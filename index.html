@@ -4,6 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Today's Five</title>
+  <meta name="description" content="A five-line checklist built to be left open on screen all day.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1A1D21">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Today's Five">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&family=Lato:wght@400;700;900&family=PT+Sans:wght@400;700&family=Quicksand:wght@500;700&display=swap">
@@ -735,6 +743,9 @@ function exitEdit(){
 /* ---------------- controls ---------------- */
 function applyMode(){
   document.documentElement.setAttribute("data-mode",state.mode);
+  var tc=document.querySelector('meta[name="theme-color"]');
+  if(tc) tc.setAttribute("content",
+    getComputedStyle(document.documentElement).getPropertyValue("--ink").trim());
   $("#theme").textContent=LABEL[state.mode];
   requestAnimationFrame(function(){ if(!editing) layoutAll(); });
 }

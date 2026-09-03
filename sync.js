@@ -45,38 +45,54 @@ export async function makeTransport(kind, config) {
 }
 
 async function makeSupabaseTransport(cfg) {
-  const mod = await import(SUPABASE_ESM);
-  const sb = mod.createClient(cfg.url, cfg.key, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-    realtime: { params: { eventsPerSecond: 5 } }
-  });
-  const rpc = async (fn, args) => {
-    const { data, error } = await sb.rpc(fn, args);
-    if (error) throw new Error(error.message || String(error));
+  const base = String(cfg.url).replace(/\/+$/, "");
+  const headers = { apikey: cfg.key, "Content-Type": "application/json" };
+  // The RPCs are plain HTTP: calling them with fetch means the first pull never waits for the client library.
+  async function rpc(fn, args) {
+    const r = await fetch(`${base}/rest/v1/rpc/${fn}`, { method: "POST", headers, body: JSON.stringify(args) });
+    const text = await r.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
+    if (!r.ok) throw new Error((data && (data.message || data.error)) || ("HTTP " + r.status));
     return data;
-  };
+  }
+  // The client library (from the CDN) is only needed to *receive* broadcasts; it loads lazily and retries after a failure.
+  let clientP = null;
+  function client() {
+    if (!clientP) {
+      clientP = import(SUPABASE_ESM).then(mod => mod.createClient(base, cfg.key, {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        realtime: { params: { eventsPerSecond: 5 } }
+      })).catch(e => { clientP = null; throw e; });
+    }
+    return clientP;
+  }
   return {
     kind: "supabase",
     get: id => rpc("get_list", { p_id: id }),
     put: (id, doc, baseRev) => rpc("put_list", { p_id: id, p_doc: doc, p_base_rev: baseRev }),
     del: id => rpc("delete_list", { p_id: id }).then(Boolean),
     subscribe(id, onMsg, onState) {
-      const ch = sb.channel("list:" + id, { config: { broadcast: { self: false, ack: false } } });
-      ch.on("broadcast", { event: "change" }, ({ payload }) => onMsg(payload));
-      ch.subscribe(status => onState(status === "SUBSCRIBED" ? "joined" : String(status).toLowerCase()));
+      let ch = null, sb = null, closed = false, failed = false;
+      client().then(c => {
+        if (closed) return;
+        sb = c;
+        ch = c.channel("list:" + id, { config: { broadcast: { self: false, ack: false } } });
+        ch.on("broadcast", { event: "change" }, ({ payload }) => onMsg(payload));
+        ch.subscribe(status => onState(status === "SUBSCRIBED" ? "joined" : String(status).toLowerCase()));
+      }).catch(() => { failed = true; onState("error"); });
       return {
-        alive() { return ch.state === "joined" || ch.state === "joining"; },
+        alive() { return !closed && !failed && (!ch || ch.state === "joined" || ch.state === "joining"); },
         send(payload) {
-          // joined: over the socket; otherwise the explicit REST path (the implicit fallback is being deprecated)
-          if (ch.state === "joined") return ch.send({ type: "broadcast", event: "change", payload });
-          if (typeof ch.httpSend === "function") return ch.httpSend("change", payload);
-          return ch.send({ type: "broadcast", event: "change", payload });
+          if (ch && ch.state === "joined") return ch.send({ type: "broadcast", event: "change", payload });
+          // REST broadcast: needs no socket and works before the client has loaded
+          return fetch(`${base}/realtime/v1/api/broadcast`, { method: "POST", headers, body: JSON.stringify({ messages: [{ topic: "list:" + id, event: "change", payload, private: false }] }) }).catch(() => {});
         },
-        close() { try { sb.removeChannel(ch); } catch (e) { /* ignore */ } }
+        close() { closed = true; if (sb && ch) { try { sb.removeChannel(ch); } catch (e) { /* ignore */ } } }
       };
     },
     /** After sleep/wake the socket may be dead while channels still say "joined"; nudge it. */
-    wake() { try { if (sb.realtime && !sb.realtime.isConnected()) sb.realtime.connect(); } catch (e) { /* ignore */ } }
+    wake() { if (clientP) clientP.then(sb => { try { if (sb.realtime && !sb.realtime.isConnected()) sb.realtime.connect(); } catch (e) { /* ignore */ } }).catch(() => {}); }
   };
 }
 

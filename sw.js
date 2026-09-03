@@ -7,8 +7,24 @@ const SHELL = [
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-512-maskable.png", "./icons/apple-touch-icon.png"
 ];
 
+// The pinned Supabase client and its imports: cached best-effort so a first launch offline still syncs later.
+const CDN = [
+  "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.114.0/+esm",
+  "https://cdn.jsdelivr.net/npm/@supabase/functions-js@2.114.0/+esm",
+  "https://cdn.jsdelivr.net/npm/@supabase/postgrest-js@2.114.0/+esm",
+  "https://cdn.jsdelivr.net/npm/@supabase/realtime-js@2.114.0/+esm",
+  "https://cdn.jsdelivr.net/npm/@supabase/storage-js@2.114.0/+esm",
+  "https://cdn.jsdelivr.net/npm/@supabase/auth-js@2.114.0/+esm",
+  "https://cdn.jsdelivr.net/npm/tslib@2.8.1/+esm",
+  "https://cdn.jsdelivr.net/npm/@supabase/phoenix@0.4.5/+esm",
+  "https://cdn.jsdelivr.net/npm/iceberg-js@0.8.1/+esm"
+];
+
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then(async c => {
+    await c.addAll(SHELL);
+    await Promise.allSettled(CDN.map(u => c.add(new Request(u, { mode: "cors" }))));
+  }).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", e => {

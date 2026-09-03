@@ -189,6 +189,7 @@ async function openList(id) {
   history.replaceState(null, "", BASE + SEARCH + "#/l/" + id);
   if (window.__tfManifest) window.__tfManifest(id);
   $("#welcome").hidden = true;
+  $("#dot").hidden = false;
   rows.clear(); $("#list").innerHTML = ""; $("#all").innerHTML = "";
   wasAll = allDoneToday();
   setView(view, { force: true });
@@ -218,6 +219,7 @@ function showWelcome(msg) {
   listId = null; doc = null;
   $("#today").hidden = true; $("#all").hidden = true; $("#welcome").hidden = false;
   $("#w-err").textContent = msg || "";
+  $("#dot").hidden = true; // no list yet: nothing to report
   $("#count").innerHTML = "<b>0</b>/0";
   $("#hint").innerHTML = "";
   $("#addtoday").hidden = true;

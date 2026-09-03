@@ -277,6 +277,14 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone }) 
       cur = null;
     },
     current() { return cur ? { id: cur.id, rev: cur.rev, dirty: cur.dirty, gone: cur.gone } : null; },
+    /** Tell other devices on `id` that it was deleted (after Rotate); they pull, find nothing, and show "gone". */
+    announceGone(id) {
+      if (!transport || !transport.subscribe) return;
+      try {
+        const ch = transport.subscribe(id, () => {}, state => { if (state === "joined") { try { ch.send({ rev: 0, from: deviceId, gone: true }); } catch (e) { /* ignore */ } setTimeout(() => ch.close(), 1500); } });
+        setTimeout(() => { try { ch.close(); } catch (e) { /* ignore */ } }, 8000);
+      } catch (e) { /* ignore */ }
+    },
     async remove(id) { if (transport && transport.del) return transport.del(id); return false; }
   };
 }

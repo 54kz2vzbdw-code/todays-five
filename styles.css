@@ -203,6 +203,7 @@ button{font:inherit;color:inherit}
 @media (hover:none){
   .tool{min-width:44px;min-height:44px}
   .tool.handle{display:none}
+  .check{min-height:44px}
 }
 
 /* inline edit */
@@ -213,6 +214,8 @@ button{font:inherit;color:inherit}
   border:1px solid var(--hair);border-bottom-color:var(--accent);border-radius:.14em;
   padding:.02em .2em;margin:-.03em 0 0 -.2em;
 }
+.row.editing .check{flex-wrap:wrap;cursor:default}
+.einput.note-in{flex:1 1 100%;margin-left:calc(.66em + .46em);width:auto}
 .einput::placeholder{color:var(--dim);opacity:.8}
 .einput:focus{outline:none;border-color:var(--accent);background:var(--ink-3)}
 .row.editing .lines,.row.editing .cap{display:none}
@@ -290,7 +293,7 @@ body.is-dragging .row:hover{background:transparent}
   font-size:clamp(1.1rem,2.7vh,1.9rem);color:var(--accent-text);font-style:var(--finale-style);
 }
 #toast{
-  position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:50;
+  position:fixed;left:50%;bottom:calc(58px + env(safe-area-inset-bottom,0px));z-index:50;
   display:flex;align-items:center;gap:.8rem;
   font-family:var(--font-ui);font-weight:700;font-size:clamp(10px,1.05vw,12.5px);
   letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
@@ -464,4 +467,8 @@ input[type="color"]{width:44px;height:44px;border:1px solid var(--hair);border-r
   .dot[data-s="syncing"]::before{animation:none;opacity:.5}
   .row.moving{transition:none}
   #toast{transition:none}
+}
+
+@media (hover:none){
+  button.add,.sec-h button.chip,.sec-h button.sec-toggle{min-height:44px}
 }

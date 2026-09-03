@@ -37,6 +37,8 @@ if (!dev.theme) dev.theme = "T1:curated:dark";
 if (!dev.darkSlot) dev.darkSlot = "T1:curated:dark";
 if (!dev.lightSlot) dev.lightSlot = "T1:curated:light";
 function saveDevice() { saveMeta(meta); }
+// per-tab identity: two tabs on one device must not ignore each other's broadcasts
+const TAB_ID = dev.id + ":" + M.shortId();
 
 /* ---------------- state ---------------- */
 let doc = null, listId = null, view = "today";
@@ -146,7 +148,7 @@ async function openList(id) {
     if (listId !== id) return;
   }
   sync = createSync({
-    transport, deviceId: dev.id,
+    transport, deviceId: TAB_ID,
     onStatus: paintStatus,
     onRemote: remote => { doc = remote; applyRemote(); },
     onGone: () => { /* status dot shows it; the paste screen is offered from the Lists panel */ }
@@ -264,11 +266,10 @@ function renderToday({ animate, quiet }) {
   const relayout = [];
   for (const it of items) {
     keep.add(it.id);
-    let li = rows.get(it.id);
-    if (!li) { li = makeRow(it); rows.set(it.id, li); list.appendChild(li); if (quiet && animate && !RM.matches) li.classList.add("arrive"); relayout.push(li); }
-    else if (updateRow(li, it)) relayout.push(li);
+    let li = rows.get(it.id), fresh = false;
+    if (!li) { li = makeRow(it); rows.set(it.id, li); list.appendChild(li); fresh = true; if (quiet && animate && !RM.matches) li.classList.add("arrive"); }
+    if (updateRow(li, it) || fresh) relayout.push(li);
     if (!li.parentNode) list.appendChild(li);
-    updateRow(li, it);
   }
   for (const [id, li] of rows) if (!keep.has(id)) { rows.delete(id); if (editing && editing.id === id) cancelEdit(true); li.remove(); }
   orderInto(list, items.map(i => i.id), animate);
@@ -291,9 +292,9 @@ function renderAll({ animate, quiet }) {
     const items = M.itemsInSection(doc, g.id);
     for (const it of items) {
       keep.add(it.id);
-      let li = rows.get(it.id);
-      if (!li) { li = makeRow(it); rows.set(it.id, li); list.appendChild(li); if (quiet && animate && !RM.matches) li.classList.add("arrive"); relayout.push(li); }
-      else if (updateRow(li, it)) relayout.push(li);
+      let li = rows.get(it.id), fresh = false;
+      if (!li) { li = makeRow(it); rows.set(it.id, li); list.appendChild(li); fresh = true; if (quiet && animate && !RM.matches) li.classList.add("arrive"); }
+      if (updateRow(li, it) || fresh) relayout.push(li);
       if (li.parentNode !== list) moves.push([li, list]);
     }
     sec.querySelector(".empty").hidden = items.length > 0;
@@ -751,7 +752,8 @@ function dragStep() {
   for (const list of lists) {
     const sec = list.closest(".sec");
     const lr = list.getBoundingClientRect();
-    const hr = sec ? sec.querySelector(".sec-h").getBoundingClientRect() : lr;
+    const head = sec ? sec.querySelector(".sec-h") : null;
+    const hr = head && !head.hidden ? head.getBoundingClientRect() : lr;
     const within = y >= Math.min(hr.top, lr.top) - 6 && y <= Math.max(lr.bottom, hr.bottom) + 30;
     if (sec) sec.classList.toggle("over", within && list !== li.parentNode);
     if (!within || placed) continue;
@@ -764,12 +766,29 @@ function dragStep() {
       if (firstDone && !lastUndone) { target = firstDone; before = true; }
       else if (lastUndone) { target = lastUndone; before = false; }
     }
-    if (target) { if (before) { if (target.previousSibling !== li) list.insertBefore(li, target); } else if (target.nextSibling !== li) list.insertBefore(li, target.nextSibling); }
-    else if (li.parentNode !== list) list.insertBefore(li, list.firstChild);
+    let ref = null, needMove = false;
+    if (target) { ref = before ? target : target.nextSibling; needMove = before ? target.previousSibling !== li : target.nextSibling !== li; }
+    else { ref = list.firstChild; needMove = li.parentNode !== list; }
+    if (needMove) domMove(li, list, ref);
     placed = true;
   }
   const nb = li.getBoundingClientRect();
   li.style.transform = `translateY(${y - drag.offY - nb.top}px)`;
+}
+/** Move the dragged row in the DOM, FLIP-animating the rows it displaces, and re-take pointer capture
+    (a DOM move is a remove + insert, which releases the capture). */
+function domMove(li, list, ref) {
+  const from = li.parentNode;
+  const affected = new Set([...(from ? from.children : []), ...list.children]);
+  affected.delete(li);
+  const first = new Map();
+  if (!RM.matches) for (const el of affected) if (el.classList && el.classList.contains("row")) first.set(el, el.getBoundingClientRect().top);
+  list.insertBefore(li, ref);
+  if (drag) { try { li.setPointerCapture(drag.pointerId); } catch (e) { /* pointer already gone */ } }
+  for (const [el, top] of first) {
+    const d = top - el.getBoundingClientRect().top;
+    if (d && el.animate) el.animate([{ transform: `translateY(${d}px)` }, { transform: "none" }], { duration: 220, easing: "cubic-bezier(.22,1,.36,1)" });
+  }
 }
 function endDrag(move, up) {
   if (!drag) return;
@@ -931,7 +950,7 @@ async function rotateLink() {
   meta.lists = meta.lists.filter(l => l.id !== oldId);
   await openList(newId);
   // let the new list land, then kill the old one
-  const kill = async () => { try { if (sync) await sync.remove(oldId); } catch (e) { /* ignore */ } removeLocal(oldId); };
+  const kill = async () => { try { if (sync) { await sync.remove(oldId); sync.announceGone(oldId); } } catch (e) { /* ignore */ } removeLocal(oldId); };
   if (sync) { await sync.flush(); await kill(); } else await kill();
   toast("New link ready");
   openShare();
@@ -1178,6 +1197,9 @@ function sectionOfFocused() {
   const it = id && doc.items[id];
   return it && !it.deleted && doc.sections[it.sectionId] && !doc.sections[it.sectionId].deleted ? it.sectionId : "";
 }
+
+/* test hook (read-only) */
+window.__tf = () => ({ view, listId, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, cur: sync ? sync.current() : null, tab: TAB_ID });
 
 /* ---------------- service worker ---------------- */
 function registerSw() {

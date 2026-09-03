@@ -1255,5 +1255,12 @@ window.__tf = () => ({ view, listId, dragging: !!drag, drag: drag ? { id: drag.i
 function registerSw() {
   if (!("serviceWorker" in navigator)) return;
   if (location.hostname === "localhost" || location.hostname === "127.0.0.1") { if (new URLSearchParams(location.search).get("sw") !== "1") return; }
-  addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+  addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").then(() => navigator.serviceWorker.ready).then(() => {
+      // the first load's font requests happened before the worker took control: fetch the stylesheet
+      // once more through it so the offline shell has the fonts CSS too
+      const f = document.querySelector('link[data-fonts="active"]');
+      if (f && navigator.serviceWorker.controller) fetch(f.href, { mode: "cors" }).catch(() => {});
+    }).catch(() => {});
+  });
 }

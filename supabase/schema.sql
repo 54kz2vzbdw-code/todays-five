@@ -65,6 +65,10 @@ begin
       -- caller thinks the list exists but it is gone (rotated or deleted): do not recreate it
       return jsonb_build_object('ok', false, 'rev', 0, 'doc', null);
     end if;
+    -- the key is public; bound how many rows anyone can create so storage cannot be exhausted
+    if (select count(*) from public.lists) >= 50 then
+      raise exception 'too many lists' using errcode = '54000';
+    end if;
     insert into public.lists (id, doc, rev) values (p_id, p_doc, 1);
     return jsonb_build_object('ok', true, 'rev', 1);
   end if;

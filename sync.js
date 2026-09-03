@@ -23,9 +23,10 @@ function write(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); ret
 export function loadLocal(id) {
   const v = read(K.list(id));
   if (!v || !v.doc) return null;
-  return { doc: normalize(v.doc, id), rev: v.rev | 0, dirty: !!v.dirty };
+  return { doc: normalize(v.doc, id), rev: v.rev | 0, dirty: !!v.dirty, created: !!v.created };
 }
-export function saveLocal(id, { doc, rev, dirty }) { return write(K.list(id), { doc, rev: rev | 0, dirty: !!dirty, savedAt: Date.now() }); }
+/** `created` marks a list this device made itself (vs. one opened from a link): only those may be inserted on the server. */
+export function saveLocal(id, { doc, rev, dirty, created }) { return write(K.list(id), { doc, rev: rev | 0, dirty: !!dirty, created: !!created, savedAt: Date.now() }); }
 export function removeLocal(id) { try { localStorage.removeItem(K.list(id)); } catch (e) { /* ignore */ } }
 export function loadMeta() { return read(K.meta) || {}; }
 export function saveMeta(m) { return write(K.meta, m); }
@@ -127,7 +128,7 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone }) 
   let pollTimer = 0;
 
   function setStatus(s) { if (s !== status) { status = s; onStatus && onStatus(s); } }
-  function persist() { if (cur) saveLocal(cur.id, { doc: cur.doc, rev: cur.rev, dirty: cur.dirty }); }
+  function persist() { if (cur) saveLocal(cur.id, { doc: cur.doc, rev: cur.rev, dirty: cur.dirty, created: cur.created }); }
 
   async function pull() {
     if (!cur || !transport) return;
@@ -139,8 +140,12 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone }) 
       const res = await transport.get(me.id);
       if (cur !== me) return;
       if (!res) {
-        if (me.rev === 0) { me.dirty = true; await push(); }
+        // only a list this device created may be inserted; a link that no longer resolves is gone (rotated/deleted)
+        if (me.rev === 0 && me.created) { me.dirty = true; await push(); }
         else { me.gone = true; setStatus("gone"); onGone && onGone(me.id); }
+      } else if ((res.rev | 0) < me.rev) {
+        // the server row was recreated after a rotate/delete: never merge into or refill it
+        me.gone = true; setStatus("gone"); onGone && onGone(me.id);
       } else {
         const remote = normalize(res.doc, me.id);
         const merged = merge(me.doc, remote);
@@ -182,7 +187,7 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone }) 
           if (me.dirty) continue; // edited while the put was in flight
           break;
         }
-        if (!res || (!res.doc && (res.rev | 0) === 0)) { me.gone = true; setStatus("gone"); onGone && onGone(me.id); return; }
+        if (!res || (!res.doc && (res.rev | 0) === 0) || ((res.rev | 0) < me.rev)) { me.gone = true; setStatus("gone"); onGone && onGone(me.id); return; }
         // stale base: fold the server doc in and try again
         const remote = normalize(res.doc, me.id);
         const merged = merge(me.doc, remote);
@@ -245,9 +250,9 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone }) 
     get status() { return status; },
     get kind() { return transport ? transport.kind : "off"; },
     /** Start syncing a list. `doc` is what the app already painted; rev/dirty come from loadLocal(). */
-    open(id, doc, { rev = 0, dirty = false } = {}) {
+    open(id, doc, { rev = 0, dirty = false, created = false } = {}) {
       this.close();
-      cur = { id, doc, rev: rev | 0, dirty: dirty || rev === 0, version: 0, pushing: false, pulling: false, channel: null, gone: false, pushTimer: 0 };
+      cur = { id, doc, rev: rev | 0, dirty: dirty || (rev === 0 && created), created: !!created, version: 0, pushing: false, pulling: false, channel: null, gone: false, pushTimer: 0 };
       persist();
       if (!transport) { setStatus("off"); return; }
       listen(true);

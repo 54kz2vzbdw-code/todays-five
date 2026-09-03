@@ -93,8 +93,9 @@ export const PAIRS = {
 /** The six pairs offered for custom themes. */
 export const CUSTOM_PAIRS = ["lato", "fraunces", "grotesk", "playfair", "manrope", "dmserif"];
 
+export function pairOf(id) { return (typeof id === "string" && Object.prototype.hasOwnProperty.call(PAIRS, id)) ? PAIRS[id] : null; }
 export function fontsUrl(pairId) {
-  const p = PAIRS[pairId] || PAIRS.lato;
+  const p = pairOf(pairId) || PAIRS.lato;
   const fam = ([name, axes]) => "family=" + encodeURIComponent(name).replace(/%20/g, "+") + (axes ? ":" + axes : "");
   const parts = [fam(p.task)];
   if (p.ui[0] !== p.task[0]) parts.push(fam(p.ui));
@@ -265,11 +266,11 @@ export function derive({ accent, base = "dark", pair, name = "", id }) {
   if (dark) {
     const inkC = Math.min(0.055, Math.max(0.012, a.C * 0.35));
     c.ink = oklch(0.215, inkC, h); c.ink2 = oklch(0.26, inkC * 1.05, h); c.ink3 = oklch(0.315, inkC * 1.1, h);
-    c.text = ensure(0.955, Math.min(0.012, a.C * 0.1), h, c.ink, 7, 1);
-    c.muted = ensure(0.75, Math.min(0.05, a.C * 0.35), h, c.ink, 4.5, 1);
-    c.dim = ensure(0.64, Math.min(0.04, a.C * 0.3), h, c.ink, 4.5, 1);
+    c.text = ensure(0.955, Math.min(0.012, a.C * 0.1), h, c.ink3, 7, 1);
+    c.muted = ensure(0.75, Math.min(0.05, a.C * 0.35), h, c.ink3, 4.5, 1);
+    c.dim = ensure(0.64, Math.min(0.04, a.C * 0.3), h, c.ink3, 4.5, 1);
     c.accent = ensure(a.L, a.C, h, c.ink, 3, 1);
-    c.accentText = ensure(hexToOklch(c.accent).L, Math.min(a.C, 0.2), h, c.ink, 4.5, 1);
+    c.accentText = ensure(hexToOklch(c.accent).L, Math.min(a.C, 0.2), h, c.ink3, 4.5, 1);
     const aL = hexToOklch(c.accent).L;
     c.accentHi = oklch(Math.min(0.92, aL + 0.12), a.C * 0.8, h + 8);
     c.accentDeep = oklch(Math.max(0.3, aL - 0.15), a.C, h - 4);
@@ -279,11 +280,11 @@ export function derive({ accent, base = "dark", pair, name = "", id }) {
   } else {
     const inkC = Math.min(0.022, Math.max(0.009, a.C * 0.14));
     c.ink = oklch(0.975, inkC, h); c.ink2 = oklch(0.95, inkC * 1.2, h); c.ink3 = oklch(0.91, inkC * 1.4, h);
-    c.text = ensure(0.32, Math.min(0.03, a.C * 0.2), h, c.ink, 7, -1);
-    c.muted = ensure(0.5, Math.min(0.05, a.C * 0.3), h, c.ink, 4.5, -1);
-    c.dim = ensure(0.56, Math.min(0.04, a.C * 0.25), h, c.ink, 4.5, -1);
+    c.text = ensure(0.32, Math.min(0.03, a.C * 0.2), h, c.ink3, 7, -1);
+    c.muted = ensure(0.5, Math.min(0.05, a.C * 0.3), h, c.ink3, 4.5, -1);
+    c.dim = ensure(0.56, Math.min(0.04, a.C * 0.25), h, c.ink3, 4.5, -1);
     c.accent = ensure(a.L, a.C, h, c.ink, 3, -1);
-    c.accentText = ensure(hexToOklch(c.accent).L, a.C, h, c.ink, 4.5, -1);
+    c.accentText = ensure(hexToOklch(c.accent).L, a.C, h, c.ink3, 4.5, -1);
     const aL = hexToOklch(c.accent).L;
     c.accentHi = oklch(Math.min(0.85, aL + 0.1), a.C * 0.9, h + 6);
     c.accentDeep = oklch(Math.max(0.25, aL - 0.15), a.C, h - 4);
@@ -296,7 +297,7 @@ export function derive({ accent, base = "dark", pair, name = "", id }) {
   c.hairHi = rgba(c.text, dark ? .30 : .42);
   c.hairSolid = hairSolidFor(c.ink, c.text);
   c.boxDoneBg = c.accent; c.strikeBg = c.accent; c.strikeSize = "auto"; c.strikeAnim = "none"; c.finaleStyle = "normal";
-  const p = pair && PAIRS[pair] ? pair : pickPair(base, accent);
+  const p = pair && pairOf(pair) ? pair : pickPair(base, accent);
   const w = warmth(h);
   const sound = (w === "pink" || w === "cool") ? { engine: "bell", pitch: 0.85 + a.L * 0.4, decay: 1.1, bright: 0.6 } : { engine: "knock", pitch: 0.8 + a.L * 0.4, decay: 1.1, noise: 1 };
   const confetti = [c.accent, c.accentHi, c.accentDeep, dark ? c.text : c.text, oklch(dark ? 0.8 : 0.72, 0.07, h + 180)];
@@ -345,7 +346,7 @@ export function parseCode(code) {
   const base = parts[1] === "l" ? "light" : parts[1] === "d" ? "dark" : null;
   const accent = normalizeHex(parts[2]);
   if (!base || !accent) return null;
-  const pair = PAIRS[parts[3]] ? parts[3] : undefined;
+  const pair = pairOf(parts[3]) ? parts[3] : undefined;
   const name = parts.slice(4).join(":").trim().slice(0, 40) || "Custom";
   return derive({ accent, base, pair, name });
 }
@@ -353,7 +354,7 @@ export function parseCode(code) {
 /* ---------------- CSS ---------------- */
 
 export function cssText(t) {
-  const c = t.colors, p = PAIRS[t.pair] || PAIRS.lato;
+  const c = t.colors, p = pairOf(t.pair) || PAIRS.lato;
   return `:root{--ink:${c.ink};--ink-2:${c.ink2};--ink-3:${c.ink3};--text:${c.text};--muted:${c.muted};--dim:${c.dim};--done:${c.done};` +
     `--accent:${c.accent};--accent-hi:${c.accentHi};--accent-deep:${c.accentDeep};--accent-text:${c.accentText};--danger:${c.danger};` +
     `--hair:${c.hair};--hair-hi:${c.hairHi};--hair-solid:${c.hairSolid};--glow:${c.glow};--strike-shadow:${c.strikeShadow};` +
@@ -374,7 +375,7 @@ export function report(t) {
 
 const CSS_KEY = "tf/v2/themecss", FONT_KEY = "tf/v2/fontsurl";
 
-export function applyTheme(t, doc = document) {
+export function applyTheme(t, doc = document, { persist = true } = {}) {
   const css = cssText(t);
   let style = doc.getElementById("theme-vars");
   if (!style) { style = doc.createElement("style"); style.id = "theme-vars"; doc.head.appendChild(style); }
@@ -384,17 +385,24 @@ export function applyTheme(t, doc = document) {
   const meta = doc.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", t.colors.ink);
   loadFonts(fontsUrl(t.pair), doc);
-  try { localStorage.setItem(CSS_KEY, css); localStorage.setItem(FONT_KEY, fontsUrl(t.pair)); } catch (e) { /* private mode */ }
+  if (persist) { try { localStorage.setItem(CSS_KEY, css); localStorage.setItem(FONT_KEY, fontsUrl(t.pair)); } catch (e) { /* private mode */ } }
 }
 
 /** Load only the fonts in use: one stylesheet for the active pair, previous ones removed once the new one has loaded. */
+let wantedFonts = null;
 export function loadFonts(url, doc = document) {
+  wantedFonts = url;
   const current = doc.querySelector('link[data-fonts="active"]');
-  if (current && current.href === url) return;
+  if (current && current.href === url) { doc.querySelectorAll('link[data-fonts="pending"]').forEach(l => l.remove()); return; }
+  const pending = Array.from(doc.querySelectorAll('link[data-fonts="pending"]'));
+  if (pending.some(l => l.href === url)) return;
+  pending.forEach(l => l.remove());
   const link = doc.createElement("link");
-  link.rel = "stylesheet"; link.href = url; link.setAttribute("data-fonts", "pending");
+  link.rel = "stylesheet"; link.href = url; link.crossOrigin = "anonymous"; link.setAttribute("data-fonts", "pending");
   link.onload = link.onerror = () => {
-    doc.querySelectorAll('link[data-fonts="active"]').forEach(l => l.remove());
+    // a later call may have chosen another pair while this one was loading
+    if (link.href !== wantedFonts) { link.remove(); return; }
+    doc.querySelectorAll('link[data-fonts]').forEach(l => { if (l !== link) l.remove(); });
     link.setAttribute("data-fonts", "active");
   };
   doc.head.appendChild(link);

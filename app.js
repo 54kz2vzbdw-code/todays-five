@@ -98,7 +98,7 @@ function boot() {
     if (v1 && Array.isArray(v1.items) && v1.items.length) {
       const id = M.newId();
       const d = M.migrateV1(v1, id);
-      saveLocal(id, { doc: d, rev: 0, dirty: true });
+      saveLocal(id, { doc: d, rev: 0, dirty: true, created: true });
       meta.migratedV1 = true;
       if (v1.mode && T.curated(v1.mode)) { dev.theme = "T1:curated:" + v1.mode; applyThemeCode(dev.theme); }
       if (v1.muted) { dev.muted = true; paintMute(); }
@@ -162,7 +162,8 @@ async function openList(id) {
     onGone: () => { /* status dot shows it; the paste screen is offered from the Lists panel */ }
   });
   paintStatus(transportFailed ? "offline" : sync.status);
-  sync.open(id, doc, local ? { rev: local.rev, dirty: local.dirty || roll.moved.length > 0 } : { rev: 0, dirty: true });
+  sync.open(id, doc, local ? { rev: local.rev, dirty: local.dirty || roll.moved.length > 0, created: local.created } : { rev: 0, dirty: false, created: false });
+  retryPendingKills();
   if (roll.moved.length) sync.update(doc);
   if (entry && !entry.name && doc.name) entry.name = doc.name;
 }
@@ -419,7 +420,7 @@ function paintStatus(s) {
 /* ---------------- changes ---------------- */
 function afterChange({ animate = true, delay = 0 } = {}) {
   doc.updatedAt = M.now();
-  if (sync) sync.update(doc); else saveLocal(listId, { doc, rev: 0, dirty: true });
+  if (sync) sync.update(doc); else saveLocal(listId, { doc, rev: 0, dirty: true, created: true });
   if (delay) setTimeout(() => render({ animate }), delay); else render({ animate });
   paintListName();
 }
@@ -918,7 +919,7 @@ function tickDay() {
   const r = M.rollover(doc);
   if (r.moved.length) { doc = r.doc; afterChange({ animate: true }); wasAll = allDoneToday(); }
 }
-setInterval(tickDay, 60000);
+setInterval(() => { tickDay(); retryPendingKills(); }, 60000);
 
 /* share / QR */
 async function openShare() {
@@ -957,17 +958,35 @@ async function rotateLink() {
   if (sync) await sync.flush();
   const copy = M.normalize(JSON.parse(JSON.stringify(doc)), newId);
   copy.updatedAt = M.now();
-  saveLocal(newId, { doc: copy, rev: 0, dirty: true });
+  saveLocal(newId, { doc: copy, rev: 0, dirty: true, created: true });
   const old = meta.lists.find(l => l.id === oldId);
   registerList(newId, old ? old.name : "");
   meta.lists = meta.lists.filter(l => l.id !== oldId);
   await openList(newId);
-  // let the new list land, then kill the old one
-  const kill = async () => { try { if (sync) { await sync.remove(oldId); sync.announceGone(oldId); } } catch (e) { /* ignore */ } removeLocal(oldId); };
-  if (sync) { await sync.flush(); await kill(); } else await kill();
-  toast("New link ready");
+  // let the new list land, then kill the old one; if that fails, remember to retry
+  if (sync) await sync.flush();
+  removeLocal(oldId);
+  const dead = await killRemote(oldId);
+  toast(dead ? "New link ready" : "New link ready — old link not revoked yet, will retry");
   openShare();
 }
+async function killRemote(id) {
+  if (!transport) { queueKill(id); return false; }
+  try {
+    await sync.remove(id);
+    sync.announceGone(id);
+    meta.pendingKill = (meta.pendingKill || []).filter(x => x !== id); saveDevice();
+    return true;
+  } catch (e) { queueKill(id); return false; }
+}
+function queueKill(id) { meta.pendingKill = Array.from(new Set([...(meta.pendingKill || []), id])); saveDevice(); }
+let killing = false;
+async function retryPendingKills() {
+  if (killing || !transport || !(meta.pendingKill || []).length || !navigator.onLine) return;
+  killing = true;
+  try { for (const id of [...meta.pendingKill]) await killRemote(id); } finally { killing = false; }
+}
+addEventListener("online", () => setTimeout(retryPendingKills, 1500));
 
 /* lists */
 function openLists() {
@@ -994,7 +1013,7 @@ $("#l-new").addEventListener("click", async () => {
   if (name === null) return;
   const id = M.newId();
   const d = M.emptyDoc(id, (name || "").trim().slice(0, 60));
-  saveLocal(id, { doc: d, rev: 0, dirty: true });
+  saveLocal(id, { doc: d, rev: 0, dirty: true, created: true });
   registerList(id, d.name);
   switchTo(id);
 });
@@ -1028,7 +1047,7 @@ $("#listname").addEventListener("click", openLists);
 $("#w-new").addEventListener("click", () => {
   const id = M.newId();
   const d = M.seedDoc(id);
-  saveLocal(id, { doc: d, rev: 0, dirty: true });
+  saveLocal(id, { doc: d, rev: 0, dirty: true, created: true });
   registerList(id, "");
   switchTo(id);
 });
@@ -1078,7 +1097,10 @@ function renderSwatches() {
     const b = document.createElement("button"); b.type = "button"; b.className = "swatch";
     b.style.background = t.colors.ink; b.style.color = t.colors.text; b.style.borderColor = t.colors.hairSolid;
     b.setAttribute("aria-pressed", T.themeCode(t) === cur ? "true" : "false");
-    b.innerHTML = `<span class="bar" style="background:${t.colors.accent}"></span><span class="nm" style="font-family:${T.PAIRS[t.pair].task[2]}">${escapeHtml(saved ? saved.name : t.name)}</span><span class="sm" style="color:${t.colors.dim}">${t.base}${saved ? " · yours" : ""}</span>`;
+    const bar = document.createElement("span"); bar.className = "bar"; bar.style.background = t.colors.accent;
+    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = saved ? saved.name : t.name; nm.style.fontFamily = (T.pairOf(t.pair) || T.PAIRS.lato).task[2];
+    const sm = document.createElement("span"); sm.className = "sm"; sm.textContent = t.base + (saved ? " · yours" : ""); sm.style.color = t.colors.dim;
+    b.append(bar, nm, sm);
     b.addEventListener("click", () => chooseTheme(saved ? { ...t, name: saved.name } : t));
     if (saved) {
       const del = document.createElement("button"); del.type = "button"; del.className = "del"; del.textContent = "×"; del.setAttribute("aria-label", "Delete " + saved.name);
@@ -1096,17 +1118,23 @@ function syncFollowChip() {
   b.setAttribute("aria-pressed", dev.follow ? "true" : "false");
   b.textContent = dev.follow ? "Follow system: on" : "Follow system: off";
 }
-$("#follow").addEventListener("click", () => { dev.follow = !dev.follow; saveDevice(); applyThemeCode(currentThemeCode()); renderSwatches(); });
+$("#follow").addEventListener("click", () => {
+  dev.follow = !dev.follow;
+  // seed the slot for the current theme's base so turning it on doesn't swap the theme away
+  if (dev.follow && theme) { if (theme.base === "dark") dev.darkSlot = dev.theme; else dev.lightSlot = dev.theme; }
+  saveDevice(); applyThemeCode(currentThemeCode()); renderSwatches();
+});
 const pairSel = $("#c-pair");
 T.CUSTOM_PAIRS.forEach(id => { const o = document.createElement("option"); o.value = id; o.textContent = T.PAIRS[id].name; pairSel.appendChild(o); });
 function customTheme() { return T.derive({ accent: custom.accent, base: custom.base, pair: custom.pair || undefined, name: custom.name || "Custom" }); }
 function paintCustom() {
-  $("#c-color").value = custom.accent; $("#c-hex").value = custom.accent;
+  $("#c-color").value = custom.accent;
+  if (document.activeElement !== $("#c-hex")) $("#c-hex").value = custom.accent;
   $("#c-dark").setAttribute("aria-pressed", custom.base === "dark" ? "true" : "false");
   $("#c-light").setAttribute("aria-pressed", custom.base === "light" ? "true" : "false");
   pairSel.value = custom.pair || "";
   $("#c-name").value = custom.name;
-  const t = customTheme(), c = t.colors, p = T.PAIRS[t.pair];
+  const t = customTheme(), c = t.colors, p = T.pairOf(t.pair) || T.PAIRS.lato;
   const pv = $("#c-preview");
   pv.style.background = c.ink; pv.style.color = c.text; pv.style.borderColor = c.hairSolid; pv.style.setProperty("--pv-accent", c.accent);
   pv.querySelectorAll(".pt").forEach(x => { x.style.fontFamily = p.task[2]; x.style.fontWeight = p.w; x.style.letterSpacing = p.ls; });
@@ -1115,19 +1143,28 @@ function paintCustom() {
   const r = T.report(t);
   $("#c-contrast").textContent = `Contrast — text ${r.text.toFixed(1)}:1 · muted ${r.muted.toFixed(1)}:1 · accent ${r.accentText.toFixed(1)}:1 · fonts ${p.name}`;
   T.loadFonts(T.fontsUrl(t.pair));
-  // live preview on the page while the panel is open
-  T.applyTheme(t);
 }
-function setCustom(patch) { Object.assign(custom, patch); paintCustom(); }
+/** Live preview on the page (not persisted); the panel's close handler restores the real theme. */
+function previewCustom() { T.applyTheme(customTheme(), document, { persist: false }); }
+function setCustom(patch) { Object.assign(custom, patch); paintCustom(); previewCustom(); }
 $("#c-color").addEventListener("input", e => setCustom({ accent: T.normalizeHex(e.target.value) || custom.accent }));
-$("#c-hex").addEventListener("input", e => { const h = T.normalizeHex(e.target.value); if (h) setCustom({ accent: h }); });
+$("#c-hex").addEventListener("input", e => { const v = e.target.value.trim(); if (/^#?[0-9a-f]{6}$/i.test(v)) setCustom({ accent: T.normalizeHex(v) }); });
+$("#c-hex").addEventListener("change", e => { const h = T.normalizeHex(e.target.value); if (h) setCustom({ accent: h }); else e.target.value = custom.accent; });
 $("#c-dark").addEventListener("click", () => setCustom({ base: "dark" }));
 $("#c-light").addEventListener("click", () => setCustom({ base: "light" }));
 pairSel.addEventListener("change", e => setCustom({ pair: e.target.value }));
 $("#c-name").addEventListener("input", e => { custom.name = e.target.value; });
 $("#c-use").addEventListener("click", () => { chooseTheme(customTheme()); });
+let keepPreview = false;
 $("#c-save").addEventListener("click", async () => {
-  if (!custom.name.trim()) { const n = await ask({ title: "Name this theme", label: "Name", value: "" }); if (!n || !n.trim()) return; custom.name = n.trim().slice(0, 40); }
+  if (!doc) { toast("Open a list first to save a theme"); return; }
+  if (!custom.name.trim()) {
+    keepPreview = true;
+    const n = await ask({ title: "Name this theme", label: "Name", value: "" });
+    keepPreview = false;
+    if (!n || !n.trim()) { openTheme(); previewCustom(); return; }
+    custom.name = n.trim().slice(0, 40);
+  }
   const t = customTheme();
   const id = M.shortId();
   doc.themes[id] = { id, name: custom.name.trim().slice(0, 40), code: T.themeCode(t), updatedAt: M.now() };
@@ -1135,14 +1172,14 @@ $("#c-save").addEventListener("click", async () => {
   chooseTheme(t);
   toast(`Saved “${custom.name.trim()}”`);
 });
-$("#c-surprise").addEventListener("click", () => { const t = T.surprise(); custom = { accent: t.accent, base: t.base, pair: t.pair, name: "" }; paintCustom(); });
+$("#c-surprise").addEventListener("click", () => { const t = T.surprise(); custom = { accent: t.accent, base: t.base, pair: t.pair, name: "" }; paintCustom(); previewCustom(); });
 $("#c-export").addEventListener("click", async () => { try { await navigator.clipboard.writeText(T.themeCode(customTheme())); toast("Theme code copied"); } catch (e) { toast(T.themeCode(customTheme())); } });
 $("#c-import-go").addEventListener("click", () => {
   const t = T.parseCode($("#c-import").value);
   if (!t) { toast("That code doesn't parse"); return; }
-  if (t.kind === "custom") { custom = { accent: t.accent, base: t.base, pair: t.pair, name: t.name }; paintCustom(); } else chooseTheme(t);
+  if (t.kind === "custom") { custom = { accent: t.accent, base: t.base, pair: t.pair, name: t.name }; paintCustom(); previewCustom(); } else chooseTheme(t);
 });
-$("#p-theme").addEventListener("close", () => { applyThemeCode(currentThemeCode()); });
+$("#p-theme").addEventListener("close", () => { if (!keepPreview) applyThemeCode(currentThemeCode()); });
 
 /* ---------------- rail controls ---------------- */
 function wireUi() {

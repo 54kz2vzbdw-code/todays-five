@@ -6,6 +6,7 @@
   <title>Today's Five</title>
   <meta name="description" content="A short list built to be left open on screen all day, synced between your Mac and your phone by a secret link.">
   <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'">
   <meta name="theme-color" content="#1A1D21">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -39,6 +40,7 @@
     var link = document.createElement("link");
     link.rel = "stylesheet";
     link.href = fonts || "https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=PT+Sans:wght@400;700&display=swap";
+    link.crossOrigin = "anonymous";
     link.setAttribute("data-fonts", "active");
     document.head.appendChild(link);
 

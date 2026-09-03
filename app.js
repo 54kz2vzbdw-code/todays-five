@@ -740,8 +740,8 @@ function dragStep() {
   if (!drag) return;
   drag.raf = 0;
   const y = drag.lastY, li = drag.li;
-  const base = li.getBoundingClientRect();
-  li.style.transform = `translateY(${y - drag.offY - base.top}px)`;
+  // measure without the current transform, so the offset is always relative to the row's real slot
+  li.style.transform = "";
   // autoscroll
   const scroller = view === "today" ? $("#list") : $("#all");
   const sr = scroller.getBoundingClientRect();
@@ -774,6 +774,7 @@ function dragStep() {
   }
   const nb = li.getBoundingClientRect();
   li.style.transform = `translateY(${y - drag.offY - nb.top}px)`;
+  drag.raf = 0;
 }
 /** Move the dragged row in the DOM, FLIP-animating the rows it displaces, and re-take pointer capture
     (a DOM move is a remove + insert, which releases the capture). */
@@ -1199,7 +1200,7 @@ function sectionOfFocused() {
 }
 
 /* test hook (read-only) */
-window.__tf = () => ({ view, listId, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, cur: sync ? sync.current() : null, tab: TAB_ID });
+window.__tf = () => ({ view, listId, dragging: !!drag, drag: drag ? { id: drag.id, lastY: drag.lastY, raf: drag.raf, offY: drag.offY, inDom: drag.li.isConnected, sameAsRows: rows.get(drag.id) === drag.li } : null, editing: editing ? editing.id : null, status: syncStatus, cur: sync ? sync.current() : null, tab: TAB_ID });
 
 /* ---------------- service worker ---------------- */
 function registerSw() {

@@ -1,813 +1,301 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-base="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Today's Five</title>
-  <meta name="description" content="A five-line checklist built to be left open on screen all day.">
-  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="description" content="A short list built to be left open on screen all day, synced between your Mac and your phone by a secret link.">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'">
   <meta name="theme-color" content="#1A1D21">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="icon" href="icons/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Today's Five">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&family=Lato:wght@400;700;900&family=PT+Sans:wght@400;700&family=Quicksand:wght@500;700&display=swap">
-  <style>*{margin:0;padding:0}</style>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="modulepreload" href="app.js">
+  <link rel="modulepreload" href="model.js">
+  <link rel="modulepreload" href="sync.js">
+  <link rel="modulepreload" href="theme.js">
+  <link rel="modulepreload" href="sound.js">
+  <link rel="modulepreload" href="fx.js">
+  <link rel="modulepreload" href="config.js">
+  <!-- the pinned Supabase client and the modules it imports, fetched in parallel instead of as a chain -->
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.114.0/+esm" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/functions-js@2.114.0/+esm" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/postgrest-js@2.114.0/+esm" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/realtime-js@2.114.0/+esm" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/storage-js@2.114.0/+esm" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/auth-js@2.114.0/+esm" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/tslib@2.8.1/+esm" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/phoenix@0.4.5/+esm" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/iceberg-js@0.8.1/+esm" crossorigin>
+  <style id="theme-vars">:root{--ink:#1A1D21;--ink-2:#23272C;--ink-3:#2E343A;--text:#F5F1EA;--muted:#9AA0A8;--dim:#7F858C;--done:#7F858C;--accent:#D26128;--accent-hi:#E8814A;--accent-deep:#A34A1C;--accent-text:#E8814A;--danger:#E0745A;--hair:rgba(245,241,234,.10);--hair-hi:rgba(245,241,234,.30);--hair-solid:#65696E;--glow:radial-gradient(125% 78% at 50% 34%, rgba(210,97,40,.10), rgba(210,97,40,0) 62%);--strike-shadow:0 0 10px rgba(210,97,40,.38);--box-done-bg:#D26128;--strike-bg:#D26128;--strike-size:auto;--strike-anim:none;--finale-style:normal;--font-task:"Lato","Helvetica Neue",Helvetica,Arial,sans-serif;--font-ui:"PT Sans","Helvetica Neue",Helvetica,Arial,sans-serif;--task-w:900;--task-ls:-.025em;--task-lh:1.14;color-scheme:dark}</style>
+  <script>
+  /* Boot, before first paint:
+     1. re-apply the cached theme tokens and font stylesheet so nothing flashes;
+     2. build the web app manifest as a Blob URL whose start_url carries this list's id.
+        iOS reads the manifest once at load and honours start_url (fragment included) only
+        when it is absolute; Chrome re-evaluates whenever the link changes. See PLAN.md. */
+  (function () {
+    var meta = {}, css = null, fonts = null;
+    try {
+      css = localStorage.getItem("tf/v2/themecss");
+      fonts = localStorage.getItem("tf/v2/fontsurl");
+      meta = JSON.parse(localStorage.getItem("tf/v2/meta") || "{}") || {};
+    } catch (e) {}
+    if (css && css.indexOf(":root{") === 0) {
+      document.getElementById("theme-vars").textContent = css;
+      var m = css.match(/color-scheme:(dark|light)/);
+      if (m) document.documentElement.setAttribute("data-base", m[1]);
+      // the iOS status bar style is read at install time: white text only over dark inks
+      if (m && m[1] === "light") document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').setAttribute("content", "default");
+      var ink = css.match(/--ink:(#[0-9A-Fa-f]{6})/);
+      if (ink) document.querySelector('meta[name="theme-color"]').setAttribute("content", ink[1]);
+    }
+    var link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = fonts || "https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=PT+Sans:wght@400;700&display=swap";
+    link.crossOrigin = "anonymous";
+    link.setAttribute("data-fonts", "active");
+    document.head.appendChild(link);
+
+    var base = location.origin + location.pathname.replace(/[^/]*$/, "");
+    var manifestLink = null, currentId = null;
+    function build(id) {
+      var inkColor = document.querySelector('meta[name="theme-color"]').getAttribute("content") || "#1A1D21";
+      var man = {
+        id: base,
+        name: "Today's Five",
+        short_name: "Five",
+        description: "A short list built to be left open on screen all day.",
+        start_url: base + (id ? "#/l/" + id : ""),
+        scope: base,
+        display: "standalone",
+        orientation: "any",
+        background_color: inkColor,
+        theme_color: inkColor,
+        icons: [
+          { src: base + "icons/icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: base + "icons/icon-512.png", sizes: "512x512", type: "image/png" },
+          { src: base + "icons/icon-512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" }
+        ]
+      };
+      var url = URL.createObjectURL(new Blob([JSON.stringify(man)], { type: "application/manifest+json" }));
+      if (!manifestLink) {
+        manifestLink = document.createElement("link");
+        manifestLink.rel = "manifest";
+        manifestLink.href = url;
+        document.head.appendChild(manifestLink);
+      } else {
+        manifestLink.href = url;
+      }
+      currentId = id;
+    }
+    var h = location.hash.match(/^#\/l\/([0-9A-Za-z]{22,64})/);
+    build(h ? h[1] : (meta.current || ""));
+    window.__tfManifest = function (id) { if (id !== currentId) build(id || ""); };
+  })();
+  </script>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<style>
-/* ---------------- themes ---------------- */
-:root{
-  /* standard, dark — palette taken from griffithdavison.com */
-  --ink:#1A1D21; --ink-2:#23272C; --ink-3:#2E343A;
-  --text:#F5F1EA; --muted:#9AA0A8; --dim:#6B7178; --done:#6B7178;
-  --accent:#D26128; --accent-hi:#E8814A; --accent-deep:#A34A1C;
-  --accent-text:#E8814A; --danger:#E0745A;
-  --hair:rgba(245,241,234,.10); --hair-hi:rgba(245,241,234,.30);
-  --glow:radial-gradient(125% 78% at 50% 34%, rgba(210,97,40,.10), rgba(210,97,40,0) 62%);
-  --strike-shadow:0 0 10px rgba(210,97,40,.38);
-  --font-task:"Lato","Helvetica Neue",Helvetica,Arial,sans-serif;
-  --font-ui:"PT Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
-  --task-w:900; --task-ls:-.025em; --task-lh:1.14;
-}
-html[data-mode="light"]{
-  --ink:#FAF8F4; --ink-2:#F1ECE3; --ink-3:#E4DED2;
-  --text:#494F55; --muted:#7A7C7F; --dim:#9EA2A7; --done:#82868C;
-  --accent:#CB6015; --accent-hi:#E07B33; --accent-deep:#9E4A10;
-  --accent-text:#9E4A10; --danger:#B8402A;
-  --hair:rgba(73,79,85,.16); --hair-hi:rgba(73,79,85,.42);
-  --glow:radial-gradient(125% 78% at 50% 30%, rgba(210,97,40,.07), rgba(210,97,40,0) 60%);
-  --strike-shadow:none;
-}
-html[data-mode="pink"]{
-  --ink:#2E0A1C; --ink-2:#421029; --ink-3:#58163A;
-  --text:#FFF0F6; --muted:#F2A8C8; --dim:#C97A9E; --done:#C97A9E;
-  --accent:#FF3D9A; --accent-hi:#FFD36E; --accent-deep:#C2185B;
-  --accent-text:#FF3D9A; --danger:#FF6B8A;
-  --hair:rgba(255,240,246,.16); --hair-hi:rgba(255,240,246,.42);
-  --glow:radial-gradient(120% 92% at 50% 42%, rgba(255,61,154,.26), rgba(255,143,190,.12) 46%, rgba(255,61,154,0) 74%);
-  --strike-shadow:0 0 12px rgba(255,61,154,.60);
-  --font-task:"Fraunces","Iowan Old Style",Georgia,serif;
-  --font-ui:"Quicksand","Helvetica Neue",Helvetica,Arial,sans-serif;
-  --task-w:600; --task-ls:-.010em; --task-lh:1.15;
-}
-
-*{box-sizing:border-box}
-
-body{
-  margin:0;
-  background:var(--ink);
-  color:var(--text);
-  font-family:var(--font-task);
-  -webkit-font-smoothing:antialiased;
-  overflow:hidden;
-}
-
-/* ---------------- atmosphere ---------------- */
-#glow{
-  position:fixed; inset:0; pointer-events:none; z-index:0;
-  background:var(--glow);
-  opacity:.62; transition:opacity .85s ease;
-}
-#glow.flare{opacity:1; transition:opacity .22s ease}
-#fx{position:fixed; inset:0; pointer-events:none; z-index:60}
-
-/* ---------------- shell ---------------- */
-#shell{
-  position:relative; z-index:2;
-  height:100vh; height:100svh;
-  display:flex; flex-direction:column;
-  padding:clamp(.9rem,2.2vh,1.6rem) clamp(1rem,4vw,3.4rem) 7px;
-}
-
-/* ---------------- rail ---------------- */
-.rail{
-  flex:0 0 auto;
-  display:flex; align-items:center; justify-content:space-between; gap:1rem;
-  font-family:var(--font-ui); font-weight:700;
-  font-size:clamp(9.5px,1.05vw,12px);
-  letter-spacing:.15em; text-transform:uppercase; color:var(--dim);
-  padding-bottom:clamp(.7rem,1.8vh,1.3rem);
-  border-bottom:1px solid var(--hair);
-}
-.rail-r{display:flex; align-items:center; gap:clamp(.4rem,1.2vw,.85rem)}
-
-#count{color:var(--muted); font-variant-numeric:tabular-nums; letter-spacing:.09em; white-space:nowrap}
-#count b{color:var(--accent-text); font-weight:700}
-
-.chip{
-  font:inherit; letter-spacing:inherit; text-transform:inherit;
-  background:transparent; color:var(--dim);
-  border:1px solid var(--hair); border-radius:999px;
-  padding:.45em .85em; cursor:pointer; white-space:nowrap;
-  transition:color .18s ease, border-color .18s ease, background-color .18s ease;
-}
-.chip:hover{color:var(--text); border-color:var(--hair-hi); background:var(--ink-2)}
-.chip:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-.chip[aria-pressed="true"]{color:var(--accent-text); border-color:var(--accent)}
-.chip[hidden]{display:none}
-#theme{color:var(--accent-text); border-color:var(--hair-hi)}
-
-/* ---------------- list ---------------- */
-#main{
-  flex:1 1 auto; min-height:0;
-  display:flex; flex-direction:column; justify-content:center;
-  padding:clamp(.4rem,1.8vh,1.3rem) 0;
-}
-#list{
-  display:flex; flex-direction:column;
-  max-height:100%; overflow-y:auto; overscroll-behavior:contain;
-  scrollbar-width:thin; scrollbar-color:var(--ink-3) transparent;
-  --unit:7.4vh;
-}
-#list[data-count="6"]{--unit:6.4vh}
-#list[data-count="7"]{--unit:5.7vh}
-#list[data-count="8"]{--unit:5.1vh}
-
-.row{
-  position:relative;
-  display:flex; align-items:flex-start; gap:.46em;
-  width:100%; text-align:left;
-  font-family:var(--font-task);
-  font-size:clamp(1.45rem,min(5.5vw,var(--unit)),4.7rem);
-  font-weight:var(--task-w); letter-spacing:var(--task-ls); line-height:var(--task-lh);
-  color:var(--text);
-  background:transparent; border:0; border-radius:.16em;
-  padding:.32em .3em .32em .26em;
-  cursor:pointer; -webkit-tap-highlight-color:transparent;
-  transition:background-color .2s ease, color .3s ease .1s;
-}
-.row:hover{background:var(--ink-2)}
-.row:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-.row.done{color:var(--done)}
-
-/* checkbox */
-.box{
-  flex:0 0 auto; width:.66em; height:.66em; margin-top:.24em;
-  border:.055em solid var(--hair-hi); border-radius:.11em;
-  display:grid; place-items:center;
-  transition:border-color .3s ease, background-color .3s ease;
-}
-.row:hover .box{border-color:var(--accent)}
-.row.done .box{border-color:var(--accent); background:var(--accent)}
-html[data-mode="pink"] .row.done .box{
-  border-color:var(--accent);
-  background:linear-gradient(135deg,#FF3D9A,#FFD36E);
-}
-.box svg{width:74%; height:74%; overflow:visible}
-.box path{
-  fill:none; stroke:var(--ink); stroke-width:3;
-  stroke-linecap:round; stroke-linejoin:round;
-  stroke-dasharray:26; stroke-dashoffset:26;
-  transition:stroke-dashoffset .3s cubic-bezier(.22,1,.36,1) .12s;
-}
-.row.done .box path{stroke-dashoffset:0}
-
-/* strike: one measured overlay per rendered line, so wrapped text
-   gets a stroke on every line that stops at the last word */
-.lines{position:absolute; inset:0; pointer-events:none}
-.ghost,.ink{
-  position:absolute; height:max(3px,.058em); border-radius:999px;
-  transform-origin:left center;
-}
-.ghost{background:var(--accent); opacity:0; transition:opacity .17s ease}
-.row:hover:not(.done) .ghost{opacity:.22}
-.ink{
-  background:var(--accent);
-  box-shadow:var(--strike-shadow);
-  transform:scaleX(0);
-  transition:transform .38s cubic-bezier(.16,1,.3,1) var(--d,0s);
-}
-.row.done .ink{transform:scaleX(1)}
-.row.nofx .ink,.row.nofx .ghost{transition:none}
-html[data-mode="pink"] .ink{
-  background:linear-gradient(90deg,#FF3D9A,#FFD36E,#FF8FBE,#FF3D9A);
-  background-size:300% 100%;
-  animation:shimmer 3.4s linear infinite;
-}
-@keyframes shimmer{to{background-position:-300% 0}}
-
-/* motion that lands with the sound */
-@keyframes kick{0%{transform:scale(1)}38%{transform:scale(1.018)}100%{transform:scale(1)}}
-@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.22)}100%{transform:scale(1)}}
-.row.kick{animation:kick .3s cubic-bezier(.3,1.4,.5,1)}
-.box.pop{animation:pop .34s cubic-bezier(.3,1.5,.5,1)}
-
-/* ---------------- edit mode ---------------- */
-.erow{display:flex; align-items:center; gap:.5rem; padding:.16em 0}
-.einput{
-  flex:1 1 auto; min-width:0;
-  font-family:var(--font-task);
-  font-size:clamp(1.45rem,min(5.5vw,var(--unit)),4.7rem);
-  font-weight:var(--task-w); letter-spacing:var(--task-ls); line-height:var(--task-lh);
-  color:var(--text); background:var(--ink-2);
-  border:1px solid var(--hair); border-bottom-color:var(--accent);
-  border-radius:.14em; padding:.2em .3em;
-}
-.einput::placeholder{color:var(--dim); opacity:.8}
-.einput:focus{outline:none; border-color:var(--accent); background:var(--ink-3)}
-.kill{
-  flex:0 0 auto; width:2rem; height:2rem;
-  font-family:var(--font-ui); font-size:15px; line-height:1;
-  color:var(--dim); background:transparent;
-  border:1px solid var(--hair); border-radius:999px; cursor:pointer;
-  transition:color .16s ease, border-color .16s ease;
-}
-.kill:hover{color:var(--danger); border-color:var(--danger)}
-.kill:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-.kill[disabled]{opacity:.25; cursor:default}
-#addrow{
-  align-self:flex-start; margin-top:.6rem;
-  font-family:var(--font-ui); font-weight:700; font-size:clamp(10px,1.15vw,13px);
-  letter-spacing:.15em; text-transform:uppercase;
-  color:var(--dim); background:transparent;
-  border:1px dashed var(--hair); border-radius:999px;
-  padding:.6em 1.1em; cursor:pointer;
-  transition:color .16s ease, border-color .16s ease;
-}
-#addrow:hover{color:var(--accent-text); border-color:var(--accent)}
-#addrow:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-#addrow[hidden]{display:none}
-
-/* ---------------- footer ---------------- */
-#foot{
-  flex:0 0 auto; position:relative;
-  min-height:clamp(3.1rem,7.4vh,4.6rem);
-  display:grid; place-items:center;
-}
-#foot>*{grid-area:1/1; transition:opacity .5s ease}
-#hint{
-  font-family:var(--font-ui); font-weight:700;
-  font-size:clamp(9px,1vw,11.5px);
-  letter-spacing:.16em; text-transform:uppercase; color:var(--dim);
-  opacity:.72; text-align:center; line-height:2;
-}
-#hint em{font-style:normal; color:var(--muted)}
-#hint.off{opacity:0; pointer-events:none}
-#finale{
-  display:flex; align-items:center; gap:1.1rem; flex-wrap:wrap; justify-content:center;
-  opacity:0; pointer-events:none;
-}
-#finale.on{opacity:1; pointer-events:auto}
-#finale span{
-  font-family:var(--font-task); font-weight:var(--task-w);
-  letter-spacing:var(--task-ls);
-  font-size:clamp(1.1rem,2.7vh,1.9rem); color:var(--accent-text);
-}
-html[data-mode="pink"] #finale span{font-style:italic}
-
-/* ---------------- progress ---------------- */
-#bar{position:fixed; left:0; right:0; bottom:0; height:3px; background:var(--ink-3); z-index:40}
-#fill{
-  height:100%; width:0%;
-  background:linear-gradient(90deg,var(--accent-deep),var(--accent) 55%,var(--accent-hi));
-  transition:width .5s cubic-bezier(.22,1,.36,1), box-shadow .4s ease;
-}
-#fill.full{box-shadow:0 0 24px 2px var(--accent)}
-
-@media (max-width:900px){ #date{display:none} }
-@media (max-width:680px){ .rail{letter-spacing:.1em} #full{display:none} }
-
-@media (prefers-reduced-motion:reduce){
-  .ink{transition-duration:.08s}
-  .ghost{transition-duration:.08s}
-  .row{transition:background-color .08s ease, color .08s ease}
-  .box,.box path{transition-duration:.08s}
-  #fill{transition-duration:.1s}
-  #glow{transition:none}
-  .row.kick,.box.pop{animation:none}
-  html[data-mode="pink"] .ink{animation:none}
-}
-</style>
-
 <div id="glow"></div>
 <canvas id="fx" aria-hidden="true"></canvas>
 
 <div id="shell">
-  <div class="rail">
-    <div id="date"></div>
+  <header class="rail">
+    <div class="rail-l">
+      <span id="date"></span>
+      <button class="chip plain" id="listname" hidden title="Switch list"></button>
+    </div>
     <div class="rail-r">
-      <span id="count" aria-live="polite"><b>0</b>/5</span>
-      <button class="chip" id="theme" title="Switch theme (T)">Dark</button>
+      <span id="count" aria-live="polite"><b>0</b>/0</span>
+      <span id="dot" class="dot" data-s="off" role="status" aria-live="polite"><span class="lbl">Sync off — finish setup</span><span class="sr-only" id="dot-sr">Sync off</span></span>
+      <div class="seg" role="tablist" aria-label="View">
+        <button id="v-today" role="tab" aria-selected="true" aria-controls="today" title="Today (A)">Today</button>
+        <button id="v-all" role="tab" aria-selected="false" aria-controls="all" title="Everything (A)">Everything</button>
+      </div>
+      <button class="chip accent" id="theme" title="Theme (T)" aria-haspopup="dialog">Dark</button>
       <button class="chip" id="mute" aria-pressed="false" title="Mute (M)">Sound on</button>
       <button class="chip" id="full" title="Full screen (F)">Full screen</button>
-      <button class="chip" id="edit" aria-pressed="false" title="Edit list (E)">Edit list</button>
+      <button class="chip icon" id="more" title="More" aria-haspopup="dialog" aria-label="More">⋯</button>
     </div>
-  </div>
+  </header>
 
-  <div id="main">
-    <div id="list" role="group" aria-label="Today's list"></div>
-    <button id="addrow" type="button" hidden>+ Add a line</button>
-  </div>
+  <main id="main">
+    <div id="today" class="view" role="tabpanel" aria-labelledby="v-today">
+      <ol id="list" role="list" aria-label="Today's list"></ol>
+      <button id="addtoday" class="add" type="button" title="New line (N)">+ New line</button>
+    </div>
+    <div id="all" class="view" role="tabpanel" aria-labelledby="v-all" hidden></div>
+    <div id="welcome" class="view" hidden>
+      <h1>Today's Five</h1>
+      <p id="welcome-msg">A short list you leave open all day. It lives behind a secret link, so it stays the same on your Mac and your phone.</p>
+      <div class="actions">
+        <button class="big" id="w-new" type="button">Start a new list</button>
+      </div>
+      <form class="paste" id="w-paste-form" novalidate>
+        <input id="w-paste" type="url" inputmode="url" autocomplete="off" placeholder="Or paste a link to an existing list" aria-label="Paste a link">
+        <button class="big" type="submit">Open</button>
+      </form>
+      <div class="err" id="w-err" role="alert"></div>
+    </div>
+  </main>
 
-  <div id="foot">
+  <footer id="foot">
     <div id="hint"></div>
-    <div id="finale"><span>That's the list.</span><button class="chip" id="again">Start again</button></div>
-  </div>
+    <div id="finale"><span>That's the list.</span><button class="chip" id="again" type="button">Start again</button></div>
+  </footer>
 </div>
 
-<div id="bar"><div id="fill"></div></div>
+<div id="toast" role="status" aria-live="polite"><span class="msg"></span><button class="chip" id="toast-undo" type="button" hidden>Undo</button></div>
+<div id="bar" aria-hidden="true"><div id="fill"></div></div>
+<div id="install" hidden><span>Add this to your Home Screen: tap <b>Share</b>, then <b>Add to Home Screen</b>.</span><button class="x" id="install-x" type="button" aria-label="Dismiss">×</button></div>
 
-<script>
-(function(){
-"use strict";
-var $=function(s){ return document.querySelector(s); };
-var KEY="todays-five/v1";
-var RM=window.matchMedia? matchMedia("(prefers-reduced-motion: reduce)") : {matches:false};
+<!-- panels -->
+<dialog class="panel" id="p-menu" aria-labelledby="p-menu-h"><div class="body">
+  <h2 id="p-menu-h">Today's Five <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <div class="menu">
+    <button type="button" data-act="share">Open on phone <span class="k">QR · link</span></button>
+    <button type="button" data-act="wake" aria-pressed="false">Keep screen awake <span class="k" id="wake-k">Off</span></button>
+    <button type="button" data-act="theme">Theme <span class="k">T</span></button>
+    <button type="button" data-act="mute" aria-pressed="false">Sound <span class="k" id="mute-k">On</span></button>
+    <label class="item" for="volume"><span>Volume</span><input type="range" id="volume" min="0" max="100" step="5" aria-label="Volume"></label>
+    <button type="button" data-act="full">Full screen <span class="k">F</span></button>
+    <button type="button" data-act="history">History <span class="k" id="streak-k"></span></button>
+    <button type="button" data-act="lists">Lists <span class="k" id="lists-k"></span></button>
+    <button type="button" data-act="help">Keyboard help <span class="k">?</span></button>
+  </div>
+</div></dialog>
 
-/* ---------------- state ---------------- */
-var store={
-  get:function(d){ try{ var v=localStorage.getItem(KEY); return v? JSON.parse(v):d; }catch(e){ return d; } },
-  set:function(v){ try{ localStorage.setItem(KEY,JSON.stringify(v)); }catch(e){} }
-};
-var SEED={
-  muted:false, seq:0, mode:"dark",
-  items:[
-    {t:"Click this line to cross it off", d:false, o:0},
-    {t:"Hit “Edit list” up top to put your own five in", d:false, o:0},
-    {t:"Press 1 – 5 to check off without the mouse", d:false, o:0},
-    {t:"Press T to try pink mode", d:false, o:0},
-    {t:"Cross off all five and see what happens", d:false, o:0}
-  ]
-};
-var state=store.get(null);
-if(!state || !state.items || !state.items.length) state=SEED;
-state.seq=state.seq||0;
-var MODES=["dark","light","pink"];
-var LABEL={dark:"Dark", light:"Light", pink:"Pink"};
-if(MODES.indexOf(state.mode)<0) state.mode="dark";
-function save(){ store.set(state); }
+<dialog class="panel" id="p-theme" aria-labelledby="p-theme-h"><div class="body">
+  <h2 id="p-theme-h">Theme <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <div class="swatches" id="swatches"></div>
+  <div class="row-actions">
+    <button class="chip" id="follow" type="button" aria-pressed="false">Follow system: off</button>
+  </div>
+  <h3>Your own</h3>
+  <div class="field">
+    <label for="c-hex">Accent</label>
+    <div class="inline">
+      <input type="color" id="c-color" value="#D26128" aria-label="Accent colour picker">
+      <input type="text" id="c-hex" value="#D26128" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Accent hex">
+      <div class="seg2" role="group" aria-label="Base">
+        <button type="button" id="c-dark" aria-pressed="true">Dark</button>
+        <button type="button" id="c-light" aria-pressed="false">Light</button>
+      </div>
+    </div>
+  </div>
+  <div class="field">
+    <label for="c-pair">Fonts</label>
+    <select id="c-pair"><option value="">Auto</option></select>
+  </div>
+  <div class="preview" id="c-preview">
+    <div class="pt">Call the bank before noon</div>
+    <div class="pt done">Walk after lunch</div>
+    <div class="pm">Wednesday · 2 of 5 · <b>Today</b></div>
+    <div class="contrast" id="c-contrast"></div>
+  </div>
+  <div class="field">
+    <label for="c-name">Name</label>
+    <div class="inline">
+      <input type="text" id="c-name" placeholder="Name this theme" maxlength="40">
+    </div>
+  </div>
+  <div class="row-actions">
+    <button class="chip accent" id="c-use" type="button">Use</button>
+    <button class="chip" id="c-save" type="button">Save</button>
+    <button class="chip" id="c-surprise" type="button">Surprise me</button>
+    <button class="chip" id="c-export" type="button">Copy code</button>
+  </div>
+  <div class="field">
+    <label for="c-import">Import a code</label>
+    <div class="inline">
+      <input type="text" id="c-import" placeholder="T1:d:FF3D9A:fraunces:Name" spellcheck="false" autocomplete="off">
+      <button class="chip" id="c-import-go" type="button">Import</button>
+    </div>
+  </div>
+</div></dialog>
 
-/* ---------------- sound ----------------
-   Standard modes use the wooden-knock engine from the handoff spec.
-   Pink mode swaps the same structure for glass bells.                */
-var ac=null;
-function audio(){
-  if(state.muted) return null;
-  try{
-    if(!ac){ var C=window.AudioContext||window.webkitAudioContext; if(!C) return null; ac=new C(); }
-    if(ac.state==="suspended") ac.resume();
-    return ac;
-  }catch(e){ return null; }
-}
-function noiseBurst(c,t,len,curve,filt,freq,gain){
-  var n=c.createBufferSource();
-  var buf=c.createBuffer(1,len,c.sampleRate), d=buf.getChannelData(0);
-  for(var i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,curve);
-  n.buffer=buf;
-  var f=c.createBiquadFilter(); f.type=filt; f.frequency.value=freq;
-  var g=c.createGain(); g.gain.value=gain;
-  n.connect(f); f.connect(g); g.connect(c.destination);
-  n.start(t);
-}
+<dialog class="panel" id="p-share" aria-labelledby="p-share-h"><div class="body">
+  <h2 id="p-share-h">Open on phone <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <p id="share-msg">Scan this with your phone's camera, or send yourself the link. Anyone with the link can read and edit the list, so treat it like a password.</p>
+  <div class="qr" id="qr"><canvas id="qr-c" width="1" height="1" aria-label="QR code for this list's link" role="img"></canvas></div>
+  <div class="link" id="share-link"></div>
+  <div class="row-actions">
+    <button class="chip accent" id="share-copy" type="button">Copy link</button>
+    <button class="chip" id="share-rotate" type="button">Rotate link</button>
+  </div>
+  <p class="sub" style="font-size:12px">Rotate makes a new link, moves the list to it, and kills the old one.</p>
+</div></dialog>
 
-/* wooden knock — each one in a row pitched up a quarter tone */
-function woodThunk(step){
-  var c=audio(); if(!c) return;
-  var t=c.currentTime, bend=Math.pow(2,(step||0)/24);
-  var o=c.createOscillator(), g=c.createGain();
-  o.type="triangle";
-  o.frequency.setValueAtTime(195*bend,t);
-  o.frequency.exponentialRampToValueAtTime(58*bend,t+0.13);
-  g.gain.setValueAtTime(0.0001,t);
-  g.gain.exponentialRampToValueAtTime(0.40,t+0.006);
-  g.gain.exponentialRampToValueAtTime(0.0001,t+0.24);
-  o.connect(g); g.connect(c.destination);
-  o.start(t); o.stop(t+0.26);
-  noiseBurst(c,t,1600,5,"lowpass",2600,0.2);
-}
-function woodUntick(){
-  var c=audio(); if(!c) return; var t=c.currentTime;
-  var o=c.createOscillator(), g=c.createGain();
-  o.type="sine";
-  o.frequency.setValueAtTime(330,t);
-  o.frequency.exponentialRampToValueAtTime(148,t+0.09);
-  g.gain.setValueAtTime(0.13,t);
-  g.gain.exponentialRampToValueAtTime(0.0001,t+0.11);
-  o.connect(g); g.connect(c.destination);
-  o.start(t); o.stop(t+0.12);
-}
-function woodFanfare(){
-  var c=audio(); if(!c) return; var t0=c.currentTime;
-  [523.25,659.25,783.99,1046.50].forEach(function(f,i){
-    var o=c.createOscillator(), g=c.createGain();
-    o.type=i===3? "triangle":"sine";
-    o.frequency.value=f;
-    var t=t0+i*0.085;
-    g.gain.setValueAtTime(0.0001,t);
-    g.gain.exponentialRampToValueAtTime(0.22,t+0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001,t+0.85);
-    o.connect(g); g.connect(c.destination);
-    o.start(t); o.stop(t+0.9);
-  });
-}
+<dialog class="panel" id="p-lists" aria-labelledby="p-lists-h"><div class="body">
+  <h2 id="p-lists-h">Lists <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <div class="menu lists" id="lists-menu"></div>
+  <div class="row-actions">
+    <button class="chip accent" id="l-new" type="button">New list</button>
+    <button class="chip" id="l-rename" type="button">Rename this list</button>
+    <button class="chip" id="l-archive" type="button">Archive this list</button>
+  </div>
+  <div class="field">
+    <label for="l-paste">Paste a link</label>
+    <div class="inline">
+      <input type="url" id="l-paste" inputmode="url" placeholder="https://…/#/l/…" autocomplete="off">
+      <button class="chip" id="l-paste-go" type="button">Open</button>
+    </div>
+  </div>
+</div></dialog>
 
-/* glass bell — same wiring, inharmonic partials instead of a knock */
-function bellHit(step){
-  var c=audio(); if(!c) return;
-  var t=c.currentTime, f0=880*Math.pow(2,(step||0)/24);
-  [[1,0.20,1.15],[2.76,0.10,0.78],[5.40,0.055,0.46],[8.93,0.028,0.30]].forEach(function(p){
-    var o=c.createOscillator(), g=c.createGain();
-    o.type="sine"; o.frequency.value=f0*p[0];
-    g.gain.setValueAtTime(0.0001,t);
-    g.gain.exponentialRampToValueAtTime(p[1],t+0.004);
-    g.gain.exponentialRampToValueAtTime(0.0001,t+p[2]);
-    o.connect(g); g.connect(c.destination);
-    o.start(t); o.stop(t+p[2]+0.05);
-  });
-  noiseBurst(c,t,2200,3,"highpass",5200,0.11);
-}
-function bellUntick(){
-  var c=audio(); if(!c) return; var t=c.currentTime;
-  var o=c.createOscillator(), g=c.createGain();
-  o.type="sine";
-  o.frequency.setValueAtTime(760,t);
-  o.frequency.exponentialRampToValueAtTime(300,t+0.12);
-  g.gain.setValueAtTime(0.11,t);
-  g.gain.exponentialRampToValueAtTime(0.0001,t+0.14);
-  o.connect(g); g.connect(c.destination);
-  o.start(t); o.stop(t+0.16);
-}
-function bellShimmer(){
-  var c=audio(); if(!c) return; var t0=c.currentTime;
-  [523.25,587.33,659.25,783.99,880,1046.5,1174.66,1318.51,1568,1760,2093].forEach(function(f,i){
-    var o=c.createOscillator(), g=c.createGain();
-    o.type="sine"; o.frequency.value=f;
-    var t=t0+i*0.055;
-    g.gain.setValueAtTime(0.0001,t);
-    g.gain.exponentialRampToValueAtTime(0.13,t+0.012);
-    g.gain.exponentialRampToValueAtTime(0.0001,t+0.75);
-    o.connect(g); g.connect(c.destination);
-    o.start(t); o.stop(t+0.8);
-  });
-  [523.25,659.25,783.99].forEach(function(f){
-    var o=c.createOscillator(), g=c.createGain();
-    o.type="triangle"; o.frequency.value=f;
-    g.gain.setValueAtTime(0.0001,t0);
-    g.gain.exponentialRampToValueAtTime(0.07,t0+0.25);
-    g.gain.exponentialRampToValueAtTime(0.0001,t0+2.2);
-    o.connect(g); g.connect(c.destination);
-    o.start(t0); o.stop(t0+2.3);
-  });
-}
-function pink(){ return state.mode==="pink"; }
-function sndCheck(step){ pink()? bellHit(step) : woodThunk(step); }
-function sndUncheck(){ pink()? bellUntick() : woodUntick(); }
-function sndFinish(){ pink()? bellShimmer() : woodFanfare(); }
+<dialog class="panel" id="p-history" aria-labelledby="p-history-h"><div class="body">
+  <h2 id="p-history-h">History <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <p class="streak" id="history-streak"></p>
+  <div id="history-days"></div>
+</div></dialog>
 
-/* ---------------- confetti ---------------- */
-var cv=$("#fx"), g2=cv.getContext("2d"), parts=[], raf=0;
-var PALETTE={
-  dark:  ["#D26128","#E8814A","#F5F1EA","#A34A1C","#7D8288"],
-  light: ["#D26128","#E8814A","#A34A1C","#4B4F54","#A4BCC4"],
-  pink:  ["#FF3D9A","#FF8FBE","#FFD36E","#FFFFFF","#FF6FAF","#FFB8D9"]
-};
-function shapesFor(){ return pink()? 3 : 1; }
-function sizeCanvas(){
-  var d=Math.min(window.devicePixelRatio||1,2);
-  cv.width=Math.floor(innerWidth*d); cv.height=Math.floor(innerHeight*d);
-  cv.style.width=innerWidth+"px"; cv.style.height=innerHeight+"px";
-  g2.setTransform(d,0,0,d,0,0);
-}
-sizeCanvas(); addEventListener("resize",sizeCanvas);
+<dialog class="panel" id="p-help" aria-labelledby="p-help-h"><div class="body">
+  <h2 id="p-help-h">Keyboard <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <div class="keys">
+    <kbd>1 – 9</kbd><span>Check off a line by position</span>
+    <kbd>N</kbd><span>New line</span>
+    <kbd>E</kbd><span>Edit the focused line</span>
+    <kbd>Enter</kbd><span>While editing: save and start a new line below</span>
+    <kbd>Esc</kbd><span>While editing: cancel</span>
+    <kbd>⌫</kbd><span>On an empty line: remove it</span>
+    <kbd>A</kbd><span>Today ↔ Everything</span>
+    <kbd>⌥ ↑ / ↓</kbd><span>Move the focused line</span>
+    <kbd>⌘ Z</kbd><span>Undo</span>
+    <kbd>T</kbd><span>Theme</span>
+    <kbd>M</kbd><span>Mute</span>
+    <kbd>F</kbd><span>Full screen</span>
+    <kbd>?</kbd><span>This help</span>
+  </div>
+</div></dialog>
 
-function heart(c,s){
-  var t=s*0.5;
-  c.beginPath();
-  c.moveTo(0,t*0.62);
-  c.bezierCurveTo(t*1.25,-t*0.60, t*0.62,-t*1.52, 0,-t*0.55);
-  c.bezierCurveTo(-t*0.62,-t*1.52, -t*1.25,-t*0.60, 0,t*0.62);
-  c.closePath(); c.fill();
-}
-function star(c,s){
-  c.beginPath();
-  for(var i=0;i<10;i++){
-    var r=(i%2)? s*0.42 : s*0.95;
-    var a=Math.PI/5*i - Math.PI/2;
-    var x=Math.cos(a)*r, y=Math.sin(a)*r;
-    if(i) c.lineTo(x,y); else c.moveTo(x,y);
-  }
-  c.closePath(); c.fill();
-}
+<dialog class="panel" id="p-sec" aria-labelledby="p-sec-h"><div class="body">
+  <h2 id="p-sec-h">Section <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <div class="menu">
+    <button type="button" data-sact="rename">Rename</button>
+    <button type="button" data-sact="up">Move up</button>
+    <button type="button" data-sact="down">Move down</button>
+    <button type="button" data-sact="delete" class="danger">Delete section <span class="sub">Its lines move to Unsorted</span></button>
+  </div>
+</div></dialog>
 
-function burst(x,y,n,power,spread){
-  if(RM.matches) return;
-  var pal=PALETTE[state.mode]||PALETTE.dark, sh=shapesFor();
-  for(var k=0;k<n;k++){
-    var a=-Math.PI/2+(Math.random()-0.5)*(spread||2.0);
-    var sp=power*(0.55+Math.random()*0.8);
-    parts.push({
-      x:x, y:y,
-      vx:Math.cos(a)*sp+(Math.random()-0.5)*1.3,
-      vy:Math.sin(a)*sp,
-      w:3+Math.random()*5, h:6+Math.random()*11,
-      s:5+Math.random()*6,
-      r:Math.random()*Math.PI*2, vr:(Math.random()-0.5)*0.34,
-      c:pal[(Math.random()*pal.length)|0],
-      life:1, dec:0.0075+Math.random()*0.008,
-      rib:Math.random()<0.45,
-      sh:(Math.random()*sh)|0
-    });
-  }
-  if(!raf) raf=requestAnimationFrame(tick);
-}
-function tick(){
-  g2.clearRect(0,0,innerWidth,innerHeight);
-  for(var i=parts.length-1;i>=0;i--){
-    var p=parts[i];
-    p.vy+=0.30; p.vx*=0.992; p.vy*=0.992;
-    p.x+=p.vx; p.y+=p.vy; p.r+=p.vr; p.life-=p.dec;
-    if(p.life<=0 || p.y>innerHeight+70){ parts.splice(i,1); continue; }
-    g2.save(); g2.translate(p.x,p.y); g2.rotate(p.r);
-    g2.globalAlpha=Math.max(0,Math.min(1,p.life*1.7));
-    g2.fillStyle=p.c;
-    if(p.sh===1) heart(g2,p.s);
-    else if(p.sh===2) star(g2,p.s);
-    else{
-      var hh=p.rib? p.h*Math.abs(Math.cos(p.r*1.7)) : p.h;
-      g2.fillRect(-p.w/2,-hh/2,p.w,hh);
-    }
-    g2.restore();
-  }
-  if(parts.length) raf=requestAnimationFrame(tick);
-  else{ raf=0; g2.clearRect(0,0,innerWidth,innerHeight); }
-}
-function volley(){
-  if(RM.matches) return;
-  var w=innerWidth, h=innerHeight;
-  for(var i=0;i<7;i++){
-    (function(j){ setTimeout(function(){ burst(w*(0.08+0.14*j), h*0.97, 26, 19, 1.15); }, j*65); })(i);
-  }
-  setTimeout(function(){ burst(w*0.5, h*0.6, 40, 14, 2.6); }, 210);
-}
+<dialog class="panel" id="ask" aria-labelledby="ask-h"><form method="dialog" class="body" id="ask-form">
+  <h2 id="ask-h"><span id="ask-title"></span><button class="x" type="button" data-close aria-label="Close">×</button></h2>
+  <p id="ask-msg"></p>
+  <div class="field" id="ask-field"><input type="text" id="ask-input" maxlength="60" autocomplete="off"></div>
+  <div class="row-actions">
+    <button class="chip accent" id="ask-ok" type="submit" value="ok">OK</button>
+    <button class="chip" type="button" data-close>Cancel</button>
+  </div>
+</form></dialog>
 
-/* ---------------- render ---------------- */
-var list=$("#list"), rowEls=[], editing=false, wasAll=false;
-var CHECK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12.6l5 5.2L19.5 6.4"/></svg>';
-
-function buildRows(){
-  list.innerHTML=""; rowEls=[];
-  state.items.forEach(function(it,i){
-    var b=document.createElement("button");
-    b.className="row"+(it.d?" done":"");
-    b.type="button"; b.setAttribute("role","checkbox");
-    b.setAttribute("aria-checked", it.d?"true":"false");
-    b.innerHTML='<span class="box">'+CHECK+'</span><span class="tx"></span>';
-    b.querySelector(".tx").textContent=it.t;
-    b.addEventListener("click",function(e){ toggle(i,e.clientX,e.clientY,e.detail>0); });
-    b.addEventListener("animationend",function(){ b.classList.remove("kick"); });
-    rowEls[i]=b;
-  });
-  list.dataset.count=state.items.length;
-  order(false);
-  layoutAll();
-}
-
-function layoutStrikes(el,instant){
-  var tx=el.querySelector(".tx");
-  var wrap=el.querySelector(".lines");
-  if(!wrap){
-    wrap=document.createElement("span");
-    wrap.className="lines"; wrap.setAttribute("aria-hidden","true");
-    el.appendChild(wrap);
-  }
-  var rg=document.createRange(); rg.selectNodeContents(tx);
-  var rects=rg.getClientRects();
-  var base=el.getBoundingClientRect();
-  if(instant) el.classList.add("nofx");
-  wrap.innerHTML="";
-  for(var i=0;i<rects.length;i++){
-    var r=rects[i];
-    if(r.width<1) continue;
-    var pos="left:"+(r.left-base.left)+"px;top:"+((r.top-base.top)+r.height*0.555)+"px;width:"+r.width+"px";
-    var g=document.createElement("i"); g.className="ghost"; g.style.cssText=pos;
-    var k=document.createElement("i"); k.className="ink";   k.style.cssText=pos+";--d:"+(i*0.13)+"s";
-    wrap.appendChild(g); wrap.appendChild(k);
-  }
-  if(instant){
-    void el.offsetHeight;
-    requestAnimationFrame(function(){ el.classList.remove("nofx"); });
-  }
-}
-function layoutAll(){ rowEls.forEach(function(el){ layoutStrikes(el,true); }); }
-
-var rz=0;
-function relayout(){
-  clearTimeout(rz);
-  rz=setTimeout(function(){ if(!editing) layoutAll(); },130);
-}
-addEventListener("resize",relayout);
-if(window.ResizeObserver) new ResizeObserver(relayout).observe(list);
-if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ if(!editing) layoutAll(); });
-
-function orderedIdx(){
-  return state.items.map(function(_,i){ return i; }).sort(function(a,b){
-    var da=state.items[a].d?1:0, db=state.items[b].d?1:0;
-    if(da!==db) return da-db;
-    if(da) return state.items[a].o-state.items[b].o;
-    return a-b;
-  });
-}
-function order(animate){
-  var idx=orderedIdx();
-  if(!animate || RM.matches){ idx.forEach(function(i){ list.appendChild(rowEls[i]); }); return; }
-  var first=[];
-  rowEls.forEach(function(el,i){ first[i]=el.getBoundingClientRect().top; });
-  idx.forEach(function(i){ list.appendChild(rowEls[i]); });
-  rowEls.forEach(function(el,i){
-    var d=first[i]-el.getBoundingClientRect().top;
-    if(!d || !el.animate) return;
-    el.animate([{transform:"translateY("+d+"px)"},{transform:"none"}],
-      {duration:520,easing:"cubic-bezier(.22,1,.36,1)"});
-  });
-}
-
-function doneCount(){ var n=0; state.items.forEach(function(it){ if(it.d) n++; }); return n; }
-function allDone(){ return state.items.length>0 && doneCount()===state.items.length; }
-
-function paint(){
-  var n=state.items.length, d=doneCount();
-  $("#count").innerHTML="<b>"+d+"</b>/"+n;
-  var fill=$("#fill");
-  fill.style.width=(n? (d/n*100):0)+"%";
-  fill.classList.toggle("full", n>0 && d===n);
-  $("#hint").innerHTML="<em>1–"+n+"</em> check off &nbsp;·&nbsp; <em>E</em> edit &nbsp;·&nbsp; <em>T</em> theme &nbsp;·&nbsp; <em>M</em> mute"+
-    (document.fullscreenEnabled? " &nbsp;·&nbsp; <em>F</em> full screen":"");
-  var fin=$("#finale"), hint=$("#hint");
-  if(allDone() && !editing){ fin.classList.add("on"); hint.classList.add("off"); }
-  else{ fin.classList.remove("on"); hint.classList.remove("off"); }
-}
-
-function toggle(i,px,py,fromPointer){
-  if(editing) return;
-  var it=state.items[i], el=rowEls[i];
-  it.d=!it.d;
-  if(it.d){ state.seq++; it.o=state.seq; }
-  el.classList.toggle("done", it.d);
-  el.setAttribute("aria-checked", it.d?"true":"false");
-
-  if(it.d){
-    sndCheck(doneCount()-1);
-    if(!RM.matches){
-      var bx=el.querySelector(".box");
-      el.classList.remove("kick"); bx.classList.remove("pop");
-      void el.offsetWidth;
-      el.classList.add("kick"); bx.classList.add("pop");
-      bx.addEventListener("animationend",function h(){ bx.classList.remove("pop"); bx.removeEventListener("animationend",h); });
-    }
-    var x=px, y=py;
-    if(!fromPointer || typeof x!=="number" || (x===0&&y===0)){
-      var r=el.querySelector(".tx").getBoundingClientRect();
-      x=Math.min(r.right,innerWidth-40); y=r.top+r.height*0.5;
-    }
-    burst(x,y,46,13,2.0);
-  } else {
-    sndUncheck();
-  }
-  save(); paint();
-  setTimeout(function(){ order(true); }, it.d? 520:200);
-
-  var now=allDone();
-  if(now && !wasAll){
-    setTimeout(function(){
-      sndFinish(); volley();
-      var g=$("#glow"); g.classList.add("flare");
-      setTimeout(function(){ g.classList.remove("flare"); },900);
-    },640);
-  }
-  wasAll=now;
-}
-
-/* ---------------- edit mode ---------------- */
-function enterEdit(){
-  editing=true;
-  $("#edit").textContent="Save list";
-  $("#edit").setAttribute("aria-pressed","true");
-  paint(); drawEditor(); syncAdd();
-  var f=list.querySelector(".einput");
-  if(f){ f.focus(); f.setSelectionRange(0,f.value.length); f.scrollLeft=0; }
-}
-function drawEditor(){
-  list.innerHTML="";
-  state.items.forEach(function(it,i){
-    var r=document.createElement("div"); r.className="erow";
-    var inp=document.createElement("input");
-    inp.className="einput"; inp.type="text"; inp.value=it.t;
-    inp.setAttribute("aria-label","Line "+(i+1));
-    inp.placeholder="What needs doing?"; inp.maxLength=90;
-    inp.addEventListener("keydown",function(e){
-      if(e.key==="Enter"){
-        e.preventDefault();
-        var all=list.querySelectorAll(".einput");
-        if(i<all.length-1){ all[i+1].focus(); all[i+1].select(); }
-        else if(state.items.length<8) addLine();
-        else exitEdit();
-      } else if(e.key==="Escape"){ e.preventDefault(); exitEdit(); }
-    });
-    var k=document.createElement("button");
-    k.className="kill"; k.type="button"; k.textContent="×";
-    k.title="Remove this line"; k.setAttribute("aria-label","Remove line "+(i+1));
-    k.disabled=state.items.length<=1;
-    k.addEventListener("click",function(){ commit(); state.items.splice(i,1); drawEditor(); syncAdd(); });
-    r.appendChild(inp); r.appendChild(k);
-    list.appendChild(r);
-  });
-  list.dataset.count=state.items.length;
-}
-function syncAdd(){ $("#addrow").hidden = !editing || state.items.length>=8; }
-function addLine(){
-  commit(); state.items.push({t:"",d:false,o:0}); drawEditor(); syncAdd();
-  var n=list.querySelectorAll(".einput"); n[n.length-1].focus();
-}
-function commit(){
-  var ins=list.querySelectorAll(".einput");
-  for(var i=0;i<ins.length;i++){
-    if(!state.items[i]) continue;
-    var v=ins[i].value.trim();
-    if(v!==state.items[i].t){ state.items[i].t=v; state.items[i].d=false; state.items[i].o=0; }
-  }
-}
-function exitEdit(){
-  commit();
-  state.items=state.items.filter(function(it){ return it.t.length; });
-  if(!state.items.length) state.items=[{t:"",d:false,o:0}];
-  editing=false;
-  $("#edit").textContent="Edit list";
-  $("#edit").setAttribute("aria-pressed","false");
-  syncAdd(); save(); buildRows(); wasAll=allDone(); paint();
-}
-
-/* ---------------- controls ---------------- */
-function applyMode(){
-  document.documentElement.setAttribute("data-mode",state.mode);
-  var tc=document.querySelector('meta[name="theme-color"]');
-  if(tc) tc.setAttribute("content",
-    getComputedStyle(document.documentElement).getPropertyValue("--ink").trim());
-  $("#theme").textContent=LABEL[state.mode];
-  requestAnimationFrame(function(){ if(!editing) layoutAll(); });
-}
-$("#theme").addEventListener("click",function(){
-  state.mode=MODES[(MODES.indexOf(state.mode)+1)%MODES.length];
-  save(); applyMode();
-  if(!state.muted) sndUncheck();
-});
-$("#edit").addEventListener("click",function(){ editing? exitEdit():enterEdit(); });
-$("#addrow").addEventListener("click",addLine);
-
-function paintMute(){
-  var b=$("#mute");
-  b.textContent=state.muted? "Muted":"Sound on";
-  b.setAttribute("aria-pressed", state.muted?"true":"false");
-}
-$("#mute").addEventListener("click",function(){
-  state.muted=!state.muted; save(); paintMute();
-  if(!state.muted) sndUncheck();
-});
-var fsBtn=$("#full");
-if(!document.fullscreenEnabled) fsBtn.hidden=true;
-fsBtn.addEventListener("click",function(){
-  if(document.fullscreenElement) document.exitFullscreen();
-  else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function(){});
-});
-$("#again").addEventListener("click",function(){
-  state.items.forEach(function(it){ it.d=false; it.o=0; });
-  state.seq=0; save();
-  rowEls.forEach(function(el){ el.classList.remove("done"); el.setAttribute("aria-checked","false"); });
-  order(true); wasAll=false; paint(); sndUncheck();
-  if(rowEls[0]) rowEls[0].focus();
-});
-
-document.addEventListener("keydown",function(e){
-  if(editing) return;
-  var t=e.target;
-  if(t && (t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.isContentEditable)) return;
-  if(e.metaKey||e.ctrlKey||e.altKey) return;
-  var k=e.key;
-  if(k>="1" && k<="9"){
-    var pos=parseInt(k,10)-1, idx=orderedIdx();
-    if(pos<idx.length){ e.preventDefault(); toggle(idx[pos],0,0,false); }
-  }
-  else if(k==="m"||k==="M"){ e.preventDefault(); $("#mute").click(); }
-  else if(k==="e"||k==="E"){ e.preventDefault(); $("#edit").click(); }
-  else if(k==="t"||k==="T"){ e.preventDefault(); $("#theme").click(); }
-  else if((k==="f"||k==="F") && !fsBtn.hidden){ e.preventDefault(); fsBtn.click(); }
-});
-
-/* ---------------- boot ---------------- */
-$("#date").textContent=new Date()
-  .toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})
-  .replace(", "," · ");
-applyMode();
-paintMute();
-buildRows();
-wasAll=allDone();
-paint();
-save();
-})();
-</script>
-
+<script type="module" src="app.js"></script>
 </body>
 </html>

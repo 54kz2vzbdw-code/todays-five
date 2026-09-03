@@ -42,7 +42,7 @@ const TAB_ID = dev.id + ":" + M.shortId();
 
 /* ---------------- state ---------------- */
 let doc = null, listId = null, view = "today";
-let sync = null, transport = null, syncStatus = "off";
+let sync = null, transport = null, syncStatus = "off", transportFailed = false;
 let theme = null;
 let editing = null;            // { id, el, ta, note, isNew, orig }
 let wasAll = false;
@@ -115,6 +115,14 @@ function hashId() {
   return m ? m[1] : null;
 }
 addEventListener("hashchange", () => { const h = hashId(); if (h && h !== listId) openList(h); });
+// the Supabase client comes from a CDN; if that import failed (first load while offline), try again once we're back
+async function retryTransport() {
+  if (transport || !transportFailed || !listId) return;
+  try { transport = await makeTransport(TRANSPORT_KIND, config); } catch (e) { transport = null; }
+  if (transport) { transportFailed = false; openList(listId); }
+}
+addEventListener("online", retryTransport);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") retryTransport(); });
 
 function registerList(id, name) {
   let e = meta.lists.find(l => l.id === id);
@@ -144,7 +152,7 @@ async function openList(id) {
   paintListName();
   // sync starts after first paint
   if (!transport) {
-    try { transport = await makeTransport(TRANSPORT_KIND, config); } catch (e) { transport = null; }
+    try { transport = await makeTransport(TRANSPORT_KIND, config); } catch (e) { transport = null; transportFailed = true; }
     if (listId !== id) return;
   }
   sync = createSync({
@@ -153,7 +161,7 @@ async function openList(id) {
     onRemote: remote => { doc = remote; applyRemote(); },
     onGone: () => { /* status dot shows it; the paste screen is offered from the Lists panel */ }
   });
-  paintStatus(sync.status);
+  paintStatus(transportFailed ? "offline" : sync.status);
   sync.open(id, doc, local ? { rev: local.rev, dirty: local.dirty || roll.moved.length > 0 } : { rev: 0, dirty: true });
   if (roll.moved.length) sync.update(doc);
   if (entry && !entry.name && doc.name) entry.name = doc.name;
@@ -577,8 +585,13 @@ function startEdit(id, { isNew = false } = {}) {
   if (!isNew) ta.setSelectionRange(ta.value.length, ta.value.length);
   paint();
 }
+/** Ids of the rows the user can currently see, top to bottom. */
+function visibleRowIds() {
+  const sel = view === "today" ? "#list .row" : "#all .sec:not([hidden]):not(.collapsed) .row";
+  return $$(sel).map(li => li.dataset.id);
+}
 function neighbourOf(id) {
-  const ids = Array.from(rows.keys());
+  const ids = visibleRowIds();
   const i = ids.indexOf(id);
   return ids[i - 1] || ids[i + 1] || null;
 }
@@ -623,8 +636,7 @@ function focusedRowId() {
   const li = a && a.closest ? a.closest(".row") : null;
   if (li && li.dataset.id) return li.dataset.id;
   if (lastRowId && rows.has(lastRowId)) return lastRowId;
-  const first = rows.keys().next();
-  return first.done ? null : first.value;
+  return visibleRowIds()[0] || null;
 }
 
 /* ---------------- sections ---------------- */
@@ -1181,7 +1193,7 @@ document.addEventListener("keydown", e => {
   const k = e.key;
   if (k >= "1" && k <= "9") {
     const pos = parseInt(k, 10) - 1;
-    const ids = view === "today" ? todayList().map(i => i.id) : Array.from(rows.keys()).filter(id => rows.get(id).isConnected);
+    const ids = visibleRowIds();
     if (pos < ids.length) { e.preventDefault(); toggle(ids[pos], 0, 0, false); }
   }
   else if (k === "m" || k === "M") { e.preventDefault(); toggleMute(); }

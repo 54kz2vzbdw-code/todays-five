@@ -128,7 +128,17 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone }) 
   let pollTimer = 0;
 
   function setStatus(s) { if (s !== status) { status = s; onStatus && onStatus(s); } }
-  function persist() { if (cur) saveLocal(cur.id, { doc: cur.doc, rev: cur.rev, dirty: cur.dirty, created: cur.created }); }
+  // merge-on-write: another tab of this browser may have persisted edits of its own to the same key
+  function persist() {
+    if (!cur) return;
+    const stored = loadLocal(cur.id);
+    if (stored && canon(stored.doc) !== canon(cur.doc)) {
+      const merged = merge(stored.doc, cur.doc);
+      saveLocal(cur.id, { doc: merged, rev: Math.max(stored.rev, cur.rev), dirty: stored.dirty || cur.dirty || canon(merged) !== canon(cur.doc), created: cur.created || stored.created });
+      return;
+    }
+    saveLocal(cur.id, { doc: cur.doc, rev: cur.rev, dirty: cur.dirty, created: cur.created || (stored && stored.created) });
+  }
 
   async function pull() {
     if (!cur || !transport) return;

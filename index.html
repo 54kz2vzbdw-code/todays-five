@@ -34,6 +34,8 @@
       document.getElementById("theme-vars").textContent = css;
       var m = css.match(/color-scheme:(dark|light)/);
       if (m) document.documentElement.setAttribute("data-base", m[1]);
+      // the iOS status bar style is read at install time: white text only over dark inks
+      if (m && m[1] === "light") document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').setAttribute("content", "default");
       var ink = css.match(/--ink:(#[0-9A-Fa-f]{6})/);
       if (ink) document.querySelector('meta[name="theme-color"]').setAttribute("content", ink[1]);
     }

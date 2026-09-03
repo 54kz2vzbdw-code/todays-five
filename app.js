@@ -11,7 +11,8 @@ const $$ = s => Array.from(document.querySelectorAll(s));
 const RM = matchMedia("(prefers-reduced-motion: reduce)");
 const HOVER = matchMedia("(hover: hover)");
 const DARK_MQ = matchMedia("(prefers-color-scheme: dark)");
-const IOS = /iP(hone|ad|od)/.test(navigator.platform) || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+// iPadOS reports itself as a Mac; a real touch screen tells it apart (headless/desktop Chrome can expose ontouchend without one)
+const IOS = /iP(hone|ad|od)/.test(navigator.platform) || (navigator.userAgent.includes("Mac") && navigator.maxTouchPoints > 0);
 const STANDALONE = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 const V1_KEY = "todays-five/v1";
 const BASE = location.origin + location.pathname.replace(/[^/]*$/, "");
@@ -36,7 +37,26 @@ if (typeof dev.volume !== "number") dev.volume = 1;
 if (!dev.theme) dev.theme = "T1:curated:dark";
 if (!dev.darkSlot) dev.darkSlot = "T1:curated:dark";
 if (!dev.lightSlot) dev.lightSlot = "T1:curated:light";
-function saveDevice() { saveMeta(meta); }
+function saveDevice() {
+  // another tab may have changed the registry since this tab loaded: union lists, respect rotations, keep our device settings
+  const stored = loadMeta();
+  const dead = new Set([...(stored.dead || []), ...(meta.dead || [])]);
+  const byId = new Map();
+  for (const l of [...(stored.lists || []), ...(meta.lists || [])]) if (l && l.id && !dead.has(l.id)) byId.set(l.id, { ...(byId.get(l.id) || {}), ...l });
+  meta.lists = Array.from(byId.values());
+  meta.dead = Array.from(dead);
+  meta.redirect = { ...(stored.redirect || {}), ...(meta.redirect || {}) };
+  meta.pendingKill = Array.from(new Set([...(stored.pendingKill || []), ...(meta.pendingKill || [])]));
+  if (syncStatus === "gone" && stored.current && stored.current !== meta.current && !dead.has(stored.current)) meta.current = stored.current;
+  saveMeta(meta);
+}
+/** Follow redirects recorded by Rotate (an installed iPhone icon keeps launching the old id). */
+function resolveId(id) {
+  const r = meta.redirect || {};
+  const seen = new Set();
+  while (r[id] && !seen.has(id)) { seen.add(id); id = r[id]; }
+  return id;
+}
 // per-tab identity: two tabs on one device must not ignore each other's broadcasts
 const TAB_ID = dev.id + ":" + M.shortId();
 
@@ -90,7 +110,7 @@ registerSw();
 
 function boot() {
   const h = hashId();
-  if (h) return openList(h);
+  if (h) return openList(resolveId(h));
   if (meta.current && loadLocal(meta.current)) return openList(meta.current);
   if (!meta.migratedV1) {
     let v1 = null;
@@ -110,11 +130,33 @@ function boot() {
   showWelcome();
 }
 
+/** Push whatever is pending, but never wait more than a moment. */
+function flushQuick() {
+  if (!sync) return Promise.resolve();
+  return Promise.race([Promise.resolve(sync.flush()).catch(() => {}), new Promise(r => setTimeout(r, 1500))]);
+}
+/** Other lists this browser holds with unpushed edits (switched away before the debounce, iOS reloads): push them once. */
+async function flushOthers() {
+  if (!transport) return;
+  for (const l of meta.lists) {
+    if (l.id === listId) continue;
+    const local = loadLocal(l.id);
+    if (!local || !local.dirty) continue;
+    try {
+      const remote = await transport.get(l.id);
+      if (!remote) { if (!(local.rev === 0 && local.created)) continue; }
+      const mergedDoc = remote ? M.merge(local.doc, M.normalize(remote.doc, l.id)) : local.doc;
+      const res = await transport.put(l.id, mergedDoc, remote ? (remote.rev | 0) : 0);
+      if (res && res.ok) saveLocal(l.id, { doc: mergedDoc, rev: res.rev, dirty: false, created: local.created });
+    } catch (e) { /* next time */ }
+  }
+}
 function hashId() {
   const m = location.hash.match(/^#\/l\/([0-9A-Za-z]{22,64})/);
   return m ? m[1] : null;
 }
-addEventListener("hashchange", () => { const h = hashId(); if (h && h !== listId) openList(h); });
+let reloading = false;
+addEventListener("hashchange", () => { if (reloading) return; const h = hashId(); if (h && h !== listId) switchTo(resolveId(h)); });
 // the Supabase client comes from a CDN; if that import failed (first load while offline), try again once we're back
 async function retryTransport() {
   if (transport || !transportFailed || !listId) return;
@@ -132,14 +174,15 @@ function registerList(id, name) {
 
 async function openList(id) {
   if (!M.isListId(id)) return showWelcome("That link doesn't look right.");
-  if (sync) sync.close();
+  if (sync) { await flushQuick(); sync.close(); }
   if (editing) cancelEdit();
   listId = id;
   meta.current = id;
   const entry = registerList(id, "");
   saveDevice();
   const local = loadLocal(id);
-  doc = local ? local.doc : M.emptyDoc(id, "");
+  // a list opened from a link starts from a doc that loses every tie, so the server's name and records win
+  doc = local ? local.doc : M.normalize({}, id);
   doc = M.purgeTombstones(doc);
   const roll = M.rollover(doc);
   if (roll.moved.length) doc = roll.doc;
@@ -164,12 +207,14 @@ async function openList(id) {
   paintStatus(transportFailed ? "offline" : sync.status);
   sync.open(id, doc, local ? { rev: local.rev, dirty: local.dirty || roll.moved.length > 0, created: local.created } : { rev: 0, dirty: false, created: false });
   retryPendingKills();
+  flushOthers();
+  if (sessionStorage.getItem("tf/reopenShare")) { sessionStorage.removeItem("tf/reopenShare"); setTimeout(openShare, 300); }
   if (roll.moved.length) sync.update(doc);
   if (entry && !entry.name && doc.name) entry.name = doc.name;
 }
 
 function showWelcome(msg) {
-  if (sync) { sync.close(); sync = null; }
+  if (sync) { flushQuick().then(() => { if (sync) { sync.close(); sync = null; } }); }
   listId = null; doc = null;
   $("#today").hidden = true; $("#all").hidden = true; $("#welcome").hidden = false;
   $("#w-err").textContent = msg || "";
@@ -232,11 +277,12 @@ function makeRow(it) {
     tools.appendChild(mk("kill", "kill", "Delete"));
     tools.appendChild(mk("handle", "handle", "Drag to reorder"));
   }
-  li.querySelector(".check").addEventListener("click", e => { if (drag) return; toggle(it.id, e.clientX, e.clientY, e.detail > 0); });
+  li.addEventListener("click", e => { if (clickAfterDrag()) { e.stopPropagation(); e.preventDefault(); } }, true);
+  li.querySelector(".check").addEventListener("click", e => { if (clickAfterDrag()) return; toggle(it.id, e.clientX, e.clientY, e.detail > 0); });
   li.querySelector(".check").addEventListener("focus", () => { lastRowId = it.id; });
   li.addEventListener("pointerenter", () => { lastRowId = it.id; });
   li.addEventListener("dblclick", e => { if (!HOVER.matches) return; e.preventDefault(); startEdit(it.id); });
-  li.querySelector(".pencil").addEventListener("click", e => { e.stopPropagation(); startEdit(it.id); });
+  li.querySelector(".pencil").addEventListener("click", e => { e.stopPropagation(); if (clickAfterDrag()) return; startEdit(it.id); });
   const star = li.querySelector(".star"); if (star) star.addEventListener("click", e => { e.stopPropagation(); toggleToday(it.id); });
   const kill = li.querySelector(".kill"); if (kill) kill.addEventListener("click", e => { e.stopPropagation(); deleteItem(it.id); });
   const more = li.querySelector(".more"); if (more) more.addEventListener("click", e => { e.stopPropagation(); li.classList.toggle("open"); more.setAttribute("aria-expanded", li.classList.contains("open") ? "true" : "false"); layoutStrikes(li, true); });
@@ -717,20 +763,32 @@ function moveFocused(dir) {
 }
 
 /* ---------------- drag ---------------- */
-let lp = null;
+const downPointers = new Set();
+document.addEventListener("pointerdown", e => downPointers.add(e.pointerId), true);
+document.addEventListener("pointerup", e => downPointers.delete(e.pointerId), true);
+document.addEventListener("pointercancel", e => downPointers.delete(e.pointerId), true);
+let dragEndedAt = -1e9; // no drag has ended yet
 function longPressStart(li, e) {
   if (e.pointerType !== "touch" || e.button !== 0) return;
-  if (editing || e.target.closest(".tool")) return;
+  if (editing || drag || e.target.closest(".tool")) return;
   const id = li.dataset.id, it = doc.items[id];
   if (!it || it.done) return;
-  const sx = e.clientX, sy = e.clientY;
-  const cancel = () => { if (lp) { clearTimeout(lp.t); li.removeEventListener("pointermove", onMove); li.removeEventListener("pointerup", cancel); li.removeEventListener("pointercancel", cancel); lp = null; } };
-  const onMove = ev => { if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 8) cancel(); };
-  lp = { t: setTimeout(() => { cancel(); try { navigator.vibrate && navigator.vibrate(12); } catch (x) { /* ignore */ } beginDrag(li, e, true); }, 400) };
+  const sx = e.clientX, sy = e.clientY, pid = e.pointerId;
+  let t = 0;
+  const cancel = () => { clearTimeout(t); li.removeEventListener("pointermove", onMove); li.removeEventListener("pointerup", cancel); li.removeEventListener("pointercancel", cancel); };
+  const onMove = ev => { if (ev.pointerId === pid && Math.hypot(ev.clientX - sx, ev.clientY - sy) > 8) cancel(); };
+  t = setTimeout(() => {
+    cancel();
+    if (!downPointers.has(pid) || drag || editing) return; // finger already lifted, or something else started
+    try { navigator.vibrate && navigator.vibrate(12); } catch (x) { /* ignore */ }
+    beginDrag(li, e, true);
+  }, 400);
   li.addEventListener("pointermove", onMove);
   li.addEventListener("pointerup", cancel);
   li.addEventListener("pointercancel", cancel);
 }
+/** The click that follows a touch drag (lift without moving) must not check the line off. */
+function clickAfterDrag() { return !!drag || (performance.now() - dragEndedAt) < 600; }
 const preventTouch = e => { if (drag) e.preventDefault(); };
 function beginDrag(li, e, fromLongPress) {
   if (drag || editing) return;
@@ -742,11 +800,12 @@ function beginDrag(li, e, fromLongPress) {
   try { li.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ }
   document.addEventListener("touchmove", preventTouch, { passive: false });
   const move = ev => { drag.lastY = ev.clientY; if (!drag.raf) drag.raf = requestAnimationFrame(dragStep); };
-  const up = () => endDrag(move, up);
+  const up = () => endDrag(move, up, cancelled, false);
+  const cancelled = () => endDrag(move, up, cancelled, true); // the system took the touch: put the row back, commit nothing
   li.addEventListener("pointermove", move);
   li.addEventListener("pointerup", up);
-  li.addEventListener("pointercancel", up);
-  drag.move = move; drag.up = up;
+  li.addEventListener("pointercancel", cancelled);
+  drag.move = move; drag.up = up; drag.cancelled = cancelled;
   dragStep();
 }
 function dragStep() {
@@ -804,16 +863,18 @@ function domMove(li, list, ref) {
     if (d && el.animate) el.animate([{ transform: `translateY(${d}px)` }, { transform: "none" }], { duration: 220, easing: "cubic-bezier(.22,1,.36,1)" });
   }
 }
-function endDrag(move, up) {
+function endDrag(move, up, cancelled, aborted) {
   if (!drag) return;
   const { id, li } = drag;
-  li.removeEventListener("pointermove", move); li.removeEventListener("pointerup", up); li.removeEventListener("pointercancel", up);
+  li.removeEventListener("pointermove", move); li.removeEventListener("pointerup", up); li.removeEventListener("pointercancel", cancelled);
   document.removeEventListener("touchmove", preventTouch);
   try { li.releasePointerCapture(drag.pointerId); } catch (x) { /* ignore */ }
   li.classList.remove("dragging"); document.body.classList.remove("is-dragging");
   li.style.transform = "";
   $$("#all .sec.over").forEach(s => s.classList.remove("over"));
   drag = null;
+  dragEndedAt = performance.now();
+  if (aborted) { render({ animate: false }); return; }
   // derive the new position from the DOM
   const it = doc.items[id]; if (!it || it.deleted) return;
   const list = li.parentNode;
@@ -948,6 +1009,7 @@ $("#share-copy").addEventListener("click", async () => {
 });
 $("#share-rotate").addEventListener("click", async () => {
   closePanel();
+  if (syncStatus !== "synced") { toast("Rotate needs a live connection — try again once synced"); return; }
   const ok = await ask({ title: "Rotate link?", msg: "A new secret link replaces this one. The old link stops working everywhere, including your other devices — open the new one there.", confirm: "Rotate", danger: true });
   if (!ok) return;
   await rotateLink();
@@ -962,11 +1024,19 @@ async function rotateLink() {
   const old = meta.lists.find(l => l.id === oldId);
   registerList(newId, old ? old.name : "");
   meta.lists = meta.lists.filter(l => l.id !== oldId);
+  meta.dead = Array.from(new Set([...(meta.dead || []), oldId]));
+  meta.redirect = { ...(meta.redirect || {}), [oldId]: newId };
   await openList(newId);
   // let the new list land, then kill the old one; if that fails, remember to retry
   if (sync) await sync.flush();
   removeLocal(oldId);
   const dead = await killRemote(oldId);
+  if (IOS && !STANDALONE) {
+    // Safari memoised the manifest at load; reload so an Add to Home Screen now carries the new id
+    sessionStorage.setItem("tf/reopenShare", "1");
+    reloading = true; location.replace(BASE + SEARCH + "#/l/" + newId); location.reload();
+    return;
+  }
   toast(dead ? "New link ready" : "New link ready — old link not revoked yet, will retry");
   openShare();
 }
@@ -1026,9 +1096,10 @@ $("#l-rename").addEventListener("click", async () => {
   saveDevice();
   afterChange({ animate: false });
 });
-$("#l-archive").addEventListener("click", () => {
+$("#l-archive").addEventListener("click", async () => {
   closePanel();
   const e = meta.lists.find(l => l.id === listId); if (!e) return;
+  await flushQuick();
   e.archived = true; saveDevice();
   const next = meta.lists.find(l => !l.archived);
   if (next) switchTo(next.id); else showWelcome();
@@ -1040,7 +1111,15 @@ function parseLink(s) {
 }
 function switchTo(id) {
   if (id === listId) return;
-  if (IOS && !STANDALONE) { location.replace(BASE + SEARCH + "#/l/" + id); location.reload(); return; }
+  if (listId && syncStatus === "gone") { meta.redirect = { ...(meta.redirect || {}), [listId]: id }; }
+  meta.current = id; saveDevice();
+  if (IOS && !STANDALONE) {
+    reloading = true;
+    const target = BASE + SEARCH + "#/l/" + id;
+    if (location.origin + location.pathname === BASE) { flushQuick().then(() => { location.replace(target); location.reload(); }); }
+    else location.replace(target); // path changes (…/index.html): this is a real navigation, no reload needed
+    return;
+  }
   openList(id);
 }
 $("#listname").addEventListener("click", openLists);

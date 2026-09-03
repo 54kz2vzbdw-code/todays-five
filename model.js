@@ -198,10 +198,16 @@ export function merge(a, b) {
   };
 }
 
-/** Drop tombstones older than TTL. Returns a new doc (or the same one if nothing changed). */
+export const HISTORY_DAYS = 365;
+
+/** Drop tombstones older than TTL and history older than HISTORY_DAYS. Returns a new doc (or the same one if nothing changed). */
 export function purgeTombstones(doc, nowTs = now(), ttl = TOMBSTONE_TTL) {
   let changed = false;
   const out = { ...doc };
+  const cutoff = localDate(nowTs - HISTORY_DAYS * 24 * 3600 * 1000);
+  const hist = {};
+  for (const day of Object.keys(doc.history || {})) { if (day >= cutoff) hist[day] = doc.history[day]; else changed = true; }
+  out.history = hist;
   for (const key of ["sections", "items", "themes"]) {
     const m = doc[key];
     const kept = {};
@@ -286,7 +292,9 @@ export function rollover(doc, today = localDate(), ts = now()) {
     const list = (history[day] || []).filter(e => e.id !== it.id).concat([entry]);
     list.sort((a, b) => a.doneAt - b.doneAt || cmp(a.id, b.id));
     history[day] = list;
-    items[it.id] = { id: it.id, deleted: true, updatedAt: Math.max(ts, (it.updatedAt || 0) + 1) };
+    // stamped just above the record it replaces (not "now"), so a genuinely newer edit elsewhere still wins
+    // and every device produces the identical tombstone
+    items[it.id] = { id: it.id, deleted: true, updatedAt: (it.updatedAt || 0) + 1 };
     moved.push(entry);
   }
   if (!moved.length) return { doc, moved };

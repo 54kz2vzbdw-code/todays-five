@@ -384,6 +384,8 @@ export function applyTheme(t, doc = document, { persist = true } = {}) {
   doc.documentElement.dataset.theme = t.id;
   const meta = doc.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", t.colors.ink);
+  const bar = doc.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  if (bar) bar.setAttribute("content", t.base === "light" ? "default" : "black-translucent");
   loadFonts(fontsUrl(t.pair), doc);
   if (persist) { try { localStorage.setItem(CSS_KEY, css); localStorage.setItem(FONT_KEY, fontsUrl(t.pair)); } catch (e) { /* private mode */ } }
 }

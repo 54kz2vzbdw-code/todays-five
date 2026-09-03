@@ -471,4 +471,9 @@ input[type="color"]{width:44px;height:44px;border:1px solid var(--hair);border-r
 
 @media (hover:none){
   button.add,.sec-h button.chip,.sec-h button.sec-toggle{min-height:44px}
+  .sec-h button.chip{min-width:44px}
+  .swatch .del{width:44px;height:44px}
+  /* iOS zooms the page when a focused field is under 16px */
+  input,select,textarea{font-size:max(16px,1em)}
+  .einput.note-in{font-size:16px}
 }

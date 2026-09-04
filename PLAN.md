@@ -232,3 +232,24 @@ Budget: 5 GB/month egress, 500 MB database, 200 concurrent realtime connections,
 ## The click swallowed after a remote change (fix 1)
 
 Cause: every render re-appended every row (`orderInto` called `appendChild` on each row in order). A remote apply within a press detaches and re-attaches the row under the pointer; Chrome, Safari and Firefox all drop the `click` when the mousedown node leaves the DOM before mouseup. The FLIP animation that follows (520 ms) also slides rows under a still pointer, so mousedown and mouseup can land on different rows and the click fires on their common ancestor instead of the checkbox. Fix: rows are reordered with the minimum number of DOM moves (rows already in place are not touched), and a tap is recognised from its own pointer events (`pointerdown` on a row, `pointerup` within a few pixels or over the same row, no drag) instead of relying on the synthesised `click`; keyboard and assistive-technology clicks still work through the `click` path, and a pointer tap suppresses the click that follows it so nothing toggles twice.
+
+## Verification results (v3, 2026-09-04)
+
+What was actually run, and what it found.
+
+| suite | result |
+|---|---|
+| Node `test/model.test.js` | 22 pass (merge properties, rollover, `reorderPlan` minimal moves, v3 seed) |
+| Node `test/theme.test.js` | 12 pass (contrast floors incl. the elevated greys, every pair's fonts self-hosted, no Google Fonts left) |
+| Node `test/crypto.test.js` | 9 pass (pinned vectors for three `W`, view link derives no token, envelope tamper fails, a year of history → 20 KB envelope) |
+| Node `test/sync.test.js` | 10 pass (envelopes on the wire without the secret, view refs never push, 403 → readonly with no retry storm, unchanged polls, live/dead poll intervals, conflict merge on plaintext, gone, legacy read/delete, 429 hold) |
+| Migrations against a local Postgres | 35 pass (both files idempotent; PT status codes; per-IP limit trips at the 13th create and recovers; reaper; anon denied everywhere but the RPCs) |
+| Browser suite, local transport (`tools/e2e3.js`) | 84 pass: welcome, save sheet, tour (desktop keys / touch gestures, replay, never again), encrypted local rows, cold boot straight into a link, the click-after-sync regression (press spanning a remote re-render; list re-ordering under the pointer; keyboard path), labelled Today toggle + tooltip, share sheet (edit/view, sharing model), view-only mode, rotate killing both links, v2 migration with a late edit and the one-time sheet, migration fork guard, undo isolation, drag abort on remote change, carry-over after a paste, 429 → busy → recovery, realtime failure → "live updates paused", phone bottom sheet (52 px rows, icons, no key hints, swipe-down, tap outside, safe-area), gesture help, 44 px targets, touch affordances, manifest + installability, zero CSP violations, zero third-party requests, zero page errors |
+| Real Supabase (`tools/realsync3.js`) | 28 pass: envelope rows keyed by lookup id, decryptable only with the link key, 403 for a view link's put and a wrong token's delete, unchanged poll = 29 bytes (vs 681 for the doc), realtime joined → 4-minute poll, two devices + a viewer converge with live updates, offline edits merge, rotate kills the old edit and view links, old key cannot read the rotated row, 429 at the 13th create with a plain message and the app degrading to "busy" |
+| Lighthouse 12 (Chrome 152, gzip like GitHub Pages) | desktop 100 / 100 / 100, desktop warm 100 / 100 / 100, mobile cold 97 / 100 / 100, mobile warm 95 / 100 / 100 (performance / accessibility / best practices); installability errors: none beyond the harness's own |
+| iOS 18.1 simulator, iPhone 16 Pro | Safari: welcome → Start a list → bottom-sheet save sheet → tour with gesture wording. Add to Home Screen → the icon launches standalone straight into the list (the head-script change kept `start_url` with the fragment working); the engine ran and reported the list's real server state |
+| Reviews | UI-state (13 findings) and accessibility (13 findings, axe clean in 20 states) — all fixed, see DECISIONS.md |
+
+Mobile warm performance sits at the 95 bar with run-to-run variance of ±2; the remaining cost is the module graph on a simulated slow phone (FCP 1.7–1.9 s). Splitting `app.js` so panels and the tour load on first use would buy a few points and is the next lever if it is ever needed.
+
+Not verified in this build: the project's hosting region (the About page says "United States", inferred from round-trip latency, not read from the dashboard); Lighthouse's `bf-cache` audit (disabled by flags in the test Chrome); a real iPhone (the simulator stood in, as in v2).

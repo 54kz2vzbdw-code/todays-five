@@ -1,3 +1,4 @@
+-- v2 schema, kept for history. The live database is defined by this file plus supabase/migrations/002_v3.sql (and 003_v2_cleanup.sql after the v3 deploy).
 -- Today's Five v2 — Supabase schema. Paste the whole file into the SQL Editor and run it once.
 --
 -- Security model: the list id is the secret. The table is never readable through the

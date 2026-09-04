@@ -12,7 +12,7 @@ function test(name, fn) { fn(); passed++; console.log("ok -", name); }
 let seed = 4242;
 function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
 
-const THRESH = { text: 7, muted: 4.5, dim: 4.5, accentText: 4.5, accent: 3, hairSolid: 3, danger: 4.5 };
+const THRESH = { text: 7, muted: 4.5, dim: 4.5, accentText: 4.5, accent: 3, hairSolid: 3, danger: 4.5, muted2: 4.5, dim2: 4.5 };
 function check(t, label) {
   const r = report(t);
   for (const k of Object.keys(THRESH)) assert.ok(r[k] >= THRESH[k] - 1e-9, `${label}: ${k} ${r[k].toFixed(2)} < ${THRESH[k]}`);
@@ -43,7 +43,7 @@ test("12 curated themes, each a complete kit", () => {
     assert.ok(PAIRS[t.pair], t.id + " pair");
     assert.ok(["knock", "bell", "blip"].includes(t.sound.engine), t.id + " sound");
     assert.ok(t.confetti.length >= 4, t.id + " confetti");
-    for (const k of ["ink", "ink2", "ink3", "text", "muted", "dim", "done", "accent", "accentHi", "accentDeep", "accentText", "danger", "hair", "hairHi", "hairSolid", "glow", "strikeShadow", "boxDoneBg", "strikeBg", "strikeAnim", "finaleStyle"]) assert.ok(t.colors[k], `${t.id} missing ${k}`);
+    for (const k of ["ink", "ink2", "ink3", "text", "muted", "dim", "done", "muted2", "dim2", "accent", "accentHi", "accentDeep", "accentText", "danger", "hair", "hairHi", "hairSolid", "glow", "strikeShadow", "boxDoneBg", "strikeBg", "strikeAnim", "finaleStyle"]) assert.ok(t.colors[k], `${t.id} missing ${k}`);
   }
 });
 
@@ -128,7 +128,7 @@ test("pair auto-pick varies with base and warmth", () => {
 
 test("cssText contains every token once and a color-scheme", () => {
   const css = cssText(CURATED[0]);
-  for (const v of ["--ink:", "--text:", "--accent:", "--font-task:", "--task-w:", "--strike-anim:", "color-scheme:dark"]) assert.ok(css.includes(v), v);
+  for (const v of ["--ink:", "--text:", "--accent:", "--dim-2:", "--muted-2:", "--font-task:", "--task-w:", "--strike-anim:", "color-scheme:dark"]) assert.ok(css.includes(v), v);
   assert.equal((css.match(/--ink:/g) || []).length, 1);
 });
 

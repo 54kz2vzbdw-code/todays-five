@@ -42,8 +42,10 @@ if (typeof dev.volume !== "number") dev.volume = 1;
 if (!dev.theme) dev.theme = "T1:curated:dark";
 if (!dev.darkSlot) dev.darkSlot = "T1:curated:dark";
 if (!dev.lightSlot) dev.lightSlot = "T1:curated:light";
-// a device that already holds lists is a returning user: never show it the tour unasked
-if (!dev.tourDone && (meta.lists.length || meta.migratedV1)) dev.tourDone = true;
+// a device that already holds an established list is a returning user: never show it the tour unasked.
+// A list registered moments ago (`fresh`, cleared when the tour ends) does not count: iOS Safari reloads the page
+// right after the first list is created, and that reload must not look like a returning device.
+if (!dev.tourDone && meta.lists.some(l => !l.fresh)) dev.tourDone = true;
 function saveDevice() {
   // another tab may have changed the registry since this tab loaded: union lists, respect rotations, keep our device settings
   const stored = loadMeta();
@@ -141,6 +143,7 @@ function boot() {
       meta.migratedV1 = true;
       if (v1.mode && T.curated(v1.mode)) { dev.theme = "T1:curated:" + v1.mode; applyThemeCode(dev.theme); }
       if (v1.muted) { dev.muted = true; paintMute(); }
+      dev.tourDone = true; // a v1 user is a returning user
       const e = registerList(id, "", "edit"); e.created = true; e.linkSaved = false;
       return openList({ id, mode: "edit" });
     }
@@ -176,7 +179,13 @@ async function flushOthers() {
   }
 }
 let reloading = false;
-addEventListener("hashchange", () => { if (reloading) return; const h = hashRef(); if (h && (h.id !== listId || h.mode !== listMode)) switchTo(resolveRef(h)); });
+addEventListener("hashchange", () => {
+  if (reloading) return;
+  const h = hashRef(); if (!h) return;
+  const r = resolveRef(h);
+  if (r.id === listId && r.mode === listMode) { history.replaceState(null, "", BASE + SEARCH + frag(r)); return; } // a stale (redirected) link: show the real one
+  switchTo(r);
+});
 async function retryTransport() {
   if (transport || !transportFailed || !listId) return;
   try { transport = await makeTransport(TRANSPORT_KIND, config); } catch (e) { transport = null; }
@@ -187,7 +196,7 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
 
 function registerList(id, name, mode) {
   let e = meta.lists.find(l => l.id === id);
-  if (!e) { e = { id, mode: mode === "view" ? "view" : "edit", name: name || "", addedAt: Date.now() }; meta.lists.push(e); }
+  if (!e) { e = { id, mode: mode === "view" ? "view" : "edit", name: name || "", addedAt: Date.now(), fresh: !dev.tourDone }; meta.lists.push(e); }
   else if (mode && e.mode !== mode) e.mode = mode;
   return e;
 }
@@ -248,8 +257,10 @@ async function openList(r) {
     } catch (e) { /* offline or refused: the engine reports it */ }
   }
   liveGrace = Date.now() + 8000; setTimeout(() => { if (gen === openGen) paintStatus(syncStatus); }, 8200);
+  const holdHook = TRANSPORT_KIND === "local" ? (() => { try { return +localStorage.getItem("tf/test/hold") || 0; } catch (e) { return 0; } })() : 0;
   sync = createSync({
     transport, deviceId: TAB_ID,
+    holdMs: holdHook ? { busy: holdHook, full: holdHook } : undefined,
     onStatus: paintStatus,
     onLive: v => { syncLive = v; paintStatus(syncStatus); },
     onRemote: remote => { doc = remote; applyRemote(); },
@@ -295,6 +306,7 @@ async function migrateLegacy(oldId, legacyLocal, serverRow) {
   const W = M.newId();
   const copy = M.normalize(D, W); copy.updatedAt = M.now();
   saveLocal(W, { doc: copy, rev: 0, dirty: true, created: true, mode: "edit" }); // the data is safe from here on, push or no push
+  dev.tourDone = true; // this device had a list already: the migration sheet is the only new screen it gets
   const old = meta.lists.find(l => l.id === oldId);
   const e = registerList(W, old ? old.name : (copy.name || ""), "edit");
   e.created = true; e.linkSaved = false; e.migrated = true;
@@ -617,6 +629,7 @@ function paintStatus(s) {
   dot.querySelector(".lbl").textContent = label;
   dot.setAttribute("title", label);
   dot.setAttribute("aria-label", "Sync status: " + label);
+  if (s === "synced") { settleMigrations(); retryPendingKills(); } // follow-ups that wait for the first successful push
   if ((s === "busy" || s === "full" || s === "toolarge") && lastLimitToast !== s) {
     lastLimitToast = s;
     toast(s === "busy" ? "The server's busy. Your list is safe here—it'll sync again in a few minutes." : s === "full" ? "The service is full right now. Your list is safe on this device." : "This list is too large to sync. Clear out some old lines or history.");
@@ -1584,7 +1597,7 @@ function endTour() {
   tourOn = false;
   $("#tour").hidden = true;
   $$(".row.tour-show").forEach(r => r.classList.remove("tour-show"));
-  dev.tourDone = true; saveDevice();
+  dev.tourDone = true; for (const l of meta.lists) delete l.fresh; saveDevice();
   if (view !== tourViewBefore) setView(tourViewBefore);
 }
 function showTourStep() {

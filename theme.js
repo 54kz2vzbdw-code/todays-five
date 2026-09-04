@@ -230,7 +230,15 @@ function finalize(t) {
   if (!c.strikeSize) c.strikeSize = "auto";
   if (!c.strikeAnim) c.strikeAnim = "none";
   if (!c.finaleStyle) c.finaleStyle = "normal";
+  elevated(t);
   return t;
+}
+/** Secondary greys for text that sits on the elevated surfaces (panels, filled chips, toasts: --ink-2/--ink-3):
+    the same colours nudged until they clear 4.5:1 against --ink-3, the lightest (dark) / darkest (light) surface. */
+function elevated(t) {
+  const c = t.colors, dir = t.base === "dark" ? 1 : -1;
+  const fix = hex => { const o = hexToOklch(hex); return ensure(o.L, o.C, o.h, c.ink3, 4.5, dir); };
+  c.dim2 = fix(c.dim); c.muted2 = fix(c.muted);
 }
 function hairSolidFor(ink, text) {
   // a solid line colour that clears 3:1 against the background (checkbox borders, focus rings' neighbours)
@@ -293,6 +301,7 @@ export function derive({ accent, base = "dark", pair, name = "", id }) {
     c.strikeShadow = "none";
   }
   c.done = c.dim;
+  c.dim2 = c.dim; c.muted2 = c.muted; // already derived against ink3
   c.hair = rgba(c.text, dark ? .10 : .16);
   c.hairHi = rgba(c.text, dark ? .30 : .42);
   c.hairSolid = hairSolidFor(c.ink, c.text);
@@ -355,7 +364,7 @@ export function parseCode(code) {
 
 export function cssText(t) {
   const c = t.colors, p = pairOf(t.pair) || PAIRS.lato;
-  return `:root{--ink:${c.ink};--ink-2:${c.ink2};--ink-3:${c.ink3};--text:${c.text};--muted:${c.muted};--dim:${c.dim};--done:${c.done};` +
+  return `:root{--ink:${c.ink};--ink-2:${c.ink2};--ink-3:${c.ink3};--text:${c.text};--muted:${c.muted};--dim:${c.dim};--done:${c.done};--muted-2:${c.muted2};--dim-2:${c.dim2};` +
     `--accent:${c.accent};--accent-hi:${c.accentHi};--accent-deep:${c.accentDeep};--accent-text:${c.accentText};--danger:${c.danger};` +
     `--hair:${c.hair};--hair-hi:${c.hairHi};--hair-solid:${c.hairSolid};--glow:${c.glow};--strike-shadow:${c.strikeShadow};` +
     `--box-done-bg:${c.boxDoneBg};--strike-bg:${c.strikeBg};--strike-size:${c.strikeSize};--strike-anim:${c.strikeAnim};--finale-style:${c.finaleStyle};` +
@@ -367,7 +376,8 @@ export function report(t) {
   const c = t.colors;
   return {
     text: contrast(c.text, c.ink), muted: contrast(c.muted, c.ink), dim: contrast(c.dim, c.ink),
-    accentText: contrast(c.accentText, c.ink), accent: contrast(c.accent, c.ink), hairSolid: contrast(c.hairSolid, c.ink), danger: contrast(c.danger, c.ink)
+    accentText: contrast(c.accentText, c.ink), accent: contrast(c.accent, c.ink), hairSolid: contrast(c.hairSolid, c.ink), danger: contrast(c.danger, c.ink),
+    muted2: contrast(c.muted2, c.ink3), dim2: contrast(c.dim2, c.ink3), accentText2: contrast(c.accentText, c.ink3)
   };
 }
 

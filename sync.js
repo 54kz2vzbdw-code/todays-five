@@ -189,7 +189,9 @@ export const POLL_MS = 60000;
 /** Strip the list secret before sealing: a view-link holder can decrypt the doc and must never learn W. */
 export function forWire(doc) { const d = { ...doc }; delete d.id; return d; }
 
-export function createSync({ transport, deviceId, onStatus, onRemote, onGone, onLive }) {
+export const HOLD_MS = { busy: 5 * 60000, full: 10 * 60000 };
+
+export function createSync({ transport, deviceId, onStatus, onRemote, onGone, onLive, holdMs = HOLD_MS }) {
   let cur = null;
   let status = transport ? "synced" : "off";
   let live = false;
@@ -220,8 +222,8 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone, on
     const hold = (name, until) => { setStatus(name); if (cur) { cur.holdUntil = until; cur.holdStatus = name; } };
     if (st === 403) { hold("readonly", Infinity); return; }                      // our token is not the row's: never hammer
     if (st === 413) { hold("toolarge", Infinity); return; }                      // retried on the next local change only
-    if (st === 429) { hold("busy", Date.now() + 5 * 60000); scheduleRetry(5 * 60000); return; }
-    if (st === 507) { hold("full", Date.now() + 10 * 60000); scheduleRetry(10 * 60000); return; }
+    if (st === 429) { hold("busy", Date.now() + holdMs.busy); scheduleRetry(holdMs.busy); return; }
+    if (st === 507) { hold("full", Date.now() + holdMs.full); scheduleRetry(holdMs.full); return; }
     setStatus(online() ? "error" : "offline");
     scheduleRetry();
   }

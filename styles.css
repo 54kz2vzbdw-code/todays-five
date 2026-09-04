@@ -401,6 +401,8 @@ html[data-mode="view"] #hint{visibility:hidden}
 #welcome .err{color:var(--danger);min-height:1.4em;font-size:13px}
 
 /* ---------------- panels (dialogs) ---------------- */
+/* text on the elevated surfaces (--ink-2 / --ink-3) uses the greys guaranteed to clear 4.5:1 there */
+dialog.panel,#tour .tour-card,#toast,#install,.row.editing .einput{--dim:var(--dim-2);--muted:var(--muted-2)}
 dialog.panel{
   color:var(--text);background:var(--ink-2);border:1px solid var(--hair-hi);border-radius:18px;
   padding:0;width:min(92vw,30rem);max-height:min(88vh,52rem);
@@ -563,13 +565,14 @@ input[type="color"]{width:44px;height:44px;border:1px solid var(--hair);border-r
 }
 /* on touch, tappable things look tappable: filled chips, stronger hairlines, no hover-only states */
 @media (hover:none){
+  .chip,.seg,.add,.dot,.tool{--dim:var(--dim-2);--muted:var(--muted-2)}
   .chip,.seg,.add{background:var(--ink-2);border-color:var(--hair-hi)}
   .chip.plain{background:var(--ink-2);border-color:var(--hair);padding-left:.8em;padding-right:.8em}
   .seg button[aria-selected="true"]{background:var(--ink-3)}
   .tool{border-color:var(--hair);background:var(--ink-2)}
   .tool.today{border-color:var(--hair-hi)}
   .swatch{border-color:var(--hair-hi)}
-  .dot{padding:.3em .55em;border:1px solid var(--hair);border-radius:999px;background:var(--ink-2)}
+  .dot{padding:.3em .55em;border:1px solid var(--hair);border-radius:999px;background:var(--ink-2);min-height:44px;min-width:44px;justify-content:center}
   .field input[type="text"],.field input[type="url"],.field select{border-color:var(--hair-hi)}
   .sec-h .chip{min-width:44px}
   .row .tool{opacity:1}

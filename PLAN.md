@@ -127,3 +127,108 @@ iPhone 16 Pro simulator, iOS 18.1 — Add to Home Screen:
 | blob manifest inserted by a head script, absolute URLs | launches at the manifest's `#/l/<id>` in standalone mode — Chrome: zero installability errors |
 
 Home Screen apps have their own localStorage (confirmed empty on first launch). Simulator driven via the Simulator app in the background because the native simulator tool needs `xcode-select`.
+
+---
+
+# Today's Five v3 — plan
+
+v3 opens the app to anyone with the URL. Two things follow: nobody but a link-holder may be able to read a list (not even the operator), and strangers must not be able to run up a bill on the free tier. Everything below was designed before the code was written; the v2 sections above still hold unless this one overrides them.
+
+## Threat model
+
+- The server (Supabase) and its operator are honest-but-curious: they must see nothing readable. They may also be assumed to lose data or return stale data; the client never trusts the server for anything but storage and wake-ups.
+- Anyone on the internet has the publishable key and can call the RPCs. They must not be able to read, change or delete a list without its link, nor fill the database, nor generate meaningful egress.
+- The user's own device is trusted (as in v2): localStorage holds the decrypted list for instant paint and the link so the list can be found again.
+- Out of scope: a compromised device, a malicious link-holder (by definition they are allowed to read), traffic analysis of *which* list ids are polled.
+
+## Links, keys and what the server sees
+
+Every secret in the system is derived from one random string with HKDF-SHA256 (Web Crypto), so a link is the whole credential and a view link can be handed out without leaking the edit link.
+
+```
+W          = 22 base62 chars from crypto.getRandomValues (≈131 bits)      → edit link   #/l/<W>
+R          = b62( HKDF(ikm = utf8(W), salt, info = "read"),   22 chars )  → view link   #/r/<R>
+lookupId   = b62( HKDF(ikm = utf8(R), salt, info = "lookup"), 32 chars )  → the row id on the server
+key        =      HKDF(ikm = utf8(R), salt, info = "key",  256 bits)      → AES-256-GCM, non-extractable
+writeToken = b64url( HKDF(ikm = utf8(W), salt, info = "write", 256 bits) ) → 43 chars, sent on every write
+salt       = utf8("todays-five/v3")   (fixed application salt)
+```
+
+- `b62(bytes, n)` maps HKDF output to base62 by rejection sampling (byte < 248 → `B62[byte % 62]`), deterministic, unbiased. It asks HKDF for more output than it can need (64 bytes for 22 chars, 96 for 32); if a block ever fell short it derives another with `info + "/2"`, `"/3"`… The test suite pins vectors for three fixed `W` values so any future refactor that changes a byte of the derivation fails loudly (a silent change would orphan every list).
+- The edit link can always produce the view link (W → R); nothing can go the other way (HKDF is one-way). The view link derives `lookupId` and `key`, so it can find and read the row, but not `writeToken`, so the server refuses its writes.
+- The server stores `sha256(writeToken)` (hex) with the row at creation and compares on every `put`/`delete`. It never sees `W`, `R` or the key: fragments are not part of HTTP requests, the app never sends them anywhere, and `<meta name="referrer" content="no-referrer">` covers the rest.
+- What the server has per list: `id` (lookupId), `doc` (envelope), `rev`, `updated_at`, `last_seen` (day granularity), `token_hash`. Nothing in it is readable.
+
+### Envelope
+
+```
+{ "v": 3, "alg": "A256GCM", "z": "deflate-raw", "iv": <base64, 12 bytes>, "ct": <base64> }
+```
+
+- Plaintext = `JSON.stringify(doc)`, deflated (`CompressionStream("deflate-raw")`, available in every browser this app targets; the flag `z` is present only when it was used) and encrypted with a fresh random iv per write. Compression is not for egress (the poll already transfers nothing when idle) but for the storage cap: a year of history shrinks 5–8×, so the per-row cap can be small and the row cap large.
+- Additional authenticated data = `utf8("v3:A256GCM:" + (z || "json"))`, so the header cannot be flipped without failing authentication.
+- The whole document is encrypted: items, sections, history, saved themes, name.
+- Merge stays client-side on plaintext. On a `put` conflict the server returns its envelope; the client decrypts, merges (same `model.merge` as v2), re-encrypts and retries. The inner doc keeps `v: 2`; nothing about its shape changed.
+
+### Server contract (`supabase/migrations/002_v3.sql`)
+
+Additive to v2 so the live v2 app keeps working until v3 deploys: two new columns (`token_hash`, `last_seen`), three new functions, a `private` schema for limits; the v2 functions keep their signatures and are only taught to refuse rows that carry a token. `003_v2_cleanup.sql` drops them after the deploy.
+
+| call | behaviour |
+|---|---|
+| `get_list_v3(p_id, p_rev)` | `null` if missing; `{unchanged:true, rev}` when `rev = p_rev`; else `{doc, rev}`. Touches `last_seen` at most once a day per row (and runs the daily reaper when it does). |
+| `put_list_v3(p_id, p_doc, p_base_rev, p_token)` | `p_doc` must be an envelope (`iv` and `ct` present) ≤ 96 KB. Missing row + `p_base_rev = 0` → rate limit + row cap, then insert with `sha256(p_token)`. Missing row + other base → `{ok:false, rev:0}` (never recreate a rotated list). Existing row: token mismatch → HTTP 403; stale base → `{ok:false, rev, doc}`; else update, `last_seen = now()`, `{ok:true, rev}`. |
+| `delete_list_v3(p_id, p_token)` | token must match (403 otherwise). A legacy plaintext row (`token_hash is null`) may be deleted by id alone, as in v2: that is how migration retires the old row. |
+
+Errors use PostgREST's `PTxxx` errcodes so the client sees real HTTP statuses: 400 bad input, 403 forbidden, 413 too large, 429 rate limited, 507 full. The app shows a sentence for each and keeps working locally.
+
+### Migration of v2 lists
+
+A legacy list is any `#/l/<id>` whose row (or local copy) is a plaintext doc. Edit and legacy ids are both 22 characters, so the client resolves an unknown link in order: local v3 record → local v2 record → server row under `lookupId(W)` → server row under the raw id (legacy) → gone.
+
+Migration is client-side and never destroys anything before its replacement exists:
+
+1. Read the legacy doc (local copy merged with the server row if reachable).
+2. Generate a new `W`, derive, save the doc locally under the new link as `dirty + created` (this alone guarantees the data survives: the sync engine will insert it whenever it can).
+3. Rewrite the registry: new entry replaces the old, `redirect[old] = new` so a stale Home Screen icon still lands on the list, `dead += old`.
+4. Open the new list; the normal push creates the encrypted row. Only after that succeeds: re-read the legacy row, merge any edit another device made in between, then `delete_list_v3(old)` (queued and retried if it fails) and drop the legacy local copy.
+5. Show the one-time sheet: "Your link changed. Save it, and re-add the phone." The other device sees "This link no longer works" and pastes the new link.
+
+The v1 → v2 migration (localStorage `todays-five/v1`) still exists and now produces a v3 list directly.
+
+### Rotate
+
+New `W` → everything re-derived → the doc re-encrypted under the new key → `put` under the new lookupId → `delete_list_v3(oldLookupId, oldToken)`. Because `R` derives from `W`, rotating also revokes every view link; the confirm dialog says so. If the delete fails it is queued (`pendingKill` holds `{lookupId, token}`, never `W`) and retried as in v2.
+
+### View-only mode (`#/r/<R>`)
+
+No editing affordances at all (CSS by `html[data-mode="view"]`, and every mutating path in `app.js` checks the mode), a quiet "View only" pill in the rail, no sound or confetti (nothing to do), no rollover (the doc is shown as the editors left it), live updates as usual. Opening a view link registers it in the list switcher marked view-only. The sync engine never pushes in view mode.
+
+## Abuse and cost (free tier, $0)
+
+Budget: 5 GB/month egress, 500 MB database, 200 concurrent realtime connections, project pauses after 7 idle days.
+
+- **Egress.** v2's 60-second poll fetched the whole doc: one open tab ≈ 1 GB/month. v3 polls with the known rev and gets `{unchanged:true, rev}` (≈ 30 bytes of body, a few hundred of headers). Poll every 60 s only while realtime is not joined, every 4 min while it is; wake handlers (visibility, focus, online, pageshow) unchanged. Verified with a network log: a steady-state poll transfers bytes, not kilobytes.
+- **Storage.** Per-row cap 96 KB (envelope, i.e. `octet_length(doc::text)`), row cap 2400: worst case 2400 × 96 KB = 230 MB, under half of 500 MB with room for indexes. 96 KB of deflated JSON holds several hundred KB of history, far past the 365-day cap in `model.js`.
+- **Creates per IP.** Inserts (new list, migration, rotate) are counted in `private.creates(ip_hash, at)`: at most 12 per hour and 40 per 24 h per address. The address comes from `request.headers` (`cf-connecting-ip`, else the first `x-forwarded-for` entry); only `sha256(salt || ip)` is stored, with a random salt generated once at migration time and kept in `private.state`; rows older than 24 h are deleted on every insert and by the reaper. If no address header is present, everything shares one bucket with 10× the limits, so abuse stays bounded without choking normal use.
+- **Reaping.** Lists with no read or write for 12 months are deleted (`last_seen`). A `pg_cron` job runs daily if the extension is available; independently, the RPCs run the reaper opportunistically at most once a day (checked against `private.state.last_reap`). Disclosed on the About page.
+- **Realtime ceiling.** If a channel cannot join (200-connection limit, paused project), the poll carries on at 60 s and the dot shows "live updates paused"; nothing else changes. The vendored client keeps retrying with backoff.
+- **Graceful over-limit UI.** 429 → "Try again in a few minutes"; 507 → "The service is full"; 413 → "This list is too large to sync"; 403 → the list is shown as view-only. Never a blank screen: the local copy is always painted first.
+
+## No third parties
+
+- **Fonts** are self-hosted: every family the 12 kits and the 6 custom pairings use, woff2, latin subset, only the declared weights, variable where Google serves one (Lato, PT Sans, IBM Plex Mono and DM Serif Display are static). One block of `@font-face` rules with `unicode-range` and `font-display: swap` lives in `styles.css`; a face is downloaded only when a theme actually uses it, and the service worker caches it on first use.
+- **Realtime client** is vendored: `vendor/realtime.js` is `@supabase/realtime-js` (MIT) bundled with its `@supabase/phoenix` dependency (MIT) into one ES module; licences in `vendor/LICENSES.md`. It is imported lazily after first paint, as the CDN build was, and only to receive broadcasts. Sends fall back to Realtime's REST endpoint when the socket is not joined.
+- **CSP**: `default-src 'self'`; `script-src 'self' 'sha256-…'` (the inline boot script, hashed); `style-src 'self' 'sha256-…'` (the inline token stylesheet, hashed; later theme changes go through the CSSOM, which CSP does not govern); `connect-src 'self'` plus the project's Supabase host over https and wss; `font-src 'self'`; `img-src 'self' data:`; `manifest-src blob: 'self'`; `worker-src 'self'`; `object-src 'none'`. No third-party host anywhere.
+
+## Verification plan
+
+1. Node: HKDF/AES round trip; pinned derivation vectors; view derivation exposes no token; envelope tamper (AAD, iv, ct) fails; compression flag round trip; migration of a v2 doc through a fake server; minimal-move reordering; the sync engine against a fake encrypting transport (view mode never puts; conflicts merge on plaintext).
+2. Real Supabase after Checkpoint 1: view link `put` refused (403); wrong token refused; rate limit trips at 12 and recovers; unchanged poll returns no doc and its size is measured; rotate kills the old id and the old view link; two devices converge after offline edits, with envelopes on the server.
+3. Browser suite (Playwright, local transport): everything v2 checked, plus view-only mode, share sheet, save-your-link sheet, migration sheet, bottom-sheet menu at 390×844 with a safe area, the click-after-sync regression, no request ever leaves for Google or jsDelivr, zero CSP violations.
+4. Lighthouse desktop and mobile ≥ 95; installability errors empty; iOS install path re-checked in the simulator because the head script changed.
+5. Live URL after deploy: fresh device gets the new welcome; a new list is created encrypted (`doc` on the server is an envelope).
+
+## The click swallowed after a remote change (fix 1)
+
+Cause: every render re-appended every row (`orderInto` called `appendChild` on each row in order). A remote apply within a press detaches and re-attaches the row under the pointer; Chrome, Safari and Firefox all drop the `click` when the mousedown node leaves the DOM before mouseup. The FLIP animation that follows (520 ms) also slides rows under a still pointer, so mousedown and mouseup can land on different rows and the click fires on their common ancestor instead of the checkbox. Fix: rows are reordered with the minimum number of DOM moves (rows already in place are not touched), and a tap is recognised from its own pointer events (`pointerdown` on a row, `pointerup` within a few pixels or over the same row, no drag) instead of relying on the synthesised `click`; keyboard and assistive-technology clicks still work through the `click` path, and a pointer tap suppresses the click that follows it so nothing toggles twice.

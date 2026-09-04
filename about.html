@@ -40,20 +40,20 @@
 
   <h2>What's stored on the server</h2>
   <ul>
-    <li><b>The encrypted list</b>: one sealed blob per list. Lines, notes, sections, history, and saved themes are all inside it.</li>
-    <li><b>A revision number</b> and two timestamps (last change, and last opened, to the day), so your devices can tell what changed and idle lists can be cleared out.</li>
-    <li><b>A hash of the write token</b>, so the server can turn away changes from a view link.</li>
-    <li><b>A salted hash of your network address</b>, kept for at most 24 hours, and only when a new list is created. It's there to stop one address from creating lists without limit. The address itself isn't stored.</li>
+    <li><strong>The encrypted list</strong>: one sealed blob per list. Lines, notes, sections, history, and saved themes are all inside it.</li>
+    <li><strong>A revision number</strong> and two timestamps (last change, and last opened, to the day), so your devices can tell what changed and idle lists can be cleared out.</li>
+    <li><strong>A hash of the write token</strong>, so the server can turn away changes from a view link.</li>
+    <li><strong>A salted hash of your network address</strong>, kept for at most 24 hours, and only when a new list is created. It's there to stop one address from creating lists without limit. The address itself isn't stored.</li>
   </ul>
 
   <h2>What the operator can see</h2>
   <p>Nothing readable. I can see that a list exists, how big its encrypted blob is, when it last changed, and when it was last opened. Not a word of what's in it, not who opened it, and not the link. There's no way for me to recover a list for you—lose the link, lose the list.</p>
 
   <h2>Third parties</h2>
-  <p>The encrypted lists sit with <b>Supabase</b> (a hosted Postgres database and realtime service) in a data centre in the United States run by Amazon Web Services. Supabase sees what I see, plus the ordinary connection metadata any server sees (your network address, request times). GitHub Pages serves the app itself. Fonts and every other file load from this site—nothing gets fetched from Google, a CDN, or anyone else.</p>
+  <p>The encrypted lists sit with <strong>Supabase</strong> (a hosted Postgres database and realtime service) in a data centre in the United States run by Amazon Web Services. Supabase sees what I see, plus the ordinary connection metadata any server sees (your network address, request times). GitHub Pages serves the app itself. Fonts and every other file load from this site—nothing gets fetched from Google, a CDN, or anyone else.</p>
 
   <h2>Retention</h2>
-  <p>A list nobody has opened or changed for <b>12 months</b> gets deleted from the server. Your device keeps its own copy for as long as the browser keeps site data. Rotating a link deletes the old encrypted blob at once.</p>
+  <p>A list nobody has opened or changed for <strong>12 months</strong> gets deleted from the server. Your device keeps its own copy for as long as the browser keeps site data. Rotating a link deletes the old encrypted blob at once.</p>
 
   <h2>What there's none of</h2>
   <ul>
@@ -63,12 +63,12 @@
   </ul>
 
   <h2>Sharing</h2>
-  <p>Anyone with the <b>edit link</b> can change anything, including making new links. Anyone with the <b>view link</b> can read everything until you rotate. Treat the edit link like a password.</p>
+  <p>Anyone with the <strong>edit link</strong> can change anything, including making new links. Anyone with the <strong>view link</strong> can read everything until you rotate. Treat the edit link like a password.</p>
 
   <h2>Limits</h2>
   <p>This is a small free service. Each list is capped at 96 KB encrypted (a year of daily history fits many times over), the service holds a few thousand lists in total, and a single network address can only create a handful of lists per hour. Hit a limit and the app says so and keeps working on your device.</p>
 
-  <p class="fine">The code is on GitHub for anyone who wants to check these claims against what actually runs.</p>
+  <p class="fine">The code is <a href="https://github.com/54kz2vzbdw-code/todays-five">on GitHub</a> for anyone who wants to check these claims against what actually runs.</p>
 </main>
 </body>
 </html>

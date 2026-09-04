@@ -649,7 +649,7 @@ body.page{overflow:auto;height:auto;min-height:100%}
 .prose .lede{font-size:18px;color:var(--muted)}
 .prose ul{padding-left:1.2rem}
 .prose li{margin:.35rem 0}
-.prose b{color:var(--text)}
+.prose b,.prose strong{color:var(--text)}
 .prose code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;background:var(--ink-2);border:1px solid var(--hair);border-radius:6px;padding:.05em .35em}
 .prose a{color:var(--accent-text)}
 .prose .crumb{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}

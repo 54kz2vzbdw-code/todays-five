@@ -348,7 +348,7 @@ function applyCarry() {
   const merged = M.normalize(M.merge(doc, old.doc), listId);
   if (M.canon(merged) === M.canon(doc)) return;
   doc = merged; applyRemote(); if (sync) sync.update(doc);
-  toast("Your unsynced edits from the old link were carried over");
+  toast("Carried your unsynced edits over from the old link");
 }
 
 /* ---------------- lists registry ---------------- */
@@ -619,7 +619,7 @@ function paintStatus(s) {
   dot.setAttribute("aria-label", "Sync status: " + label);
   if ((s === "busy" || s === "full" || s === "toolarge") && lastLimitToast !== s) {
     lastLimitToast = s;
-    toast(s === "busy" ? "The server is busy. Your list is safe here; syncing again in a few minutes." : s === "full" ? "The service is full right now. Your list is safe on this device." : "This list is too large to sync. Delete some old lines or history.");
+    toast(s === "busy" ? "The server's busy. Your list is safe here—it'll sync again in a few minutes." : s === "full" ? "The service is full right now. Your list is safe on this device." : "This list is too large to sync. Clear out some old lines or history.");
   }
   if (s === "synced") lastLimitToast = "";
 }
@@ -1245,7 +1245,7 @@ function nativeShare(text) {
 let shareKind = "edit";
 async function openShare() {
   if (!doc || !ref) return;
-  if (!transport) { toast("Sync isn't set up, so a link would open an empty list elsewhere"); return; }
+  if (!transport) { toast("Sync isn't set up, so a link would open an empty list somewhere else"); return; }
   shareKind = listMode === "view" ? "view" : "edit";
   $("#share-tab-edit").hidden = listMode === "view";
   $("#share-rotate").hidden = listMode === "view";
@@ -1258,8 +1258,8 @@ async function paintShare() {
   $("#share-tab-edit").setAttribute("aria-selected", shareKind === "edit" ? "true" : "false");
   $("#share-tab-view").setAttribute("aria-selected", shareKind === "view" ? "true" : "false");
   $("#share-msg").textContent = shareKind === "edit"
-    ? "For your other devices and anyone who should edit. Scan it with the phone's camera, or send yourself the link."
-    : "For anyone who should see the list but not change it. They get live updates too.";
+    ? "For your other devices, and for anyone who should be able to edit. Point the phone's camera at it, or send yourself the link."
+    : "For anyone who should see the list but not touch it. They get live updates too.";
   $("#share-link").textContent = link;
   $("#share-rotate").textContent = "Rotate links";
   await drawQr($("#qr-c"), link);
@@ -1271,8 +1271,8 @@ $("#share").addEventListener("click", openShare);
 $("#share-rotate").addEventListener("click", async () => {
   closePanel();
   if (!canEdit()) return;
-  if (syncStatus !== "synced") { toast("Rotate needs a live connection — try again once synced"); return; }
-  const ok = await ask({ title: "Rotate links?", msg: "A new edit link and a new view link replace the current ones. Every old link stops working everywhere at once, including your other devices and anyone you gave a view link. Open the new link there.", confirm: "Rotate", danger: true });
+  if (syncStatus !== "synced") { toast("Rotate needs a live connection—try again once synced"); return; }
+  const ok = await ask({ title: "Rotate links?", msg: "A new edit link and a new view link replace the current ones. Every old link dies everywhere at once—your other devices and anyone you gave a view link included. Open the new link there.", confirm: "Rotate", danger: true });
   if (!ok) return;
   await rotateLink();
 });
@@ -1299,7 +1299,7 @@ async function rotateLink() {
     reloading = true; location.replace(BASE + SEARCH + "#/l/" + newId); location.reload();
     return;
   }
-  toast(dead ? "New links ready — the old ones are dead" : "New links ready — old ones not revoked yet, will retry");
+  toast(dead ? "New links ready—the old ones are dead" : "New links ready—old ones not revoked yet, will retry");
   openShare();
 }
 async function killRemote(k) {
@@ -1325,8 +1325,8 @@ function showSaveLink({ migrated = false } = {}) {
   const link = editLink(); if (!link) return maybeTour();
   $("#save-title").textContent = migrated ? "Your link changed" : "Save your link";
   $("#save-msg").textContent = migrated
-    ? "Your list is now encrypted on your device and lives behind this new link. The old link is dead. Save this one: it is the only way back and the only key that can read the list."
-    : "This link is the only way back to your list, and the only key that can read it. Nobody can send it to you again, not even the person running this site.";
+    ? "Your list is now encrypted on your device and lives behind this new link. The old link is dead. Save this one—it's the only way back, and the only key that can read the list."
+    : "This link is the only way back to your list—and the only key that can read it. Nobody can send it to you again, not even the person running this site.";
   $("#save-hint-phone").hidden = !migrated;
   $("#save-hint-home").hidden = migrated;
   $("#save-native").hidden = !navigator.share;
@@ -1560,11 +1560,11 @@ function tourSteps() {
   const firstToday = () => $("#list .row .check") || $("#list") || $("#addtoday");
   const firstAll = () => $("#all .row");
   return [
-    { view: "today", target: firstToday, text: touch ? "Tap a line to cross it off. Tap it again to bring it back." : "Click a line to cross it off, or press its number. Click again to bring it back." },
-    { view: "today", target: () => $(".seg"), text: "Today is the short list you leave on screen. Everything holds the rest." },
-    { view: "all", target: () => { const r = firstAll(); return (r && r.querySelector(".tool.today")) || $("#all"); }, text: "In Everything, the Today toggle puts a line on Today, or takes it off." },
-    { view: "all", target: () => { const r = firstAll(); return touch ? (r || $("#all")) : ((r && r.querySelector(".tool.handle")) || $("#all")); }, text: touch ? "Press and hold a line, then drag to reorder it or move it to another section." : "Drag the handle to reorder a line or move it to another section. ⌥ ↑ / ↓ moves the focused line too." },
-    { view: "today", target: () => (!$("#share").hidden && $("#share").offsetParent) ? $("#share") : $("#more"), text: "Your link is the key. Save it from Share, and share it only with people who should see the list. Lose the link, lose the list." }
+    { view: "today", target: firstToday, text: touch ? "Tap a line to cross it off. Tap again and it's back." : "Click a line to cross it off, or press its number. Click again and it's back." },
+    { view: "today", target: () => $(".seg"), text: "Today is the short list you keep on screen. Everything is where the rest lives." },
+    { view: "all", target: () => { const r = firstAll(); return (r && r.querySelector(".tool.today")) || $("#all"); }, text: "Over in Everything, the Today toggle puts a line on Today—or takes it off." },
+    { view: "all", target: () => { const r = firstAll(); return touch ? (r || $("#all")) : ((r && r.querySelector(".tool.handle")) || $("#all")); }, text: touch ? "Press and hold a line, then drag it where you want it—up, down, or into another section." : "Grab the handle to drag a line where you want it—up, down, or into another section. ⌥ ↑/↓ does the same from the keyboard." },
+    { view: "today", target: () => (!$("#share").hidden && $("#share").offsetParent) ? $("#share") : $("#more"), text: "Your link is the key. Save it from Share, and hand it only to people who should see the list. Lose the link, lose the list." }
   ];
 }
 function maybeTour() {

@@ -60,6 +60,7 @@ function saveDevice() {
   const migs = new Map(); for (const m of [...(stored.migrations || []), ...(meta.migrations || [])]) if (m && m.from) migs.set(m.from, m);
   meta.migrations = Array.from(migs.values());
   if (syncStatus === "gone" && stored.current && stored.current !== meta.current && !dead.has(stored.current)) { meta.current = stored.current; meta.currentMode = stored.currentMode; }
+  if (stored.device) { if (stored.device.tourDone) dev.tourDone = true; if (stored.device.installHint) dev.installHint = true; } // one-way latches
   saveMeta(meta);
 }
 /** Follow redirects recorded by Rotate and migration (an installed iPhone icon keeps launching the old id). */
@@ -89,6 +90,21 @@ let drag = null;
 let wakeLock = null;
 let openPanel = null;
 const canEdit = () => listMode === "edit" && !!doc;
+// Everything below is reachable from boot() (which runs before the rest of this module has been evaluated):
+// declare it here, never further down, or a cold start straight into a link dies in a temporal dead zone.
+const STATUS_SHORT = { offline: "Offline", error: "Sync trouble" };
+const STATUS_CAT = s => (s === "synced" || s === "syncing") ? "ok" : (s === "busy" || s === "full" || s === "toolarge" || s === "error") ? "trouble" : s;
+const STATUS_LABEL = {
+  synced: "Synced", syncing: "Syncing", offline: "Offline", error: "Sync trouble — will retry",
+  gone: "This link no longer works", off: "Sync off", busy: "Server busy — retrying in a few minutes",
+  full: "The service is full — saved on this device only", toolarge: "Too large to sync — saved on this device only",
+  readonly: "View only", unreadable: "This link can't read this list"
+};
+let lastCat = "", lastLimitToast = "";
+const viewCollapsed = new Set(); // view-only mode: a viewer's collapse must never win a merge against the editors
+let tourOn = false, tourStep = 0, tourViewBefore = "today", tourFocusBefore = null;
+let press = null, tapped = null;
+let reloading = false;
 
 /* ---------------- sound & fx ---------------- */
 const sound = createSound({ muted: () => !!dev.muted, volume: () => dev.volume, kit: () => theme && theme.sound });
@@ -178,7 +194,6 @@ async function flushOthers() {
     } catch (e) { /* next time */ }
   }
 }
-let reloading = false;
 addEventListener("hashchange", () => {
   if (reloading) return;
   const h = hashRef(); if (!h) return;
@@ -204,20 +219,19 @@ function registerList(id, name, mode) {
 async function openList(r) {
   if (!r || !M.isListId(r.id)) return showWelcome("That link doesn't look right.");
   const mode = r.mode === "view" ? "view" : "edit";
-  if (sync) { await flushQuick(); sync.close(); sync = null; }
   if (editing) cancelEdit();
+  if (sync) { await flushQuick(); sync.close(); sync = null; }
+  if (drag) abortDrag();
+  undoStack = []; hideToast();
   const gen = ++openGen;
   listId = r.id; listMode = mode; ref = null;
   meta.current = r.id; meta.currentMode = mode;
   const entry = registerList(r.id, "", mode);
   saveDevice();
-  const local = loadLocal(r.id);
-  if (!local && mode === "edit") {
-    const legacy = loadLegacyLocal(r.id);
-    if (legacy) return migrateLegacy(r.id, legacy, null); // a v2 list this device still holds in plaintext
-  }
+  let local = loadLocal(r.id);
+  const legacy = (!local && mode === "edit") ? loadLegacyLocal(r.id) : null; // a v2 list this device still holds in plaintext
   // a list opened from a link starts from a doc that loses every tie, so the server's name and records win
-  doc = local ? local.doc : M.normalize({}, r.id);
+  doc = local ? local.doc : legacy ? legacy.doc : M.normalize({}, r.id);
   let rolled = false;
   if (mode === "edit") {
     doc = M.purgeTombstones(doc);
@@ -234,6 +248,12 @@ async function openList(r) {
   wasAll = allDoneToday();
   setView(view, { force: true });
   paintListName();
+  syncLive = false; lastCat = ""; paintStatus(transport || TRANSPORT_KIND ? "syncing" : "off");
+  if (legacy) {
+    const outcome = await migrateLegacy(r.id, legacy, null, gen);
+    if (gen !== openGen || outcome !== "keep") return; // migrated (openList ran again) or superseded
+    local = loadLocal(r.id) || { doc: legacy.doc, rev: legacy.rev, dirty: legacy.dirty, created: legacy.created, mode: "edit" }; // stays under its old id, will report "gone"
+  }
   // keys and sync start after first paint
   let derived = null;
   try { derived = await C.fromLink(mode, r.id); } catch (e) { derived = null; }
@@ -261,9 +281,9 @@ async function openList(r) {
   sync = createSync({
     transport, deviceId: TAB_ID,
     holdMs: holdHook ? { busy: holdHook, full: holdHook } : undefined,
-    onStatus: paintStatus,
-    onLive: v => { syncLive = v; paintStatus(syncStatus); },
-    onRemote: remote => { doc = remote; applyRemote(); },
+    onStatus: s => { if (gen === openGen) paintStatus(s); },
+    onLive: v => { if (gen === openGen) { syncLive = v; paintStatus(syncStatus); } },
+    onRemote: remote => { if (gen !== openGen) return; doc = remote; applyRemote(); applyCarry(); },
     onGone: () => { /* the dot says it; the Lists panel offers the paste box */ }
   });
   syncLive = false;
@@ -282,26 +302,35 @@ async function openList(r) {
 
 function showWelcome(msg) {
   if (sync) { flushQuick().then(() => { if (sync) { sync.close(); sync = null; } }); }
-  listId = null; doc = null; ref = null;
+  listId = null; doc = null; ref = null; undoStack = []; hideToast();
+  meta.current = null; meta.currentMode = null; saveDevice();
   document.documentElement.dataset.mode = "edit";
   $("#today").hidden = true; $("#all").hidden = true; $("#welcome").hidden = false;
   $("#w-err").textContent = msg || "";
   $("#dot").hidden = true; // no list yet: nothing to report
   $("#ro").hidden = true;
-  $("#count").innerHTML = "<b>0</b>/0";
+  $("#count").innerHTML = "<b>0</b>/0<span class=\"sr-only\"> done</span>";
   $("#hint").innerHTML = "";
+  $("#list-h1").textContent = "Today's Five";
   $("#addtoday").hidden = true;
   paintListName();
 }
 
 /* ---------------- migration of a v2 (plaintext) list ---------------- */
-async function migrateLegacy(oldId, legacyLocal, serverRow) {
+async function migrateLegacy(oldId, legacyLocal, serverRow, gen = openGen) {
   let D = legacyLocal ? legacyLocal.doc : M.normalize({}, oldId);
   let legacyRev = 0;
   if (serverRow) { D = M.merge(D, serverRow.doc); legacyRev = serverRow.rev; }
   else if (!transport) { try { transport = await makeTransport(TRANSPORT_KIND, config); } catch (e) { transport = null; transportFailed = true; } }
+  if (gen !== openGen) return "superseded";
   if (!serverRow && transport && navigator.onLine) {
-    try { const leg = await fetchLegacy(transport, oldId); if (leg) { D = M.merge(D, leg.doc); legacyRev = leg.rev; } } catch (e) { /* the follow-up merges again */ }
+    let leg = null, reached = false;
+    try { leg = await fetchLegacy(transport, oldId); reached = true; } catch (e) { /* offline or refused: the follow-up merges again */ }
+    if (gen !== openGen) return "superseded";
+    if (leg) { D = M.merge(D, leg.doc); legacyRev = leg.rev; }
+    // the row is already gone and this device only ever opened the list from a link: another device migrated it.
+    // Forking a second encrypted list here would strand this copy; keep it, show "gone", and let the paste carry it over.
+    else if (reached && legacyLocal && !legacyLocal.created) return "keep";
   }
   const W = M.newId();
   const copy = M.normalize(D, W); copy.updatedAt = M.now();
@@ -317,7 +346,9 @@ async function migrateLegacy(oldId, legacyLocal, serverRow) {
   meta.migrations = [...(meta.migrations || []).filter(m => m.from !== oldId), { from: oldId, to: W, rev: legacyRev, at: Date.now() }];
   if (meta.current === oldId) { meta.current = W; meta.currentMode = "edit"; }
   saveDevice();
+  if (gen !== openGen) return "superseded";
   await openList({ id: W, mode: "edit" });
+  return "migrated";
 }
 /** Once a migrated list has landed on the server: fold in anything another device wrote to the old row since,
     retire the old row, drop the plaintext local copy. Retried until it succeeds. */
@@ -352,6 +383,7 @@ async function settleMigrations() {
     unpushed edits over, but only when the two documents share lines (same lineage), never into a stranger's list. */
 function applyCarry() {
   const c = meta.carry; if (!c || c.to !== listId || !doc || listMode !== "edit") return;
+  if (!Object.keys(doc.items).length && !(sync && sync.current() && sync.current().rev > 0)) return; // nothing pulled yet: decide on real data
   meta.carry = null; saveDevice();
   const old = loadLocal(c.from) || loadLegacyLocal(c.from);
   if (!old || !old.dirty) return;
@@ -371,6 +403,7 @@ function paintListName() {
   const name = doc && doc.name ? doc.name : (entry && entry.name) || "";
   btn.hidden = !(doc && (active.length > 1 || name));
   btn.textContent = name || "List";
+  $("#list-h1").textContent = name ? name + " — Today's Five" : "Today's Five";
   $("#lists-k").textContent = active.length > 1 ? active.length + " lists" : "";
 }
 
@@ -385,6 +418,7 @@ function allDoneToday() { const t = todayList(); return t.length > 0 && t.every(
 function setView(v, { force } = {}) {
   if (!doc) return;
   if (editing) commitEdit();
+  if (drag) abortDrag();
   if (v !== view || force) { rows.clear(); $("#list").innerHTML = ""; $("#all").innerHTML = ""; }
   view = v;
   $("#v-today").setAttribute("aria-selected", v === "today" ? "true" : "false");
@@ -408,13 +442,13 @@ function makeRow(it) {
   const tools = li.querySelector(".tools");
   const mk = (cls, icon, label) => { const b = document.createElement("button"); b.type = "button"; b.className = "tool " + cls; b.innerHTML = ICONS[icon]; b.title = label; b.setAttribute("aria-label", label); return b; };
   if (view === "today") {
-    const more = mk("more", "more", "Show note"); more.hidden = true; tools.appendChild(more);
+    const more = mk("more", "more", "Show note"); more.hidden = true; more.setAttribute("aria-expanded", "false"); tools.appendChild(more);
     tools.appendChild(mk("pencil", "pencil", "Edit (E)"));
   } else {
     // the promote control explains itself: a labelled toggle, not a bare star
     const today = document.createElement("button"); today.type = "button"; today.className = "tool today";
-    today.innerHTML = ICONS.star + '<span class="lb">Today</span>'; today.setAttribute("aria-pressed", "false"); today.setAttribute("aria-label", "On Today");
-    today.removeAttribute("title"); tools.appendChild(today);
+    today.innerHTML = ICONS.star + '<span class="lb">Today</span>'; today.setAttribute("aria-pressed", "false"); today.setAttribute("aria-label", "Today");
+    tools.appendChild(today);
     tools.appendChild(mk("pencil", "pencil", "Edit (E)"));
     tools.appendChild(mk("kill", "kill", "Delete"));
     tools.appendChild(mk("handle", "handle", "Drag to reorder"));
@@ -447,11 +481,14 @@ function updateRow(li, it) {
     if (it.note) { const n = document.createElement("span"); n.className = "note"; n.textContent = it.note; tx.appendChild(n); }
   }
   li.classList.toggle("done", it.done);
-  li.querySelector(".check").setAttribute("aria-checked", it.done ? "true" : "false");
+  const chk = li.querySelector(".check");
+  chk.setAttribute("aria-checked", it.done ? "true" : "false");
+  if (listMode === "view") chk.setAttribute("aria-readonly", "true"); else chk.removeAttribute("aria-readonly");
   const today = li.querySelector(".today");
   if (today) {
+    // the name stays "Today"; aria-pressed carries the state, the description says what a press does
     today.setAttribute("aria-pressed", it.today ? "true" : "false");
-    today.setAttribute("aria-label", it.today ? "On Today. Take it off Today" : "Put this line on Today");
+    today.setAttribute("aria-description", it.today ? "Take this line off Today" : "Put this line on Today");
     today.dataset.tip = it.today ? "On Today — click to take it off" : "Put this line on Today";
   }
   const more = li.querySelector(".more"); if (more) more.hidden = !it.note;
@@ -483,7 +520,7 @@ function renderToday({ animate, quiet }) {
 function renderAll({ animate, quiet }) {
   const root = $("#all");
   const secs = M.sectionsOrdered(doc);
-  const groups = [{ id: "", name: "Unsorted", implicit: !secs.length, collapsed: false }].concat(secs);
+  const groups = [{ id: "", name: "Unsorted", implicit: !secs.length, collapsed: false }].concat(listMode === "view" ? secs.map(s => ({ ...s, collapsed: viewCollapsed.has(s.id) })) : secs);
   const keepSec = new Set(), keep = new Set(), relayout = [];
   const moves = [];
   for (const g of groups) {
@@ -598,7 +635,8 @@ if (document.fonts) document.fonts.addEventListener("loadingdone", () => layoutA
 
 function paint() {
   const t = todayList(), n = t.length, d = t.filter(i => i.done).length;
-  $("#count").innerHTML = `<b>${d}</b>/${n}`;
+  const countHtml = `<b>${d}</b>/${n}<span class="sr-only"> done</span>`;
+  if ($("#count").innerHTML !== countHtml) $("#count").innerHTML = countHtml;
   const fill = $("#fill");
   fill.style.width = (n ? (d / n * 100) : 0) + "%";
   fill.classList.toggle("full", n > 0 && d === n);
@@ -612,13 +650,6 @@ function paint() {
   $("#streak-k").textContent = (s => s ? s + " day" + (s > 1 ? "s" : "") : "")(M.streak(doc));
 }
 
-const STATUS_LABEL = {
-  synced: "Synced", syncing: "Syncing", offline: "Offline", error: "Sync trouble — will retry",
-  gone: "This link no longer works", off: "Sync off", busy: "Server busy — retrying in a few minutes",
-  full: "The service is full — saved on this device only", toolarge: "Too large to sync — saved on this device only",
-  readonly: "View only", unreadable: "This link can't read this list"
-};
-let lastLimitToast = "";
 function paintStatus(s) {
   syncStatus = s;
   const dot = $("#dot");
@@ -626,9 +657,11 @@ function paintStatus(s) {
   const paused = s === "synced" && !syncLive && transport && Date.now() > liveGrace && listMode !== undefined;
   dot.dataset.live = syncLive || s !== "synced" ? "1" : (Date.now() > liveGrace ? "0" : "1");
   const label = (paused ? "Synced · live updates paused" : STATUS_LABEL[s]) || s;
-  dot.querySelector(".lbl").textContent = label;
+  dot.querySelector(".lbl").textContent = STATUS_SHORT[s] || label;
   dot.setAttribute("title", label);
   dot.setAttribute("aria-label", "Sync status: " + label);
+  const cat = STATUS_CAT(s);
+  if (cat !== lastCat) { lastCat = cat; const sr = $("#dot-sr"); if (sr) sr.textContent = cat === "ok" ? (lastCat && s === "synced" ? "Synced" : "") : label; }
   if (s === "synced") { settleMigrations(); retryPendingKills(); } // follow-ups that wait for the first successful push
   if ((s === "busy" || s === "full" || s === "toolarge") && lastLimitToast !== s) {
     lastLimitToast = s;
@@ -636,19 +669,22 @@ function paintStatus(s) {
   }
   if (s === "synced") lastLimitToast = "";
 }
-$("#dot").addEventListener("click", () => { toast($("#dot").querySelector(".lbl").textContent); });
+$("#dot").addEventListener("click", () => { toast($("#dot").getAttribute("title") || ""); });
 
 /* ---------------- changes ---------------- */
 function afterChange({ animate = true, delay = 0 } = {}) {
   doc.updatedAt = M.now();
-  if (sync) sync.update(doc); else saveLocal(listId, { doc, rev: 0, dirty: true, created: true, mode: listMode });
+  if (sync) sync.update(doc);
+  else { const l = loadLocal(listId); saveLocal(listId, { doc, rev: l ? l.rev : 0, dirty: true, created: l ? l.created : true, mode: listMode }); }
   if (delay) setTimeout(() => render({ animate }), delay); else render({ animate });
   paintListName();
 }
 function applyRemote() {
   // quiet: no sound, no confetti, no kick; rows animate into place
+  if (drag) abortDrag(); // the row under the finger may be gone or moved; a stuck drag would swallow every tap
   const nowAll = allDoneToday();
   render({ animate: true, quiet: true });
+  if (tourOn) requestAnimationFrame(placeTour);
   wasAll = nowAll;
   paintListName();
   if (editing && !doc.items[editing.id]) cancelEdit(true);
@@ -693,7 +729,6 @@ function toggle(id, px, py, fromPointer) {
 }
 
 /* taps: recognised from the pointer, so a render or a remote change between press and release cannot swallow them */
-let press = null, tapped = null;
 function onPress(li, e) {
   if (e.button !== 0 || e.isPrimary === false) return;
   if (!e.target.closest(".check") || e.target.closest(".einput")) return;
@@ -766,8 +801,11 @@ function deleteItem(id, { silent = false } = {}) {
   if (editing && editing.id === id) { editing = null; }
   if (!silent) pushUndo("Deleted", [id]);
   const text = it.text;
+  const hadFocus = document.activeElement && document.activeElement.closest && document.activeElement.closest(".row") && document.activeElement.closest(".row").dataset.id === id;
+  const next = hadFocus ? neighbourOf(id) : null;
   doc.items[id] = { id, deleted: true, updatedAt: M.now() };
   afterChange({ animate: true });
+  if (hadFocus) { if (next && rows.has(next)) focusRow(next); else { const add = view === "today" ? $("#addtoday") : $("#all .add"); if (add) add.focus(); } }
   if (!silent) toast(`Deleted “${text.length > 40 ? text.slice(0, 40) + "…" : text}”`, { undo: true });
 }
 
@@ -798,7 +836,7 @@ function toast(msg, { undo: withUndo = false } = {}) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(hideToast, withUndo ? 4500 : 2600);
 }
-function hideToast() { $("#toast").classList.remove("on"); }
+function hideToast() { $("#toast").classList.remove("on"); $("#toast-undo").hidden = true; }
 
 /* ---------------- inline editing ---------------- */
 function startEdit(id, { isNew = false } = {}) {
@@ -906,6 +944,7 @@ async function addSection() {
 }
 function toggleCollapse(id) {
   const s = doc.sections[id]; if (!s || s.deleted) return;
+  if (listMode === "view") { if (viewCollapsed.has(id)) viewCollapsed.delete(id); else viewCollapsed.add(id); render({ animate: false }); return; }
   s.collapsed = !s.collapsed; s.updatedAt = M.now();
   afterChange({ animate: false });
 }
@@ -916,7 +955,8 @@ async function sectionAction(act) {
   closePanel();
   if (act === "rename") {
     const name = await ask({ title: "Rename section", label: "Name", value: s.name });
-    if (name && name.trim() && name.trim() !== s.name) { s.name = name.trim().slice(0, 60); s.updatedAt = M.now(); afterChange({ animate: false }); }
+    const live = doc && doc.sections[s.id]; if (!live || live.deleted) return; // a remote change may have replaced the doc meanwhile
+    if (name && name.trim() && name.trim() !== live.name) { live.name = name.trim().slice(0, 60); live.updatedAt = M.now(); afterChange({ animate: false }); }
   } else if (act === "up" || act === "down") {
     const secs = M.sectionsOrdered(doc);
     const i = secs.findIndex(x => x.id === s.id);
@@ -1020,8 +1060,11 @@ function beginDrag(li, e, fromLongPress) {
   li.addEventListener("pointerup", up);
   li.addEventListener("pointercancel", cancelled);
   drag.move = move; drag.up = up; drag.cancelled = cancelled;
+  li.addEventListener("lostpointercapture", () => { if (drag && drag.li === li && !li.isConnected) abortDrag(); }, { once: true });
   dragStep();
 }
+/** Put the dragged row back without committing anything (a render, a view switch or a lost row interrupted it). */
+function abortDrag() { if (drag) endDrag(drag.move, drag.up, drag.cancelled, true); }
 function dragStep() {
   if (!drag) return;
   drag.raf = 0;
@@ -1186,6 +1229,9 @@ function paintMenu() {
   $("#volume").value = Math.round(dev.volume * 100);
   $('#p-menu [data-act="full"]').hidden = !document.fullscreenEnabled;
   $("#help-lb").textContent = touchUi() ? "Gestures" : "Keyboard help";
+  $("#menu-keys").hidden = touchUi();
+  $("#menu-keys").setAttribute("aria-pressed", dev.keysOff ? "false" : "true");
+  $("#keys-k").textContent = dev.keysOff ? "Off" : "On";
   $('#p-menu [data-act="tour"]').hidden = !doc || listMode !== "edit";
   $('#p-menu [data-act="share"] .lb').textContent = listMode === "view" ? "Share the view link" : "Share & open on phone";
 }
@@ -1200,6 +1246,7 @@ $("#p-menu").addEventListener("click", e => {
   else if (act === "history") { closePanel(); openHistory(); }
   else if (act === "lists") { closePanel(); openLists(); }
   else if (act === "tour") { closePanel(); startTour(); }
+  else if (act === "keys") { dev.keysOff = !dev.keysOff; saveDevice(); paintMenu(); toast(dev.keysOff ? "Single-key shortcuts off (Cmd/Ctrl+Z, Esc and ⌥↑↓ still work)" : "Single-key shortcuts on"); }
   else if (act === "help") { closePanel(); openHelp(); }
 });
 $("#volume").addEventListener("input", e => { dev.volume = (+e.target.value) / 100; saveDevice(); });
@@ -1231,7 +1278,7 @@ function tickDay() {
   paintDate();
   if (!doc || listMode !== "edit") return;
   const r = M.rollover(doc);
-  if (r.moved.length) { doc = r.doc; afterChange({ animate: true }); wasAll = allDoneToday(); }
+  if (r.moved.length) { if (drag) abortDrag(); doc = r.doc; afterChange({ animate: true }); wasAll = allDoneToday(); }
 }
 setInterval(() => { tickDay(); retryPendingKills(); settleMigrations(); }, 60000);
 
@@ -1273,13 +1320,14 @@ async function paintShare() {
   $("#share-msg").textContent = shareKind === "edit"
     ? "For your other devices, and for anyone who should be able to edit. Point the phone's camera at it, or send yourself the link."
     : "For anyone who should see the list but not touch it. They get live updates too.";
-  $("#share-link").textContent = link;
+  $("#share-link").value = link;
   $("#share-rotate").textContent = "Rotate links";
   await drawQr($("#qr-c"), link);
 }
 $("#share-tabs").addEventListener("click", e => { const b = e.target.closest("[data-kind]"); if (!b) return; shareKind = b.dataset.kind; paintShare(); });
-$("#share-copy").addEventListener("click", () => copyText($("#share-link").textContent, "Link copied"));
-$("#share-native").addEventListener("click", () => nativeShare($("#share-link").textContent));
+$("#share-copy").addEventListener("click", () => copyText($("#share-link").value, "Link copied"));
+$("#share-native").addEventListener("click", () => nativeShare($("#share-link").value));
+$$(".link").forEach(el => el.addEventListener("focus", () => { try { el.select(); } catch (e) { /* ignore */ } }));
 $("#share").addEventListener("click", openShare);
 $("#share-rotate").addEventListener("click", async () => {
   closePanel();
@@ -1343,12 +1391,13 @@ function showSaveLink({ migrated = false } = {}) {
   $("#save-hint-phone").hidden = !migrated;
   $("#save-hint-home").hidden = migrated;
   $("#save-native").hidden = !navigator.share;
-  $("#save-link").textContent = link;
+  $("#save-link").value = link;
   drawQr($("#save-qr-c"), link).catch(() => {});
   showPanel("p-save");
+  $("#save-body").focus({ preventScroll: true }); // reading starts at the title and the message, not at the link field
 }
-$("#save-copy").addEventListener("click", () => copyText($("#save-link").textContent, "Link copied"));
-$("#save-native").addEventListener("click", () => nativeShare($("#save-link").textContent));
+$("#save-copy").addEventListener("click", () => copyText($("#save-link").value, "Link copied"));
+$("#save-native").addEventListener("click", () => nativeShare($("#save-link").value));
 $("#save-done").addEventListener("click", () => closePanel());
 $("#p-save").addEventListener("close", () => {
   const e = meta.lists.find(l => l.id === listId);
@@ -1406,7 +1455,7 @@ $("#l-archive").addEventListener("click", async () => {
   const next = meta.lists.find(l => !l.archived);
   if (next) switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else showWelcome();
 });
-$("#l-paste-go").addEventListener("click", () => { const r = parseLink($("#l-paste").value); if (!r) { toast("That doesn't look like a list link"); return; } closePanel(); switchTo(r); });
+$("#l-paste-go").addEventListener("click", () => { const r = parseLink($("#l-paste").value); if (!r) { toast("That doesn't look like a list link"); return; } closePanel(); switchTo(r, { paste: true }); });
 function parseLink(s) {
   const t = String(s || "").trim();
   const m = t.match(/#\/(l|r)\/([0-9A-Za-z]{22,64})/);
@@ -1414,9 +1463,9 @@ function parseLink(s) {
   const bare = t.match(/^([0-9A-Za-z]{22,64})$/);
   return bare ? { id: bare[1], mode: "edit" } : null;
 }
-function switchTo(r) {
+function switchTo(r, { paste = false } = {}) {
   if (r.id === listId && r.mode === listMode) return;
-  if (listId && syncStatus === "gone" && r.mode === "edit") {
+  if (paste && listId && syncStatus === "gone" && r.mode === "edit") {
     // the old link died (rotated or migrated elsewhere): remember where it went, and carry unsynced edits if the docs are kin
     meta.redirect = { ...(meta.redirect || {}), [listId]: r.id };
     meta.carry = { from: listId, to: r.id };
@@ -1438,7 +1487,7 @@ $("#w-paste-form").addEventListener("submit", e => {
   e.preventDefault();
   const r = parseLink($("#w-paste").value);
   if (!r) { $("#w-err").textContent = "That doesn't look like a list link. It ends in #/l/ or #/r/ followed by 22 letters and digits."; return; }
-  switchTo(r);
+  switchTo(r, { paste: true });
 });
 
 /* history */
@@ -1567,16 +1616,15 @@ $("#p-theme").addEventListener("close", () => { if (!keepPreview) applyThemeCode
 /* ---------------- first-run tour ----------------
    Four or five coach marks over the real controls, one line each. Dismissable at any step, never shown again
    on this device unless asked for (⋯ → How it works). Gestures on touch, keys on the desktop.              */
-let tourOn = false, tourStep = 0, tourViewBefore = "today";
 function tourSteps() {
   const touch = touchUi();
   const firstToday = () => $("#list .row .check") || $("#list") || $("#addtoday");
   const firstAll = () => $("#all .row");
   return [
-    { view: "today", target: firstToday, text: touch ? "Tap a line to cross it off. Tap again and it's back." : "Click a line to cross it off, or press its number. Click again and it's back." },
+    { view: "today", needsRow: true, target: firstToday, text: touch ? "Tap a line to cross it off. Tap again and it's back." : "Click a line to cross it off, or press its number. Click again and it's back." },
     { view: "today", target: () => $(".seg"), text: "Today is the short list you keep on screen. Everything is where the rest lives." },
-    { view: "all", target: () => { const r = firstAll(); return (r && r.querySelector(".tool.today")) || $("#all"); }, text: "Over in Everything, the Today toggle puts a line on Today—or takes it off." },
-    { view: "all", target: () => { const r = firstAll(); return touch ? (r || $("#all")) : ((r && r.querySelector(".tool.handle")) || $("#all")); }, text: touch ? "Press and hold a line, then drag it where you want it—up, down, or into another section." : "Grab the handle to drag a line where you want it—up, down, or into another section. ⌥ ↑/↓ does the same from the keyboard." },
+    { view: "all", needsRow: true, target: () => { const r = firstAll(); return (r && r.querySelector(".tool.today")) || $("#all"); }, text: "Over in Everything, the Today toggle puts a line on Today—or takes it off." },
+    { view: "all", needsRow: true, target: () => { const r = firstAll(); return touch ? (r || $("#all")) : ((r && r.querySelector(".tool.handle")) || $("#all")); }, text: touch ? "Press and hold a line, then drag it where you want it—up, down, or into another section." : "Grab the handle to drag a line where you want it—up, down, or into another section. ⌥ ↑/↓ does the same from the keyboard." },
     { view: "today", target: () => (!$("#share").hidden && $("#share").offsetParent) ? $("#share") : $("#more"), text: "Your link is the key. Save it from Share, and hand it only to people who should see the list. Lose the link, lose the list." }
   ];
 }
@@ -1588,24 +1636,30 @@ function startTour() {
   if (!doc) return;
   if (openPanel) closePanel();
   if (editing) commitEdit();
-  tourOn = true; tourStep = 0; tourViewBefore = view;
+  tourOn = true; tourStep = 0; tourViewBefore = view; tourFocusBefore = document.activeElement;
   const t = $("#tour"); t.hidden = false;
+  try { $("#shell").inert = true; } catch (e) { /* older engines: the overlay still covers the page */ }
   showTourStep();
 }
 function endTour() {
   if (!tourOn) return;
   tourOn = false;
   $("#tour").hidden = true;
+  try { $("#shell").inert = false; } catch (e) { /* ignore */ }
   $$(".row.tour-show").forEach(r => r.classList.remove("tour-show"));
   dev.tourDone = true; for (const l of meta.lists) delete l.fresh; saveDevice();
   if (view !== tourViewBefore) setView(tourViewBefore);
+  const back = tourFocusBefore && tourFocusBefore.isConnected && tourFocusBefore !== document.body ? tourFocusBefore : ($("#list .row .check") || $("#more"));
+  if (back) { try { back.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
 }
 function showTourStep() {
   const steps = tourSteps();
   const s = steps[tourStep];
   if (!s) return endTour();
+  if (s.needsRow && !$("#list .row") && !$("#all .row")) { tourStep++; return showTourStep(); }
   if (view !== s.view) setView(s.view);
   $("#tour-text").textContent = s.text;
+  $("#tour-step").textContent = `Step ${tourStep + 1} of ${steps.length}.`;
   $("#tour-next").textContent = tourStep === steps.length - 1 ? "Done" : "Next";
   $("#tour-dots").innerHTML = steps.map((_, i) => `<i class="${i === tourStep ? "on" : ""}"></i>`).join("");
   $$(".row.tour-show").forEach(r => r.classList.remove("tour-show"));
@@ -1640,12 +1694,14 @@ function placeTour() {
   // the arrow points at the target's centre when the card had to slide sideways
   const arrowX = r ? Math.max(18, Math.min(cw - 18, r.left + r.width / 2 - left)) : cw / 2;
   card.style.setProperty("--arrow-x", arrowX + "px");
-  $("#tour-next").focus({ preventScroll: true });
+  card.focus({ preventScroll: true }); // the card is announced (label + description) and Tab reaches Skip/Next
 }
 $("#tour-next").addEventListener("click", () => { tourStep++; showTourStep(); });
 $("#tour-skip").addEventListener("click", endTour);
 $("#tour").addEventListener("click", e => { if (e.target === e.currentTarget || e.target.id === "tour-hole") endTour(); });
 document.addEventListener("keydown", e => { if (tourOn && e.key === "Escape") { e.preventDefault(); endTour(); } }, true);
+document.addEventListener("keydown", e => { if (e.key === "Escape") document.body.classList.add("no-tip"); }, true);
+document.addEventListener("pointermove", () => document.body.classList.remove("no-tip"), { passive: true });
 
 /* ---------------- rail controls ---------------- */
 function wireUi() {
@@ -1697,6 +1753,8 @@ document.addEventListener("keydown", e => {
   if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) { if (edit) { e.preventDefault(); moveFocused(e.key === "ArrowUp" ? -1 : 1); } return; }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key;
+  if (k === "Escape") { hideToast(); return; }
+  if (dev.keysOff) return; // single-character shortcuts can be switched off (⋯ → Single-key shortcuts)
   if (k >= "1" && k <= "9") {
     if (!edit) return;
     const pos = parseInt(k, 10) - 1;
@@ -1710,7 +1768,6 @@ document.addEventListener("keydown", e => {
   else if (k === "n" || k === "N") { if (!edit) return; e.preventDefault(); newItem({ today: view === "today", sectionId: view === "all" ? sectionOfFocused() : "" }); }
   else if (k === "a" || k === "A") { e.preventDefault(); setView(view === "today" ? "all" : "today"); }
   else if (k === "?") { e.preventDefault(); openHelp(); }
-  else if (k === "Escape") { hideToast(); }
 });
 function sectionOfFocused() {
   const id = focusedRowId();

@@ -116,7 +116,7 @@ button{font:inherit;color:inherit}
 .dot[data-s="error"]::before{background:var(--danger)}
 .dot[data-s="gone"]::before{background:var(--danger)}
 .dot[data-s="off"]::before{background:transparent;box-shadow:inset 0 0 0 1.5px var(--dim);opacity:.7}
-.dot[data-s="off"] .lbl,.dot[data-s="gone"] .lbl,.dot[data-s="busy"] .lbl,.dot[data-s="full"] .lbl,.dot[data-s="toolarge"] .lbl,.dot[data-s="readonly"] .lbl,.dot[data-s="unreadable"] .lbl{display:inline}
+.dot[data-s="off"] .lbl,.dot[data-s="gone"] .lbl,.dot[data-s="busy"] .lbl,.dot[data-s="full"] .lbl,.dot[data-s="toolarge"] .lbl,.dot[data-s="readonly"] .lbl,.dot[data-s="unreadable"] .lbl,.dot[data-s="offline"] .lbl,.dot[data-s="error"] .lbl{display:inline}
 .dot[data-s="busy"]::before,.dot[data-s="full"]::before,.dot[data-s="toolarge"]::before,.dot[data-s="readonly"]::before,.dot[data-s="unreadable"]::before{background:var(--danger)}
 .dot[data-s="synced"][data-live="0"]::before{background:transparent;box-shadow:inset 0 0 0 2px var(--accent)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
@@ -248,7 +248,8 @@ button{font:inherit;color:inherit}
     color:var(--text);background:var(--ink-3);border:1px solid var(--hair-hi);border-radius:8px;padding:.35em .6em;
     opacity:0;pointer-events:none;transition:opacity .15s ease .35s,transform .15s ease .35s;z-index:6;
   }
-  .tool[data-tip]:hover::after,.tool[data-tip]:focus-visible::after{opacity:1;transform:translate(-50%,0)}
+  .tool[data-tip]:hover::after,.tool[data-tip]:focus-visible::after{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+  body.no-tip .tool[data-tip]::after{opacity:0 !important;pointer-events:none !important}
 }
 .tool.handle{cursor:grab}
 .tool.kill:hover{color:var(--danger);border-color:var(--danger)}
@@ -273,8 +274,8 @@ button{font:inherit;color:inherit}
 }
 .row.editing .check{flex-wrap:wrap;cursor:default}
 .einput.note-in{flex:1 1 100%;margin-left:calc(.66em + .46em);width:auto}
-.einput::placeholder{color:var(--dim);opacity:.8}
-.einput:focus{outline:none;border-color:var(--accent);background:var(--ink-3)}
+.einput::placeholder{color:var(--dim);opacity:1}
+.einput:focus{outline:2px solid var(--accent);outline-offset:2px;border-color:var(--accent);background:var(--ink-3)}
 .row.editing .lines,.row.editing .cap{display:none}
 .row.editing .box{opacity:.5}
 
@@ -349,7 +350,7 @@ html[data-mode="view"] #hint{visibility:hidden}
 #hint{
   font-family:var(--font-ui);font-weight:700;font-size:clamp(9px,1vw,11.5px);
   letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
-  opacity:.72;text-align:center;line-height:2;
+  text-align:center;line-height:2;
 }
 #hint em{font-style:normal;color:var(--muted)}
 #hint.off{opacity:0;pointer-events:none}
@@ -397,7 +398,7 @@ html[data-mode="view"] #hint{visibility:hidden}
   flex:1 1 auto;min-width:0;font-family:var(--font-ui);font-size:15px;color:var(--text);
   background:var(--ink-2);border:1px solid var(--hair);border-radius:999px;padding:.7em 1.1em;min-height:44px;
 }
-#welcome .paste input:focus{outline:none;border-color:var(--accent)}
+#welcome .paste input:focus{outline:2px solid var(--accent);outline-offset:2px;border-color:var(--accent)}
 #welcome .err{color:var(--danger);min-height:1.4em;font-size:13px}
 
 /* ---------------- panels (dialogs) ---------------- */
@@ -458,7 +459,7 @@ dialog.panel .x:focus-visible,dialog.panel .chip:focus-visible,dialog.panel .men
 .field input[type="text"],.field input[type="url"],.field select,.field textarea{
   font:inherit;color:var(--text);background:var(--ink);border:1px solid var(--hair);border-radius:10px;padding:.6em .8em;min-height:44px;width:100%;
 }
-.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--accent);outline-offset:2px;border-color:var(--accent)}
 .inline{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
 .inline>*{flex:1 1 auto}
 input[type="range"]{width:100%;accent-color:var(--accent);min-height:44px}
@@ -496,9 +497,11 @@ input[type="color"]{width:44px;height:44px;border:1px solid var(--hair);border-r
 .qr{display:grid;place-items:center;padding:.6rem;background:#fff;border-radius:12px;margin:.6rem auto;width:fit-content}
 .qr canvas{display:block;image-rendering:pixelated}
 .link{
-  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;word-break:break-all;
-  color:var(--muted);background:var(--ink);border:1px solid var(--hair);border-radius:10px;padding:.6em .8em;
+  display:block;width:100%;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;word-break:break-all;
+  color:var(--muted);background:var(--ink);border:1px solid var(--hair);border-radius:10px;padding:.6em .8em;min-height:40px;
 }
+.link:focus{outline:2px solid var(--accent);outline-offset:2px}
+#save-body:focus{outline:none}
 
 /* help */
 .keys{display:grid;grid-template-columns:auto 1fr;gap:.35rem 1rem;align-items:center}
@@ -586,6 +589,7 @@ input[type="color"]{width:44px;height:44px;border:1px solid var(--hair);border-r
   transition:left .28s cubic-bezier(.22,1,.36,1),top .28s cubic-bezier(.22,1,.36,1),width .28s cubic-bezier(.22,1,.36,1),height .28s cubic-bezier(.22,1,.36,1);
 }
 #tour.center .tour-hole{box-shadow:0 0 0 9999px rgba(0,0,0,.58)}
+#tour .tour-card:focus{outline:none}
 #tour .tour-card{
   position:absolute;width:min(22rem,calc(100vw - 2rem));background:var(--ink-2);color:var(--text);
   border:1px solid var(--hair-hi);border-radius:16px;padding:1rem 1.1rem .9rem;box-shadow:0 24px 60px rgba(0,0,0,.45);
@@ -594,7 +598,7 @@ input[type="color"]{width:44px;height:44px;border:1px solid var(--hair);border-r
 #tour .tour-card p{font-size:16px;line-height:1.45;margin:0 0 .8rem;color:var(--text)}
 #tour .tour-foot{display:flex;align-items:center;gap:.5rem}
 #tour .tour-dots{flex:1 1 auto;display:flex;gap:.35rem}
-#tour .tour-dots i{width:.45rem;height:.45rem;border-radius:50%;background:var(--hair-hi)}
+#tour .tour-dots i{width:.45rem;height:.45rem;border-radius:50%;background:var(--dim-2)}
 #tour .tour-dots i.on{background:var(--accent)}
 #tour .chip{font-family:var(--font-ui);font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;min-height:40px}
 #tour .tour-card::before{
@@ -624,6 +628,9 @@ input[type="color"]{width:44px;height:44px;border:1px solid var(--hair);border-r
   button.add,.sec-h button.chip,.sec-h button.sec-toggle{min-height:44px}
   .sec-h button.chip{min-width:44px}
   .swatch .del{width:44px;height:44px}
+  dialog.panel .x,#install .x{width:44px;height:44px}
+  .row-actions .chip,.seg2 button,#tour .chip{min-height:44px}
+  input[type="range"]{min-height:44px}
   /* iOS zooms the page when a focused field is under 16px */
   input,select,textarea{font-size:max(16px,1em)}
   .einput.note-in{font-size:16px}

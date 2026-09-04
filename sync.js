@@ -251,7 +251,8 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone, on
         gone(me); // a plaintext row under a v3 id is not ours
       } else {
         let remote;
-        try { remote = await decrypt(me, res.doc); } catch (e) { setStatus("unreadable"); return; }
+        try { remote = await decrypt(me, res.doc); } catch (e) { if (cur === me) setStatus("unreadable"); return; }
+        if (cur !== me) return;
         const merged = merge(me.doc, remote);
         const cm = canon(merged);
         const changedLocal = cm !== canon(me.doc);
@@ -283,6 +284,7 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone, on
       for (let attempt = 0; attempt < 6; attempt++) {
         const v = me.version, doc = me.doc, base = me.rev;
         const env = await C.seal(me.ref.key, forWire(doc));
+        if (cur !== me) return;
         const res = await transport.put(me.ref.lookupId, env, base, me.ref.token);
         if (cur !== me) return;
         if (res && res.ok) {
@@ -296,7 +298,8 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone, on
         if (!res || (!res.doc && (res.rev | 0) === 0) || ((res.rev | 0) < me.rev)) { gone(me); return; }
         // stale base: fold the server doc in and try again
         let remote;
-        try { remote = await decrypt(me, res.doc); } catch (e) { setStatus("unreadable"); return; }
+        try { remote = await decrypt(me, res.doc); } catch (e) { if (cur === me) setStatus("unreadable"); return; }
+        if (cur !== me) return;
         const merged = merge(me.doc, remote);
         me.rev = res.rev | 0;
         if (canon(merged) !== canon(me.doc)) { me.doc = merged; me.version++; onRemote && onRemote(merged); }

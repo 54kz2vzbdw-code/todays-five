@@ -26,5 +26,9 @@ alter table public.lists add constraint lists_doc_is_envelope check (jsonb_typeo
 
 notify pgrst, 'reload schema';
 
--- What remains (all encrypted):
-select count(*) as encrypted_lists, pg_size_pretty(pg_total_relation_size('public.lists')) as table_size from public.lists;
+-- What remains (all encrypted). envelopes = the lists themselves; table_on_disk = heap page + two indexes + TOAST +
+-- free-space/visibility maps, which is 48–90 KB even for a single small row.
+select count(*) as encrypted_lists,
+       pg_size_pretty(coalesce(sum(octet_length(doc::text)), 0)) as envelopes,
+       pg_size_pretty(pg_total_relation_size('public.lists')) as table_on_disk
+  from public.lists;

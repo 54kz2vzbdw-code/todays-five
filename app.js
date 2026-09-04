@@ -102,7 +102,7 @@ const STATUS_LABEL = {
 };
 let lastCat = "", lastLimitToast = "";
 const viewCollapsed = new Set(); // view-only mode: a viewer's collapse must never win a merge against the editors
-let tourOn = false, tourStep = 0, tourViewBefore = "today", tourFocusBefore = null;
+let tourOn = false, tourStep = 0, tourViewBefore = "today", tourFocusBefore = null, tourUsedKeys = false;
 let press = null, tapped = null;
 let reloading = false;
 
@@ -1636,7 +1636,7 @@ function startTour() {
   if (!doc) return;
   if (openPanel) closePanel();
   if (editing) commitEdit();
-  tourOn = true; tourStep = 0; tourViewBefore = view; tourFocusBefore = document.activeElement;
+  tourOn = true; tourStep = 0; tourViewBefore = view; tourFocusBefore = document.activeElement; tourUsedKeys = false;
   const t = $("#tour"); t.hidden = false;
   try { $("#shell").inert = true; } catch (e) { /* older engines: the overlay still covers the page */ }
   showTourStep();
@@ -1649,7 +1649,9 @@ function endTour() {
   $$(".row.tour-show").forEach(r => r.classList.remove("tour-show"));
   dev.tourDone = true; for (const l of meta.lists) delete l.fresh; saveDevice();
   if (view !== tourViewBefore) setView(tourViewBefore);
-  const back = tourFocusBefore && tourFocusBefore.isConnected && tourFocusBefore !== document.body ? tourFocusBefore : ($("#list .row .check") || $("#more"));
+  // give focus back to where it was; a keyboard user who started on the page body lands on the first line. A finger
+  // never had focus anywhere, so nothing is focused (and no ring appears on the phone).
+  const back = tourFocusBefore && tourFocusBefore.isConnected && tourFocusBefore !== document.body ? tourFocusBefore : (tourUsedKeys ? ($("#list .row .check") || $("#more")) : null);
   if (back) { try { back.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
 }
 function showTourStep() {
@@ -1699,7 +1701,7 @@ function placeTour() {
 $("#tour-next").addEventListener("click", () => { tourStep++; showTourStep(); });
 $("#tour-skip").addEventListener("click", endTour);
 $("#tour").addEventListener("click", e => { if (e.target === e.currentTarget || e.target.id === "tour-hole") endTour(); });
-document.addEventListener("keydown", e => { if (tourOn && e.key === "Escape") { e.preventDefault(); endTour(); } }, true);
+document.addEventListener("keydown", e => { if (!tourOn) return; tourUsedKeys = true; if (e.key === "Escape") { e.preventDefault(); endTour(); } }, true);
 document.addEventListener("keydown", e => { if (e.key === "Escape") document.body.classList.add("no-tip"); }, true);
 document.addEventListener("pointermove", () => document.body.classList.remove("no-tip"), { passive: true });
 

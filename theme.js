@@ -1,5 +1,6 @@
-// theme.js — curated kits, OKLCH derivation with contrast guarantees, font loading, codes.
-// Pure functions except applyTheme()/loadFonts(), which touch the DOM.
+// theme.js — curated kits, OKLCH derivation with contrast guarantees, codes.
+// Pure functions except applyTheme(), which touches the DOM. Fonts are self-hosted and declared in styles.css;
+// the axes strings in PAIRS record which weights were downloaded (see fonts/README.md).
 
 /* ---------------- colour math ---------------- */
 
@@ -94,12 +95,11 @@ export const PAIRS = {
 export const CUSTOM_PAIRS = ["lato", "fraunces", "grotesk", "playfair", "manrope", "dmserif"];
 
 export function pairOf(id) { return (typeof id === "string" && Object.prototype.hasOwnProperty.call(PAIRS, id)) ? PAIRS[id] : null; }
-export function fontsUrl(pairId) {
+/** The families a pair uses. Fonts are self-hosted (fonts/, declared in styles.css with unicode-range), so
+    nothing is fetched until a theme actually renders text in a family; this list is for warming and tests. */
+export function pairFamilies(pairId) {
   const p = pairOf(pairId) || PAIRS.lato;
-  const fam = ([name, axes]) => "family=" + encodeURIComponent(name).replace(/%20/g, "+") + (axes ? ":" + axes : "");
-  const parts = [fam(p.task)];
-  if (p.ui[0] !== p.task[0]) parts.push(fam(p.ui));
-  return "https://fonts.googleapis.com/css2?" + parts.join("&") + "&display=swap";
+  return p.ui[0] === p.task[0] ? [p.task[0]] : [p.task[0], p.ui[0]];
 }
 
 /* ---------------- curated kits ----------------
@@ -373,39 +373,36 @@ export function report(t) {
 
 /* ---------------- DOM ---------------- */
 
-const CSS_KEY = "tf/v2/themecss", FONT_KEY = "tf/v2/fontsurl";
+const CSS_KEY = "tf/v2/themecss";
+
+/** Replace the token rule through the CSSOM. The inline <style> is hashed by the CSP, so its text must never
+    be rewritten; insertRule/deleteRule are not subject to style-src. */
+export function setTokenCss(style, css) {
+  if (!style) return;
+  if (style.dataset.css === css) return;
+  const sheet = style.sheet;
+  if (sheet) {
+    try {
+      while (sheet.cssRules.length) sheet.deleteRule(0);
+      sheet.insertRule(css, 0);
+      style.dataset.css = css;
+      return;
+    } catch (e) { /* fall through */ }
+  }
+  style.textContent = css; // no sheet yet (detached element): safe, nothing is hashed here
+  style.dataset.css = css;
+}
 
 export function applyTheme(t, doc = document, { persist = true } = {}) {
   const css = cssText(t);
   let style = doc.getElementById("theme-vars");
   if (!style) { style = doc.createElement("style"); style.id = "theme-vars"; doc.head.appendChild(style); }
-  if (style.textContent !== css) style.textContent = css;
+  setTokenCss(style, css);
   doc.documentElement.dataset.base = t.base;
   doc.documentElement.dataset.theme = t.id;
   const meta = doc.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", t.colors.ink);
   const bar = doc.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
   if (bar) bar.setAttribute("content", t.base === "light" ? "default" : "black-translucent");
-  loadFonts(fontsUrl(t.pair), doc);
-  if (persist) { try { localStorage.setItem(CSS_KEY, css); localStorage.setItem(FONT_KEY, fontsUrl(t.pair)); } catch (e) { /* private mode */ } }
-}
-
-/** Load only the fonts in use: one stylesheet for the active pair, previous ones removed once the new one has loaded. */
-let wantedFonts = null;
-export function loadFonts(url, doc = document) {
-  wantedFonts = url;
-  const current = doc.querySelector('link[data-fonts="active"]');
-  if (current && current.href === url) { doc.querySelectorAll('link[data-fonts="pending"]').forEach(l => l.remove()); return; }
-  const pending = Array.from(doc.querySelectorAll('link[data-fonts="pending"]'));
-  if (pending.some(l => l.href === url)) return;
-  pending.forEach(l => l.remove());
-  const link = doc.createElement("link");
-  link.rel = "stylesheet"; link.href = url; link.crossOrigin = "anonymous"; link.setAttribute("data-fonts", "pending");
-  link.onload = link.onerror = () => {
-    // a later call may have chosen another pair while this one was loading
-    if (link.href !== wantedFonts) { link.remove(); return; }
-    doc.querySelectorAll('link[data-fonts]').forEach(l => { if (l !== link) l.remove(); });
-    link.setAttribute("data-fonts", "active");
-  };
-  doc.head.appendChild(link);
+  if (persist) { try { localStorage.setItem(CSS_KEY, css); localStorage.removeItem("tf/v2/fontsurl"); } catch (e) { /* private mode */ } }
 }

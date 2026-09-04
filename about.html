@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" data-base="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Today's Five — how it works &amp; privacy</title>
+  <meta name="description" content="What Today's Five stores, who can see it, and what it never collects.">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-dOLoP8c7UQp50t1a+EUGdzHLyxTzcDqYujrUVeKT7xY='; style-src 'self' 'sha256-b1A6HHBcts72g8f0R2zO5DWWdnS1iZsjwdkndV1vbmw='; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta name="theme-color" content="#1A1D21">
+  <link rel="icon" href="icons/icon-192.png">
+  <style id="theme-vars">:root{--ink:#1A1D21;--ink-2:#23272C;--ink-3:#2E343A;--text:#F5F1EA;--muted:#9AA0A8;--dim:#7F858C;--done:#7F858C;--accent:#D26128;--accent-hi:#E8814A;--accent-deep:#A34A1C;--accent-text:#E8814A;--danger:#E0745A;--hair:rgba(245,241,234,.10);--hair-hi:rgba(245,241,234,.30);--hair-solid:#65696E;--glow:radial-gradient(125% 78% at 50% 34%, rgba(210,97,40,.10), rgba(210,97,40,0) 62%);--strike-shadow:0 0 10px rgba(210,97,40,.38);--box-done-bg:#D26128;--strike-bg:#D26128;--strike-size:auto;--strike-anim:none;--finale-style:normal;--font-task:"Lato","Helvetica Neue",Helvetica,Arial,sans-serif;--font-ui:"PT Sans","Helvetica Neue",Helvetica,Arial,sans-serif;--task-w:900;--task-ls:-.025em;--task-lh:1.14;color-scheme:dark}</style>
+  <script>
+  /* Same theme as the app, applied through the CSSOM (this script is hashed in the CSP above). */
+  (function () {
+    var css = null;
+    try { css = localStorage.getItem("tf/v2/themecss"); } catch (e) {}
+    var style = document.getElementById("theme-vars");
+    if (css && css.indexOf(":root{") === 0 && style && style.sheet) {
+      try { while (style.sheet.cssRules.length) style.sheet.deleteRule(0); style.sheet.insertRule(css, 0); } catch (e) {}
+      var m = css.match(/color-scheme:(dark|light)/);
+      if (m) document.documentElement.setAttribute("data-base", m[1]);
+      var ink = css.match(/--ink:(#[0-9A-Fa-f]{6})/);
+      if (ink) document.querySelector('meta[name="theme-color"]').setAttribute("content", ink[1]);
+    }
+  })();
+  </script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page">
+<div id="glow"></div>
+<main class="prose">
+  <p class="crumb"><a href="./">← Back to the list</a></p>
+  <h1>Today's Five</h1>
+  <p class="lede">A short list you leave open on screen all day. This page says exactly what leaves your device, who can see it, and what is never collected.</p>
+
+  <h2>How it works</h2>
+  <p>When you start a list, your browser makes a random secret and puts it in the link, after the <code>#</code>. Everything else is derived from that secret on your device: the key that encrypts the list, the id the server files it under, and the token that proves you may change it. The part of a link after <code>#</code> is never sent to a server by a browser, and this app never sends it anywhere else.</p>
+  <p>Before anything is saved or synced, the whole list is encrypted on your device with AES-256-GCM. Other devices with the same link derive the same key and decrypt it. The edit link can produce a view link; a view link cannot produce the edit link.</p>
+
+  <h2>What is stored on the server</h2>
+  <ul>
+    <li><b>The encrypted list</b>: one sealed blob per list. Lines, notes, sections, history and saved themes are all inside it.</li>
+    <li><b>A revision number</b> and two timestamps (last change, last opened to the day), so devices can tell what changed and idle lists can be cleared out.</li>
+    <li><b>A hash of the write token</b>, so the server can refuse changes from a view link.</li>
+    <li><b>A salted hash of your network address</b>, kept for at most 24 hours, only when a new list is created. It exists to stop one address from creating lists without limit. The address itself is not stored.</li>
+  </ul>
+
+  <h2>What the operator can see</h2>
+  <p>Nothing readable. The person running this site can see that a list exists, how large its encrypted blob is, when it last changed and when it was last opened. Not a word of what is in it, not who opened it, and not the link. There is no way to recover a list for you: lose the link, lose the list.</p>
+
+  <h2>Third parties</h2>
+  <p>The encrypted lists are stored with <b>Supabase</b> (a hosted Postgres database and realtime service) in a data centre in the United States run by Amazon Web Services. Supabase sees the same things the operator sees, plus the ordinary connection metadata any server sees (your network address, request times). The app itself is served by GitHub Pages. Fonts and every other file load from this site; nothing is fetched from Google, a CDN or anyone else.</p>
+
+  <h2>Retention</h2>
+  <p>A list that nobody has opened or changed for <b>12 months</b> is deleted from the server. Your device keeps its own copy for as long as the browser keeps site data. Rotating a link deletes the old encrypted blob at once.</p>
+
+  <h2>What there is none of</h2>
+  <ul>
+    <li>No accounts, no sign-up, no email, no passwords.</li>
+    <li>No analytics, no trackers, no cookies. The browser's own storage holds your theme and your links, on your device only.</li>
+    <li>No names or presence: the list does not record who changed what.</li>
+  </ul>
+
+  <h2>Sharing</h2>
+  <p>Anyone with the <b>edit link</b> can change anything, including making new links. Anyone with the <b>view link</b> can read everything until you rotate. Treat the edit link like a password.</p>
+
+  <h2>Limits</h2>
+  <p>This is a small free service. Each list is capped at 96 KB encrypted (a year of daily history fits many times over), the service holds a few thousand lists in total, and a single network address may create only a handful of lists per hour. When a limit is hit, the app says so and keeps working on your device.</p>
+
+  <p class="fine">The code is on GitHub for anyone who wants to check these claims against what actually runs.</p>
+</main>
+</body>
+</html>

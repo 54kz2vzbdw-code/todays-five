@@ -1,9 +1,10 @@
 // Node tests for theme.js. Run: node test/theme.test.js
 import assert from "node:assert/strict";
 import {
-  CURATED, CUSTOM_PAIRS, PAIRS, derive, surprise, report, themeCode, parseCode, fontsUrl,
+  CURATED, CUSTOM_PAIRS, PAIRS, derive, surprise, report, themeCode, parseCode, pairFamilies,
   hexToOklch, oklch, contrast, cssText, normalizeHex, pickPair
 } from "../theme.js";
+import fs from "node:fs";
 
 let passed = 0;
 function test(name, fn) { fn(); passed++; console.log("ok -", name); }
@@ -102,11 +103,22 @@ test("normalizeHex", () => {
   assert.equal(normalizeHex("#12345"), null);
 });
 
-test("fonts url lists only the pair's families", () => {
-  assert.equal(fontsUrl("lato"), "https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=PT+Sans:wght@400;700&display=swap");
-  assert.equal(fontsUrl("fraunces"), "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&family=Quicksand:wght@500;700&display=swap");
-  assert.equal(fontsUrl("manrope"), "https://fonts.googleapis.com/css2?family=Manrope:wght@500;800&display=swap");
-  assert.equal(fontsUrl("dmserif"), "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;700&display=swap");
+test("every family a pair names is self-hosted: declared in styles.css and present in fonts/", () => {
+  const css = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
+  const files = new Set(fs.readdirSync(new URL("../fonts", import.meta.url)));
+  assert.deepEqual(pairFamilies("lato"), ["Lato", "PT Sans"]);
+  assert.deepEqual(pairFamilies("manrope"), ["Manrope"]);
+  for (const id of Object.keys(PAIRS)) for (const fam of pairFamilies(id)) {
+    const faces = [...css.matchAll(new RegExp('@font-face\\{font-family:"' + fam.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + '";[^}]*\\}', "g"))].map(m => m[0]);
+    assert.ok(faces.length >= 1, fam + " has no @font-face in styles.css");
+    for (const f of faces) {
+      assert.ok(/font-display:swap/.test(f), fam + " must use font-display: swap");
+      assert.ok(/unicode-range:U\+0000-00FF/.test(f), fam + " must be the latin subset");
+      const file = f.match(/url\(fonts\/([^)]+)\)/)[1];
+      assert.ok(files.has(file), fam + ": missing " + file);
+    }
+  }
+  assert.ok(!/googleapis|gstatic/.test(css), "no Google Fonts left in the stylesheet");
 });
 
 test("pair auto-pick varies with base and warmth", () => {

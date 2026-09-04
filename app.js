@@ -1,6 +1,8 @@
-// app.js — the UI: views, rendering, inline editing, drag, keyboard, undo, rollover, panels, lists.
+// app.js — the UI: views, rendering, inline editing, drag, keyboard, undo, rollover, panels, lists,
+// links (edit/view), migration of v2 lists, share/save sheets, the first-run tour.
 import * as M from "./model.js";
-import { loadLocal, saveLocal, removeLocal, loadMeta, saveMeta, makeTransport, createSync } from "./sync.js";
+import { loadLocal, saveLocal, removeLocal, loadLegacyLocal, removeLegacyLocal, loadMeta, saveMeta, makeTransport, createSync, fetchLegacy, deleteLegacy, forWire } from "./sync.js";
+import * as C from "./crypto.js";
 import * as T from "./theme.js";
 import { createSound } from "./sound.js";
 import { createFx } from "./fx.js";
@@ -10,6 +12,7 @@ const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const RM = matchMedia("(prefers-reduced-motion: reduce)");
 const HOVER = matchMedia("(hover: hover)");
+const NARROW = matchMedia("(max-width: 680px)");
 const DARK_MQ = matchMedia("(prefers-color-scheme: dark)");
 // iPadOS reports itself as a Mac; a real touch screen tells it apart (headless/desktop Chrome can expose ontouchend without one)
 const IOS = /iP(hone|ad|od)/.test(navigator.platform) || (navigator.userAgent.includes("Mac") && navigator.maxTouchPoints > 0);
@@ -26,6 +29,8 @@ const ICONS = {
   kill: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   more: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>'
 };
+const touchUi = () => !HOVER.matches;
+const sheetUi = () => !HOVER.matches || NARROW.matches;
 
 /* ---------------- device meta ---------------- */
 let meta = loadMeta();
@@ -37,6 +42,8 @@ if (typeof dev.volume !== "number") dev.volume = 1;
 if (!dev.theme) dev.theme = "T1:curated:dark";
 if (!dev.darkSlot) dev.darkSlot = "T1:curated:dark";
 if (!dev.lightSlot) dev.lightSlot = "T1:curated:light";
+// a device that already holds lists is a returning user: never show it the tour unasked
+if (!dev.tourDone && (meta.lists.length || meta.migratedV1)) dev.tourDone = true;
 function saveDevice() {
   // another tab may have changed the registry since this tab loaded: union lists, respect rotations, keep our device settings
   const stored = loadMeta();
@@ -46,23 +53,29 @@ function saveDevice() {
   meta.lists = Array.from(byId.values());
   meta.dead = Array.from(dead);
   meta.redirect = { ...(stored.redirect || {}), ...(meta.redirect || {}) };
-  meta.pendingKill = Array.from(new Set([...(stored.pendingKill || []), ...(meta.pendingKill || [])]));
-  if (syncStatus === "gone" && stored.current && stored.current !== meta.current && !dead.has(stored.current)) meta.current = stored.current;
+  const kills = new Map(); for (const k of [...(stored.pendingKill || []), ...(meta.pendingKill || [])]) if (k && k.lookupId) kills.set(k.lookupId, k);
+  meta.pendingKill = Array.from(kills.values());
+  const migs = new Map(); for (const m of [...(stored.migrations || []), ...(meta.migrations || [])]) if (m && m.from) migs.set(m.from, m);
+  meta.migrations = Array.from(migs.values());
+  if (syncStatus === "gone" && stored.current && stored.current !== meta.current && !dead.has(stored.current)) { meta.current = stored.current; meta.currentMode = stored.currentMode; }
   saveMeta(meta);
 }
-/** Follow redirects recorded by Rotate (an installed iPhone icon keeps launching the old id). */
-function resolveId(id) {
-  const r = meta.redirect || {};
+/** Follow redirects recorded by Rotate and migration (an installed iPhone icon keeps launching the old id). */
+function resolveRef(r) {
+  if (r.mode === "view") return r;
+  const map = meta.redirect || {};
   const seen = new Set();
-  while (r[id] && !seen.has(id)) { seen.add(id); id = r[id]; }
-  return id;
+  let id = r.id;
+  while (map[id] && !seen.has(id)) { seen.add(id); id = map[id]; }
+  return { id, mode: "edit" };
 }
 // per-tab identity: two tabs on one device must not ignore each other's broadcasts
 const TAB_ID = dev.id + ":" + M.shortId();
 
 /* ---------------- state ---------------- */
-let doc = null, listId = null, view = "today";
-let sync = null, transport = null, syncStatus = "off", transportFailed = false;
+let doc = null, listId = null, listMode = "edit", ref = null, view = "today";
+let sync = null, transport = null, syncStatus = "off", syncLive = false, liveGrace = 0, transportFailed = false;
+let openGen = 0;
 let theme = null;
 let editing = null;            // { id, el, ta, note, isNew, orig }
 let wasAll = false;
@@ -73,6 +86,7 @@ let toastTimer = 0;
 let drag = null;
 let wakeLock = null;
 let openPanel = null;
+const canEdit = () => listMode === "edit" && !!doc;
 
 /* ---------------- sound & fx ---------------- */
 const sound = createSound({ muted: () => !!dev.muted, volume: () => dev.volume, kit: () => theme && theme.sound });
@@ -108,22 +122,27 @@ wireUi();
 boot();
 registerSw();
 
+function frag(r) { return "#/" + (r.mode === "view" ? "r" : "l") + "/" + r.id; }
+function hashRef() {
+  const m = location.hash.match(/^#\/(l|r)\/([0-9A-Za-z]{22,64})/);
+  return m ? { id: m[2], mode: m[1] === "r" ? "view" : "edit" } : null;
+}
 function boot() {
-  const h = hashId();
-  if (h) return openList(resolveId(h));
-  if (meta.current && loadLocal(meta.current)) return openList(meta.current);
+  const h = hashRef();
+  if (h) return openList(resolveRef(h));
+  if (meta.current && (loadLocal(meta.current) || loadLegacyLocal(meta.current))) return openList({ id: meta.current, mode: meta.currentMode === "view" ? "view" : "edit" });
   if (!meta.migratedV1) {
     let v1 = null;
     try { v1 = JSON.parse(localStorage.getItem(V1_KEY) || "null"); } catch (e) { /* ignore */ }
     if (v1 && Array.isArray(v1.items) && v1.items.length) {
       const id = M.newId();
       const d = M.migrateV1(v1, id);
-      saveLocal(id, { doc: d, rev: 0, dirty: true, created: true });
+      saveLocal(id, { doc: d, rev: 0, dirty: true, created: true, mode: "edit" });
       meta.migratedV1 = true;
       if (v1.mode && T.curated(v1.mode)) { dev.theme = "T1:curated:" + v1.mode; applyThemeCode(dev.theme); }
       if (v1.muted) { dev.muted = true; paintMute(); }
-      registerList(id, "");
-      return openList(id);
+      const e = registerList(id, "", "edit"); e.created = true; e.linkSaved = false;
+      return openList({ id, mode: "edit" });
     }
     meta.migratedV1 = true; saveDevice();
   }
@@ -137,93 +156,199 @@ function flushQuick() {
 }
 /** Other lists this browser holds with unpushed edits (switched away before the debounce, iOS reloads): push them once. */
 async function flushOthers() {
-  if (!transport) return;
+  if (!transport || !navigator.onLine) return;
   for (const l of meta.lists) {
-    if (l.id === listId) continue;
+    if (l.id === listId || l.mode === "view") continue;
     const local = loadLocal(l.id);
-    if (!local || !local.dirty) continue;
+    if (!local || !local.dirty || local.mode === "view") continue;
     try {
-      const remote = await transport.get(l.id);
+      const r = await C.fromWrite(l.id);
+      const remote = await transport.get(r.lookupId, null);
       if (!remote) { if (!(local.rev === 0 && local.created)) continue; }
-      const mergedDoc = remote ? M.merge(local.doc, M.normalize(remote.doc, l.id)) : local.doc;
-      const res = await transport.put(l.id, mergedDoc, remote ? (remote.rev | 0) : 0);
-      if (res && res.ok) saveLocal(l.id, { doc: mergedDoc, rev: res.rev, dirty: false, created: local.created });
+      let mergedDoc = local.doc, base = 0;
+      if (remote) {
+        if (!remote.doc || !C.isEnvelope(remote.doc)) continue;
+        mergedDoc = M.merge(local.doc, M.normalize(await C.open(r.key, remote.doc), l.id)); base = remote.rev | 0;
+      }
+      const res = await transport.put(r.lookupId, await C.seal(r.key, forWire(mergedDoc)), base, r.token);
+      if (res && res.ok) saveLocal(l.id, { doc: mergedDoc, rev: res.rev, dirty: false, created: local.created, mode: "edit" });
     } catch (e) { /* next time */ }
   }
 }
-function hashId() {
-  const m = location.hash.match(/^#\/l\/([0-9A-Za-z]{22,64})/);
-  return m ? m[1] : null;
-}
 let reloading = false;
-addEventListener("hashchange", () => { if (reloading) return; const h = hashId(); if (h && h !== listId) switchTo(resolveId(h)); });
-// the Supabase client comes from a CDN; if that import failed (first load while offline), try again once we're back
+addEventListener("hashchange", () => { if (reloading) return; const h = hashRef(); if (h && (h.id !== listId || h.mode !== listMode)) switchTo(resolveRef(h)); });
 async function retryTransport() {
   if (transport || !transportFailed || !listId) return;
   try { transport = await makeTransport(TRANSPORT_KIND, config); } catch (e) { transport = null; }
-  if (transport) { transportFailed = false; openList(listId); }
+  if (transport) { transportFailed = false; openList({ id: listId, mode: listMode }); }
 }
 addEventListener("online", retryTransport);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") retryTransport(); });
 
-function registerList(id, name) {
+function registerList(id, name, mode) {
   let e = meta.lists.find(l => l.id === id);
-  if (!e) { e = { id, name: name || "", addedAt: Date.now() }; meta.lists.push(e); }
+  if (!e) { e = { id, mode: mode === "view" ? "view" : "edit", name: name || "", addedAt: Date.now() }; meta.lists.push(e); }
+  else if (mode && e.mode !== mode) e.mode = mode;
   return e;
 }
 
-async function openList(id) {
-  if (!M.isListId(id)) return showWelcome("That link doesn't look right.");
-  if (sync) { await flushQuick(); sync.close(); }
+async function openList(r) {
+  if (!r || !M.isListId(r.id)) return showWelcome("That link doesn't look right.");
+  const mode = r.mode === "view" ? "view" : "edit";
+  if (sync) { await flushQuick(); sync.close(); sync = null; }
   if (editing) cancelEdit();
-  listId = id;
-  meta.current = id;
-  const entry = registerList(id, "");
+  const gen = ++openGen;
+  listId = r.id; listMode = mode; ref = null;
+  meta.current = r.id; meta.currentMode = mode;
+  const entry = registerList(r.id, "", mode);
   saveDevice();
-  const local = loadLocal(id);
+  const local = loadLocal(r.id);
+  if (!local && mode === "edit") {
+    const legacy = loadLegacyLocal(r.id);
+    if (legacy) return migrateLegacy(r.id, legacy, null); // a v2 list this device still holds in plaintext
+  }
   // a list opened from a link starts from a doc that loses every tie, so the server's name and records win
-  doc = local ? local.doc : M.normalize({}, id);
-  doc = M.purgeTombstones(doc);
-  const roll = M.rollover(doc);
-  if (roll.moved.length) doc = roll.doc;
-  history.replaceState(null, "", BASE + SEARCH + "#/l/" + id);
-  if (window.__tfManifest) window.__tfManifest(id);
+  doc = local ? local.doc : M.normalize({}, r.id);
+  let rolled = false;
+  if (mode === "edit") {
+    doc = M.purgeTombstones(doc);
+    const roll = M.rollover(doc);
+    if (roll.moved.length) { doc = roll.doc; rolled = true; }
+  }
+  document.documentElement.dataset.mode = mode;
+  history.replaceState(null, "", BASE + SEARCH + frag({ id: r.id, mode }));
+  if (window.__tfManifest) window.__tfManifest(frag({ id: r.id, mode }));
   $("#welcome").hidden = true;
   $("#dot").hidden = false;
+  $("#ro").hidden = mode !== "view";
   rows.clear(); $("#list").innerHTML = ""; $("#all").innerHTML = "";
   wasAll = allDoneToday();
   setView(view, { force: true });
   paintListName();
-  // sync starts after first paint
+  // keys and sync start after first paint
+  let derived = null;
+  try { derived = await C.fromLink(mode, r.id); } catch (e) { derived = null; }
+  if (gen !== openGen) return;
+  if (!derived) return showWelcome("That link doesn't look right.");
+  ref = derived;
   if (!transport) {
     try { transport = await makeTransport(TRANSPORT_KIND, config); } catch (e) { transport = null; transportFailed = true; }
-    if (listId !== id) return;
+    if (gen !== openGen) return;
   }
+  // a link pasted for the first time: an encrypted row, a v2 plaintext row (migrate), or nothing (gone)
+  if (!local && mode === "edit" && transport && navigator.onLine) {
+    try {
+      const res = await transport.get(ref.lookupId, null);
+      if (gen !== openGen) return;
+      if (!res) {
+        const leg = await fetchLegacy(transport, r.id);
+        if (gen !== openGen) return;
+        if (leg) return migrateLegacy(r.id, null, leg);
+      }
+    } catch (e) { /* offline or refused: the engine reports it */ }
+  }
+  liveGrace = Date.now() + 8000; setTimeout(() => { if (gen === openGen) paintStatus(syncStatus); }, 8200);
   sync = createSync({
     transport, deviceId: TAB_ID,
     onStatus: paintStatus,
+    onLive: v => { syncLive = v; paintStatus(syncStatus); },
     onRemote: remote => { doc = remote; applyRemote(); },
-    onGone: () => { /* status dot shows it; the paste screen is offered from the Lists panel */ }
+    onGone: () => { /* the dot says it; the Lists panel offers the paste box */ }
   });
+  syncLive = false;
   paintStatus(transportFailed ? "offline" : sync.status);
-  sync.open(id, doc, local ? { rev: local.rev, dirty: local.dirty || roll.moved.length > 0, created: local.created } : { rev: 0, dirty: false, created: false });
+  sync.open(ref, doc, local ? { rev: local.rev, dirty: local.dirty || rolled, created: local.created } : { rev: 0, dirty: false, created: false });
   retryPendingKills();
   flushOthers();
+  settleMigrations();
+  applyCarry();
   if (sessionStorage.getItem("tf/reopenShare")) { sessionStorage.removeItem("tf/reopenShare"); setTimeout(openShare, 300); }
-  if (roll.moved.length) sync.update(doc);
+  if (rolled) sync.update(doc);
   if (entry && !entry.name && doc.name) entry.name = doc.name;
+  if (mode === "edit" && entry.created && !entry.linkSaved) showSaveLink({ migrated: !!entry.migrated });
+  else maybeTour();
 }
 
 function showWelcome(msg) {
   if (sync) { flushQuick().then(() => { if (sync) { sync.close(); sync = null; } }); }
-  listId = null; doc = null;
+  listId = null; doc = null; ref = null;
+  document.documentElement.dataset.mode = "edit";
   $("#today").hidden = true; $("#all").hidden = true; $("#welcome").hidden = false;
   $("#w-err").textContent = msg || "";
   $("#dot").hidden = true; // no list yet: nothing to report
+  $("#ro").hidden = true;
   $("#count").innerHTML = "<b>0</b>/0";
   $("#hint").innerHTML = "";
   $("#addtoday").hidden = true;
   paintListName();
+}
+
+/* ---------------- migration of a v2 (plaintext) list ---------------- */
+async function migrateLegacy(oldId, legacyLocal, serverRow) {
+  let D = legacyLocal ? legacyLocal.doc : M.normalize({}, oldId);
+  let legacyRev = 0;
+  if (serverRow) { D = M.merge(D, serverRow.doc); legacyRev = serverRow.rev; }
+  else if (!transport) { try { transport = await makeTransport(TRANSPORT_KIND, config); } catch (e) { transport = null; transportFailed = true; } }
+  if (!serverRow && transport && navigator.onLine) {
+    try { const leg = await fetchLegacy(transport, oldId); if (leg) { D = M.merge(D, leg.doc); legacyRev = leg.rev; } } catch (e) { /* the follow-up merges again */ }
+  }
+  const W = M.newId();
+  const copy = M.normalize(D, W); copy.updatedAt = M.now();
+  saveLocal(W, { doc: copy, rev: 0, dirty: true, created: true, mode: "edit" }); // the data is safe from here on, push or no push
+  const old = meta.lists.find(l => l.id === oldId);
+  const e = registerList(W, old ? old.name : (copy.name || ""), "edit");
+  e.created = true; e.linkSaved = false; e.migrated = true;
+  if (old && old.archived) e.archived = true;
+  meta.lists = meta.lists.filter(l => l.id !== oldId);
+  meta.dead = Array.from(new Set([...(meta.dead || []), oldId]));
+  meta.redirect = { ...(meta.redirect || {}), [oldId]: W };
+  meta.migrations = [...(meta.migrations || []).filter(m => m.from !== oldId), { from: oldId, to: W, rev: legacyRev, at: Date.now() }];
+  if (meta.current === oldId) { meta.current = W; meta.currentMode = "edit"; }
+  saveDevice();
+  await openList({ id: W, mode: "edit" });
+}
+/** Once a migrated list has landed on the server: fold in anything another device wrote to the old row since,
+    retire the old row, drop the plaintext local copy. Retried until it succeeds. */
+let settling = false;
+async function settleMigrations() {
+  if (settling || !transport || !navigator.onLine || !(meta.migrations || []).length) return;
+  settling = true;
+  try {
+    for (const m of [...meta.migrations]) {
+      const local = loadLocal(m.to);
+      if (!local) { meta.migrations = meta.migrations.filter(x => x !== m); saveDevice(); continue; }
+      if (local.rev === 0) continue; // not pushed yet
+      try {
+        const leg = await fetchLegacy(transport, m.from);
+        if (leg) {
+          if (m.to === listId && doc) {
+            const merged = M.normalize(M.merge(doc, leg.doc), listId);
+            if (M.canon(merged) !== M.canon(doc)) { doc = merged; applyRemote(); if (sync) sync.update(doc); }
+          } else {
+            const merged = M.normalize(M.merge(local.doc, leg.doc), m.to);
+            if (M.canon(merged) !== M.canon(local.doc)) saveLocal(m.to, { ...local, doc: merged, dirty: true });
+          }
+          await deleteLegacy(transport, m.from);
+        }
+        removeLegacyLocal(m.from);
+        meta.migrations = meta.migrations.filter(x => x !== m); saveDevice();
+      } catch (e) { /* retry on the next tick */ }
+    }
+  } finally { settling = false; }
+}
+/** After a rotate or a migration elsewhere, the device that still held the old link pastes the new one: carry its
+    unpushed edits over, but only when the two documents share lines (same lineage), never into a stranger's list. */
+function applyCarry() {
+  const c = meta.carry; if (!c || c.to !== listId || !doc || listMode !== "edit") return;
+  meta.carry = null; saveDevice();
+  const old = loadLocal(c.from) || loadLegacyLocal(c.from);
+  if (!old || !old.dirty) return;
+  const shared = Object.keys(old.doc.items).some(id => doc.items[id]);
+  if (!shared) return;
+  const merged = M.normalize(M.merge(doc, old.doc), listId);
+  if (M.canon(merged) === M.canon(doc)) return;
+  doc = merged; applyRemote(); if (sync) sync.update(doc);
+  toast("Your unsynced edits from the old link were carried over");
 }
 
 /* ---------------- lists registry ---------------- */
@@ -274,22 +399,26 @@ function makeRow(it) {
     const more = mk("more", "more", "Show note"); more.hidden = true; tools.appendChild(more);
     tools.appendChild(mk("pencil", "pencil", "Edit (E)"));
   } else {
-    const star = mk("star", "star", "Today"); star.setAttribute("aria-pressed", "false"); tools.appendChild(star);
+    // the promote control explains itself: a labelled toggle, not a bare star
+    const today = document.createElement("button"); today.type = "button"; today.className = "tool today";
+    today.innerHTML = ICONS.star + '<span class="lb">Today</span>'; today.setAttribute("aria-pressed", "false"); today.setAttribute("aria-label", "On Today");
+    today.removeAttribute("title"); tools.appendChild(today);
     tools.appendChild(mk("pencil", "pencil", "Edit (E)"));
     tools.appendChild(mk("kill", "kill", "Delete"));
     tools.appendChild(mk("handle", "handle", "Drag to reorder"));
   }
   li.addEventListener("click", e => { if (clickAfterDrag()) { e.stopPropagation(); e.preventDefault(); } }, true);
-  li.querySelector(".check").addEventListener("click", e => { if (clickAfterDrag()) return; toggle(it.id, e.clientX, e.clientY, e.detail > 0); });
+  // taps are recognised from pointer events (see onPress/onRelease); the click path serves keyboards and assistive tech
+  li.querySelector(".check").addEventListener("click", e => { if (clickAfterDrag()) return; if (recentlyTapped(it.id)) return; toggle(it.id, e.clientX, e.clientY, e.detail > 0); });
   li.querySelector(".check").addEventListener("focus", () => { lastRowId = it.id; });
   li.addEventListener("pointerenter", () => { lastRowId = it.id; });
   li.addEventListener("dblclick", e => { if (!HOVER.matches) return; e.preventDefault(); startEdit(it.id); });
   li.querySelector(".pencil").addEventListener("click", e => { e.stopPropagation(); if (clickAfterDrag()) return; startEdit(it.id); });
-  const star = li.querySelector(".star"); if (star) star.addEventListener("click", e => { e.stopPropagation(); toggleToday(it.id); });
+  const today = li.querySelector(".today"); if (today) today.addEventListener("click", e => { e.stopPropagation(); toggleToday(it.id); });
   const kill = li.querySelector(".kill"); if (kill) kill.addEventListener("click", e => { e.stopPropagation(); deleteItem(it.id); });
   const more = li.querySelector(".more"); if (more) more.addEventListener("click", e => { e.stopPropagation(); li.classList.toggle("open"); more.setAttribute("aria-expanded", li.classList.contains("open") ? "true" : "false"); layoutStrikes(li, true); });
   const handle = li.querySelector(".handle"); if (handle) handle.addEventListener("pointerdown", e => { if (e.button !== 0) return; e.preventDefault(); beginDrag(li, e); });
-  li.addEventListener("pointerdown", e => longPressStart(li, e));
+  li.addEventListener("pointerdown", e => { onPress(li, e); longPressStart(li, e); });
   li.addEventListener("contextmenu", e => { if (e.pointerType === "touch" || !HOVER.matches) e.preventDefault(); });
   li.addEventListener("animationend", () => { li.classList.remove("kick"); li.classList.remove("arrive"); });
   return li;
@@ -307,7 +436,12 @@ function updateRow(li, it) {
   }
   li.classList.toggle("done", it.done);
   li.querySelector(".check").setAttribute("aria-checked", it.done ? "true" : "false");
-  const star = li.querySelector(".star"); if (star) star.setAttribute("aria-pressed", it.today ? "true" : "false");
+  const today = li.querySelector(".today");
+  if (today) {
+    today.setAttribute("aria-pressed", it.today ? "true" : "false");
+    today.setAttribute("aria-label", it.today ? "On Today. Take it off Today" : "Put this line on Today");
+    today.dataset.tip = it.today ? "On Today — click to take it off" : "Put this line on Today";
+  }
   const more = li.querySelector(".more"); if (more) more.hidden = !it.note;
   return changedText;
 }
@@ -393,12 +527,23 @@ function updateSection(sec, g) {
   sec.querySelector(".sec-more").hidden = g.id === "";
 }
 
-/** Put the given ids in order inside `container`, FLIP-animating when asked. */
+/** Put the given ids in order inside `container` with the fewest DOM moves (rows already in place are never
+    detached, so a render cannot cancel a click in progress or steal focus), FLIP-animating when asked. */
 function orderInto(container, ids, animate) {
-  const els = ids.map(id => rows.get(id)).filter(Boolean);
+  const wanted = ids.filter(id => rows.has(id));
+  const els = wanted.map(id => rows.get(id));
+  for (const el of els) if (el.parentNode !== container) container.appendChild(el);
+  const current = Array.from(container.children).filter(el => el.classList && el.classList.contains("row")).map(el => el.dataset.id);
+  const plan = M.reorderPlan(current, wanted);
+  if (!plan.length) return;
   const first = new Map();
   if (animate && !RM.matches) for (const el of els) first.set(el, el.getBoundingClientRect().top);
-  for (const el of els) container.appendChild(el);
+  const active = document.activeElement;
+  for (const m of plan) {
+    const el = rows.get(m.id); const before = m.before ? rows.get(m.before) : null;
+    if (el) container.insertBefore(el, before && before.parentNode === container ? before : null);
+  }
+  if (active && active !== document.body && document.activeElement !== active && active.isConnected) { try { active.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
   if (animate && !RM.matches) for (const [el, top] of first) {
     const d = top - el.getBoundingClientRect().top;
     if (d && el.animate) el.animate([{ transform: `translateY(${d}px)` }, { transform: "none" }], { duration: 520, easing: "cubic-bezier(.22,1,.36,1)" });
@@ -433,7 +578,7 @@ function layoutAll(only) {
   for (const el of els) layoutStrikes(el, true);
 }
 let rz = 0;
-function relayout() { clearTimeout(rz); rz = setTimeout(() => layoutAll(), 130); }
+function relayout() { clearTimeout(rz); rz = setTimeout(() => { layoutAll(); if (tourOn) placeTour(); }, 130); }
 addEventListener("resize", relayout);
 if (window.ResizeObserver) new ResizeObserver(relayout).observe($("#main"));
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => layoutAll());
@@ -455,20 +600,35 @@ function paint() {
   $("#streak-k").textContent = (s => s ? s + " day" + (s > 1 ? "s" : "") : "")(M.streak(doc));
 }
 
+const STATUS_LABEL = {
+  synced: "Synced", syncing: "Syncing", offline: "Offline", error: "Sync trouble — will retry",
+  gone: "This link no longer works", off: "Sync off", busy: "Server busy — retrying in a few minutes",
+  full: "The service is full — saved on this device only", toolarge: "Too large to sync — saved on this device only",
+  readonly: "View only", unreadable: "This link can't read this list"
+};
+let lastLimitToast = "";
 function paintStatus(s) {
   syncStatus = s;
   const dot = $("#dot");
   dot.dataset.s = s;
-  const label = { synced: "Synced", syncing: "Syncing", offline: "Offline", error: "Sync trouble — will retry", gone: "This link no longer works", off: "Sync off — finish setup" }[s] || s;
+  const paused = s === "synced" && !syncLive && transport && Date.now() > liveGrace && listMode !== undefined;
+  dot.dataset.live = syncLive || s !== "synced" ? "1" : (Date.now() > liveGrace ? "0" : "1");
+  const label = (paused ? "Synced · live updates paused" : STATUS_LABEL[s]) || s;
   dot.querySelector(".lbl").textContent = label;
   dot.setAttribute("title", label);
-  $("#dot-sr").textContent = label;
+  dot.setAttribute("aria-label", "Sync status: " + label);
+  if ((s === "busy" || s === "full" || s === "toolarge") && lastLimitToast !== s) {
+    lastLimitToast = s;
+    toast(s === "busy" ? "The server is busy. Your list is safe here; syncing again in a few minutes." : s === "full" ? "The service is full right now. Your list is safe on this device." : "This list is too large to sync. Delete some old lines or history.");
+  }
+  if (s === "synced") lastLimitToast = "";
 }
+$("#dot").addEventListener("click", () => { toast($("#dot").querySelector(".lbl").textContent); });
 
 /* ---------------- changes ---------------- */
 function afterChange({ animate = true, delay = 0 } = {}) {
   doc.updatedAt = M.now();
-  if (sync) sync.update(doc); else saveLocal(listId, { doc, rev: 0, dirty: true, created: true });
+  if (sync) sync.update(doc); else saveLocal(listId, { doc, rev: 0, dirty: true, created: true, mode: listMode });
   if (delay) setTimeout(() => render({ animate }), delay); else render({ animate });
   paintListName();
 }
@@ -482,6 +642,7 @@ function applyRemote() {
 }
 
 function toggle(id, px, py, fromPointer) {
+  if (!canEdit()) return;
   const it = doc.items[id]; if (!it || it.deleted) return;
   if (editing) { if (editing.id === id) return; commitEdit(); }
   const li = rows.get(id);
@@ -518,16 +679,44 @@ function toggle(id, px, py, fromPointer) {
   }
 }
 
+/* taps: recognised from the pointer, so a render or a remote change between press and release cannot swallow them */
+let press = null, tapped = null;
+function onPress(li, e) {
+  if (e.button !== 0 || e.isPrimary === false) return;
+  if (!e.target.closest(".check") || e.target.closest(".einput")) return;
+  if (editing || drag) return;
+  press = { id: li.dataset.id, x: e.clientX, y: e.clientY, t: performance.now(), pointerId: e.pointerId, type: e.pointerType };
+}
+function recentlyTapped(id) { return !!tapped && tapped.id === id && performance.now() - tapped.t < 700; }
+document.addEventListener("pointerup", e => {
+  const p = press; press = null;
+  if (!p || e.pointerId !== p.pointerId) return;
+  if (drag || clickAfterDrag() || editing) return;
+  if (p.type === "touch" && performance.now() - p.t > 450) return; // held: a drag attempt, not a tap
+  const moved = Math.hypot(e.clientX - p.x, e.clientY - p.y);
+  const under = document.elementFromPoint(e.clientX, e.clientY);
+  const row = under && under.closest ? under.closest(".row") : null;
+  const sameRow = !!row && row.dataset.id === p.id && !!(under.closest(".check"));
+  if (!sameRow && moved > 10) return; // released somewhere else on purpose
+  if (!doc || !doc.items[p.id] || !rows.has(p.id)) return;
+  tapped = { id: p.id, t: performance.now() };
+  toggle(p.id, e.clientX, e.clientY, true);
+}, true);
+document.addEventListener("pointercancel", () => { press = null; }, true);
+
 function toggleToday(id) {
+  if (!canEdit()) return;
   const it = doc.items[id]; if (!it || it.deleted) return;
   it.today = !it.today;
   if (it.today) it.todayOrder = M.lastOrder(todayList(), i => i.todayOrder);
   it.updatedAt = M.now();
   sound.tick();
   afterChange();
+  toast(it.today ? "On Today" : "Off Today");
 }
 
 function newItem({ sectionId = "", today = view === "today", afterId = null } = {}) {
+  if (!canEdit()) return;
   if (editing) commitEdit();
   const id = M.shortId();
   const ts = M.now();
@@ -559,6 +748,7 @@ function renumber(sectionId, key) {
 }
 
 function deleteItem(id, { silent = false } = {}) {
+  if (!canEdit()) return;
   const it = doc.items[id]; if (!it || it.deleted) return;
   if (editing && editing.id === id) { editing = null; }
   if (!silent) pushUndo("Deleted", [id]);
@@ -574,6 +764,7 @@ function pushUndo(label, ids, secIds = []) {
   if (undoStack.length > 60) undoStack.shift();
 }
 function undo() {
+  if (!canEdit()) return;
   const u = undoStack.pop();
   if (!u) return;
   if (editing) cancelEdit();
@@ -589,15 +780,16 @@ function undo() {
 function toast(msg, { undo: withUndo = false } = {}) {
   const t = $("#toast");
   t.querySelector(".msg").textContent = msg;
-  $("#toast-undo").hidden = !withUndo;
+  $("#toast-undo").hidden = !withUndo || !canEdit();
   t.classList.add("on");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(hideToast, withUndo ? 4500 : 2200);
+  toastTimer = setTimeout(hideToast, withUndo ? 4500 : 2600);
 }
 function hideToast() { $("#toast").classList.remove("on"); }
 
 /* ---------------- inline editing ---------------- */
 function startEdit(id, { isNew = false } = {}) {
+  if (!canEdit()) return;
   const it = doc.items[id]; if (!it || it.deleted) return;
   if (editing) { if (editing.id === id) return; commitEdit(); }
   const li = rows.get(id); if (!li) return;
@@ -691,6 +883,7 @@ function focusedRowId() {
 /* ---------------- sections ---------------- */
 let secMenuId = null;
 async function addSection() {
+  if (!canEdit()) return;
   const name = await ask({ title: "New section", label: "Name", value: "" });
   if (!name) return;
   const id = M.shortId();
@@ -703,8 +896,9 @@ function toggleCollapse(id) {
   s.collapsed = !s.collapsed; s.updatedAt = M.now();
   afterChange({ animate: false });
 }
-function openSectionMenu(id) { secMenuId = id; showPanel("p-sec"); }
+function openSectionMenu(id) { if (!canEdit()) return; secMenuId = id; showPanel("p-sec"); }
 async function sectionAction(act) {
+  if (!canEdit()) return;
   const s = doc.sections[secMenuId]; if (!s || s.deleted) return;
   closePanel();
   if (act === "rename") {
@@ -732,6 +926,7 @@ async function sectionAction(act) {
 
 /* ---------------- keyboard move ---------------- */
 function moveFocused(dir) {
+  if (!canEdit()) return;
   const id = focusedRowId(); if (!id) return;
   const it = doc.items[id]; if (!it || it.deleted || it.done) return;
   if (view === "today") {
@@ -771,6 +966,7 @@ document.addEventListener("pointerup", e => downPointers.delete(e.pointerId), tr
 document.addEventListener("pointercancel", e => downPointers.delete(e.pointerId), true);
 let dragEndedAt = -1e9; // no drag has ended yet
 function longPressStart(li, e) {
+  if (!canEdit()) return;
   if (e.pointerType !== "touch" || e.button !== 0) return;
   if (editing || drag || e.target.closest(".tool")) return;
   const id = li.dataset.id, it = doc.items[id];
@@ -782,6 +978,7 @@ function longPressStart(li, e) {
   t = setTimeout(() => {
     cancel();
     if (!downPointers.has(pid) || drag || editing) return; // finger already lifted, or something else started
+    press = null; // a hold is not a tap
     try { navigator.vibrate && navigator.vibrate(12); } catch (x) { /* ignore */ }
     beginDrag(li, e, true);
   }, 400);
@@ -793,9 +990,11 @@ function longPressStart(li, e) {
 function clickAfterDrag() { return !!drag || (performance.now() - dragEndedAt) < 600; }
 const preventTouch = e => { if (drag) e.preventDefault(); };
 function beginDrag(li, e, fromLongPress) {
+  if (!canEdit()) return;
   if (drag || editing) return;
   const id = li.dataset.id, it = doc.items[id];
   if (!it || it.deleted || it.done) return;
+  press = null;
   const rect = li.getBoundingClientRect();
   drag = { id, li, offY: e.clientY - rect.top, startTop: rect.top, pointerId: e.pointerId, overSec: null, lastY: e.clientY, raf: 0 };
   li.classList.add("dragging"); document.body.classList.add("is-dragging");
@@ -905,6 +1104,7 @@ function showPanel(id) {
   const d = document.getElementById(id);
   if (openPanel && openPanel !== d) openPanel.close();
   openPanel = d;
+  d.classList.remove("closing"); d.style.transform = ""; d.removeAttribute("data-drag");
   if (!d.open) d.showModal();
 }
 function closePanel() { if (openPanel) { openPanel.close(); } }
@@ -912,7 +1112,35 @@ $$("dialog.panel").forEach(d => {
   d.addEventListener("close", () => { if (openPanel === d) openPanel = null; });
   d.addEventListener("click", e => { if (e.target === d) d.close(); });
   d.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => d.close()));
+  if (d.classList.contains("sheet")) wireSheetSwipe(d);
 });
+/** Bottom sheets close on a downward swipe (from the grip, the header, or the body when it is scrolled to the top). */
+function wireSheetSwipe(d) {
+  let st = null;
+  d.addEventListener("pointerdown", e => {
+    if (!sheetUi() || e.pointerType === "mouse" || e.button !== 0) return;
+    const body = d.querySelector(".body");
+    if (e.target.closest("input,select,textarea,canvas,.link")) return;
+    if (body && body.scrollTop > 0 && !e.target.closest(".grip, h2")) return;
+    st = { y: e.clientY, x: e.clientX, t: performance.now(), id: e.pointerId, moving: false };
+  });
+  d.addEventListener("pointermove", e => {
+    if (!st || e.pointerId !== st.id) return;
+    const dy = e.clientY - st.y, dx = e.clientX - st.x;
+    if (!st.moving) { if (Math.abs(dx) > Math.abs(dy) || dy < 8) { if (Math.abs(dx) > 12) st = null; return; } st.moving = true; d.setAttribute("data-drag", "1"); try { d.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ } }
+    d.style.transform = `translateY(${Math.max(0, dy)}px)`;
+  });
+  const end = e => {
+    if (!st || e.pointerId !== st.id) return;
+    const dy = e.clientY - st.y, dt = performance.now() - st.t; const s = st; st = null;
+    d.removeAttribute("data-drag");
+    if (s.moving && (dy > 90 || (dy > 30 && dy / dt > 0.5))) {
+      d.classList.add("closing"); d.style.transform = "";
+      setTimeout(() => { d.classList.remove("closing"); if (d.open) d.close(); }, RM.matches ? 0 : 200);
+    } else d.style.transform = "";
+  };
+  d.addEventListener("pointerup", end); d.addEventListener("pointercancel", end);
+}
 function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger = false }) {
   return new Promise(resolve => {
     const d = $("#ask");
@@ -944,6 +1172,9 @@ function paintMenu() {
   $('#p-menu [data-act="mute"]').setAttribute("aria-pressed", dev.muted ? "true" : "false");
   $("#volume").value = Math.round(dev.volume * 100);
   $('#p-menu [data-act="full"]').hidden = !document.fullscreenEnabled;
+  $("#help-lb").textContent = touchUi() ? "Gestures" : "Keyboard help";
+  $('#p-menu [data-act="tour"]').hidden = !doc || listMode !== "edit";
+  $('#p-menu [data-act="share"] .lb').textContent = listMode === "view" ? "Share the view link" : "Share & open on phone";
 }
 $("#p-menu").addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
@@ -955,10 +1186,17 @@ $("#p-menu").addEventListener("click", e => {
   else if (act === "full") { closePanel(); toggleFullscreen(); }
   else if (act === "history") { closePanel(); openHistory(); }
   else if (act === "lists") { closePanel(); openLists(); }
-  else if (act === "help") { closePanel(); showPanel("p-help"); }
+  else if (act === "tour") { closePanel(); startTour(); }
+  else if (act === "help") { closePanel(); openHelp(); }
 });
 $("#volume").addEventListener("input", e => { dev.volume = (+e.target.value) / 100; saveDevice(); });
 $("#volume").addEventListener("change", () => { if (!dev.muted) sound.tick(); });
+function openHelp() {
+  const touch = touchUi();
+  $("#help-title").textContent = touch ? "Gestures" : "Keyboard";
+  $("#help-keys").hidden = touch; $("#help-gestures").hidden = !touch;
+  showPanel("p-help");
+}
 
 /* wake lock */
 async function setWake(on) {
@@ -978,87 +1216,132 @@ if (dev.wake) requestWake();
 /* rollover + date, once a minute */
 function tickDay() {
   paintDate();
-  if (!doc) return;
+  if (!doc || listMode !== "edit") return;
   const r = M.rollover(doc);
   if (r.moved.length) { doc = r.doc; afterChange({ animate: true }); wasAll = allDoneToday(); }
 }
-setInterval(() => { tickDay(); retryPendingKills(); }, 60000);
+setInterval(() => { tickDay(); retryPendingKills(); settleMigrations(); }, 60000);
 
-/* share / QR */
+/* ---------------- links: share, save, rotate ---------------- */
+function editLink() { return ref && ref.mode === "edit" ? BASE + "#/l/" + ref.W : null; }
+function viewLink() { return ref ? BASE + "#/r/" + ref.R : null; }
+async function drawQr(canvas, text) {
+  const { default: qrcode } = await import("./qr.js");
+  const q = qrcode(0, "M"); q.addData(text); q.make();
+  const n = q.getModuleCount(), scale = Math.max(3, Math.floor(200 / n)), quiet = 2;
+  const size = (n + quiet * 2) * scale;
+  canvas.width = size; canvas.height = size; canvas.style.width = canvas.style.height = size + "px";
+  const g = canvas.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, size, size); g.fillStyle = "#111";
+  for (let r = 0; r < n; r++) for (let col = 0; col < n; col++) if (q.isDark(r, col)) g.fillRect((col + quiet) * scale, (r + quiet) * scale, scale, scale);
+}
+async function copyText(text, okMsg) {
+  try { await navigator.clipboard.writeText(text); toast(okMsg || "Copied"); } catch (e) { toast("Select the link and copy it"); }
+}
+function nativeShare(text) {
+  if (!navigator.share) return false;
+  navigator.share({ title: "Today's Five", text: "Today's Five list", url: text }).catch(() => {});
+  return true;
+}
+let shareKind = "edit";
 async function openShare() {
-  if (!doc) return;
-  const link = BASE + "#/l/" + listId;
-  $("#share-link").textContent = link;
-  const off = !transport;
-  $("#share-msg").textContent = off
-    ? "Sync isn't set up yet, so this link would open an empty list on another device. Follow SETUP.md first."
-    : "Scan this with your phone's camera, or send yourself the link. Anyone with the link can read and edit the list, so treat it like a password.";
-  $("#qr").hidden = off;
-  $("#share-rotate").hidden = off;
-  if (!off) {
-    const { default: qrcode } = await import("./qr.js");
-    const q = qrcode(0, "M"); q.addData(link); q.make();
-    const n = q.getModuleCount(), scale = Math.max(4, Math.floor(220 / n)), quiet = 2;
-    const c = $("#qr-c"), size = (n + quiet * 2) * scale;
-    c.width = size; c.height = size; c.style.width = c.style.height = size + "px";
-    const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, size, size); g.fillStyle = "#111";
-    for (let r = 0; r < n; r++) for (let col = 0; col < n; col++) if (q.isDark(r, col)) g.fillRect((col + quiet) * scale, (r + quiet) * scale, scale, scale);
-  }
+  if (!doc || !ref) return;
+  if (!transport) { toast("Sync isn't set up, so a link would open an empty list elsewhere"); return; }
+  shareKind = listMode === "view" ? "view" : "edit";
+  $("#share-tab-edit").hidden = listMode === "view";
+  $("#share-rotate").hidden = listMode === "view";
+  $("#share-native").hidden = !navigator.share;
+  await paintShare();
   showPanel("p-share");
 }
-$("#share-copy").addEventListener("click", async () => {
-  try { await navigator.clipboard.writeText($("#share-link").textContent); toast("Link copied"); } catch (e) { toast("Select the link and copy it"); }
-});
+async function paintShare() {
+  const link = shareKind === "edit" ? editLink() : viewLink();
+  $("#share-tab-edit").setAttribute("aria-selected", shareKind === "edit" ? "true" : "false");
+  $("#share-tab-view").setAttribute("aria-selected", shareKind === "view" ? "true" : "false");
+  $("#share-msg").textContent = shareKind === "edit"
+    ? "For your other devices and anyone who should edit. Scan it with the phone's camera, or send yourself the link."
+    : "For anyone who should see the list but not change it. They get live updates too.";
+  $("#share-link").textContent = link;
+  $("#share-rotate").textContent = "Rotate links";
+  await drawQr($("#qr-c"), link);
+}
+$("#share-tabs").addEventListener("click", e => { const b = e.target.closest("[data-kind]"); if (!b) return; shareKind = b.dataset.kind; paintShare(); });
+$("#share-copy").addEventListener("click", () => copyText($("#share-link").textContent, "Link copied"));
+$("#share-native").addEventListener("click", () => nativeShare($("#share-link").textContent));
+$("#share").addEventListener("click", openShare);
 $("#share-rotate").addEventListener("click", async () => {
   closePanel();
+  if (!canEdit()) return;
   if (syncStatus !== "synced") { toast("Rotate needs a live connection — try again once synced"); return; }
-  const ok = await ask({ title: "Rotate link?", msg: "A new secret link replaces this one. The old link stops working everywhere, including your other devices — open the new one there.", confirm: "Rotate", danger: true });
+  const ok = await ask({ title: "Rotate links?", msg: "A new edit link and a new view link replace the current ones. Every old link stops working everywhere at once, including your other devices and anyone you gave a view link. Open the new link there.", confirm: "Rotate", danger: true });
   if (!ok) return;
   await rotateLink();
 });
 async function rotateLink() {
-  const oldId = listId;
+  const oldId = listId, oldRef = ref;
   const newId = M.newId();
   if (sync) await sync.flush();
   const copy = M.normalize(JSON.parse(JSON.stringify(doc)), newId);
   copy.updatedAt = M.now();
-  saveLocal(newId, { doc: copy, rev: 0, dirty: true, created: true });
+  saveLocal(newId, { doc: copy, rev: 0, dirty: true, created: true, mode: "edit" });
   const old = meta.lists.find(l => l.id === oldId);
-  registerList(newId, old ? old.name : "");
+  const e = registerList(newId, old ? old.name : "", "edit"); e.created = true; e.linkSaved = true; // the share sheet that follows shows the link
   meta.lists = meta.lists.filter(l => l.id !== oldId);
   meta.dead = Array.from(new Set([...(meta.dead || []), oldId]));
   meta.redirect = { ...(meta.redirect || {}), [oldId]: newId };
-  await openList(newId);
+  await openList({ id: newId, mode: "edit" });
   // let the new list land, then kill the old one; if that fails, remember to retry
   if (sync) await sync.flush();
   removeLocal(oldId);
-  const dead = await killRemote(oldId);
+  const dead = await killRemote({ lookupId: oldRef.lookupId, token: oldRef.token });
   if (IOS && !STANDALONE) {
-    // Safari memoised the manifest at load; reload so an Add to Home Screen now carries the new id
+    // Safari memoised the manifest at load; reload so an Add to Home Screen now carries the new link
     sessionStorage.setItem("tf/reopenShare", "1");
     reloading = true; location.replace(BASE + SEARCH + "#/l/" + newId); location.reload();
     return;
   }
-  toast(dead ? "New link ready" : "New link ready — old link not revoked yet, will retry");
+  toast(dead ? "New links ready — the old ones are dead" : "New links ready — old ones not revoked yet, will retry");
   openShare();
 }
-async function killRemote(id) {
-  if (!transport) { queueKill(id); return false; }
+async function killRemote(k) {
+  if (!transport) { queueKill(k); return false; }
   try {
-    await sync.remove(id);
-    sync.announceGone(id);
-    meta.pendingKill = (meta.pendingKill || []).filter(x => x !== id); saveDevice();
+    await sync.remove(k.lookupId, k.token);
+    sync.announceGone(k.lookupId);
+    meta.pendingKill = (meta.pendingKill || []).filter(x => x.lookupId !== k.lookupId); saveDevice();
     return true;
-  } catch (e) { queueKill(id); return false; }
+  } catch (e) { queueKill(k); return false; }
 }
-function queueKill(id) { meta.pendingKill = Array.from(new Set([...(meta.pendingKill || []), id])); saveDevice(); }
+function queueKill(k) { meta.pendingKill = [...(meta.pendingKill || []).filter(x => x.lookupId !== k.lookupId), k]; saveDevice(); }
 let killing = false;
 async function retryPendingKills() {
-  if (killing || !transport || !(meta.pendingKill || []).length || !navigator.onLine) return;
+  if (killing || !transport || !sync || !(meta.pendingKill || []).length || !navigator.onLine) return;
   killing = true;
-  try { for (const id of [...meta.pendingKill]) await killRemote(id); } finally { killing = false; }
+  try { for (const k of [...meta.pendingKill]) await killRemote(k); } finally { killing = false; }
 }
-addEventListener("online", () => setTimeout(retryPendingKills, 1500));
+addEventListener("online", () => setTimeout(() => { retryPendingKills(); settleMigrations(); }, 1500));
+
+/* save-your-link sheet: right after a list is created (or migrated); dismissable, shown once per list */
+function showSaveLink({ migrated = false } = {}) {
+  const link = editLink(); if (!link) return maybeTour();
+  $("#save-title").textContent = migrated ? "Your link changed" : "Save your link";
+  $("#save-msg").textContent = migrated
+    ? "Your list is now encrypted on your device and lives behind this new link. The old link is dead. Save this one: it is the only way back and the only key that can read the list."
+    : "This link is the only way back to your list, and the only key that can read it. Nobody can send it to you again, not even the person running this site.";
+  $("#save-hint-phone").hidden = !migrated;
+  $("#save-hint-home").hidden = migrated;
+  $("#save-native").hidden = !navigator.share;
+  $("#save-link").textContent = link;
+  drawQr($("#save-qr-c"), link).catch(() => {});
+  showPanel("p-save");
+}
+$("#save-copy").addEventListener("click", () => copyText($("#save-link").textContent, "Link copied"));
+$("#save-native").addEventListener("click", () => nativeShare($("#save-link").textContent));
+$("#save-done").addEventListener("click", () => closePanel());
+$("#p-save").addEventListener("close", () => {
+  const e = meta.lists.find(l => l.id === listId);
+  if (e) { e.linkSaved = true; e.migrated = false; saveDevice(); }
+  setTimeout(maybeTour, 250);
+});
 
 /* lists */
 function openLists() {
@@ -1068,29 +1351,33 @@ function openLists() {
     const b = document.createElement("button"); b.type = "button";
     const loc = loadLocal(l.id);
     const name = (loc && loc.doc.name) || l.name || "Untitled list";
-    b.innerHTML = `<span class="${l.id === listId ? "cur" : ""}">${escapeHtml(name)}${arch ? ' <span class="sub">archived</span>' : ""}</span><span class="id">${l.id.slice(0, 6)}…</span>`;
-    b.addEventListener("click", () => { closePanel(); if (arch) { l.archived = false; saveDevice(); } switchTo(l.id); });
+    const tags = [l.mode === "view" ? "view-only" : "", arch ? "archived" : ""].filter(Boolean).map(t => `<span class="sub">${t}</span>`).join(" ");
+    b.innerHTML = `<span class="lb ${l.id === listId ? "cur" : ""}">${escapeHtml(name)} ${tags}</span><span class="id">${l.id.slice(0, 6)}…</span>`;
+    b.addEventListener("click", () => { closePanel(); if (arch) { l.archived = false; saveDevice(); } switchTo({ id: l.id, mode: l.mode === "view" ? "view" : "edit" }); });
     return b;
   };
   active.forEach(l => menu.appendChild(mk(l, false)));
   archived.forEach(l => menu.appendChild(mk(l, true)));
   $("#l-archive").hidden = active.length < 2 || !listId;
-  $("#l-rename").hidden = !listId;
+  $("#l-rename").hidden = !listId || listMode !== "edit";
   showPanel("p-lists");
 }
 function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function createList(d, id) {
+  saveLocal(id, { doc: d, rev: 0, dirty: true, created: true, mode: "edit" });
+  const e = registerList(id, d.name, "edit"); e.created = true; e.linkSaved = false;
+  switchTo({ id, mode: "edit" });
+}
 $("#l-new").addEventListener("click", async () => {
   closePanel();
   const name = await ask({ title: "New list", label: "Name", value: "" });
   if (name === null) return;
   const id = M.newId();
-  const d = M.emptyDoc(id, (name || "").trim().slice(0, 60));
-  saveLocal(id, { doc: d, rev: 0, dirty: true, created: true });
-  registerList(id, d.name);
-  switchTo(id);
+  createList(M.emptyDoc(id, (name || "").trim().slice(0, 60)), id);
 });
 $("#l-rename").addEventListener("click", async () => {
   closePanel();
+  if (!canEdit()) return;
   const name = await ask({ title: "Rename list", label: "Name", value: doc.name || "" });
   if (name === null) return;
   doc.name = name.trim().slice(0, 60); doc.nameAt = M.now();
@@ -1104,39 +1391,41 @@ $("#l-archive").addEventListener("click", async () => {
   await flushQuick();
   e.archived = true; saveDevice();
   const next = meta.lists.find(l => !l.archived);
-  if (next) switchTo(next.id); else showWelcome();
+  if (next) switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else showWelcome();
 });
-$("#l-paste-go").addEventListener("click", () => { const id = parseLink($("#l-paste").value); if (!id) { toast("That doesn't look like a list link"); return; } closePanel(); switchTo(id); });
+$("#l-paste-go").addEventListener("click", () => { const r = parseLink($("#l-paste").value); if (!r) { toast("That doesn't look like a list link"); return; } closePanel(); switchTo(r); });
 function parseLink(s) {
-  const m = String(s || "").trim().match(/#\/l\/([0-9A-Za-z]{22,64})/) || String(s || "").trim().match(/^([0-9A-Za-z]{22,64})$/);
-  return m ? m[1] : null;
+  const t = String(s || "").trim();
+  const m = t.match(/#\/(l|r)\/([0-9A-Za-z]{22,64})/);
+  if (m) return { id: m[2], mode: m[1] === "r" ? "view" : "edit" };
+  const bare = t.match(/^([0-9A-Za-z]{22,64})$/);
+  return bare ? { id: bare[1], mode: "edit" } : null;
 }
-function switchTo(id) {
-  if (id === listId) return;
-  if (listId && syncStatus === "gone") { meta.redirect = { ...(meta.redirect || {}), [listId]: id }; }
-  meta.current = id; saveDevice();
+function switchTo(r) {
+  if (r.id === listId && r.mode === listMode) return;
+  if (listId && syncStatus === "gone" && r.mode === "edit") {
+    // the old link died (rotated or migrated elsewhere): remember where it went, and carry unsynced edits if the docs are kin
+    meta.redirect = { ...(meta.redirect || {}), [listId]: r.id };
+    meta.carry = { from: listId, to: r.id };
+  }
+  meta.current = r.id; meta.currentMode = r.mode; saveDevice();
   if (IOS && !STANDALONE) {
     reloading = true;
-    const target = BASE + SEARCH + "#/l/" + id;
+    const target = BASE + SEARCH + frag(r);
     if (location.origin + location.pathname === BASE) { flushQuick().then(() => { location.replace(target); location.reload(); }); }
     else location.replace(target); // path changes (…/index.html): this is a real navigation, no reload needed
     return;
   }
-  openList(id);
+  openList(r);
 }
 $("#listname").addEventListener("click", openLists);
-$("#w-new").addEventListener("click", () => {
-  const id = M.newId();
-  const d = M.seedDoc(id);
-  saveLocal(id, { doc: d, rev: 0, dirty: true, created: true });
-  registerList(id, "");
-  switchTo(id);
-});
+$("#w-new").addEventListener("click", () => { const id = M.newId(); createList(M.seedDoc(id), id); });
+$("#w-paste-show").addEventListener("click", () => { $("#w-paste-form").hidden = false; $("#w-paste").focus(); });
 $("#w-paste-form").addEventListener("submit", e => {
   e.preventDefault();
-  const id = parseLink($("#w-paste").value);
-  if (!id) { $("#w-err").textContent = "That doesn't look like a list link. It ends in #/l/ followed by 22 letters and digits."; return; }
-  switchTo(id);
+  const r = parseLink($("#w-paste").value);
+  if (!r) { $("#w-err").textContent = "That doesn't look like a list link. It ends in #/l/ or #/r/ followed by 22 letters and digits."; return; }
+  switchTo(r);
 });
 
 /* history */
@@ -1183,7 +1472,7 @@ function renderSwatches() {
     const sm = document.createElement("span"); sm.className = "sm"; sm.textContent = t.base + (saved ? " · yours" : ""); sm.style.color = t.colors.dim;
     b.append(bar, nm, sm);
     b.addEventListener("click", () => chooseTheme(saved ? { ...t, name: saved.name } : t));
-    if (saved) {
+    if (saved && canEdit()) {
       const del = document.createElement("button"); del.type = "button"; del.className = "del"; del.textContent = "×"; del.setAttribute("aria-label", "Delete " + saved.name);
       del.addEventListener("click", e => { e.stopPropagation(); doc.themes[saved.id] = { id: saved.id, deleted: true, updatedAt: M.now() }; afterChange({ animate: false }); renderSwatches(); });
       b.appendChild(del);
@@ -1223,7 +1512,6 @@ function paintCustom() {
   const pm = pv.querySelector(".pm"); pm.style.fontFamily = p.ui[2]; pm.style.color = c.dim; pm.querySelector("b").style.color = c.accentText;
   const r = T.report(t);
   $("#c-contrast").textContent = `Contrast — text ${r.text.toFixed(1)}:1 · muted ${r.muted.toFixed(1)}:1 · accent ${r.accentText.toFixed(1)}:1 · fonts ${p.name}`;
-  T.loadFonts(T.fontsUrl(t.pair));
 }
 /** Live preview on the page (not persisted); the panel's close handler restores the real theme. */
 function previewCustom() { T.applyTheme(customTheme(), document, { persist: false }); }
@@ -1239,6 +1527,7 @@ $("#c-use").addEventListener("click", () => { chooseTheme(customTheme()); });
 let keepPreview = false;
 $("#c-save").addEventListener("click", async () => {
   if (!doc) { toast("Open a list first to save a theme"); return; }
+  if (!canEdit()) { toast("A view link can't save themes to the list"); return; }
   if (!custom.name.trim()) {
     keepPreview = true;
     const n = await ask({ title: "Name this theme", label: "Name", value: "" });
@@ -1262,6 +1551,89 @@ $("#c-import-go").addEventListener("click", () => {
 });
 $("#p-theme").addEventListener("close", () => { if (!keepPreview) applyThemeCode(currentThemeCode()); });
 
+/* ---------------- first-run tour ----------------
+   Four or five coach marks over the real controls, one line each. Dismissable at any step, never shown again
+   on this device unless asked for (⋯ → How it works). Gestures on touch, keys on the desktop.              */
+let tourOn = false, tourStep = 0, tourViewBefore = "today";
+function tourSteps() {
+  const touch = touchUi();
+  const firstToday = () => $("#list .row .check") || $("#list") || $("#addtoday");
+  const firstAll = () => $("#all .row");
+  return [
+    { view: "today", target: firstToday, text: touch ? "Tap a line to cross it off. Tap it again to bring it back." : "Click a line to cross it off, or press its number. Click again to bring it back." },
+    { view: "today", target: () => $(".seg"), text: "Today is the short list you leave on screen. Everything holds the rest." },
+    { view: "all", target: () => { const r = firstAll(); return (r && r.querySelector(".tool.today")) || $("#all"); }, text: "In Everything, the Today toggle puts a line on Today, or takes it off." },
+    { view: "all", target: () => { const r = firstAll(); return touch ? (r || $("#all")) : ((r && r.querySelector(".tool.handle")) || $("#all")); }, text: touch ? "Press and hold a line, then drag to reorder it or move it to another section." : "Drag the handle to reorder a line or move it to another section. ⌥ ↑ / ↓ moves the focused line too." },
+    { view: "today", target: () => (!$("#share").hidden && $("#share").offsetParent) ? $("#share") : $("#more"), text: "Your link is the key. Save it from Share, and share it only with people who should see the list. Lose the link, lose the list." }
+  ];
+}
+function maybeTour() {
+  if (dev.tourDone || !doc || listMode !== "edit" || openPanel || tourOn) return;
+  setTimeout(() => { if (!dev.tourDone && doc && listMode === "edit" && !openPanel && !tourOn) startTour(); }, 400);
+}
+function startTour() {
+  if (!doc) return;
+  if (openPanel) closePanel();
+  if (editing) commitEdit();
+  tourOn = true; tourStep = 0; tourViewBefore = view;
+  const t = $("#tour"); t.hidden = false;
+  showTourStep();
+}
+function endTour() {
+  if (!tourOn) return;
+  tourOn = false;
+  $("#tour").hidden = true;
+  $$(".row.tour-show").forEach(r => r.classList.remove("tour-show"));
+  dev.tourDone = true; saveDevice();
+  if (view !== tourViewBefore) setView(tourViewBefore);
+}
+function showTourStep() {
+  const steps = tourSteps();
+  const s = steps[tourStep];
+  if (!s) return endTour();
+  if (view !== s.view) setView(s.view);
+  $("#tour-text").textContent = s.text;
+  $("#tour-next").textContent = tourStep === steps.length - 1 ? "Done" : "Next";
+  $("#tour-dots").innerHTML = steps.map((_, i) => `<i class="${i === tourStep ? "on" : ""}"></i>`).join("");
+  $$(".row.tour-show").forEach(r => r.classList.remove("tour-show"));
+  requestAnimationFrame(placeTour);
+}
+function placeTour() {
+  if (!tourOn) return;
+  const s = tourSteps()[tourStep]; if (!s) return;
+  const el = s.target();
+  const tour = $("#tour"), hole = $("#tour-hole"), card = $("#tour-card");
+  const row = el && el.closest ? el.closest(".row") : null; if (row) row.classList.add("tour-show");
+  const r = el ? el.getBoundingClientRect() : null;
+  const pad = 8;
+  if (!r || (r.width === 0 && r.height === 0)) {
+    tour.classList.add("center");
+    hole.style.cssText = `left:${innerWidth / 2}px;top:${innerHeight / 2}px;width:0;height:0`;
+  } else {
+    tour.classList.remove("center");
+    hole.style.cssText = `left:${r.left - pad}px;top:${r.top - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px`;
+  }
+  const cw = Math.min(352, innerWidth - 32);
+  card.style.width = cw + "px";
+  const ch = card.offsetHeight || 140;
+  let left = r ? r.left + r.width / 2 - cw / 2 : innerWidth / 2 - cw / 2;
+  left = Math.max(16, Math.min(innerWidth - cw - 16, left));
+  let top, place = "below";
+  if (!r) { top = innerHeight / 2 - ch / 2; place = "center"; }
+  else if (r.bottom + pad + 16 + ch < innerHeight - 16) top = r.bottom + pad + 16;
+  else { top = Math.max(16, r.top - pad - 16 - ch); place = "above"; }
+  tour.dataset.place = place;
+  card.style.left = left + "px"; card.style.top = top + "px";
+  // the arrow points at the target's centre when the card had to slide sideways
+  const arrowX = r ? Math.max(18, Math.min(cw - 18, r.left + r.width / 2 - left)) : cw / 2;
+  card.style.setProperty("--arrow-x", arrowX + "px");
+  $("#tour-next").focus({ preventScroll: true });
+}
+$("#tour-next").addEventListener("click", () => { tourStep++; showTourStep(); });
+$("#tour-skip").addEventListener("click", endTour);
+$("#tour").addEventListener("click", e => { if (e.target === e.currentTarget || e.target.id === "tour-hole") endTour(); });
+document.addEventListener("keydown", e => { if (tourOn && e.key === "Escape") { e.preventDefault(); endTour(); } }, true);
+
 /* ---------------- rail controls ---------------- */
 function wireUi() {
   $("#v-today").addEventListener("click", () => setView("today"));
@@ -1275,7 +1647,7 @@ function wireUi() {
   $("#toast-undo").addEventListener("click", () => { hideToast(); undo(); });
   $("#install-x").addEventListener("click", () => { $("#install").hidden = true; dev.installHint = true; saveDevice(); });
   $("#p-sec").addEventListener("click", e => { const b = e.target.closest("[data-sact]"); if (b) sectionAction(b.dataset.sact); });
-  if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc) $("#install").hidden = false; }, 2500);
+  if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc && !openPanel && !tourOn) $("#install").hidden = false; }, 2500);
   document.addEventListener("pointerdown", () => sound.prime(), { once: true, capture: true });
 }
 function toggleMute() { dev.muted = !dev.muted; saveDevice(); paintMute(); if (!dev.muted) sound.tick(); }
@@ -1285,6 +1657,7 @@ function toggleFullscreen() {
   else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
 }
 function startAgain() {
+  if (!canEdit()) return;
   const ids = todayList().filter(i => i.done).map(i => i.id);
   if (!ids.length) return;
   pushUndo("Start again", ids);
@@ -1302,14 +1675,17 @@ document.addEventListener("keydown", e => {
   if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.key === "z" || e.key === "Z")) {
     if (inField && !editing) return; // let the field handle its own undo
     if (editing) return;
+    if (!canEdit()) return;
     e.preventDefault(); undo(); return;
   }
-  if (openPanel || editing || inField) return;
+  if (openPanel || editing || inField || tourOn) return;
   if (!doc) return;
-  if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) { e.preventDefault(); moveFocused(e.key === "ArrowUp" ? -1 : 1); return; }
+  const edit = canEdit();
+  if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) { if (edit) { e.preventDefault(); moveFocused(e.key === "ArrowUp" ? -1 : 1); } return; }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key;
   if (k >= "1" && k <= "9") {
+    if (!edit) return;
     const pos = parseInt(k, 10) - 1;
     const ids = visibleRowIds();
     if (pos < ids.length) { e.preventDefault(); toggle(ids[pos], 0, 0, false); }
@@ -1317,10 +1693,10 @@ document.addEventListener("keydown", e => {
   else if (k === "m" || k === "M") { e.preventDefault(); toggleMute(); }
   else if (k === "t" || k === "T") { e.preventDefault(); openTheme(); }
   else if ((k === "f" || k === "F") && document.fullscreenEnabled) { e.preventDefault(); toggleFullscreen(); }
-  else if (k === "e" || k === "E") { e.preventDefault(); const id = focusedRowId(); if (id) startEdit(id); }
-  else if (k === "n" || k === "N") { e.preventDefault(); newItem({ today: view === "today", sectionId: view === "all" ? sectionOfFocused() : "" }); }
+  else if (k === "e" || k === "E") { if (!edit) return; e.preventDefault(); const id = focusedRowId(); if (id) startEdit(id); }
+  else if (k === "n" || k === "N") { if (!edit) return; e.preventDefault(); newItem({ today: view === "today", sectionId: view === "all" ? sectionOfFocused() : "" }); }
   else if (k === "a" || k === "A") { e.preventDefault(); setView(view === "today" ? "all" : "today"); }
-  else if (k === "?") { e.preventDefault(); showPanel("p-help"); }
+  else if (k === "?") { e.preventDefault(); openHelp(); }
   else if (k === "Escape") { hideToast(); }
 });
 function sectionOfFocused() {
@@ -1330,18 +1706,11 @@ function sectionOfFocused() {
 }
 
 /* test hook (read-only) */
-window.__tf = () => ({ view, listId, dragging: !!drag, drag: drag ? { id: drag.id, lastY: drag.lastY, raf: drag.raf, offY: drag.offY, inDom: drag.li.isConnected, sameAsRows: rows.get(drag.id) === drag.li } : null, editing: editing ? editing.id : null, status: syncStatus, cur: sync ? sync.current() : null, tab: TAB_ID });
+window.__tf = () => ({ view, listId, mode: listMode, lookupId: ref ? ref.lookupId : null, R: ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, tour: tourOn ? tourStep : -1, tourDone: !!dev.tourDone, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length });
 
 /* ---------------- service worker ---------------- */
 function registerSw() {
   if (!("serviceWorker" in navigator)) return;
   if (location.hostname === "localhost" || location.hostname === "127.0.0.1") { if (new URLSearchParams(location.search).get("sw") !== "1") return; }
-  addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js").then(() => navigator.serviceWorker.ready).then(() => {
-      // the first load's font requests happened before the worker took control: fetch the stylesheet
-      // once more through it so the offline shell has the fonts CSS too
-      const f = document.querySelector('link[data-fonts="active"]');
-      if (f && navigator.serviceWorker.controller) fetch(f.href, { mode: "cors" }).catch(() => {});
-    }).catch(() => {});
-  });
+  addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
 }

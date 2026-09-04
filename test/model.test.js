@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   newId, isListId, emptyDoc, normalize, merge, canon, docEquals, purgeTombstones,
   rollover, localDate, todayItems, itemsInSection, sectionsOrdered, orderBetween,
-  migrateV1, seedDoc, streak, diff, TOMBSTONE_TTL
+  migrateV1, seedDoc, streak, diff, TOMBSTONE_TTL, reorderPlan, applyPlan, SEED_LINES
 } from "../model.js";
 
 let passed = 0;
@@ -208,6 +208,43 @@ test("diff lists changed ids only", () => {
 test("canon is key-order independent", () => {
   assert.equal(canon({ a: 1, b: { c: 2, d: 3 } }), canon({ b: { d: 3, c: 2 }, a: 1 }));
   assert.ok(docEquals(emptyDoc("L", "n"), { ...emptyDoc("L", "n") }) === false || true);
+});
+
+
+test("reorderPlan: nothing to do when the order is unchanged", () => {
+  assert.deepEqual(reorderPlan(["a", "b", "c", "d"], ["a", "b", "c", "d"]), []);
+  assert.deepEqual(reorderPlan([], []), []);
+});
+
+test("reorderPlan: a done line sinking moves exactly one row (the others are never detached)", () => {
+  const cur = ["a", "b", "c", "d", "e"], want = ["b", "c", "d", "e", "a"];
+  const plan = reorderPlan(cur, want);
+  assert.equal(plan.length, 1); assert.deepEqual(plan[0], { id: "a", before: null });
+  assert.deepEqual(applyPlan(cur, plan), want);
+  const plan2 = reorderPlan(["a", "b", "c", "d", "e"], ["a", "b", "e", "c", "d"]);
+  assert.equal(plan2.length, 1, "a remote line jumping up moves only itself");
+});
+
+test("reorderPlan: new rows and removed rows, and random permutations always land (fuzz)", () => {
+  for (let t = 0; t < 300; t++) {
+    const n = 1 + Math.floor(rnd() * 9);
+    const ids = Array.from({ length: n }, (_, i) => "r" + i);
+    const cur = ids.slice().sort(() => rnd() - 0.5);
+    const want = ids.filter(() => rnd() < 0.85).sort(() => rnd() - 0.5);
+    if (rnd() < 0.5) want.push("new" + t); // a row the container already has appended at the end
+    const container = cur.concat(want.filter(id => !cur.includes(id)));
+    const plan = reorderPlan(container, want);
+    assert.deepEqual(applyPlan(container, plan).filter(id => want.includes(id)), want, "lands: " + JSON.stringify([container, want, plan]));
+    assert.ok(plan.length <= want.length);
+  }
+});
+
+test("seed: five Today lines that teach the basics without naming keys", () => {
+  assert.equal(SEED_LINES.length, 5);
+  assert.ok(SEED_LINES[0].includes("Tap or click"));
+  assert.ok(SEED_LINES.some(l => /Today toggle/.test(l)));
+  assert.ok(SEED_LINES.some(l => /link is the key/.test(l)));
+  assert.ok(SEED_LINES.every(l => l.length <= 70), "short enough for big type on a phone");
 });
 
 console.log(`\n${passed} model tests passed`);

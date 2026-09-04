@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Today's Five</title>
-  <meta name="description" content="A short list built to be left open on screen all day, synced between your Mac and your phone by a secret link.">
+  <meta name="description" content="A short list built to be left open on screen all day. Encrypted on your device; the link is the key. No account.">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-MwYdZmcd5WtJpDGtTAUiOLp/uNHWeenj2aBDPCEA95k='; style-src 'self' 'sha256-b1A6HHBcts72g8f0R2zO5DWWdnS1iZsjwdkndV1vbmw='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://xyfjxdbwhysbaltcwvcx.supabase.co wss://xyfjxdbwhysbaltcwvcx.supabase.co; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
   <meta name="theme-color" content="#1A1D21">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,42 +14,35 @@
   <meta name="apple-mobile-web-app-title" content="Today's Five">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" href="icons/icon-192.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="modulepreload" href="app.js">
   <link rel="modulepreload" href="model.js">
   <link rel="modulepreload" href="sync.js">
+  <link rel="modulepreload" href="crypto.js">
   <link rel="modulepreload" href="theme.js">
   <link rel="modulepreload" href="sound.js">
   <link rel="modulepreload" href="fx.js">
   <link rel="modulepreload" href="config.js">
-  <!-- the pinned Supabase client and the modules it imports, fetched in parallel instead of as a chain -->
-  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.114.0/+esm" crossorigin>
-  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/functions-js@2.114.0/+esm" crossorigin>
-  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/postgrest-js@2.114.0/+esm" crossorigin>
-  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/realtime-js@2.114.0/+esm" crossorigin>
-  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/storage-js@2.114.0/+esm" crossorigin>
-  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/auth-js@2.114.0/+esm" crossorigin>
-  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/tslib@2.8.1/+esm" crossorigin>
-  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/phoenix@0.4.5/+esm" crossorigin>
-  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/iceberg-js@0.8.1/+esm" crossorigin>
   <style id="theme-vars">:root{--ink:#1A1D21;--ink-2:#23272C;--ink-3:#2E343A;--text:#F5F1EA;--muted:#9AA0A8;--dim:#7F858C;--done:#7F858C;--accent:#D26128;--accent-hi:#E8814A;--accent-deep:#A34A1C;--accent-text:#E8814A;--danger:#E0745A;--hair:rgba(245,241,234,.10);--hair-hi:rgba(245,241,234,.30);--hair-solid:#65696E;--glow:radial-gradient(125% 78% at 50% 34%, rgba(210,97,40,.10), rgba(210,97,40,0) 62%);--strike-shadow:0 0 10px rgba(210,97,40,.38);--box-done-bg:#D26128;--strike-bg:#D26128;--strike-size:auto;--strike-anim:none;--finale-style:normal;--font-task:"Lato","Helvetica Neue",Helvetica,Arial,sans-serif;--font-ui:"PT Sans","Helvetica Neue",Helvetica,Arial,sans-serif;--task-w:900;--task-ls:-.025em;--task-lh:1.14;color-scheme:dark}</style>
   <script>
-  /* Boot, before first paint:
-     1. re-apply the cached theme tokens and font stylesheet so nothing flashes;
-     2. build the web app manifest as a Blob URL whose start_url carries this list's id.
-        iOS reads the manifest once at load and honours start_url (fragment included) only
-        when it is absolute; Chrome re-evaluates whenever the link changes. See PLAN.md. */
+  /* Boot, before first paint. This script is hashed in the CSP above: change it and re-run tools/csp-hash.
+     1. re-apply the cached theme tokens through the CSSOM (the inline stylesheet's text is hashed too, so it
+        is never rewritten) so nothing flashes;
+     2. build the web app manifest as a Blob URL whose start_url carries this list's link (#/l/<W> or #/r/<R>).
+        iOS reads the manifest once at load and honours start_url (fragment included) only when it is absolute;
+        Chrome re-evaluates whenever the link changes. See PLAN.md. */
   (function () {
-    var meta = {}, css = null, fonts = null;
+    var meta = {}, css = null;
     try {
       css = localStorage.getItem("tf/v2/themecss");
-      fonts = localStorage.getItem("tf/v2/fontsurl");
       meta = JSON.parse(localStorage.getItem("tf/v2/meta") || "{}") || {};
     } catch (e) {}
-    if (css && css.indexOf(":root{") === 0) {
-      document.getElementById("theme-vars").textContent = css;
+    var style = document.getElementById("theme-vars");
+    if (css && css.indexOf(":root{") === 0 && style && style.sheet) {
+      try {
+        while (style.sheet.cssRules.length) style.sheet.deleteRule(0);
+        style.sheet.insertRule(css, 0);
+        style.setAttribute("data-css", css);
+      } catch (e) {}
       var m = css.match(/color-scheme:(dark|light)/);
       if (m) document.documentElement.setAttribute("data-base", m[1]);
       // the iOS status bar style is read at install time: white text only over dark inks
@@ -57,23 +50,16 @@
       var ink = css.match(/--ink:(#[0-9A-Fa-f]{6})/);
       if (ink) document.querySelector('meta[name="theme-color"]').setAttribute("content", ink[1]);
     }
-    var link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = fonts || "https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=PT+Sans:wght@400;700&display=swap";
-    link.crossOrigin = "anonymous";
-    link.setAttribute("data-fonts", "active");
-    document.head.appendChild(link);
-
     var base = location.origin + location.pathname.replace(/[^/]*$/, "");
-    var manifestLink = null, currentId = null;
-    function build(id) {
+    var manifestLink = null, currentFrag = null;
+    function build(frag) {
       var inkColor = document.querySelector('meta[name="theme-color"]').getAttribute("content") || "#1A1D21";
       var man = {
         id: base,
         name: "Today's Five",
         short_name: "Five",
         description: "A short list built to be left open on screen all day.",
-        start_url: base + (id ? "#/l/" + id : ""),
+        start_url: base + (frag || ""),
         scope: base,
         display: "standalone",
         orientation: "any",
@@ -94,11 +80,11 @@
       } else {
         manifestLink.href = url;
       }
-      currentId = id;
+      currentFrag = frag;
     }
-    var h = location.hash.match(/^#\/l\/([0-9A-Za-z]{22,64})/);
-    build(h ? h[1] : (meta.current || ""));
-    window.__tfManifest = function (id) { if (id !== currentId) build(id || ""); };
+    var h = location.hash.match(/^#\/(l|r)\/([0-9A-Za-z]{22,64})/);
+    build(h ? "#/" + h[1] + "/" + h[2] : (meta.current ? "#/" + (meta.currentMode === "view" ? "r" : "l") + "/" + meta.current : ""));
+    window.__tfManifest = function (frag) { if (frag !== currentFrag) build(frag || ""); };
   })();
   </script>
   <link rel="stylesheet" href="styles.css">
@@ -111,17 +97,19 @@
   <header class="rail">
     <div class="rail-l">
       <span id="date"></span>
-      <button class="chip plain" id="listname" hidden title="Switch list"></button>
+      <button class="chip plain" id="listname" hidden title="Switch list">List</button>
+      <span class="pill" id="ro" hidden>View only</span>
     </div>
     <div class="rail-r">
       <span id="count" aria-live="polite"><b>0</b>/0</span>
-      <span id="dot" class="dot" data-s="off" role="status" aria-live="polite"><span class="lbl">Sync off — finish setup</span><span class="sr-only" id="dot-sr">Sync off</span></span>
+      <button id="dot" class="dot" data-s="off" data-live="0" type="button" aria-live="polite" aria-label="Sync status"><span class="lbl">Sync off</span></button>
       <div class="seg" role="tablist" aria-label="View">
         <button id="v-today" role="tab" aria-selected="true" aria-controls="today" title="Today (A)">Today</button>
         <button id="v-all" role="tab" aria-selected="false" aria-controls="all" title="Everything (A)">Everything</button>
       </div>
       <button class="chip accent" id="theme" title="Theme (T)" aria-haspopup="dialog">Dark</button>
       <button class="chip" id="mute" aria-pressed="false" title="Mute (M)">Sound on</button>
+      <button class="chip" id="share" title="Share this list" aria-haspopup="dialog">Share</button>
       <button class="chip" id="full" title="Full screen (F)">Full screen</button>
       <button class="chip icon" id="more" title="More" aria-haspopup="dialog" aria-label="More">⋯</button>
     </div>
@@ -135,15 +123,17 @@
     <div id="all" class="view" role="tabpanel" aria-labelledby="v-all" hidden></div>
     <div id="welcome" class="view" hidden>
       <h1>Today's Five</h1>
-      <p id="welcome-msg">A short list you leave open all day. It lives behind a secret link, so it stays the same on your Mac and your phone.</p>
+      <p id="welcome-msg">A short list you leave open on screen all day. It is encrypted on your device before it goes anywhere, and the link is the key. No account, nothing to sign up for.</p>
       <div class="actions">
-        <button class="big" id="w-new" type="button">Start a new list</button>
+        <button class="big" id="w-new" type="button">Start a list</button>
+        <button class="big quiet" id="w-paste-show" type="button">Paste a link</button>
       </div>
-      <form class="paste" id="w-paste-form" novalidate>
-        <input id="w-paste" type="url" inputmode="url" autocomplete="off" placeholder="Or paste a link to an existing list" aria-label="Paste a link">
+      <form class="paste" id="w-paste-form" novalidate hidden>
+        <input id="w-paste" type="url" inputmode="url" autocomplete="off" placeholder="https://…/#/l/…" aria-label="Paste a link">
         <button class="big" type="submit">Open</button>
       </form>
       <div class="err" id="w-err" role="alert"></div>
+      <p class="fine"><a href="about.html" id="w-about">How it works &amp; privacy</a></p>
     </div>
   </main>
 
@@ -157,19 +147,35 @@
 <div id="bar" aria-hidden="true"><div id="fill"></div></div>
 <div id="install" hidden><span>Add this to your Home Screen: tap <b>Share</b>, then <b>Add to Home Screen</b>.</span><button class="x" id="install-x" type="button" aria-label="Dismiss">×</button></div>
 
+<!-- first-run tour: a dimmed backdrop with a hole over the real control and one line of copy -->
+<div id="tour" hidden role="dialog" aria-modal="true" aria-labelledby="tour-text">
+  <div class="tour-hole" id="tour-hole"></div>
+  <div class="tour-card" id="tour-card">
+    <p id="tour-text"></p>
+    <div class="tour-foot">
+      <span class="tour-dots" id="tour-dots" aria-hidden="true"></span>
+      <button class="chip" id="tour-skip" type="button">Skip</button>
+      <button class="chip accent" id="tour-next" type="button">Next</button>
+    </div>
+  </div>
+</div>
+
 <!-- panels -->
-<dialog class="panel" id="p-menu" aria-labelledby="p-menu-h"><div class="body">
+<dialog class="panel sheet" id="p-menu" aria-labelledby="p-menu-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
   <h2 id="p-menu-h">Today's Five <button class="x" data-close type="button" aria-label="Close">×</button></h2>
-  <div class="menu">
-    <button type="button" data-act="share">Open on phone <span class="k">QR · link</span></button>
-    <button type="button" data-act="wake" aria-pressed="false">Keep screen awake <span class="k" id="wake-k">Off</span></button>
-    <button type="button" data-act="theme">Theme <span class="k">T</span></button>
-    <button type="button" data-act="mute" aria-pressed="false">Sound <span class="k" id="mute-k">On</span></button>
-    <label class="item" for="volume"><span>Volume</span><input type="range" id="volume" min="0" max="100" step="5" aria-label="Volume"></label>
-    <button type="button" data-act="full">Full screen <span class="k">F</span></button>
-    <button type="button" data-act="history">History <span class="k" id="streak-k"></span></button>
-    <button type="button" data-act="lists">Lists <span class="k" id="lists-k"></span></button>
-    <button type="button" data-act="help">Keyboard help <span class="k">?</span></button>
+  <div class="menu" id="menu">
+    <button type="button" data-act="share"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M5 12v7h14v-7"/></svg><span class="lb">Share &amp; open on phone</span><span class="k key">QR · link</span></button>
+    <button type="button" data-act="wake" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span class="lb">Keep screen awake</span><span class="k state" id="wake-k">Off</span></button>
+    <button type="button" data-act="theme"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2s-1-2 0-3 3 0 3-2c0-5-2-11-5-11z"/><circle cx="8" cy="10" r="1"/><circle cx="12" cy="7" r="1"/><circle cx="16" cy="10" r="1"/></svg><span class="lb">Theme</span><span class="k key">T</span></button>
+    <button type="button" data-act="mute" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h3l4 3V7l-4 3H4zM15 9a4 4 0 0 1 0 6M17.5 6.5a8 8 0 0 1 0 11"/></svg><span class="lb">Sound</span><span class="k state" id="mute-k">On</span></button>
+    <label class="item" for="volume"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14h4l3 5V5L8 10H4z"/></svg><span class="lb">Volume</span><input type="range" id="volume" min="0" max="100" step="5" aria-label="Volume"></label>
+    <button type="button" data-act="full"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span class="lb">Full screen</span><span class="k key">F</span></button>
+    <button type="button" data-act="history"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="lb">History</span><span class="k state" id="streak-k"></span></button>
+    <button type="button" data-act="lists"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="lb">Lists</span><span class="k state" id="lists-k"></span></button>
+    <button type="button" data-act="tour"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/></svg><span class="lb">How it works</span><span class="k state">Tour</span></button>
+    <button type="button" data-act="help"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/></svg><span class="lb" id="help-lb">Keyboard help</span><span class="k key">?</span></button>
+    <a class="item link" href="about.html" id="menu-about"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg><span class="lb">About &amp; privacy</span><span class="k state">↗</span></a>
   </div>
 </div></dialog>
 
@@ -209,7 +215,7 @@
   </div>
   <div class="row-actions">
     <button class="chip accent" id="c-use" type="button">Use</button>
-    <button class="chip" id="c-save" type="button">Save</button>
+    <button class="chip" id="c-save" type="button">Save to this list</button>
     <button class="chip" id="c-surprise" type="button">Surprise me</button>
     <button class="chip" id="c-export" type="button">Copy code</button>
   </div>
@@ -222,16 +228,43 @@
   </div>
 </div></dialog>
 
-<dialog class="panel" id="p-share" aria-labelledby="p-share-h"><div class="body">
-  <h2 id="p-share-h">Open on phone <button class="x" data-close type="button" aria-label="Close">×</button></h2>
-  <p id="share-msg">Scan this with your phone's camera, or send yourself the link. Anyone with the link can read and edit the list, so treat it like a password.</p>
-  <div class="qr" id="qr"><canvas id="qr-c" width="1" height="1" aria-label="QR code for this list's link" role="img"></canvas></div>
-  <div class="link" id="share-link"></div>
+<dialog class="panel sheet" id="p-share" aria-labelledby="p-share-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
+  <h2 id="p-share-h">Share <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <div class="seg2 wide" role="tablist" aria-label="Which link" id="share-tabs">
+    <button type="button" role="tab" id="share-tab-edit" aria-selected="true" data-kind="edit">Edit link</button>
+    <button type="button" role="tab" id="share-tab-view" aria-selected="false" data-kind="view">View link</button>
+  </div>
+  <p id="share-msg" class="share-msg"></p>
+  <div class="qr" id="qr"><canvas id="qr-c" width="1" height="1" aria-label="QR code for this link" role="img"></canvas></div>
+  <div class="link" id="share-link" tabindex="0"></div>
   <div class="row-actions">
     <button class="chip accent" id="share-copy" type="button">Copy link</button>
-    <button class="chip" id="share-rotate" type="button">Rotate link</button>
+    <button class="chip" id="share-native" type="button" hidden>Share…</button>
+    <button class="chip" id="share-rotate" type="button">Rotate links</button>
   </div>
-  <p class="sub" style="font-size:12px">Rotate makes a new link, moves the list to it, and kills the old one.</p>
+  <p class="fine" id="share-model">Anyone with the edit link can change anything, including making new links. Anyone with the view link can see everything until you rotate. There are no names, no presence and no record of who did what.</p>
+</div></dialog>
+
+<dialog class="panel sheet" id="p-save" aria-labelledby="p-save-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
+  <h2 id="p-save-h"><span id="save-title">Save your link</span></h2>
+  <p id="save-msg" class="save-msg">This link is the only way back to your list, and the only key that can read it. Nobody can send it to you again, not even the person running this site.</p>
+  <div class="qr" id="save-qr"><canvas id="save-qr-c" width="1" height="1" aria-label="QR code for this list's link" role="img"></canvas></div>
+  <div class="link" id="save-link" tabindex="0"></div>
+  <div class="row-actions">
+    <button class="chip accent" id="save-copy" type="button">Copy link</button>
+    <button class="chip" id="save-native" type="button" hidden>Share…</button>
+  </div>
+  <ul class="hints" id="save-hints">
+    <li id="save-hint-pm">Save it in your password manager, like a password.</li>
+    <li id="save-hint-home">On a phone, add this page to your Home Screen: the icon carries the link.</li>
+    <li id="save-hint-phone" hidden>Open the new link on your other devices and add it to the Home Screen again. The old icon stops working.</li>
+    <li>Lose the link, lose the list.</li>
+  </ul>
+  <div class="row-actions">
+    <button class="chip accent" id="save-done" type="button">I've saved it</button>
+  </div>
 </div></dialog>
 
 <dialog class="panel" id="p-lists" aria-labelledby="p-lists-h"><div class="body">
@@ -245,7 +278,7 @@
   <div class="field">
     <label for="l-paste">Paste a link</label>
     <div class="inline">
-      <input type="url" id="l-paste" inputmode="url" placeholder="https://…/#/l/…" autocomplete="off">
+      <input type="url" id="l-paste" inputmode="url" placeholder="https://…/#/l/… or #/r/…" autocomplete="off">
       <button class="chip" id="l-paste-go" type="button">Open</button>
     </div>
   </div>
@@ -257,9 +290,10 @@
   <div id="history-days"></div>
 </div></dialog>
 
-<dialog class="panel" id="p-help" aria-labelledby="p-help-h"><div class="body">
-  <h2 id="p-help-h">Keyboard <button class="x" data-close type="button" aria-label="Close">×</button></h2>
-  <div class="keys">
+<dialog class="panel sheet" id="p-help" aria-labelledby="p-help-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
+  <h2 id="p-help-h"><span id="help-title">Keyboard</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <div class="keys" id="help-keys">
     <kbd>1 – 9</kbd><span>Check off a line by position</span>
     <kbd>N</kbd><span>New line</span>
     <kbd>E</kbd><span>Edit the focused line</span>
@@ -274,15 +308,24 @@
     <kbd>F</kbd><span>Full screen</span>
     <kbd>?</kbd><span>This help</span>
   </div>
+  <div class="gestures" id="help-gestures" hidden>
+    <div class="g"><b>Tap a line</b><span>Cross it off, or bring it back</span></div>
+    <div class="g"><b>Press and hold, then drag</b><span>Reorder a line, or move it to another section in Everything</span></div>
+    <div class="g"><b>Pencil</b><span>Edit the line and its note</span></div>
+    <div class="g"><b>Today toggle</b><span>In Everything: put a line on Today, or take it off</span></div>
+    <div class="g"><b>Today / Everything</b><span>The two views. Today is the big one; Everything holds the rest</span></div>
+    <div class="g"><b>Swipe down or tap outside</b><span>Close a sheet like this one</span></div>
+  </div>
 </div></dialog>
 
-<dialog class="panel" id="p-sec" aria-labelledby="p-sec-h"><div class="body">
+<dialog class="panel sheet" id="p-sec" aria-labelledby="p-sec-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
   <h2 id="p-sec-h">Section <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <div class="menu">
-    <button type="button" data-sact="rename">Rename</button>
-    <button type="button" data-sact="up">Move up</button>
-    <button type="button" data-sact="down">Move down</button>
-    <button type="button" data-sact="delete" class="danger">Delete section <span class="sub">Its lines move to Unsorted</span></button>
+    <button type="button" data-sact="rename"><span class="lb">Rename</span></button>
+    <button type="button" data-sact="up"><span class="lb">Move up</span></button>
+    <button type="button" data-sact="down"><span class="lb">Move down</span></button>
+    <button type="button" data-sact="delete" class="danger"><span class="lb">Delete section <span class="sub">Its lines move to Unsorted</span></span></button>
   </div>
 </div></dialog>
 

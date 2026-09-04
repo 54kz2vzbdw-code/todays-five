@@ -338,10 +338,10 @@ export function migrateV1(v1, id, ts = now()) {
 }
 
 export const SEED_LINES = [
-  "Click this line to cross it off",
-  "Press N for a new line, or double-click one to edit it",
-  "Press 1 – 5 to check off without the mouse",
-  "Press A for Everything, T to pick a theme",
+  "Tap or click this line to cross it off",
+  "Add a line with + New line; the pencil edits one",
+  "Everything holds the rest; its Today toggle brings a line here",
+  "Your link is the key: save it from Share before you close this",
   "Cross off all five and see what happens"
 ];
 
@@ -355,6 +355,44 @@ export function seedDoc(id, ts = now()) {
     };
   });
   return doc;
+}
+
+/* ---------------- reorder planning ----------------
+   The fewest DOM moves that turn `current` into `wanted`: rows that already sit in a
+   correct relative order (the longest increasing subsequence) stay untouched, so a
+   render never detaches the row under the user's pointer unless it really moved.      */
+
+/** Moves as [{ id, before }] to apply in order: insert `id` before `before` (null = append). */
+export function reorderPlan(current, wanted) {
+  const cur = current.filter(id => wanted.includes(id));
+  const index = new Map(cur.map((id, i) => [id, i]));
+  const pos = wanted.map(id => index.has(id) ? index.get(id) : -1);
+  // longest strictly increasing subsequence over the current positions (O(n²) is fine for a list)
+  const n = pos.length, len = new Array(n).fill(1), prev = new Array(n).fill(-1);
+  let best = -1;
+  for (let i = 0; i < n; i++) {
+    if (pos[i] < 0) { len[i] = 0; continue; }
+    for (let j = 0; j < i; j++) if (pos[j] >= 0 && pos[j] < pos[i] && len[j] + 1 > len[i]) { len[i] = len[j] + 1; prev[i] = j; }
+    if (best < 0 || len[i] > len[best]) best = i;
+  }
+  const keep = new Set();
+  for (let i = best; i >= 0; i = prev[i]) keep.add(wanted[i]);
+  const moves = [];
+  for (let i = n - 1; i >= 0; i--) {
+    if (keep.has(wanted[i])) continue;
+    moves.push({ id: wanted[i], before: i + 1 < n ? wanted[i + 1] : null });
+  }
+  return moves;
+}
+
+/** Apply a plan to an array (what the DOM does with insertBefore); used by the tests. */
+export function applyPlan(current, moves) {
+  const out = current.slice();
+  for (const m of moves) {
+    const i = out.indexOf(m.id); if (i >= 0) out.splice(i, 1);
+    if (m.before === null) out.push(m.id); else out.splice(out.indexOf(m.before), 0, m.id);
+  }
+  return out;
 }
 
 /* ---------------- diff (for quiet UI updates) ---------------- */

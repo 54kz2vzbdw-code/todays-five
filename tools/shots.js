@@ -43,7 +43,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await step("line-menu", async () => {
     if (touch) {
       const tool = await page.$("#list .row:nth-child(2) .tool.lmenu");
-      if (tool && await tool.isVisible()) await tool.tap();
+      if (tool && (await tool.boundingBox() || { width: 0 }).width > 2) await tool.tap(); // 1.0 had a ⋯ on the phone; 1.1 hides it from fingers (a hold opens the menu)
       else { const release = await hold("#list .row:nth-child(2) .tx", 650); await mark("hint-drag"); await release(); }
     } else { await page.hover("#list .row:nth-child(2) .tx"); await wait(200); await page.click("#list .row:nth-child(2) .tool.lmenu"); }
     await page.waitForSelector("#p-line[open]"); await wait(400); await shot("line-menu"); await esc();
@@ -61,7 +61,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await page.mouse.move(2, 2); await wait(200);
   });
   await step("hint-menu", async () => {
-    if (touch) { const tool = await page.$("#all .row:nth-child(3) .tool.lmenu"); if (tool && await tool.isVisible()) await tool.tap(); else { const r = await hold("#all .row:nth-child(3) .tx", 650); await r(); } await page.waitForSelector("#p-line[open]"); await page.click('#p-line [data-lact="edit"]'); }
+    if (touch) { const tool = await page.$("#all .row:nth-child(3) .tool.lmenu"); if (tool && (await tool.boundingBox() || { width: 0 }).width > 2) await tool.tap(); else { const r = await hold("#all .row:nth-child(3) .tx", 650); await r(); } await page.waitForSelector("#p-line[open]"); await page.click('#p-line [data-lact="edit"]'); }
     else await page.dblclick("#all .row:nth-child(3) .tx");
     await page.waitForSelector("#all .row.editing"); await wait(200); await page.keyboard.press("Escape"); await wait(500);
     await mark("hint-menu"); if (await page.$("#mark:not([hidden])")) await esc();

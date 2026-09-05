@@ -125,11 +125,13 @@ let reloading = false;
 let toastAction = null, reviewDismissed = false, whatsNewShown = false, rz = 0, settling = false, killing = false;
 let dragEndedAt = -1e9; // no drag has ended yet
 let panelsP = null, panelCssReady = false;
-/** The panels' stylesheet is not render-blocking: it loads right after boot, and every panel waits for it. */
+/** The panels' stylesheet is not render-blocking: it is asked for a beat after load, so it never competes with the
+    first paint for the connection, and every panel waits for it. */
 const panelCss = new Promise(res => {
   const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "panels.css";
   l.onload = () => { panelCssReady = true; res(true); }; l.onerror = () => { panelCssReady = true; res(false); };
-  document.head.appendChild(l);
+  const go = () => setTimeout(() => document.head.appendChild(l), 250);
+  if (document.readyState === "complete") go(); else addEventListener("load", go, { once: true });
 });
 /** The lazy module with every panel. Loaded on first use, then kept. */
 function panels() {

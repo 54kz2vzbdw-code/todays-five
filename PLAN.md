@@ -469,3 +469,116 @@ What was actually run, and what it found.
 Found and fixed along the way: two module-level `let`s below the boot call (the temporal dead zone the v3 notes warn about — the smoke test caught it on the first run); the view-link refusal toast dying in the reload iOS Safari needs (a notice that survives it); one-thing type too small on a phone (`13vw`/`18vh`); a presence peer that closed its tab without a leave on the local transport (pagehide says goodbye, as a closed socket does on the real server).
 
 Standalone viewport note: in the simulator's Home Screen app the layout viewport (`inset: 0`, `100dvh`) ends 62 pt above the screen's bottom edge, so fixed elements sit that much higher than in Safari; the body background paints the rest, which is why the edge is seamless and why the v3 track showed as a floating hairline there. Whether a real iPhone does the same could not be checked in this build.
+
+---
+
+# Today's Five 1.1 — plan
+
+A design round, not a feature round. 1.0 taught and offered the same things through several channels at once: a
+five-mark tour, seed lines, a nine-item footer, five rail chips, a pencil and a ⋯ on every line, a labelled Today
+pill on every line in Everything, a lone search icon. 1.1 subtracts until each moment has one channel, and gives the
+app a real version scheme. The v2, v3 and v4 sections above still hold unless this one overrides them; the calls
+made where the brief left things open are in DECISIONS.md, "1.1 decisions".
+
+## What changed, by surface
+
+| surface | 1.0 | 1.1 |
+|---|---|---|
+| a line, at rest | checkbox, words, pencil, ⋯ (always on the phone, on hover on the desktop); a chevron for a note; in Everything also a TODAY pill, a delete cross and a drag handle | the checkbox and the words; in Everything a small star (hollow off, filled on, no colour until hover). Notes show under the line in both views |
+| a line, in hand | pencil edits; ⋯ opens the menu; the handle drags; a long-press drags on the phone | desktop: hover shows one ⋯ — click it for the menu (Edit first), drag it to move the line; `E` edits. Phone: a hold lifts the line — drag to move, let go for the menu; swipe right is the menu, swipe left is Not today |
+| the rail | date · count · dot · Today/Everything · Theme · Sound · Share · Full screen · ⋯ | date · count with a 6 px sync dot (and the presence dots) · Today/Everything · Share · ⋯; on the phone count · dot · views · ⋯. After four seconds without the mouse the desktop rail and footer fade to the date and the count |
+| the welcome | the rail above it | the title, three sentences, two buttons, one link |
+| teaching | a five-mark tour after the save sheet; seed lines up to 62 characters; footers of nine and seven items; `?` opened How it works | the five seed lines, 26–30 characters, all on screen on both viewports, the payoff last; nothing after the save sheet; three one-line hints once per device (the star on the first Everything, drag on the first hold or ⋯ hover, the menu after the first edit); footers of four; `?` is a keys-and-gestures reference; ⋯ → How it works stays the long-form page |
+| ⋯ | six rows, a centred dialog on the desktop | nine rows — Share · Theme · Sound · Full screen · How it works · Lists · Settings · About · Delete — a popover under the button on the desktop, the sheet on the phone; the line and section menus likewise |
+| search | a lone icon at the top of Everything | nothing under nine lines; past eight a worded Search button; `/` always works |
+| Settings › Advanced | the URL, export, import, who's here in one column | the URL · Export & import › (a sub-sheet) · Show who's here |
+| the theme builder | accent, base, fonts, name | plus a Sound picker (Auto names the hue rule's pick; six packs, a preview on select); the choice rides in the theme record and a `T2:` code, `T1:` codes still import |
+| the version | `4.0.0`, a date on every changelog entry | `1.1 (build N)`, the history renumbered (4.0.0 → 1.0, then 0.3, 0.2, 0.1), no dates anywhere; the toast keys on the string changing |
+
+## The interaction model
+
+| intent | desktop | phone |
+|---|---|---|
+| cross off | click, or `1–9` | tap |
+| edit | ⋯ → Edit, or `E` | hold → Edit, or swipe right → Edit |
+| the line's menu | hover, ⋯ | hold and let go, or swipe right |
+| move a line | drag ⋯, or `⌥↑/↓` | hold, then drag |
+| not today | `-`, or the menu | swipe left, or the menu |
+| on/off Today | the star in Everything | the star in Everything |
+| theme, sound, full screen | ⋯ rows, or `T`, `M`, `F` | ⋯ rows |
+| every key or gesture | `?` | ⋯ → How it works → Gestures |
+
+Everything a line can do still lives in its menu (edit, on/off Today, repeat, not today, move to another list,
+delete), and everything a section can do in the ⋯ of its header. Nothing was removed from the app; what was removed
+was the second and third way of reaching the same thing from the row.
+
+## Structure of the change
+
+- `app.js`: rows are built with the star (Everything) and the ⋯ grip only; `gripPress` turns a mouse press on ⋯ into a
+  drag once it moves; `longPressStart` lifts a line and `endDrag` opens the menu when a hold ends where it began;
+  `swipeStart` handles both directions; the just-in-time hints (`showMark`, `placeMark`, `hintToday`, `hintMenu`)
+  and the idle fade (`idleReset`) sit above `boot()` with their state, as the temporal-dead-zone note demands;
+  `showPanel` takes an anchor and positions a popover; the ⋯ menu paints the theme name and the sound state.
+- `panels.js`: the tour is gone; `openKeys` is the `?` reference; How it works is rewritten for the new gestures;
+  the theme builder carries the pack; `openExport` is the sub-sheet; Settings gained the fade switch and lost Full
+  screen.
+- `theme.js`: `derive({ pack })`, `PACK_IDS`, `hueSound`, `T2:` codes in `themeCode`/`parseCode`.
+- `model.js`: the seed lines. `version.js`: `VERSION`, `BUILD`, `VERSION_LABEL`. `sw.js`: `tf-v1.1`.
+- `styles.css` lost the pill, the pencil, the handle and the tour hole and gained the mark, the status group, the
+  welcome and idle rules; it is a little smaller than 1.0's. `panels.css` lost the tour and gained the popover.
+- `index.html`: the rail, the nine-row menu, the mark, the `?` reference, the export sub-sheet, the Sound select.
+  The boot script is byte-identical, so its CSP hash is unchanged; About's script changed and was re-hashed.
+- Compatibility: nothing touches links, keys, the document shape or the server. New per-device state (`hints`,
+  `idleFadeOff`) are new keys inside `meta.device`; a saved custom theme's `code` may now be a `T2:` string, which a
+  1.0 device's picker skips.
+
+## Before and after
+
+Every surface at 1440×900 and 390×844, taken by `tools/shots.js` on the local transport before the first change
+and after the last. Before is the left of each pair.
+
+| surface | desktop before | desktop after | phone before | phone after |
+|---|---|---|---|---|
+| welcome | <img src="shots/1.1/before/desktop-welcome.png" width="300" alt="welcome, desktop, before"> | <img src="shots/1.1/after/desktop-welcome.png" width="300" alt="welcome, desktop, after"> | <img src="shots/1.1/before/phone-welcome.png" width="120" alt="welcome, phone, before"> | <img src="shots/1.1/after/phone-welcome.png" width="120" alt="welcome, phone, after"> |
+| save-link | <img src="shots/1.1/before/desktop-save-link.png" width="300" alt="save-link, desktop, before"> | <img src="shots/1.1/after/desktop-save-link.png" width="300" alt="save-link, desktop, after"> | <img src="shots/1.1/before/phone-save-link.png" width="120" alt="save-link, phone, before"> | <img src="shots/1.1/after/phone-save-link.png" width="120" alt="save-link, phone, after"> |
+| tour | <img src="shots/1.1/before/desktop-tour.png" width="300" alt="tour, desktop, before"> | — | <img src="shots/1.1/before/phone-tour.png" width="120" alt="tour, phone, before"> | — |
+| today | <img src="shots/1.1/before/desktop-today.png" width="300" alt="today, desktop, before"> | <img src="shots/1.1/after/desktop-today.png" width="300" alt="today, desktop, after"> | <img src="shots/1.1/before/phone-today.png" width="120" alt="today, phone, before"> | <img src="shots/1.1/after/phone-today.png" width="120" alt="today, phone, after"> |
+| today-hover | <img src="shots/1.1/before/desktop-today-hover.png" width="300" alt="today-hover, desktop, before"> | <img src="shots/1.1/after/desktop-today-hover.png" width="300" alt="today-hover, desktop, after"> | — | — |
+| hint-today | — | <img src="shots/1.1/after/desktop-hint-today.png" width="300" alt="hint-today, desktop, after"> | — | <img src="shots/1.1/after/phone-hint-today.png" width="120" alt="hint-today, phone, after"> |
+| everything | <img src="shots/1.1/before/desktop-everything.png" width="300" alt="everything, desktop, before"> | <img src="shots/1.1/after/desktop-everything.png" width="300" alt="everything, desktop, after"> | <img src="shots/1.1/before/phone-everything.png" width="120" alt="everything, phone, before"> | <img src="shots/1.1/after/phone-everything.png" width="120" alt="everything, phone, after"> |
+| everything-hover | <img src="shots/1.1/before/desktop-everything-hover.png" width="300" alt="everything-hover, desktop, before"> | <img src="shots/1.1/after/desktop-everything-hover.png" width="300" alt="everything-hover, desktop, after"> | — | — |
+| hint-drag | — | — | — | <img src="shots/1.1/after/phone-hint-drag.png" width="120" alt="hint-drag, phone, after"> |
+| hint-menu | — | <img src="shots/1.1/after/desktop-hint-menu.png" width="300" alt="hint-menu, desktop, after"> | — | <img src="shots/1.1/after/phone-hint-menu.png" width="120" alt="hint-menu, phone, after"> |
+| menu | <img src="shots/1.1/before/desktop-menu.png" width="300" alt="menu, desktop, before"> | <img src="shots/1.1/after/desktop-menu.png" width="300" alt="menu, desktop, after"> | <img src="shots/1.1/before/phone-menu.png" width="120" alt="menu, phone, before"> | <img src="shots/1.1/after/phone-menu.png" width="120" alt="menu, phone, after"> |
+| line-menu | <img src="shots/1.1/before/desktop-line-menu.png" width="300" alt="line-menu, desktop, before"> | <img src="shots/1.1/after/desktop-line-menu.png" width="300" alt="line-menu, desktop, after"> | <img src="shots/1.1/before/phone-line-menu.png" width="120" alt="line-menu, phone, before"> | <img src="shots/1.1/after/phone-line-menu.png" width="120" alt="line-menu, phone, after"> |
+| section-menu | <img src="shots/1.1/before/desktop-section-menu.png" width="300" alt="section-menu, desktop, before"> | <img src="shots/1.1/after/desktop-section-menu.png" width="300" alt="section-menu, desktop, after"> | <img src="shots/1.1/before/phone-section-menu.png" width="120" alt="section-menu, phone, before"> | <img src="shots/1.1/after/phone-section-menu.png" width="120" alt="section-menu, phone, after"> |
+| settings | <img src="shots/1.1/before/desktop-settings.png" width="300" alt="settings, desktop, before"> | <img src="shots/1.1/after/desktop-settings.png" width="300" alt="settings, desktop, after"> | <img src="shots/1.1/before/phone-settings.png" width="120" alt="settings, phone, before"> | <img src="shots/1.1/after/phone-settings.png" width="120" alt="settings, phone, after"> |
+| settings-advanced | <img src="shots/1.1/before/desktop-settings-advanced.png" width="300" alt="settings-advanced, desktop, before"> | <img src="shots/1.1/after/desktop-settings-advanced.png" width="300" alt="settings-advanced, desktop, after"> | <img src="shots/1.1/before/phone-settings-advanced.png" width="120" alt="settings-advanced, phone, before"> | <img src="shots/1.1/after/phone-settings-advanced.png" width="120" alt="settings-advanced, phone, after"> |
+| theme | <img src="shots/1.1/before/desktop-theme.png" width="300" alt="theme, desktop, before"> | <img src="shots/1.1/after/desktop-theme.png" width="300" alt="theme, desktop, after"> | <img src="shots/1.1/before/phone-theme.png" width="120" alt="theme, phone, before"> | <img src="shots/1.1/after/phone-theme.png" width="120" alt="theme, phone, after"> |
+| theme-builder | <img src="shots/1.1/before/desktop-theme-builder.png" width="300" alt="theme-builder, desktop, before"> | <img src="shots/1.1/after/desktop-theme-builder.png" width="300" alt="theme-builder, desktop, after"> | <img src="shots/1.1/before/phone-theme-builder.png" width="120" alt="theme-builder, phone, before"> | <img src="shots/1.1/after/phone-theme-builder.png" width="120" alt="theme-builder, phone, after"> |
+| share | <img src="shots/1.1/before/desktop-share.png" width="300" alt="share, desktop, before"> | <img src="shots/1.1/after/desktop-share.png" width="300" alt="share, desktop, after"> | <img src="shots/1.1/before/phone-share.png" width="120" alt="share, phone, before"> | <img src="shots/1.1/after/phone-share.png" width="120" alt="share, phone, after"> |
+| help | <img src="shots/1.1/before/desktop-help.png" width="300" alt="help, desktop, before"> | <img src="shots/1.1/after/desktop-help.png" width="300" alt="help, desktop, after"> | <img src="shots/1.1/before/phone-help.png" width="120" alt="help, phone, before"> | <img src="shots/1.1/after/phone-help.png" width="120" alt="help, phone, after"> |
+| keys | — | <img src="shots/1.1/after/desktop-keys.png" width="300" alt="keys, desktop, after"> | — | <img src="shots/1.1/after/phone-keys.png" width="120" alt="keys, phone, after"> |
+| idle | — | <img src="shots/1.1/after/desktop-idle.png" width="300" alt="idle, desktop, after"> | — | — |
+| finale | <img src="shots/1.1/before/desktop-finale.png" width="300" alt="finale, desktop, before"> | <img src="shots/1.1/after/desktop-finale.png" width="300" alt="finale, desktop, after"> | <img src="shots/1.1/before/phone-finale.png" width="120" alt="finale, phone, before"> | <img src="shots/1.1/after/phone-finale.png" width="120" alt="finale, phone, after"> |
+| about | <img src="shots/1.1/before/desktop-about.png" width="300" alt="about, desktop, before"> | <img src="shots/1.1/after/desktop-about.png" width="300" alt="about, desktop, after"> | <img src="shots/1.1/before/phone-about.png" width="120" alt="about, phone, before"> | <img src="shots/1.1/after/phone-about.png" width="120" alt="about, phone, after"> |
+
+(— means the surface does not exist in that version: the tour is 1.0's, the hints, the reference, the idle state and the export sheet are 1.1's.)
+
+## Verification results (1.1)
+
+What was actually run, and what it found.
+
+| suite | result |
+|---|---|
+| Node `test/model.test.js` | 22 pass (v3's and v4's, and the seed test rewritten: five lines of 32 characters or fewer that send you to Everything, say to save the link, and end on the payoff) |
+| Node `test/features.test.js` | 19 pass: everything v4 checked, plus what's-new firing on a *changed* version string and never on its order (a device at `4.0.0` sees the 1.1 entry once; a `1.0.1` after `1.1` still fires; the toast line says "quieter" and nothing about the renumbering), and the version in three places, the build in two, no `date` field and no date on the About page, the history `1.1, 1.0, 0.3, 0.2, 0.1` |
+| Node `test/theme.test.js` | 14 pass: v4's thirteen, plus `T2:` codes round-tripping byte for byte with the pack, an empty pack meaning the hue rule, `T1:` codes importing as before and getting the hue rule, an unknown pack falling back, a `T3:` refused, curated codes unchanged |
+| Node `test/crypto.test.js`, `sync.test.js`, `sound.test.js` | 9, 13 and 8 pass, untouched (the pinned derivation vectors included) |
+| Node `test/compat.test.js` | 6 pass, untouched: nothing in 1.1 changed the document shape |
+| Browser suite `tools/e2e4.js` (Chrome 152, local transport, 1440×900 mouse and 390×844 touch) | 63 pass, zero page errors, CSP violations or third-party requests: the save sheet then five seed lines of ≤ 32 characters all on screen without scrolling, no tour, no mark, no sheet after the save sheet; the welcome with no rail and no footer, both back with a list; the rail as specified with a 6 px dot and no pill; the ⋯ menu's nine rows in order, a popover under the button on the desktop (transparent backdrop) and a bottom sheet on the phone, Sound toggling in place, `M` and `T` still working; quiet rows (nothing at rest on the phone but the checkbox, the words and a small star in Everything; on the desktop nothing at rest, hover revealing exactly one control, the star hollow when off and filled when on with no orange until hover; one add style everywhere); the line menu from ⋯ with Edit first, dragging ⋯ moving the line, the popover by the row; on the phone a hold released in place opening the menu, a swipe right opening it, a hold that moves dragging; the section menu likewise; the three hints once each and never again, on the device after a reload; four-item footers, hidden on the phone, `?` opening the reference and the reference opening How it works; the idle fade in after 4 s and out on a move, a key resetting it, none with a panel open or during the finale, off by the setting; Settings' five sections, Full screen gone from them, the version line, Advanced keeping the URL and who's-here beside Export & import ›; a 1.0 device (seenVersion `4.0.0`) seeing the 1.1 toast once, nothing else, nothing about the renumbering, its list intact, no hints after; About reading `1.1 (build N)` with a renumbered, dateless changelog; How it works with the Shortcut, the bookmarklet, the new gestures and no tour; and everything v4 checked (repeat, not today by key and by swipe, one-thing mode, search past eight lines with `/` always working, recently deleted, templates, move between lists, delete everywhere and undo, add from anywhere, view-only celebration, presence dots beside the sync dot, every sound pack with the theme's pick named and the override winning, the theme builder's pack in a `T2:` record, audio recovery, the bottom-edge pixel probe, export and import from the sub-sheet, the day review, remove from this device) |
+| Real Supabase `tools/realsync4.js` | 6 pass, the suite unchanged: envelopes on the wire, a view link's put refused, the unchanged poll still **29 bytes**, presence, delete and undo, add from a URL; the seed list 617 bytes encrypted, the realistic list 6,549 bytes |
+| Lighthouse 12 (Chrome 152, gzip like GitHub Pages, the same harness and machine for both, two runs each) | **1.0 baseline** (the untouched 1.0 clone): desktop 100 / 100 / 100 (FCP 0.38–0.40 s); mobile cold 98–99 / 100 / 100 (FCP 1.59–1.85 s, LCP 1.97 s); mobile warm 99 / 100 / 100 (FCP 1.59 s, LCP 1.98 s). **1.1 as first built**: mobile cold 97–98 and warm 98, LCP 2.12 s: a point behind, and deterministic. The cause and the fix are in DECISIONS.md, "First paint" (the dependency graph, not the code: `version.js` never preloaded, `panels.css` requested before the first paint, and three Lato faces pulled in by an invisible row). **1.1 final**: desktop 100 / 100 / 100 (FCP 0.30–0.38 s, LCP 0.40–0.42 s); mobile cold 99 / 100 / 100 (FCP 1.65–1.66 s, LCP 1.88 s); mobile warm 99 and 98 / 100 / 100 (FCP 1.29–1.67 s, LCP 1.82–1.90 s); TBT ≤ 5 ms everywhere; first paint and LCP better than 1.0's in every run, two font files fewer at every cold open. Performance / accessibility / best practices throughout |
+| Sizes on the critical path (gzip) | `styles.css` 8.7 KB (1.0: 8.1), `app.js` 34.1 KB (31.3), `index.html` 8.4 KB (8.1); `panels.css` and `panels.js`, off the critical path, smaller than 1.0's (3.9 and 14.9 KB against 4.0 and 15.8) |
+| Live check, a 1.0 device (a Chrome profile that made its list on the live site while it ran 1.0, then opened the URL fresh after the deploy) | (recorded in the deploy commit) |
+| Live check, a fresh device (a new profile on the live URL after the deploy) | (recorded in the deploy commit) |

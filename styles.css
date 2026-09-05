@@ -37,6 +37,7 @@ body{
 }
 button{font:inherit;color:inherit}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#list-h1{font-family:var(--font-ui);font-weight:700} /* the hidden heading is laid out: in the row font it would pull Lato 700 in at first paint */
 [hidden]{display:none !important}
 
 /* ---------------- atmosphere ---------------- */
@@ -339,7 +340,7 @@ html[data-mode="view"] .row:hover:not(.done) .ghost{opacity:0}
 html[data-mode="view"] #hint{visibility:hidden}
 
 /* ---------------- footer ---------------- */
-#foot{flex:0 0 auto;position:relative;display:flex;flex-direction:column;align-items:center}
+#foot{flex:0 0 auto;position:relative;display:flex;flex-direction:column;align-items:center;font-family:var(--font-ui)}
 .foot-row{position:relative;min-height:clamp(3.1rem,7.4vh,4.6rem);display:grid;place-items:center;width:100%}
 .foot-row>*{grid-area:1/1;transition:opacity .5s ease}
 #hint{
@@ -349,8 +350,10 @@ html[data-mode="view"] #hint{visibility:hidden}
 }
 #hint em{font-style:normal;color:var(--muted)}
 #hint.off{opacity:0;pointer-events:none}
-#finale{display:flex;align-items:center;gap:1.1rem;flex-wrap:wrap;justify-content:center;opacity:0;pointer-events:none}
-#finale.on{opacity:1;pointer-events:auto}
+/* the finale is not laid out until it is on: an invisible row in the row font pulled Lato 900 (and, through its chip, Lato 400) in at first paint */
+#finale{display:none;align-items:center;gap:1.1rem;flex-wrap:wrap;justify-content:center}
+#finale.on{display:flex;animation:finale-in .5s ease}
+@keyframes finale-in{from{opacity:0}to{opacity:1}}
 #finale span{
   font-family:var(--font-task);font-weight:var(--task-w);letter-spacing:var(--task-ls);
   font-size:clamp(1.1rem,2.7vh,1.9rem);color:var(--accent-text);font-style:var(--finale-style);
@@ -446,6 +449,7 @@ html[data-mode="view"] #hint{visibility:hidden}
   .row.kick,.box.pop,.row.arrive{animation:none}
   .ink{animation:none}
   .dot[data-s="syncing"]::before{animation:none;opacity:.5}
+  #finale.on{animation:none}
   .row.moving{transition:none}
   #toast{transition:none}
 }

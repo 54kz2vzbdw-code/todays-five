@@ -43,7 +43,7 @@ async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: 
     await page.waitForSelector("#welcome:not([hidden])");
     await page.click("#w-new"); await page.waitForSelector("#p-save[open]"); await page.click("#save-done"); await wait(500);
     await page.waitForSelector("#list .row");
-    if (!opts.hasTouch) { await page.mouse.move(2, 2); await wait(150); }
+    if (!opts.hasTouch) { await page.mouse.move(2, 2); await wait(400); } // past the tools' fade, so "at rest" means at rest
   }
   const s = () => page.evaluate(() => window.__tf());
   const press = async sel => {
@@ -66,7 +66,7 @@ async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: 
   };
   /** the line's menu: ⋯ on hover on the desktop, a hold on the phone (Edit is its first row) */
   const lineMenu = async rowSel => { if (opts.hasTouch) await hold(rowSel + " .tx"); else { await page.hover(rowSel + " .tx"); await wait(120); await page.click(rowSel + " .tool.lmenu"); } await page.waitForSelector("#p-line[open]"); };
-  const away = async () => { await page.mouse.move(2, 2); await wait(150); };
+  const away = async () => { await page.mouse.move(2, 2); await wait(350); };
   /** the row tools a person can see: rendered, opaque, not clipped away */
   const visibleTools = (scope = "") => page.$$eval(scope + " .row .tool", els => els.filter(e => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 2 && cs.opacity !== "0" && cs.visibility !== "hidden" && cs.display !== "none"; }).map(e => e.className.replace("tool ", "")));
   const front = () => page.bringToFront();

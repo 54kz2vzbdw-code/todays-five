@@ -146,7 +146,7 @@ const panelCss = new Promise(res => {
 });
 /** The lazy module with every panel. Loaded on first use, then kept. */
 function panels() {
-  if (!panelsP) panelsP = Promise.all([import("./panels.js"), panelCss]).then(([m]) => { m.init(api); return m; }).catch(e => { panelsP = null; toast("Couldn't load that part of the app—check the connection and try again"); throw e; });
+  if (!panelsP) panelsP = Promise.all([import("./panels.js"), panelCss]).then(([m]) => { m.init(api); return m; }).catch(e => { panelsP = null; if (!(e && /updated: reloading/.test(e.message))) toast("Couldn't load that part of the app—check the connection and try again"); throw e; });
   return panelsP;
 }
 const HAPTIC = IOS && (() => { const h = document.getElementById("haptic"); return !!h && "switch" in h; })();

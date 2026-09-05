@@ -19,6 +19,8 @@ Share sheet puts the View link first and by default, the Private link (the edit 
 warning, New keys (Rotate's new name) beside it, and Tell a friend at the bottom with a note about the app and the
 bare app URL; shuffle in one-thing mode by a shake, S, or ↻ beside the count. URL formats are unchanged.
 
+Build 61 — a page open across a deploy reloads itself when a panel would run another build's code, instead of every panel failing with "Couldn't load that part of the app" until the app is closed and reopened.
+
 ## 1.2 — Day and night, your way.
 
 - **New** — Pick a Day theme and a Night theme; the sun and moon flip them.

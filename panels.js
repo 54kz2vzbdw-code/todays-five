@@ -3,9 +3,20 @@
 // repeat picker, templates, move-to-list, delete everywhere with its undo, export/import, the ? reference, and How it
 // works. Loaded by app.js on first use; `A` is its api.
 let A = null, $ = null, $$ = null, M = null, T = null, C = null;
+const PANELS_BUILD = 61; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
+export const RELOADING = "Today's Five updated: reloading";
 
 export function init(api) {
   if (A) return;
+  // A page open across a deploy fetches this module fresh on its first panel while its markup and app.js are older (the
+  // shell is network-first, the panels load on first use), and the wiring below would throw on elements the old page
+  // lacks — every panel failing until a reload. So the page reloads itself, once; a page that already did gets the
+  // plain failure rather than a loop.
+  if (document.documentElement.getAttribute("data-build") !== String(PANELS_BUILD)) {
+    let again = false;
+    try { again = sessionStorage.getItem("tf/reloaded") === String(PANELS_BUILD); sessionStorage.setItem("tf/reloaded", String(PANELS_BUILD)); } catch (e) { /* no storage: reload anyway */ }
+    if (!again) { location.reload(); throw new Error(RELOADING); }
+  }
   A = api; $ = api.$; $$ = api.$$; M = api.M; T = api.T; C = api.C;
   wireTheme(); wireShare(); wireSave(); wireLists(); wireSettings(); wireSection(); wireLine(); wireRepeat(); wireKeys(); wireMisc();
 }

@@ -264,7 +264,7 @@ test("purgeTombstones drops rules and returns whose line is gone for good", () =
   assert.equal(M.purgeTombstones(e, 1e13), e, "a live line keeps its rule");
 });
 
-test("the version is one number in three places, the build in two, and there are no dates anywhere", () => {
+test("the version is one number in three places, the build in four, and there are no dates anywhere", () => {
   const sw = fs.readFileSync(new URL("../sw.js", import.meta.url), "utf8");
   const wn = JSON.parse(fs.readFileSync(new URL("../whatsnew.json", import.meta.url), "utf8"));
   assert.match(VERSION, /^\d+\.\d+(\.\d+)?$/, "marketing version: 1.x, or 1.0.x for a fix");
@@ -273,6 +273,9 @@ test("the version is one number in three places, the build in two, and there are
   assert.ok(sw.includes(`const VERSION = "tf-v${VERSION}"`), "sw.js cache name carries the app version");
   assert.equal(wn.versions[0].version, VERSION, "whatsnew.json leads with the current version");
   assert.equal(wn.build, BUILD, "whatsnew.json carries the build number the About page shows");
+  const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8"), panels = fs.readFileSync(new URL("../panels.js", import.meta.url), "utf8");
+  assert.ok(html.includes(`<html lang="en" data-base="dark" data-build="${BUILD}">`), "index.html says which build its markup is");
+  assert.ok(panels.includes(`const PANELS_BUILD = ${BUILD};`), "panels.js says which build's markup it wires (a page open across a deploy reloads on the mismatch)");
   assert.deepEqual(wn.versions.map(v => v.version), ["1.3", "1.2", "1.1", "1.0"], "the public history: 1.0 and later (4.0.0 became 1.0; the pre-releases live in CHANGELOG.md)");
   for (const v of wn.versions) { assert.match(v.version, /^\d+\.\d+(\.\d+)?$/); assert.ok(!("date" in v), v.version + ": no date field"); assert.ok(typeof v.headline === "string" && v.items.length >= 1 && v.items.length <= 3, v.version + ": a headline and one to three items"); }
   assert.ok(!/\b20\d\d-\d\d-\d\d\b/.test(fs.readFileSync(new URL("../about.html", import.meta.url), "utf8")), "no dates on the About page");

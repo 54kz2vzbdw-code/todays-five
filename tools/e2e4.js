@@ -1238,6 +1238,27 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const sw = await (await fetch(BASE + "sw.js")).text(); assert.ok(!/og\.png/.test(sw), "not part of the shell");
   });
 
+  await test(label + ": a page open across a deploy — the first panel reloads it once instead of failing; a page that already reloaded gets the plain failure, never a loop", async () => {
+    const t = await fresh(opts);
+    const build = await t.page.evaluate(() => document.documentElement.getAttribute("data-build"));
+    assert.ok(/^\d+$/.test(build), "the page says its build: " + build);
+    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(400); // a page that has not wired a panel yet (the save sheet wired them on the first load)
+    await t.page.evaluate(() => document.documentElement.setAttribute("data-build", "1")); // the markup of an older build
+    const loaded = t.page.waitForEvent("load", { timeout: 6000 });
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await t.press('#p-menu [data-act="share"]');
+    await loaded; await t.page.waitForSelector("#list .row"); await wait(800);
+    assert.equal(await t.page.evaluate(() => document.documentElement.getAttribute("data-build")), build, "reloaded into its own build");
+    assert.ok(!/Couldn't load/.test(await t.page.textContent("#toast")), "no failure toast: " + await t.page.textContent("#toast"));
+    assert.equal(await t.page.evaluate(() => sessionStorage.getItem("tf/reloaded")), build, "remembers the reload for this build");
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await t.press('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await t.page.keyboard.press("Escape"); await wait(300);
+    // the same mismatch on a page that already reloaded for this build: the panels wire as usual, no second reload
+    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(400);
+    await t.page.evaluate(() => document.documentElement.setAttribute("data-build", "1"));
+    let reloaded = false; t.page.once("load", () => { reloaded = true; });
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await t.press('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await wait(500);
+    assert.ok(!reloaded, "no loop"); await t.page.keyboard.press("Escape"); await wait(200);
+  });
+
   await test(label + ": no page errors, CSP violations or third-party requests across a full session", async () => {
     const t = await fresh(opts);
     await t.press("#v-all"); await t.page.keyboard.press("Escape"); await t.press("#v-today");

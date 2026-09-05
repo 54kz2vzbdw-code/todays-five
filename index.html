@@ -123,8 +123,8 @@
       <button id="addtoday" class="add" type="button" title="New line (N)">+ New line</button>
     </div>
     <div id="all" class="view" role="tabpanel" aria-labelledby="v-all" aria-describedby="ro" hidden>
-      <div class="all-head" id="all-head">
-        <button class="chip icon" id="search-btn" type="button" title="Search (/)" aria-label="Search" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg></button>
+      <div class="all-head" id="all-head" hidden>
+        <button class="chip" id="search-btn" type="button" title="Search (/)" aria-expanded="false">Search<span class="key" aria-hidden="true"> /</span></button>
         <input id="search" type="search" placeholder="Search lines and notes" aria-label="Search Everything" autocomplete="off" spellcheck="false" hidden>
       </div>
     </div>
@@ -174,7 +174,7 @@
     <button type="button" data-act="help"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/></svg><span class="lb">How it works</span></button>
     <button type="button" data-act="lists"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="lb">Lists</span><span class="k state" id="lists-k"></span></button>
     <button type="button" data-act="settings"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="lb">Settings</span><span class="k state" id="settings-k"></span></button>
-    <a class="item link" href="about.html" id="menu-about"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg><span class="lb">About &amp; privacy</span><span class="k state" id="about-k">↗</span></a>
+    <a class="item" href="about.html" id="menu-about"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg><span class="lb">About &amp; privacy</span><span class="k state" id="about-k">↗</span></a>
     <button type="button" data-act="delete" class="danger" id="menu-delete"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg><span class="lb">Delete this list everywhere</span></button>
   </div>
 </div></dialog>
@@ -228,6 +228,16 @@
       <span class="lb">Add from anywhere<span class="sub">Open this URL with text on the end and the line lands on Today. How it works has a Shortcut and a bookmarklet.</span></span>
       <div class="inline"><input class="link" id="set-addurl" type="text" readonly aria-label="Add-from-anywhere URL" spellcheck="false"><button class="chip" id="set-addurl-copy" type="button">Copy</button></div>
     </div>
+    <button type="button" class="row-set" data-set="export"><span class="lb">Export &amp; import<span class="sub">The only backup there is: JSON or Markdown out, a JSON export back in</span></span><span class="k state">›</span></button>
+    <button type="button" class="row-toggle" data-set="who" aria-pressed="true"><span class="lb">Show who's here<span class="sub">A dot per other device with this list open. Off: this device neither shows nor counts</span></span><span class="sw" aria-hidden="true"></span></button>
+  </div>
+  <p class="fine" id="set-version"></p>
+</div></dialog>
+
+<dialog class="panel sheet" id="p-export" aria-labelledby="p-export-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
+  <h2><span id="p-export-h">Export &amp; import</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <div class="menu">
     <div class="sub-block">
       <span class="lb">Export<span class="sub">This is the only backup there is. Nobody else holds a copy that can be read.</span></span>
       <div class="row-actions"><button class="chip" id="set-export-json" type="button">JSON</button><button class="chip" id="set-export-md" type="button">Markdown</button></div>
@@ -237,9 +247,7 @@
       <div class="row-actions"><label class="chip file"><input type="file" id="set-import-file" accept="application/json,.json"><span>Choose a file</span></label><button class="chip" id="set-import-new" type="button" disabled>Into a new list</button><button class="chip" id="set-import-merge" type="button" disabled>Merge into this list</button></div>
       <div class="fine" id="set-import-name"></div>
     </div>
-    <button type="button" class="row-toggle" data-set="who" aria-pressed="true"><span class="lb">Show who's here<span class="sub">A dot per other device with this list open. Off: this device neither shows nor counts</span></span><span class="sw" aria-hidden="true"></span></button>
   </div>
-  <p class="fine" id="set-version"></p>
 </div></dialog>
 
 <dialog class="panel" id="p-theme" aria-labelledby="p-theme-h"><div class="body">

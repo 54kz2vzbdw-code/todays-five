@@ -697,7 +697,13 @@ function renderAll({ animate, quiet }) {
   if (query && !hits) { if (!none) { none = document.createElement("div"); none.className = "nohits"; } none.textContent = "Nothing matches “" + query + "”"; root.insertBefore(none, addsec); }
   else if (none) none.remove();
   renderDeleted(root);
+  paintSearchHead();
   layoutAll(relayout);
+}
+/** Everything's search: no lone icon. Past eight lines a Search button sits in the header row; / opens the field any time. */
+function paintSearchHead() {
+  const open = !$("#search").hidden;
+  $("#all-head").hidden = !(open || (doc && M.liveItems(doc).length > 8));
 }
 /** "Recently deleted (n)" at the bottom of Everything: the tombstones that remember their line, with Restore. */
 function renderDeleted(root) {
@@ -1446,14 +1452,24 @@ function endDrag(move, up, cancelled, aborted) {
 }
 
 /* ---------------- panels: plumbing shared by every dialog ---------------- */
-function showPanel(id) {
-  if (!panelCssReady) { panelCss.then(() => showPanel(id)); return; } // never paint a dialog before its stylesheet
+/** Open a dialog. With an anchor on the desktop it is a popover under that control (the ⋯, line and section menus);
+    on the phone, or without one, it is the sheet or the centred panel it always was. */
+function showPanel(id, { anchor = null } = {}) {
+  if (!panelCssReady) { panelCss.then(() => showPanel(id, { anchor })); return; } // never paint a dialog before its stylesheet
   const d = document.getElementById(id);
   hideMark();
   if (openPanel && openPanel !== d) openPanel.close();
   openPanel = d;
   d.classList.remove("closing"); d.style.transform = ""; d.removeAttribute("data-drag");
+  const pop = !!anchor && !sheetUi() && anchor.isConnected;
+  d.classList.toggle("pop", pop); d.style.left = ""; d.style.top = "";
   if (!d.open) d.showModal();
+  if (pop) {
+    const r = anchor.getBoundingClientRect(), w = d.offsetWidth, h = d.offsetHeight;
+    const left = Math.max(8, Math.min(innerWidth - w - 8, r.right - w));
+    const top = r.bottom + 6 + h <= innerHeight - 8 ? r.bottom + 6 : Math.max(8, r.top - 6 - h);
+    d.style.left = left + "px"; d.style.top = top + "px";
+  }
   idleReset();
 }
 function closePanel() { if (openPanel) { const d = openPanel; openPanel = null; d.close(); } } // forget it now, not when the close event lands: what follows may need the panel gone
@@ -1512,7 +1528,7 @@ function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger =
 }
 
 /* the ⋯ menu: Share · Theme · Sound · Full screen · How it works · Lists · Settings · About · Delete (nine rows is the ceiling) */
-$("#more").addEventListener("click", () => { paintMenu(); showPanel("p-menu"); });
+$("#more").addEventListener("click", () => { paintMenu(); showPanel("p-menu", { anchor: $("#more") }); });
 function paintMenu() {
   $("#menu-share-lb").textContent = listMode === "view" ? "Share the view link" : (sheetUi() ? "Share this list" : "Share & open on phone");
   $('#p-menu [data-act="share"] .k').hidden = sheetUi();
@@ -1675,18 +1691,20 @@ function setSearch(q, { silent = false } = {}) {
   if (inp.value !== q) inp.value = q;
   const open = !!query || document.activeElement === inp;
   inp.hidden = !open; btn.setAttribute("aria-expanded", open ? "true" : "false");
+  paintSearchHead();
   if (doc && view === "all" && !silent) render({ animate: false });
 }
 function openSearch() {
   if (!doc) return;
   if (view !== "all") setView("all");
-  $("#search").hidden = false; $("#search-btn").setAttribute("aria-expanded", "true");
+  $("#all-head").hidden = false; $("#search").hidden = false; $("#search-btn").setAttribute("aria-expanded", "true");
   $("#search").focus();
 }
-$("#search-btn").addEventListener("click", () => { if ($("#search").hidden) openSearch(); else { setSearch(""); $("#search").hidden = true; $("#search-btn").setAttribute("aria-expanded", "false"); } });
+function closeSearch() { setSearch(""); $("#search").hidden = true; $("#search-btn").setAttribute("aria-expanded", "false"); paintSearchHead(); }
+$("#search-btn").addEventListener("click", () => { if ($("#search").hidden) openSearch(); else closeSearch(); });
 $("#search").addEventListener("input", e => setSearch(e.target.value));
-$("#search").addEventListener("keydown", e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); setSearch(""); $("#search").hidden = true; $("#search-btn").setAttribute("aria-expanded", "false"); $("#search-btn").focus(); } });
-$("#search").addEventListener("blur", () => { if (!query) { $("#search").hidden = true; $("#search-btn").setAttribute("aria-expanded", "false"); } });
+$("#search").addEventListener("keydown", e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeSearch(); if (!$("#all-head").hidden) $("#search-btn").focus(); } });
+$("#search").addEventListener("blur", () => { if (!query) closeSearch(); });
 
 /* ---------------- what's new ---------------- */
 function maybeWhatsNew() {

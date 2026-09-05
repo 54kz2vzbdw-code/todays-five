@@ -507,10 +507,9 @@ body.page{overflow:auto;height:auto;min-height:100%}
 .erow .chip.on{color:var(--accent-text);border-color:var(--accent)}
 
 /* everything's header: search */
-.all-head{display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;min-height:36px}
-.all-head .chip.icon svg{width:1.1em;height:1.1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
-.all-head .chip.icon{padding:.4em .6em;font-size:1em}
-.all-head .chip.icon[aria-expanded="true"]{color:var(--accent-text);border-color:var(--accent)}
+.all-head{display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;min-height:36px;font-family:var(--font-ui);font-weight:700;font-size:clamp(9.5px,1.05vw,12px);letter-spacing:.15em;text-transform:uppercase}
+.all-head .chip[aria-expanded="true"]{color:var(--accent-text);border-color:var(--accent)}
+.all-head .chip .key{color:var(--muted);letter-spacing:.09em}
 #search{
   flex:1 1 auto;min-width:0;max-width:26rem;font-family:var(--font-ui);font-size:15px;color:var(--text);
   background:var(--ink-2);border:1px solid var(--hair);border-radius:999px;padding:.45em 1em;min-height:36px;
@@ -586,7 +585,8 @@ body.install-on #toast,body.install-on #whatsnew{bottom:calc(96px + env(safe-are
   .sw{width:46px;height:28px}
   .sw::after{width:20px;height:20px}
   .row-toggle[aria-pressed="true"] .sw::after{transform:translateX(18px)}
-  .all-head .chip.icon{min-width:44px;min-height:44px}
+  .all-head .chip{min-height:44px}
+  .all-head .chip .key{display:none}
   #search{min-height:44px;font-size:16px}
   .deleted li .chip{min-height:40px}
 }

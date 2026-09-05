@@ -325,8 +325,6 @@ function paintSettings() {
   const W = A.ref && A.ref.mode === "edit" ? A.ref.W : null;
   $("#set-addurl").value = W ? M.addUrl(A.BASE, W) : "Open an edit link to get its URL";
   $("#set-addurl-copy").disabled = !W;
-  $("#set-export-json").disabled = !A.doc; $("#set-export-md").disabled = !A.doc;
-  $("#set-import-merge").disabled = !importedDoc || !A.canEdit(); $("#set-import-new").disabled = !importedDoc;
   set("who", !d.whoOff);
   $("#set-version").textContent = `Today's Five ${A.VERSION_LABEL}. What's new is on the About page.`;
 }
@@ -349,6 +347,7 @@ function wireSettings() {
     else if (k === "removed") { A.closePanel(); openLists({ removed: true }); }
     else if (k === "history") { A.closePanel(); openHistory(); }
     else if (k === "who") { d.whoOff = !d.whoOff; A.saveDevice(); A.resubscribePresence(); paintSettings(); }
+    else if (k === "export") { A.closePanel(); openExport(); }
   });
   const sch = () => { d.schedule = { ...d.schedule, dayAt: $("#sch-day-at").value || "07:00", nightAt: $("#sch-night-at").value || "19:00", day: $("#sch-day").value, night: $("#sch-night").value }; A.saveDevice(); A.tickTheme(); A.applyThemeCode(A.currentThemeCode()); paintSettings(); };
   ["#sch-day-at", "#sch-night-at", "#sch-day", "#sch-night"].forEach(s => $(s).addEventListener("change", sch));
@@ -363,7 +362,7 @@ function wireSettings() {
       importedDoc = M.importJSON(await readFile(f));
       $("#set-import-name").textContent = `${f.name}: ${Object.values(importedDoc.items).filter(i => !i.deleted).length} lines, ${M.liveSections(importedDoc).length} sections, ${M.historyDays(importedDoc).length} days of history${importedDoc.name ? ", named “" + importedDoc.name + "”" : ""}`;
     } catch (err) { importedDoc = null; $("#set-import-name").textContent = err.message || "That file couldn't be read."; }
-    paintSettings();
+    paintExport();
   });
   $("#set-import-new").addEventListener("click", () => {
     if (!importedDoc) return;
@@ -383,6 +382,12 @@ function wireSettings() {
   });
   addEventListener("tf:settings", () => { if ($("#p-settings").open) paintSettings(); });
 }
+/* ---------------- export & import: Settings → Advanced → Export & import › ---------------- */
+function paintExport() {
+  $("#set-export-json").disabled = !A.doc; $("#set-export-md").disabled = !A.doc;
+  $("#set-import-merge").disabled = !importedDoc || !A.canEdit(); $("#set-import-new").disabled = !importedDoc;
+}
+export function openExport() { paintExport(); A.showPanel("p-export"); }
 async function exportList(kind) {
   if (!A.doc) return;
   const { handOff, filenameFor } = await import("./exporter.js");
@@ -404,7 +409,7 @@ export function openSectionMenu(id) {
   $('#p-sec [data-sact="template"]').hidden = !items.length && !M.itemsInSection(A.doc, id).length;
   $('#p-sec [data-sact="insert"]').hidden = !M.liveTemplates(A.doc).length;
   $("#p-sec-h").textContent = unsorted ? "Unsorted" : M.sectionName(A.doc, id) || "Section";
-  A.showPanel("p-sec");
+  A.showPanel("p-sec", { anchor: $(`#all .sec[data-id="${CSS.escape(id)}"] .sec-more`) });
 }
 function wireSection() { $("#p-sec").addEventListener("click", e => { const b = e.target.closest("[data-sact]"); if (b) sectionAction(b.dataset.sact); }); }
 async function sectionAction(act) {
@@ -508,7 +513,8 @@ export function openLineMenu(id) {
   $("#line-repeat-sub").textContent = A.ruleLabel(M.ruleOf(A.doc, id));
   $('#p-line [data-lact="nottoday"]').hidden = !it.today || it.done;
   $('#p-line [data-lact="move"]').hidden = !meta().lists.some(l => l.id !== A.listId && l.mode !== "view" && !l.archived);
-  A.showPanel("p-line");
+  const li = A.rows.get(id);
+  A.showPanel("p-line", { anchor: li ? li.querySelector(".tool.lmenu") : null });
 }
 function wireLine() {
   $("#p-line").addEventListener("click", e => {

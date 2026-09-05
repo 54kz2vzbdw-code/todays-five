@@ -1,0 +1,761 @@
+// panels.js — everything that lives behind a panel: the theme picker, share and save sheets, Lists, History,
+// Settings, the section and line menus, the repeat picker, templates, move-to-list, delete everywhere with its
+// undo, export/import, the first-run tour, and How it works. Loaded by app.js on first use; `A` is its api.
+let A = null, $ = null, $$ = null, M = null, T = null, C = null;
+
+export function init(api) {
+  if (A) return;
+  A = api; $ = api.$; $$ = api.$$; M = api.M; T = api.T; C = api.C;
+  wireTheme(); wireShare(); wireSave(); wireLists(); wireSettings(); wireSection(); wireLine(); wireRepeat(); wireTour();
+}
+const dev = () => A.dev, meta = () => A.meta;
+
+/* ---------------- theme panel ---------------- */
+let custom = { accent: "#D26128", base: "dark", pair: "", name: "" };
+let keepPreview = false;
+export function openTheme() {
+  renderSwatches();
+  const t = A.theme;
+  if (t && t.kind === "custom") custom = { accent: t.accent, base: t.base, pair: t.pair, name: t.name };
+  paintCustom();
+  A.showPanel("p-theme");
+}
+function savedThemes() { return Object.values(A.doc ? A.doc.themes : {}).filter(t => !t.deleted).map(t => ({ ...t, theme: T.parseCode(t.code) })).filter(t => t.theme); }
+function renderSwatches() {
+  const root = $("#swatches"); root.innerHTML = "";
+  const cur = A.theme ? T.themeCode(A.theme) : "";
+  const mk = (t, saved) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "swatch";
+    b.style.background = t.colors.ink; b.style.color = t.colors.text; b.style.borderColor = t.colors.hairSolid;
+    b.setAttribute("aria-pressed", T.themeCode(t) === cur ? "true" : "false");
+    const bar = document.createElement("span"); bar.className = "bar"; bar.style.background = t.colors.accent;
+    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = saved ? saved.name : t.name; nm.style.fontFamily = (T.pairOf(t.pair) || T.PAIRS.lato).task[2];
+    const sm = document.createElement("span"); sm.className = "sm"; sm.textContent = t.base + (saved ? " · yours" : ""); sm.style.color = t.colors.dim;
+    b.append(bar, nm, sm);
+    b.addEventListener("click", () => { A.chooseTheme(saved ? { ...t, name: saved.name } : t); renderSwatches(); });
+    if (saved && A.canEdit()) {
+      const del = document.createElement("button"); del.type = "button"; del.className = "del"; del.textContent = "×"; del.setAttribute("aria-label", "Delete " + saved.name);
+      del.addEventListener("click", e => { e.stopPropagation(); A.doc.themes[saved.id] = { id: saved.id, deleted: true, updatedAt: M.now() }; A.afterChange({ animate: false }); renderSwatches(); });
+      b.appendChild(del);
+    }
+    return b;
+  };
+  T.CURATED.forEach(t => root.appendChild(mk(t)));
+  savedThemes().forEach(s => root.appendChild(mk(s.theme, s)));
+  syncFollowChip();
+}
+function syncFollowChip() {
+  const b = $("#follow");
+  b.setAttribute("aria-pressed", dev().follow ? "true" : "false");
+  b.textContent = dev().follow ? "Follow system: on" : "Follow system: off";
+}
+/** Follow system and the schedule cannot both be on. */
+function setFollow(on) {
+  const d = dev();
+  d.follow = !!on;
+  if (on) { if (d.schedule && d.schedule.on) { d.schedule.on = false; A.toast("Schedule off: Follow system takes over"); } if (A.theme) { if (A.theme.base === "dark") d.darkSlot = d.theme; else d.lightSlot = d.theme; } }
+  A.saveDevice(); A.applyThemeCode(A.currentThemeCode()); renderSwatches(); paintSettings();
+}
+function setSchedule(on) {
+  const d = dev();
+  d.schedule = { ...(d.schedule || {}), on: !!on };
+  if (on && d.follow) { d.follow = false; A.toast("Follow system off: the schedule takes over"); }
+  if (on && A.theme) { const slot = A.theme.base === "dark" ? "night" : "day"; if (!d.schedule[slot]) d.schedule[slot] = d.theme; }
+  A.saveDevice(); A.tickTheme(); A.applyThemeCode(A.currentThemeCode()); renderSwatches(); paintSettings();
+}
+function customTheme() { return T.derive({ accent: custom.accent, base: custom.base, pair: custom.pair || undefined, name: custom.name || "Custom" }); }
+function paintCustom() {
+  $("#c-color").value = custom.accent;
+  if (document.activeElement !== $("#c-hex")) $("#c-hex").value = custom.accent;
+  $("#c-dark").setAttribute("aria-pressed", custom.base === "dark" ? "true" : "false");
+  $("#c-light").setAttribute("aria-pressed", custom.base === "light" ? "true" : "false");
+  $("#c-pair").value = custom.pair || "";
+  $("#c-name").value = custom.name;
+  const t = customTheme(), c = t.colors, p = T.pairOf(t.pair) || T.PAIRS.lato;
+  const pv = $("#c-preview");
+  pv.style.background = c.ink; pv.style.color = c.text; pv.style.borderColor = c.hairSolid; pv.style.setProperty("--pv-accent", c.accent);
+  pv.querySelectorAll(".pt").forEach(x => { x.style.fontFamily = p.task[2]; x.style.fontWeight = p.w; x.style.letterSpacing = p.ls; });
+  pv.querySelector(".pt.done").style.color = c.done;
+  const pm = pv.querySelector(".pm"); pm.style.fontFamily = p.ui[2]; pm.style.color = c.dim; pm.querySelector("b").style.color = c.accentText;
+  const r = T.report(t);
+  $("#c-contrast").textContent = `Contrast — text ${r.text.toFixed(1)}:1 · muted ${r.muted.toFixed(1)}:1 · accent ${r.accentText.toFixed(1)}:1 · fonts ${p.name}`;
+}
+function previewCustom() { T.applyTheme(customTheme(), document, { persist: false }); }
+function setCustom(patch) { Object.assign(custom, patch); paintCustom(); previewCustom(); }
+function wireTheme() {
+  const pairSel = $("#c-pair");
+  T.CUSTOM_PAIRS.forEach(id => { const o = document.createElement("option"); o.value = id; o.textContent = T.PAIRS[id].name; pairSel.appendChild(o); });
+  $("#follow").addEventListener("click", () => setFollow(!dev().follow));
+  $("#c-color").addEventListener("input", e => setCustom({ accent: T.normalizeHex(e.target.value) || custom.accent }));
+  $("#c-hex").addEventListener("input", e => { const v = e.target.value.trim(); if (/^#?[0-9a-f]{6}$/i.test(v)) setCustom({ accent: T.normalizeHex(v) }); });
+  $("#c-hex").addEventListener("change", e => { const h = T.normalizeHex(e.target.value); if (h) setCustom({ accent: h }); else e.target.value = custom.accent; });
+  $("#c-dark").addEventListener("click", () => setCustom({ base: "dark" }));
+  $("#c-light").addEventListener("click", () => setCustom({ base: "light" }));
+  pairSel.addEventListener("change", e => setCustom({ pair: e.target.value }));
+  $("#c-name").addEventListener("input", e => { custom.name = e.target.value; });
+  $("#c-use").addEventListener("click", () => { A.chooseTheme(customTheme()); renderSwatches(); });
+  $("#c-save").addEventListener("click", async () => {
+    if (!A.doc) { A.toast("Open a list first to save a theme"); return; }
+    if (!A.canEdit()) { A.toast("A view link can't save themes to the list"); return; }
+    if (!custom.name.trim()) {
+      keepPreview = true;
+      const n = await A.ask({ title: "Name this theme", label: "Name", value: "" });
+      keepPreview = false;
+      if (!n || !n.trim()) { openTheme(); previewCustom(); return; }
+      custom.name = n.trim().slice(0, 40);
+    }
+    const t = customTheme();
+    const id = M.shortId();
+    A.doc.themes[id] = { id, name: custom.name.trim().slice(0, 40), code: T.themeCode(t), updatedAt: M.now() };
+    A.afterChange({ animate: false });
+    A.chooseTheme(t); renderSwatches();
+    A.toast(`Saved “${custom.name.trim()}”`);
+  });
+  $("#c-surprise").addEventListener("click", () => { const t = T.surprise(); custom = { accent: t.accent, base: t.base, pair: t.pair, name: "" }; paintCustom(); previewCustom(); });
+  $("#c-export").addEventListener("click", async () => { try { await navigator.clipboard.writeText(T.themeCode(customTheme())); A.toast("Theme code copied"); } catch (e) { A.toast(T.themeCode(customTheme())); } });
+  $("#c-import-go").addEventListener("click", () => {
+    const t = T.parseCode($("#c-import").value);
+    if (!t) { A.toast("That code doesn't parse"); return; }
+    if (t.kind === "custom") { custom = { accent: t.accent, base: t.base, pair: t.pair, name: t.name }; paintCustom(); previewCustom(); } else { A.chooseTheme(t); renderSwatches(); }
+  });
+  $("#p-theme").addEventListener("close", () => { if (!keepPreview) A.applyThemeCode(A.currentThemeCode()); });
+  addEventListener("tf:theme", () => { if ($("#p-theme").open) renderSwatches(); if ($("#p-settings").open) paintSettings(); });
+}
+
+/* ---------------- share sheet ---------------- */
+let shareKind = "edit";
+export async function openShare() {
+  if (!A.doc || !A.ref) return;
+  if (!A.transport) { A.toast("Sync isn't set up, so a link would open an empty list somewhere else"); return; }
+  shareKind = A.listMode === "view" ? "view" : "edit";
+  $("#share-tab-edit").hidden = A.listMode === "view";
+  $("#share-rotate").hidden = A.listMode === "view";
+  $("#share-native").hidden = !navigator.share;
+  await paintShare();
+  A.showPanel("p-share");
+}
+async function paintShare() {
+  const link = shareKind === "edit" ? A.editLink() : A.viewLink();
+  $("#share-tab-edit").setAttribute("aria-selected", shareKind === "edit" ? "true" : "false");
+  $("#share-tab-view").setAttribute("aria-selected", shareKind === "view" ? "true" : "false");
+  const phone = A.sheetUi();
+  $("#share-msg").textContent = shareKind === "edit"
+    ? (phone ? "For your other devices, and for anyone who should be able to edit. Let them point a camera at the code, or send the link." : "For your other devices, and for anyone who should be able to edit. Point the phone's camera at it, or send yourself the link.")
+    : "For anyone who should see the list but not touch it. They get live updates too.";
+  $("#share-link").value = link;
+  $("#share-rotate").textContent = "Rotate links";
+  await A.drawQr($("#qr-c"), link);
+}
+function wireShare() {
+  $("#share-tabs").addEventListener("click", e => { const b = e.target.closest("[data-kind]"); if (!b) return; shareKind = b.dataset.kind; paintShare(); });
+  $("#share-copy").addEventListener("click", () => A.copyText($("#share-link").value, "Link copied"));
+  $("#share-native").addEventListener("click", () => A.nativeShare($("#share-link").value));
+  $("#share-rotate").addEventListener("click", async () => {
+    A.closePanel();
+    if (!A.canEdit()) return;
+    if (A.syncStatus !== "synced") { A.toast("Rotate needs a live connection—try again once synced"); return; }
+    const ok = await A.ask({ title: "Rotate links?", msg: "A new edit link and a new view link replace the current ones. Every old link dies everywhere at once—your other devices and anyone you gave a view link included. Open the new link there.", confirm: "Rotate", danger: true });
+    if (!ok) return;
+    await rotateLink();
+  });
+}
+async function rotateLink() {
+  const oldId = A.listId, oldRef = A.ref;
+  const newId = M.newId();
+  if (A.sync) await A.sync.flush();
+  const copy = M.normalize(JSON.parse(JSON.stringify(A.doc)), newId);
+  copy.updatedAt = M.now();
+  A.saveLocal(newId, { doc: copy, rev: 0, dirty: true, created: true, mode: "edit" });
+  const old = meta().lists.find(l => l.id === oldId);
+  const e = A.registerList(newId, old ? old.name : "", "edit"); e.created = true; e.linkSaved = true; // the share sheet that follows shows the link
+  meta().lists = meta().lists.filter(l => l.id !== oldId);
+  meta().dead = Array.from(new Set([...(meta().dead || []), oldId]));
+  meta().redirect = { ...(meta().redirect || {}), [oldId]: newId };
+  await A.openList({ id: newId, mode: "edit" });
+  // let the new list land, then kill the old one; if that fails, remember to retry
+  if (A.sync) await A.sync.flush();
+  A.removeLocal(oldId);
+  const dead = await A.killRemote({ lookupId: oldRef.lookupId, token: oldRef.token });
+  if (A.IOS && !A.STANDALONE) {
+    // Safari memoised the manifest at load; reload so an Add to Home Screen now carries the new link
+    sessionStorage.setItem("tf/reopenShare", "1");
+    location.replace(A.BASE + A.SEARCH + "#/l/" + newId); location.reload();
+    return;
+  }
+  A.toast(dead ? "New links ready—the old ones are dead" : "New links ready—old ones not revoked yet, will retry");
+  openShare();
+}
+
+/* ---------------- save-your-link sheet ---------------- */
+export function showSaveLink({ migrated = false } = {}) {
+  const link = A.editLink(); if (!link) return maybeTour();
+  $("#save-title").textContent = migrated ? "Your link changed" : "Save your link";
+  $("#save-msg").textContent = migrated
+    ? "Your list is now encrypted on your device and lives behind this new link. The old link is dead. Save this one—it's the only way back, and the only key that can read the list."
+    : "This link is the only way back to your list—and the only key that can read it. Nobody can send it to you again, not even the person running this site.";
+  $("#save-hint-phone").hidden = !migrated;
+  $("#save-hint-home").hidden = migrated;
+  $("#save-native").hidden = !navigator.share;
+  $("#save-link").value = link;
+  A.drawQr($("#save-qr-c"), link).catch(() => {});
+  A.showPanel("p-save");
+  $("#save-body").focus({ preventScroll: true }); // reading starts at the title and the message, not at the link field
+}
+function wireSave() {
+  $("#save-copy").addEventListener("click", () => A.copyText($("#save-link").value, "Link copied"));
+  $("#save-native").addEventListener("click", () => A.nativeShare($("#save-link").value));
+  $("#save-done").addEventListener("click", () => A.closePanel());
+  $("#p-save").addEventListener("close", () => {
+    const e = meta().lists.find(l => l.id === A.listId);
+    if (e) { e.linkSaved = true; e.migrated = false; A.saveDevice(); }
+    setTimeout(maybeTour, 250);
+  });
+}
+
+/* ---------------- lists ---------------- */
+export function openLists({ removed = false } = {}) {
+  const menu = $("#lists-menu"), rm = $("#lists-removed"); menu.innerHTML = ""; rm.innerHTML = "";
+  const active = meta().lists.filter(l => !l.archived), archived = meta().lists.filter(l => l.archived);
+  const mk = (l, arch) => {
+    const b = document.createElement("button"); b.type = "button";
+    const loc = A.loadLocal(l.id);
+    const name = (loc && loc.doc.name) || l.name || "Untitled list";
+    const tags = [l.mode === "view" ? "view-only" : ""].filter(Boolean).map(t => `<span class="sub">${t}</span>`).join(" ");
+    b.innerHTML = `<span class="lb ${l.id === A.listId ? "cur" : ""}">${A.escapeHtml(name)} ${tags}</span><span class="id">${arch ? "Restore" : l.id.slice(0, 6) + "…"}</span>`;
+    b.addEventListener("click", () => { A.closePanel(); if (arch) { l.archived = false; A.saveDevice(); A.toast("Back on this device"); } A.switchTo({ id: l.id, mode: l.mode === "view" ? "view" : "edit" }); });
+    return b;
+  };
+  active.forEach(l => menu.appendChild(mk(l, false)));
+  archived.forEach(l => rm.appendChild(mk(l, true)));
+  $("#lists-removed-h").hidden = !archived.length; rm.hidden = !archived.length;
+  $("#l-archive").hidden = !A.listId;
+  $("#l-rename").hidden = !A.listId || A.listMode !== "edit";
+  A.showPanel("p-lists");
+  if (removed && archived.length) $("#lists-removed-h").scrollIntoView({ block: "start" });
+}
+function wireLists() {
+  $("#l-new").addEventListener("click", async () => {
+    A.closePanel();
+    const name = await A.ask({ title: "New list", label: "Name", value: "" });
+    if (name === null) return;
+    const id = M.newId();
+    A.createList(M.emptyDoc(id, (name || "").trim().slice(0, 60)), id);
+  });
+  $("#l-rename").addEventListener("click", async () => {
+    A.closePanel();
+    if (!A.canEdit()) return;
+    const name = await A.ask({ title: "Rename list", label: "Name", value: A.doc.name || "" });
+    if (name === null) return;
+    A.doc.name = name.trim().slice(0, 60); A.doc.nameAt = M.now();
+    const e = meta().lists.find(l => l.id === A.listId); if (e) e.name = A.doc.name;
+    A.saveDevice();
+    A.afterChange({ animate: false });
+  });
+  $("#l-archive").addEventListener("click", async () => {
+    A.closePanel();
+    const e = meta().lists.find(l => l.id === A.listId); if (!e) return;
+    await A.flushQuick();
+    e.archived = true; A.saveDevice();
+    A.toast("Removed from this device. The server and your other devices still have it—Lists → Removed brings it back.");
+    const next = meta().lists.find(l => !l.archived);
+    if (next) A.switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else A.showWelcome();
+  });
+  $("#l-paste-go").addEventListener("click", () => { const r = A.parseLink($("#l-paste").value); if (!r) { A.toast("That doesn't look like a list link"); return; } A.closePanel(); A.switchTo(r, { paste: true }); });
+}
+
+/* ---------------- history ---------------- */
+export function openHistory() {
+  const s = M.streak(A.doc);
+  $("#history-streak").textContent = s ? `${s}-day streak` : "No streak yet";
+  const root = $("#history-days"); root.innerHTML = "";
+  const days = M.historyDays(A.doc).slice(0, 60);
+  if (!days.length) { root.innerHTML = '<p>Nothing finished on a previous day yet. Finished lines move here at the start of the next day.</p>'; }
+  for (const day of days) {
+    const d = document.createElement("div"); d.className = "day";
+    const h = document.createElement("h4"); h.textContent = new Date(day + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    const ul = document.createElement("ul");
+    for (const e of A.doc.history[day]) {
+      const li = document.createElement("li");
+      const t = document.createElement("span"); t.className = "t"; t.textContent = new Date(e.doneAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+      const x = document.createElement("span"); x.textContent = e.text + (e.section ? " · " + e.section : "");
+      li.appendChild(t); li.appendChild(x); ul.appendChild(li);
+    }
+    d.appendChild(h); d.appendChild(ul); root.appendChild(d);
+  }
+  A.showPanel("p-history");
+}
+
+/* ---------------- settings ---------------- */
+const PACKS = [["", "Theme's pick"], ["knock", "Knock"], ["bell", "Bell"], ["blip", "Blip"], ["typewriter", "Typewriter"], ["marble", "Marble"], ["pop", "Pop"]];
+let importedDoc = null;
+export function openSettings() { paintSettings(); A.showPanel("p-settings"); }
+function themeOptions(sel, value) {
+  sel.innerHTML = "";
+  const add = (code, name) => { const o = document.createElement("option"); o.value = code; o.textContent = name; sel.appendChild(o); };
+  T.CURATED.forEach(t => add(T.themeCode(t), t.name));
+  savedThemes().forEach(s => add(s.code, s.name + " · yours"));
+  if (value && !Array.from(sel.options).some(o => o.value === value)) add(value, "Custom");
+  sel.value = value || "";
+}
+function paintSettings() {
+  const d = dev(), set = (name, on) => { const b = $(`#p-settings [data-set="${name}"]`); if (b) b.setAttribute("aria-pressed", on ? "true" : "false"); };
+  $("#set-theme-k").textContent = A.theme ? A.theme.name : "";
+  $("#set-theme-sub").textContent = d.schedule && d.schedule.on ? "Set by the schedule right now" : d.follow ? "Set by the system right now" : "T opens the picker";
+  set("follow", !!d.follow);
+  set("schedule", !!(d.schedule && d.schedule.on));
+  $("#set-schedule-sub").textContent = d.schedule && d.schedule.on ? `Day from ${d.schedule.dayAt}, night from ${d.schedule.nightAt}` : (d.follow ? "Turning this on turns Follow system off" : "A day theme and a night theme, by the clock");
+  $("#schedule-block").hidden = !(d.schedule && d.schedule.on);
+  $("#sch-day-at").value = d.schedule.dayAt || "07:00"; $("#sch-night-at").value = d.schedule.nightAt || "19:00";
+  themeOptions($("#sch-day"), d.schedule.day || "T1:curated:light"); themeOptions($("#sch-night"), d.schedule.night || "T1:curated:dark");
+  set("sound", !d.muted);
+  const pk = $("#set-pack"); if (!pk.options.length || pk.options.length !== PACKS.length) { pk.innerHTML = ""; PACKS.forEach(([v, n]) => { const o = document.createElement("option"); o.value = v; o.textContent = n; pk.appendChild(o); }); }
+  pk.value = d.soundPack || "";
+  $("#set-pack-sub").textContent = A.theme ? `${A.theme.name} picks ${PACKS.find(p => p[0] === (A.theme.sound && A.theme.sound.engine))?.[1] || "Knock"}` : "Each theme picks its own";
+  $("#volume").value = Math.round(d.volume * 100);
+  set("celebrate", !!d.celebrateRemote);
+  set("review", !!d.review);
+  set("wake", !!d.wake); $('#p-settings [data-set="wake"]').hidden = !("wakeLock" in navigator);
+  set("swipe", !d.swipeOff); $("#set-swipe").hidden = !A.touchUi();
+  set("keys", !d.keysOff); $("#set-keys").hidden = A.touchUi();
+  $("#set-full").hidden = !document.fullscreenEnabled;
+  const tpls = A.doc ? M.liveTemplates(A.doc).length : 0;
+  $("#set-tpl-k").textContent = tpls ? String(tpls) : "";
+  const removed = meta().lists.filter(l => l.archived).length;
+  $("#set-removed-k").textContent = removed ? String(removed) : "";
+  $("#streak-k").textContent = A.doc ? (s => s ? s + " day" + (s > 1 ? "s" : "") : "")(M.streak(A.doc)) : "";
+  const W = A.ref && A.ref.mode === "edit" ? A.ref.W : null;
+  $("#set-addurl").value = W ? M.addUrl(A.BASE, W) : "Open an edit link to get its URL";
+  $("#set-addurl-copy").disabled = !W;
+  $("#set-export-json").disabled = !A.doc; $("#set-export-md").disabled = !A.doc;
+  $("#set-import-merge").disabled = !importedDoc || !A.canEdit(); $("#set-import-new").disabled = !importedDoc;
+  set("who", !d.whoOff);
+  $("#set-version").textContent = `Today's Five ${A.VERSION}. What's new is on the About page.`;
+}
+function wireSettings() {
+  const d = dev();
+  $("#p-settings").addEventListener("click", async e => {
+    const b = e.target.closest("[data-set]"); if (!b) return;
+    const k = b.dataset.set;
+    if (k === "theme") { A.closePanel(); openTheme(); }
+    else if (k === "follow") setFollow(!d.follow);
+    else if (k === "schedule") setSchedule(!(d.schedule && d.schedule.on));
+    else if (k === "sound") { A.toggleMute(); paintSettings(); }
+    else if (k === "celebrate") { d.celebrateRemote = !d.celebrateRemote; A.saveDevice(); paintSettings(); }
+    else if (k === "review") { d.review = !d.review; A.saveDevice(); paintSettings(); A.paint(); }
+    else if (k === "wake") { await A.setWake(!d.wake); paintSettings(); }
+    else if (k === "swipe") { d.swipeOff = !d.swipeOff; A.saveDevice(); paintSettings(); }
+    else if (k === "keys") { d.keysOff = !d.keysOff; A.saveDevice(); paintSettings(); A.toast(d.keysOff ? "Single-key shortcuts off (Cmd/Ctrl+Z, Esc and ⌥↑↓ still work)" : "Single-key shortcuts on"); }
+    else if (k === "full") { A.closePanel(); A.toggleFullscreen(); }
+    else if (k === "templates") { A.closePanel(); openTemplates(); }
+    else if (k === "removed") { A.closePanel(); openLists({ removed: true }); }
+    else if (k === "history") { A.closePanel(); openHistory(); }
+    else if (k === "who") { d.whoOff = !d.whoOff; A.saveDevice(); A.resubscribePresence(); paintSettings(); }
+  });
+  const sch = () => { d.schedule = { ...d.schedule, dayAt: $("#sch-day-at").value || "07:00", nightAt: $("#sch-night-at").value || "19:00", day: $("#sch-day").value, night: $("#sch-night").value }; A.saveDevice(); A.tickTheme(); A.applyThemeCode(A.currentThemeCode()); paintSettings(); };
+  ["#sch-day-at", "#sch-night-at", "#sch-day", "#sch-night"].forEach(s => $(s).addEventListener("change", sch));
+  $("#set-pack").addEventListener("change", e => { d.soundPack = e.target.value; A.saveDevice(); const eng = e.target.value || (A.theme && A.theme.sound && A.theme.sound.engine) || "knock"; if (!d.muted) A.sound.preview(eng); });
+  $("#set-addurl-copy").addEventListener("click", () => A.copyText($("#set-addurl").value, "URL copied. Put text after text= and open it."));
+  $("#set-export-json").addEventListener("click", () => exportList("json"));
+  $("#set-export-md").addEventListener("click", () => exportList("md"));
+  $("#set-import-file").addEventListener("change", async e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    try {
+      const { readFile } = await import("./exporter.js");
+      importedDoc = M.importJSON(await readFile(f));
+      $("#set-import-name").textContent = `${f.name}: ${Object.values(importedDoc.items).filter(i => !i.deleted).length} lines, ${M.liveSections(importedDoc).length} sections, ${M.historyDays(importedDoc).length} days of history${importedDoc.name ? ", named “" + importedDoc.name + "”" : ""}`;
+    } catch (err) { importedDoc = null; $("#set-import-name").textContent = err.message || "That file couldn't be read."; }
+    paintSettings();
+  });
+  $("#set-import-new").addEventListener("click", () => {
+    if (!importedDoc) return;
+    const id = M.newId();
+    const doc = M.normalize(importedDoc, id); doc.updatedAt = M.now();
+    importedDoc = null; A.closePanel();
+    A.createList(doc, id);
+  });
+  $("#set-import-merge").addEventListener("click", () => {
+    if (!importedDoc || !A.canEdit()) return;
+    const merged = M.normalize(M.merge(A.doc, importedDoc), A.listId);
+    const before = Object.values(A.doc.items).filter(i => !i.deleted).length;
+    A.doc = merged; A.afterChange({ animate: true });
+    const after = Object.values(merged.items).filter(i => !i.deleted).length;
+    importedDoc = null; A.closePanel();
+    A.toast(`Merged: ${after - before} new line${after - before === 1 ? "" : "s"}`);
+  });
+  addEventListener("tf:settings", () => { if ($("#p-settings").open) paintSettings(); });
+}
+async function exportList(kind) {
+  if (!A.doc) return;
+  const { handOff, filenameFor } = await import("./exporter.js");
+  const json = kind === "json";
+  const text = json ? M.exportJSON(A.doc) : M.exportMarkdown(A.doc);
+  const res = await handOff({ text, filename: filenameFor(A.doc.name, json ? "json" : "md"), mime: json ? "application/json" : "text/markdown", ios: A.IOS });
+  A.toast(res === "shared" ? "Handed to the share sheet" : res === "downloaded" ? "Downloaded" : res === "copied" ? "Copied to the clipboard" : res === "cancelled" ? "Export cancelled" : "Couldn't export—try copying instead");
+}
+
+/* ---------------- section menu ---------------- */
+let secMenuId = null;
+export function openSectionMenu(id) {
+  secMenuId = id;
+  const unsorted = id === "";
+  for (const act of ["rename", "up", "down", "delete"]) $(`#p-sec [data-sact="${act}"]`).hidden = unsorted;
+  const items = M.itemsInSection(A.doc, id).filter(i => !i.done);
+  $('#p-sec [data-sact="today-on"]').hidden = !items.some(i => !i.today);
+  $('#p-sec [data-sact="today-off"]').hidden = !items.some(i => i.today);
+  $('#p-sec [data-sact="template"]').hidden = !items.length && !M.itemsInSection(A.doc, id).length;
+  $('#p-sec [data-sact="insert"]').hidden = !M.liveTemplates(A.doc).length;
+  $("#p-sec-h").textContent = unsorted ? "Unsorted" : M.sectionName(A.doc, id) || "Section";
+  A.showPanel("p-sec");
+}
+function wireSection() { $("#p-sec").addEventListener("click", e => { const b = e.target.closest("[data-sact]"); if (b) sectionAction(b.dataset.sact); }); }
+async function sectionAction(act) {
+  if (!A.canEdit()) return;
+  const id = secMenuId, s = A.doc.sections[id];
+  if (id !== "" && (!s || s.deleted)) return;
+  A.closePanel();
+  if (act === "rename") {
+    const name = await A.ask({ title: "Rename section", label: "Name", value: s.name });
+    const live = A.doc && A.doc.sections[s.id]; if (!live || live.deleted) return; // a remote change may have replaced the doc meanwhile
+    if (name && name.trim() && name.trim() !== live.name) { live.name = name.trim().slice(0, 60); live.updatedAt = M.now(); A.afterChange({ animate: false }); }
+  } else if (act === "up" || act === "down") {
+    const secs = M.sectionsOrdered(A.doc);
+    const i = secs.findIndex(x => x.id === s.id);
+    const j = act === "up" ? i - 1 : i + 1;
+    if (j < 0 || j >= secs.length) return;
+    const other = secs[j];
+    const tmp = s.order; s.order = other.order; other.order = tmp;
+    if (s.order === other.order) { secs.forEach((x, k) => { x.order = (k + 1) * 1000; }); const o = s.order; s.order = other.order; other.order = o; }
+    s.updatedAt = M.now(); other.updatedAt = M.now();
+    A.afterChange();
+  } else if (act === "delete") {
+    const ok = await A.ask({ title: "Delete section?", msg: `“${s.name}” goes away. Its lines move to Unsorted.`, confirm: "Delete", danger: true });
+    if (!ok) return;
+    A.pushUndo("Deleted section", [], [s.id]);
+    A.doc.sections[s.id] = { id: s.id, deleted: true, updatedAt: M.now() };
+    A.afterChange();
+    A.toast(`Deleted “${s.name}”`, { undo: true });
+  } else if (act === "today-on" || act === "today-off") {
+    const ids = M.itemsInSection(A.doc, id).filter(i => !i.done).map(i => i.id);
+    A.pushUndo(act === "today-on" ? "Put all on Today" : "Took all off Today", ids);
+    A.doc = M.setSectionToday(A.doc, id, act === "today-on");
+    A.sound.tick(); A.afterChange();
+    A.toast(act === "today-on" ? "All on Today" : "All off Today", { undo: true });
+  } else if (act === "template") {
+    const name = await A.ask({ title: "Save as template", label: "Name", value: id === "" ? "" : s.name });
+    if (!name || !name.trim()) return;
+    A.doc = M.templateFromSection(A.doc, id, name.trim());
+    A.afterChange({ animate: false });
+    A.toast(`Saved template “${name.trim()}”. Insert it from any section's menu.`);
+  } else if (act === "insert") {
+    pickTemplate(id);
+  }
+}
+
+/* ---------------- templates ---------------- */
+function pickTemplate(sectionId) {
+  const tpls = M.liveTemplates(A.doc);
+  if (!tpls.length) { A.toast("No templates yet. Save one from a section's menu."); return; }
+  openPick({
+    title: "Insert template", msg: sectionId === "" ? "Into Unsorted" : "Into " + M.sectionName(A.doc, sectionId),
+    rows: tpls.map(t => ({ label: t.name, sub: t.lines.length + " line" + (t.lines.length === 1 ? "" : "s"), run: () => {
+      const r = M.insertTemplate(A.doc, t, sectionId, { today: false });
+      A.pushUndo("Inserted template", r.ids);
+      A.doc = r.doc; A.afterChange();
+      // fresh lines are tombstones-to-be in the undo snapshot (null), so Undo removes them
+      A.toast(`Inserted “${t.name}”`, { undo: true });
+    } }))
+  });
+}
+export function openTemplates() {
+  const tpls = A.doc ? M.liveTemplates(A.doc) : [];
+  openPick({
+    title: "Templates",
+    msg: tpls.length ? "Saved in this list, synced with it. Insert one from any section's menu." : "Nothing saved yet. A section's menu has “Save as template”: its lines, without their done state.",
+    rows: tpls.map(t => ({ label: t.name, sub: t.lines.map(l => l.text).join(" · ").slice(0, 120), danger: "Delete", run: () => { showLines(t); }, del: async () => {
+      const ok = await A.ask({ title: "Delete template?", msg: `“${t.name}” goes away. Lines already inserted stay where they are.`, confirm: "Delete", danger: true });
+      if (!ok) return;
+      A.doc = M.deleteTemplate(A.doc, t.id); A.afterChange({ animate: false }); openTemplates();
+    } })),
+    actions: A.canEdit() && A.doc && M.liveSections(A.doc).length + 1 ? [{ label: "Insert into Unsorted", run: () => pickTemplate("") }] : []
+  });
+}
+function showLines(t) {
+  openPick({ title: t.name, msg: t.lines.length + " line" + (t.lines.length === 1 ? "" : "s"), rows: t.lines.map(l => ({ label: l.text, sub: l.note })), actions: [{ label: "Back", run: openTemplates }, { label: "Insert into Unsorted", run: () => pickTemplate("") }] });
+}
+/** One picker sheet for lists, templates and sections: rows with a label, a sub-line, an optional delete. */
+function openPick({ title, msg = "", rows = [], actions = [] }) {
+  $("#p-pick-h").textContent = title;
+  $("#pick-msg").textContent = msg; $("#pick-msg").hidden = !msg;
+  const menu = $("#pick-menu"); menu.innerHTML = "";
+  for (const r of rows) {
+    const b = document.createElement("button"); b.type = "button";
+    b.innerHTML = `<span class="lb">${A.escapeHtml(r.label)}${r.sub ? `<span class="sub">${A.escapeHtml(r.sub)}</span>` : ""}</span>`;
+    if (r.run) b.addEventListener("click", () => { A.closePanel(); r.run(); }); else b.disabled = true;
+    menu.appendChild(b);
+    if (r.del) { const d = document.createElement("button"); d.type = "button"; d.className = "chip"; d.textContent = r.danger || "Delete"; d.setAttribute("aria-label", (r.danger || "Delete") + " " + r.label); d.addEventListener("click", e => { e.stopPropagation(); A.closePanel(); r.del(); }); b.appendChild(d); }
+  }
+  const act = $("#pick-actions"); act.innerHTML = ""; act.hidden = !actions.length;
+  for (const a of actions) { const c = document.createElement("button"); c.type = "button"; c.className = "chip"; c.textContent = a.label; c.addEventListener("click", () => { A.closePanel(); a.run(); }); act.appendChild(c); }
+  A.showPanel("p-pick");
+}
+
+/* ---------------- line menu ---------------- */
+let lineId = null;
+export function openLineMenu(id) {
+  const it = A.doc.items[id]; if (!it || it.deleted) return;
+  lineId = id;
+  $("#p-line-h").textContent = it.text.length > 48 ? it.text.slice(0, 48) + "…" : it.text || "Line";
+  $("#line-today-lb").textContent = it.today ? "Take off Today" : "Put on Today";
+  $("#line-repeat-sub").textContent = A.ruleLabel(M.ruleOf(A.doc, id));
+  $('#p-line [data-lact="nottoday"]').hidden = !it.today || it.done;
+  $('#p-line [data-lact="move"]').hidden = !meta().lists.some(l => l.id !== A.listId && l.mode !== "view" && !l.archived);
+  A.showPanel("p-line");
+}
+function wireLine() {
+  $("#p-line").addEventListener("click", e => {
+    const b = e.target.closest("[data-lact]"); if (!b) return;
+    const id = lineId; A.closePanel();
+    if (!A.canEdit() || !A.doc.items[id] || A.doc.items[id].deleted) return;
+    const act = b.dataset.lact;
+    if (act === "edit") A.startEdit(id);
+    else if (act === "today") A.toggleToday(id);
+    else if (act === "repeat") openRepeat(id);
+    else if (act === "nottoday") A.notToday(id);
+    else if (act === "move") openMove(id);
+    else if (act === "delete") A.deleteItem(id);
+  });
+}
+
+/* ---------------- repeat picker ---------------- */
+let rep = { id: null, kind: "", days: [], day: 1 };
+export function openRepeat(id) {
+  const it = A.doc.items[id]; if (!it || it.deleted) return;
+  const r = M.ruleOf(A.doc, id);
+  rep = { id, kind: r ? r.kind : "", days: r && r.days ? [...r.days] : [], day: r && r.day ? r.day : Math.min(28, new Date().getDate()) };
+  $("#p-repeat-h").textContent = "Repeat · " + (it.text.length > 32 ? it.text.slice(0, 32) + "…" : it.text);
+  paintRepeat();
+  A.showPanel("p-repeat");
+}
+function paintRepeat() {
+  $$("#repeat-kinds [data-kind]").forEach(b => b.setAttribute("aria-checked", b.dataset.kind === rep.kind ? "true" : "false"));
+  $("#repeat-days").hidden = rep.kind !== "weekly";
+  $$("#repeat-days [data-day]").forEach(b => b.setAttribute("aria-pressed", rep.days.includes(+b.dataset.day) ? "true" : "false"));
+  $("#repeat-monthly").hidden = rep.kind !== "monthly";
+  $("#repeat-day").value = rep.day;
+}
+function wireRepeat() {
+  $("#repeat-kinds").addEventListener("click", e => { const b = e.target.closest("[data-kind]"); if (!b) return; rep.kind = b.dataset.kind; if (rep.kind === "weekly" && !rep.days.length) rep.days = [new Date().getDay()]; paintRepeat(); });
+  $("#repeat-days").addEventListener("click", e => { const b = e.target.closest("[data-day]"); if (!b) return; const d = +b.dataset.day; rep.days = rep.days.includes(d) ? rep.days.filter(x => x !== d) : [...rep.days, d].sort(); paintRepeat(); });
+  $("#repeat-day").addEventListener("change", e => { rep.day = Math.min(31, Math.max(1, (+e.target.value) | 0 || 1)); paintRepeat(); });
+  $("#repeat-done").addEventListener("click", () => {
+    const id = rep.id; A.closePanel();
+    if (!A.canEdit() || !A.doc.items[id] || A.doc.items[id].deleted) return;
+    const before = M.ruleOf(A.doc, id);
+    let rule = null;
+    if (rep.kind === "weekly") { if (!rep.days.length) { A.toast("Pick at least one day, or choose Never"); return; } rule = { kind: "weekly", days: rep.days }; }
+    else if (rep.kind === "monthly") rule = { kind: "monthly", day: rep.day };
+    else if (rep.kind) rule = { kind: rep.kind };
+    const same = (!before && !rule) || (before && rule && before.kind === rule.kind && JSON.stringify(before.days || []) === JSON.stringify(rule.days || []) && (before.day || 0) === (rule.day || 0));
+    if (same) return;
+    A.pushUndo("Repeat", [id]);
+    A.doc = M.setRule(A.doc, id, rule);
+    A.afterChange({ animate: false });
+    A.toast(rule ? "Repeats: " + A.ruleLabel(M.ruleOf(A.doc, id)) : "Doesn't repeat any more", { undo: true });
+  });
+}
+
+/* ---------------- move to another list ---------------- */
+function openMove(id) {
+  const it = A.doc.items[id]; if (!it || it.deleted) return;
+  const targets = meta().lists.filter(l => l.id !== A.listId && l.mode !== "view" && !l.archived);
+  openPick({
+    title: "Move to…", msg: `“${it.text.length > 40 ? it.text.slice(0, 40) + "…" : it.text}” leaves this list and lands in the other one's Unsorted.`,
+    rows: targets.map(l => { const loc = A.loadLocal(l.id); return { label: (loc && loc.doc.name) || l.name || "Untitled list", sub: loc ? "" : "Not on this device yet—open it once first", run: loc ? () => moveTo(id, l.id) : null }; })
+  });
+}
+function moveTo(id, target) {
+  const it = A.doc.items[id]; if (!it || it.deleted || !A.canEdit()) return;
+  const loc = A.loadLocal(target); if (!loc || loc.mode === "view") { A.toast("That list isn't on this device"); return; }
+  const r = M.moveItem(A.doc, loc.doc, id);
+  if (!r) return;
+  A.saveLocal(target, { doc: r.dst, rev: loc.rev, dirty: true, created: loc.created, mode: "edit" }); // the target first: the line exists somewhere before it leaves here
+  A.doc = r.src; A.afterChange({ animate: true });
+  A.flushOthers();
+  const name = (loc.doc.name) || (meta().lists.find(l => l.id === target) || {}).name || "the other list";
+  A.toast(`Moved to ${name}`, { action: () => {
+    const back = A.loadLocal(target); if (!back) return;
+    const rr = M.moveItem(back.doc, A.doc, r.newId);
+    if (!rr) return;
+    A.saveLocal(target, { ...back, doc: rr.src, dirty: true });
+    A.doc = rr.dst; A.afterChange({ animate: true }); A.flushOthers();
+    A.toast("Moved back");
+  } });
+}
+
+/* ---------------- delete this list everywhere ---------------- */
+export async function deleteEverywhere() {
+  if (!A.canEdit() || !A.ref) return;
+  const name = A.doc.name || (meta().lists.find(l => l.id === A.listId) || {}).name || "this list";
+  const n = Object.values(A.doc.items).filter(i => !i.deleted).length;
+  const ok = await A.ask({ title: "Delete this list everywhere?", msg: `“${name}” (${n} line${n === 1 ? "" : "s"}) is removed from the server and from this device. Every other device with the link loses it too. You get ten seconds to change your mind, and no way back after that.`, confirm: "Delete everywhere", danger: true });
+  if (!ok) return;
+  await A.flushQuick();
+  const id = A.listId, ref = A.ref, docCopy = M.normalize(JSON.parse(JSON.stringify(A.doc)), id);
+  const entry = { ...(meta().lists.find(l => l.id === id) || { id, mode: "edit", name }) };
+  const kill = { lookupId: ref.lookupId, token: ref.token };
+  if (A.sync) { A.sync.close(); }
+  const dead = await A.killRemote(kill); // offline: queued in pendingKill like Rotate
+  A.removeLocal(id);
+  meta().lists = meta().lists.filter(l => l.id !== id);
+  meta().dead = Array.from(new Set([...(meta().dead || []), id]));
+  A.saveDevice();
+  const next = meta().lists.find(l => !l.archived);
+  if (next) A.switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else A.showWelcome();
+  A.toast(dead ? `Deleted “${name}” everywhere` : `Deleted “${name}” here; the server copy goes when you're back online`, { action: async () => {
+    // the client still holds W and the document: re-create the row under the same link
+    meta().dead = (meta().dead || []).filter(x => x !== id);
+    meta().pendingKill = (meta().pendingKill || []).filter(k => k.lookupId !== kill.lookupId);
+    A.saveLocal(id, { doc: docCopy, rev: 0, dirty: true, created: true, mode: "edit" });
+    const e = A.registerList(id, entry.name || docCopy.name || "", "edit"); e.created = true; e.linkSaved = true; e.archived = false;
+    A.saveDevice();
+    A.switchTo({ id, mode: "edit" });
+    A.toast("Back, under the same link");
+  } });
+}
+
+/* ---------------- how it works ---------------- */
+export function openHelp(section) {
+  const touch = A.touchUi();
+  const W = A.ref && A.ref.mode === "edit" ? A.ref.W : null;
+  const add = W ? M.addUrl(A.BASE, W) : A.BASE + "#/l/<your list>/add?text=";
+  const esc = A.escapeHtml;
+  const bm = `javascript:(function(){var t=prompt("Line for Today's Five");if(t)open(${JSON.stringify(add)}+encodeURIComponent(t))})()`;
+  const keys = [["1 – 9", "Check off a line by position"], ["N", "New line"], ["E", "Edit the focused line"], ["O", "One thing at a time"], ["-", "Not today (the focused line)"], ["/", "Search Everything"], ["Enter", "While editing: save and start a new line below"], ["Esc", "While editing: cancel · clear the search"], ["⌫", "On an empty line: remove it"], ["A", "Today ↔ Everything"], ["⌥ ↑ / ↓", "Move the focused line"], ["⌘ Z", "Undo"], ["T", "Theme"], ["M", "Mute"], ["F", "Full screen"], ["?", "This page"]];
+  const gestures = [["Tap a line", "Cross it off, or bring it back"], ["Swipe left", "Not today: the line leaves Today until tomorrow's rollover (Settings → Behavior turns it off)"], ["Press and hold, then drag", "Reorder a line, or move it to another section in Everything"], ["Tap the count", "One thing at a time"], ["Pencil", "Edit the line and its note; the Repeat chip is in there"], ["⋯ on a line", "Its menu: repeat, not today, move to another list, delete"], ["Today toggle", "In Everything: put a line on Today, or take it off"], ["Swipe down or tap outside", "Close a sheet like this one"]];
+  $("#help-body").innerHTML = `
+    <div class="row-actions"><button class="chip accent" id="help-tour" type="button">Replay the tour</button></div>
+    <h3 id="h-basics">The basics</h3>
+    <p>Today is the short list you keep on screen. Everything is the backlog, in sections, with a <b>Today</b> toggle on every line. Cross a line off and it sinks; finish them all and the finale plays. Finished lines move to History at the start of the next day; unfinished ones carry over.</p>
+    <h3>${touch ? "Gestures" : "Keys"}</h3>
+    ${touch ? `<div class="gestures">${gestures.map(g => `<div class="g"><b>${esc(g[0])}</b><span>${esc(g[1])}</span></div>`).join("")}</div>` : `<div class="keys">${keys.map(k => `<kbd>${esc(k[0])}</kbd><span>${esc(k[1])}</span>`).join("")}</div>`}
+    <h3 id="h-repeat">Repeat, and not today</h3>
+    <p>A line can repeat every day, on weekdays, on days you pick, or monthly on a date: set it from the line's menu (⋯) or the Repeat chip in the editor. A finished repeating line goes to History at the next rollover and comes back undone on its next day. It never gets deleted by finishing it. A ↻ on the line marks it.</p>
+    <p><b>Not today</b> (${touch ? "swipe left, or the line's menu" : "press - with a line focused, or the line's menu"}) takes a line off Today until tomorrow's rollover puts it back. Everything shows a small “tomorrow” tag on it meanwhile.</p>
+    <h3 id="h-one">One thing at a time</h3>
+    <p>${touch ? "Tap the count in the top bar" : "Press O, or click the count in the top bar"}: only the top undone line, as big as the screen allows. Cross it off and the next one slides in. The finale ends it; ${touch ? "the count" : "O"} brings the whole list back. It's remembered on this device.</p>
+    <h3 id="h-lists">Lists, sections, templates</h3>
+    <p>Sections live in Everything; a section's menu (⋯) can rename it, put every line on Today or take them off, save the section as a <b>template</b> (its lines, no done state), or insert a template. Templates are kept in the list itself, so they sync, and Settings → Lists manages them. A line's menu can <b>move it to another list</b> on this device.</p>
+    <p><b>Remove from this device</b> (Lists) only hides a list here; the server and your other devices keep it, and Lists → Removed brings it back. <b>Delete this list everywhere</b> (bottom of ⋯) removes it from the server and from here, with ten seconds to undo. Deleted lines sit in <b>Recently deleted</b> at the bottom of Everything for 30 days, with Restore.</p>
+    <h3 id="h-links">Links</h3>
+    <p>Your link is the key. The edit link lets anyone change the list and make new links; the view link lets someone watch, with live updates, sound and confetti when you cross a line off. Rotate (in Share) replaces both. Lose the link, lose the list: nobody can recover it, and Settings → Advanced → Export is the only backup there is.</p>
+    <h3 id="h-add">Add from anywhere</h3>
+    <p>Open this URL with text on the end and the line lands on Today${W ? "" : " (open an edit link to see yours)"}. Several lines: put a newline between them. Optional <code>&amp;section=Name</code> files it under a section.</p>
+    <input class="link" type="text" readonly value="${esc(add)}" aria-label="Add-from-anywhere URL" spellcheck="false">
+    <p><b>An iOS Shortcut:</b> Shortcuts → + → add <i>Ask for Input</i> (Text) → <i>URL Encode</i> the input → <i>Open URLs</i> with the address above followed by the encoded text. Name it, add it to the Home Screen or Siri, and every run adds a line.</p>
+    <p><b>A Mac bookmarklet:</b> drag this to the bookmarks bar, or make a bookmark whose address is the code below. Click it, type the line, done.</p>
+    <p><a class="chip" href="${esc(bm)}" onclick="return false" draggable="true" title="Drag me to the bookmarks bar">+ Today's Five</a></p>
+    <input class="link" type="text" readonly value="${esc(bm)}" aria-label="Bookmarklet code" spellcheck="false">
+    <h3 id="h-who">Who's here, sound, the rest</h3>
+    <p>A small dot beside the sync dot for each other device that has the list open right now—a random session id, nothing else, and Settings → Advanced turns it off. Every theme picks a sound pack; Settings → Sound overrides it. On an iPhone, the ring/silent switch mutes the app's sounds too. The theme can follow the system or a schedule, one or the other.</p>`;
+  $("#help-tour").addEventListener("click", () => { A.closePanel(); startTour(); });
+  $$("#help-body .link").forEach(el => el.addEventListener("focus", () => { try { el.select(); } catch (e) { /* ignore */ } }));
+  A.showPanel("p-help");
+  if (section) { const h = document.getElementById("h-" + section); if (h) h.scrollIntoView({ block: "start" }); }
+}
+
+/* ---------------- first-run tour ----------------
+   Five coach marks over the real controls, one line each. Dismissable at any step, never shown again on this
+   device unless asked for (⋯ → How it works → Replay). Gestures on touch, keys on the desktop.              */
+let tourStep = 0, tourViewBefore = "today", tourFocusBefore = null, tourUsedKeys = false;
+function tourSteps() {
+  const touch = A.touchUi();
+  const firstToday = () => $("#list .row .check") || $("#list") || $("#addtoday");
+  const firstAll = () => $("#all .row");
+  return [
+    { view: "today", needsRow: true, target: firstToday, text: touch ? "Tap a line to cross it off. Tap again and it's back." : "Click a line to cross it off, or press its number. Click again and it's back." },
+    { view: "today", target: () => $(".seg"), text: "Today is the short list you keep on screen. Everything is where the rest lives." },
+    { view: "all", needsRow: true, target: () => { const r = firstAll(); return (r && r.querySelector(".tool.today")) || $("#all"); }, text: "Over in Everything, the Today toggle puts a line on Today—or takes it off." },
+    { view: "all", needsRow: true, target: () => { const r = firstAll(); return touch ? (r || $("#all")) : ((r && r.querySelector(".tool.handle")) || $("#all")); }, text: touch ? "Press and hold a line, then drag it where you want it—up, down, or into another section." : "Grab the handle to drag a line where you want it—up, down, or into another section. ⌥ ↑/↓ does the same from the keyboard." },
+    { view: "today", target: () => (!$("#share").hidden && $("#share").offsetParent) ? $("#share") : $("#more"), text: "Your link is the key. Save it from Share, and hand it only to people who should see the list. Lose the link, lose the list." }
+  ];
+}
+export function maybeTour() {
+  if (dev().tourDone || !A.doc || A.listMode !== "edit" || A.openPanel || A.tourOn) return;
+  setTimeout(() => { if (!dev().tourDone && A.doc && A.listMode === "edit" && !A.openPanel && !A.tourOn) startTour(); }, 400);
+}
+export function startTour() {
+  if (!A.doc) return;
+  if (A.openPanel) A.closePanel();
+  if (A.editing) A.commitEdit();
+  A.tourOn = true; tourStep = 0; tourViewBefore = A.view; tourFocusBefore = document.activeElement; tourUsedKeys = false;
+  const t = $("#tour"); t.hidden = false;
+  try { $("#shell").inert = true; } catch (e) { /* older engines: the overlay still covers the page */ }
+  showTourStep();
+}
+function endTour() {
+  if (!A.tourOn) return;
+  A.tourOn = false;
+  $("#tour").hidden = true;
+  try { $("#shell").inert = false; } catch (e) { /* ignore */ }
+  $$(".row.tour-show").forEach(r => r.classList.remove("tour-show"));
+  dev().tourDone = true; for (const l of meta().lists) delete l.fresh; A.saveDevice();
+  if (A.view !== tourViewBefore) A.setView(tourViewBefore);
+  // give focus back to where it was; a keyboard user who started on the page body lands on the first line. A finger
+  // never had focus anywhere, so nothing is focused (and no ring appears on the phone).
+  const back = tourFocusBefore && tourFocusBefore.isConnected && tourFocusBefore !== document.body ? tourFocusBefore : (tourUsedKeys ? ($("#list .row .check") || $("#more")) : null);
+  if (back) { try { back.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
+}
+function showTourStep() {
+  const steps = tourSteps();
+  const s = steps[tourStep];
+  if (!s) return endTour();
+  if (s.needsRow && !$("#list .row") && !$("#all .row")) { tourStep++; return showTourStep(); }
+  if (A.view !== s.view) A.setView(s.view);
+  $("#tour-text").textContent = s.text;
+  $("#tour-step").textContent = `Step ${tourStep + 1} of ${steps.length}.`;
+  $("#tour-next").textContent = tourStep === steps.length - 1 ? "Done" : "Next";
+  $("#tour-dots").innerHTML = steps.map((_, i) => `<i class="${i === tourStep ? "on" : ""}"></i>`).join("");
+  $$(".row.tour-show").forEach(r => r.classList.remove("tour-show"));
+  requestAnimationFrame(placeTour);
+}
+function placeTour() {
+  if (!A.tourOn) return;
+  const s = tourSteps()[tourStep]; if (!s) return;
+  const el = s.target();
+  const tour = $("#tour"), hole = $("#tour-hole"), card = $("#tour-card");
+  const row = el && el.closest ? el.closest(".row") : null; if (row) row.classList.add("tour-show");
+  const r = el ? el.getBoundingClientRect() : null;
+  const pad = 8;
+  if (!r || (r.width === 0 && r.height === 0)) {
+    tour.classList.add("center");
+    hole.style.cssText = `left:${innerWidth / 2}px;top:${innerHeight / 2}px;width:0;height:0`;
+  } else {
+    tour.classList.remove("center");
+    hole.style.cssText = `left:${r.left - pad}px;top:${r.top - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px`;
+  }
+  const cw = Math.min(352, innerWidth - 32);
+  card.style.width = cw + "px";
+  const ch = card.offsetHeight || 140;
+  let left = r ? r.left + r.width / 2 - cw / 2 : innerWidth / 2 - cw / 2;
+  left = Math.max(16, Math.min(innerWidth - cw - 16, left));
+  let top, place = "below";
+  if (!r) { top = innerHeight / 2 - ch / 2; place = "center"; }
+  else if (r.bottom + pad + 16 + ch < innerHeight - 16) top = r.bottom + pad + 16;
+  else { top = Math.max(16, r.top - pad - 16 - ch); place = "above"; }
+  tour.dataset.place = place;
+  card.style.left = left + "px"; card.style.top = top + "px";
+  // the arrow points at the target's centre when the card had to slide sideways
+  const arrowX = r ? Math.max(18, Math.min(cw - 18, r.left + r.width / 2 - left)) : cw / 2;
+  card.style.setProperty("--arrow-x", arrowX + "px");
+  card.focus({ preventScroll: true }); // the card is announced (label + description) and Tab reaches Skip/Next
+}
+function wireTour() {
+  $("#tour-next").addEventListener("click", () => { tourStep++; showTourStep(); });
+  $("#tour-skip").addEventListener("click", endTour);
+  $("#tour").addEventListener("click", e => { if (e.target === e.currentTarget || e.target.id === "tour-hole") endTour(); });
+  document.addEventListener("keydown", e => { if (!A.tourOn) return; tourUsedKeys = true; if (e.key === "Escape") { e.preventDefault(); endTour(); } }, true);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") document.body.classList.add("no-tip"); }, true);
+  document.addEventListener("pointermove", () => document.body.classList.remove("no-tip"), { passive: true });
+  addEventListener("tf:relayout", () => { if (A.tourOn) placeTour(); });
+  window.__tfTourStep = () => tourStep;
+}

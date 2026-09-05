@@ -6,12 +6,13 @@
   <title>Today's Five — how it works &amp; privacy</title>
   <meta name="description" content="What Today's Five stores, who can see it, and what it never collects.">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-dOLoP8c7UQp50t1a+EUGdzHLyxTzcDqYujrUVeKT7xY='; style-src 'self' 'sha256-yNknL13COQN52cpZ0PepUU2IyZOt8ZfrghaJG5Kz+t4='; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-62TAjfDtqW1cwqEfRI/lxIyJTOZ/5/rDtLmJn7THQsM='; style-src 'self' 'sha256-yNknL13COQN52cpZ0PepUU2IyZOt8ZfrghaJG5Kz+t4='; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
   <meta name="theme-color" content="#1A1D21">
   <link rel="icon" href="icons/icon-192.png">
   <style id="theme-vars">:root{--ink:#1A1D21;--ink-2:#23272C;--ink-3:#2E343A;--text:#F5F1EA;--muted:#9AA0A8;--dim:#7F858C;--done:#7F858C;--muted-2:#9AA0A8;--dim-2:#979DA4;--accent:#D26128;--accent-hi:#E8814A;--accent-deep:#A34A1C;--accent-text:#E8814A;--danger:#E0745A;--hair:rgba(245,241,234,.10);--hair-hi:rgba(245,241,234,.30);--hair-solid:#65696E;--glow:radial-gradient(125% 78% at 50% 34%, rgba(210,97,40,.10), rgba(210,97,40,0) 62%);--strike-shadow:0 0 10px rgba(210,97,40,.38);--box-done-bg:#D26128;--strike-bg:#D26128;--strike-size:auto;--strike-anim:none;--finale-style:normal;--font-task:"Lato","Helvetica Neue",Helvetica,Arial,sans-serif;--font-ui:"PT Sans","Helvetica Neue",Helvetica,Arial,sans-serif;--task-w:900;--task-ls:-.025em;--task-lh:1.14;color-scheme:dark}</style>
   <script>
-  /* Same theme as the app, applied through the CSSOM (this script is hashed in the CSP above). */
+  /* Same theme as the app, applied through the CSSOM (this script is hashed in the CSP above), and the changelog
+     read from whatsnew.json once the page has loaded. */
   (function () {
     var css = null;
     try { css = localStorage.getItem("tf/v2/themecss"); } catch (e) {}
@@ -23,6 +24,23 @@
       var ink = css.match(/--ink:(#[0-9A-Fa-f]{6})/);
       if (ink) document.querySelector('meta[name="theme-color"]').setAttribute("content", ink[1]);
     }
+    window.addEventListener("DOMContentLoaded", function () {
+      fetch("whatsnew.json", { cache: "no-cache" }).then(function (r) { return r.json(); }).then(function (j) {
+        var vs = j && j.versions || [];
+        if (!vs.length) return;
+        document.getElementById("version").textContent = "Version " + vs[0].version + " \u00b7 " + vs[0].date;
+        var log = document.getElementById("log");
+        log.textContent = "";
+        vs.forEach(function (v) {
+          var li = document.createElement("li");
+          var h = document.createElement("div"); var b = document.createElement("span"); b.className = "v"; b.textContent = v.version;
+          var d = document.createElement("span"); d.className = "d"; d.textContent = v.date; h.appendChild(b); h.appendChild(d); li.appendChild(h);
+          var ul = document.createElement("ul");
+          (v.lines || []).forEach(function (t) { var x = document.createElement("li"); x.textContent = t; ul.appendChild(x); });
+          li.appendChild(ul); log.appendChild(li);
+        });
+      }).catch(function () {});
+    });
   })();
   </script>
   <link rel="stylesheet" href="styles.css">
@@ -32,6 +50,7 @@
 <main class="prose">
   <p class="crumb"><a href="./">← Back to the list</a></p>
   <h1>Today's Five</h1>
+  <p class="version" id="version">Version 4.0.0</p>
   <p class="lede">A short list you keep open on screen all day. Here's exactly what leaves your device, who can see it, and what never gets collected.</p>
 
   <h2>How it works</h2>
@@ -40,26 +59,26 @@
 
   <h2>What's stored on the server</h2>
   <ul>
-    <li><strong>The encrypted list</strong>: one sealed blob per list. Lines, notes, sections, history, and saved themes are all inside it.</li>
+    <li><strong>The encrypted list</strong>: one sealed blob per list. Lines, notes, sections, repeat rules, templates, history, and saved themes are all inside it.</li>
     <li><strong>A revision number</strong> and two timestamps (last change, and last opened, to the day), so your devices can tell what changed and idle lists can be cleared out.</li>
     <li><strong>A hash of the write token</strong>, so the server can turn away changes from a view link.</li>
     <li><strong>A salted hash of your network address</strong>, kept for at most 24 hours, and only when a new list is created. It's there to stop one address from creating lists without limit. The address itself isn't stored.</li>
   </ul>
 
   <h2>What the operator can see</h2>
-  <p>Nothing readable. I can see that a list exists, how big its encrypted blob is, when it last changed, and when it was last opened. Not a word of what's in it, not who opened it, and not the link. There's no way for me to recover a list for you—lose the link, lose the list.</p>
+  <p>Nothing readable. I can see that a list exists, how big its encrypted blob is, when it last changed, and when it was last opened. Not a word of what's in it, not who opened it, and not the link. There's no way for me to recover a list for you—lose the link, lose the list. The only backup is the one you make yourself: ⋯ → Settings → Advanced → Export.</p>
 
   <h2>Third parties</h2>
   <p>The encrypted lists sit with <strong>Supabase</strong> (a hosted Postgres database and realtime service) in a data centre in the United States run by Amazon Web Services. Supabase sees what I see, plus the ordinary connection metadata any server sees (your network address, request times). GitHub Pages serves the app itself. Fonts and every other file load from this site—nothing gets fetched from Google, a CDN, or anyone else.</p>
 
   <h2>Retention</h2>
-  <p>A list nobody has opened or changed for <strong>12 months</strong> gets deleted from the server. Your device keeps its own copy for as long as the browser keeps site data. Rotating a link deletes the old encrypted blob at once.</p>
+  <p>A list nobody has opened or changed for <strong>12 months</strong> gets deleted from the server. Your device keeps its own copy for as long as the browser keeps site data. Rotating a link deletes the old encrypted blob at once. ⋯ → Delete this list everywhere removes it from the server and from this device on the spot, with ten seconds to change your mind; "Remove from this device" only hides a list here, and the server and your other devices keep it.</p>
 
   <h2>What there's none of</h2>
   <ul>
     <li>No accounts, no sign-up, no email, no passwords.</li>
     <li>No analytics, no trackers, no cookies. The browser's own storage holds your theme and your links, on your device only.</li>
-    <li>No names or presence: the list doesn't record who changed what.</li>
+    <li>No names: the list doesn't record who changed what. "Who's here" shows a dot per device that has the list open right now—a random session id on the live channel, gone the moment the page closes, never stored. Turn it off in Settings → Advanced and this device neither shows nor counts.</li>
   </ul>
 
   <h2>Sharing</h2>
@@ -67,6 +86,9 @@
 
   <h2>Limits</h2>
   <p>This is a small free service. Each list is capped at 96 KB encrypted (a year of daily history fits many times over), the service holds a few thousand lists in total, and a single network address can only create a handful of lists per hour. Hit a limit and the app says so and keeps working on your device.</p>
+
+  <h2 id="whats-new">What's new</h2>
+  <ul class="log" id="log"><li>The changelog lives in <code>whatsnew.json</code>.</li></ul>
 
   <p class="fine">The code is <a href="https://github.com/54kz2vzbdw-code/todays-five">on GitHub</a> for anyone who wants to check these claims against what actually runs.</p>
 </main>

@@ -78,6 +78,8 @@ export function createSound(opts) {
     /** Play a pack's check sound regardless of the theme (Settings → Sound preview). */
     preview(engine) { const c = ctx(); if (!c) return false; if (!packs) { loadPacks(); return false; } const k = { ...kit(), engine }; const pack = packs[engine] || packs.knock; try { pack.check({ c, master, kit: k, P: (key, d) => { const v = k[key]; return typeof v === "number" ? v : d; } }, 0); } catch (e) { return false; } return true; },
     /** Test hook: the state machine's view of the world. */
-    state() { return { state: ac ? ac.state : "none", pending, made, packs: !!packs }; }
+    state() { return { state: ac ? ac.state : "none", pending, made, packs: !!packs }; },
+    /** Test hook: do to the live context what iOS does (suspend on background; a dead context after a call). */
+    debugContext(what) { if (!ac) return false; try { if (what === "suspend") ac.suspend(); else if (what === "close") ac.close(); } catch (e) { /* ignore */ } return true; }
   };
 }

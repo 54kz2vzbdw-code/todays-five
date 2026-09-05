@@ -1,5 +1,9 @@
-// app.js — the UI: views, rendering, inline editing, drag, keyboard, undo, rollover, panels, lists,
-// links (edit/view), migration of v2 lists, share/save sheets, the first-run tour.
+// app.js — the UI: boot, registry, open/switch lists, rendering, inline editing, drag, keyboard, undo, rollover,
+// sync wiring, the ⋯ menu, one-thing mode, search, not-today, presence, add-from-URL, the what's-new toast.
+// Everything used only from a panel (theme picker, share/save sheets, Lists, History, Settings, section and line
+// menus, templates, delete-everywhere, move, export, the tour, How it works) lives in panels.js and loads on first
+// use: Today's first paint pays for none of it. panels.js gets one object, `api`, with live getters for the
+// state here and the actions it needs.
 import * as M from "./model.js";
 import { loadLocal, saveLocal, removeLocal, loadLegacyLocal, removeLegacyLocal, loadMeta, saveMeta, makeTransport, createSync, fetchLegacy, deleteLegacy, forWire } from "./sync.js";
 import * as C from "./crypto.js";
@@ -7,6 +11,7 @@ import * as T from "./theme.js";
 import { createSound } from "./sound.js";
 import { createFx } from "./fx.js";
 import config from "./config.js";
+import { VERSION } from "./version.js";
 
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
@@ -27,7 +32,8 @@ const ICONS = {
   star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.8l6.1-.7z"/></svg>',
   handle: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"/></svg>',
   kill: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
-  more: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>'
+  more: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>',
+  menu: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>'
 };
 const touchUi = () => !HOVER.matches;
 const sheetUi = () => !HOVER.matches || NARROW.matches;
@@ -42,10 +48,15 @@ if (typeof dev.volume !== "number") dev.volume = 1;
 if (!dev.theme) dev.theme = "T1:curated:dark";
 if (!dev.darkSlot) dev.darkSlot = "T1:curated:dark";
 if (!dev.lightSlot) dev.lightSlot = "T1:curated:light";
+// v4 settings all default off (or to the v3 behaviour) when absent; nothing is rewritten on a returning device
+if (!dev.schedule || typeof dev.schedule !== "object") dev.schedule = { on: false, dayAt: "07:00", nightAt: "19:00", day: "T1:curated:light", night: "T1:curated:dark" };
 // a device that already holds an established list is a returning user: never show it the tour unasked.
 // A list registered moments ago (`fresh`, cleared when the tour ends) does not count: iOS Safari reloads the page
 // right after the first list is created, and that reload must not look like a returning device.
 if (!dev.tourDone && meta.lists.some(l => !l.fresh)) dev.tourDone = true;
+// what's new: a device that has never held a list is on its first run and sees nothing; anyone else sees the toast once per version
+const whatsNewPending = M.whatsNewDue({ seenVersion: dev.seenVersion, hasLists: meta.lists.length > 0 || !!dev.tourDone }, VERSION);
+if (!dev.seenVersion && !whatsNewPending) dev.seenVersion = VERSION;
 function saveDevice() {
   // another tab may have changed the registry since this tab loaded: union lists, respect rotations, keep our device settings
   const stored = loadMeta();
@@ -72,8 +83,9 @@ function resolveRef(r) {
   while (map[id] && !seen.has(id)) { seen.add(id); id = map[id]; }
   return { id, mode: "edit" };
 }
-// per-tab identity: two tabs on one device must not ignore each other's broadcasts
+// per-tab identity: two tabs on one device must not ignore each other's broadcasts; presence tracks a per-load key
 const TAB_ID = dev.id + ":" + M.shortId();
+const PRESENCE_KEY = M.shortId();
 
 /* ---------------- state ---------------- */
 let doc = null, listId = null, listMode = "edit", ref = null, view = "today";
@@ -89,6 +101,11 @@ let toastTimer = 0;
 let drag = null;
 let wakeLock = null;
 let openPanel = null;
+let tourOn = false;
+let query = "";                // Everything's search
+let pendingAdd = null;         // { text: [...], section } from an add-from-anywhere link, applied once the doc is ready
+let whoCount = 0;
+let lastRemoteCelebrate = 0;
 const canEdit = () => listMode === "edit" && !!doc;
 // Everything below is reachable from boot() (which runs before the rest of this module has been evaluated):
 // declare it here, never further down, or a cold start straight into a link dies in a temporal dead zone.
@@ -102,38 +119,63 @@ const STATUS_LABEL = {
 };
 let lastCat = "", lastLimitToast = "";
 const viewCollapsed = new Set(); // view-only mode: a viewer's collapse must never win a merge against the editors
-let tourOn = false, tourStep = 0, tourViewBefore = "today", tourFocusBefore = null, tourUsedKeys = false;
-let press = null, tapped = null;
+let press = null, tapped = null, swipe = null;
 let reloading = false;
+let toastAction = null, reviewDismissed = false, whatsNewShown = false, rz = 0, settling = false, killing = false;
+let dragEndedAt = -1e9; // no drag has ended yet
+let panelsP = null;
+/** The lazy module with every panel. Loaded on first use, then kept. */
+function panels() {
+  if (!panelsP) panelsP = import("./panels.js").then(m => { m.init(api); return m; }).catch(e => { panelsP = null; toast("Couldn't load that part of the app—check the connection and try again"); throw e; });
+  return panelsP;
+}
+const HAPTIC = IOS && (() => { const h = document.getElementById("haptic"); return !!h && "switch" in h; })();
 
 /* ---------------- sound & fx ---------------- */
-const sound = createSound({ muted: () => !!dev.muted, volume: () => dev.volume, kit: () => theme && theme.sound });
-const fx = createFx($("#fx"), { palette: () => theme ? theme.confetti : ["#D26128"], shapes: () => theme ? theme.shapes : 1, reduced: () => RM.matches });
+const stats = { check: 0, uncheck: 0, finish: 0, burst: 0, volley: 0 }; // read by the test hook
+const rawSound = createSound({ muted: () => !!dev.muted, volume: () => dev.volume, kit: () => theme && theme.sound, pack: () => dev.soundPack || "" });
+const sound = { ...rawSound, check: s => { stats.check++; return rawSound.check(s); }, uncheck: () => { stats.uncheck++; return rawSound.uncheck(); }, finish: () => { stats.finish++; return rawSound.finish(); } };
+const rawFx = createFx($("#fx"), { palette: () => theme ? theme.confetti : ["#D26128"], shapes: () => theme ? theme.shapes : 1, reduced: () => RM.matches });
+const fx = { burst: (...a) => { stats.burst++; return rawFx.burst(...a); }, volley: () => { stats.volley++; return rawFx.volley(); } };
 
 /* ---------------- theme ---------------- */
+/** Which theme is on right now: the schedule by the clock, else the system slots, else the chosen one. */
 function currentThemeCode() {
+  const s = dev.schedule;
+  if (s && s.on) return scheduledSlot() === "night" ? (s.night || dev.darkSlot) : (s.day || dev.lightSlot);
   if (dev.follow) return DARK_MQ.matches ? dev.darkSlot : dev.lightSlot;
   return dev.theme;
+}
+function scheduledSlot(now = new Date()) {
+  const s = dev.schedule; if (!s) return "day";
+  const mins = t => { const m = /^(\d{1,2}):(\d{2})$/.exec(t || ""); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+  const d = mins(s.dayAt), n = mins(s.nightAt), cur = now.getHours() * 60 + now.getMinutes();
+  if (d === null || n === null || d === n) return "day";
+  if (d < n) return (cur >= d && cur < n) ? "day" : "night";
+  return (cur >= n && cur < d) ? "night" : "day";
 }
 function applyThemeCode(code) {
   theme = T.parseCode(code) || T.curated("dark");
   T.applyTheme(theme);
   $("#theme").textContent = theme.name;
-  syncFollowChip();
+  dispatchEvent(new CustomEvent("tf:theme"));
 }
 function chooseTheme(t) {
   const code = T.themeCode(t);
   if (dev.follow) { if (t.base === "dark") dev.darkSlot = code; else dev.lightSlot = code; }
+  if (dev.schedule && dev.schedule.on) { if (scheduledSlot() === "night") dev.schedule.night = code; else dev.schedule.day = code; }
   dev.theme = code;
   saveDevice();
-  applyThemeCode(dev.follow ? currentThemeCode() : code);
+  applyThemeCode(currentThemeCode());
   if (!dev.muted) sound.tick();
-  renderSwatches();
 }
 DARK_MQ.addEventListener("change", () => { if (dev.follow) applyThemeCode(currentThemeCode()); });
+let appliedCode = "";
+function tickTheme() { const c = currentThemeCode(); if (c !== appliedCode) { appliedCode = c; applyThemeCode(c); } }
 
 /* ---------------- boot ---------------- */
-applyThemeCode(currentThemeCode());
+appliedCode = currentThemeCode();
+applyThemeCode(appliedCode);
 paintDate();
 paintMute();
 wireUi();
@@ -142,10 +184,19 @@ registerSw();
 
 function frag(r) { return "#/" + (r.mode === "view" ? "r" : "l") + "/" + r.id; }
 function hashRef() {
-  const m = location.hash.match(/^#\/(l|r)\/([0-9A-Za-z]{22,64})/);
-  return m ? { id: m[2], mode: m[1] === "r" ? "view" : "edit" } : null;
+  const h = M.parseHash(location.hash);
+  return h ? { id: h.id, mode: h.mode } : null;
+}
+/** An add-from-anywhere link: remember what to add, refuse it on a view link, and clean the address either way. */
+function takeAddFromHash() {
+  const h = M.parseHash(location.hash);
+  if (!h || !h.add) return;
+  if (h.mode === "view") { pendingAdd = null; setTimeout(() => toast("A view link can only watch. Open the edit link to add a line."), 600); }
+  else pendingAdd = h.add;
+  history.replaceState(null, "", BASE + SEARCH + frag(h));
 }
 function boot() {
+  takeAddFromHash();
   const h = hashRef();
   if (h) return openList(resolveRef(h));
   if (meta.current && (loadLocal(meta.current) || loadLegacyLocal(meta.current))) return openList({ id: meta.current, mode: meta.currentMode === "view" ? "view" : "edit" });
@@ -173,7 +224,8 @@ function flushQuick() {
   if (!sync) return Promise.resolve();
   return Promise.race([Promise.resolve(sync.flush()).catch(() => {}), new Promise(r => setTimeout(r, 1500))]);
 }
-/** Other lists this browser holds with unpushed edits (switched away before the debounce, iOS reloads): push them once. */
+/** Other lists this browser holds with unpushed edits (switched away before the debounce, iOS reloads, a line moved
+    to another list): push them once. */
 async function flushOthers() {
   if (!transport || !navigator.onLine) return;
   for (const l of meta.lists) {
@@ -196,9 +248,10 @@ async function flushOthers() {
 }
 addEventListener("hashchange", () => {
   if (reloading) return;
+  takeAddFromHash();
   const h = hashRef(); if (!h) return;
   const r = resolveRef(h);
-  if (r.id === listId && r.mode === listMode) { history.replaceState(null, "", BASE + SEARCH + frag(r)); return; } // a stale (redirected) link: show the real one
+  if (r.id === listId && r.mode === listMode) { history.replaceState(null, "", BASE + SEARCH + frag(r)); applyPendingAdd(); return; } // a stale (redirected) link: show the real one
   switchTo(r);
 });
 async function retryTransport() {
@@ -223,6 +276,7 @@ async function openList(r) {
   if (sync) { await flushQuick(); sync.close(); sync = null; }
   if (drag) abortDrag();
   undoStack = []; hideToast();
+  setSearch("", { silent: true });
   const gen = ++openGen;
   listId = r.id; listMode = mode; ref = null;
   meta.current = r.id; meta.currentMode = mode;
@@ -236,7 +290,7 @@ async function openList(r) {
   if (mode === "edit") {
     doc = M.purgeTombstones(doc);
     const roll = M.rollover(doc);
-    if (roll.moved.length) { doc = roll.doc; rolled = true; }
+    if (roll.moved.length || roll.doc !== doc) { doc = roll.doc; rolled = true; }
   }
   document.documentElement.dataset.mode = mode;
   history.replaceState(null, "", BASE + SEARCH + frag({ id: r.id, mode }));
@@ -244,8 +298,9 @@ async function openList(r) {
   $("#welcome").hidden = true;
   $("#dot").hidden = false;
   $("#ro").hidden = mode !== "view";
-  rows.clear(); $("#list").innerHTML = ""; $("#all").innerHTML = "";
+  rows.clear(); $("#list").innerHTML = ""; clearAll();
   wasAll = allDoneToday();
+  paintWho(0);
   setView(view, { force: true });
   paintListName();
   syncLive = false; lastCat = ""; paintStatus(transport || TRANSPORT_KIND ? "syncing" : "off");
@@ -281,9 +336,10 @@ async function openList(r) {
   sync = createSync({
     transport, deviceId: TAB_ID,
     holdMs: holdHook ? { busy: holdHook, full: holdHook } : undefined,
+    presence: { key: PRESENCE_KEY, enabled: () => !dev.whoOff, onCount: n => { if (gen === openGen) paintWho(n); } },
     onStatus: s => { if (gen === openGen) paintStatus(s); },
     onLive: v => { if (gen === openGen) { syncLive = v; paintStatus(syncStatus); } },
-    onRemote: remote => { if (gen !== openGen) return; doc = remote; applyRemote(); applyCarry(); },
+    onRemote: remote => { if (gen !== openGen) return; const prev = doc; doc = remote; applyRemote(prev); applyCarry(); applyPendingAdd(); },
     onGone: () => { /* the dot says it; the Lists panel offers the paste box */ }
   });
   syncLive = false;
@@ -293,11 +349,13 @@ async function openList(r) {
   flushOthers();
   settleMigrations();
   applyCarry();
-  if (sessionStorage.getItem("tf/reopenShare")) { sessionStorage.removeItem("tf/reopenShare"); setTimeout(openShare, 300); }
+  if (sessionStorage.getItem("tf/reopenShare")) { sessionStorage.removeItem("tf/reopenShare"); setTimeout(() => panels().then(p => p.openShare()), 300); }
   if (rolled) sync.update(doc);
   if (entry && !entry.name && doc.name) entry.name = doc.name;
-  if (mode === "edit" && entry.created && !entry.linkSaved) showSaveLink({ migrated: !!entry.migrated });
+  if (local) applyPendingAdd();
+  if (mode === "edit" && entry.created && !entry.linkSaved) panels().then(p => p.showSaveLink({ migrated: !!entry.migrated }));
   else maybeTour();
+  maybeWhatsNew();
 }
 
 function showWelcome(msg) {
@@ -309,11 +367,15 @@ function showWelcome(msg) {
   $("#w-err").textContent = msg || "";
   $("#dot").hidden = true; // no list yet: nothing to report
   $("#ro").hidden = true;
+  paintWho(0);
   $("#count").innerHTML = "<b>0</b>/0<span class=\"sr-only\"> done</span>";
   $("#hint").innerHTML = "";
   $("#list-h1").textContent = "Today's Five";
   $("#addtoday").hidden = true;
+  $("#review").hidden = true;
+  setOneThing(false, { silent: true, keep: true });
   paintListName();
+  maybeWhatsNew();
 }
 
 /* ---------------- migration of a v2 (plaintext) list ---------------- */
@@ -352,7 +414,6 @@ async function migrateLegacy(oldId, legacyLocal, serverRow, gen = openGen) {
 }
 /** Once a migrated list has landed on the server: fold in anything another device wrote to the old row since,
     retire the old row, drop the plaintext local copy. Retried until it succeeds. */
-let settling = false;
 async function settleMigrations() {
   if (settling || !transport || !navigator.onLine || !(meta.migrations || []).length) return;
   settling = true;
@@ -366,7 +427,7 @@ async function settleMigrations() {
         if (leg) {
           if (m.to === listId && doc) {
             const merged = M.normalize(M.merge(doc, leg.doc), listId);
-            if (M.canon(merged) !== M.canon(doc)) { doc = merged; applyRemote(); if (sync) sync.update(doc); }
+            if (M.canon(merged) !== M.canon(doc)) { const prev = doc; doc = merged; applyRemote(prev); if (sync) sync.update(doc); }
           } else {
             const merged = M.normalize(M.merge(local.doc, leg.doc), m.to);
             if (M.canon(merged) !== M.canon(local.doc)) saveLocal(m.to, { ...local, doc: merged, dirty: true });
@@ -391,8 +452,29 @@ function applyCarry() {
   if (!shared) return;
   const merged = M.normalize(M.merge(doc, old.doc), listId);
   if (M.canon(merged) === M.canon(doc)) return;
-  doc = merged; applyRemote(); if (sync) sync.update(doc);
+  const prev = doc; doc = merged; applyRemote(prev); if (sync) sync.update(doc);
   toast("Carried your unsynced edits over from the old link");
+}
+/** Add-from-anywhere: once the document is real (local, or pulled for the first time), add the lines to Today. */
+function applyPendingAdd() {
+  const a = pendingAdd; if (!a || !doc || listMode !== "edit") return;
+  const fresh = !Object.keys(doc.items).length && !(sync && sync.current() && sync.current().rev > 0) && !(loadLocal(listId) && loadLocal(listId).rev > 0);
+  if (fresh && syncStatus !== "gone" && syncStatus !== "off") return; // a link this device never had: wait for the pull
+  pendingAdd = null;
+  if (syncStatus === "gone") { toast("This link no longer works, so nothing was added"); return; }
+  if (!a.text.length) { setView("today"); newItem({ today: true }); return; }
+  const secs = M.sectionsOrdered(doc);
+  const sec = a.section ? secs.find(s => s.name.toLowerCase() === a.section.toLowerCase()) : null;
+  const sectionId = sec ? sec.id : "";
+  const ts = M.now();
+  let order = M.lastOrder(M.itemsInSection(doc, sectionId), i => i.order), todayOrder = M.lastOrder(todayList(), i => i.todayOrder);
+  const ids = [];
+  for (const text of a.text) { const id = M.shortId(); ids.push(id); doc.items[id] = { id, sectionId, text, note: "", done: false, doneAt: 0, today: true, order, todayOrder, updatedAt: ts }; order += 1000; todayOrder += 1000; }
+  pushUndo("Added", ids);
+  setView("today");
+  afterChange({ animate: false });
+  requestAnimationFrame(() => { for (const id of ids) { const li = rows.get(id); if (li && !RM.matches) li.classList.add("arrive"); } focusRow(ids[0]); });
+  toast(ids.length === 1 ? "Added" : "Added " + ids.length + " lines", { undo: true });
 }
 
 /* ---------------- lists registry ---------------- */
@@ -414,12 +496,14 @@ function paintDate() {
 function todayList() { return M.todayItems(doc); }
 function doneCountToday() { return todayList().filter(i => i.done).length; }
 function allDoneToday() { const t = todayList(); return t.length > 0 && t.every(i => i.done); }
+/** Everything's DOM apart from its header: sections, the add button, the deleted shelf. */
+function clearAll() { for (const el of Array.from($("#all").children)) if (el.id !== "all-head") el.remove(); }
 
 function setView(v, { force } = {}) {
   if (!doc) return;
   if (editing) commitEdit();
   if (drag) abortDrag();
-  if (v !== view || force) { rows.clear(); $("#list").innerHTML = ""; $("#all").innerHTML = ""; }
+  if (v !== view || force) { rows.clear(); $("#list").innerHTML = ""; clearAll(); }
   view = v;
   $("#v-today").setAttribute("aria-selected", v === "today" ? "true" : "false");
   $("#v-all").setAttribute("aria-selected", v === "all" ? "true" : "false");
@@ -444,6 +528,7 @@ function makeRow(it) {
   if (view === "today") {
     const more = mk("more", "more", "Show note"); more.hidden = true; more.setAttribute("aria-expanded", "false"); tools.appendChild(more);
     tools.appendChild(mk("pencil", "pencil", "Edit (E)"));
+    tools.appendChild(mk("lmenu", "menu", "Line menu"));
   } else {
     // the promote control explains itself: a labelled toggle, not a bare star
     const today = document.createElement("button"); today.type = "button"; today.className = "tool today";
@@ -451,6 +536,7 @@ function makeRow(it) {
     tools.appendChild(today);
     tools.appendChild(mk("pencil", "pencil", "Edit (E)"));
     tools.appendChild(mk("kill", "kill", "Delete"));
+    tools.appendChild(mk("lmenu", "menu", "Line menu"));
     tools.appendChild(mk("handle", "handle", "Drag to reorder"));
   }
   li.addEventListener("click", e => { if (clickAfterDrag()) { e.stopPropagation(); e.preventDefault(); } }, true);
@@ -460,11 +546,12 @@ function makeRow(it) {
   li.addEventListener("pointerenter", () => { lastRowId = it.id; });
   li.addEventListener("dblclick", e => { if (!HOVER.matches) return; e.preventDefault(); startEdit(it.id); });
   li.querySelector(".pencil").addEventListener("click", e => { e.stopPropagation(); if (clickAfterDrag()) return; startEdit(it.id); });
+  li.querySelector(".lmenu").addEventListener("click", e => { e.stopPropagation(); if (clickAfterDrag()) return; openLineMenu(it.id); });
   const today = li.querySelector(".today"); if (today) today.addEventListener("click", e => { e.stopPropagation(); toggleToday(it.id); });
   const kill = li.querySelector(".kill"); if (kill) kill.addEventListener("click", e => { e.stopPropagation(); deleteItem(it.id); });
   const more = li.querySelector(".more"); if (more) more.addEventListener("click", e => { e.stopPropagation(); li.classList.toggle("open"); more.setAttribute("aria-expanded", li.classList.contains("open") ? "true" : "false"); layoutStrikes(li, true); });
   const handle = li.querySelector(".handle"); if (handle) handle.addEventListener("pointerdown", e => { if (e.button !== 0) return; e.preventDefault(); beginDrag(li, e); });
-  li.addEventListener("pointerdown", e => { onPress(li, e); longPressStart(li, e); });
+  li.addEventListener("pointerdown", e => { onPress(li, e); longPressStart(li, e); swipeStart(li, e); });
   li.addEventListener("contextmenu", e => { if (e.pointerType === "touch" || !HOVER.matches) e.preventDefault(); });
   li.addEventListener("animationend", () => { li.classList.remove("kick"); li.classList.remove("arrive"); });
   return li;
@@ -472,12 +559,16 @@ function makeRow(it) {
 
 function updateRow(li, it) {
   const tx = li.querySelector(".tx");
-  const changedText = tx.dataset.text !== it.text || tx.dataset.cap !== captionFor(it) || tx.dataset.note !== (it.note || "");
+  const rule = M.ruleOf(doc, it.id), ret = listMode === "edit" ? M.returnOf(doc, it.id) : null;
+  const marks = (rule ? "r" : "") + (ret ? "t" : "");
+  const changedText = tx.dataset.text !== it.text || tx.dataset.cap !== captionFor(it) || tx.dataset.note !== (it.note || "") || tx.dataset.marks !== marks;
   if (changedText) {
     tx.textContent = it.text;
-    tx.dataset.text = it.text; tx.dataset.cap = captionFor(it); tx.dataset.note = it.note || "";
+    tx.dataset.text = it.text; tx.dataset.cap = captionFor(it); tx.dataset.note = it.note || ""; tx.dataset.marks = marks;
+    if (rule) { const r = document.createElement("span"); r.className = "rep"; r.textContent = "↻"; r.title = ruleLabel(rule); r.setAttribute("aria-label", "Repeats: " + ruleLabel(rule)); tx.appendChild(r); }
     const cap = captionFor(it);
     if (cap) { const c = document.createElement("span"); c.className = "cap"; c.textContent = cap; tx.appendChild(c); }
+    if (ret) { const c = document.createElement("span"); c.className = "cap tmr"; c.textContent = "tomorrow"; c.title = "Not today: back on Today at tomorrow's rollover"; tx.appendChild(c); }
     if (it.note) { const n = document.createElement("span"); n.className = "note"; n.textContent = it.note; tx.appendChild(n); }
   }
   li.classList.toggle("done", it.done);
@@ -492,9 +583,21 @@ function updateRow(li, it) {
     today.dataset.tip = it.today ? "On Today — click to take it off" : "Put this line on Today";
   }
   const more = li.querySelector(".more"); if (more) more.hidden = !it.note;
+  if (view === "all") li.classList.toggle("miss", !!query && !matches(it, query));
   return changedText;
 }
 function captionFor(it) { return view === "today" ? M.sectionName(doc, it.sectionId) : ""; }
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+function ruleLabel(r) {
+  if (!r) return "Never";
+  if (r.kind === "daily") return "Every day";
+  if (r.kind === "weekdays") return "Weekdays";
+  if (r.kind === "weekly") return (r.days || []).length ? (r.days.length === 7 ? "Every day" : r.days.map(d => DAY_NAMES[d]).join(", ")) : "Chosen days";
+  if (r.kind === "monthly") return "Monthly on the " + ordinal(r.day || 1);
+  return "Repeats";
+}
+function ordinal(n) { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+function matches(it, q) { const s = q.toLowerCase(); return it.text.toLowerCase().includes(s) || (it.note || "").toLowerCase().includes(s); }
 
 function renderToday({ animate, quiet }) {
   const list = $("#list");
@@ -504,15 +607,26 @@ function renderToday({ animate, quiet }) {
   list.style.setProperty("--unit", n > 8 ? (41 / n) + "vh" : "");
   const keep = new Set();
   const relayout = [];
+  const one = !!dev.oneThing && listMode === "edit";
+  const first = one ? items.find(i => !i.done) : null;
   for (const it of items) {
     keep.add(it.id);
     let li = rows.get(it.id), fresh = false;
     if (!li) { li = makeRow(it); rows.set(it.id, li); list.appendChild(li); fresh = true; if (quiet && animate && !RM.matches) li.classList.add("arrive"); }
-    if (updateRow(li, it) || fresh) relayout.push(li);
+    const was = li.classList.contains("one-now");
+    li.classList.toggle("one-now", !!first && first.id === it.id);
+    if (first && first.id === it.id && !was && !fresh && animate && !RM.matches) li.classList.add("arrive");
+    if (updateRow(li, it) || fresh || (one && first && first.id === it.id && !was)) relayout.push(li);
     if (!li.parentNode) list.appendChild(li);
   }
   for (const [id, li] of rows) if (!keep.has(id)) { rows.delete(id); if (editing && editing.id === id) cancelEdit(true); li.remove(); }
   orderInto(list, items.map(i => i.id), animate);
+  let more = list.parentNode.querySelector(".one-more");
+  if (one) {
+    if (!more) { more = document.createElement("div"); more.className = "one-more"; list.after(more); }
+    const left = items.filter(i => !i.done).length - (first ? 1 : 0);
+    more.textContent = first ? (left ? left + " more after this" : "Last one") : "";
+  } else if (more) more.remove();
   layoutAll(relayout);
   $("#addtoday").hidden = false;
 }
@@ -523,6 +637,8 @@ function renderAll({ animate, quiet }) {
   const groups = [{ id: "", name: "Unsorted", implicit: !secs.length, collapsed: false }].concat(listMode === "view" ? secs.map(s => ({ ...s, collapsed: viewCollapsed.has(s.id) })) : secs);
   const keepSec = new Set(), keep = new Set(), relayout = [];
   const moves = [];
+  root.classList.toggle("searching", !!query);
+  let hits = 0;
   for (const g of groups) {
     keepSec.add(g.id);
     let sec = root.querySelector(`.sec[data-id="${CSS.escape(g.id)}"]`);
@@ -530,13 +646,17 @@ function renderAll({ animate, quiet }) {
     updateSection(sec, g);
     const list = sec.querySelector(".seclist");
     const items = M.itemsInSection(doc, g.id);
+    let hit = 0;
     for (const it of items) {
       keep.add(it.id);
       let li = rows.get(it.id), fresh = false;
       if (!li) { li = makeRow(it); rows.set(it.id, li); list.appendChild(li); fresh = true; if (quiet && animate && !RM.matches) li.classList.add("arrive"); }
       if (updateRow(li, it) || fresh) relayout.push(li);
       if (li.parentNode !== list) moves.push([li, list]);
+      if (!query || matches(it, query)) hit++;
     }
+    hits += hit;
+    sec.classList.toggle("nohit", !!query && hit === 0);
     sec.querySelector(".empty").hidden = items.length > 0;
     sec.querySelector(".sec-count").textContent = items.length ? `${items.filter(i => i.done).length}/${items.length}` : "";
     if (g.id === "" && !items.length && !g.implicit) sec.hidden = true; else sec.hidden = false;
@@ -555,7 +675,39 @@ function renderAll({ animate, quiet }) {
   root.appendChild(addsec);
   // order sections
   for (const g of groups) { const s = root.querySelector(`.sec[data-id="${CSS.escape(g.id)}"]`); if (s) root.insertBefore(s, addsec); }
+  let none = root.querySelector(".nohits");
+  if (query && !hits) { if (!none) { none = document.createElement("div"); none.className = "nohits"; } none.textContent = "Nothing matches “" + query + "”"; root.insertBefore(none, addsec); }
+  else if (none) none.remove();
+  renderDeleted(root);
   layoutAll(relayout);
+}
+/** "Recently deleted (n)" at the bottom of Everything: the tombstones that remember their line, with Restore. */
+function renderDeleted(root) {
+  let shelf = root.querySelector("#deleted");
+  const gone = listMode === "edit" && !query ? M.recentlyDeleted(doc) : [];
+  if (!gone.length) { if (shelf) shelf.remove(); return; }
+  if (!shelf) {
+    shelf = document.createElement("details"); shelf.id = "deleted"; shelf.className = "deleted";
+    shelf.innerHTML = '<summary><span class="caret" aria-hidden="true">›</span><span class="lb"></span></summary><ul></ul>';
+    shelf.addEventListener("click", e => { const b = e.target.closest("[data-restore]"); if (b) { e.preventDefault(); restoreItem(b.dataset.restore); } });
+  }
+  root.appendChild(shelf);
+  shelf.querySelector(".lb").textContent = `Recently deleted (${gone.length})`;
+  const ul = shelf.querySelector("ul"); ul.innerHTML = "";
+  for (const t of gone) {
+    const li = document.createElement("li");
+    const s = document.createElement("span"); s.className = "t"; s.textContent = t.text + (t.note ? " · " + t.note : "");
+    const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = "Restore"; b.dataset.restore = t.id; b.setAttribute("aria-label", "Restore “" + t.text + "”");
+    li.append(s, b); ul.appendChild(li);
+  }
+}
+function restoreItem(id) {
+  if (!canEdit()) return;
+  const t = doc.items[id]; if (!t || !t.deleted) return;
+  doc = M.restoreItem(doc, id);
+  afterChange({ animate: true });
+  toast(`Restored “${t.text.length > 40 ? t.text.slice(0, 40) + "…" : t.text}”`);
+  focusRow(id);
 }
 
 function makeSection(g) {
@@ -573,7 +725,8 @@ function updateSection(sec, g) {
   sec.querySelector(".nm").textContent = g.name;
   sec.classList.toggle("collapsed", !!g.collapsed && !g.implicit);
   sec.querySelector(".sec-toggle").setAttribute("aria-expanded", g.collapsed ? "false" : "true");
-  sec.querySelector(".sec-more").hidden = g.id === "";
+  sec.querySelector(".sec-more").hidden = false; // Unsorted has a menu too (templates, put all on Today)
+  sec.querySelector(".sec-more").dataset.unsorted = g.id === "" ? "1" : "";
 }
 
 /** Put the given ids in order inside `container` with the fewest DOM moves (rows already in place are never
@@ -626,8 +779,7 @@ function layoutAll(only) {
   const els = only && only.length ? only : Array.from(rows.values());
   for (const el of els) layoutStrikes(el, true);
 }
-let rz = 0;
-function relayout() { clearTimeout(rz); rz = setTimeout(() => { layoutAll(); if (tourOn) placeTour(); }, 130); }
+function relayout() { clearTimeout(rz); rz = setTimeout(() => { layoutAll(); if (tourOn) dispatchEvent(new CustomEvent("tf:relayout")); }, 130); }
 addEventListener("resize", relayout);
 if (window.ResizeObserver) new ResizeObserver(relayout).observe($("#main"));
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => layoutAll());
@@ -637,18 +789,35 @@ function paint() {
   const t = todayList(), n = t.length, d = t.filter(i => i.done).length;
   const countHtml = `<b>${d}</b>/${n}<span class="sr-only"> done</span>`;
   if ($("#count").innerHTML !== countHtml) $("#count").innerHTML = countHtml;
+  $("#count").setAttribute("aria-pressed", dev.oneThing && listMode === "edit" ? "true" : "false");
   const fill = $("#fill");
   fill.style.width = (n ? (d / n * 100) : 0) + "%";
   fill.classList.toggle("full", n > 0 && d === n);
   const fs = document.fullscreenEnabled ? " &nbsp;·&nbsp; <em>F</em> full screen" : "";
   $("#hint").innerHTML = view === "today"
-    ? `<em>1–${Math.min(n, 9)}</em> check off &nbsp;·&nbsp; <em>N</em> new &nbsp;·&nbsp; <em>E</em> edit &nbsp;·&nbsp; <em>A</em> everything &nbsp;·&nbsp; <em>T</em> theme &nbsp;·&nbsp; <em>M</em> mute${fs} &nbsp;·&nbsp; <em>?</em> help`
-    : `<em>A</em> today &nbsp;·&nbsp; <em>N</em> new &nbsp;·&nbsp; <em>E</em> edit &nbsp;·&nbsp; <em>⌥↑↓</em> move &nbsp;·&nbsp; <em>?</em> help`;
+    ? `<em>1–${Math.min(n, 9)}</em> check off &nbsp;·&nbsp; <em>N</em> new &nbsp;·&nbsp; <em>E</em> edit &nbsp;·&nbsp; <em>O</em> one thing &nbsp;·&nbsp; <em>A</em> everything &nbsp;·&nbsp; <em>T</em> theme &nbsp;·&nbsp; <em>M</em> mute${fs} &nbsp;·&nbsp; <em>?</em> help`
+    : `<em>A</em> today &nbsp;·&nbsp; <em>N</em> new &nbsp;·&nbsp; <em>E</em> edit &nbsp;·&nbsp; <em>/</em> search &nbsp;·&nbsp; <em>-</em> not today &nbsp;·&nbsp; <em>⌥↑↓</em> move &nbsp;·&nbsp; <em>?</em> help`;
   const fin = $("#finale"), hint = $("#hint");
-  if (view === "today" && allDoneToday() && !editing) { fin.classList.add("on"); hint.classList.add("off"); }
+  const finale = view === "today" && allDoneToday() && !editing;
+  if (finale) { fin.classList.add("on"); hint.classList.add("off"); }
   else { fin.classList.remove("on"); hint.classList.remove("off"); }
+  paintReview(finale);
   $("#streak-k").textContent = (s => s ? s + " day" + (s > 1 ? "s" : "") : "")(M.streak(doc));
 }
+/** Day review: a quiet card under "That's the list", only when the setting is on, dismissed by any tap or key. */
+function paintReview(finale) {
+  const card = $("#review");
+  const show = finale && !!dev.review && listMode === "edit" && !reviewDismissed;
+  if (!show) { card.hidden = true; if (!finale) reviewDismissed = false; return; }
+  const r = M.dayReview(doc);
+  card.innerHTML = `<div class="r-head"><span>Today</span><span class="r-streak">${r.streak ? r.streak + "-day streak" : "Streak starts today"}</span></div>` +
+    `<div class="r-week">${r.days.map(d => `<i class="${d.finished ? "on" : ""}${d.future ? " future" : ""}" title="${d.day}"></i>`).join("")}<span>${r.finishedThisWeek} of 7 days finished this week</span></div>` +
+    `<ul>${r.lines.map(l => `<li class="${l.done ? "done" : ""}">${escapeHtml(l.text)}</li>`).join("")}</ul>`;
+  card.hidden = false;
+}
+function dismissReview() { if (!$("#review").hidden) { reviewDismissed = true; $("#review").hidden = true; } }
+document.addEventListener("pointerdown", dismissReview, true);
+document.addEventListener("keydown", dismissReview, true);
 
 function paintStatus(s) {
   syncStatus = s;
@@ -668,8 +837,24 @@ function paintStatus(s) {
     toast(s === "busy" ? "The server's busy. Your list is safe here—it'll sync again in a few minutes." : s === "full" ? "The service is full right now. Your list is safe on this device." : "This list is too large to sync. Clear out some old lines or history.");
   }
   if (s === "synced") lastLimitToast = "";
+  if (s === "gone") applyPendingAdd();
 }
 $("#dot").addEventListener("click", () => { toast($("#dot").getAttribute("title") || ""); });
+/** Who's here: one dot per other device (five, then "+n"), fading in and out. */
+function paintWho(n) {
+  whoCount = n;
+  const el = $("#who");
+  const show = n > 0 && !!doc && !dev.whoOff;
+  if (!show) { if (!el.hidden) { el.classList.add("fade"); setTimeout(() => { if (whoCount === 0 || dev.whoOff || !doc) { el.hidden = true; el.classList.remove("fade"); } }, 420); } return; }
+  el.hidden = false; el.classList.remove("fade");
+  const dots = el.querySelector(".dots");
+  const want = Math.min(n, 5);
+  while (dots.children.length < want) { const i = document.createElement("i"); dots.appendChild(i); requestAnimationFrame(() => i.classList.add("on")); }
+  while (dots.children.length > want) dots.lastChild.remove();
+  el.querySelector(".plus").textContent = n > 5 ? "+" + (n - 5) : "";
+  const label = n === 1 ? "1 other device has this list open" : n + " others have this list open";
+  el.title = label; el.querySelector("#who-sr").textContent = label;
+}
 
 /* ---------------- changes ---------------- */
 function afterChange({ animate = true, delay = 0 } = {}) {
@@ -679,15 +864,31 @@ function afterChange({ animate = true, delay = 0 } = {}) {
   if (delay) setTimeout(() => render({ animate }), delay); else render({ animate });
   paintListName();
 }
-function applyRemote() {
-  // quiet: no sound, no confetti, no kick; rows animate into place
+/** A remote document arrived (`prev` is the one it replaces). Quiet by default: no sound, no confetti, no kick; rows
+    animate into place. A view link celebrates what the editors did; an edit link only when the setting says so. */
+function applyRemote(prev) {
   if (drag) abortDrag(); // the row under the finger may be gone or moved; a stuck drag would swallow every tap
+  const before = wasAll;
   const nowAll = allDoneToday();
   render({ animate: true, quiet: true });
-  if (tourOn) requestAnimationFrame(placeTour);
+  if (tourOn) requestAnimationFrame(() => dispatchEvent(new CustomEvent("tf:relayout")));
   wasAll = nowAll;
   paintListName();
   if (editing && !doc.items[editing.id]) cancelEdit(true);
+  if (prev && (listMode === "view" || dev.celebrateRemote)) celebrateRemote(prev, before, nowAll);
+}
+function celebrateRemote(prev, before, nowAll) {
+  const doneNow = [];
+  for (const it of todayList()) { const p = prev.items && prev.items[it.id]; if (it.done && (!p || p.deleted || !p.done)) doneNow.push(it); }
+  if (!doneNow.length) return;
+  const t = performance.now();
+  if (t - lastRemoteCelebrate > 250) { lastRemoteCelebrate = t; sound.check(Math.max(0, doneCountToday() - 1)); }
+  if (view === "today" && !RM.matches) for (const it of doneNow) {
+    const li = rows.get(it.id); if (!li) continue;
+    const r = li.querySelector(".tx").getBoundingClientRect();
+    fx.burst(Math.min(r.right, innerWidth - 40), r.top + r.height * 0.5, 30, 11, 1.8);
+  }
+  if (nowAll && !before) setTimeout(() => { sound.finish(); fx.volley(); const g = $("#glow"); g.classList.add("flare"); setTimeout(() => g.classList.remove("flare"), 900); }, 500);
 }
 
 function toggle(id, px, py, fromPointer) {
@@ -696,10 +897,13 @@ function toggle(id, px, py, fromPointer) {
   if (editing) { if (editing.id === id) return; commitEdit(); }
   const li = rows.get(id);
   pushUndo(it.done ? "Undone" : "Done", [id]);
-  it.done = !it.done; it.doneAt = it.done ? M.now() : 0; it.updatedAt = M.now();
+  const ts = M.now();
+  it.done = !it.done; it.doneAt = it.done ? ts : 0; it.updatedAt = ts; // one stamp: a rollover elsewhere is recognisable by it
   if (li) { li.classList.toggle("done", it.done); li.querySelector(".check").setAttribute("aria-checked", it.done ? "true" : "false"); }
   if (it.done) {
-    sound.check(Math.max(0, (view === "today" ? doneCountToday() : M.itemsInSection(doc, it.sectionId).filter(i => i.done).length) - 1));
+    const played = sound.check(Math.max(0, (view === "today" ? doneCountToday() : M.itemsInSection(doc, it.sectionId).filter(i => i.done).length) - 1));
+    haptic();
+    if (played && IOS && !dev.muted && !dev.silentHint) { dev.silentHint = true; saveDevice(); setTimeout(() => toast("Hearing nothing? The ring/silent switch mutes the app's sounds too."), 900); }
     if (li && !RM.matches) {
       const bx = li.querySelector(".box");
       li.classList.remove("kick"); bx.classList.remove("pop"); void li.offsetWidth;
@@ -721,11 +925,17 @@ function toggle(id, px, py, fromPointer) {
   if (view === "today") {
     const now = allDoneToday();
     if (now && !wasAll) setTimeout(() => {
+      if (dev.oneThing) setOneThing(false, { silent: true }); // the finale shows the whole list
       sound.finish(); fx.volley();
       const g = $("#glow"); g.classList.add("flare"); setTimeout(() => g.classList.remove("flare"), 900);
     }, 640);
     wasAll = now;
   }
+}
+/** iOS haptics through a hidden native switch: toggling it inside the tap is what fires the tick. No-op elsewhere. */
+function haptic() {
+  if (!HAPTIC || dev.haptics === false) return;
+  try { const h = document.getElementById("haptic"); const a = document.activeElement; h.click(); if (document.activeElement !== a && a && a.focus) a.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
 }
 
 /* taps: recognised from the pointer, so a render or a remote change between press and release cannot swallow them */
@@ -740,6 +950,7 @@ document.addEventListener("pointerup", e => {
   const p = press; press = null;
   if (!p || e.pointerId !== p.pointerId) return;
   if (drag || clickAfterDrag() || editing) return;
+  if (swipe && swipe.moving) return;
   if (p.type === "touch" && performance.now() - p.t > 450) return; // held: a drag attempt, not a tap
   const moved = Math.hypot(e.clientX - p.x, e.clientY - p.y);
   const under = document.elementFromPoint(e.clientX, e.clientY);
@@ -752,12 +963,57 @@ document.addEventListener("pointerup", e => {
 }, true);
 document.addEventListener("pointercancel", () => { press = null; }, true);
 
+/* not today by swipe: a finger dragged leftwards across a line (touch only; off in Settings → Behavior) */
+function swipeStart(li, e) {
+  if (!canEdit() || dev.swipeOff || e.pointerType !== "touch" || e.button !== 0 || editing || drag) return;
+  if (e.target.closest(".tool")) return;
+  const it = doc.items[li.dataset.id]; if (!it || it.deleted) return;
+  swipe = { id: li.dataset.id, li, x: e.clientX, y: e.clientY, pointerId: e.pointerId, moving: false, dx: 0 };
+  const move = ev => {
+    if (!swipe || ev.pointerId !== swipe.pointerId) return;
+    const dx = ev.clientX - swipe.x, dy = ev.clientY - swipe.y;
+    if (!swipe.moving) {
+      if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { end(); return; } // a scroll
+      if (dx > -14) return;
+      if (drag) { end(); return; }
+      swipe.moving = true; press = null; li.classList.add("swiping");
+      try { li.setPointerCapture(ev.pointerId); } catch (x) { /* ignore */ }
+    }
+    swipe.dx = Math.min(0, dx);
+    li.style.transform = `translateX(${swipe.dx}px)`; li.style.opacity = String(Math.max(0.35, 1 + swipe.dx / 260));
+  };
+  const up = ev => {
+    if (!swipe || ev.pointerId !== swipe.pointerId) return;
+    const s = swipe; end();
+    if (s.moving && s.dx < -90 && !s.li.classList.contains("done")) { s.li.classList.add("swipe-out"); s.li.style.transform = "translateX(-110%)"; setTimeout(() => { s.li.classList.remove("swipe-out"); s.li.style.transform = ""; s.li.style.opacity = ""; notToday(s.id); }, RM.matches ? 0 : 180); }
+    else { s.li.style.transform = ""; s.li.style.opacity = ""; }
+    if (s.moving) { dragEndedAt = performance.now(); } // the click that follows must not toggle
+  };
+  const end = () => { if (!swipe) return; swipe.li.classList.remove("swiping"); li.removeEventListener("pointermove", move); li.removeEventListener("pointerup", up); li.removeEventListener("pointercancel", cancel); try { li.releasePointerCapture(swipe.pointerId); } catch (x) { /* ignore */ } swipe = null; };
+  const cancel = () => { if (swipe) { swipe.li.style.transform = ""; swipe.li.style.opacity = ""; } end(); };
+  li.addEventListener("pointermove", move); li.addEventListener("pointerup", up); li.addEventListener("pointercancel", cancel);
+}
+/** Take a line off Today until tomorrow's rollover. */
+function notToday(id) {
+  if (!canEdit()) return;
+  const it = doc.items[id]; if (!it || it.deleted) return;
+  if (editing) commitEdit();
+  if (!it.today && M.returnOf(doc, id)) { toast("Already off until tomorrow"); return; }
+  pushUndo("Not today", [id]);
+  doc = M.notToday(doc, id);
+  sound.tick();
+  afterChange({ animate: true });
+  toast("Not today. It's back on Today tomorrow.", { undo: true });
+}
+
 function toggleToday(id) {
   if (!canEdit()) return;
   const it = doc.items[id]; if (!it || it.deleted) return;
+  if (!it.today && M.returnOf(doc, id)) { pushUndo("On Today", [id]); doc = M.backToday(doc, id); sound.tick(); afterChange(); toast("On Today"); return; }
   it.today = !it.today;
   if (it.today) it.todayOrder = M.lastOrder(todayList(), i => i.todayOrder);
   it.updatedAt = M.now();
+  if (it.today) { const r = M.ruleOf(doc, id); if (r) doc.rules[id] = { ...r, placed: M.localDate(), updatedAt: M.now() }; }
   sound.tick();
   afterChange();
   toast(it.today ? "On Today" : "Off Today");
@@ -786,6 +1042,7 @@ function newItem({ sectionId = "", today = view === "today", afterId = null } = 
   }
   doc.items[id] = { id, sectionId, text: "", note: "", done: false, doneAt: 0, today, order, todayOrder, updatedAt: ts };
   if (view === "today" && !today) doc.items[id].today = true;
+  if (dev.oneThing && view === "today") setOneThing(false, { silent: true }); // a new line is written in the full list
   render({ animate: false });
   startEdit(id, { isNew: true });
 }
@@ -803,7 +1060,10 @@ function deleteItem(id, { silent = false } = {}) {
   const text = it.text;
   const hadFocus = document.activeElement && document.activeElement.closest && document.activeElement.closest(".row") && document.activeElement.closest(".row").dataset.id === id;
   const next = hadFocus ? neighbourOf(id) : null;
-  doc.items[id] = { id, deleted: true, updatedAt: M.now() };
+  const ts = M.now();
+  doc.items[id] = text ? M.tombstone(it, ts) : { id, deleted: true, updatedAt: ts }; // a line with words is remembered in Recently deleted
+  if (M.ruleOf(doc, id)) doc.rules[id] = { id, deleted: true, updatedAt: ts };
+  if (M.returnOf(doc, id)) doc.returns[id] = { id, deleted: true, updatedAt: ts };
   afterChange({ animate: true });
   if (hadFocus) { if (next && rows.has(next)) focusRow(next); else { const add = view === "today" ? $("#addtoday") : $("#all .add"); if (add) add.focus(); } }
   if (!silent) toast(`Deleted “${text.length > 40 ? text.slice(0, 40) + "…" : text}”`, { undo: true });
@@ -811,7 +1071,14 @@ function deleteItem(id, { silent = false } = {}) {
 
 /* ---------------- undo ---------------- */
 function pushUndo(label, ids, secIds = []) {
-  undoStack.push({ label, items: ids.map(id => [id, doc.items[id] ? JSON.parse(JSON.stringify(doc.items[id])) : null]), sections: secIds.map(id => [id, doc.sections[id] ? JSON.parse(JSON.stringify(doc.sections[id])) : null]) });
+  const snap = (m, id) => (m && m[id]) ? JSON.parse(JSON.stringify(m[id])) : null;
+  undoStack.push({
+    label,
+    items: ids.map(id => [id, snap(doc.items, id)]),
+    rules: ids.map(id => [id, snap(doc.rules, id)]),
+    returns: ids.map(id => [id, snap(doc.returns, id)]),
+    sections: secIds.map(id => [id, snap(doc.sections, id)])
+  });
   if (undoStack.length > 60) undoStack.shift();
 }
 function undo() {
@@ -821,6 +1088,8 @@ function undo() {
   if (editing) cancelEdit();
   const ts = M.now();
   for (const [id, rec] of u.items) doc.items[id] = rec ? { ...rec, updatedAt: ts } : { id, deleted: true, updatedAt: ts };
+  for (const [id, rec] of u.rules || []) { if (rec) doc.rules[id] = { ...rec, updatedAt: ts }; else if (doc.rules[id] && !doc.rules[id].deleted) doc.rules[id] = { id, deleted: true, updatedAt: ts }; }
+  for (const [id, rec] of u.returns || []) { if (rec) doc.returns[id] = { ...rec, updatedAt: ts }; else if (doc.returns[id] && !doc.returns[id].deleted) doc.returns[id] = { id, deleted: true, updatedAt: ts }; }
   for (const [id, rec] of u.sections) doc.sections[id] = rec ? { ...rec, updatedAt: ts } : { id, deleted: true, updatedAt: ts };
   sound.uncheck();
   afterChange();
@@ -828,15 +1097,17 @@ function undo() {
   toast("Undone");
 }
 
-function toast(msg, { undo: withUndo = false } = {}) {
+/** A toast. `undo: true` offers the undo stack; `action` offers a one-off undo of its own (delete everywhere) for `ms`. */
+function toast(msg, { undo: withUndo = false, action = null, ms = 0 } = {}) {
   const t = $("#toast");
   t.querySelector(".msg").textContent = msg;
-  $("#toast-undo").hidden = !withUndo || !canEdit();
+  toastAction = action;
+  $("#toast-undo").hidden = !(action || (withUndo && canEdit()));
   t.classList.add("on");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(hideToast, withUndo ? 4500 : 2600);
+  toastTimer = setTimeout(hideToast, ms || (action ? 10000 : withUndo ? 4500 : 2600));
 }
-function hideToast() { $("#toast").classList.remove("on"); $("#toast-undo").hidden = true; }
+function hideToast() { $("#toast").classList.remove("on"); $("#toast-undo").hidden = true; toastAction = null; }
 
 /* ---------------- inline editing ---------------- */
 function startEdit(id, { isNew = false } = {}) {
@@ -853,14 +1124,21 @@ function startEdit(id, { isNew = false } = {}) {
   note.type = "text"; note.className = "einput note-in"; note.value = it.note || ""; note.maxLength = M.NOTE_MAX;
   note.placeholder = "Note (optional)"; note.setAttribute("aria-label", "Note");
   note.style.cssText = "font-family:var(--font-ui);font-weight:400;font-size:clamp(12px,.36em,15px);letter-spacing:.02em;margin-top:.2em;padding:.35em .6em;";
+  // the repeat rule lives in the editor: a chip that opens the picker for this line
+  const erow = document.createElement("div"); erow.className = "erow";
+  const rep = document.createElement("button"); rep.type = "button"; rep.className = "chip rep-chip"; rep.setAttribute("aria-haspopup", "dialog");
+  const rule = M.ruleOf(doc, id); rep.textContent = "↻ " + (rule ? ruleLabel(rule) : "Repeat"); rep.classList.toggle("on", !!rule); rep.title = "Repeat: " + ruleLabel(rule);
+  rep.addEventListener("pointerdown", e => e.preventDefault()); // keep the textarea's focus until we decide
+  rep.addEventListener("click", () => { const cur = editing; if (!cur) return; if (!ta.value.trim()) { toast("Write the line first, then set how it repeats"); ta.focus(); return; } commitEdit(); openRepeat(cur.id); });
+  erow.appendChild(rep);
   tx.hidden = true;
-  tx.after(ta); ta.after(note);
+  tx.after(ta); ta.after(note); note.after(erow);
   const grow = () => { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; };
   ta.addEventListener("input", grow);
   ta.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); const cur = editing; const had = ta.value.trim(); commitEdit(); if (had) newItem({ afterId: cur.id, sectionId: doc.items[cur.id] ? doc.items[cur.id].sectionId : "" }); }
     else if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
-    else if (e.key === "Backspace" && ta.value === "") { e.preventDefault(); const cur = editing; editing = null; li.classList.remove("editing"); deleteItem(cur.id, { silent: cur.isNew || !cur.orig }); focusRow(neighbourOf(cur.id)); }
+    else if (e.key === "Backspace" && ta.value === "") { e.preventDefault(); const cur = editing; editing = null; li.classList.remove("editing"); erow.remove(); deleteItem(cur.id, { silent: cur.isNew || !cur.orig }); focusRow(neighbourOf(cur.id)); }
     else if (e.key === "Tab" && !e.shiftKey) { e.preventDefault(); note.focus(); }
   });
   note.addEventListener("keydown", e => {
@@ -868,9 +1146,9 @@ function startEdit(id, { isNew = false } = {}) {
     else if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
     else if (e.key === "Tab" && e.shiftKey) { e.preventDefault(); ta.focus(); }
   });
-  const onBlur = () => setTimeout(() => { if (editing && editing.id === id && document.activeElement !== ta && document.activeElement !== note) commitEdit(); }, 0);
+  const onBlur = () => setTimeout(() => { if (editing && editing.id === id && document.activeElement !== ta && document.activeElement !== note && document.activeElement !== rep) commitEdit(); }, 0);
   ta.addEventListener("blur", onBlur); note.addEventListener("blur", onBlur);
-  editing = { id, el: li, ta, note, isNew, orig: it.text, origNote: it.note || "" };
+  editing = { id, el: li, ta, note, erow, isNew, orig: it.text, origNote: it.note || "" };
   li.querySelector(".lines").innerHTML = "";
   grow();
   ta.focus();
@@ -879,7 +1157,7 @@ function startEdit(id, { isNew = false } = {}) {
 }
 /** Ids of the rows the user can currently see, top to bottom. */
 function visibleRowIds() {
-  const sel = view === "today" ? "#list .row" : "#all .sec:not([hidden]):not(.collapsed) .row";
+  const sel = view === "today" ? (dev.oneThing && listMode === "edit" ? "#list .row.one-now" : "#list .row") : "#all .sec:not([hidden]):not(.collapsed):not(.nohit) .row:not(.miss)";
   return $$(sel).map(li => li.dataset.id);
 }
 function neighbourOf(id) {
@@ -889,7 +1167,7 @@ function neighbourOf(id) {
 }
 function endEditDom() {
   const e = editing; if (!e) return;
-  e.ta.remove(); e.note.remove();
+  e.ta.remove(); e.note.remove(); if (e.erow) e.erow.remove();
   const tx = e.el.querySelector(".tx"); tx.hidden = false;
   e.el.classList.remove("editing");
   editing = null;
@@ -905,6 +1183,7 @@ function commitEdit() {
   if (text !== it.text || note !== (it.note || "")) {
     if (!e.isNew) pushUndo("Edited", [e.id]);
     it.text = text; it.note = note; it.updatedAt = M.now();
+    doc = M.refreshRuleSnapshot(doc, e.id);
     afterChange({ animate: false });
   } else {
     render({ animate: false });
@@ -932,7 +1211,6 @@ function focusedRowId() {
 }
 
 /* ---------------- sections ---------------- */
-let secMenuId = null;
 async function addSection() {
   if (!canEdit()) return;
   const name = await ask({ title: "New section", label: "Name", value: "" });
@@ -948,34 +1226,9 @@ function toggleCollapse(id) {
   s.collapsed = !s.collapsed; s.updatedAt = M.now();
   afterChange({ animate: false });
 }
-function openSectionMenu(id) { if (!canEdit()) return; secMenuId = id; showPanel("p-sec"); }
-async function sectionAction(act) {
-  if (!canEdit()) return;
-  const s = doc.sections[secMenuId]; if (!s || s.deleted) return;
-  closePanel();
-  if (act === "rename") {
-    const name = await ask({ title: "Rename section", label: "Name", value: s.name });
-    const live = doc && doc.sections[s.id]; if (!live || live.deleted) return; // a remote change may have replaced the doc meanwhile
-    if (name && name.trim() && name.trim() !== live.name) { live.name = name.trim().slice(0, 60); live.updatedAt = M.now(); afterChange({ animate: false }); }
-  } else if (act === "up" || act === "down") {
-    const secs = M.sectionsOrdered(doc);
-    const i = secs.findIndex(x => x.id === s.id);
-    const j = act === "up" ? i - 1 : i + 1;
-    if (j < 0 || j >= secs.length) return;
-    const other = secs[j];
-    const tmp = s.order; s.order = other.order; other.order = tmp;
-    if (s.order === other.order) { secs.forEach((x, k) => { x.order = (k + 1) * 1000; }); const o = s.order; s.order = other.order; other.order = o; }
-    s.updatedAt = M.now(); other.updatedAt = M.now();
-    afterChange();
-  } else if (act === "delete") {
-    const ok = await ask({ title: "Delete section?", msg: `“${s.name}” goes away. Its lines move to Unsorted.`, confirm: "Delete", danger: true });
-    if (!ok) return;
-    pushUndo("Deleted section", [], [s.id]);
-    doc.sections[s.id] = { id: s.id, deleted: true, updatedAt: M.now() };
-    afterChange();
-    toast(`Deleted “${s.name}”`, { undo: true });
-  }
-}
+function openSectionMenu(id) { if (!canEdit()) return; panels().then(p => p.openSectionMenu(id)); }
+function openLineMenu(id) { if (!canEdit()) return; if (editing) commitEdit(); panels().then(p => p.openLineMenu(id)); }
+function openRepeat(id) { if (!canEdit()) return; panels().then(p => p.openRepeat(id)); }
 
 /* ---------------- keyboard move ---------------- */
 function moveFocused(dir) {
@@ -1008,6 +1261,7 @@ function moveFocused(dir) {
     }
   }
   it.updatedAt = M.now();
+  doc = M.refreshRuleSnapshot(doc, id);
   afterChange();
   focusRow(id);
 }
@@ -1017,7 +1271,6 @@ const downPointers = new Set();
 document.addEventListener("pointerdown", e => downPointers.add(e.pointerId), true);
 document.addEventListener("pointerup", e => downPointers.delete(e.pointerId), true);
 document.addEventListener("pointercancel", e => downPointers.delete(e.pointerId), true);
-let dragEndedAt = -1e9; // no drag has ended yet
 function longPressStart(li, e) {
   if (!canEdit()) return;
   if (e.pointerType !== "touch" || e.button !== 0) return;
@@ -1030,7 +1283,7 @@ function longPressStart(li, e) {
   const onMove = ev => { if (ev.pointerId === pid && Math.hypot(ev.clientX - sx, ev.clientY - sy) > 8) cancel(); };
   t = setTimeout(() => {
     cancel();
-    if (!downPointers.has(pid) || drag || editing) return; // finger already lifted, or something else started
+    if (!downPointers.has(pid) || drag || editing || (swipe && swipe.moving)) return; // finger already lifted, or something else started
     press = null; // a hold is not a tap
     try { navigator.vibrate && navigator.vibrate(12); } catch (x) { /* ignore */ }
     beginDrag(li, e, true);
@@ -1048,6 +1301,7 @@ function beginDrag(li, e, fromLongPress) {
   const id = li.dataset.id, it = doc.items[id];
   if (!it || it.deleted || it.done) return;
   press = null;
+  if (swipe) { swipe.li.style.transform = ""; swipe.li.style.opacity = ""; swipe = null; }
   const rect = li.getBoundingClientRect();
   drag = { id, li, offY: e.clientY - rect.top, startTop: rect.top, pointerId: e.pointerId, overSec: null, lastY: e.clientY, raf: 0 };
   li.classList.add("dragging"); document.body.classList.add("is-dragging");
@@ -1150,12 +1404,13 @@ function endDrag(move, up, cancelled, aborted) {
   it[key] = o;
   if (view === "all") it.sectionId = secId;
   it.updatedAt = M.now();
+  doc = M.refreshRuleSnapshot(doc, id);
   sound.tick();
   afterChange({ animate: false });
   focusRow(id);
 }
 
-/* ---------------- panels ---------------- */
+/* ---------------- panels: plumbing shared by every dialog ---------------- */
 function showPanel(id) {
   const d = document.getElementById(id);
   if (openPanel && openPanel !== d) openPanel.close();
@@ -1176,7 +1431,7 @@ function wireSheetSwipe(d) {
   d.addEventListener("pointerdown", e => {
     if (!sheetUi() || e.pointerType === "mouse" || e.button !== 0) return;
     const body = d.querySelector(".body");
-    if (e.target.closest("input,select,textarea,canvas,.link")) return;
+    if (e.target.closest("input,select,textarea,canvas,.link,.days")) return;
     if (body && body.scrollTop > 0 && !e.target.closest(".grip, h2")) return;
     st = { y: e.clientY, x: e.clientX, t: performance.now(), id: e.pointerId, moving: false };
   });
@@ -1218,45 +1473,26 @@ function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger =
   });
 }
 
-/* menu */
+/* the ⋯ menu: short and contextual */
 $("#more").addEventListener("click", () => { paintMenu(); showPanel("p-menu"); });
 function paintMenu() {
-  $("#wake-k").textContent = dev.wake ? "On" : "Off";
-  $('#p-menu [data-act="wake"]').setAttribute("aria-pressed", dev.wake ? "true" : "false");
-  $('#p-menu [data-act="wake"]').hidden = !("wakeLock" in navigator);
-  $("#mute-k").textContent = dev.muted ? "Off" : "On";
-  $('#p-menu [data-act="mute"]').setAttribute("aria-pressed", dev.muted ? "true" : "false");
-  $("#volume").value = Math.round(dev.volume * 100);
-  $('#p-menu [data-act="full"]').hidden = !document.fullscreenEnabled;
-  $("#help-lb").textContent = touchUi() ? "Gestures" : "Keyboard help";
-  $("#menu-keys").hidden = touchUi();
-  $("#menu-keys").setAttribute("aria-pressed", dev.keysOff ? "false" : "true");
-  $("#keys-k").textContent = dev.keysOff ? "Off" : "On";
-  $('#p-menu [data-act="tour"]').hidden = !doc || listMode !== "edit";
-  $('#p-menu [data-act="share"] .lb').textContent = listMode === "view" ? "Share the view link" : "Share & open on phone";
+  $("#menu-share-lb").textContent = listMode === "view" ? "Share the view link" : (sheetUi() ? "Share this list" : "Share & open on phone");
+  $('#p-menu [data-act="share"] .k').hidden = sheetUi();
+  $("#menu-delete").hidden = !doc || listMode !== "edit";
+  $("#settings-k").textContent = "";
 }
 $("#p-menu").addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const act = b.dataset.act;
-  if (act === "share") { closePanel(); openShare(); }
-  else if (act === "wake") { setWake(!dev.wake); paintMenu(); }
-  else if (act === "theme") { closePanel(); openTheme(); }
-  else if (act === "mute") { toggleMute(); paintMenu(); }
-  else if (act === "full") { closePanel(); toggleFullscreen(); }
-  else if (act === "history") { closePanel(); openHistory(); }
-  else if (act === "lists") { closePanel(); openLists(); }
-  else if (act === "tour") { closePanel(); startTour(); }
-  else if (act === "keys") { dev.keysOff = !dev.keysOff; saveDevice(); paintMenu(); toast(dev.keysOff ? "Single-key shortcuts off (Cmd/Ctrl+Z, Esc and ⌥↑↓ still work)" : "Single-key shortcuts on"); }
-  else if (act === "help") { closePanel(); openHelp(); }
+  closePanel();
+  if (act === "share") panels().then(p => p.openShare());
+  else if (act === "help") panels().then(p => p.openHelp());
+  else if (act === "lists") panels().then(p => p.openLists());
+  else if (act === "settings") panels().then(p => p.openSettings());
+  else if (act === "delete") panels().then(p => p.deleteEverywhere());
 });
 $("#volume").addEventListener("input", e => { dev.volume = (+e.target.value) / 100; saveDevice(); });
 $("#volume").addEventListener("change", () => { if (!dev.muted) sound.tick(); });
-function openHelp() {
-  const touch = touchUi();
-  $("#help-title").textContent = touch ? "Gestures" : "Keyboard";
-  $("#help-keys").hidden = touch; $("#help-gestures").hidden = !touch;
-  showPanel("p-help");
-}
 
 /* wake lock */
 async function setWake(on) {
@@ -1269,20 +1505,21 @@ async function requestWake() {
   catch (e) { wakeLock = null; }
 }
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") { if (dev.wake && !wakeLock) requestWake(); tickDay(); }
+  if (document.visibilityState === "visible") { if (dev.wake && !wakeLock) requestWake(); sound.foreground(); tickDay(); }
 });
 if (dev.wake) requestWake();
 
-/* rollover + date, once a minute */
+/* rollover + date + the theme schedule, once a minute */
 function tickDay() {
   paintDate();
+  tickTheme();
   if (!doc || listMode !== "edit") return;
   const r = M.rollover(doc);
-  if (r.moved.length) { if (drag) abortDrag(); doc = r.doc; afterChange({ animate: true }); wasAll = allDoneToday(); }
+  if (r.doc !== doc) { if (drag) abortDrag(); doc = r.doc; afterChange({ animate: true }); wasAll = allDoneToday(); }
 }
 setInterval(() => { tickDay(); retryPendingKills(); settleMigrations(); }, 60000);
 
-/* ---------------- links: share, save, rotate ---------------- */
+/* ---------------- links ---------------- */
 function editLink() { return ref && ref.mode === "edit" ? BASE + "#/l/" + ref.W : null; }
 function viewLink() { return ref ? BASE + "#/r/" + ref.R : null; }
 async function drawQr(canvas, text) {
@@ -1302,67 +1539,8 @@ function nativeShare(text) {
   navigator.share({ title: "Today's Five", text: "Today's Five list", url: text }).catch(() => {});
   return true;
 }
-let shareKind = "edit";
-async function openShare() {
-  if (!doc || !ref) return;
-  if (!transport) { toast("Sync isn't set up, so a link would open an empty list somewhere else"); return; }
-  shareKind = listMode === "view" ? "view" : "edit";
-  $("#share-tab-edit").hidden = listMode === "view";
-  $("#share-rotate").hidden = listMode === "view";
-  $("#share-native").hidden = !navigator.share;
-  await paintShare();
-  showPanel("p-share");
-}
-async function paintShare() {
-  const link = shareKind === "edit" ? editLink() : viewLink();
-  $("#share-tab-edit").setAttribute("aria-selected", shareKind === "edit" ? "true" : "false");
-  $("#share-tab-view").setAttribute("aria-selected", shareKind === "view" ? "true" : "false");
-  $("#share-msg").textContent = shareKind === "edit"
-    ? "For your other devices, and for anyone who should be able to edit. Point the phone's camera at it, or send yourself the link."
-    : "For anyone who should see the list but not touch it. They get live updates too.";
-  $("#share-link").value = link;
-  $("#share-rotate").textContent = "Rotate links";
-  await drawQr($("#qr-c"), link);
-}
-$("#share-tabs").addEventListener("click", e => { const b = e.target.closest("[data-kind]"); if (!b) return; shareKind = b.dataset.kind; paintShare(); });
-$("#share-copy").addEventListener("click", () => copyText($("#share-link").value, "Link copied"));
-$("#share-native").addEventListener("click", () => nativeShare($("#share-link").value));
 $$(".link").forEach(el => el.addEventListener("focus", () => { try { el.select(); } catch (e) { /* ignore */ } }));
-$("#share").addEventListener("click", openShare);
-$("#share-rotate").addEventListener("click", async () => {
-  closePanel();
-  if (!canEdit()) return;
-  if (syncStatus !== "synced") { toast("Rotate needs a live connection—try again once synced"); return; }
-  const ok = await ask({ title: "Rotate links?", msg: "A new edit link and a new view link replace the current ones. Every old link dies everywhere at once—your other devices and anyone you gave a view link included. Open the new link there.", confirm: "Rotate", danger: true });
-  if (!ok) return;
-  await rotateLink();
-});
-async function rotateLink() {
-  const oldId = listId, oldRef = ref;
-  const newId = M.newId();
-  if (sync) await sync.flush();
-  const copy = M.normalize(JSON.parse(JSON.stringify(doc)), newId);
-  copy.updatedAt = M.now();
-  saveLocal(newId, { doc: copy, rev: 0, dirty: true, created: true, mode: "edit" });
-  const old = meta.lists.find(l => l.id === oldId);
-  const e = registerList(newId, old ? old.name : "", "edit"); e.created = true; e.linkSaved = true; // the share sheet that follows shows the link
-  meta.lists = meta.lists.filter(l => l.id !== oldId);
-  meta.dead = Array.from(new Set([...(meta.dead || []), oldId]));
-  meta.redirect = { ...(meta.redirect || {}), [oldId]: newId };
-  await openList({ id: newId, mode: "edit" });
-  // let the new list land, then kill the old one; if that fails, remember to retry
-  if (sync) await sync.flush();
-  removeLocal(oldId);
-  const dead = await killRemote({ lookupId: oldRef.lookupId, token: oldRef.token });
-  if (IOS && !STANDALONE) {
-    // Safari memoised the manifest at load; reload so an Add to Home Screen now carries the new link
-    sessionStorage.setItem("tf/reopenShare", "1");
-    reloading = true; location.replace(BASE + SEARCH + "#/l/" + newId); location.reload();
-    return;
-  }
-  toast(dead ? "New links ready—the old ones are dead" : "New links ready—old ones not revoked yet, will retry");
-  openShare();
-}
+$("#share").addEventListener("click", () => panels().then(p => p.openShare()));
 async function killRemote(k) {
   if (!transport) { queueKill(k); return false; }
   try {
@@ -1373,89 +1551,20 @@ async function killRemote(k) {
   } catch (e) { queueKill(k); return false; }
 }
 function queueKill(k) { meta.pendingKill = [...(meta.pendingKill || []).filter(x => x.lookupId !== k.lookupId), k]; saveDevice(); }
-let killing = false;
 async function retryPendingKills() {
   if (killing || !transport || !sync || !(meta.pendingKill || []).length || !navigator.onLine) return;
   killing = true;
   try { for (const k of [...meta.pendingKill]) await killRemote(k); } finally { killing = false; }
 }
-addEventListener("online", () => setTimeout(() => { retryPendingKills(); settleMigrations(); }, 1500));
+addEventListener("online", () => setTimeout(() => { retryPendingKills(); settleMigrations(); flushOthers(); }, 1500));
 
-/* save-your-link sheet: right after a list is created (or migrated); dismissable, shown once per list */
-function showSaveLink({ migrated = false } = {}) {
-  const link = editLink(); if (!link) return maybeTour();
-  $("#save-title").textContent = migrated ? "Your link changed" : "Save your link";
-  $("#save-msg").textContent = migrated
-    ? "Your list is now encrypted on your device and lives behind this new link. The old link is dead. Save this one—it's the only way back, and the only key that can read the list."
-    : "This link is the only way back to your list—and the only key that can read it. Nobody can send it to you again, not even the person running this site.";
-  $("#save-hint-phone").hidden = !migrated;
-  $("#save-hint-home").hidden = migrated;
-  $("#save-native").hidden = !navigator.share;
-  $("#save-link").value = link;
-  drawQr($("#save-qr-c"), link).catch(() => {});
-  showPanel("p-save");
-  $("#save-body").focus({ preventScroll: true }); // reading starts at the title and the message, not at the link field
-}
-$("#save-copy").addEventListener("click", () => copyText($("#save-link").value, "Link copied"));
-$("#save-native").addEventListener("click", () => nativeShare($("#save-link").value));
-$("#save-done").addEventListener("click", () => closePanel());
-$("#p-save").addEventListener("close", () => {
-  const e = meta.lists.find(l => l.id === listId);
-  if (e) { e.linkSaved = true; e.migrated = false; saveDevice(); }
-  setTimeout(maybeTour, 250);
-});
-
-/* lists */
-function openLists() {
-  const menu = $("#lists-menu"); menu.innerHTML = "";
-  const active = meta.lists.filter(l => !l.archived), archived = meta.lists.filter(l => l.archived);
-  const mk = (l, arch) => {
-    const b = document.createElement("button"); b.type = "button";
-    const loc = loadLocal(l.id);
-    const name = (loc && loc.doc.name) || l.name || "Untitled list";
-    const tags = [l.mode === "view" ? "view-only" : "", arch ? "archived" : ""].filter(Boolean).map(t => `<span class="sub">${t}</span>`).join(" ");
-    b.innerHTML = `<span class="lb ${l.id === listId ? "cur" : ""}">${escapeHtml(name)} ${tags}</span><span class="id">${l.id.slice(0, 6)}…</span>`;
-    b.addEventListener("click", () => { closePanel(); if (arch) { l.archived = false; saveDevice(); } switchTo({ id: l.id, mode: l.mode === "view" ? "view" : "edit" }); });
-    return b;
-  };
-  active.forEach(l => menu.appendChild(mk(l, false)));
-  archived.forEach(l => menu.appendChild(mk(l, true)));
-  $("#l-archive").hidden = active.length < 2 || !listId;
-  $("#l-rename").hidden = !listId || listMode !== "edit";
-  showPanel("p-lists");
-}
-function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+/* lists: the pieces the welcome screen and the switcher need before any panel has loaded */
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function createList(d, id) {
   saveLocal(id, { doc: d, rev: 0, dirty: true, created: true, mode: "edit" });
   const e = registerList(id, d.name, "edit"); e.created = true; e.linkSaved = false;
   switchTo({ id, mode: "edit" });
 }
-$("#l-new").addEventListener("click", async () => {
-  closePanel();
-  const name = await ask({ title: "New list", label: "Name", value: "" });
-  if (name === null) return;
-  const id = M.newId();
-  createList(M.emptyDoc(id, (name || "").trim().slice(0, 60)), id);
-});
-$("#l-rename").addEventListener("click", async () => {
-  closePanel();
-  if (!canEdit()) return;
-  const name = await ask({ title: "Rename list", label: "Name", value: doc.name || "" });
-  if (name === null) return;
-  doc.name = name.trim().slice(0, 60); doc.nameAt = M.now();
-  const e = meta.lists.find(l => l.id === listId); if (e) e.name = doc.name;
-  saveDevice();
-  afterChange({ animate: false });
-});
-$("#l-archive").addEventListener("click", async () => {
-  closePanel();
-  const e = meta.lists.find(l => l.id === listId); if (!e) return;
-  await flushQuick();
-  e.archived = true; saveDevice();
-  const next = meta.lists.find(l => !l.archived);
-  if (next) switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else showWelcome();
-});
-$("#l-paste-go").addEventListener("click", () => { const r = parseLink($("#l-paste").value); if (!r) { toast("That doesn't look like a list link"); return; } closePanel(); switchTo(r, { paste: true }); });
 function parseLink(s) {
   const t = String(s || "").trim();
   const m = t.match(/#\/(l|r)\/([0-9A-Za-z]{22,64})/);
@@ -1480,7 +1589,7 @@ function switchTo(r, { paste = false } = {}) {
   }
   openList(r);
 }
-$("#listname").addEventListener("click", openLists);
+$("#listname").addEventListener("click", () => panels().then(p => p.openLists()));
 $("#w-new").addEventListener("click", () => { const id = M.newId(); createList(M.seedDoc(id), id); });
 $("#w-paste-show").addEventListener("click", () => { $("#w-paste-form").hidden = false; $("#w-paste").focus(); });
 $("#w-paste-form").addEventListener("submit", e => {
@@ -1490,220 +1599,49 @@ $("#w-paste-form").addEventListener("submit", e => {
   switchTo(r, { paste: true });
 });
 
-/* history */
-function openHistory() {
-  const s = M.streak(doc);
-  $("#history-streak").textContent = s ? `${s}-day streak` : "No streak yet";
-  const root = $("#history-days"); root.innerHTML = "";
-  const days = M.historyDays(doc).slice(0, 60);
-  if (!days.length) { root.innerHTML = '<p>Nothing finished on a previous day yet. Finished lines move here at the start of the next day.</p>'; }
-  for (const day of days) {
-    const d = document.createElement("div"); d.className = "day";
-    const h = document.createElement("h4"); h.textContent = new Date(day + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-    const ul = document.createElement("ul");
-    for (const e of doc.history[day]) {
-      const li = document.createElement("li");
-      const t = document.createElement("span"); t.className = "t"; t.textContent = new Date(e.doneAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-      const x = document.createElement("span"); x.textContent = e.text + (e.section ? " · " + e.section : "");
-      li.appendChild(t); li.appendChild(x); ul.appendChild(li);
-    }
-    d.appendChild(h); d.appendChild(ul); root.appendChild(d);
-  }
-  showPanel("p-history");
+/* ---------------- one-thing mode, search ---------------- */
+/** Only the top undone Today line, enormous. `O` or the count toggles it; the finale ends it. Remembered per device. */
+function setOneThing(on, { silent = false, keep = false } = {}) {
+  if (!keep) { dev.oneThing = !!on; saveDevice(); }
+  document.body.classList.toggle("one", !!on && !!doc && listMode === "edit");
+  if (doc) { if (editing) commitEdit(); if (view !== "today" && on) setView("today"); else render({ animate: false }); }
+  if (!silent) toast(on ? "One thing at a time. O or the count brings the list back." : "The whole list");
 }
-
-/* theme panel */
-let custom = { accent: "#D26128", base: "dark", pair: "", name: "" };
-function openTheme() {
-  renderSwatches();
-  if (theme && theme.kind === "custom") custom = { accent: theme.accent, base: theme.base, pair: theme.pair, name: theme.name };
-  paintCustom();
-  showPanel("p-theme");
+$("#count").addEventListener("click", () => { if (!doc || listMode !== "edit") return; setOneThing(!dev.oneThing); });
+function setSearch(q, { silent = false } = {}) {
+  query = String(q || "").trim();
+  const inp = $("#search"), btn = $("#search-btn");
+  if (inp.value !== q) inp.value = q;
+  const open = !!query || document.activeElement === inp;
+  inp.hidden = !open; btn.setAttribute("aria-expanded", open ? "true" : "false");
+  if (doc && view === "all" && !silent) render({ animate: false });
 }
-$("#theme").addEventListener("click", openTheme);
-function savedThemes() { return Object.values(doc ? doc.themes : {}).filter(t => !t.deleted).map(t => ({ ...t, theme: T.parseCode(t.code) })).filter(t => t.theme); }
-function renderSwatches() {
-  const root = $("#swatches"); root.innerHTML = "";
-  const cur = theme ? T.themeCode(theme) : "";
-  const mk = (t, saved) => {
-    const b = document.createElement("button"); b.type = "button"; b.className = "swatch";
-    b.style.background = t.colors.ink; b.style.color = t.colors.text; b.style.borderColor = t.colors.hairSolid;
-    b.setAttribute("aria-pressed", T.themeCode(t) === cur ? "true" : "false");
-    const bar = document.createElement("span"); bar.className = "bar"; bar.style.background = t.colors.accent;
-    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = saved ? saved.name : t.name; nm.style.fontFamily = (T.pairOf(t.pair) || T.PAIRS.lato).task[2];
-    const sm = document.createElement("span"); sm.className = "sm"; sm.textContent = t.base + (saved ? " · yours" : ""); sm.style.color = t.colors.dim;
-    b.append(bar, nm, sm);
-    b.addEventListener("click", () => chooseTheme(saved ? { ...t, name: saved.name } : t));
-    if (saved && canEdit()) {
-      const del = document.createElement("button"); del.type = "button"; del.className = "del"; del.textContent = "×"; del.setAttribute("aria-label", "Delete " + saved.name);
-      del.addEventListener("click", e => { e.stopPropagation(); doc.themes[saved.id] = { id: saved.id, deleted: true, updatedAt: M.now() }; afterChange({ animate: false }); renderSwatches(); });
-      b.appendChild(del);
-    }
-    return b;
-  };
-  T.CURATED.forEach(t => root.appendChild(mk(t)));
-  savedThemes().forEach(s => root.appendChild(mk(s.theme, s)));
-  syncFollowChip();
-}
-function syncFollowChip() {
-  const b = $("#follow");
-  b.setAttribute("aria-pressed", dev.follow ? "true" : "false");
-  b.textContent = dev.follow ? "Follow system: on" : "Follow system: off";
-}
-$("#follow").addEventListener("click", () => {
-  dev.follow = !dev.follow;
-  // seed the slot for the current theme's base so turning it on doesn't swap the theme away
-  if (dev.follow && theme) { if (theme.base === "dark") dev.darkSlot = dev.theme; else dev.lightSlot = dev.theme; }
-  saveDevice(); applyThemeCode(currentThemeCode()); renderSwatches();
-});
-const pairSel = $("#c-pair");
-T.CUSTOM_PAIRS.forEach(id => { const o = document.createElement("option"); o.value = id; o.textContent = T.PAIRS[id].name; pairSel.appendChild(o); });
-function customTheme() { return T.derive({ accent: custom.accent, base: custom.base, pair: custom.pair || undefined, name: custom.name || "Custom" }); }
-function paintCustom() {
-  $("#c-color").value = custom.accent;
-  if (document.activeElement !== $("#c-hex")) $("#c-hex").value = custom.accent;
-  $("#c-dark").setAttribute("aria-pressed", custom.base === "dark" ? "true" : "false");
-  $("#c-light").setAttribute("aria-pressed", custom.base === "light" ? "true" : "false");
-  pairSel.value = custom.pair || "";
-  $("#c-name").value = custom.name;
-  const t = customTheme(), c = t.colors, p = T.pairOf(t.pair) || T.PAIRS.lato;
-  const pv = $("#c-preview");
-  pv.style.background = c.ink; pv.style.color = c.text; pv.style.borderColor = c.hairSolid; pv.style.setProperty("--pv-accent", c.accent);
-  pv.querySelectorAll(".pt").forEach(x => { x.style.fontFamily = p.task[2]; x.style.fontWeight = p.w; x.style.letterSpacing = p.ls; });
-  pv.querySelector(".pt.done").style.color = c.done;
-  const pm = pv.querySelector(".pm"); pm.style.fontFamily = p.ui[2]; pm.style.color = c.dim; pm.querySelector("b").style.color = c.accentText;
-  const r = T.report(t);
-  $("#c-contrast").textContent = `Contrast — text ${r.text.toFixed(1)}:1 · muted ${r.muted.toFixed(1)}:1 · accent ${r.accentText.toFixed(1)}:1 · fonts ${p.name}`;
-}
-/** Live preview on the page (not persisted); the panel's close handler restores the real theme. */
-function previewCustom() { T.applyTheme(customTheme(), document, { persist: false }); }
-function setCustom(patch) { Object.assign(custom, patch); paintCustom(); previewCustom(); }
-$("#c-color").addEventListener("input", e => setCustom({ accent: T.normalizeHex(e.target.value) || custom.accent }));
-$("#c-hex").addEventListener("input", e => { const v = e.target.value.trim(); if (/^#?[0-9a-f]{6}$/i.test(v)) setCustom({ accent: T.normalizeHex(v) }); });
-$("#c-hex").addEventListener("change", e => { const h = T.normalizeHex(e.target.value); if (h) setCustom({ accent: h }); else e.target.value = custom.accent; });
-$("#c-dark").addEventListener("click", () => setCustom({ base: "dark" }));
-$("#c-light").addEventListener("click", () => setCustom({ base: "light" }));
-pairSel.addEventListener("change", e => setCustom({ pair: e.target.value }));
-$("#c-name").addEventListener("input", e => { custom.name = e.target.value; });
-$("#c-use").addEventListener("click", () => { chooseTheme(customTheme()); });
-let keepPreview = false;
-$("#c-save").addEventListener("click", async () => {
-  if (!doc) { toast("Open a list first to save a theme"); return; }
-  if (!canEdit()) { toast("A view link can't save themes to the list"); return; }
-  if (!custom.name.trim()) {
-    keepPreview = true;
-    const n = await ask({ title: "Name this theme", label: "Name", value: "" });
-    keepPreview = false;
-    if (!n || !n.trim()) { openTheme(); previewCustom(); return; }
-    custom.name = n.trim().slice(0, 40);
-  }
-  const t = customTheme();
-  const id = M.shortId();
-  doc.themes[id] = { id, name: custom.name.trim().slice(0, 40), code: T.themeCode(t), updatedAt: M.now() };
-  afterChange({ animate: false });
-  chooseTheme(t);
-  toast(`Saved “${custom.name.trim()}”`);
-});
-$("#c-surprise").addEventListener("click", () => { const t = T.surprise(); custom = { accent: t.accent, base: t.base, pair: t.pair, name: "" }; paintCustom(); previewCustom(); });
-$("#c-export").addEventListener("click", async () => { try { await navigator.clipboard.writeText(T.themeCode(customTheme())); toast("Theme code copied"); } catch (e) { toast(T.themeCode(customTheme())); } });
-$("#c-import-go").addEventListener("click", () => {
-  const t = T.parseCode($("#c-import").value);
-  if (!t) { toast("That code doesn't parse"); return; }
-  if (t.kind === "custom") { custom = { accent: t.accent, base: t.base, pair: t.pair, name: t.name }; paintCustom(); previewCustom(); } else chooseTheme(t);
-});
-$("#p-theme").addEventListener("close", () => { if (!keepPreview) applyThemeCode(currentThemeCode()); });
-
-/* ---------------- first-run tour ----------------
-   Four or five coach marks over the real controls, one line each. Dismissable at any step, never shown again
-   on this device unless asked for (⋯ → How it works). Gestures on touch, keys on the desktop.              */
-function tourSteps() {
-  const touch = touchUi();
-  const firstToday = () => $("#list .row .check") || $("#list") || $("#addtoday");
-  const firstAll = () => $("#all .row");
-  return [
-    { view: "today", needsRow: true, target: firstToday, text: touch ? "Tap a line to cross it off. Tap again and it's back." : "Click a line to cross it off, or press its number. Click again and it's back." },
-    { view: "today", target: () => $(".seg"), text: "Today is the short list you keep on screen. Everything is where the rest lives." },
-    { view: "all", needsRow: true, target: () => { const r = firstAll(); return (r && r.querySelector(".tool.today")) || $("#all"); }, text: "Over in Everything, the Today toggle puts a line on Today—or takes it off." },
-    { view: "all", needsRow: true, target: () => { const r = firstAll(); return touch ? (r || $("#all")) : ((r && r.querySelector(".tool.handle")) || $("#all")); }, text: touch ? "Press and hold a line, then drag it where you want it—up, down, or into another section." : "Grab the handle to drag a line where you want it—up, down, or into another section. ⌥ ↑/↓ does the same from the keyboard." },
-    { view: "today", target: () => (!$("#share").hidden && $("#share").offsetParent) ? $("#share") : $("#more"), text: "Your link is the key. Save it from Share, and hand it only to people who should see the list. Lose the link, lose the list." }
-  ];
-}
-function maybeTour() {
-  if (dev.tourDone || !doc || listMode !== "edit" || openPanel || tourOn) return;
-  setTimeout(() => { if (!dev.tourDone && doc && listMode === "edit" && !openPanel && !tourOn) startTour(); }, 400);
-}
-function startTour() {
+function openSearch() {
   if (!doc) return;
-  if (openPanel) closePanel();
-  if (editing) commitEdit();
-  tourOn = true; tourStep = 0; tourViewBefore = view; tourFocusBefore = document.activeElement; tourUsedKeys = false;
-  const t = $("#tour"); t.hidden = false;
-  try { $("#shell").inert = true; } catch (e) { /* older engines: the overlay still covers the page */ }
-  showTourStep();
+  if (view !== "all") setView("all");
+  $("#search").hidden = false; $("#search-btn").setAttribute("aria-expanded", "true");
+  $("#search").focus();
 }
-function endTour() {
-  if (!tourOn) return;
-  tourOn = false;
-  $("#tour").hidden = true;
-  try { $("#shell").inert = false; } catch (e) { /* ignore */ }
-  $$(".row.tour-show").forEach(r => r.classList.remove("tour-show"));
-  dev.tourDone = true; for (const l of meta.lists) delete l.fresh; saveDevice();
-  if (view !== tourViewBefore) setView(tourViewBefore);
-  // give focus back to where it was; a keyboard user who started on the page body lands on the first line. A finger
-  // never had focus anywhere, so nothing is focused (and no ring appears on the phone).
-  const back = tourFocusBefore && tourFocusBefore.isConnected && tourFocusBefore !== document.body ? tourFocusBefore : (tourUsedKeys ? ($("#list .row .check") || $("#more")) : null);
-  if (back) { try { back.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
+$("#search-btn").addEventListener("click", () => { if ($("#search").hidden) openSearch(); else { setSearch(""); $("#search").hidden = true; $("#search-btn").setAttribute("aria-expanded", "false"); } });
+$("#search").addEventListener("input", e => setSearch(e.target.value));
+$("#search").addEventListener("keydown", e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); setSearch(""); $("#search").hidden = true; $("#search-btn").setAttribute("aria-expanded", "false"); $("#search-btn").focus(); } });
+$("#search").addEventListener("blur", () => { if (!query) { $("#search").hidden = true; $("#search-btn").setAttribute("aria-expanded", "false"); } });
+
+/* ---------------- what's new ---------------- */
+function maybeWhatsNew() {
+  if (!whatsNewPending || whatsNewShown) return;
+  setTimeout(async () => {
+    if (whatsNewShown || openPanel || tourOn) { if (!whatsNewShown) setTimeout(maybeWhatsNew, 3000); return; }
+    whatsNewShown = true;
+    dev.seenVersion = VERSION; saveDevice();
+    let line = "This version brings repeating lines, one-thing mode, search, templates and more.";
+    try { const r = await fetch("whatsnew.json", { cache: "no-cache" }); const j = await r.json(); const v = (j.versions || []).find(x => x.version === VERSION) || j.versions[0]; if (v && v.lines && v.lines[0]) line = v.lines[0]; } catch (e) { /* the fallback line */ }
+    $("#wn-msg").textContent = "New in " + VERSION + ": " + line;
+    $("#whatsnew").hidden = false;
+  }, 1200);
 }
-function showTourStep() {
-  const steps = tourSteps();
-  const s = steps[tourStep];
-  if (!s) return endTour();
-  if (s.needsRow && !$("#list .row") && !$("#all .row")) { tourStep++; return showTourStep(); }
-  if (view !== s.view) setView(s.view);
-  $("#tour-text").textContent = s.text;
-  $("#tour-step").textContent = `Step ${tourStep + 1} of ${steps.length}.`;
-  $("#tour-next").textContent = tourStep === steps.length - 1 ? "Done" : "Next";
-  $("#tour-dots").innerHTML = steps.map((_, i) => `<i class="${i === tourStep ? "on" : ""}"></i>`).join("");
-  $$(".row.tour-show").forEach(r => r.classList.remove("tour-show"));
-  requestAnimationFrame(placeTour);
-}
-function placeTour() {
-  if (!tourOn) return;
-  const s = tourSteps()[tourStep]; if (!s) return;
-  const el = s.target();
-  const tour = $("#tour"), hole = $("#tour-hole"), card = $("#tour-card");
-  const row = el && el.closest ? el.closest(".row") : null; if (row) row.classList.add("tour-show");
-  const r = el ? el.getBoundingClientRect() : null;
-  const pad = 8;
-  if (!r || (r.width === 0 && r.height === 0)) {
-    tour.classList.add("center");
-    hole.style.cssText = `left:${innerWidth / 2}px;top:${innerHeight / 2}px;width:0;height:0`;
-  } else {
-    tour.classList.remove("center");
-    hole.style.cssText = `left:${r.left - pad}px;top:${r.top - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px`;
-  }
-  const cw = Math.min(352, innerWidth - 32);
-  card.style.width = cw + "px";
-  const ch = card.offsetHeight || 140;
-  let left = r ? r.left + r.width / 2 - cw / 2 : innerWidth / 2 - cw / 2;
-  left = Math.max(16, Math.min(innerWidth - cw - 16, left));
-  let top, place = "below";
-  if (!r) { top = innerHeight / 2 - ch / 2; place = "center"; }
-  else if (r.bottom + pad + 16 + ch < innerHeight - 16) top = r.bottom + pad + 16;
-  else { top = Math.max(16, r.top - pad - 16 - ch); place = "above"; }
-  tour.dataset.place = place;
-  card.style.left = left + "px"; card.style.top = top + "px";
-  // the arrow points at the target's centre when the card had to slide sideways
-  const arrowX = r ? Math.max(18, Math.min(cw - 18, r.left + r.width / 2 - left)) : cw / 2;
-  card.style.setProperty("--arrow-x", arrowX + "px");
-  card.focus({ preventScroll: true }); // the card is announced (label + description) and Tab reaches Skip/Next
-}
-$("#tour-next").addEventListener("click", () => { tourStep++; showTourStep(); });
-$("#tour-skip").addEventListener("click", endTour);
-$("#tour").addEventListener("click", e => { if (e.target === e.currentTarget || e.target.id === "tour-hole") endTour(); });
-document.addEventListener("keydown", e => { if (!tourOn) return; tourUsedKeys = true; if (e.key === "Escape") { e.preventDefault(); endTour(); } }, true);
-document.addEventListener("keydown", e => { if (e.key === "Escape") document.body.classList.add("no-tip"); }, true);
-document.addEventListener("pointermove", () => document.body.classList.remove("no-tip"), { passive: true });
+$("#wn-x").addEventListener("click", () => { $("#whatsnew").hidden = true; });
+$("#wn-more").addEventListener("click", () => { $("#whatsnew").hidden = true; location.href = "about.html#whats-new"; });
 
 /* ---------------- rail controls ---------------- */
 function wireUi() {
@@ -1713,15 +1651,16 @@ function wireUi() {
   const fsBtn = $("#full");
   if (!document.fullscreenEnabled) fsBtn.hidden = true;
   fsBtn.addEventListener("click", toggleFullscreen);
+  $("#theme").addEventListener("click", () => panels().then(p => p.openTheme()));
   $("#again").addEventListener("click", startAgain);
   $("#addtoday").addEventListener("click", () => newItem({ today: true }));
-  $("#toast-undo").addEventListener("click", () => { hideToast(); undo(); });
+  $("#toast-undo").addEventListener("click", () => { const a = toastAction; hideToast(); if (a) a(); else undo(); });
   $("#install-x").addEventListener("click", () => { $("#install").hidden = true; dev.installHint = true; saveDevice(); });
-  $("#p-sec").addEventListener("click", e => { const b = e.target.closest("[data-sact]"); if (b) sectionAction(b.dataset.sact); });
   if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc && !openPanel && !tourOn) $("#install").hidden = false; }, 2500);
   document.addEventListener("pointerdown", () => sound.prime(), { once: true, capture: true });
+  document.body.classList.toggle("one", !!dev.oneThing);
 }
-function toggleMute() { dev.muted = !dev.muted; saveDevice(); paintMute(); if (!dev.muted) sound.tick(); }
+function toggleMute() { dev.muted = !dev.muted; saveDevice(); paintMute(); if (!dev.muted) sound.tick(); dispatchEvent(new CustomEvent("tf:settings")); }
 function paintMute() { const b = $("#mute"); b.textContent = dev.muted ? "Muted" : "Sound on"; b.setAttribute("aria-pressed", dev.muted ? "true" : "false"); }
 function toggleFullscreen() {
   if (document.fullscreenElement) document.exitFullscreen();
@@ -1755,8 +1694,8 @@ document.addEventListener("keydown", e => {
   if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) { if (edit) { e.preventDefault(); moveFocused(e.key === "ArrowUp" ? -1 : 1); } return; }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key;
-  if (k === "Escape") { hideToast(); return; }
-  if (dev.keysOff) return; // single-character shortcuts can be switched off (⋯ → Single-key shortcuts)
+  if (k === "Escape") { hideToast(); if (query) setSearch(""); return; }
+  if (dev.keysOff) return; // single-character shortcuts can be switched off (Settings → Behavior)
   if (k >= "1" && k <= "9") {
     if (!edit) return;
     const pos = parseInt(k, 10) - 1;
@@ -1764,21 +1703,50 @@ document.addEventListener("keydown", e => {
     if (pos < ids.length) { e.preventDefault(); toggle(ids[pos], 0, 0, false); }
   }
   else if (k === "m" || k === "M") { e.preventDefault(); toggleMute(); }
-  else if (k === "t" || k === "T") { e.preventDefault(); openTheme(); }
+  else if (k === "t" || k === "T") { e.preventDefault(); panels().then(p => p.openTheme()); }
   else if ((k === "f" || k === "F") && document.fullscreenEnabled) { e.preventDefault(); toggleFullscreen(); }
   else if (k === "e" || k === "E") { if (!edit) return; e.preventDefault(); const id = focusedRowId(); if (id) startEdit(id); }
   else if (k === "n" || k === "N") { if (!edit) return; e.preventDefault(); newItem({ today: view === "today", sectionId: view === "all" ? sectionOfFocused() : "" }); }
   else if (k === "a" || k === "A") { e.preventDefault(); setView(view === "today" ? "all" : "today"); }
-  else if (k === "?") { e.preventDefault(); openHelp(); }
+  else if (k === "o" || k === "O") { if (!edit) return; e.preventDefault(); setOneThing(!dev.oneThing); }
+  else if (k === "/") { e.preventDefault(); openSearch(); }
+  else if (k === "-") { if (!edit) return; e.preventDefault(); const id = focusedRowId(); if (id && doc.items[id] && doc.items[id].today) notToday(id); }
+  else if (k === "?") { e.preventDefault(); panels().then(p => p.openHelp()); }
 });
 function sectionOfFocused() {
   const id = focusedRowId();
   const it = id && doc.items[id];
   return it && !it.deleted && doc.sections[it.sectionId] && !doc.sections[it.sectionId].deleted ? it.sectionId : "";
 }
+function maybeTour() {
+  if (dev.tourDone || !doc || listMode !== "edit" || openPanel || tourOn) return;
+  panels().then(p => p.maybeTour());
+}
+
+/* ---------------- what the lazy modules see ---------------- */
+const api = {
+  M, C, T, VERSION, config, $, $$, IOS, STANDALONE, BASE, SEARCH, TRANSPORT_KIND, HOVER, NARROW, RM, DARK_MQ, touchUi, sheetUi, canEdit,
+  meta, dev, rows, sound, fx,
+  get doc() { return doc; }, set doc(v) { doc = v; },
+  get listId() { return listId; }, get listMode() { return listMode; }, get ref() { return ref; }, get sync() { return sync; }, get transport() { return transport; },
+  get theme() { return theme; }, get view() { return view; }, get syncStatus() { return syncStatus; }, get editing() { return editing; }, get openPanel() { return openPanel; },
+  get tourOn() { return tourOn; }, set tourOn(v) { tourOn = v; },
+  get whoCount() { return whoCount; },
+  todayList, allDoneToday, setWasAll: () => { wasAll = allDoneToday(); },
+  afterChange, applyRemote, render, setView, paint, paintListName, paintMute, paintStatus, paintMenu, paintWho, toast, hideToast, ask, showPanel, closePanel,
+  focusRow, newItem, startEdit, commitEdit, deleteItem, toggle, toggleToday, notToday, pushUndo, undo, restoreItem,
+  saveDevice, registerList, switchTo, openList, showWelcome, createList, parseLink, flushQuick, flushOthers, killRemote, queueKill, retryPendingKills,
+  applyThemeCode, chooseTheme, currentThemeCode, tickTheme, setWake, toggleMute, toggleFullscreen, setOneThing, setSearch, ruleLabel,
+  editLink, viewLink, copyText, nativeShare, escapeHtml, drawQr, frag,
+  resubscribePresence: () => { if (sync) sync.resubscribe(); paintWho(dev.whoOff ? 0 : whoCount); },
+  loadLocal, saveLocal, removeLocal
+};
 
 /* test hook (read-only) */
-window.__tf = () => ({ view, listId, mode: listMode, lookupId: ref ? ref.lookupId : null, R: ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, tour: tourOn ? tourStep : -1, tourDone: !!dev.tourDone, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length });
+window.__tf = () => ({ stats: { ...stats }, view, listId, mode: listMode, lookupId: ref ? ref.lookupId : null, R: ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, tour: tourOn ? tourStep() : -1, tourDone: !!dev.tourDone, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY });
+function tourStep() { return window.__tfTourStep ? window.__tfTourStep() : 0; }
+// test-only controls, on the local transport: simulate what iOS does to the audio context
+if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneToday(); } }, presence: n => paintWho(n) };
 
 /* ---------------- service worker ---------------- */
 function registerSw() {

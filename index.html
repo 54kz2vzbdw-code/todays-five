@@ -101,9 +101,10 @@
       <span class="pill" id="ro" hidden>View only</span>
     </div>
     <div class="rail-r">
-      <span id="count"><b>0</b>/0<span class="sr-only"> done</span></span>
+      <button id="count" class="count" type="button" aria-pressed="false" title="One thing at a time (O)"><b>0</b>/0<span class="sr-only"> done</span></button>
       <button id="dot" class="dot" data-s="off" data-live="0" type="button" aria-label="Sync status"><span class="lbl">Sync off</span></button>
       <span class="sr-only" id="dot-sr" role="status" aria-live="polite"></span>
+      <span class="who" id="who" hidden><span class="dots" aria-hidden="true"></span><span class="plus" aria-hidden="true"></span><span class="sr-only" id="who-sr"></span></span>
       <div class="seg" role="tablist" aria-label="View">
         <button id="v-today" role="tab" aria-selected="true" aria-controls="today" title="Today (A)">Today</button>
         <button id="v-all" role="tab" aria-selected="false" aria-controls="all" title="Everything (A)">Everything</button>
@@ -122,7 +123,12 @@
       <ol id="list" role="list" aria-label="Today's list" aria-describedby="ro"></ol>
       <button id="addtoday" class="add" type="button" title="New line (N)">+ New line</button>
     </div>
-    <div id="all" class="view" role="tabpanel" aria-labelledby="v-all" aria-describedby="ro" hidden></div>
+    <div id="all" class="view" role="tabpanel" aria-labelledby="v-all" aria-describedby="ro" hidden>
+      <div class="all-head" id="all-head">
+        <button class="chip icon" id="search-btn" type="button" title="Search (/)" aria-label="Search" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg></button>
+        <input id="search" type="search" placeholder="Search lines and notes" aria-label="Search Everything" autocomplete="off" spellcheck="false" hidden>
+      </div>
+    </div>
     <div id="welcome" class="view" hidden>
       <h1>Today's Five</h1>
       <p id="welcome-msg">A short list you keep open on screen all day. It's encrypted on your device before it goes anywhere—the link is the key. No account, nothing to sign up for.</p>
@@ -140,14 +146,19 @@
   </main>
 
   <footer id="foot">
-    <div id="hint"></div>
-    <div id="finale"><span>That's the list.</span><button class="chip" id="again" type="button">Start again</button></div>
+    <div class="foot-row">
+      <div id="hint"></div>
+      <div id="finale"><span>That's the list.</span><button class="chip" id="again" type="button">Start again</button></div>
+    </div>
+    <div id="review" class="review" hidden aria-live="polite"></div>
   </footer>
 </div>
 
 <div id="toast" role="status" aria-live="polite"><span class="msg"></span><button class="chip" id="toast-undo" type="button" hidden>Undo</button></div>
+<div id="whatsnew" role="status" hidden><span class="msg" id="wn-msg"></span><button class="chip" id="wn-more" type="button">Read it</button><button class="x" id="wn-x" type="button" aria-label="Dismiss">×</button></div>
 <div id="bar" aria-hidden="true"><div id="fill"></div></div>
 <div id="install" role="status" hidden><span>Add this to your Home Screen: tap <b>Share</b>, then <b>Add to Home Screen</b>.</span><button class="x" id="install-x" type="button" aria-label="Dismiss">×</button></div>
+<input type="checkbox" switch id="haptic" class="haptic" tabindex="-1" aria-hidden="true">
 
 <!-- first-run tour: a dimmed backdrop with a hole over the real control and one line of copy -->
 <div id="tour" hidden role="dialog" aria-modal="true" aria-label="How it works" aria-describedby="tour-text">
@@ -168,19 +179,76 @@
   <div class="grip" aria-hidden="true"></div>
   <h2><span id="p-menu-h">Today's Five</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <div class="menu" id="menu">
-    <button type="button" data-act="share"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M5 12v7h14v-7"/></svg><span class="lb">Share &amp; open on phone</span><span class="k key">QR · link</span></button>
-    <button type="button" data-act="wake" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span class="lb">Keep screen awake</span><span class="k state" id="wake-k">Off</span></button>
-    <button type="button" data-act="theme"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2s-1-2 0-3 3 0 3-2c0-5-2-11-5-11z"/><circle cx="8" cy="10" r="1"/><circle cx="12" cy="7" r="1"/><circle cx="16" cy="10" r="1"/></svg><span class="lb">Theme</span><span class="k key">T</span></button>
-    <button type="button" data-act="mute" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h3l4 3V7l-4 3H4zM15 9a4 4 0 0 1 0 6M17.5 6.5a8 8 0 0 1 0 11"/></svg><span class="lb">Sound</span><span class="k state" id="mute-k">On</span></button>
-    <label class="item" for="volume"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14h4l3 5V5L8 10H4z"/></svg><span class="lb">Volume</span><input type="range" id="volume" min="0" max="100" step="5" aria-label="Volume"></label>
-    <button type="button" data-act="full"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span class="lb">Full screen</span><span class="k key">F</span></button>
-    <button type="button" data-act="history"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="lb">History</span><span class="k state" id="streak-k"></span></button>
+    <button type="button" data-act="share"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M5 12v7h14v-7"/></svg><span class="lb" id="menu-share-lb">Share &amp; open on phone</span><span class="k key">QR · link</span></button>
+    <button type="button" data-act="help"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/></svg><span class="lb">How it works</span><span class="k key">?</span></button>
     <button type="button" data-act="lists"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="lb">Lists</span><span class="k state" id="lists-k"></span></button>
-    <button type="button" data-act="tour"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/></svg><span class="lb">How it works</span><span class="k state">Tour</span></button>
-    <button type="button" data-act="help"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/></svg><span class="lb" id="help-lb">Keyboard help</span><span class="k key">?</span></button>
-    <button type="button" data-act="keys" aria-pressed="true" id="menu-keys"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16M4 12h16M4 16h10"/><path d="M18 15l2 2 3-3" /></svg><span class="lb">Single-key shortcuts</span><span class="k state" id="keys-k">On</span></button>
-    <a class="item link" href="about.html" id="menu-about"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg><span class="lb">About &amp; privacy</span><span class="k state">↗</span></a>
+    <button type="button" data-act="settings"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="lb">Settings</span><span class="k state" id="settings-k"></span></button>
+    <a class="item link" href="about.html" id="menu-about"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg><span class="lb">About &amp; privacy</span><span class="k state" id="about-k">↗</span></a>
+    <button type="button" data-act="delete" class="danger" id="menu-delete"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg><span class="lb">Delete this list everywhere</span></button>
   </div>
+</div></dialog>
+
+<dialog class="panel sheet" id="p-settings" aria-labelledby="p-settings-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
+  <h2><span id="p-settings-h">Settings</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+
+  <h3>Appearance</h3>
+  <div class="menu">
+    <button type="button" class="row-set" data-set="theme"><span class="lb">Theme<span class="sub" id="set-theme-sub"></span></span><span class="k state" id="set-theme-k">Dark</span></button>
+    <button type="button" class="row-toggle" data-set="follow" aria-pressed="false"><span class="lb">Follow system<span class="sub">Dark and light slots follow the device</span></span><span class="sw" aria-hidden="true"></span></button>
+    <button type="button" class="row-toggle" data-set="schedule" aria-pressed="false"><span class="lb">Schedule<span class="sub" id="set-schedule-sub">A day theme and a night theme, by the clock</span></span><span class="sw" aria-hidden="true"></span></button>
+    <div class="sub-block" id="schedule-block" hidden>
+      <div class="grid2">
+        <label>Day from<input type="time" id="sch-day-at" step="300"></label>
+        <label>Night from<input type="time" id="sch-night-at" step="300"></label>
+        <label>Day theme<select id="sch-day"></select></label>
+        <label>Night theme<select id="sch-night"></select></label>
+      </div>
+    </div>
+  </div>
+
+  <h3>Sound</h3>
+  <div class="menu">
+    <button type="button" class="row-toggle" data-set="sound" aria-pressed="true"><span class="lb">Sound<span class="sub">The knock, the bell, the finale</span></span><span class="sw" aria-hidden="true"></span></button>
+    <label class="item" for="set-pack"><span class="lb">Sound pack<span class="sub" id="set-pack-sub">Each theme picks its own</span></span><select id="set-pack"><option value="">Theme's pick</option></select></label>
+    <label class="item" for="volume"><span class="lb">Volume</span><input type="range" id="volume" min="0" max="100" step="5" aria-label="Volume"></label>
+    <button type="button" class="row-toggle" data-set="celebrate" aria-pressed="false"><span class="lb">Celebrate changes from other devices<span class="sub">Sound and confetti when someone else crosses a line off</span></span><span class="sw" aria-hidden="true"></span></button>
+  </div>
+
+  <h3>Behavior</h3>
+  <div class="menu">
+    <button type="button" class="row-toggle" data-set="review" aria-pressed="false"><span class="lb">Day review<span class="sub">A quiet card under the finale: streak, the week, today's lines</span></span><span class="sw" aria-hidden="true"></span></button>
+    <button type="button" class="row-toggle" data-set="wake" aria-pressed="false"><span class="lb">Keep screen awake<span class="sub">While this list is on screen</span></span><span class="sw" aria-hidden="true"></span></button>
+    <button type="button" class="row-toggle" data-set="swipe" aria-pressed="true" id="set-swipe"><span class="lb">Swipe left for "Not today"<span class="sub">The line comes back at tomorrow's rollover</span></span><span class="sw" aria-hidden="true"></span></button>
+    <button type="button" class="row-toggle" data-set="keys" aria-pressed="true" id="set-keys"><span class="lb">Single-key shortcuts<span class="sub">N, E, A, T, M, F, O, 1–9. Cmd/Ctrl+Z and Esc always work</span></span><span class="sw" aria-hidden="true"></span></button>
+    <button type="button" class="row-set" data-set="full" id="set-full"><span class="lb">Full screen</span><span class="k key">F</span></button>
+  </div>
+
+  <h3>Lists</h3>
+  <div class="menu">
+    <button type="button" class="row-set" data-set="templates"><span class="lb">Templates<span class="sub">Saved from a section; insert them anywhere</span></span><span class="k state" id="set-tpl-k"></span></button>
+    <button type="button" class="row-set" data-set="removed"><span class="lb">Removed lists<span class="sub">Hidden from this device only</span></span><span class="k state" id="set-removed-k"></span></button>
+    <button type="button" class="row-set" data-set="history"><span class="lb">History</span><span class="k state" id="streak-k"></span></button>
+  </div>
+
+  <h3>Advanced</h3>
+  <div class="menu">
+    <div class="sub-block">
+      <span class="lb">Add from anywhere<span class="sub">Open this URL with text on the end and the line lands on Today. How it works has a Shortcut and a bookmarklet.</span></span>
+      <div class="inline"><input class="link" id="set-addurl" type="text" readonly aria-label="Add-from-anywhere URL" spellcheck="false"><button class="chip" id="set-addurl-copy" type="button">Copy</button></div>
+    </div>
+    <div class="sub-block">
+      <span class="lb">Export<span class="sub">This is the only backup there is. Nobody else holds a copy that can be read.</span></span>
+      <div class="row-actions"><button class="chip" id="set-export-json" type="button">JSON</button><button class="chip" id="set-export-md" type="button">Markdown</button></div>
+    </div>
+    <div class="sub-block">
+      <span class="lb">Import<span class="sub">A JSON export, into a new list or folded into this one</span></span>
+      <div class="row-actions"><label class="chip file"><input type="file" id="set-import-file" accept="application/json,.json"><span>Choose a file</span></label><button class="chip" id="set-import-new" type="button" disabled>Into a new list</button><button class="chip" id="set-import-merge" type="button" disabled>Merge into this list</button></div>
+      <div class="fine" id="set-import-name"></div>
+    </div>
+    <button type="button" class="row-toggle" data-set="who" aria-pressed="true"><span class="lb">Show who's here<span class="sub">A dot per other device with this list open. Off: this device neither shows nor counts</span></span><span class="sw" aria-hidden="true"></span></button>
+  </div>
+  <p class="fine" id="set-version"></p>
 </div></dialog>
 
 <dialog class="panel" id="p-theme" aria-labelledby="p-theme-h"><div class="body">
@@ -247,7 +315,7 @@
     <button class="chip" id="share-native" type="button" hidden>Share…</button>
     <button class="chip" id="share-rotate" type="button">Rotate links</button>
   </div>
-  <p class="fine" id="share-model">Fair warning: anyone with the edit link can change anything, including making new links. Anyone with the view link can see everything until you rotate. No names, no presence, no record of who did what.</p>
+  <p class="fine" id="share-model">Fair warning: anyone with the edit link can change anything, including making new links. Anyone with the view link can see everything until you rotate. No names, no record of who did what—"Who's here" only counts open devices.</p>
 </div></dialog>
 
 <dialog class="panel sheet" id="p-save" aria-labelledby="save-title" aria-describedby="save-msg"><div class="body" tabindex="-1" id="save-body">
@@ -271,13 +339,16 @@
   </div>
 </div></dialog>
 
-<dialog class="panel" id="p-lists" aria-labelledby="p-lists-h"><div class="body">
+<dialog class="panel sheet" id="p-lists" aria-labelledby="p-lists-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
   <h2><span id="p-lists-h">Lists</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <div class="menu lists" id="lists-menu"></div>
+  <h3 id="lists-removed-h" hidden>Removed from this device</h3>
+  <div class="menu lists" id="lists-removed"></div>
   <div class="row-actions">
     <button class="chip accent" id="l-new" type="button">New list</button>
     <button class="chip" id="l-rename" type="button">Rename this list</button>
-    <button class="chip" id="l-archive" type="button">Archive this list</button>
+    <button class="chip" id="l-archive" type="button">Remove from this device</button>
   </div>
   <div class="field">
     <label for="l-paste">Paste a link</label>
@@ -288,7 +359,8 @@
   </div>
 </div></dialog>
 
-<dialog class="panel" id="p-history" aria-labelledby="p-history-h"><div class="body">
+<dialog class="panel sheet" id="p-history" aria-labelledby="p-history-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
   <h2><span id="p-history-h">History</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <p class="streak" id="history-streak"></p>
   <div id="history-days"></div>
@@ -296,30 +368,8 @@
 
 <dialog class="panel sheet" id="p-help" aria-labelledby="p-help-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
-  <h2><span id="p-help-h"><span id="help-title">Keyboard</span></span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
-  <div class="keys" id="help-keys">
-    <kbd>1 – 9</kbd><span>Check off a line by position</span>
-    <kbd>N</kbd><span>New line</span>
-    <kbd>E</kbd><span>Edit the focused line</span>
-    <kbd>Enter</kbd><span>While editing: save and start a new line below</span>
-    <kbd>Esc</kbd><span>While editing: cancel</span>
-    <kbd>⌫</kbd><span>On an empty line: remove it</span>
-    <kbd>A</kbd><span>Today ↔ Everything</span>
-    <kbd>⌥ ↑ / ↓</kbd><span>Move the focused line</span>
-    <kbd>⌘ Z</kbd><span>Undo</span>
-    <kbd>T</kbd><span>Theme</span>
-    <kbd>M</kbd><span>Mute</span>
-    <kbd>F</kbd><span>Full screen</span>
-    <kbd>?</kbd><span>This help</span>
-  </div>
-  <div class="gestures" id="help-gestures" hidden>
-    <div class="g"><b>Tap a line</b><span>Cross it off, or bring it back</span></div>
-    <div class="g"><b>Press and hold, then drag</b><span>Reorder a line, or move it to another section in Everything</span></div>
-    <div class="g"><b>Pencil</b><span>Edit the line and its note</span></div>
-    <div class="g"><b>Today toggle</b><span>In Everything: put a line on Today, or take it off</span></div>
-    <div class="g"><b>Today / Everything</b><span>The two views. Today is the big one; Everything is where the rest lives</span></div>
-    <div class="g"><b>Swipe down or tap outside</b><span>Close a sheet like this one</span></div>
-  </div>
+  <h2><span id="p-help-h">How it works</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <div class="help" id="help-body"></div>
 </div></dialog>
 
 <dialog class="panel sheet" id="p-sec" aria-labelledby="p-sec-h"><div class="body">
@@ -327,10 +377,53 @@
   <h2><span id="p-sec-h">Section</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <div class="menu">
     <button type="button" data-sact="rename"><span class="lb">Rename</span></button>
+    <button type="button" data-sact="today-on"><span class="lb">Put all on Today</span></button>
+    <button type="button" data-sact="today-off"><span class="lb">Take all off Today</span></button>
+    <button type="button" data-sact="template"><span class="lb">Save as template</span></button>
+    <button type="button" data-sact="insert"><span class="lb">Insert template…</span></button>
     <button type="button" data-sact="up"><span class="lb">Move up</span></button>
     <button type="button" data-sact="down"><span class="lb">Move down</span></button>
     <button type="button" data-sact="delete" class="danger"><span class="lb">Delete section <span class="sub">Its lines move to Unsorted</span></span></button>
   </div>
+</div></dialog>
+
+<dialog class="panel sheet" id="p-line" aria-labelledby="p-line-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
+  <h2><span id="p-line-h">Line</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <div class="menu">
+    <button type="button" data-lact="edit"><span class="lb">Edit</span><span class="k key">E</span></button>
+    <button type="button" data-lact="today"><span class="lb" id="line-today-lb">Put on Today</span></button>
+    <button type="button" data-lact="repeat"><span class="lb">Repeat<span class="sub" id="line-repeat-sub">Never</span></span></button>
+    <button type="button" data-lact="nottoday"><span class="lb">Not today<span class="sub">Back on Today tomorrow</span></span><span class="k key">-</span></button>
+    <button type="button" data-lact="move"><span class="lb">Move to another list…</span></button>
+    <button type="button" data-lact="delete" class="danger"><span class="lb">Delete</span></button>
+  </div>
+</div></dialog>
+
+<dialog class="panel sheet" id="p-repeat" aria-labelledby="p-repeat-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
+  <h2><span id="p-repeat-h">Repeat</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <div class="menu" id="repeat-kinds" role="radiogroup" aria-label="Repeat">
+    <button type="button" role="radio" data-kind="" aria-checked="true"><span class="lb">Never</span></button>
+    <button type="button" role="radio" data-kind="daily" aria-checked="false"><span class="lb">Every day</span></button>
+    <button type="button" role="radio" data-kind="weekdays" aria-checked="false"><span class="lb">Weekdays</span></button>
+    <button type="button" role="radio" data-kind="weekly" aria-checked="false"><span class="lb">Chosen days</span></button>
+    <button type="button" role="radio" data-kind="monthly" aria-checked="false"><span class="lb">Monthly on a date</span></button>
+  </div>
+  <div class="days" id="repeat-days" hidden role="group" aria-label="Days of the week">
+    <button type="button" data-day="1" aria-pressed="false">M</button><button type="button" data-day="2" aria-pressed="false">T</button><button type="button" data-day="3" aria-pressed="false">W</button><button type="button" data-day="4" aria-pressed="false">T</button><button type="button" data-day="5" aria-pressed="false">F</button><button type="button" data-day="6" aria-pressed="false">S</button><button type="button" data-day="0" aria-pressed="false">S</button>
+  </div>
+  <div class="field" id="repeat-monthly" hidden><label for="repeat-day">Day of the month</label><input type="number" id="repeat-day" min="1" max="31" value="1" inputmode="numeric"></div>
+  <p class="fine" id="repeat-note">A finished repeating line goes to History at the start of the next day and comes back undone on its next day.</p>
+  <div class="row-actions"><button class="chip accent" id="repeat-done" type="button">Done</button></div>
+</div></dialog>
+
+<dialog class="panel sheet" id="p-pick" aria-labelledby="p-pick-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
+  <h2><span id="p-pick-h">Choose</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <p class="fine" id="pick-msg" hidden></p>
+  <div class="menu lists" id="pick-menu"></div>
+  <div class="row-actions" id="pick-actions" hidden></div>
 </div></dialog>
 
 <dialog class="panel" id="ask" aria-labelledby="ask-title" aria-describedby="ask-msg"><form method="dialog" class="body" id="ask-form">

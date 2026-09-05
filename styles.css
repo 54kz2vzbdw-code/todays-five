@@ -1,4 +1,4 @@
-/* Today's Five v3 — all colour/type tokens come from #theme-vars (theme.js). */
+/* Today's Five v4 — all colour/type tokens come from #theme-vars (theme.js). */
 
 /* ---------------- fonts: self-hosted, latin subset, only the weights the pairs use (see fonts/README.md) ---------------- */
 @font-face{font-family:"Lato";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/lato-400.woff2) format("woff2");unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
@@ -46,7 +46,7 @@ button{font:inherit;color:inherit}
 
 /* ---------------- shell ---------------- */
 #shell{
-  position:relative;z-index:2;height:100vh;height:100svh;
+  position:relative;z-index:2;height:100vh;height:100dvh;
   display:flex;flex-direction:column;
   padding:calc(clamp(.9rem,2.2vh,1.6rem) + env(safe-area-inset-top,0px)) calc(clamp(1rem,4vw,3.4rem) + env(safe-area-inset-right,0px)) calc(7px + env(safe-area-inset-bottom,0px)) calc(clamp(1rem,4vw,3.4rem) + env(safe-area-inset-left,0px));
 }
@@ -62,8 +62,10 @@ button{font:inherit;color:inherit}
 .rail-l,.rail-r{display:flex;align-items:center;gap:clamp(.4rem,1.2vw,.85rem);min-width:0}
 .rail-l{flex:1 1 auto}
 #date{white-space:nowrap}
-#count{color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.09em;white-space:nowrap}
+#count{color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.09em;white-space:nowrap;background:transparent;border:0;padding:.3em .2em;font:inherit;letter-spacing:.09em;text-transform:inherit;cursor:pointer;min-height:32px;border-radius:999px}
 #count b{color:var(--accent-text);font-weight:700}
+#count:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#count[aria-pressed="true"]{color:var(--accent-text)}
 
 .chip{
   font:inherit;letter-spacing:inherit;text-transform:inherit;
@@ -345,8 +347,9 @@ html[data-mode="view"] .row:hover:not(.done) .ghost{opacity:0}
 html[data-mode="view"] #hint{visibility:hidden}
 
 /* ---------------- footer ---------------- */
-#foot{flex:0 0 auto;position:relative;min-height:clamp(3.1rem,7.4vh,4.6rem);display:grid;place-items:center}
-#foot>*{grid-area:1/1;transition:opacity .5s ease}
+#foot{flex:0 0 auto;position:relative;display:flex;flex-direction:column;align-items:center}
+.foot-row{position:relative;min-height:clamp(3.1rem,7.4vh,4.6rem);display:grid;place-items:center;width:100%}
+.foot-row>*{grid-area:1/1;transition:opacity .5s ease}
 #hint{
   font-family:var(--font-ui);font-weight:700;font-size:clamp(9px,1vw,11.5px);
   letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
@@ -374,7 +377,9 @@ html[data-mode="view"] #hint{visibility:hidden}
 #toast .chip{color:var(--accent-text);border-color:var(--accent);min-height:36px}
 
 /* ---------------- progress ---------------- */
-#bar{position:fixed;left:0;right:0;bottom:0;height:3px;background:var(--ink-3);z-index:40}
+/* the track is transparent (an empty 3 px of --ink-3 read as a hairline under the iPhone's home indicator);
+   only the fill draws, and it sits above the safe-area inset */
+#bar{position:fixed;left:0;right:0;bottom:env(safe-area-inset-bottom,0px);height:3px;background:transparent;z-index:40;pointer-events:none}
 #fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent-deep),var(--accent) 55%,var(--accent-hi));transition:width .5s cubic-bezier(.22,1,.36,1),box-shadow .4s ease}
 #fill.full{box-shadow:0 0 24px 2px var(--accent)}
 
@@ -656,3 +661,169 @@ body.page{overflow:auto;height:auto;min-height:100%}
 .prose .crumb a{color:var(--dim);text-decoration:none}
 .prose .crumb a:hover{color:var(--text)}
 .prose .fine{margin-top:2rem}
+
+
+/* ================= v4 ================= */
+
+/* who's here: one dot per other device beside the sync dot, five at most then "+n" */
+.who{display:inline-flex;align-items:center;gap:3px;min-height:32px}
+.who .dots{display:inline-flex;gap:3px}
+.who .dots i{width:7px;height:7px;border-radius:50%;background:var(--muted);opacity:0;transform:scale(.4);transition:opacity .4s ease,transform .4s cubic-bezier(.22,1,.36,1)}
+.who .dots i.on{opacity:.9;transform:none}
+.who .plus{font-size:.85em;color:var(--dim);letter-spacing:.04em}
+.who.fade{opacity:0;transition:opacity .4s ease}
+
+/* the line menu, the repeat glyph, the tomorrow marker */
+.tool.lmenu{font-size:1.1em;letter-spacing:0;line-height:1}
+.rep{display:inline-block;margin-left:.35em;font-size:.55em;color:var(--dim);vertical-align:middle;transform:translateY(-.1em);font-family:var(--font-ui)}
+.row.done .rep{color:var(--done)}
+.cap.tmr{color:var(--accent-text);border:1px solid var(--accent);border-radius:999px;padding:.1em .5em;font-size:clamp(9px,.26em,12px)}
+#list .cap.tmr{display:none}
+.row.swiping{transition:none}
+.row.swipe-out{transition:transform .25s ease,opacity .25s ease;opacity:0}
+
+/* the editor's repeat chip */
+.erow{flex:1 1 100%;margin-left:calc(.66em + .46em);display:flex;gap:.4rem;align-items:center;margin-top:.2em}
+.erow .chip{font-family:var(--font-ui);font-weight:700;font-size:clamp(10px,.3em,12px);letter-spacing:.12em;text-transform:uppercase;min-height:32px}
+.erow .chip.on{color:var(--accent-text);border-color:var(--accent)}
+
+/* everything's header: search */
+.all-head{display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;min-height:36px}
+.all-head .chip.icon svg{width:1.1em;height:1.1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.all-head .chip.icon{padding:.4em .6em;font-size:1em}
+.all-head .chip.icon[aria-expanded="true"]{color:var(--accent-text);border-color:var(--accent)}
+#search{
+  flex:1 1 auto;min-width:0;max-width:26rem;font-family:var(--font-ui);font-size:15px;color:var(--text);
+  background:var(--ink-2);border:1px solid var(--hair);border-radius:999px;padding:.45em 1em;min-height:36px;
+}
+#search:focus{outline:2px solid var(--accent);outline-offset:2px;border-color:var(--accent)}
+#all.searching .row.miss{display:none}
+#all.searching .sec.nohit{display:none}
+#all.searching .sec .add,#all.searching #addsec,#all.searching .empty{display:none}
+.nohits{font-family:var(--font-ui);font-size:14px;color:var(--dim);padding:.8rem .3rem}
+
+/* recently deleted: a shelf at the bottom of Everything */
+.deleted{margin-top:clamp(.8rem,2.4vh,1.6rem);border-top:1px solid var(--hair);padding-top:.5rem}
+.deleted summary{
+  list-style:none;cursor:pointer;display:flex;align-items:center;gap:.5rem;min-height:36px;
+  font-family:var(--font-ui);font-weight:700;font-size:clamp(9.5px,1.05vw,12px);letter-spacing:.15em;text-transform:uppercase;color:var(--dim);
+}
+.deleted summary::-webkit-details-marker{display:none}
+.deleted summary .caret{display:inline-block;transition:transform .2s ease}
+.deleted[open] summary .caret{transform:rotate(90deg)}
+.deleted summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.deleted ul{list-style:none;display:flex;flex-direction:column;gap:2px;margin:.3rem 0 0}
+.deleted li{display:flex;align-items:center;gap:.8rem;padding:.35em .3em;font-family:var(--font-ui);font-size:clamp(13px,1.6vh,16px);color:var(--muted);min-height:40px}
+.deleted li .t{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;text-decoration-color:var(--hair-hi)}
+.deleted li .chip{font-family:var(--font-ui);font-weight:700;font-size:10px;letter-spacing:.12em;text-transform:uppercase;min-height:32px;flex:0 0 auto}
+
+/* one-thing mode: the top undone line, enormous; the rest wait their turn */
+body.one #list{justify-content:center}
+body.one #list .row:not(.one-now){display:none}
+body.one #list .row.one-now{font-size:clamp(2rem,min(9vw,14vh),8rem);padding:.3em .3em}
+body.one #list .row.one-now .tools{display:none}
+body.one #addtoday{display:none}
+body.one #list .row.one-now .cap{display:none}
+@keyframes one-in{from{opacity:0;transform:translateY(.35em)}to{opacity:1;transform:none}}
+body.one #list .row.one-now.arrive{animation:one-in .45s cubic-bezier(.22,1,.36,1)}
+.one-more{display:none;font-family:var(--font-ui);font-weight:700;font-size:clamp(10px,1.05vw,12px);letter-spacing:.15em;text-transform:uppercase;color:var(--dim);text-align:center;margin-top:.6rem}
+body.one .one-more{display:block}
+
+/* day review: a quiet card under the finale */
+.review{
+  width:min(100%,34rem);margin:.2rem auto .4rem;padding:.8rem 1rem;border:1px solid var(--hair);border-radius:14px;background:var(--ink-2);
+  font-family:var(--font-ui);font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:.5rem;
+  --dim:var(--dim-2);--muted:var(--muted-2);
+}
+.review .r-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.review .r-streak{color:var(--accent-text)}
+.review .r-week{display:flex;gap:.35rem;align-items:center}
+.review .r-week i{width:.9rem;height:.9rem;border-radius:50%;border:1px solid var(--hair-hi);display:inline-block}
+.review .r-week i.on{background:var(--accent);border-color:var(--accent)}
+.review .r-week i.future{opacity:.35}
+.review .r-week span{margin-left:.4rem;font-size:12px}
+.review ul{list-style:none;display:flex;flex-wrap:wrap;gap:.25rem .9rem;margin:0;padding:0}
+.review li{font-size:13px;color:var(--text)}
+.review li.done{color:var(--dim);text-decoration:line-through;text-decoration-color:var(--hair-hi)}
+
+/* what's new: a small toast after an update, never on first run */
+#whatsnew{
+  position:fixed;left:50%;bottom:calc(58px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:49;
+  display:flex;align-items:center;gap:.6rem;max-width:min(92vw,36rem);
+  font-family:var(--font-ui);font-size:13px;color:var(--text);
+  background:var(--ink-2);border:1px solid var(--hair-hi);border-radius:14px;padding:.55rem .5rem .55rem .9rem;
+  box-shadow:0 12px 40px rgba(0,0,0,.35);--dim:var(--dim-2);--muted:var(--muted-2);
+}
+#whatsnew .msg{flex:1 1 auto;min-width:0}
+#whatsnew .chip{font-family:var(--font-ui);font-weight:700;font-size:10px;letter-spacing:.12em;text-transform:uppercase;min-height:36px;color:var(--accent-text);border-color:var(--accent);flex:0 0 auto}
+#whatsnew .x{width:36px;height:36px;border-radius:999px;border:0;background:transparent;color:var(--dim);font-size:18px;cursor:pointer;flex:0 0 auto}
+body.one #whatsnew,body.one #toast{bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+
+/* the iOS haptic switch: off screen, never focusable, never painted where it can be seen */
+.haptic{position:fixed;left:-200px;top:-200px;width:1px;height:1px;opacity:0;pointer-events:none}
+
+/* settings and the other sheets: the shared primitives */
+dialog.panel h3.first{margin-top:.2rem}
+.row-toggle,.row-set{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.row-toggle .lb .sub,.row-set .lb .sub,.menu .lb .sub{display:block;color:var(--muted);font-size:12px;font-weight:400;line-height:1.35;margin-top:.1rem}
+.sw{flex:0 0 auto;width:40px;height:24px;border-radius:999px;border:1px solid var(--hair-hi);background:var(--ink);position:relative;transition:background-color .2s ease,border-color .2s ease}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--dim);transition:transform .2s cubic-bezier(.22,1,.36,1),background-color .2s ease}
+.row-toggle[aria-pressed="true"] .sw{background:var(--accent);border-color:var(--accent)}
+.row-toggle[aria-pressed="true"] .sw::after{transform:translateX(16px);background:var(--ink)}
+.row-toggle[disabled],.row-set[disabled]{opacity:.5;cursor:default}
+.row-toggle[disabled]:hover,.row-set[disabled]:hover{background:transparent}
+.sub-block{display:flex;flex-direction:column;gap:.5rem;padding:.6em .8em;border-radius:10px}
+.sub-block .lb{font-weight:600;color:var(--text)}
+.sub-block .inline .link{flex:1 1 auto}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.5rem .8rem}
+.grid2 label{display:flex;flex-direction:column;gap:.3rem;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.grid2 input,.grid2 select,.menu label.item select{font:inherit;font-size:14px;letter-spacing:0;text-transform:none;color:var(--text);background:var(--ink);border:1px solid var(--hair);border-radius:10px;padding:.5em .7em;min-height:40px}
+.menu label.item select{flex:0 1 auto;max-width:11rem;min-height:36px}
+.menu label.item .lb{flex:1 1 auto}
+.chip.file{position:relative;overflow:hidden;cursor:pointer;display:inline-flex;align-items:center}
+.chip.file input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.chip[disabled]{opacity:.45;cursor:default}
+.menu .chip.accent{color:var(--accent-text)}
+.days{display:flex;gap:.35rem;margin:.6rem 0 .2rem}
+.days button{flex:1 1 0;min-height:44px;border-radius:10px;border:1px solid var(--hair);background:var(--ink);color:var(--dim);font:inherit;font-weight:700;cursor:pointer}
+.days button[aria-pressed="true"]{color:var(--accent-text);border-color:var(--accent);background:var(--ink-3)}
+.days button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#repeat-kinds button[aria-checked="true"]{color:var(--accent-text);background:var(--ink-3)}
+#repeat-kinds button[aria-checked="true"]::after{content:"✓";margin-left:auto;color:var(--accent-text)}
+.field input[type="number"]{font:inherit;color:var(--text);background:var(--ink);border:1px solid var(--hair);border-radius:10px;padding:.6em .8em;min-height:44px;width:100%}
+
+/* how it works: sectioned, readable */
+.help{display:flex;flex-direction:column;gap:.2rem;font-size:14px;line-height:1.5;color:var(--text)}
+.help h3{margin:1rem 0 .3rem}
+.help h3:first-child{margin-top:.2rem}
+.help p{margin:.3rem 0;color:var(--text)}
+.help ul{margin:.2rem 0 .4rem 1.1rem;padding:0;color:var(--text)}
+.help li{margin:.2rem 0}
+.help .keys{margin:.3rem 0 .6rem}
+.help code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;background:var(--ink);border:1px solid var(--hair);border-radius:6px;padding:.05em .35em;word-break:break-all}
+.help .link{margin:.3rem 0}
+.help .row-actions{margin:.3rem 0 .6rem}
+.help b{color:var(--text)}
+
+/* about page: the changelog */
+.prose .version{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:.2rem 0 1rem}
+.prose .log{list-style:none;padding:0}
+.prose .log li{margin:.7rem 0}
+.prose .log .v{font-weight:700;color:var(--text)}
+.prose .log .d{color:var(--dim);font-size:12px;letter-spacing:.06em;margin-left:.5rem}
+.prose .log ul{margin:.25rem 0 0 1.1rem;padding:0}
+
+@media (hover:none){
+  .row .tool.lmenu{opacity:1}
+  .sw{width:46px;height:28px}
+  .sw::after{width:20px;height:20px}
+  .row-toggle[aria-pressed="true"] .sw::after{transform:translateX(18px)}
+  .all-head .chip.icon{min-width:44px;min-height:44px}
+  #search{min-height:44px;font-size:16px}
+  .deleted li .chip{min-height:40px}
+}
+@media (prefers-reduced-motion:reduce){
+  .who .dots i,.sw,.sw::after{transition:none}
+  body.one #list .row.one-now.arrive{animation:none}
+  .row.swipe-out{transition:none}
+}

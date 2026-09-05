@@ -41,7 +41,7 @@ test("12 curated themes, each a complete kit", () => {
   assert.equal(ids.size, 12);
   for (const t of CURATED) {
     assert.ok(PAIRS[t.pair], t.id + " pair");
-    assert.ok(["knock", "bell", "blip"].includes(t.sound.engine), t.id + " sound");
+    assert.ok(["knock", "bell", "blip", "typewriter", "marble", "pop"].includes(t.sound.engine), t.id + " sound");
     assert.ok(t.confetti.length >= 4, t.id + " confetti");
     for (const k of ["ink", "ink2", "ink3", "text", "muted", "dim", "done", "muted2", "dim2", "accent", "accentHi", "accentDeep", "accentText", "danger", "hair", "hairHi", "hairSolid", "glow", "strikeShadow", "boxDoneBg", "strikeBg", "strikeAnim", "finaleStyle"]) assert.ok(t.colors[k], `${t.id} missing ${k}`);
   }
@@ -56,6 +56,12 @@ test("dark, light, pink keep v1's primary tokens exactly", () => {
   assert.equal(p.boxDoneBg, "linear-gradient(135deg,#FF3D9A,#FFD36E)");
   assert.equal(CURATED.find(t => t.id === "pink").shapes, 3);
   assert.deepEqual(CURATED.find(t => t.id === "pink").confetti, ["#FF3D9A", "#FF8FBE", "#FFD36E", "#FFFFFF", "#FF6FAF", "#FFB8D9"]);
+});
+
+test("best-fit sound packs: Paper types, Forest drops marbles, Harbor pops, the originals keep theirs", () => {
+  const eng = id => CURATED.find(t => t.id === id).sound.engine;
+  assert.equal(eng("paper"), "typewriter"); assert.equal(eng("forest"), "marble"); assert.equal(eng("harbor"), "pop");
+  assert.equal(eng("dark"), "knock"); assert.equal(eng("light"), "knock"); assert.equal(eng("pink"), "bell"); assert.equal(eng("terminal"), "blip");
 });
 
 test("every curated theme meets the contrast floors", () => {

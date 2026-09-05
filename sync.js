@@ -54,7 +54,9 @@ export class SyncError extends Error {
      get(id, knownRev)         → { unchanged:true, rev } | { doc, rev } | null
      put(id, env, baseRev, tok) → { ok:true, rev } | { ok:false, rev, doc }      (throws SyncError 403/413/429/507)
      del(id, tok)               → boolean
-     subscribe(id, onMsg, onState) → { alive(), send(payload), close() },  wake?() }                    */
+     subscribe(id, onMsg, onState, presence?) → { alive(), send(payload), close() },  wake?() }
+   presence = { key, onCount }: track this session on the channel under a random key (nothing else is sent)
+   and report how many *other* keys are present. Absent when the device has turned "Show who's here" off. */
 
 export async function makeTransport(kind, config) {
   if (kind === "local") return makeLocalTransport();
@@ -92,14 +94,23 @@ async function makeSupabaseTransport(cfg) {
     get: (id, rev) => rpc("get_list_v3", { p_id: id, p_rev: rev == null ? null : rev }),
     put: (id, env, baseRev, token) => rpc("put_list_v3", { p_id: id, p_doc: env, p_base_rev: baseRev, p_token: token }),
     del: (id, token) => rpc("delete_list_v3", { p_id: id, p_token: token || null }).then(Boolean),
-    subscribe(id, onMsg, onState) {
+    subscribe(id, onMsg, onState, presence) {
       let ch = null, rc = null, closed = false, failed = false;
       client().then(c => {
         if (closed) return;
         rc = c;
-        ch = c.channel("list:" + id, { config: { broadcast: { self: false, ack: false } } });
+        const config = { broadcast: { self: false, ack: false } };
+        if (presence) config.presence = { key: presence.key };
+        ch = c.channel("list:" + id, { config });
         ch.on("broadcast", { event: "change" }, ({ payload }) => onMsg(payload));
-        ch.subscribe(status => onState(status === "SUBSCRIBED" ? "joined" : String(status).toLowerCase()));
+        if (presence) {
+          const report = () => { try { const st = ch.presenceState(); presence.onCount(Object.keys(st).filter(k => k !== presence.key).length); } catch (e) { /* ignore */ } };
+          ch.on("presence", { event: "sync" }, report);
+        }
+        ch.subscribe(status => {
+          onState(status === "SUBSCRIBED" ? "joined" : String(status).toLowerCase());
+          if (status === "SUBSCRIBED" && presence) { try { ch.track({}); } catch (e) { /* ignore */ } }
+        });
       }).catch(() => { failed = true; onState("error"); });
       return {
         alive() { return !closed && !failed && (!ch || ch.state === "joined" || ch.state === "joining"); },
@@ -121,6 +132,8 @@ async function makeSupabaseTransport(cfg) {
     localStorage: tf/test/lag (ms), tf/test/rtfail (realtime never joins), tf/test/limit (every create → 429). */
 function makeLocalTransport() {
   const bc = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("tf-local-transport") : null;
+  // presence between tabs: hello / here / bye on the same channel, a heartbeat, and a short expiry
+  const PRESENCE_TTL = 12000;
   const hook = k => { try { return localStorage.getItem("tf/test/" + k); } catch (e) { return null; } };
   const wait = () => new Promise(r => setTimeout(r, +(hook("lag") || 15)));
   const guard = () => { if (!online()) throw new SyncError("offline", 0, "network"); };
@@ -158,14 +171,27 @@ function makeLocalTransport() {
       remove(K.local(id));
       return true;
     },
-    subscribe(id, onMsg, onState) {
-      const h = e => { if (e.data && e.data.topic === id) onMsg(e.data.payload); };
+    subscribe(id, onMsg, onState, presence) {
+      const others = new Map(); let beat = 0, closed = false;
+      const count = () => { const t = Date.now(); for (const [k, at] of others) if (t - at > PRESENCE_TTL) others.delete(k); if (presence) presence.onCount(others.size); };
+      const say = t => { if (bc && presence) bc.postMessage({ topic: id, presence: { t, key: presence.key } }); };
+      const h = e => {
+        const d = e.data; if (!d || d.topic !== id) return;
+        if (d.presence) {
+          if (!presence || d.presence.key === presence.key) return;
+          if (d.presence.t === "bye") others.delete(d.presence.key); else others.set(d.presence.key, Date.now());
+          if (d.presence.t === "hello") say("here");
+          count();
+          return;
+        }
+        onMsg(d.payload);
+      };
       if (bc) bc.addEventListener("message", h);
-      setTimeout(() => onState(hook("rtfail") ? "channel_error" : "joined"), 0);
+      setTimeout(() => { if (closed) return; onState(hook("rtfail") ? "channel_error" : "joined"); if (presence) { say("hello"); beat = setInterval(() => { say("here"); count(); }, 5000); } }, 0);
       return {
         alive: () => !hook("rtfail"),
         send(payload) { if (bc) bc.postMessage({ topic: id, payload }); },
-        close() { if (bc) bc.removeEventListener("message", h); }
+        close() { closed = true; clearInterval(beat); say("bye"); if (bc) bc.removeEventListener("message", h); }
       };
     }
   };
@@ -191,7 +217,8 @@ export function forWire(doc) { const d = { ...doc }; delete d.id; return d; }
 
 export const HOLD_MS = { busy: 5 * 60000, full: 10 * 60000 };
 
-export function createSync({ transport, deviceId, onStatus, onRemote, onGone, onLive, holdMs = HOLD_MS }) {
+export function createSync({ transport, deviceId, onStatus, onRemote, onGone, onLive, holdMs = HOLD_MS, presence = null }) {
+  // presence: { key, enabled: () => boolean, onCount(n) } — who's here, off when the device says so
   let cur = null;
   let status = transport ? "synced" : "off";
   let live = false;
@@ -328,13 +355,16 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone, on
     const me = cur;
     if (me.channel && me.channel.alive()) return;
     if (me.channel) me.channel.close();
+    const wantPresence = presence && presence.key && (!presence.enabled || presence.enabled());
+    me.presenceOn = !!wantPresence;
     me.channel = transport.subscribe(me.ref.lookupId,
       msg => { if (cur === me && (!msg || msg.from !== deviceId)) pull(); },
       state => {
         if (cur !== me) return;
         if (state === "joined") { setLive(true); pull(); }
         else setLive(false);
-      });
+      },
+      wantPresence ? { key: presence.key, onCount: n => { if (cur === me) presence.onCount(n); } } : undefined);
   }
 
   /** The safety-net poll: every minute while live updates are not flowing, every 4 minutes while they are. */
@@ -412,7 +442,9 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone, on
       cur = null;
       live = false;
     },
-    current() { return cur ? { id: cur.id, mode: cur.ref.mode, lookupId: cur.ref.lookupId, rev: cur.rev, dirty: cur.dirty, gone: cur.gone, live } : null; },
+    current() { return cur ? { id: cur.id, mode: cur.ref.mode, lookupId: cur.ref.lookupId, rev: cur.rev, dirty: cur.dirty, gone: cur.gone, live, presence: !!cur.presenceOn } : null; },
+    /** "Show who's here" changed: rejoin the channel with or without presence. */
+    resubscribe() { if (!cur) return; if (cur.channel) { cur.channel.close(); cur.channel = null; } if (presence && presence.onCount) presence.onCount(0); subscribe(); },
     /** Tell other devices on `lookupId` that it was deleted (after Rotate); they pull, find nothing, and show "gone". */
     announceGone(lookupId) {
       if (!transport || !transport.subscribe) return;

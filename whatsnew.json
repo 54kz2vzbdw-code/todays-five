@@ -1,0 +1,37 @@
+{
+  "versions": [
+    {
+      "version": "4.0.0",
+      "date": "2026-09-05",
+      "lines": [
+        "Lines can repeat now—every day, weekdays, days you pick, or monthly—and \"Not today\" moves one to tomorrow. Both live in the line's own menu.",
+        "Sound sticks on the iPhone after a call or a lock. Three new sound packs, one-thing mode (press O or tap the count), search in Everything, templates, a Recently deleted shelf, and a URL that adds a line from anywhere.",
+        "Settings has a home now: ⋯ → Settings. Deleting a list everywhere is at the bottom of ⋯, with ten seconds to change your mind."
+      ]
+    },
+    {
+      "version": "3.0.0",
+      "date": "2026-09-04",
+      "lines": [
+        "Every list is encrypted on your device before it goes anywhere. The link is the key; a view link lets someone watch without touching.",
+        "Fonts and the realtime client are served from this site—nothing loads from Google or a CDN—and the phone menu became a proper bottom sheet.",
+        "A five-step tour on the first list, and a save-your-link sheet you can't miss."
+      ]
+    },
+    {
+      "version": "2.0.0",
+      "date": "2026-09-03",
+      "lines": [
+        "Sync between devices through a secret link, no account. Sections and several lists; Everything holds the backlog.",
+        "Twelve curated themes plus your own from one accent colour, each with its own fonts, sounds and confetti. Installable on the phone and the Mac."
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-09-02",
+      "lines": [
+        "Five lines in big type, a strike that draws across, a knock or a bell, confetti, and a finale when the list is done."
+      ]
+    }
+  ]
+}

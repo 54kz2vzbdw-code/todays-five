@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import {
   CURATED, CUSTOM_PAIRS, PAIRS, derive, surprise, report, themeCode, parseCode, pairFamilies,
-  hexToOklch, oklch, contrast, cssText, normalizeHex, pickPair
+  hexToOklch, oklch, contrast, cssText, normalizeHex, pickPair, PACK_IDS, hueSound
 } from "../theme.js";
 import fs from "node:fs";
 
@@ -94,6 +94,7 @@ test("surprise me always passes and stays inside the tasteful ranges", () => {
 
 test("codes round-trip for curated and custom themes", () => {
   for (const t of CURATED) assert.equal(parseCode(themeCode(t)).id, t.id);
+  for (const t of CURATED) assert.equal(themeCode(t), "T1:curated:" + t.id, "curated codes are unchanged, so every device reads them");
   const c = derive({ accent: "#3366FF", base: "light", pair: "playfair", name: "Blue: sky" });
   const back = parseCode(themeCode(c));
   assert.equal(back.accent, "#3366FF"); assert.equal(back.base, "light"); assert.equal(back.pair, "playfair"); assert.equal(back.name, "Blue  sky");
@@ -101,6 +102,29 @@ test("codes round-trip for curated and custom themes", () => {
   assert.equal(parseCode("garbage"), null);
   assert.equal(parseCode("T1:d:zzzzzz:lato:x"), null);
   assert.ok(parseCode("T1:d:abc:nope:Short").pair, "3-digit hex and unknown pair fall back sanely");
+});
+
+test("a theme you make carries a sound pack: T2 codes round-trip, T1 codes still import and get the hue rule", () => {
+  assert.deepEqual(PACK_IDS, ["knock", "bell", "blip", "typewriter", "marble", "pop"]);
+  const m = derive({ accent: "#3366FF", base: "dark", pair: "grotesk", name: "Marbles", pack: "marble" });
+  assert.equal(m.pack, "marble"); assert.equal(m.sound.engine, "marble"); assert.ok(m.sound.pitch > 0 && m.sound.decay > 0, "the accent still sets pitch and decay");
+  const code = themeCode(m);
+  assert.equal(code, "T2:d:3366FF:grotesk:marble:Marbles");
+  const back = parseCode(code);
+  assert.equal(back.pack, "marble"); assert.equal(back.sound.engine, "marble"); assert.equal(back.name, "Marbles"); assert.equal(cssText(back), cssText(m));
+  assert.equal(themeCode(parseCode(code)), code, "byte-identical after a round trip");
+  // no pack chosen: the hue rule (blue rings a bell, orange knocks), and the code says so with an empty field
+  const auto = derive({ accent: "#3366FF", base: "dark", pair: "grotesk", name: "Auto" });
+  assert.equal(auto.pack, ""); assert.equal(auto.sound.engine, "bell"); assert.equal(themeCode(auto), "T2:d:3366FF:grotesk::Auto");
+  assert.equal(parseCode(themeCode(auto)).sound.engine, "bell"); assert.equal(hueSound("#D26128", "dark"), "knock"); assert.equal(hueSound("#3366FF", "light"), "bell");
+  // a code from before 1.1 imports as it always did: the hue rule picks the sound
+  const old = parseCode("T1:d:FF3D9A:fraunces:Pink one");
+  assert.ok(old); assert.equal(old.pack, ""); assert.equal(old.sound.engine, "bell"); assert.equal(old.name, "Pink one"); assert.equal(old.pair, "fraunces");
+  assert.equal(parseCode("T1:l:D26128:lato:Warm").sound.engine, "knock");
+  // an unknown pack falls back to the hue rule; a name with colons survives
+  assert.equal(parseCode("T2:d:D26128:lato:kazoo:X").sound.engine, "knock");
+  assert.equal(parseCode("T2:d:D26128:lato:pop:A:B").name, "A:B");
+  assert.equal(parseCode("T3:d:D26128:lato:pop:X"), null, "a code from the future is refused, not misread");
 });
 
 test("normalizeHex", () => {

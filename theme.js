@@ -266,8 +266,14 @@ export function pickPair(base, accentHex) {
   return { pink: "fraunces", warm: "playfair", green: "lato", cool: "manrope" }[w];
 }
 
-/** Every token from an accent + base. Backgrounds are tinted toward the accent hue at low chroma. */
-export function derive({ accent, base = "dark", pair, name = "", id }) {
+/** The sound packs a theme you make can carry (packs.js); "" means the hue rule picks. */
+export const PACK_IDS = ["knock", "bell", "blip", "typewriter", "marble", "pop"];
+export const PACK_NAMES = { knock: "Knock", bell: "Bell", blip: "Blip", typewriter: "Typewriter", marble: "Marble", pop: "Pop" };
+export function packOf(id) { return PACK_IDS.includes(id) ? id : ""; }
+
+/** Every token from an accent + base. Backgrounds are tinted toward the accent hue at low chroma. A `pack` names the
+    sound (1.1); without one the hue rule picks: pinks, purples and blues ring a bell, everything else knocks. */
+export function derive({ accent, base = "dark", pair, name = "", id, pack }) {
   accent = normalizeHex(accent) || "#D26128";
   const a = hexToOklch(accent);
   const h = a.h, dark = base === "dark";
@@ -310,13 +316,17 @@ export function derive({ accent, base = "dark", pair, name = "", id }) {
   c.boxDoneBg = c.accent; c.strikeBg = c.accent; c.strikeSize = "auto"; c.strikeAnim = "none"; c.finaleStyle = "normal";
   const p = pair && pairOf(pair) ? pair : pickPair(base, accent);
   const w = warmth(h);
-  const sound = (w === "pink" || w === "cool") ? { engine: "bell", pitch: 0.85 + a.L * 0.4, decay: 1.1, bright: 0.6 } : { engine: "knock", pitch: 0.8 + a.L * 0.4, decay: 1.1, noise: 1 };
+  const pk = packOf(pack);
+  const byHue = (w === "pink" || w === "cool") ? { engine: "bell", pitch: 0.85 + a.L * 0.4, decay: 1.1, bright: 0.6 } : { engine: "knock", pitch: 0.8 + a.L * 0.4, decay: 1.1, noise: 1 };
+  const sound = pk ? { ...byHue, engine: pk } : byHue; // the accent still sets pitch and decay; the pack sets the voice
   const confetti = [c.accent, c.accentHi, c.accentDeep, dark ? c.text : c.text, oklch(dark ? 0.8 : 0.72, 0.07, h + 180)];
   return {
-    id: id || ("custom-" + accent.slice(1).toLowerCase() + "-" + base[0] + "-" + p),
-    name: name || "Custom", base, kind: "custom", pair: p, accent, colors: c, sound, confetti, shapes: 1
+    id: id || ("custom-" + accent.slice(1).toLowerCase() + "-" + base[0] + "-" + p + (pk ? "-" + pk : "")),
+    name: name || "Custom", base, kind: "custom", pair: p, accent, pack: pk, colors: c, sound, confetti, shapes: 1
   };
 }
+/** What the hue rule would pick for this accent (the builder's "Auto" label). */
+export function hueSound(accent, base = "dark") { return derive({ accent, base }).sound.engine; }
 
 export function normalizeHex(s) {
   if (typeof s !== "string") return null;
@@ -343,23 +353,28 @@ export function surprise(rand = Math.random) {
   return derive({ accent, base, pair, name: "Surprise" });
 }
 
-/* ---------------- codes (share / save) ---------------- */
+/* ---------------- codes (share / save) ----------------
+   T1:curated:<id> for the twelve kits (unchanged, so every device reads them).
+   T1:<d|l>:<hex>:<pair>:<name> is a custom theme from before 1.1: it still imports, and the hue rule picks its sound.
+   T2:<d|l>:<hex>:<pair>:<pack>:<name> (1.1) carries the sound pack; an empty pack means the hue rule.            */
 
 export function themeCode(t) {
   if (t.kind === "curated") return "T1:curated:" + t.id;
-  return ["T1", t.base[0], t.accent.slice(1), t.pair, (t.name || "Custom").replace(/[:\n]/g, " ")].join(":");
+  return ["T2", t.base[0], t.accent.slice(1), t.pair, packOf(t.pack), (t.name || "Custom").replace(/[:\n]/g, " ")].join(":");
 }
 export function parseCode(code) {
   if (typeof code !== "string") return null;
   const parts = code.trim().split(":");
-  if (parts[0] !== "T1") return null;
+  if (parts[0] !== "T1" && parts[0] !== "T2") return null;
   if (parts[1] === "curated") return curated(parts[2]) || null;
   const base = parts[1] === "l" ? "light" : parts[1] === "d" ? "dark" : null;
   const accent = normalizeHex(parts[2]);
   if (!base || !accent) return null;
   const pair = pairOf(parts[3]) ? parts[3] : undefined;
-  const name = parts.slice(4).join(":").trim().slice(0, 40) || "Custom";
-  return derive({ accent, base, pair, name });
+  const v2 = parts[0] === "T2";
+  const pack = v2 ? packOf(parts[4]) : "";
+  const name = parts.slice(v2 ? 5 : 4).join(":").trim().slice(0, 40) || "Custom";
+  return derive({ accent, base, pair, name, pack });
 }
 
 /* ---------------- CSS ---------------- */

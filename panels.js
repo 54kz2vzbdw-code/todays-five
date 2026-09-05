@@ -11,12 +11,12 @@ export function init(api) {
 const dev = () => A.dev, meta = () => A.meta;
 
 /* ---------------- theme panel ---------------- */
-let custom = { accent: "#D26128", base: "dark", pair: "", name: "" };
+let custom = { accent: "#D26128", base: "dark", pair: "", name: "", pack: "" };
 let keepPreview = false;
 export function openTheme() {
   renderSwatches();
   const t = A.theme;
-  if (t && t.kind === "custom") custom = { accent: t.accent, base: t.base, pair: t.pair, name: t.name };
+  if (t && t.kind === "custom") custom = { accent: t.accent, base: t.base, pair: t.pair, name: t.name, pack: t.pack || "" };
   paintCustom();
   A.showPanel("p-theme");
 }
@@ -63,13 +63,15 @@ function setSchedule(on) {
   if (on && A.theme) { const slot = A.theme.base === "dark" ? "night" : "day"; if (!d.schedule[slot]) d.schedule[slot] = d.theme; }
   A.saveDevice(); A.tickTheme(); A.applyThemeCode(A.currentThemeCode()); renderSwatches(); paintSettings();
 }
-function customTheme() { return T.derive({ accent: custom.accent, base: custom.base, pair: custom.pair || undefined, name: custom.name || "Custom" }); }
+function customTheme() { return T.derive({ accent: custom.accent, base: custom.base, pair: custom.pair || undefined, name: custom.name || "Custom", pack: custom.pack || undefined }); }
 function paintCustom() {
   $("#c-color").value = custom.accent;
   if (document.activeElement !== $("#c-hex")) $("#c-hex").value = custom.accent;
   $("#c-dark").setAttribute("aria-pressed", custom.base === "dark" ? "true" : "false");
   $("#c-light").setAttribute("aria-pressed", custom.base === "light" ? "true" : "false");
   $("#c-pair").value = custom.pair || "";
+  $("#c-pack").options[0].textContent = "Auto · " + T.PACK_NAMES[T.hueSound(custom.accent, custom.base)]; // what the hue rule picks today
+  $("#c-pack").value = custom.pack || "";
   $("#c-name").value = custom.name;
   const t = customTheme(), c = t.colors, p = T.pairOf(t.pair) || T.PAIRS.lato;
   const pv = $("#c-preview");
@@ -92,6 +94,9 @@ function wireTheme() {
   $("#c-dark").addEventListener("click", () => setCustom({ base: "dark" }));
   $("#c-light").addEventListener("click", () => setCustom({ base: "light" }));
   pairSel.addEventListener("change", e => setCustom({ pair: e.target.value }));
+  const packSel = $("#c-pack");
+  T.PACK_IDS.forEach(id => { const o = document.createElement("option"); o.value = id; o.textContent = T.PACK_NAMES[id]; packSel.appendChild(o); });
+  packSel.addEventListener("change", e => { setCustom({ pack: e.target.value }); if (!dev().muted) A.sound.preview(customTheme().sound.engine); }); // preview on select
   $("#c-name").addEventListener("input", e => { custom.name = e.target.value; });
   $("#c-use").addEventListener("click", () => { A.chooseTheme(customTheme()); renderSwatches(); });
   $("#c-save").addEventListener("click", async () => {
@@ -111,12 +116,12 @@ function wireTheme() {
     A.chooseTheme(t); renderSwatches();
     A.toast(`Saved “${custom.name.trim()}”`);
   });
-  $("#c-surprise").addEventListener("click", () => { const t = T.surprise(); custom = { accent: t.accent, base: t.base, pair: t.pair, name: "" }; paintCustom(); previewCustom(); });
+  $("#c-surprise").addEventListener("click", () => { const t = T.surprise(); custom = { accent: t.accent, base: t.base, pair: t.pair, name: "", pack: "" }; paintCustom(); previewCustom(); });
   $("#c-export").addEventListener("click", async () => { try { await navigator.clipboard.writeText(T.themeCode(customTheme())); A.toast("Theme code copied"); } catch (e) { A.toast(T.themeCode(customTheme())); } });
   $("#c-import-go").addEventListener("click", () => {
     const t = T.parseCode($("#c-import").value);
     if (!t) { A.toast("That code doesn't parse"); return; }
-    if (t.kind === "custom") { custom = { accent: t.accent, base: t.base, pair: t.pair, name: t.name }; paintCustom(); previewCustom(); } else { A.chooseTheme(t); renderSwatches(); }
+    if (t.kind === "custom") { custom = { accent: t.accent, base: t.base, pair: t.pair, name: t.name, pack: t.pack || "" }; paintCustom(); previewCustom(); } else { A.chooseTheme(t); renderSwatches(); }
   });
   $("#p-theme").addEventListener("close", () => { if (!keepPreview) A.applyThemeCode(A.currentThemeCode()); });
   addEventListener("tf:theme", () => { if ($("#p-theme").open) renderSwatches(); if ($("#p-settings").open) paintSettings(); });
@@ -308,8 +313,12 @@ function paintSettings() {
   themeOptions($("#sch-day"), d.schedule.day || "T1:curated:light"); themeOptions($("#sch-night"), d.schedule.night || "T1:curated:dark");
   set("sound", !d.muted);
   const pk = $("#set-pack"); if (!pk.options.length || pk.options.length !== PACKS.length) { pk.innerHTML = ""; PACKS.forEach(([v, n]) => { const o = document.createElement("option"); o.value = v; o.textContent = n; pk.appendChild(o); }); }
+  // "Theme's pick" names the theme's pack, and the sub-line says which one wins on this device
+  const themePack = A.theme ? (PACKS.find(p => p[0] === (A.theme.sound && A.theme.sound.engine))?.[1] || "Knock") : "";
+  pk.options[0].textContent = themePack ? `Theme's pick (${themePack})` : "Theme's pick";
   pk.value = d.soundPack || "";
-  $("#set-pack-sub").textContent = A.theme ? `${A.theme.name} picks ${PACKS.find(p => p[0] === (A.theme.sound && A.theme.sound.engine))?.[1] || "Knock"}` : "Each theme picks its own";
+  const override = PACKS.find(p => p[0] === d.soundPack)?.[1];
+  $("#set-pack-sub").textContent = !A.theme ? "Each theme picks its own" : override ? `${A.theme.name} picks ${themePack}; this device plays ${override}` : `${A.theme.name} picks ${themePack}, and that's what plays`;
   $("#volume").value = Math.round(d.volume * 100);
   set("celebrate", !!d.celebrateRemote);
   set("review", !!d.review);
@@ -351,7 +360,7 @@ function wireSettings() {
   });
   const sch = () => { d.schedule = { ...d.schedule, dayAt: $("#sch-day-at").value || "07:00", nightAt: $("#sch-night-at").value || "19:00", day: $("#sch-day").value, night: $("#sch-night").value }; A.saveDevice(); A.tickTheme(); A.applyThemeCode(A.currentThemeCode()); paintSettings(); };
   ["#sch-day-at", "#sch-night-at", "#sch-day", "#sch-night"].forEach(s => $(s).addEventListener("change", sch));
-  $("#set-pack").addEventListener("change", e => { d.soundPack = e.target.value; A.saveDevice(); const eng = e.target.value || (A.theme && A.theme.sound && A.theme.sound.engine) || "knock"; if (!d.muted) A.sound.preview(eng); });
+  $("#set-pack").addEventListener("change", e => { d.soundPack = e.target.value; A.saveDevice(); paintSettings(); const eng = e.target.value || (A.theme && A.theme.sound && A.theme.sound.engine) || "knock"; if (!d.muted) A.sound.preview(eng); });
   $("#set-addurl-copy").addEventListener("click", () => A.copyText($("#set-addurl").value, "URL copied. Put text after text= and open it."));
   $("#set-export-json").addEventListener("click", () => exportList("json"));
   $("#set-export-md").addEventListener("click", () => exportList("md"));

@@ -237,7 +237,7 @@
 <dialog class="panel sheet" id="p-export" aria-labelledby="p-export-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
   <h2><span id="p-export-h">Export &amp; import</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
-  <div class="menu">
+  <div class="stack">
     <div class="sub-block">
       <span class="lb">Export<span class="sub">This is the only backup there is. Nobody else holds a copy that can be read.</span></span>
       <div class="row-actions"><button class="chip" id="set-export-json" type="button">JSON</button><button class="chip" id="set-export-md" type="button">Markdown</button></div>
@@ -272,6 +272,10 @@
     <label for="c-pair">Fonts</label>
     <select id="c-pair"><option value="">Auto</option></select>
   </div>
+  <div class="field">
+    <label for="c-pack">Sound</label>
+    <select id="c-pack"><option value="">Auto</option></select>
+  </div>
   <div class="preview" id="c-preview">
     <div class="pt">Call the bank before noon</div>
     <div class="pt done">Walk after lunch</div>
@@ -293,7 +297,7 @@
   <div class="field">
     <label for="c-import">Import a code</label>
     <div class="inline">
-      <input type="text" id="c-import" placeholder="T1:d:FF3D9A:fraunces:Name" spellcheck="false" autocomplete="off">
+      <input type="text" id="c-import" placeholder="T2:d:FF3D9A:fraunces:bell:Name" spellcheck="false" autocomplete="off">
       <button class="chip" id="c-import-go" type="button">Import</button>
     </div>
   </div>

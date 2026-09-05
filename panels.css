@@ -213,6 +213,8 @@ dialog.panel h3.first{margin-top:.2rem}
 
 /* popovers (desktop, 1.1): the ⋯, line and section menus sit under the control that opened them; no dim, no blur */
 dialog.panel.pop{position:fixed;inset:auto;margin:0;width:17rem;max-height:min(80vh,40rem);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.4);animation:pop-in .16s cubic-bezier(.22,1,.36,1);transform-origin:top right}
+dialog.panel.pop#p-menu{width:19.5rem}
+.stack{display:flex;flex-direction:column;gap:.4rem}
 dialog.panel.pop::backdrop{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
 dialog.panel.pop .body{padding:.45rem .45rem .5rem}
 dialog.panel.pop h2{display:none}

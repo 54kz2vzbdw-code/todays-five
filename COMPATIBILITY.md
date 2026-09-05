@@ -90,6 +90,11 @@ invariants, and the checklist to run before anything reaches `main`. Read this b
   available" banner. An old page and a new service worker must coexist until the page is next opened.
 - Every new module must be listed in the shell precache so an installed app works offline after
   its first online open of the new version.
+- What "next open" means on iOS, observed on the v3 → v4 deploy: a tab Safari merely re-fronted still
+  ran the old code, and so did a tap on Safari's reload (the old worker's network-first fetch was
+  answered from Safari's HTTP cache); the first fresh navigation to the URL brought the new version,
+  intact list and what's-new toast included. A Home Screen app relaunched from its icon is a fresh
+  navigation. So: never promise a user that a refresh updates them; the next open does.
 
 ## 7. Release checklist
 
@@ -109,6 +114,8 @@ Run all of it, in this order, for every change that reaches `main`:
    numbers are not worse than the previous release's.
 7. Bump the version in `version.js`, `sw.js` and `whatsnew.json` together (`test/features.test.js`
    checks they agree).
-8. Merge to `main`, wait for Pages, then check the live URL on a fresh device (welcome → new list
-   → encrypted row) and on a device that still holds a previous version's list (it opens, the
-   list is intact, the what's-new toast is the only new thing it sees).
+8. Merge to `main`, wait for Pages (about a minute; poll `sw.js` for the new cache name), then check
+   the live URL on a fresh device (welcome → new list → encrypted row) and on a device that still
+   holds a previous version's list (open the URL fresh, not a refresh: it opens, the list is intact,
+   the what's-new toast is the only new thing it sees). Mind the server's create limit (12 per hour
+   per address): a day of suites can spend it, and a fresh device then reports "busy" until it clears.

@@ -577,7 +577,7 @@ body.one .one-more{display:block}
 /* what's new: a small toast after an update, never on first run */
 #whatsnew{
   position:fixed;left:50%;bottom:calc(58px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:49;
-  display:flex;align-items:center;gap:.6rem;max-width:min(92vw,36rem);
+  display:flex;align-items:center;gap:.6rem;width:min(92vw,36rem);box-sizing:border-box;
   font-family:var(--font-ui);font-size:13px;color:var(--text);
   background:var(--ink-2);border:1px solid var(--hair-hi);border-radius:14px;padding:.55rem .5rem .55rem .9rem;
   box-shadow:0 12px 40px rgba(0,0,0,.35);--dim:var(--dim-2);--muted:var(--muted-2);

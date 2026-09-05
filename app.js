@@ -359,7 +359,7 @@ async function openList(r) {
     if (roll.moved.length || roll.doc !== doc) { doc = roll.doc; rolled = true; }
   }
   document.documentElement.dataset.mode = mode;
-  document.body.classList.remove("welcome");
+  document.body.classList.remove("welcome"); document.documentElement.classList.remove("welcome"); // the boot script's guess ends here
   history.replaceState(null, "", BASE + SEARCH + frag({ id: r.id, mode }));
   if (window.__tfManifest) window.__tfManifest(frag({ id: r.id, mode }));
   $("#welcome").hidden = true;
@@ -438,7 +438,7 @@ function showWelcome(msg) {
   listMode = "edit"; demo = true; shuffledId = null;
   doc = M.seedDoc("");
   document.documentElement.dataset.mode = "edit";
-  document.body.classList.add("welcome");
+  document.body.classList.add("welcome"); document.documentElement.classList.remove("welcome"); // the body class carries it from here
   $("#all").hidden = true; $("#welcome").hidden = false; $("#demo-foot").hidden = false; $("#w-keep").hidden = true; $("#w-paste-form").hidden = true;
   $("#w-err").textContent = msg || "";
   $("#dot").hidden = true; // no list yet: nothing to report

@@ -108,6 +108,9 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.waitForSelector("#welcome:not([hidden])");
     assert.equal(await t.page.$eval(".rail", e => getComputedStyle(e).display), "none", "rail hidden on welcome");
     assert.equal(await t.page.$eval("#foot", e => getComputedStyle(e).display), "none", "footer hidden on welcome");
+    await t.page.evaluate(() => document.fonts.ready); await wait(300);
+    const fonts = await t.page.evaluate(() => performance.getEntriesByType("resource").map(r => r.name).filter(n => /fonts\//.test(n)).map(n => n.replace(/.*fonts\//, "")).sort());
+    assert.equal(fonts.join(" "), "lato-900.woff2 pt-sans-400.woff2 pt-sans-700.woff2", "the welcome pulls in the three faces 1.2 did and nothing more (first paint): " + fonts);
     const parts = await t.page.$$eval("#welcome > *:not([hidden])", els => els.map(e => e.tagName.toLowerCase()));
     assert.equal(parts.join(","), "h1,p", "the title and one sentence above the live list: " + parts);
     const below = await t.page.$$eval("#demo-foot > *:not([hidden])", els => els.map(e => e.tagName.toLowerCase() + (e.querySelector("#w-skip") ? "(skip, paste)" : "")));

@@ -17,7 +17,7 @@
   <meta property="og:image:alt" content="Today's Five: a short list in big type, one line crossed off">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-MwYdZmcd5WtJpDGtTAUiOLp/uNHWeenj2aBDPCEA95k='; style-src 'self' 'sha256-oE1HVK8YytWGTI+f5YZEZpzJkHu5EBNa0YFHsWkjQgQ='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://xyfjxdbwhysbaltcwvcx.supabase.co wss://xyfjxdbwhysbaltcwvcx.supabase.co; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-/CbwMwU95exk9O+gGsatEPIVZxOIe23QV9Zj3lu/5gw='; style-src 'self' 'sha256-oE1HVK8YytWGTI+f5YZEZpzJkHu5EBNa0YFHsWkjQgQ='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://xyfjxdbwhysbaltcwvcx.supabase.co wss://xyfjxdbwhysbaltcwvcx.supabase.co; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
   <meta name="theme-color" content="#1A1D21">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -45,13 +45,17 @@
         is never rewritten) so nothing flashes;
      2. build the web app manifest as a Blob URL whose start_url carries this list's link (#/l/<W> or #/r/<R>).
         iOS reads the manifest once at load and honours start_url (fragment included) only when it is absolute;
-        Chrome re-evaluates whenever the link changes. See PLAN.md. */
+        Chrome re-evaluates whenever the link changes. See PLAN.md.
+     3. (1.3) no list and no link: the welcome is coming, so the rail and the footer never paint — a first paint with
+        the rail, then the welcome without it, moved everything up and counted as a layout shift. */
   (function () {
     var meta = {}, css = null;
     try {
       css = localStorage.getItem("tf/v2/themecss");
       meta = JSON.parse(localStorage.getItem("tf/v2/meta") || "{}") || {};
     } catch (e) {}
+    var hash = location.hash || "";
+    if (!(meta.lists && meta.lists.length) && hash.indexOf("#/l/") !== 0 && hash.indexOf("#/r/") !== 0) document.documentElement.classList.add("welcome");
     var style = document.getElementById("theme-vars");
     if (css && css.indexOf(":root{") === 0 && style && style.sheet) {
       try {

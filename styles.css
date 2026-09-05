@@ -381,7 +381,7 @@ html[data-mode="view"] #hint{visibility:hidden}
 /* ---------------- welcome ---------------- */
 #welcome{align-items:center;justify-content:center;text-align:center;gap:1.2rem;padding:1rem 0}
 #welcome h1{font-family:var(--font-task);font-weight:var(--task-w);letter-spacing:var(--task-ls);font-size:clamp(2rem,7vh,4.2rem);line-height:1.05}
-#welcome p{font-family:var(--font-ui);color:var(--muted);font-size:clamp(13px,1.3vw,16px);max-width:34rem;line-height:1.5}
+#welcome p,#demo-foot p{font-family:var(--font-ui);color:var(--muted);font-size:clamp(13px,1.3vw,16px);max-width:34rem;line-height:1.5} /* the foot too: in the row font its About link pulled Lato 400 in at first paint */
 #welcome .actions,#demo-foot .actions{display:flex;flex-wrap:wrap;gap:.8rem;justify-content:center}
 #welcome .big,#demo-foot .big{
   font-family:var(--font-ui);font-weight:700;font-size:clamp(12px,1.2vw,14px);letter-spacing:.14em;text-transform:uppercase;
@@ -638,7 +638,8 @@ body.install-on #toast,body.install-on #whatsnew{bottom:calc(96px + env(safe-are
    (pale text on a pale ground for a beat), so they are off until the fade lands; the glow keeps its inline dip */
 body.fading *:not(#glow),body.fading .dot::before{transition-property:none !important}
 /* welcome: no rail, no footer */
-body.welcome .rail,body.welcome #foot{display:none}
+body.welcome .rail,body.welcome #foot,html.welcome .rail,html.welcome #foot{display:none} /* html.welcome: the boot script's guess, before first paint */
+html.welcome #today{display:none} /* and the empty list stays out of the first paint too: the welcome slots in above it and would push it down */
 /* idle fade (desktop): the rail and the footer step back to the date and the count; the presence dots stay */
 .rail-r > *,.rail-l > *,#foot{transition:opacity .25s ease}
 body.idle .rail-r > :not(.status),body.idle .rail-l > :not(#date),body.idle #foot{opacity:0;transition:opacity 1.4s ease}

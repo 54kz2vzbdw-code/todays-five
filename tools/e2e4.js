@@ -747,8 +747,10 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.ok(midState.fading, "a crossfade is running"); assert.equal(midState.theme, "light", "the theme is already the incoming one (its kit plays)");
     assert.ok(mid !== INK.dark && mid !== INK.light, "the ink is in between mid-flip: " + mid);
     assert.ok(await t.page.$eval("#glow", e => +getComputedStyle(e).opacity < 0.6), "the glow dips through the flip");
+    assert.ok(await t.page.evaluate(() => document.body.classList.contains("fading")), "the rows' own colour transitions are off while the tokens move");
+    assert.equal(await t.page.$eval("#list .row", e => getComputedStyle(e).color), await t.page.evaluate(() => getComputedStyle(document.body).color), "the row text is at the token, not trailing it");
     await wait(600);
-    assert.equal(await inkOf(t.page), INK.light, "Day = Light at the end"); assert.ok(!(await t.s()).fading);
+    assert.equal(await inkOf(t.page), INK.light, "Day = Light at the end"); assert.ok(!(await t.s()).fading); assert.ok(!(await t.page.evaluate(() => document.body.classList.contains("fading"))), "transitions are back once it lands");
     assert.equal((await t.s()).stats.tick, tick0 + 1, "the incoming theme's soft tick played");
     assert.equal(await t.page.$eval("#daynight", e => e.dataset.next + "|" + e.title + "|" + e.getAttribute("aria-label")), "night|Night · T|Switch to night", "the glyph now offers Night");
     assert.equal(await t.page.$eval("html", e => e.dataset.base + "/" + e.dataset.theme), "light/light"); assert.equal(await t.page.$eval('meta[name="theme-color"]', e => e.content), INK.light, "theme-color follows the slot's theme");
@@ -900,9 +902,10 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.keyboard.press("t"); await wait(600); assert.notEqual((await t.s()).slot, s0, "T flips");
     await t.page.keyboard.press("Shift+T"); await t.page.waitForSelector("#p-settings[open]");
     assert.equal(await t.page.$eval("#p-settings h3", e => e.textContent), "Appearance"); assert.equal((await t.s()).slot, s0 === "day" ? "night" : "day", "Shift+T does not flip");
-    await t.page.keyboard.press("Escape"); await wait(200);
-    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]");
+    await t.page.$eval("#p-settings .body", e => { e.scrollTop = e.scrollHeight; }); await t.page.keyboard.press("Escape"); await wait(200); // leave Settings scrolled to the bottom
+    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await wait(150);
     assert.equal(await t.page.locator("#p-theme[open]").count(), 0, "the ⋯ row goes to Appearance, not straight to the picker");
+    assert.equal(await t.page.$eval("#p-settings .body", e => e.scrollTop), 0, "and Appearance is what shows: the sheet opens at its top, wherever it was left");
     assert.equal(await t.page.textContent("#menu-theme-k"), "Light", "the ⋯ row still names the theme that is on");
     await t.page.keyboard.press("Escape");
     await t.close();

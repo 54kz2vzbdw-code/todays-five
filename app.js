@@ -171,7 +171,7 @@ function applyThemeCode(code, { crossfade = false } = {}) {
   paintDayNight();
   dispatchEvent(new CustomEvent("tf:theme"));
 }
-function stopFade() { if (!fadeRaf) return; cancelAnimationFrame(fadeRaf); fadeRaf = 0; const g = $("#glow"); g.style.transition = ""; g.style.opacity = ""; }
+function stopFade() { if (!fadeRaf) return; cancelAnimationFrame(fadeRaf); fadeRaf = 0; const g = $("#glow"); g.style.transition = ""; g.style.opacity = ""; document.body.classList.remove("fading"); }
 /** The whole palette crossfades from one slot's theme to the other's: the colour tokens interpolated in OKLab over
     about 400 ms, the fonts, gradients and shadows swapped at the midpoint, the glow dipping through it. Instant
     under prefers-reduced-motion (applyThemeCode never gets here then). */
@@ -181,12 +181,13 @@ function crossfadeTo(prev, next) {
   const t0 = performance.now();
   const ease = p => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2);
   glow.style.transition = "opacity .2s ease"; glow.style.opacity = "0";
+  document.body.classList.add("fading"); // the rows' own colour transitions would trail the tokens (styles.css)
   let swapped = false;
   const step = now => {
     const p = Math.min(1, (now - t0) / FADE_MS);
     if (p >= 0.5 && !swapped) { swapped = true; root.dataset.base = next.base; root.dataset.theme = next.id; glow.style.opacity = ""; }
     if (p < 1) { T.setTokenCss(style, T.cssTextBetween(prev, next, ease(p))); fadeRaf = requestAnimationFrame(step); }
-    else { fadeRaf = 0; glow.style.transition = ""; T.applyTheme(next); }
+    else { fadeRaf = 0; glow.style.transition = ""; T.applyTheme(next); document.body.classList.remove("fading"); }
   };
   fadeRaf = requestAnimationFrame(step);
 }
@@ -1510,6 +1511,7 @@ function showPanel(id, { anchor = null } = {}) {
   const pop = !!anchor && !sheetUi() && anchor.isConnected;
   d.classList.toggle("pop", pop); d.style.left = ""; d.style.top = "";
   if (!d.open) d.showModal();
+  const body = d.querySelector(".body"); if (body) body.scrollTop = 0; // a sheet opens at its top, whatever it was scrolled to when it closed (⋯ → Theme must land on Appearance)
   if (pop) {
     const r = anchor.getBoundingClientRect(), w = d.offsetWidth, h = d.offsetHeight;
     const left = Math.max(8, Math.min(innerWidth - w - 8, r.right - w));

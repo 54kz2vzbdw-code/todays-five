@@ -76,6 +76,7 @@ function choose(code, name, partner, swatch) {
   offer = partner && A.slotCode(other) !== partner.code ? { ...partner, slot: other } : null;
   renderSwatches();
   if (group) group.after($("#partner-offer")); // the chip sits under the group the choice came from
+  if (offer) { try { $("#partner-offer").scrollIntoView({ block: "nearest" }); } catch (e) { /* ignore */ } } // and on screen, on a phone too
   A.toast(`${name} for ${cap(pickSlot)}`);
 }
 function paintOffer() {

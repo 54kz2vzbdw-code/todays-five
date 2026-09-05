@@ -634,6 +634,9 @@ body.install-on #toast,body.install-on #whatsnew{bottom:calc(96px + env(safe-are
 #daynight{display:inline-grid;place-items:center;padding:.45em .6em}
 #daynight svg{width:15px;height:15px;display:block;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 #daynight[data-next="night"] .sun,#daynight[data-next="day"] .moon{display:none}
+/* while the palette crossfades, the tokens move every frame: the rows' and chips' own colour transitions would trail them
+   (pale text on a pale ground for a beat), so they are off until the fade lands; the glow keeps its inline dip */
+body.fading *:not(#glow),body.fading .dot::before{transition-property:none !important}
 /* welcome: no rail, no footer */
 body.welcome .rail,body.welcome #foot{display:none}
 /* idle fade (desktop): the rail and the footer step back to the date and the count; the presence dots stay */

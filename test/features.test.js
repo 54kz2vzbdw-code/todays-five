@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import * as M from "../model.js";
-import { VERSION } from "../version.js";
+import { VERSION, BUILD, VERSION_LABEL } from "../version.js";
 
 let passed = 0;
 function test(name, fn) { fn(); passed++; console.log("ok -", name); }
@@ -208,6 +208,18 @@ test("what's new: once per version, never on a fresh device, and a pre-v4 device
   assert.equal(M.whatsNewDue({ seenVersion: "4.0.0", hasLists: false }, "4.1.0"), true, "next update");
 });
 
+test("what's new fires on a changed version string, never on its order: a device that last saw 4.0.0 sees 1.1 once", () => {
+  // the renumbering (4.0.0 → 1.0, this round 1.1) sorts *below* what every existing device remembers
+  assert.equal(M.whatsNewDue({ seenVersion: "4.0.0", hasLists: true }, VERSION), true, "a 1.0 device (which called itself 4.0.0) sees the 1.1 entry");
+  assert.equal(M.whatsNewDue({ seenVersion: VERSION, hasLists: true }, VERSION), false, "and never again");
+  assert.equal(M.whatsNewDue({ seenVersion: "1.1", hasLists: true }, "1.0.1"), true, "a fix that sorts lower still fires (change, not order)");
+  assert.equal(M.whatsNewDue({ seenVersion: "1.1", hasLists: true }, "1.1"), false);
+  const wn = JSON.parse(fs.readFileSync(new URL("../whatsnew.json", import.meta.url), "utf8"));
+  const toast = wn.versions[0].lines[0];
+  assert.doesNotMatch(toast, /4\.0\.0|renumber|1\.0\b/, "the toast line says nothing about the renumbering");
+  assert.match(toast, /quieter/i, "the first line says the app got quieter, not what was added");
+});
+
 test("day review: streak, the week's finished days, today's lines", () => {
   const d = M.emptyDoc("L");
   d.history["2026-09-01"] = [{ id: "h1", text: "x", doneAt: 1, section: "" }]; d.history["2026-09-02"] = [{ id: "h2", text: "y", doneAt: 2, section: "" }];
@@ -229,13 +241,18 @@ test("purgeTombstones drops rules and returns whose line is gone for good", () =
   assert.equal(M.purgeTombstones(e, 1e13), e, "a live line keeps its rule");
 });
 
-test("the version is one number in three places", () => {
+test("the version is one number in three places, the build in two, and there are no dates anywhere", () => {
   const sw = fs.readFileSync(new URL("../sw.js", import.meta.url), "utf8");
   const wn = JSON.parse(fs.readFileSync(new URL("../whatsnew.json", import.meta.url), "utf8"));
-  assert.match(VERSION, /^\d+\.\d+\.\d+$/);
+  assert.match(VERSION, /^\d+\.\d+(\.\d+)?$/, "marketing version: 1.x, or 1.0.x for a fix");
+  assert.ok(Number.isInteger(BUILD) && BUILD > 0, "build is a positive integer (the commit count on main)");
+  assert.equal(VERSION_LABEL, `${VERSION} (build ${BUILD})`);
   assert.ok(sw.includes(`const VERSION = "tf-v${VERSION}"`), "sw.js cache name carries the app version");
   assert.equal(wn.versions[0].version, VERSION, "whatsnew.json leads with the current version");
-  for (const v of wn.versions) { assert.match(v.version, /^\d+\.\d+\.\d+$/); assert.match(v.date, /^\d{4}-\d{2}-\d{2}$/); assert.ok(v.lines.length >= 1 && v.lines.length <= 3, v.version + ": two or three lines"); }
+  assert.equal(wn.build, BUILD, "whatsnew.json carries the build number the About page shows");
+  assert.deepEqual(wn.versions.map(v => v.version), ["1.1", "1.0", "0.3", "0.2", "0.1"], "the renumbered history: 4.0.0 → 1.0, everything before it pre-release");
+  for (const v of wn.versions) { assert.match(v.version, /^\d+\.\d+(\.\d+)?$/); assert.ok(!("date" in v), v.version + ": no date field"); assert.ok(v.lines.length >= 1 && v.lines.length <= 3, v.version + ": one to three lines"); }
+  assert.ok(!/\b20\d\d-\d\d-\d\d\b/.test(fs.readFileSync(new URL("../about.html", import.meta.url), "utf8")), "no dates on the About page");
   for (const f of ["packs.js", "panels.js", "panels.css", "exporter.js", "version.js", "whatsnew.json"]) assert.ok(sw.includes(`"./${f}"`), "precached: " + f);
 });
 

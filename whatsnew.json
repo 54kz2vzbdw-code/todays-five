@@ -1,8 +1,16 @@
 {
+  "build": 44,
   "versions": [
     {
-      "version": "4.0.0",
-      "date": "2026-09-05",
+      "version": "1.1",
+      "lines": [
+        "It got quieter. A line is the checkbox and the words now—hover it on the Mac or hold it on the phone and the menu shows up. The top bar lost three chips, and the controls fade when you leave the list alone.",
+        "The tour is gone. The first list teaches the basics, and a one-line hint turns up the first time you open Everything, hold a line, or edit one. Theme, Sound and Full screen live in ⋯ now; T, M and F still work.",
+        "Your own theme can carry a sound pack. And the numbers are plain from here on: this is 1.1, and what shipped as 4.0.0 was 1.0."
+      ]
+    },
+    {
+      "version": "1.0",
       "lines": [
         "Lines can repeat now—every day, weekdays, days you pick, or monthly—and \"Not today\" moves one to tomorrow. Both live in the line's own menu.",
         "Sound sticks on the iPhone after a call or a lock. Three new sound packs, one-thing mode (press O or tap the count), search in Everything, templates, a Recently deleted shelf, and a URL that adds a line from anywhere.",
@@ -10,8 +18,7 @@
       ]
     },
     {
-      "version": "3.0.0",
-      "date": "2026-09-04",
+      "version": "0.3",
       "lines": [
         "Every list is encrypted on your device before it goes anywhere. The link is the key; a view link lets someone watch without touching.",
         "Fonts and the realtime client are served from this site—nothing loads from Google or a CDN—and the phone menu became a proper bottom sheet.",
@@ -19,16 +26,14 @@
       ]
     },
     {
-      "version": "2.0.0",
-      "date": "2026-09-03",
+      "version": "0.2",
       "lines": [
         "Sync between devices through a secret link, no account. Sections and several lists; Everything holds the backlog.",
         "Twelve curated themes plus your own from one accent colour, each with its own fonts, sounds and confetti. Installable on the phone and the Mac."
       ]
     },
     {
-      "version": "1.0.0",
-      "date": "2026-09-02",
+      "version": "0.1",
       "lines": [
         "Five lines in big type, a strike that draws across, a knock or a bell, confetti, and a finale when the list is done."
       ]

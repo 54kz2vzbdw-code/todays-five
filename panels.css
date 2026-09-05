@@ -221,7 +221,6 @@ dialog.panel h3.first{margin-top:.2rem}
 .prose .log{list-style:none;padding:0}
 .prose .log li{margin:.7rem 0}
 .prose .log .v{font-weight:700;color:var(--text)}
-.prose .log .d{color:var(--dim);font-size:12px;letter-spacing:.06em;margin-left:.5rem}
 .prose .log ul{margin:.25rem 0 0 1.1rem;padding:0}
 
 

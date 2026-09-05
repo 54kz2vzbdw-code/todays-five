@@ -329,7 +329,7 @@ function paintSettings() {
   $("#set-export-json").disabled = !A.doc; $("#set-export-md").disabled = !A.doc;
   $("#set-import-merge").disabled = !importedDoc || !A.canEdit(); $("#set-import-new").disabled = !importedDoc;
   set("who", !d.whoOff);
-  $("#set-version").textContent = `Today's Five ${A.VERSION}. What's new is on the About page.`;
+  $("#set-version").textContent = `Today's Five ${A.VERSION_LABEL}. What's new is on the About page.`;
 }
 function wireSettings() {
   const d = dev();

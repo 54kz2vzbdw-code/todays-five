@@ -113,7 +113,12 @@ Run all of it, in this order, for every change that reaches `main`:
 6. Lighthouse desktop and mobile ≥ 95, installability errors empty; the mobile cold and warm
    numbers are not worse than the previous release's.
 7. Bump the version in `version.js`, `sw.js` and `whatsnew.json` together (`test/features.test.js`
-   checks they agree).
+   checks they agree). The marketing version is semver for people (`1.0.x` a fix, `1.x` a design or
+   feature round, `2.0` a redesign) and the what's-new toast keys on the string *changing*, never on
+   its order. The build number (`BUILD` in `version.js`, `build` in `whatsnew.json`; About shows
+   `1.1 (build N)`) is the commit count on `main` after the merge: merge fast-forward, and write
+   `38 + <commits on the branch>` in the branch's last commit, then confirm with
+   `git rev-list --count main`. No dates anywhere.
 8. Merge to `main`, wait for Pages (about a minute; poll `sw.js` for the new cache name), then check
    the live URL on a fresh device (welcome → new list → encrypted row) and on a device that still
    holds a previous version's list (open the URL fresh, not a refresh: it opens, the list is intact,

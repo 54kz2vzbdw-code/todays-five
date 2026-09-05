@@ -11,7 +11,7 @@ import * as T from "./theme.js";
 import { createSound } from "./sound.js";
 import { createFx } from "./fx.js";
 import config from "./config.js";
-import { VERSION } from "./version.js";
+import { VERSION, BUILD, VERSION_LABEL } from "./version.js";
 
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
@@ -1648,7 +1648,7 @@ function maybeWhatsNew() {
     if (whatsNewShown || openPanel || tourOn) { if (!whatsNewShown) setTimeout(maybeWhatsNew, 3000); return; }
     whatsNewShown = true;
     dev.seenVersion = VERSION; saveDevice();
-    let line = "This version brings repeating lines, one-thing mode, search, templates and more.";
+    let line = "It got quieter: nothing on a line but the words until you hover or hold, a shorter top bar, and controls that fade when you leave the list alone.";
     try { const r = await fetch("whatsnew.json", { cache: "no-cache" }); const j = await r.json(); const v = (j.versions || []).find(x => x.version === VERSION) || j.versions[0]; if (v && v.lines && v.lines[0]) line = v.lines[0]; } catch (e) { /* the fallback line */ }
     $("#wn-msg").textContent = "New in " + VERSION + ": " + line;
     $("#whatsnew").hidden = false;
@@ -1739,7 +1739,7 @@ function maybeTour() {
 
 /* ---------------- what the lazy modules see ---------------- */
 const api = {
-  M, C, T, VERSION, config, $, $$, IOS, STANDALONE, BASE, SEARCH, TRANSPORT_KIND, HOVER, NARROW, RM, DARK_MQ, touchUi, sheetUi, canEdit,
+  M, C, T, VERSION, BUILD, VERSION_LABEL, config, $, $$, IOS, STANDALONE, BASE, SEARCH, TRANSPORT_KIND, HOVER, NARROW, RM, DARK_MQ, touchUi, sheetUi, canEdit,
   meta, dev, rows, sound, fx,
   get doc() { return doc; }, set doc(v) { doc = v; },
   get listId() { return listId; }, get listMode() { return listMode; }, get ref() { return ref; }, get sync() { return sync; }, get transport() { return transport; },

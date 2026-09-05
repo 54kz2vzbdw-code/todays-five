@@ -582,3 +582,97 @@ What was actually run, and what it found.
 | Sizes on the critical path (gzip) | `styles.css` 8.7 KB (1.0: 8.1), `app.js` 34.1 KB (31.3), `index.html` 8.4 KB (8.1); `panels.css` and `panels.js`, off the critical path, smaller than 1.0's (3.9 and 14.9 KB against 4.0 and 15.8) |
 | Live check, a 1.0 device (a Chrome profile that made its list on the live site while it ran 1.0, crossed a line off, saw its list synced at rev 2 with `seenVersion` `4.0.0`; then, after the deploy of build 48, opened the URL fresh) | The first navigation, six minutes after the profile's last visit, still ran 1.0: GitHub Pages serves the page with a ten-minute lifetime and Chrome answered the navigation from its HTTP cache, the "next open" behaviour COMPATIBILITY.md §6 describes. The navigation after that ran **1.1**: the list intact (five lines, one done, synced), the what's-new toast the only new thing ("New in 1.1: It got quieter…"), no tour, no hint, no sheet, no sound, every hint already counted as seen; a second open showed no toast; opening Everything showed no mark. Then ⋯ → Delete this list everywhere cleaned the row up |
 | Live check, a fresh device (a new profile on the live URL after the deploy) | The welcome with no rail → Start a list → the save sheet → the five seed lines, nothing else on screen (no tour, no mark, no toast), the version marked seen silently, synced at rev 1 with an encrypted row on the server; the ⋯ menu's nine rows in order; Settings' line "Today's Five 1.1 (build 48)"; About "Version 1.1 (build 48)". Then deleted everywhere. This record is the commit that makes `main` 49 commits long, so the live About reads `1.1 (build 49)` from here on |
+
+---
+
+# Today's Five 1.2 — plan
+
+Two changes, both simplifications: the theme model becomes two slots with one switch, and the changelog stops
+narrating development. Nothing on the server changes. The earlier sections still hold unless this one overrides
+them; the calls made where the brief left things open are in DECISIONS.md, "1.2 decisions".
+
+## Day and Night
+
+Every device has a **Day theme** and a **Night theme**. One sun/moon control on the rail flips between them; Settings
+decides which theme fills each slot and how the switch happens. "Follow system" and "Schedule" stop being separate
+features and become two ways of driving that one switch.
+
+| surface | 1.1 | 1.2 |
+|---|---|---|
+| the rail | date · count with the sync dot · Today/Everything · Share · ⋯ | the same, with a sun/moon between the views and Share (count · dot · views · sun/moon · ⋯ on the phone). It shows where a tap goes (the moon by day, the sun by night), tooltip "Night · T", and it fades with the rail |
+| a tap on it | — | the other slot, with a crossfade of the whole palette (~400 ms; colour tokens interpolated in OKLab, gradients, shadows and the fonts swapped at the midpoint, the glow dipping through; instant under reduced motion) and the incoming theme's soft tick |
+| Settings → Appearance | Theme · Follow system · Schedule (day from, night from, a day theme, a night theme) | Day theme · Night theme · Switch. Switch offers By hand / With the system / On a schedule (day from, night from). Under an automation, a manual flip holds until the next automatic switch, then the automation resumes |
+| the picker | every theme in one grid, Follow system chip, the builder | opened for one slot (from either row; ⋯ → Theme opens Appearance): every theme grouped Made for day / Made for night / Yours, any theme for either slot, each curated kit tagged with its lean and its partner; choosing one offers "Use ⟨partner⟩ for ⟨other slot⟩" in one tap; the builder fills the same slot and can Make its partner |
+| curated kits | twelve | fourteen: every kit has a designed partner (Light ↔ Dark, Paper ↔ Midnight, Harbor ↔ Forest, Blush ↔ Pink, Teletype ↔ Terminal, Sunset ↔ Dusk, Cocoa ↔ Ember); Blush and Teletype are new |
+| a theme you make | accent, base, fonts, sound, name; Use, Save, Surprise, Copy code, Import | the same, plus Make its partner: same accent, same pack, flipped base, through the same derivation, saved as a second theme linked to the first |
+| keys | `T` opens the picker | `T` flips; `Shift+T` opens Appearance; the `?` reference and How it works say so |
+| a new device | Dark | Day = Light, Night = Dark, With the system, and the first frame already follows the device's setting |
+| a device from before | — | no visual change: the theme on screen keeps its slot; Follow system → With the system with its slots; the schedule → On a schedule with its themes and times; neither → By hand. The what's-new toast is the only new thing it sees, and the sun/moon where the rail already was |
+
+### Structure of the change
+
+- `theme.js`: `lean` and `partner` on every kit, `CURATED_DAY` / `CURATED_NIGHT` (pair order), `partnerOf`, `makePartner`;
+  the pure slot logic (`migrateSlots`, `scheduledSlot`, `autoSlot`, `activeSlot`, `slotCode`, `flipSlot`, `settleHold`,
+  `setSwitchMode`) over the device record and an environment `{ systemDark, now }`; `mixHex` and `cssTextBetween` for
+  the crossfade. `T2:` codes are unchanged.
+- `app.js`: the migration on load, `applyThemeCode` with a crossfade, `flipSlot`, `setSlotTheme`, `setSwitchMode`,
+  `setSwitchTimes`, `tickTheme` settling a spent hold on the minute tick and on the system's own change, the glyph, the
+  keys, the ⋯ route, the toast reading a headline, `tick` counted for the test hook.
+- `panels.js`: the picker for one slot (three groups, the partner offer, Make its partner), Appearance's three rows,
+  the Switch select and its times; How it works and the `?` reference.
+- `index.html`: the sun/moon, the Appearance rows, the grouped picker, the light tokens under `prefers-color-scheme`
+  beside the Dark ones in the hashed inline stylesheet (the boot script is byte-identical; the style hash was re-written).
+- Per-device state, all additive inside `meta.device` (COMPATIBILITY.md §5): `day`, `night`, `switch { mode, dayAt,
+  nightAt }`, `slot`, `holdAuto`; the 1.1 keys stay in place. The document gains one optional field, `partner`, on a
+  saved theme record (COMPATIBILITY.md §3: additive; the frozen v3 model strips it and the richer record wins the tie).
+
+## The changelog
+
+`whatsnew.json` carries 1.0 and later only, each version a `headline` (one sentence, ≤ 12 words) and up to three
+`items` tagged New, Improved or Fixed (≤ 14 words, naming something the user can do or will notice). The 0.x entries
+moved to `CHANGELOG.md`, which holds the full history for the record and never renders. The toast shows the headline
+only, with "What's new" opening the About changelog; About renders the new shape under the version line, whose rules
+(with the changelog's) now live in `styles.css`, the only sheet About loads. `test/features.test.js` enforces the
+schema and the banned words.
+
+## Before and after
+
+Every surface at 1440×900 and 390×844, taken by `tools/shots.js` on the local transport (a dark system) before the
+first change and after the last. Before is the left of each pair.
+
+| surface | desktop before | desktop after | phone before | phone after |
+|---|---|---|---|---|
+| welcome | <img src="shots/1.2/before/desktop-welcome.png" width="300" alt="welcome, desktop, before"> | <img src="shots/1.2/after/desktop-welcome.png" width="300" alt="welcome, desktop, after"> | <img src="shots/1.2/before/phone-welcome.png" width="120" alt="welcome, phone, before"> | <img src="shots/1.2/after/phone-welcome.png" width="120" alt="welcome, phone, after"> |
+| save-link | <img src="shots/1.2/before/desktop-save-link.png" width="300" alt="save-link, desktop, before"> | <img src="shots/1.2/after/desktop-save-link.png" width="300" alt="save-link, desktop, after"> | <img src="shots/1.2/before/phone-save-link.png" width="120" alt="save-link, phone, before"> | <img src="shots/1.2/after/phone-save-link.png" width="120" alt="save-link, phone, after"> |
+| today | <img src="shots/1.2/before/desktop-today.png" width="300" alt="today, desktop, before"> | <img src="shots/1.2/after/desktop-today.png" width="300" alt="today, desktop, after"> | <img src="shots/1.2/before/phone-today.png" width="120" alt="today, phone, before"> | <img src="shots/1.2/after/phone-today.png" width="120" alt="today, phone, after"> |
+| today-hover | <img src="shots/1.2/before/desktop-today-hover.png" width="300" alt="today-hover, desktop, before"> | <img src="shots/1.2/after/desktop-today-hover.png" width="300" alt="today-hover, desktop, after"> | — | — |
+| flip-mid | — | <img src="shots/1.2/after/desktop-flip-mid.png" width="300" alt="flip-mid, desktop, after"> | — | <img src="shots/1.2/after/phone-flip-mid.png" width="120" alt="flip-mid, phone, after"> |
+| flip-day | — | <img src="shots/1.2/after/desktop-flip-day.png" width="300" alt="flip-day, desktop, after"> | — | <img src="shots/1.2/after/phone-flip-day.png" width="120" alt="flip-day, phone, after"> |
+| hint-today | <img src="shots/1.2/before/desktop-hint-today.png" width="300" alt="hint-today, desktop, before"> | <img src="shots/1.2/after/desktop-hint-today.png" width="300" alt="hint-today, desktop, after"> | <img src="shots/1.2/before/phone-hint-today.png" width="120" alt="hint-today, phone, before"> | <img src="shots/1.2/after/phone-hint-today.png" width="120" alt="hint-today, phone, after"> |
+| everything | <img src="shots/1.2/before/desktop-everything.png" width="300" alt="everything, desktop, before"> | <img src="shots/1.2/after/desktop-everything.png" width="300" alt="everything, desktop, after"> | <img src="shots/1.2/before/phone-everything.png" width="120" alt="everything, phone, before"> | <img src="shots/1.2/after/phone-everything.png" width="120" alt="everything, phone, after"> |
+| everything-hover | <img src="shots/1.2/before/desktop-everything-hover.png" width="300" alt="everything-hover, desktop, before"> | <img src="shots/1.2/after/desktop-everything-hover.png" width="300" alt="everything-hover, desktop, after"> | — | — |
+| hint-drag | — | — | <img src="shots/1.2/before/phone-hint-drag.png" width="120" alt="hint-drag, phone, before"> | <img src="shots/1.2/after/phone-hint-drag.png" width="120" alt="hint-drag, phone, after"> |
+| hint-menu | <img src="shots/1.2/before/desktop-hint-menu.png" width="300" alt="hint-menu, desktop, before"> | <img src="shots/1.2/after/desktop-hint-menu.png" width="300" alt="hint-menu, desktop, after"> | <img src="shots/1.2/before/phone-hint-menu.png" width="120" alt="hint-menu, phone, before"> | <img src="shots/1.2/after/phone-hint-menu.png" width="120" alt="hint-menu, phone, after"> |
+| menu | <img src="shots/1.2/before/desktop-menu.png" width="300" alt="menu, desktop, before"> | <img src="shots/1.2/after/desktop-menu.png" width="300" alt="menu, desktop, after"> | <img src="shots/1.2/before/phone-menu.png" width="120" alt="menu, phone, before"> | <img src="shots/1.2/after/phone-menu.png" width="120" alt="menu, phone, after"> |
+| line-menu | <img src="shots/1.2/before/desktop-line-menu.png" width="300" alt="line-menu, desktop, before"> | <img src="shots/1.2/after/desktop-line-menu.png" width="300" alt="line-menu, desktop, after"> | <img src="shots/1.2/before/phone-line-menu.png" width="120" alt="line-menu, phone, before"> | <img src="shots/1.2/after/phone-line-menu.png" width="120" alt="line-menu, phone, after"> |
+| section-menu | <img src="shots/1.2/before/desktop-section-menu.png" width="300" alt="section-menu, desktop, before"> | <img src="shots/1.2/after/desktop-section-menu.png" width="300" alt="section-menu, desktop, after"> | <img src="shots/1.2/before/phone-section-menu.png" width="120" alt="section-menu, phone, before"> | <img src="shots/1.2/after/phone-section-menu.png" width="120" alt="section-menu, phone, after"> |
+| settings | <img src="shots/1.2/before/desktop-settings.png" width="300" alt="settings, desktop, before"> | <img src="shots/1.2/after/desktop-settings.png" width="300" alt="settings, desktop, after"> | <img src="shots/1.2/before/phone-settings.png" width="120" alt="settings, phone, before"> | <img src="shots/1.2/after/phone-settings.png" width="120" alt="settings, phone, after"> |
+| settings-advanced | <img src="shots/1.2/before/desktop-settings-advanced.png" width="300" alt="settings-advanced, desktop, before"> | <img src="shots/1.2/after/desktop-settings-advanced.png" width="300" alt="settings-advanced, desktop, after"> | <img src="shots/1.2/before/phone-settings-advanced.png" width="120" alt="settings-advanced, phone, before"> | <img src="shots/1.2/after/phone-settings-advanced.png" width="120" alt="settings-advanced, phone, after"> |
+| appearance | — | <img src="shots/1.2/after/desktop-appearance.png" width="300" alt="appearance, desktop, after"> | — | <img src="shots/1.2/after/phone-appearance.png" width="120" alt="appearance, phone, after"> |
+| theme | <img src="shots/1.2/before/desktop-theme.png" width="300" alt="theme, desktop, before"> | <img src="shots/1.2/after/desktop-theme.png" width="300" alt="theme, desktop, after"> | <img src="shots/1.2/before/phone-theme.png" width="120" alt="theme, phone, before"> | <img src="shots/1.2/after/phone-theme.png" width="120" alt="theme, phone, after"> |
+| theme-partner | — | <img src="shots/1.2/after/desktop-theme-partner.png" width="300" alt="theme-partner, desktop, after"> | — | <img src="shots/1.2/after/phone-theme-partner.png" width="120" alt="theme-partner, phone, after"> |
+| theme-builder | <img src="shots/1.2/before/desktop-theme-builder.png" width="300" alt="theme-builder, desktop, before"> | <img src="shots/1.2/after/desktop-theme-builder.png" width="300" alt="theme-builder, desktop, after"> | <img src="shots/1.2/before/phone-theme-builder.png" width="120" alt="theme-builder, phone, before"> | <img src="shots/1.2/after/phone-theme-builder.png" width="120" alt="theme-builder, phone, after"> |
+| share | <img src="shots/1.2/before/desktop-share.png" width="300" alt="share, desktop, before"> | <img src="shots/1.2/after/desktop-share.png" width="300" alt="share, desktop, after"> | <img src="shots/1.2/before/phone-share.png" width="120" alt="share, phone, before"> | <img src="shots/1.2/after/phone-share.png" width="120" alt="share, phone, after"> |
+| help | <img src="shots/1.2/before/desktop-help.png" width="300" alt="help, desktop, before"> | <img src="shots/1.2/after/desktop-help.png" width="300" alt="help, desktop, after"> | <img src="shots/1.2/before/phone-help.png" width="120" alt="help, phone, before"> | <img src="shots/1.2/after/phone-help.png" width="120" alt="help, phone, after"> |
+| keys | <img src="shots/1.2/before/desktop-keys.png" width="300" alt="keys, desktop, before"> | <img src="shots/1.2/after/desktop-keys.png" width="300" alt="keys, desktop, after"> | <img src="shots/1.2/before/phone-keys.png" width="120" alt="keys, phone, before"> | <img src="shots/1.2/after/phone-keys.png" width="120" alt="keys, phone, after"> |
+| idle | <img src="shots/1.2/before/desktop-idle.png" width="300" alt="idle, desktop, before"> | <img src="shots/1.2/after/desktop-idle.png" width="300" alt="idle, desktop, after"> | — | — |
+| finale | <img src="shots/1.2/before/desktop-finale.png" width="300" alt="finale, desktop, before"> | <img src="shots/1.2/after/desktop-finale.png" width="300" alt="finale, desktop, after"> | <img src="shots/1.2/before/phone-finale.png" width="120" alt="finale, phone, before"> | <img src="shots/1.2/after/phone-finale.png" width="120" alt="finale, phone, after"> |
+| about | <img src="shots/1.2/before/desktop-about.png" width="300" alt="about, desktop, before"> | <img src="shots/1.2/after/desktop-about.png" width="300" alt="about, desktop, after"> | <img src="shots/1.2/before/phone-about.png" width="120" alt="about, phone, before"> | <img src="shots/1.2/after/phone-about.png" width="120" alt="about, phone, after"> |
+
+(— means the surface does not exist in that version: the flip, Appearance and the partner on offer are 1.2's; the 1.1 picker's Follow system chip is gone.)
+
+## Verification results (1.2)
+
+What was actually run, and what it found.
+
+__RESULTS_TABLE__

@@ -1,6 +1,7 @@
 // tools/shots.js — a screenshot of every surface at 1440×900 and 390×844, for PLAN.md's before/after sets.
 // Run: node tools/serve.js 8790 . &  then  node tools/shots.js shots/1.1/after   (the directory is created)
-// Steps that a version does not have (the tour before 1.1, the hints after) are skipped, so one script takes both sets.
+// Steps that a version does not have (the tour before 1.1, the hints after, the Day and Night surfaces before 1.2) are skipped,
+// so one script takes both sets.
 import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
@@ -16,7 +17,7 @@ const VIEWPORTS = [["desktop", { viewport: { width: 1440, height: 900 } }, false
 const wait = ms => new Promise(r => setTimeout(r, ms));
 let n = 0;
 for (const [label, opts, touch] of VIEWPORTS) {
-  const ctx = await browser.newContext(opts);
+  const ctx = await browser.newContext({ ...opts, colorScheme: "dark" }); // a dark system, so the after set matches the before set
   const page = await ctx.newPage(); page.setDefaultTimeout(5000);
   const shot = async name => {
     const file = path.join(OUT, label + "-" + name + ".png");
@@ -39,6 +40,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await step("tour", async () => { const t = await page.$("#tour:not([hidden])"); if (!t) return; await wait(300); await shot("tour"); await page.click("#tour-skip"); await wait(300); });
   await step("today", async () => { await page.waitForSelector("#list .row"); await page.mouse.move(2, 2); await wait(400); await shot("today"); });
   if (!touch) await step("today-hover", async () => { await page.hover("#list .row:nth-child(2) .tx"); await wait(400); await shot("today-hover"); await page.mouse.move(2, 2); await wait(200); });
+  await step("flip", async () => { if (!(await page.$("#daynight"))) return; await press("#daynight"); await wait(170); await shot("flip-mid"); await wait(500); await page.mouse.move(2, 2); await wait(200); await shot("flip-day"); await press("#daynight"); await wait(700); await page.mouse.move(2, 2); await wait(200); });
   await step("menu", async () => { await openMore(); await wait(400); await shot("menu"); await esc(); });
   await step("line-menu", async () => {
     if (touch) {
@@ -74,9 +76,10 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await step("theme", async () => {
     const chip = await page.$("#theme:not([hidden])");
     if (chip && await chip.isVisible()) await press("#theme");
-    else if (await page.$('#p-menu [data-act="theme"]')) await openMore("theme");
+    else if (await page.$('#p-menu [data-act="theme"]')) { await openMore("theme"); if (await page.$('[data-set="night"]')) { await page.waitForSelector("#p-settings[open]"); await wait(300); await shot("appearance"); await page.click('[data-set="night"]'); } }
     else { await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('[data-set="theme"]'); }
     await page.waitForSelector("#p-theme[open]"); await wait(400); await shot("theme");
+    if (await page.$("#sw-night")) { await page.click('#sw-night .swatch[data-code="T1:curated:dusk"]'); await wait(400); await shot("theme-partner"); }
     await page.$eval("#p-theme h3", el => el.scrollIntoView({ block: "start" })); await wait(300); await shot("theme-builder"); await esc();
   });
   await step("share", async () => { const chip = await page.$("#share"); if (chip && await chip.isVisible()) await press("#share"); else await openMore("share"); await page.waitForSelector("#p-share[open]"); await wait(500); await shot("share"); await esc(); });

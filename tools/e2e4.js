@@ -4,9 +4,12 @@
 // Every feature at 1440×900 (mouse) and 390×844 (touch), v4's and 1.1's: quiet rows (nothing at rest on the phone,
 // one control on hover on the desktop), the seed lines all on screen, no coach mark after the save sheet, the three
 // just-in-time hints once and never again, the idle fade, the four-item footers, the popover and the sheet, the
-// welcome without a rail, the Advanced reshuffle, a 1.0 device seeing the 1.1 toast once; plus one-thing mode,
-// search, recently deleted, Settings, view-only celebration, every sound pack, the bottom-of-screen pixel probe,
-// audio recovery, presence dots, zero page errors, zero CSP violations, zero third-party requests.
+// welcome without a rail, the Advanced reshuffle, a 1.0 device seeing the toast once; 1.2's Day and Night (the flip with
+// its crossfade and sound, each Switch mode with a mocked clock and a mocked colour scheme, the picker's groups and the
+// one-tap partner, Make its partner, ⋯ → Theme opening Appearance, T and Shift+T, the migration of a 1.1 device, the
+// headline-only toast and About's new shape, the sun/moon fading with the rail); plus one-thing mode, search, recently
+// deleted, Settings, view-only celebration, every sound pack, the bottom-of-screen pixel probe, audio recovery, presence
+// dots, zero page errors, zero CSP violations, zero third-party requests.
 import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
@@ -25,15 +28,17 @@ async function test(name, fn) {
   for (const c of open) { try { await c.close(); } catch (x) { /* already closed */ } }
   open.clear();
 }
-const assert = { ok(v, m) { if (!v) throw new Error(m || "expected truthy"); }, equal(a, b, m) { if (a !== b) throw new Error((m || "") + " expected " + JSON.stringify(b) + " got " + JSON.stringify(a)); } };
+const assert = { ok(v, m) { if (!v) throw new Error(m || "expected truthy"); }, notEqual(a, b, m) { if (a === b) throw new Error((m || "") + " expected not " + JSON.stringify(b)); }, deepEqual(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error((m || "") + " expected " + JSON.stringify(b) + " got " + JSON.stringify(a)); }, equal(a, b, m) { if (a !== b) throw new Error((m || "") + " expected " + JSON.stringify(b) + " got " + JSON.stringify(a)); } };
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
 const VIEWPORTS = [["desktop 1440×900", { viewport: { width: 1440, height: 900 } }, false], ["phone 390×844", { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }, true]];
-async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: shared = null } = {}) {
-  // a second "device" on the local transport is a second tab of the same context: the local server lives in localStorage
-  const ctx = shared || await browser.newContext(opts);
+async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: shared = null, scheme = "dark", clock = null, reducedMotion = "no-preference" } = {}) {
+  // a second "device" on the local transport is a second tab of the same context: the local server lives in localStorage.
+  // The system is dark unless a test says otherwise (1.2 starts a fresh device With the system); `clock` installs a fake one.
+  const ctx = shared || await browser.newContext({ ...opts, colorScheme: scheme, reducedMotion });
   open.add(ctx);
   const page = await ctx.newPage(); page.setDefaultTimeout(6000);
+  if (clock) await page.clock.install({ time: clock });
   const errors = [], csp = [], thirdParty = [], consoleErrors = [];
   page.on("pageerror", e => errors.push(e.message));
   page.on("console", m => { const t = m.text(); if (/Content Security Policy|Refused to/.test(t)) csp.push(t); else if (m.type() === "error") consoleErrors.push(t); });
@@ -113,10 +118,12 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": the rail is date · count with the sync dot · Today/Everything · Share · ⋯ (count · dot · views · ⋯ on the phone), no pills", async () => {
     const t = await fresh(opts);
     const items = await t.page.$$eval(".rail-l > *, .rail-r > *", els => els.filter(e => !e.hidden && getComputedStyle(e).display !== "none").map(e => e.id || e.className));
-    assert.equal(items.join(" "), touch ? "status seg more" : "date status seg share more", items.join(" "));
+    assert.equal(items.join(" "), touch ? "status seg daynight more" : "date status seg daynight share more", items.join(" "));
+    const dn = await t.page.$eval("#daynight", e => ({ next: e.dataset.next, title: e.title, w: e.getBoundingClientRect().width, h: e.getBoundingClientRect().height }));
+    assert.equal(dn.next, "day", "a dark system: Night is on, so the tap goes to Day: " + JSON.stringify(dn)); assert.equal(dn.title, "Day · T"); assert.ok(dn.w >= 30 && dn.h >= 32, "a real target: " + JSON.stringify(dn)); if (touch) assert.ok(dn.w >= 44 && dn.h >= 44, "44 px on touch");
     const dot = await t.page.$eval("#dot", e => ({ size: getComputedStyle(e, "::before").width, bg: getComputedStyle(e).backgroundColor, border: getComputedStyle(e).borderTopWidth }));
     assert.equal(dot.size, "6px", "6 px sync dot"); assert.ok(dot.bg === "rgba(0, 0, 0, 0)" && dot.border === "0px", "no pill around the dot: " + JSON.stringify(dot));
-    assert.equal(await t.page.locator("#theme, #mute, #full").count(), 0, "theme, sound and full-screen chips are gone from the rail");
+    assert.equal(await t.page.locator("#theme, #mute, #full").count(), 0, "theme, sound and full-screen chips are gone from the rail; the sun/moon is the one chip 1.2 added");
     await t.close();
   });
 
@@ -136,7 +143,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device.muted), true);
     await t.press('#p-menu [data-act="sound"]'); assert.equal(await t.page.textContent("#menu-sound-k"), "On");
     await t.page.keyboard.press("Escape"); await wait(200);
-    if (!touch) { await t.page.keyboard.press("m"); assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device.muted), true, "M still mutes"); await t.page.keyboard.press("m"); await t.page.keyboard.press("t"); await t.page.waitForSelector("#p-theme[open]"); await t.page.keyboard.press("Escape"); }
+    if (!touch) { await t.page.keyboard.press("m"); assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device.muted), true, "M still mutes"); await t.page.keyboard.press("m"); const s0 = (await t.s()).slot; await t.page.keyboard.press("t"); await wait(600); assert.notEqual((await t.s()).slot, s0, "T flips Day and Night"); assert.equal(await t.page.locator("#p-theme[open]").count(), 0, "and opens nothing"); await t.page.keyboard.press("t"); await wait(600); }
     await t.close();
   });
 
@@ -251,7 +258,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#v-all"); await wait(200);
     assert.equal(await t.page.$eval("#hint", e => e.textContent.replace(/\s+/g, " ").trim()), "A today · N new · / search · ? help");
     await t.page.keyboard.press("Escape"); await t.page.keyboard.press("?"); await t.page.waitForSelector("#p-keys[open]");
-    assert.ok(/Undo/.test(await t.page.textContent("#keys-body")) && /Hover a line/.test(await t.page.textContent("#keys-body")), "? is the reference: every key and the mouse");
+    assert.ok(/Undo/.test(await t.page.textContent("#keys-body")) && /Hover a line/.test(await t.page.textContent("#keys-body")), "? is the reference: every key and the mouse"); assert.ok(/Day ↔ Night/.test(await t.page.textContent("#keys-body")) && /Appearance/.test(await t.page.textContent("#keys-body")), "T and ⇧T in the reference");
     await t.page.click("#keys-help"); await t.page.waitForSelector("#p-help[open]"); assert.ok(/no tour/i.test(await t.page.textContent("#help-body")));
     await t.page.keyboard.press("Escape");
     await t.close();
@@ -262,7 +269,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.away(); await wait(4400);
     assert.ok((await t.s()).idle, "idle after 4 s"); await wait(1600);
     const op = sel => t.page.$eval(sel, e => +getComputedStyle(e).opacity);
-    assert.ok((await op(".seg")) < 0.05 && (await op("#share")) < 0.05 && (await op("#foot")) < 0.05, "the views, Share and the footer faded");
+    assert.ok((await op(".seg")) < 0.05 && (await op("#share")) < 0.05 && (await op("#foot")) < 0.05 && (await op("#daynight")) < 0.05, "the views, the sun/moon, Share and the footer faded");
     assert.equal(await op("#date"), 1); assert.equal(await op(".status"), 1, "the date and the count stay");
     await t.page.mouse.move(600, 400); await wait(400);
     assert.ok(!(await t.s()).idle, "a move brings them back"); assert.equal(await op(".seg"), 1);
@@ -288,11 +295,15 @@ for (const [label, opts, touch] of VIEWPORTS) {
     for (const k of ["review", "celebrate", "who"]) { await t.page.click(`[data-set="${k}"]`); }
     assert.equal(await t.page.getAttribute('[data-set="review"]', "aria-pressed"), "true");
     assert.equal(await t.page.getAttribute('[data-set="who"]', "aria-pressed"), "false");
-    // schedule and follow system are mutually exclusive
-    await t.page.click('[data-set="follow"]'); assert.equal(await t.page.getAttribute('[data-set="follow"]', "aria-pressed"), "true");
-    await t.page.click('[data-set="schedule"]'); assert.equal(await t.page.getAttribute('[data-set="schedule"]', "aria-pressed"), "true"); assert.equal(await t.page.getAttribute('[data-set="follow"]', "aria-pressed"), "false");
-    assert.ok(await t.page.locator("#schedule-block").isVisible());
-    await t.page.click('[data-set="follow"]'); assert.equal(await t.page.getAttribute('[data-set="schedule"]', "aria-pressed"), "false");
+    // Appearance (1.2): Day theme · Night theme · Switch; the old Follow system and Schedule toggles are gone
+    const app = await t.page.$$eval("#p-settings h3:first-of-type + .menu > *", els => els.map(e => (e.querySelector(".lb") || e).firstChild.textContent.trim()));
+    assert.equal(app.slice(0, 3).join("|"), "Day theme|Night theme|Switch", app.join("|"));
+    assert.equal(await t.page.locator('[data-set="follow"], [data-set="schedule"], [data-set="theme"], #sch-day, #sch-night').count(), 0, "the 1.1 rows are gone");
+    assert.equal(await t.page.$eval("#set-switch", e => e.value), "system", "a fresh device switches with the system");
+    assert.equal(await t.page.$$eval("#set-switch option", os => os.map(o => o.textContent).join("|")), "By hand|With the system|On a schedule");
+    await t.page.selectOption("#set-switch", "schedule"); await wait(150); assert.ok(await t.page.locator("#schedule-block").isVisible(), "the times show for a schedule"); assert.ok(/Day from 07:00, night from 19:00/.test(await t.page.textContent("#set-switch-sub")));
+    await t.page.selectOption("#set-switch", "hand"); await wait(150); assert.ok(await t.page.locator("#schedule-block").isHidden()); assert.ok(/sun and moon/.test(await t.page.textContent("#set-switch-sub")));
+    await t.page.selectOption("#set-switch", "system"); await wait(150);
     // Advanced: the URL and who's here on top, export and import one level down
     const adv = await t.page.$$eval("#p-settings h3:last-of-type ~ .menu > *", els => els.map(e => (e.querySelector(".lb") || e).textContent.trim().split(/\n|(?<=[a-z])(?=[A-Z])/)[0].slice(0, 18)));
     assert.equal(adv.join("|"), "Add from anywhere|Export & import|Show who's here", adv.join("|"));
@@ -304,7 +315,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     // the settings survive a reload
     await t.page.reload(); await t.page.waitForSelector("#list .row");
     const dev = await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device);
-    assert.equal(dev.review, true); assert.equal(dev.celebrateRemote, true); assert.equal(dev.whoOff, true); assert.equal(dev.follow, true);
+    assert.equal(dev.review, true); assert.equal(dev.celebrateRemote, true); assert.equal(dev.whoOff, true); assert.equal(dev.switch.mode, "system");
     assert.equal(t.errors.length, 0, t.errors.join("; "));
     await t.close();
   });
@@ -553,7 +564,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
       const ok = await t.page.evaluate(() => { const s = window.__tf(); return s.audio.state === "running"; });
       assert.ok(ok, pack + ": context running");
     }
-    assert.ok(/Dark picks Knock; this device plays Pop/.test(await t.page.textContent("#set-pack-sub")), "says which one wins: " + await t.page.textContent("#set-pack-sub"));
+    assert.ok(/Dark picks Knock; this device plays Pop/.test(await t.page.textContent("#set-pack-sub")), "says which one wins (Dark is on: a dark system, Night = Dark): " + await t.page.textContent("#set-pack-sub"));
     await t.page.keyboard.press("Escape"); await wait(200);
     const played = await t.page.evaluate(async () => { const S = await import("./sound.js"); const P = await import("./packs.js"); const snd = S.createSound({ muted: false, volume: 1, kit: () => ({ engine: "knock" }), loadPacks: () => Promise.resolve(P) }); snd.prime(); await new Promise(r => setTimeout(r, 50)); const out = {}; for (const e of P.PACK_ORDER) { out[e] = [snd.preview(e), snd.uncheck(), snd.finish()]; } return { out, st: snd.state() }; });
     for (const e of Object.keys(played.out)) assert.ok(played.out[e][0] && played.out[e][1] && played.out[e][2], e + " scheduled: " + JSON.stringify(played.out[e]));
@@ -567,7 +578,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": the theme builder carries a sound pack — Auto names the hue rule's pick, a saved theme's code is T2:, a T1: code imports", async () => {
     const t = await fresh(opts);
     await t.press("#list .row:first-child .check"); await wait(400); // a gesture, so a preview has a context to play through
-    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-theme[open]");
+    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]");
+    assert.equal((await t.page.textContent("#p-theme-h")).trim(), "Night theme"); assert.equal((await t.page.textContent("#c-use")).trim(), "Use for Night");
     assert.equal(await t.page.$$eval("#c-pack option", os => os.map(o => o.value).join(",")), ",knock,bell,blip,typewriter,marble,pop");
     await t.page.fill("#c-hex", "#3366FF"); await t.page.dispatchEvent("#c-hex", "input"); await wait(150);
     assert.equal(await t.page.$eval("#c-pack option", o => o.textContent), "Auto · Bell", "blue rings a bell by the hue rule");
@@ -575,7 +587,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.fill("#c-name", "Marbles"); await t.page.dispatchEvent("#c-name", "input"); await t.page.click("#c-save"); await wait(500);
     const codes = await t.page.evaluate(() => Object.values(JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc.themes).map(x => x.code));
     assert.equal(codes.join(""), "T2:d:3366FF:grotesk:marble:Marbles", "the pack rides in the theme record");
-    assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device.theme), "T2:d:3366FF:grotesk:marble:Marbles", "and in the device's code");
+    assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device.night), "T2:d:3366FF:grotesk:marble:Marbles", "and in the Night slot"); assert.equal((await t.s()).theme, "custom-3366ff-d-grotesk-marble", "which is on");
     await t.page.fill("#c-import", "T1:d:FF3D9A:fraunces:Old pink"); await t.page.click("#c-import-go"); await wait(200);
     assert.equal(await t.page.$eval("#c-pack", s => s.value), "", "a T1 code imports with the hue rule");
     assert.equal(await t.page.inputValue("#c-hex"), "#FF3D9A");
@@ -667,7 +679,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": a 1.0 device (it called itself 4.0.0) opens 1.1 — the toast once, nothing else, nothing about the renumbering, list intact, no hints later", async () => {
+  await test(label + ": a 1.0 device (it called itself 4.0.0) opens 1.2 — the toast once, nothing else, nothing about version numbers, list intact, no hints later", async () => {
     const t = await fresh(opts);
     const { listId } = await t.s();
     // turn this device into a 1.0 one: the version it remembers is 4.0.0, it went through the tour, it never heard of hints
@@ -675,7 +687,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
     assert.ok(await t.page.locator("#whatsnew").isVisible(), "what's-new toast");
     const msg = await t.page.textContent("#wn-msg");
-    assert.ok(new RegExp("New in " + VERSION.replace(".", "\\.")).test(msg), msg); assert.ok(!/4\.0\.0|renumber/.test(msg), "nothing about the renumbering: " + msg); assert.ok(/quieter/i.test(msg), "says it got quieter");
+    assert.ok(new RegExp("New in " + VERSION.replace(".", "\\.")).test(msg), msg); assert.ok(!/4\.0\.0|renumber|1\.1\b/.test(msg), "nothing about version numbers: " + msg); assert.ok(/Day and night/i.test(msg), "the headline"); assert.equal((await t.page.textContent("#wn-more")).trim(), "What's new");
     assert.equal(await t.page.locator("#tour").count(), 0, "no tour"); assert.equal(await t.page.locator("dialog[open]").count(), 0, "no sheet"); assert.ok(await t.page.locator("#mark").isHidden(), "no hint");
     assert.equal((await t.s()).stats.check + (await t.s()).stats.finish, 0, "no sound");
     assert.equal(await t.page.locator("#list .row").count(), 5); assert.equal((await t.s()).listId, listId);
@@ -687,12 +699,16 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": About shows the version as 1.1 (build N) and a changelog with no dates", async () => {
+  await test(label + ": About shows the version as 1.2 (build N) and the changelog in its new shape, no dates", async () => {
     const t = await fresh(opts, { url: BASE + "about.html", list: false });
     await t.page.waitForFunction(() => /build/.test(document.getElementById("version").textContent), null, { timeout: 5000, polling: 100 });
     assert.equal(await t.page.textContent("#version"), "Version " + VERSION_LABEL);
     const log = await t.page.$$eval("#log .v", els => els.map(e => e.textContent));
-    assert.equal(log.join(","), "1.1,1.0,0.3,0.2,0.1", "renumbered history");
+    assert.equal(log.join(","), "1.2,1.1,1.0", "1.0 and later; the pre-releases never render");
+    assert.ok(/Day and night, your way\./.test(await t.page.textContent("#log > li:first-child div")), "a headline per version");
+    const tags = await t.page.$$eval("#log .tag", els => els.map(e => e.textContent)); assert.ok(tags.length >= 6 && tags.every(x => ["New", "Improved", "Fixed"].includes(x)), "tagged items: " + tags);
+    assert.ok(await t.page.$$eval("#log > li", els => els.every(li => li.querySelectorAll("ul li").length <= 3)), "three items at most");
+    assert.equal(await t.page.$eval("#version", e => getComputedStyle(e).textTransform), "uppercase", "the version line is styled on About (its rules live in styles.css now)");
     assert.ok(!/\b20\d\d-\d\d-\d\d\b/.test(await t.page.textContent("main")), "no dates");
     assert.equal(await t.page.locator("#log .d").count(), 0);
     assert.equal(t.csp.length, 0, "csp: " + t.csp); assert.equal(t.errors.length, 0);
@@ -706,6 +722,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.ok(heads.length >= 6, "sections: " + heads.length);
     const body = await t.page.textContent("#help-body");
     assert.ok(/Ask for Input/.test(body) && /bookmarklet/i.test(body) && /Remove from this device/.test(body));
+    assert.ok(/Day theme/.test(body) && /Night theme/.test(body) && /partner/.test(body) && /schedule/.test(body), "Day and Night in How it works");
     assert.ok(/no tour/i.test(body), "says the tour is gone"); assert.ok(new RegExp(touch ? "Hold a line" : "Hover a line").test(body), "the new gestures");
     assert.ok(!/Replay the tour/.test(body)); assert.equal(await t.page.locator("#help-tour").count(), 0);
     assert.ok((await t.page.inputValue("#help-body input.link")).includes("/add?text="));
@@ -716,11 +733,229 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  /* ---------------- 1.2: Day and Night ---------------- */
+  const inkOf = page => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--ink").trim().toUpperCase());
+  const INK = { dark: "#1A1D21", light: "#FAF8F4", midnight: "#0E1424", paper: "#F7F2E8", harbor: "#EEF5F4", forest: "#10201A" };
+
+  await test(label + ": the flip — " + (touch ? "a tap on the sun/moon" : "T, or a click on the sun/moon") + " crossfades the whole palette (~400 ms, tokens interpolated) with the incoming theme's tick; instant under reduced motion", async () => {
+    const t = await fresh(opts);
+    assert.equal((await t.s()).theme, "dark", "a dark system: Night = Dark is on"); assert.equal(await inkOf(t.page), INK.dark);
+    const tick0 = (await t.s()).stats.tick;
+    if (touch) await t.page.tap("#daynight"); else await t.page.keyboard.press("t");
+    await wait(110);
+    const mid = await inkOf(t.page), midState = await t.s();
+    assert.ok(midState.fading, "a crossfade is running"); assert.equal(midState.theme, "light", "the theme is already the incoming one (its kit plays)");
+    assert.ok(mid !== INK.dark && mid !== INK.light, "the ink is in between mid-flip: " + mid);
+    assert.ok(await t.page.$eval("#glow", e => +getComputedStyle(e).opacity < 0.6), "the glow dips through the flip");
+    await wait(600);
+    assert.equal(await inkOf(t.page), INK.light, "Day = Light at the end"); assert.ok(!(await t.s()).fading);
+    assert.equal((await t.s()).stats.tick, tick0 + 1, "the incoming theme's soft tick played");
+    assert.equal(await t.page.$eval("#daynight", e => e.dataset.next + "|" + e.title + "|" + e.getAttribute("aria-label")), "night|Night · T|Switch to night", "the glyph now offers Night");
+    assert.equal(await t.page.$eval("html", e => e.dataset.base + "/" + e.dataset.theme), "light/light"); assert.equal(await t.page.$eval('meta[name="theme-color"]', e => e.content), INK.light, "theme-color follows the slot's theme");
+    assert.equal(await t.page.evaluate(() => localStorage.getItem("tf/v2/themecss").includes("--ink:#FAF8F4")), true, "the boot cache holds the theme that is on");
+    // flip back with the control itself, then check the fonts swapped at the midpoint (Light and Dark share Lato; use Paper for Day)
+    await t.press("#daynight"); await wait(700); assert.equal(await inkOf(t.page), INK.dark);
+    await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device.day = "T1:curated:paper"; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
+    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(300);
+    await t.press("#daynight"); await wait(90);
+    assert.ok(/Lato/.test(await t.page.$eval("#list .row", e => getComputedStyle(e).fontFamily)), "before the midpoint: the outgoing fonts");
+    await wait(600);
+    assert.ok(/Playfair/.test(await t.page.$eval("#list .row", e => getComputedStyle(e).fontFamily)), "after: Paper's"); assert.equal(await inkOf(t.page), INK.paper);
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join(" | "));
+    await t.close();
+    const r = await fresh(opts, { reducedMotion: "reduce" });
+    await r.press("#daynight"); await wait(40);
+    assert.equal(await inkOf(r.page), INK.light, "reduced motion: instant"); assert.ok(!(await r.s()).fading);
+    await r.close();
+  });
+
+  await test(label + ": Switch · With the system — the device's setting picks the slot; a manual flip holds until the system next changes, then the automation resumes", async () => {
+    const t = await fresh(opts, { scheme: "light" });
+    assert.equal((await t.s()).switchMode, "system"); assert.equal((await t.s()).theme, "light", "a light system: Day = Light");
+    await t.page.emulateMedia({ colorScheme: "dark" }); await wait(700);
+    assert.equal((await t.s()).theme, "dark", "the system went dark: Night"); assert.equal(await inkOf(t.page), INK.dark);
+    await t.press("#daynight"); await wait(700);
+    let st = await t.s(); assert.equal(st.theme, "light", "flipped to Day by hand"); assert.equal(st.hold, "night", "held against a dark system");
+    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(300);
+    st = await t.s(); assert.equal(st.theme, "light", "the hold survives a reload"); assert.equal(st.hold, "night");
+    await t.page.emulateMedia({ colorScheme: "light" }); await wait(700);
+    st = await t.s(); assert.equal(st.hold, null, "the system changed its mind: the hold is spent"); assert.equal(st.theme, "light");
+    await t.page.emulateMedia({ colorScheme: "dark" }); await wait(700);
+    assert.equal((await t.s()).theme, "dark", "and the automation is back in charge");
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
+    assert.ok(/Follows the device/.test(await t.page.textContent("#set-switch-sub")), await t.page.textContent("#set-switch-sub"));
+    assert.equal(await t.page.textContent("#set-night-k"), "Dark · on"); assert.equal(await t.page.textContent("#set-day-k"), "Light");
+    await t.page.keyboard.press("Escape");
+    await t.press("#daynight"); await wait(700);
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
+    assert.ok(/Day by hand for now/.test(await t.page.textContent("#set-switch-sub")), "the row says a flip is holding: " + await t.page.textContent("#set-switch-sub"));
+    await t.page.selectOption("#set-switch", "hand"); await wait(200);
+    st = await t.s(); assert.equal(st.switchMode, "hand"); assert.equal(st.theme, "light", "By hand keeps what is on"); assert.equal(st.hold, null);
+    await t.page.keyboard.press("Escape"); await t.page.emulateMedia({ colorScheme: "light" }); await wait(500); await t.page.emulateMedia({ colorScheme: "dark" }); await wait(500);
+    assert.equal((await t.s()).theme, "light", "by hand, the system is ignored");
+    assert.equal(t.errors.length, 0, t.errors.join("; "));
+    await t.close();
+  });
+
+  await test(label + ": Switch · On a schedule — day from / night from by a mocked clock; the minute tick switches; a manual flip holds until the schedule's next switch", async () => {
+    const t = await fresh(opts, { clock: new Date("2026-09-05T15:00:00") });
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
+    await t.page.selectOption("#set-switch", "schedule"); await wait(200);
+    let st = await t.s(); assert.equal(st.switchMode, "schedule"); assert.equal(st.theme, "light", "15:00 is day: Light");
+    await t.page.fill("#sch-night-at", "16:30"); await t.page.dispatchEvent("#sch-night-at", "change"); await wait(200);
+    assert.ok(/Day from 07:00, night from 16:30/.test(await t.page.textContent("#set-switch-sub")), await t.page.textContent("#set-switch-sub"));
+    await t.page.keyboard.press("Escape"); await wait(200);
+    await t.page.clock.fastForward("01:31:00"); await wait(800); // 16:31: the minute tick applies Night
+    st = await t.s(); assert.equal(st.theme, "dark", "16:31 is night: Dark"); assert.equal(await inkOf(t.page), INK.dark);
+    await t.press("#daynight"); await wait(700);
+    st = await t.s(); assert.equal(st.theme, "light", "flipped to Day by hand"); assert.equal(st.hold, "night", "held against the schedule");
+    await t.page.clock.fastForward("02:00:00"); await wait(800); // 18:31: still night by the clock, still held
+    assert.equal((await t.s()).theme, "light", "the hold stands while the schedule says night"); assert.equal((await t.s()).hold, "night");
+    await t.page.clock.fastForward("13:00:00"); await wait(800); // 07:31 next day: the schedule's own switch to day ends the hold
+    st = await t.s(); assert.equal(st.hold, null, "the schedule switched: the hold is spent"); assert.equal(st.theme, "light");
+    await t.page.clock.fastForward("09:30:00"); await wait(800); // 17:01: night again, by the schedule
+    assert.equal((await t.s()).theme, "dark", "the automation resumed"); assert.equal(await inkOf(t.page), INK.dark);
+    assert.equal(t.errors.length, 0, t.errors.join("; "));
+    await t.close();
+  });
+
+  await test(label + ": the picker fills one slot — Made for day / Made for night / Yours, every theme for either slot, the lean and partner tags, and the one-tap partner", async () => {
+    const t = await fresh(opts);
+    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]");
+    assert.equal(await t.page.$eval("#p-settings h3", e => e.textContent), "Appearance", "⋯ → Theme opens Appearance");
+    await t.page.click('[data-set="day"]'); await t.page.waitForSelector("#p-theme[open]");
+    assert.equal((await t.page.textContent("#p-theme-h")).trim(), "Day theme");
+    const heads = await t.page.$$eval("#p-theme h3:not([hidden])", els => els.map(e => e.textContent));
+    assert.equal(heads.slice(0, 2).join("|"), "Made for day|Made for night"); assert.ok(!heads.includes("Yours"), "no saved themes yet: no Yours group");
+    const day = await t.page.$$eval("#sw-day .swatch .nm", els => els.map(e => e.textContent)), night = await t.page.$$eval("#sw-night .swatch .nm", els => els.map(e => e.textContent));
+    assert.equal(day.join(","), "Light,Paper,Harbor,Blush,Teletype,Sunset,Cocoa"); assert.equal(night.join(","), "Dark,Midnight,Forest,Pink,Terminal,Dusk,Ember");
+    assert.equal(await t.page.$eval('#sw-day .swatch[data-code="T1:curated:light"] .sm', e => e.textContent), "Day · pairs with Dark", "a lean and a partner on every curated kit");
+    assert.equal(await t.page.$eval('#sw-night .swatch[data-code="T1:curated:ember"] .sm', e => e.textContent), "Night · pairs with Cocoa");
+    assert.equal(await t.page.$eval('#sw-day .swatch[data-code="T1:curated:light"]', e => e.getAttribute("aria-pressed")), "true", "the slot's theme is marked");
+    assert.ok(await t.page.locator("#partner-offer").isHidden(), "no offer before a choice");
+    // a night kit for the Day slot (any theme, either slot); its partner is offered for Night
+    await t.press('#sw-night .swatch[data-code="T1:curated:midnight"]'); await wait(300);
+    let st = await t.s(); assert.equal(st.day, "T1:curated:midnight"); assert.equal(st.theme, "dark", "Night is on: nothing changes on screen yet");
+    assert.ok(await t.page.locator("#partner-offer").isVisible()); assert.equal((await t.page.textContent("#partner-use")).trim(), "Use Paper for Night");
+    assert.equal(await t.page.$eval("#partner-offer", e => e.previousElementSibling.id), "sw-night", "the chip sits under the group the choice came from");
+    assert.equal(await t.page.$eval('#sw-night .swatch[data-code="T1:curated:midnight"]', e => e.getAttribute("aria-pressed")), "true");
+    await t.press("#partner-use"); await wait(500);
+    st = await t.s(); assert.equal(st.night, "T1:curated:paper"); assert.equal(st.theme, "paper", "Night is on, so Paper shows at once"); assert.equal(await inkOf(t.page), INK.paper);
+    assert.ok(await t.page.locator("#partner-offer").isHidden(), "the offer is spent");
+    // a choice whose partner the other slot already holds offers nothing
+    await t.press('#sw-day .swatch[data-code="T1:curated:harbor"]'); await wait(300);
+    assert.ok(await t.page.locator("#partner-offer").isVisible()); assert.equal((await t.page.textContent("#partner-use")).trim(), "Use Forest for Night");
+    await t.press("#partner-use"); await wait(300);
+    await t.press('#sw-day .swatch[data-code="T1:curated:harbor"]'); await wait(300); assert.ok(await t.page.locator("#partner-offer").isHidden(), "Forest is already in Night: nothing to offer");
+    await t.page.keyboard.press("Escape"); await wait(300);
+    assert.equal(await inkOf(t.page), INK.forest, "closing the picker leaves the slot's theme on");
+    await t.press("#daynight"); await wait(700); assert.equal(await inkOf(t.page), INK.harbor, "Day = Harbor");
+    // the sound and the confetti follow the slot's theme like the active theme before
+    const kit = await t.page.evaluate(async () => { const T = await import("./theme.js"); const s = window.__tf(); return { engine: T.curated(s.theme).sound.engine, confetti: T.curated(s.theme).confetti[0] }; });
+    assert.equal(kit.engine, "pop", "Harbor pops");
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
+    assert.equal(await t.page.$eval("#set-pack option", o => o.textContent), "Theme's pick (Pop)", "Settings → Sound names the slot's theme's pack");
+    assert.equal(await t.page.textContent("#set-day-k"), "Harbor · on"); assert.equal(await t.page.textContent("#set-night-k"), "Forest");
+    assert.equal(t.errors.length, 0, t.errors.join("; "));
+    await t.close();
+  });
+
+  await test(label + ": the builder — Use for the slot, Save to this list puts a theme under Yours, Make its partner saves a linked second theme and offers it", async () => {
+    const t = await fresh(opts);
+    await t.press("#list .row:first-child .check"); await wait(400);
+    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]");
+    await t.page.fill("#c-hex", "#3366FF"); await t.page.dispatchEvent("#c-hex", "input"); await wait(150);
+    await t.page.selectOption("#c-pair", "grotesk"); await t.page.selectOption("#c-pack", "marble"); await wait(150);
+    await t.page.fill("#c-name", "Blue"); await t.page.dispatchEvent("#c-name", "input");
+    await t.press("#c-partner"); await wait(700);
+    const themes = await t.page.evaluate(() => Object.values(JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc.themes).filter(x => !x.deleted));
+    assert.equal(themes.length, 2, "two saved themes: " + JSON.stringify(themes));
+    const blue = themes.find(x => x.name === "Blue"), day = themes.find(x => x.name === "Blue · day");
+    assert.ok(blue && day, "named Blue and Blue · day");
+    assert.equal(blue.code, "T2:d:3366FF:grotesk:marble:Blue"); assert.equal(day.code, "T2:l:3366FF:grotesk:marble:Blue · day", "same accent, same pack, the chosen pair kept, flipped base");
+    assert.equal(blue.partner, day.id); assert.equal(day.partner, blue.id, "linked both ways through the partner field");
+    let st = await t.s(); assert.equal(st.night, blue.code, "the theme you made fills the slot you were filling"); assert.equal(st.theme, "custom-3366ff-d-grotesk-marble");
+    assert.ok(await t.page.locator("#partner-offer").isVisible()); assert.equal((await t.page.textContent("#partner-use")).trim(), "Use Blue · day for Day");
+    const yours = await t.page.$$eval("#sw-yours .swatch .sm", els => els.map(e => e.textContent)); assert.equal(yours.join("|"), "Yours · pairs with Blue · day|Yours · pairs with Blue");
+    await t.press("#partner-use"); await wait(400);
+    st = await t.s(); assert.equal(st.day, day.code);
+    // the partner made from the partner is the original palette again
+    const round = await t.page.evaluate(async c => { const T = await import("./theme.js"); const p = T.parseCode(c); const back = T.makePartner({ ...p, pairChosen: true }); return T.cssText(back) === T.cssText(T.parseCode("T2:d:3366FF:grotesk:marble:Blue")); }, day.code);
+    assert.ok(round, "round trip");
+    // Make its partner again on the same theme finds the existing link instead of saving a third theme
+    await t.press("#c-partner"); await wait(500);
+    assert.equal(await t.page.evaluate(() => Object.values(JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc.themes).filter(x => !x.deleted).length), 2);
+    await t.page.keyboard.press("Escape"); await wait(200);
+    // a saved theme chosen from Yours offers its partner like a curated one
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.click('[data-set="day"]'); await t.page.waitForSelector("#p-theme[open]");
+    await t.press('#sw-yours .swatch[data-code="T2:d:3366FF:grotesk:marble:Blue"]'); await wait(300);
+    assert.equal((await t.page.textContent("#partner-use")).trim(), "Use Blue · day for Night");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join(" | "));
+    await t.close();
+  });
+
+  if (!touch) await test(label + ": T flips, Shift+T opens Appearance; ⋯ → Theme opens Appearance too", async () => {
+    const t = await fresh(opts);
+    const s0 = (await t.s()).slot;
+    await t.page.keyboard.press("t"); await wait(600); assert.notEqual((await t.s()).slot, s0, "T flips");
+    await t.page.keyboard.press("Shift+T"); await t.page.waitForSelector("#p-settings[open]");
+    assert.equal(await t.page.$eval("#p-settings h3", e => e.textContent), "Appearance"); assert.equal((await t.s()).slot, s0 === "day" ? "night" : "day", "Shift+T does not flip");
+    await t.page.keyboard.press("Escape"); await wait(200);
+    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]");
+    assert.equal(await t.page.locator("#p-theme[open]").count(), 0, "the ⋯ row goes to Appearance, not straight to the picker");
+    assert.equal(await t.page.textContent("#menu-theme-k"), "Light", "the ⋯ row still names the theme that is on");
+    await t.page.keyboard.press("Escape");
+    await t.close();
+  });
+
+  await test(label + ": a 1.1 device opens 1.2 — Follow system and the schedule migrate into the switch, the theme on screen does not change, and the toast is the only new thing", async () => {
+    // Follow system on, with both slots filled
+    const t = await fresh(opts);
+    const { listId } = await t.s();
+    await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); const d = m.device; delete d.day; delete d.night; delete d.switch; delete d.slot; delete d.holdAuto; d.seenVersion = "1.1"; d.tourDone = true; d.hints = { today: true, drag: true, menu: true }; d.follow = true; d.darkSlot = "T1:curated:midnight"; d.lightSlot = "T1:curated:harbor"; d.theme = "T1:curated:midnight"; d.schedule = { on: false, dayAt: "07:00", nightAt: "19:00", day: "T1:curated:light", night: "T1:curated:dark" }; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); localStorage.setItem("tf/v2/themecss", "x"); });
+    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
+    let st = await t.s();
+    assert.equal(st.theme, "midnight", "a dark system: Midnight, as Follow system showed"); assert.equal(st.switchMode, "system"); assert.equal(st.day, "T1:curated:harbor"); assert.equal(st.night, "T1:curated:midnight"); assert.equal(st.hold, null);
+    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.2: Day and night, your way\./.test(await t.page.textContent("#wn-msg")), "the headline only: " + await t.page.textContent("#wn-msg"));
+    assert.equal(await t.page.locator("dialog[open]").count(), 0, "no sheet"); assert.ok(await t.page.locator("#mark").isHidden(), "no hint"); assert.equal(st.stats.check + st.stats.finish + st.stats.tick, 0, "no sound");
+    assert.equal(await t.page.locator("#list .row").count(), 5); assert.equal(st.listId, listId, "the list is intact");
+    assert.ok(await t.page.locator("#daynight").isVisible(), "the sun/moon is there");
+    const old = await t.page.evaluate(() => { const d = JSON.parse(localStorage.getItem("tf/v2/meta")).device; return { follow: d.follow, darkSlot: d.darkSlot, lightSlot: d.lightSlot, scheduleOn: d.schedule.on }; });
+    assert.deepEqual(old, { follow: true, darkSlot: "T1:curated:midnight", lightSlot: "T1:curated:harbor", scheduleOn: false }, "the 1.1 keys are left in place, never wiped");
+    await t.page.emulateMedia({ colorScheme: "light" }); await wait(700); assert.equal((await t.s()).theme, "harbor", "and the system still drives it");
+    // the schedule on, with its themes and times
+    await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); const d = m.device; delete d.day; delete d.night; delete d.switch; delete d.slot; delete d.holdAuto; d.follow = false; d.schedule = { on: true, dayAt: "08:15", nightAt: "17:45", day: "T1:curated:paper", night: "T1:curated:forest" }; d.theme = "T1:curated:paper"; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
+    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(400);
+    st = await t.s(); assert.equal(st.switchMode, "schedule"); assert.equal(st.day, "T1:curated:paper"); assert.equal(st.night, "T1:curated:forest");
+    const hour = new Date().getHours() + new Date().getMinutes() / 60; const expect = hour >= 8.25 && hour < 17.75 ? "paper" : "forest";
+    assert.equal(st.theme, expect, "the clock decides as before");
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
+    assert.equal(await t.page.$eval("#set-switch", e => e.value), "schedule"); assert.equal(await t.page.$eval("#sch-day-at", e => e.value) + "/" + await t.page.$eval("#sch-night-at", e => e.value), "08:15/17:45", "the times carried over");
+    await t.page.keyboard.press("Escape");
+    // neither on: by hand, the theme in the slot matching its base, its partner in the other
+    await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); const d = m.device; delete d.day; delete d.night; delete d.switch; delete d.slot; delete d.holdAuto; d.follow = false; d.schedule.on = false; d.theme = "T1:curated:pink"; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
+    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(400);
+    st = await t.s(); assert.equal(st.switchMode, "hand"); assert.equal(st.theme, "pink"); assert.equal(st.night, "T1:curated:pink"); assert.equal(st.day, "T1:curated:blush", "Pink's partner fills Day"); assert.equal(st.slot, "night");
+    assert.ok(await t.page.locator("#whatsnew").isHidden(), "the toast showed once");
+    assert.equal(t.errors.length, 0, t.errors.join("; "));
+    await t.close();
+  });
+
+  await test(label + ": a fresh device on a light system paints Light from the first frame and starts With the system", async () => {
+    const t = await fresh(opts, { scheme: "light", list: false });
+    assert.equal(await inkOf(t.page), INK.light, "the inline tokens follow prefers-color-scheme before any module ran");
+    await t.page.click("#w-new"); await t.page.waitForSelector("#p-save[open]"); await t.page.click("#save-done"); await wait(500);
+    const st = await t.s(); assert.equal(st.theme, "light"); assert.equal(st.switchMode, "system"); assert.equal(st.day, "T1:curated:light"); assert.equal(st.night, "T1:curated:dark");
+    assert.equal(await t.page.$eval("#daynight", e => e.dataset.next), "night");
+    await t.close();
+  });
+
   await test(label + ": no page errors, CSP violations or third-party requests across a full session", async () => {
     const t = await fresh(opts);
     await t.press("#v-all"); await t.page.keyboard.press("Escape"); await t.press("#v-today");
-    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]');
-    await t.page.waitForSelector("#p-theme[open]"); await t.page.click(".swatch:nth-child(4)"); await t.page.keyboard.press("Escape");
+    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]');
+    await t.page.waitForSelector("#p-theme[open]"); await t.page.click("#sw-night .swatch:nth-child(4)"); await wait(200); await t.page.click("#partner-use"); await t.page.keyboard.press("Escape"); await wait(200);
+    await t.press("#daynight"); await wait(500); await t.press("#daynight"); await wait(500);
     await t.press("#more"); await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await t.page.click("#share-tab-view"); await wait(300); await t.page.keyboard.press("Escape");
     if (!touch) { await t.press("#share"); await t.page.waitForSelector("#p-share[open]"); await t.page.keyboard.press("Escape"); await t.page.keyboard.press("?"); await t.page.waitForSelector("#p-keys[open]"); await t.page.keyboard.press("Escape"); await t.page.keyboard.press("f"); await wait(200); await t.page.keyboard.press("f"); }
     await wait(300);

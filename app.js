@@ -123,10 +123,16 @@ let press = null, tapped = null, swipe = null;
 let reloading = false;
 let toastAction = null, reviewDismissed = false, whatsNewShown = false, rz = 0, settling = false, killing = false;
 let dragEndedAt = -1e9; // no drag has ended yet
-let panelsP = null;
+let panelsP = null, panelCssReady = false;
+/** The panels' stylesheet is not render-blocking: it loads right after boot, and every panel waits for it. */
+const panelCss = new Promise(res => {
+  const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "panels.css";
+  l.onload = () => { panelCssReady = true; res(true); }; l.onerror = () => { panelCssReady = true; res(false); };
+  document.head.appendChild(l);
+});
 /** The lazy module with every panel. Loaded on first use, then kept. */
 function panels() {
-  if (!panelsP) panelsP = import("./panels.js").then(m => { m.init(api); return m; }).catch(e => { panelsP = null; toast("Couldn't load that part of the app—check the connection and try again"); throw e; });
+  if (!panelsP) panelsP = Promise.all([import("./panels.js"), panelCss]).then(([m]) => { m.init(api); return m; }).catch(e => { panelsP = null; toast("Couldn't load that part of the app—check the connection and try again"); throw e; });
   return panelsP;
 }
 const HAPTIC = IOS && (() => { const h = document.getElementById("haptic"); return !!h && "switch" in h; })();
@@ -1419,6 +1425,7 @@ function endDrag(move, up, cancelled, aborted) {
 
 /* ---------------- panels: plumbing shared by every dialog ---------------- */
 function showPanel(id) {
+  if (!panelCssReady) { panelCss.then(() => showPanel(id)); return; } // never paint a dialog before its stylesheet
   const d = document.getElementById(id);
   if (openPanel && openPanel !== d) openPanel.close();
   openPanel = d;

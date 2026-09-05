@@ -236,7 +236,7 @@ test("the version is one number in three places", () => {
   assert.ok(sw.includes(`const VERSION = "tf-v${VERSION}"`), "sw.js cache name carries the app version");
   assert.equal(wn.versions[0].version, VERSION, "whatsnew.json leads with the current version");
   for (const v of wn.versions) { assert.match(v.version, /^\d+\.\d+\.\d+$/); assert.match(v.date, /^\d{4}-\d{2}-\d{2}$/); assert.ok(v.lines.length >= 1 && v.lines.length <= 3, v.version + ": two or three lines"); }
-  for (const f of ["packs.js", "panels.js", "exporter.js", "version.js", "whatsnew.json"]) assert.ok(sw.includes(`"./${f}"`), "precached: " + f);
+  for (const f of ["packs.js", "panels.js", "panels.css", "exporter.js", "version.js", "whatsnew.json"]) assert.ok(sw.includes(`"./${f}"`), "precached: " + f);
 });
 
 console.log(`\n${passed} feature tests passed`);

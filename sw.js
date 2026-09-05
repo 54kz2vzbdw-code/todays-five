@@ -2,7 +2,7 @@
 // deploy lands on the next load; icons, fonts and the vendored realtime client are cache-first. Bump VERSION on deploy.
 const VERSION = "tf-v4.0.0"; // = "tf-v" + version.js; bumped with every deploy
 const SHELL = [
-  "./", "./index.html", "./about.html", "./styles.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js",
+  "./", "./index.html", "./about.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js",
   "./sound.js", "./packs.js", "./fx.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json",
   "./manifest.webmanifest", "./vendor/realtime.js",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-512-maskable.png", "./icons/apple-touch-icon.png"

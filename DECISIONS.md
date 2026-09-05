@@ -194,7 +194,7 @@ Calls made where the v4 brief left things open. The design is in PLAN.md, "Today
 - **The line menu is a ⋯ tool on the row**, on Today and in Everything. Today's screen gains no control; the row already had tools, and the menu is where "Not today", "Repeat", "Move to…" and "Delete" belong without four more icons.
 - **The section menu also exists for Unsorted** once a section exists (v3 hid it), because templates and "Put all on Today" apply there too. A list with no sections has no headers and therefore no section menu; Settings → Lists → Templates offers "Insert into Unsorted" for that case.
 - **Panels load lazily as one module** (`panels.js`, 53 KB) rather than one file per panel. One request on first use, cached by the service worker after; splitting further would add round trips for no first-paint gain.
-- **Dialog markup stays in `index.html`.** Hidden dialogs cost nothing at first paint, and injecting markup from the lazy module would have doubled the surface for id typos.
+- **Dialog markup stays in `index.html`, dialog styles do not.** Hidden dialogs cost nothing at first paint, and injecting markup from the lazy module would have doubled the surface for id typos. Their CSS is another matter: Lighthouse's simulated slow phone painted v4 about 8% later than v3 with everything in one render-blocking stylesheet, so `panels.css` (15 KB: sheets, the theme picker, Settings, the tour, How it works) loads right after boot and every panel waits for it; `styles.css` is back to v3's size.
 
 ## Features
 

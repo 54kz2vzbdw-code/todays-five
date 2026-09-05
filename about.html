@@ -6,7 +6,7 @@
   <title>Today's Five — how it works &amp; privacy</title>
   <meta name="description" content="What Today's Five stores, who can see it, and what it never collects.">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-cssKfvLd1A8uguYyrfgkRK+0RJG1wH8PsoQGOSJoERA='; style-src 'self' 'sha256-yNknL13COQN52cpZ0PepUU2IyZOt8ZfrghaJG5Kz+t4='; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-QTscGs0BUxGAh12afKI4KnPv42l7EyMlfWQNvnha/ww='; style-src 'self' 'sha256-yNknL13COQN52cpZ0PepUU2IyZOt8ZfrghaJG5Kz+t4='; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
   <meta name="theme-color" content="#1A1D21">
   <link rel="icon" href="icons/icon-192.png">
   <style id="theme-vars">:root{--ink:#1A1D21;--ink-2:#23272C;--ink-3:#2E343A;--text:#F5F1EA;--muted:#9AA0A8;--dim:#7F858C;--done:#7F858C;--muted-2:#9AA0A8;--dim-2:#979DA4;--accent:#D26128;--accent-hi:#E8814A;--accent-deep:#A34A1C;--accent-text:#E8814A;--danger:#E0745A;--hair:rgba(245,241,234,.10);--hair-hi:rgba(245,241,234,.30);--hair-solid:#65696E;--glow:radial-gradient(125% 78% at 50% 34%, rgba(210,97,40,.10), rgba(210,97,40,0) 62%);--strike-shadow:0 0 10px rgba(210,97,40,.38);--box-done-bg:#D26128;--strike-bg:#D26128;--strike-size:auto;--strike-anim:none;--finale-style:normal;--font-task:"Lato","Helvetica Neue",Helvetica,Arial,sans-serif;--font-ui:"PT Sans","Helvetica Neue",Helvetica,Arial,sans-serif;--task-w:900;--task-ls:-.025em;--task-lh:1.14;color-scheme:dark}</style>
@@ -32,10 +32,18 @@
         var log = document.getElementById("log");
         log.textContent = "";
         vs.forEach(function (v) {
+          // 1.2: a headline per version, then up to three items tagged New, Improved or Fixed
           var li = document.createElement("li");
-          var h = document.createElement("div"); var b = document.createElement("span"); b.className = "v"; b.textContent = v.version; h.appendChild(b); li.appendChild(h);
+          var h = document.createElement("div"); var b = document.createElement("span"); b.className = "v"; b.textContent = v.version; h.appendChild(b);
+          if (v.headline) { var hl = document.createElement("span"); hl.className = "hl"; hl.textContent = " — " + v.headline; h.appendChild(hl); }
+          li.appendChild(h);
           var ul = document.createElement("ul");
-          (v.lines || []).forEach(function (t) { var x = document.createElement("li"); x.textContent = t; ul.appendChild(x); });
+          (v.items || []).forEach(function (it) {
+            var x = document.createElement("li");
+            var tag = document.createElement("span"); tag.className = "tag " + String(it.tag || "").toLowerCase(); tag.textContent = it.tag || "";
+            var tx = document.createElement("span"); tx.textContent = it.text || "";
+            x.appendChild(tag); x.appendChild(tx); ul.appendChild(x);
+          });
           li.appendChild(ul); log.appendChild(li);
         });
       }).catch(function () {});
@@ -49,7 +57,7 @@
 <main class="prose">
   <p class="crumb"><a href="./">← Back to the list</a></p>
   <h1>Today's Five</h1>
-  <p class="version" id="version">Version 1.1</p>
+  <p class="version" id="version">Version 1.2</p>
   <p class="lede">A short list you keep open on screen all day. Here's exactly what leaves your device, who can see it, and what never gets collected.</p>
 
   <h2>How it works</h2>

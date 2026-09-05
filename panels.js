@@ -1,6 +1,7 @@
-// panels.js — everything that lives behind a panel: the theme picker, share and save sheets, Lists, History,
-// Settings, the section and line menus, the repeat picker, templates, move-to-list, delete everywhere with its
-// undo, export/import, the ? reference, and How it works. Loaded by app.js on first use; `A` is its api.
+// panels.js — everything that lives behind a panel: the theme picker (one slot at a time since 1.2), share and save
+// sheets, Lists, History, Settings (Appearance: Day theme · Night theme · Switch), the section and line menus, the
+// repeat picker, templates, move-to-list, delete everywhere with its undo, export/import, the ? reference, and How it
+// works. Loaded by app.js on first use; `A` is its api.
 let A = null, $ = null, $$ = null, M = null, T = null, C = null;
 
 export function init(api) {
@@ -10,58 +11,78 @@ export function init(api) {
 }
 const dev = () => A.dev, meta = () => A.meta;
 
-/* ---------------- theme panel ---------------- */
+/* ---------------- the theme picker: one slot at a time (1.2) ----------------
+   Opened from Settings → Appearance's Day theme or Night theme row (or ⋯ → Theme → Appearance). Every theme is on
+   offer for either slot: the curated kits grouped by their lean, then the list's saved ones; picking one names its
+   partner for the other slot as a one-tap chip. The builder below fills the same slot, and can make a partner. */
 let custom = { accent: "#D26128", base: "dark", pair: "", name: "", pack: "" };
 let keepPreview = false;
-export function openTheme() {
-  renderSwatches();
-  const t = A.theme;
+let pickSlot = "day"; // the slot the picker fills
+let offer = null;     // { code, name, slot }: the partner on offer for the other slot after a choice, if any
+const cap = s => (s === "day" ? "Day" : "Night");
+const otherSlot = s => (s === "day" ? "night" : "day");
+export function openTheme(slot) {
+  pickSlot = slot === "night" ? "night" : slot === "day" ? "day" : A.activeSlot();
+  offer = null;
+  const t = T.parseCode(A.slotCode(pickSlot));
   if (t && t.kind === "custom") custom = { accent: t.accent, base: t.base, pair: t.pair, name: t.name, pack: t.pack || "" };
+  $("#p-theme-h").textContent = cap(pickSlot) + " theme";
+  $("#c-use").textContent = "Use for " + cap(pickSlot);
+  renderSwatches();
   paintCustom();
   A.showPanel("p-theme");
 }
 function savedThemes() { return Object.values(A.doc ? A.doc.themes : {}).filter(t => !t.deleted).map(t => ({ ...t, theme: T.parseCode(t.code) })).filter(t => t.theme); }
+/** A saved theme's partner: the live saved record its `partner` field names (or the one naming it back). */
+function savedPartner(saved, rec) {
+  return saved.find(s => s.id !== rec.id && ((rec.partner && s.id === rec.partner) || (s.partner && s.partner === rec.id))) || null;
+}
 function renderSwatches() {
-  const root = $("#swatches"); root.innerHTML = "";
-  const cur = A.theme ? T.themeCode(A.theme) : "";
-  const mk = (t, saved) => {
+  const cur = A.slotCode(pickSlot);
+  const saved = savedThemes();
+  const mk = (t, rec) => {
     const b = document.createElement("button"); b.type = "button"; b.className = "swatch";
     b.style.background = t.colors.ink; b.style.color = t.colors.text; b.style.borderColor = t.colors.hairSolid;
-    b.setAttribute("aria-pressed", T.themeCode(t) === cur ? "true" : "false");
+    const code = rec ? rec.code : T.themeCode(t), name = rec ? rec.name : t.name;
+    b.setAttribute("aria-pressed", code === cur ? "true" : "false");
     const bar = document.createElement("span"); bar.className = "bar"; bar.style.background = t.colors.accent;
-    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = saved ? saved.name : t.name; nm.style.fontFamily = (T.pairOf(t.pair) || T.PAIRS.lato).task[2];
-    const sm = document.createElement("span"); sm.className = "sm"; sm.textContent = t.base + (saved ? " · yours" : ""); sm.style.color = t.colors.dim;
+    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name; nm.style.fontFamily = (T.pairOf(t.pair) || T.PAIRS.lato).task[2];
+    const partner = rec ? savedPartner(saved, rec) : T.partnerOf(t);
+    const pName = partner ? partner.name : "";
+    const sm = document.createElement("span"); sm.className = "sm"; sm.style.color = t.colors.dim;
+    sm.textContent = (rec ? "Yours" : cap(t.lean === "day" ? "day" : "night")) + (pName ? " · pairs with " + pName : "");
     b.append(bar, nm, sm);
-    b.addEventListener("click", () => { A.chooseTheme(saved ? { ...t, name: saved.name } : t); renderSwatches(); });
-    if (saved && A.canEdit()) {
-      const del = document.createElement("button"); del.type = "button"; del.className = "del"; del.textContent = "×"; del.setAttribute("aria-label", "Delete " + saved.name);
-      del.addEventListener("click", e => { e.stopPropagation(); A.doc.themes[saved.id] = { id: saved.id, deleted: true, updatedAt: M.now() }; A.afterChange({ animate: false }); renderSwatches(); });
+    b.dataset.code = code;
+    b.addEventListener("click", () => choose(code, name, partner ? { code: rec ? partner.code : T.themeCode(partner), name: pName } : null, b));
+    if (rec && A.canEdit()) {
+      const del = document.createElement("button"); del.type = "button"; del.className = "del"; del.textContent = "×"; del.setAttribute("aria-label", "Delete " + rec.name);
+      del.addEventListener("click", e => { e.stopPropagation(); A.doc.themes[rec.id] = { id: rec.id, deleted: true, updatedAt: M.now() }; A.afterChange({ animate: false }); if (offer && offer.code === rec.code) offer = null; renderSwatches(); });
       b.appendChild(del);
     }
     return b;
   };
-  T.CURATED.forEach(t => root.appendChild(mk(t)));
-  savedThemes().forEach(s => root.appendChild(mk(s.theme, s)));
-  syncFollowChip();
+  const fill = (id, list) => { const root = $(id); root.innerHTML = ""; list.forEach(x => root.appendChild(x)); };
+  fill("#sw-day", T.CURATED_DAY.map(t => mk(t)));
+  fill("#sw-night", T.CURATED_NIGHT.map(t => mk(t)));
+  fill("#sw-yours", saved.map(s => mk(s.theme, s)));
+  $("#sw-yours-h").hidden = !saved.length; $("#sw-yours").hidden = !saved.length;
+  paintOffer();
 }
-function syncFollowChip() {
-  const b = $("#follow");
-  b.setAttribute("aria-pressed", dev().follow ? "true" : "false");
-  b.textContent = dev().follow ? "Follow system: on" : "Follow system: off";
+/** A swatch was chosen for the slot; the partner (if the other slot does not hold it already) goes on offer beside it. */
+function choose(code, name, partner, swatch) {
+  const group = swatch && swatch.parentNode; // read before the re-render detaches the swatch
+  A.setSlotTheme(pickSlot, code);
+  const other = otherSlot(pickSlot);
+  offer = partner && A.slotCode(other) !== partner.code ? { ...partner, slot: other } : null;
+  renderSwatches();
+  if (group) group.after($("#partner-offer")); // the chip sits under the group the choice came from
+  A.toast(`${name} for ${cap(pickSlot)}`);
 }
-/** Follow system and the schedule cannot both be on. */
-function setFollow(on) {
-  const d = dev();
-  d.follow = !!on;
-  if (on) { if (d.schedule && d.schedule.on) { d.schedule.on = false; A.toast("Schedule off: Follow system takes over"); } if (A.theme) { if (A.theme.base === "dark") d.darkSlot = d.theme; else d.lightSlot = d.theme; } }
-  A.saveDevice(); A.applyThemeCode(A.currentThemeCode()); renderSwatches(); paintSettings();
-}
-function setSchedule(on) {
-  const d = dev();
-  d.schedule = { ...(d.schedule || {}), on: !!on };
-  if (on && d.follow) { d.follow = false; A.toast("Follow system off: the schedule takes over"); }
-  if (on && A.theme) { const slot = A.theme.base === "dark" ? "night" : "day"; if (!d.schedule[slot]) d.schedule[slot] = d.theme; }
-  A.saveDevice(); A.tickTheme(); A.applyThemeCode(A.currentThemeCode()); renderSwatches(); paintSettings();
+function paintOffer() {
+  const box = $("#partner-offer");
+  if (!offer) { box.hidden = true; return; }
+  $("#partner-use").textContent = `Use ${offer.name} for ${cap(offer.slot)}`;
+  box.hidden = false;
 }
 function customTheme() { return T.derive({ accent: custom.accent, base: custom.base, pair: custom.pair || undefined, name: custom.name || "Custom", pack: custom.pack || undefined }); }
 function paintCustom() {
@@ -84,10 +105,27 @@ function paintCustom() {
 }
 function previewCustom() { T.applyTheme(customTheme(), document, { persist: false }); }
 function setCustom(patch) { Object.assign(custom, patch); paintCustom(); previewCustom(); }
+/** The builder's theme needs a name before it can be saved; ask for one unless it has it. */
+async function ensureName() {
+  if (custom.name.trim()) return true;
+  keepPreview = true;
+  const n = await A.ask({ title: "Name this theme", label: "Name", value: "" });
+  keepPreview = false;
+  if (!n || !n.trim()) { openTheme(pickSlot); previewCustom(); return false; }
+  custom.name = n.trim().slice(0, 40);
+  return true;
+}
+/** Save the builder's theme to the list (or find the record that already carries this exact code) and return the record. */
+function saveCustom() {
+  const t = customTheme(), code = T.themeCode(t);
+  let rec = Object.values(A.doc.themes).find(r => !r.deleted && r.code === code);
+  if (!rec) { const id = M.shortId(); rec = { id, name: custom.name.trim().slice(0, 40), code, updatedAt: M.now() }; A.doc.themes[id] = rec; }
+  return rec;
+}
 function wireTheme() {
   const pairSel = $("#c-pair");
   T.CUSTOM_PAIRS.forEach(id => { const o = document.createElement("option"); o.value = id; o.textContent = T.PAIRS[id].name; pairSel.appendChild(o); });
-  $("#follow").addEventListener("click", () => setFollow(!dev().follow));
+  $("#partner-use").addEventListener("click", () => { if (!offer) return; const o = offer; offer = null; A.setSlotTheme(o.slot, o.code); renderSwatches(); A.toast(`${o.name} for ${cap(o.slot)}`); });
   $("#c-color").addEventListener("input", e => setCustom({ accent: T.normalizeHex(e.target.value) || custom.accent }));
   $("#c-hex").addEventListener("input", e => { const v = e.target.value.trim(); if (/^#?[0-9a-f]{6}$/i.test(v)) setCustom({ accent: T.normalizeHex(v) }); });
   $("#c-hex").addEventListener("change", e => { const h = T.normalizeHex(e.target.value); if (h) setCustom({ accent: h }); else e.target.value = custom.accent; });
@@ -98,30 +136,48 @@ function wireTheme() {
   T.PACK_IDS.forEach(id => { const o = document.createElement("option"); o.value = id; o.textContent = T.PACK_NAMES[id]; packSel.appendChild(o); });
   packSel.addEventListener("change", e => { setCustom({ pack: e.target.value }); if (!dev().muted) A.sound.preview(customTheme().sound.engine); }); // preview on select
   $("#c-name").addEventListener("input", e => { custom.name = e.target.value; });
-  $("#c-use").addEventListener("click", () => { A.chooseTheme(customTheme()); renderSwatches(); });
+  $("#c-use").addEventListener("click", () => { offer = null; A.setSlotTheme(pickSlot, T.themeCode(customTheme())); renderSwatches(); A.toast(`${custom.name.trim() || "Custom"} for ${cap(pickSlot)}`); });
   $("#c-save").addEventListener("click", async () => {
     if (!A.doc) { A.toast("Open a list first to save a theme"); return; }
     if (!A.canEdit()) { A.toast("A view link can't save themes to the list"); return; }
-    if (!custom.name.trim()) {
-      keepPreview = true;
-      const n = await A.ask({ title: "Name this theme", label: "Name", value: "" });
-      keepPreview = false;
-      if (!n || !n.trim()) { openTheme(); previewCustom(); return; }
-      custom.name = n.trim().slice(0, 40);
-    }
-    const t = customTheme();
-    const id = M.shortId();
-    A.doc.themes[id] = { id, name: custom.name.trim().slice(0, 40), code: T.themeCode(t), updatedAt: M.now() };
+    if (!(await ensureName())) return;
+    const rec = saveCustom();
     A.afterChange({ animate: false });
-    A.chooseTheme(t); renderSwatches();
-    A.toast(`Saved “${custom.name.trim()}”`);
+    offer = null;
+    A.setSlotTheme(pickSlot, rec.code); renderSwatches();
+    A.toast(`Saved “${rec.name}”`);
+  });
+  // Make its partner: the same accent and sound pack on the flipped base, saved as a second theme linked to the first
+  // (a `partner` field on both records), and offered for the other slot the way a curated partner is
+  $("#c-partner").addEventListener("click", async () => {
+    if (!A.doc) { A.toast("Open a list first to save a theme"); return; }
+    if (!A.canEdit()) { A.toast("A view link can't save themes to the list"); return; }
+    if (!(await ensureName())) return;
+    const rec = saveCustom();
+    const saved = savedThemes();
+    let prec = savedPartner(saved, rec);
+    if (!prec) {
+      const p = T.makePartner({ accent: custom.accent, base: custom.base, pair: custom.pair, pack: custom.pack, name: custom.name.trim(), pairChosen: !!custom.pair });
+      const pid = M.shortId();
+      prec = { id: pid, name: p.name, code: T.themeCode(p), partner: rec.id, updatedAt: M.now() };
+      A.doc.themes[pid] = prec;
+      A.doc.themes[rec.id] = { ...rec, partner: pid, updatedAt: M.now() };
+    }
+    A.afterChange({ animate: false });
+    A.setSlotTheme(pickSlot, rec.code);
+    const other = otherSlot(pickSlot);
+    offer = A.slotCode(other) !== prec.code ? { code: prec.code, name: prec.name, slot: other } : null;
+    renderSwatches();
+    $("#sw-yours").after($("#partner-offer"));
+    A.toast(`Saved “${prec.name}”, its partner`);
   });
   $("#c-surprise").addEventListener("click", () => { const t = T.surprise(); custom = { accent: t.accent, base: t.base, pair: t.pair, name: "", pack: "" }; paintCustom(); previewCustom(); });
   $("#c-export").addEventListener("click", async () => { try { await navigator.clipboard.writeText(T.themeCode(customTheme())); A.toast("Theme code copied"); } catch (e) { A.toast(T.themeCode(customTheme())); } });
   $("#c-import-go").addEventListener("click", () => {
     const t = T.parseCode($("#c-import").value);
     if (!t) { A.toast("That code doesn't parse"); return; }
-    if (t.kind === "custom") { custom = { accent: t.accent, base: t.base, pair: t.pair, name: t.name, pack: t.pack || "" }; paintCustom(); previewCustom(); } else { A.chooseTheme(t); renderSwatches(); }
+    if (t.kind === "custom") { custom = { accent: t.accent, base: t.base, pair: t.pair, name: t.name, pack: t.pack || "" }; paintCustom(); previewCustom(); }
+    else choose(T.themeCode(t), t.name, T.partnerOf(t) ? { code: T.themeCode(T.partnerOf(t)), name: T.partnerOf(t).name } : null, null);
   });
   $("#p-theme").addEventListener("close", () => { if (!keepPreview) A.applyThemeCode(A.currentThemeCode()); });
   addEventListener("tf:theme", () => { if ($("#p-theme").open) renderSwatches(); if ($("#p-settings").open) paintSettings(); });
@@ -293,24 +349,27 @@ export function openHistory() {
 const PACKS = [["", "Theme's pick"], ["knock", "Knock"], ["bell", "Bell"], ["blip", "Blip"], ["typewriter", "Typewriter"], ["marble", "Marble"], ["pop", "Pop"]];
 let importedDoc = null;
 export function openSettings() { paintSettings(); A.showPanel("p-settings"); }
-function themeOptions(sel, value) {
-  sel.innerHTML = "";
-  const add = (code, name) => { const o = document.createElement("option"); o.value = code; o.textContent = name; sel.appendChild(o); };
-  T.CURATED.forEach(t => add(T.themeCode(t), t.name));
-  savedThemes().forEach(s => add(s.code, s.name + " · yours"));
-  if (value && !Array.from(sel.options).some(o => o.value === value)) add(value, "Custom");
-  sel.value = value || "";
+/** Appearance (1.2): Day theme · Night theme · Switch. The rows name what fills each slot and which one is on; the
+    Switch row says how the flip happens and whether a tap on the sun or moon is holding an automation off. */
+function paintAppearance(d) {
+  const active = A.activeSlot(), auto = A.autoSlot(), sw = d.switch || {}, mode = sw.mode || "hand";
+  const nameOf = slot => { const t = T.parseCode(A.slotCode(slot)); return t ? t.name : "Custom"; };
+  $("#set-day-k").textContent = nameOf("day") + (active === "day" ? " · on" : "");
+  $("#set-night-k").textContent = nameOf("night") + (active === "night" ? " · on" : "");
+  $("#set-switch").value = mode;
+  const hold = !!(d.holdAuto && auto && d.holdAuto === auto);
+  const tap = A.touchUi() ? "A tap on the sun or moon" : "A tap on the sun or moon (or T)";
+  $("#set-switch-sub").textContent = mode === "system"
+    ? (hold ? `${cap(active)} by hand for now. The device's light or dark setting takes over when it next changes.` : `Follows the device's light or dark setting. ${tap} holds until it next changes.`)
+    : mode === "schedule"
+      ? (hold ? `${cap(active)} by hand for now. The schedule takes over at its next switch.` : `Day from ${sw.dayAt || "07:00"}, night from ${sw.nightAt || "19:00"}. ${tap} holds until the next switch.`)
+      : (A.touchUi() ? "The sun and moon in the top bar flip it." : "The sun and moon in the top bar flip it, and so does T.");
+  $("#schedule-block").hidden = mode !== "schedule";
+  $("#sch-day-at").value = sw.dayAt || "07:00"; $("#sch-night-at").value = sw.nightAt || "19:00";
 }
 function paintSettings() {
   const d = dev(), set = (name, on) => { const b = $(`#p-settings [data-set="${name}"]`); if (b) b.setAttribute("aria-pressed", on ? "true" : "false"); };
-  $("#set-theme-k").textContent = A.theme ? A.theme.name : "";
-  $("#set-theme-sub").textContent = d.schedule && d.schedule.on ? "Set by the schedule right now" : d.follow ? "Set by the system right now" : (A.touchUi() ? "Twelve kits, or your own from one colour" : "T opens the picker");
-  set("follow", !!d.follow);
-  set("schedule", !!(d.schedule && d.schedule.on));
-  $("#set-schedule-sub").textContent = d.schedule && d.schedule.on ? `Day from ${d.schedule.dayAt}, night from ${d.schedule.nightAt}` : (d.follow ? "Turning this on turns Follow system off" : "A day theme and a night theme, by the clock");
-  $("#schedule-block").hidden = !(d.schedule && d.schedule.on);
-  $("#sch-day-at").value = d.schedule.dayAt || "07:00"; $("#sch-night-at").value = d.schedule.nightAt || "19:00";
-  themeOptions($("#sch-day"), d.schedule.day || "T1:curated:light"); themeOptions($("#sch-night"), d.schedule.night || "T1:curated:dark");
+  paintAppearance(d);
   set("sound", !d.muted);
   const pk = $("#set-pack"); if (!pk.options.length || pk.options.length !== PACKS.length) { pk.innerHTML = ""; PACKS.forEach(([v, n]) => { const o = document.createElement("option"); o.value = v; o.textContent = n; pk.appendChild(o); }); }
   // "Theme's pick" names the theme's pack, and the sub-line says which one wins on this device
@@ -342,9 +401,7 @@ function wireSettings() {
   $("#p-settings").addEventListener("click", async e => {
     const b = e.target.closest("[data-set]"); if (!b) return;
     const k = b.dataset.set;
-    if (k === "theme") { A.closePanel(); openTheme(); }
-    else if (k === "follow") setFollow(!d.follow);
-    else if (k === "schedule") setSchedule(!(d.schedule && d.schedule.on));
+    if (k === "day" || k === "night") { A.closePanel(); openTheme(k); }
     else if (k === "sound") { A.toggleMute(); paintSettings(); }
     else if (k === "celebrate") { d.celebrateRemote = !d.celebrateRemote; A.saveDevice(); paintSettings(); }
     else if (k === "review") { d.review = !d.review; A.saveDevice(); paintSettings(); A.paint(); }
@@ -358,8 +415,9 @@ function wireSettings() {
     else if (k === "who") { d.whoOff = !d.whoOff; A.saveDevice(); A.resubscribePresence(); paintSettings(); }
     else if (k === "export") { A.closePanel(); openExport(); }
   });
-  const sch = () => { d.schedule = { ...d.schedule, dayAt: $("#sch-day-at").value || "07:00", nightAt: $("#sch-night-at").value || "19:00", day: $("#sch-day").value, night: $("#sch-night").value }; A.saveDevice(); A.tickTheme(); A.applyThemeCode(A.currentThemeCode()); paintSettings(); };
-  ["#sch-day-at", "#sch-night-at", "#sch-day", "#sch-night"].forEach(s => $(s).addEventListener("change", sch));
+  $("#set-switch").addEventListener("change", e => { A.setSwitchMode(e.target.value); paintSettings(); });
+  const sch = () => { A.setSwitchTimes($("#sch-day-at").value, $("#sch-night-at").value); paintSettings(); };
+  ["#sch-day-at", "#sch-night-at"].forEach(s => $(s).addEventListener("change", sch));
   $("#set-pack").addEventListener("change", e => { d.soundPack = e.target.value; A.saveDevice(); paintSettings(); const eng = e.target.value || (A.theme && A.theme.sound && A.theme.sound.engine) || "knock"; if (!d.muted) A.sound.preview(eng); });
   $("#set-addurl-copy").addEventListener("click", () => A.copyText($("#set-addurl").value, "URL copied. Put text after text= and open it."));
   $("#set-export-json").addEventListener("click", () => exportList("json"));
@@ -669,8 +727,9 @@ export function openHelp(section) {
     <p><b>A Mac bookmarklet:</b> drag this to the bookmarks bar, or make a bookmark whose address is the code below. Click it, type the line, done.</p>
     <p><a class="chip" href="${esc(bm)}" onclick="return false" draggable="true" title="Drag me to the bookmarks bar">+ Today's Five</a></p>
     <input class="link" type="text" readonly value="${esc(bm)}" aria-label="Bookmarklet code" spellcheck="false">
-    <h3 id="h-who">Theme, sound, who's here</h3>
-    <p>Theme, Sound and Full screen live in ⋯${touch ? "" : " (T, M and F from the keyboard)"}; Settings → Appearance and Sound hold the rest. Every theme picks a sound pack, a theme you make can carry its own, and Settings → Sound overrides it on this device. On an iPhone, the ring/silent switch mutes the app's sounds too. The theme can follow the system or a schedule, one or the other.</p>
+    <h3 id="h-who">Day and night, sound, who's here</h3>
+    <p>Every device has a <b>Day theme</b> and a <b>Night theme</b>. The sun or moon in the top bar flips between them${touch ? "" : " (T does too; Shift+T opens Appearance)"}. Settings → Appearance holds both slots and the switch: by hand, with the device's light or dark setting, or on a schedule with a day time and a night time. Under either automation a tap on the sun or moon holds until the next automatic switch, then the automation takes over again.</p>
+    <p>Any theme can go in either slot—light, dark, or one of yours; the slot is about when, not what. Every theme names a partner for the other side, one tap away when you pick it, and the builder can make a partner for a theme of your own: same accent, same sound, flipped base. Every theme picks a sound pack, a theme you make can carry its own, and Settings → Sound overrides it on this device. On an iPhone, the ring/silent switch mutes the app's sounds too.</p>
     <p>A small dot beside the sync dot marks each other device that has the list open right now—a random session id, nothing else, and Settings → Advanced turns it off.${touch ? "" : " Leave the mouse alone for a few seconds and the top bar and the footer fade to the date and the count; move it and they're back (Settings → Behavior turns that off)."}</p>`;
   $("#help-keys").addEventListener("click", () => { A.closePanel(); openKeys(); });
   $$("#help-body .link").forEach(el => el.addEventListener("focus", () => { try { el.select(); } catch (e) { /* ignore */ } }));
@@ -681,9 +740,9 @@ export function openHelp(section) {
 /* ---------------- the reference (?): every key on the desktop, every gesture on touch ---------------- */
 export function openKeys() {
   const touch = A.touchUi(), esc = A.escapeHtml;
-  const keys = [["1 – 9", "Cross off a line by position"], ["N", "New line"], ["E", "Edit the focused line"], ["O", "One thing at a time"], ["-", "Not today (the focused line)"], ["/", "Search Everything"], ["A", "Today ↔ Everything"], ["⌥ ↑ / ↓", "Move the focused line"], ["⌘ Z", "Undo"], ["T", "Theme"], ["M", "Mute"], ["F", "Full screen"], ["Enter", "While editing: save, and start a new line below"], ["Tab", "While editing: over to the note"], ["Esc", "While editing: cancel · close a panel · clear the search"], ["⌫", "On an empty line: remove it"], ["?", "This sheet"]];
-  const mouse = [["Click a line", "Cross it off, or bring it back"], ["Hover a line, then ⋯", "Click for the menu: edit (the Repeat chip is in the editor), repeat, not today, move, delete. Drag it to move the line"], ["Star, in Everything", "Put the line on Today, or take it off"], ["The count", "One thing at a time"]];
-  const gestures = [["Tap a line", "Cross it off, or bring it back"], ["Hold a line", "It lifts: drag to move it, or let go for its menu—edit, repeat, not today, move, delete"], ["Swipe right", "The line's menu"], ["Swipe left", "Not today: the line leaves Today until tomorrow's rollover (Settings → Behavior turns it off)"], ["Star, in Everything", "Put the line on Today, or take it off"], ["Tap the count", "One thing at a time"], ["Swipe down, or tap outside", "Close a sheet like this one"]];
+  const keys = [["1 – 9", "Cross off a line by position"], ["N", "New line"], ["E", "Edit the focused line"], ["O", "One thing at a time"], ["-", "Not today (the focused line)"], ["/", "Search Everything"], ["A", "Today ↔ Everything"], ["⌥ ↑ / ↓", "Move the focused line"], ["⌘ Z", "Undo"], ["T", "Day ↔ Night"], ["⇧ T", "Appearance: the Day and Night themes, and the switch"], ["M", "Mute"], ["F", "Full screen"], ["Enter", "While editing: save, and start a new line below"], ["Tab", "While editing: over to the note"], ["Esc", "While editing: cancel · close a panel · clear the search"], ["⌫", "On an empty line: remove it"], ["?", "This sheet"]];
+  const mouse = [["Click a line", "Cross it off, or bring it back"], ["Hover a line, then ⋯", "Click for the menu: edit (the Repeat chip is in the editor), repeat, not today, move, delete. Drag it to move the line"], ["Star, in Everything", "Put the line on Today, or take it off"], ["The count", "One thing at a time"], ["The sun or moon", "Day ↔ Night"]];
+  const gestures = [["Tap a line", "Cross it off, or bring it back"], ["Hold a line", "It lifts: drag to move it, or let go for its menu—edit, repeat, not today, move, delete"], ["Swipe right", "The line's menu"], ["Swipe left", "Not today: the line leaves Today until tomorrow's rollover (Settings → Behavior turns it off)"], ["Star, in Everything", "Put the line on Today, or take it off"], ["Tap the count", "One thing at a time"], ["Tap the sun or moon", "Day ↔ Night"], ["Swipe down, or tap outside", "Close a sheet like this one"]];
   const g = list => `<div class="gestures">${list.map(x => `<div class="g"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join("")}</div>`;
   $("#p-keys-h").textContent = touch ? "Gestures" : "Keys";
   $("#keys-body").innerHTML = touch ? g(gestures) : `<div class="keys">${keys.map(k => `<kbd>${esc(k[0])}</kbd><span>${esc(k[1])}</span>`).join("")}</div><h3>Mouse</h3>${g(mouse)}`;

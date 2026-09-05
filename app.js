@@ -50,8 +50,11 @@ if (!dev.schedule || typeof dev.schedule !== "object") dev.schedule = { on: fals
 // A list registered moments ago (`fresh`) does not count: iOS Safari reloads the page
 // right after the first list is created, and that reload must not look like a returning device.
 if (!dev.tourDone && meta.lists.some(l => !l.fresh)) dev.tourDone = true;
+// a device that holds a list (or went through the tour) is a returning one: it sees the what's-new toast, no hints, and
+// its theme settings migrate in place; a device with neither is on its first run
+const RETURNING = meta.lists.length > 0 || !!dev.tourDone;
 // what's new: a device that has never held a list is on its first run and sees nothing; anyone else sees the toast once per version
-const whatsNewPending = M.whatsNewDue({ seenVersion: dev.seenVersion, hasLists: meta.lists.length > 0 || !!dev.tourDone }, VERSION);
+const whatsNewPending = M.whatsNewDue({ seenVersion: dev.seenVersion, hasLists: RETURNING }, VERSION);
 if (!dev.seenVersion && !whatsNewPending) dev.seenVersion = VERSION;
 // just-in-time hints (1.1), once per device. A device that held a list before 1.1 went through the tour, or simply
 // knows the app, and must see exactly one new thing on update (the what's-new toast): its hints count as seen.
@@ -141,46 +144,84 @@ function panels() {
 const HAPTIC = IOS && (() => { const h = document.getElementById("haptic"); return !!h && "switch" in h; })();
 
 /* ---------------- sound & fx ---------------- */
-const stats = { check: 0, uncheck: 0, finish: 0, burst: 0, volley: 0 }; // read by the test hook
+const stats = { check: 0, uncheck: 0, finish: 0, burst: 0, volley: 0, tick: 0 }; // read by the test hook
 const rawSound = createSound({ muted: () => !!dev.muted, volume: () => dev.volume, kit: () => theme && theme.sound, pack: () => dev.soundPack || "" });
-const sound = { ...rawSound, check: s => { stats.check++; return rawSound.check(s); }, uncheck: () => { stats.uncheck++; return rawSound.uncheck(); }, finish: () => { stats.finish++; return rawSound.finish(); } };
+const sound = { ...rawSound, check: s => { stats.check++; return rawSound.check(s); }, uncheck: () => { stats.uncheck++; return rawSound.uncheck(); }, finish: () => { stats.finish++; return rawSound.finish(); }, tick: () => { stats.tick++; return rawSound.tick(); } };
 const rawFx = createFx($("#fx"), { palette: () => theme ? theme.confetti : ["#D26128"], shapes: () => theme ? theme.shapes : 1, reduced: () => RM.matches });
 const fx = { burst: (...a) => { stats.burst++; return rawFx.burst(...a); }, volley: () => { stats.volley++; return rawFx.volley(); } };
 
-/* ---------------- theme ---------------- */
-/** Which theme is on right now: the schedule by the clock, else the system slots, else the chosen one. */
-function currentThemeCode() {
-  const s = dev.schedule;
-  if (s && s.on) return scheduledSlot() === "night" ? (s.night || dev.darkSlot) : (s.day || dev.lightSlot);
-  if (dev.follow) return DARK_MQ.matches ? dev.darkSlot : dev.lightSlot;
-  return dev.theme;
-}
-function scheduledSlot(now = new Date()) {
-  const s = dev.schedule; if (!s) return "day";
-  const mins = t => { const m = /^(\d{1,2}):(\d{2})$/.exec(t || ""); return m ? (+m[1]) * 60 + (+m[2]) : null; };
-  const d = mins(s.dayAt), n = mins(s.nightAt), cur = now.getHours() * 60 + now.getMinutes();
-  if (d === null || n === null || d === n) return "day";
-  if (d < n) return (cur >= d && cur < n) ? "day" : "night";
-  return (cur >= n && cur < d) ? "night" : "day";
-}
-function applyThemeCode(code) {
-  theme = T.parseCode(code) || T.curated("dark");
-  T.applyTheme(theme);
-  $("#menu-theme-k").textContent = theme.name;
+/* ---------------- theme: Day and Night (1.2) ----------------
+   Every device has a Day theme and a Night theme; the sun/moon on the rail (T) flips between them. Settings →
+   Appearance decides which theme fills each slot and how the switch happens: by hand, with the system, or on a
+   schedule. A flip while an automation is on holds until the automation next switches. The slot logic is pure
+   and lives in theme.js (migrateSlots, activeSlot, flipSlot…); this is the DOM side: apply, crossfade, the glyph. */
+const envNow = () => ({ systemDark: DARK_MQ.matches, now: new Date() });
+if (T.migrateSlots(dev, { returning: RETURNING, env: envNow() })) saveDevice(); // once, on the first open of 1.2; the old keys stay
+/** The code of the theme that is on right now. */
+function currentThemeCode() { return T.slotCode(dev, envNow()); }
+let appliedCode = "", fadeRaf = 0;
+const FADE_MS = 400;
+function applyThemeCode(code, { crossfade = false } = {}) {
+  const next = T.parseCode(code) || T.curated("dark"), prev = theme;
+  theme = next;
+  dev.theme = code; // mirrored (never read here) so a device that ever ran the old code again opens on what it last saw
+  if (crossfade && prev && !RM.matches && T.cssText(prev) !== T.cssText(next)) crossfadeTo(prev, next);
+  else { stopFade(); T.applyTheme(next); }
+  $("#menu-theme-k").textContent = next.name;
+  paintDayNight();
   dispatchEvent(new CustomEvent("tf:theme"));
 }
-function chooseTheme(t) {
-  const code = T.themeCode(t);
-  if (dev.follow) { if (t.base === "dark") dev.darkSlot = code; else dev.lightSlot = code; }
-  if (dev.schedule && dev.schedule.on) { if (scheduledSlot() === "night") dev.schedule.night = code; else dev.schedule.day = code; }
-  dev.theme = code;
-  saveDevice();
-  applyThemeCode(currentThemeCode());
+function stopFade() { if (!fadeRaf) return; cancelAnimationFrame(fadeRaf); fadeRaf = 0; const g = $("#glow"); g.style.transition = ""; g.style.opacity = ""; }
+/** The whole palette crossfades from one slot's theme to the other's: the colour tokens interpolated in OKLab over
+    about 400 ms, the fonts, gradients and shadows swapped at the midpoint, the glow dipping through it. Instant
+    under prefers-reduced-motion (applyThemeCode never gets here then). */
+function crossfadeTo(prev, next) {
+  stopFade();
+  const style = document.getElementById("theme-vars"), glow = $("#glow"), root = document.documentElement;
+  const t0 = performance.now();
+  const ease = p => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2);
+  glow.style.transition = "opacity .2s ease"; glow.style.opacity = "0";
+  let swapped = false;
+  const step = now => {
+    const p = Math.min(1, (now - t0) / FADE_MS);
+    if (p >= 0.5 && !swapped) { swapped = true; root.dataset.base = next.base; root.dataset.theme = next.id; glow.style.opacity = ""; }
+    if (p < 1) { T.setTokenCss(style, T.cssTextBetween(prev, next, ease(p))); fadeRaf = requestAnimationFrame(step); }
+    else { fadeRaf = 0; glow.style.transition = ""; T.applyTheme(next); }
+  };
+  fadeRaf = requestAnimationFrame(step);
+}
+/** The sun/moon on the rail shows where a tap goes: the moon by day, the sun by night. */
+function paintDayNight() {
+  const b = $("#daynight"); if (!b) return;
+  const next = T.activeSlot(dev, envNow()) === "day" ? "night" : "day";
+  b.dataset.next = next;
+  b.title = (next === "night" ? "Night" : "Day") + " · T";
+  b.setAttribute("aria-label", "Switch to " + next);
+}
+/** A tap on the sun or moon: the other slot, with the crossfade and the incoming theme's soft tick. */
+function flipSlot() {
+  T.flipSlot(dev, envNow()); saveDevice();
+  appliedCode = currentThemeCode();
+  applyThemeCode(appliedCode, { crossfade: true });
   if (!dev.muted) sound.tick();
 }
-DARK_MQ.addEventListener("change", () => { if (dev.follow) applyThemeCode(currentThemeCode()); });
-let appliedCode = "";
-function tickTheme() { const c = currentThemeCode(); if (c !== appliedCode) { appliedCode = c; applyThemeCode(c); } }
+/** Settings → Appearance: a theme for a slot (applied at once when that slot is on), the switch, its times. */
+function setSlotTheme(slot, code) {
+  if ((slot !== "day" && slot !== "night") || !T.parseCode(code)) return;
+  dev[slot] = code; saveDevice();
+  if (T.activeSlot(dev, envNow()) === slot) { appliedCode = code; applyThemeCode(code); if (!dev.muted) sound.tick(); }
+  else dispatchEvent(new CustomEvent("tf:theme"));
+}
+function setSwitchMode(mode) { T.setSwitchMode(dev, mode, envNow()); saveDevice(); tickTheme(); dispatchEvent(new CustomEvent("tf:theme")); }
+function setSwitchTimes(dayAt, nightAt) { dev.switch = { ...dev.switch, dayAt: dayAt || "07:00", nightAt: nightAt || "19:00" }; dev.holdAuto = null; saveDevice(); tickTheme(); dispatchEvent(new CustomEvent("tf:theme")); }
+/** The minute tick and the system's own switch: a spent hold is forgotten, and a slot change crossfades. */
+function tickTheme() {
+  if (T.settleHold(dev, envNow())) saveDevice();
+  const c = currentThemeCode();
+  if (c !== appliedCode) { appliedCode = c; applyThemeCode(c, { crossfade: true }); }
+  else paintDayNight();
+}
+DARK_MQ.addEventListener("change", tickTheme);
 
 /* ---------------- boot ---------------- */
 appliedCode = currentThemeCode();
@@ -223,7 +264,7 @@ function boot() {
       const d = M.migrateV1(v1, id);
       saveLocal(id, { doc: d, rev: 0, dirty: true, created: true, mode: "edit" });
       meta.migratedV1 = true;
-      if (v1.mode && T.curated(v1.mode)) { dev.theme = "T1:curated:" + v1.mode; applyThemeCode(dev.theme); }
+      if (v1.mode && T.curated(v1.mode)) { const t = T.curated(v1.mode), slot = t.base === "light" ? "day" : "night"; dev[slot] = "T1:curated:" + v1.mode; T.setSwitchMode(dev, "hand"); dev.slot = slot; appliedCode = currentThemeCode(); applyThemeCode(appliedCode); }
       if (v1.muted) { dev.muted = true; paintMute(); }
       dev.tourDone = true; // a v1 user is a returning user
       const e = registerList(id, "", "edit"); e.created = true; e.linkSaved = false;
@@ -1550,7 +1591,7 @@ $("#p-menu").addEventListener("click", e => {
   if (act === "sound") { toggleMute(); return; } // a toggle row: the menu stays, the state flips
   closePanel();
   if (act === "share") panels().then(p => p.openShare());
-  else if (act === "theme") panels().then(p => p.openTheme());
+  else if (act === "theme") panels().then(p => p.openSettings()); // 1.2: Appearance (Day theme · Night theme · Switch) is the theme's home
   else if (act === "full") toggleFullscreen();
   else if (act === "help") panels().then(p => p.openHelp());
   else if (act === "lists") panels().then(p => p.openLists());
@@ -1719,8 +1760,9 @@ function maybeWhatsNew() {
     if (whatsNewShown || openPanel) { if (!whatsNewShown) setTimeout(maybeWhatsNew, 3000); return; }
     whatsNewShown = true;
     dev.seenVersion = VERSION; saveDevice();
-    let line = "It got quieter: nothing on a line but the words until you hover or hold, a shorter top bar, and controls that fade when you leave the list alone.";
-    try { const r = await fetch("whatsnew.json", { cache: "no-cache" }); const j = await r.json(); const v = (j.versions || []).find(x => x.version === VERSION) || j.versions[0]; if (v && v.lines && v.lines[0]) line = v.lines[0]; } catch (e) { /* the fallback line */ }
+    // the toast is the headline only; "What's new" opens the About page's changelog
+    let line = "Day and night, your way.";
+    try { const r = await fetch("whatsnew.json", { cache: "no-cache" }); const j = await r.json(); const v = (j.versions || []).find(x => x.version === VERSION) || j.versions[0]; if (v && typeof v.headline === "string" && v.headline) line = v.headline; } catch (e) { /* the fallback line */ }
     $("#wn-msg").textContent = "New in " + VERSION + ": " + line;
     $("#whatsnew").hidden = false;
   }, 1200);
@@ -1734,6 +1776,7 @@ function wireUi() {
   $("#v-all").addEventListener("click", () => setView("all"));
   $("#again").addEventListener("click", startAgain);
   $("#addtoday").addEventListener("click", () => newItem({ today: true }));
+  $("#daynight").addEventListener("click", flipSlot);
   $("#toast-undo").addEventListener("click", () => { const a = toastAction; hideToast(); if (a) a(); else undo(); });
   $("#install-x").addEventListener("click", () => { $("#install").hidden = true; document.body.classList.remove("install-on"); dev.installHint = true; saveDevice(); });
   if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc && !openPanel) { $("#install").hidden = false; document.body.classList.add("install-on"); } }, 2500);
@@ -1783,7 +1826,7 @@ document.addEventListener("keydown", e => {
     if (pos < ids.length) { e.preventDefault(); toggle(ids[pos], 0, 0, false); }
   }
   else if (k === "m" || k === "M") { e.preventDefault(); toggleMute(); }
-  else if (k === "t" || k === "T") { e.preventDefault(); panels().then(p => p.openTheme()); }
+  else if (k === "t" || k === "T") { e.preventDefault(); if (e.shiftKey) panels().then(p => p.openSettings()); else flipSlot(); } // T flips Day and Night; Shift+T opens Appearance
   else if ((k === "f" || k === "F") && document.fullscreenEnabled) { e.preventDefault(); toggleFullscreen(); }
   else if (k === "e" || k === "E") { if (!edit) return; e.preventDefault(); const id = focusedRowId(); if (id) startEdit(id); }
   else if (k === "n" || k === "N") { if (!edit) return; e.preventDefault(); newItem({ today: view === "today", sectionId: view === "all" ? sectionOfFocused() : "" }); }
@@ -1856,14 +1899,15 @@ const api = {
   afterChange, applyRemote, render, setView, paint, paintListName, paintMute, paintStatus, paintMenu, paintWho, toast, hideToast, ask, showPanel, closePanel,
   focusRow, newItem, startEdit, commitEdit, deleteItem, toggle, toggleToday, notToday, pushUndo, undo, restoreItem,
   saveDevice, registerList, switchTo, openList, showWelcome, createList, parseLink, flushQuick, flushOthers, killRemote, queueKill, retryPendingKills,
-  applyThemeCode, chooseTheme, currentThemeCode, tickTheme, setWake, toggleMute, toggleFullscreen, setOneThing, setSearch, ruleLabel, idleReset,
+  applyThemeCode, currentThemeCode, tickTheme, setSlotTheme, flipSlot, setSwitchMode, setSwitchTimes, activeSlot: () => T.activeSlot(dev, envNow()), autoSlot: () => T.autoSlot(dev, envNow()),
+  slotCode: slot => dev[slot] || T.SLOT_DEFAULT[slot], setWake, toggleMute, toggleFullscreen, setOneThing, setSearch, ruleLabel, idleReset,
   editLink, viewLink, copyText, nativeShare, escapeHtml, drawQr, frag,
   resubscribePresence: () => { if (sync) sync.resubscribe(); paintWho(dev.whoOff ? 0 : whoCount); },
   loadLocal, saveLocal, removeLocal
 };
 
 /* test hook (read-only) */
-window.__tf = () => ({ stats: { ...stats }, view, listId, mode: listMode, lookupId: ref ? ref.lookupId : null, R: ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY });
+window.__tf = () => ({ stats: { ...stats }, view, listId, mode: listMode, lookupId: ref ? ref.lookupId : null, R: ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf });
 // test-only controls, on the local transport: simulate what iOS does to the audio context
 if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneToday(); } }, presence: n => paintWho(n) };
 

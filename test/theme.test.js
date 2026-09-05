@@ -2,7 +2,9 @@
 import assert from "node:assert/strict";
 import {
   CURATED, CUSTOM_PAIRS, PAIRS, derive, surprise, report, themeCode, parseCode, pairFamilies,
-  hexToOklch, oklch, contrast, cssText, normalizeHex, pickPair, PACK_IDS, hueSound
+  hexToOklch, oklch, contrast, cssText, normalizeHex, pickPair, PACK_IDS, hueSound,
+  CURATED_DAY, CURATED_NIGHT, curated, partnerOf, makePartner, SLOT_DEFAULT, scheduledSlot, autoSlot, activeSlot, slotCode,
+  flipSlot, settleHold, setSwitchMode, migrateSlots, mixHex, cssTextBetween
 } from "../theme.js";
 import fs from "node:fs";
 
@@ -35,10 +37,10 @@ test("out-of-gamut oklch is mapped by dropping chroma, never NaN", () => {
   assert.equal(oklch(0.5, 0, 0).length, 7);
 });
 
-test("12 curated themes, each a complete kit", () => {
-  assert.equal(CURATED.length, 12);
+test("14 curated themes, each a complete kit", () => {
+  assert.equal(CURATED.length, 14);
   const ids = new Set(CURATED.map(t => t.id));
-  assert.equal(ids.size, 12);
+  assert.equal(ids.size, 14);
   for (const t of CURATED) {
     assert.ok(PAIRS[t.pair], t.id + " pair");
     assert.ok(["knock", "bell", "blip", "typewriter", "marble", "pop"].includes(t.sound.engine), t.id + " sound");
@@ -160,6 +162,134 @@ test("cssText contains every token once and a color-scheme", () => {
   const css = cssText(CURATED[0]);
   for (const v of ["--ink:", "--text:", "--accent:", "--dim-2:", "--muted-2:", "--font-task:", "--task-w:", "--strike-anim:", "color-scheme:dark"]) assert.ok(css.includes(v), v);
   assert.equal((css.match(/--ink:/g) || []).length, 1);
+});
+
+/* ---------------- 1.2: Day and Night ---------------- */
+
+test("every curated theme leans day or night and names a partner that names it back; the pairs are the designed ones", () => {
+  for (const t of CURATED) {
+    assert.ok(t.lean === "day" || t.lean === "night", t.id + " lean");
+    const p = partnerOf(t);
+    assert.ok(p && p.id !== t.id, t.id + " has a partner");
+    assert.equal(p.partner, t.id, t.id + "'s partner names it back");
+    assert.notEqual(p.lean, t.lean, t.id + " and " + p.id + " lean different ways");
+  }
+  const pairs = CURATED_DAY.map((d, i) => d.id + "↔" + CURATED_NIGHT[i].id);
+  assert.deepEqual(pairs, ["light↔dark", "paper↔midnight", "harbor↔forest", "blush↔pink", "teletype↔terminal", "sunset↔dusk", "cocoa↔ember"]);
+  assert.equal(CURATED_DAY.length + CURATED_NIGHT.length, CURATED.length, "every kit is in exactly one group");
+  assert.ok(CURATED_DAY.every(t => t.lean === "day") && CURATED_NIGHT.every(t => t.lean === "night"));
+  assert.equal(partnerOf(derive({ accent: "#3366FF" })), null, "a theme you make has no curated partner");
+});
+
+test("the two new kits reach the curated bar and share their partner's DNA: Blush is Pink's day, Teletype is Terminal's day", () => {
+  const blush = curated("blush"), pink = curated("pink"), tele = curated("teletype"), term = curated("terminal");
+  check(blush, "blush"); check(tele, "teletype");
+  assert.equal(blush.base, "light"); assert.equal(blush.pair, pink.pair); assert.equal(blush.sound.engine, "bell"); assert.equal(blush.shapes, 3); assert.ok(blush.confetti.length >= 5);
+  assert.equal(blush.colors.strikeAnim, pink.colors.strikeAnim, "the same shimmer strike as Pink");
+  assert.equal(tele.base, "light"); assert.equal(tele.pair, term.pair); assert.equal(tele.sound.engine, "blip"); assert.ok(tele.sound.pitch < 1, "a lower, softer blip"); assert.ok(tele.confetti.length >= 5);
+  for (const t of [blush, tele]) assert.equal(themeCode(t), "T1:curated:" + t.id, "a curated code like any other");
+  const ink = hexToOklch(blush.colors.ink); assert.ok(ink.L > 0.95 && ink.h > 330, "blush paper: very light, pink-leaning");
+});
+
+test("the partner of a theme you make: same accent and pack, flipped base, a chosen pair kept and an automatic one re-picked; it round-trips", () => {
+  const m = derive({ accent: "#3366FF", base: "dark", pair: "grotesk", name: "Marbles", pack: "marble" });
+  const p = makePartner({ ...m, pairChosen: true });
+  assert.equal(p.base, "light"); assert.equal(p.accent, "#3366FF"); assert.equal(p.pack, "marble"); assert.equal(p.sound.engine, "marble"); assert.equal(p.pair, "grotesk"); assert.equal(p.name, "Marbles · day");
+  assert.equal(themeCode(p), "T2:l:3366FF:grotesk:marble:Marbles · day");
+  assert.equal(cssText(parseCode(themeCode(p))), cssText(p), "the saved code rebuilds the same tokens");
+  const back = makePartner({ ...p, pairChosen: true });
+  assert.equal(back.base, "dark"); assert.equal(back.name, "Marbles · night"); assert.equal(cssText(back), cssText(derive({ accent: "#3366FF", base: "dark", pair: "grotesk", name: "x", pack: "marble" })), "the partner's partner is the original palette");
+  const auto = makePartner({ accent: "#3366FF", base: "dark", pair: "", pack: "", name: "Auto", pairChosen: false });
+  assert.equal(auto.pair, pickPair("light", "#3366FF"), "an automatic pair is picked again for the new base"); assert.equal(auto.pack, ""); assert.equal(themeCode(auto), "T2:l:3366FF:" + auto.pair + "::Auto · day");
+  check(p, "partner light"); check(back, "partner dark");
+  for (const t of CURATED) assert.equal(themeCode(t), "T1:curated:" + t.id, "curated codes unchanged by 1.2");
+  assert.equal(themeCode(parseCode("T2:d:3366FF:grotesk:marble:Marbles")), "T2:d:3366FF:grotesk:marble:Marbles", "T2 codes unchanged by 1.2");
+});
+
+const at = s => new Date(s);
+const DARK = { systemDark: true, now: at("2026-09-05T15:00:00") }, LIGHT = { systemDark: false, now: at("2026-09-05T15:00:00") };
+
+test("migration: a by-hand device keeps its theme in the slot matching its base, the other slot gets the partner", () => {
+  const dev = { theme: "T1:curated:pink", darkSlot: "T1:curated:dark", lightSlot: "T1:curated:light", follow: false, schedule: { on: false, dayAt: "07:00", nightAt: "19:00", day: "T1:curated:light", night: "T1:curated:dark" }, tourDone: true };
+  assert.equal(migrateSlots(dev, { returning: true, env: DARK }), true);
+  assert.equal(dev.switch.mode, "hand"); assert.equal(dev.night, "T1:curated:pink"); assert.equal(dev.day, "T1:curated:blush"); assert.equal(dev.slot, "night");
+  assert.equal(slotCode(dev, DARK), "T1:curated:pink", "no visual change"); assert.equal(slotCode(dev, LIGHT), "T1:curated:pink", "by hand ignores the system");
+  assert.equal(dev.theme, "T1:curated:pink", "the old key is untouched"); assert.equal(dev.follow, false); assert.equal(dev.schedule.on, false);
+  assert.equal(migrateSlots(dev, { returning: true, env: DARK }), false, "runs once");
+  // a light theme lands in Day; a custom theme's other slot gets that side's default
+  const l = { theme: "T1:curated:paper", tourDone: true }; migrateSlots(l, { returning: true, env: DARK });
+  assert.equal(l.slot, "day"); assert.equal(l.day, "T1:curated:paper"); assert.equal(l.night, "T1:curated:midnight"); assert.equal(slotCode(l, DARK), "T1:curated:paper");
+  const c = { theme: "T2:d:3366FF:grotesk:marble:Marbles", tourDone: true }; migrateSlots(c, { returning: true, env: DARK });
+  assert.equal(c.night, "T2:d:3366FF:grotesk:marble:Marbles"); assert.equal(c.day, SLOT_DEFAULT.day); assert.equal(slotCode(c, LIGHT), "T2:d:3366FF:grotesk:marble:Marbles");
+});
+
+test("migration: Follow system becomes With the system with both slots carried over; the theme on screen does not change", () => {
+  const dev = { theme: "T1:curated:midnight", follow: true, darkSlot: "T1:curated:midnight", lightSlot: "T1:curated:harbor", schedule: { on: false, dayAt: "07:00", nightAt: "19:00" } };
+  migrateSlots(dev, { returning: true, env: DARK });
+  assert.equal(dev.switch.mode, "system"); assert.equal(dev.day, "T1:curated:harbor"); assert.equal(dev.night, "T1:curated:midnight"); assert.equal(dev.holdAuto, null);
+  assert.equal(slotCode(dev, DARK), "T1:curated:midnight", "dark system: what Follow system showed"); assert.equal(slotCode(dev, LIGHT), "T1:curated:harbor", "light system: likewise");
+  const bare = { follow: true }; migrateSlots(bare, { returning: true, env: LIGHT }); assert.equal(bare.day, SLOT_DEFAULT.day); assert.equal(bare.night, SLOT_DEFAULT.night, "missing slots get the defaults 1.1 used");
+});
+
+test("migration: the schedule becomes On a schedule with its themes and times; the clock decides as before", () => {
+  const dev = { theme: "T1:curated:harbor", follow: false, schedule: { on: true, dayAt: "08:00", nightAt: "18:30", day: "T1:curated:harbor", night: "T1:curated:forest" } };
+  migrateSlots(dev, { returning: true, env: DARK });
+  assert.equal(dev.switch.mode, "schedule"); assert.equal(dev.switch.dayAt, "08:00"); assert.equal(dev.switch.nightAt, "18:30"); assert.equal(dev.day, "T1:curated:harbor"); assert.equal(dev.night, "T1:curated:forest");
+  assert.equal(slotCode(dev, { now: at("2026-09-05T15:00:00") }), "T1:curated:harbor"); assert.equal(slotCode(dev, { now: at("2026-09-05T18:30:00") }), "T1:curated:forest"); assert.equal(slotCode(dev, { now: at("2026-09-05T07:59:00") }), "T1:curated:forest");
+  assert.equal(scheduledSlot({ dayAt: "22:00", nightAt: "06:00" }, at("2026-09-05T23:00:00")), "day", "a schedule that wraps midnight");
+  assert.equal(scheduledSlot({ dayAt: "22:00", nightAt: "06:00" }, at("2026-09-05T07:00:00")), "night");
+  assert.equal(scheduledSlot({ dayAt: "x", nightAt: "06:00" }), "day", "junk times mean day");
+});
+
+test("a fresh device: Light by day, Dark by night, with the system, so the first open matches the device", () => {
+  const dev = {}; assert.equal(migrateSlots(dev, { returning: false, env: DARK }), true);
+  assert.equal(dev.switch.mode, "system"); assert.equal(dev.day, "T1:curated:light"); assert.equal(dev.night, "T1:curated:dark");
+  assert.equal(slotCode(dev, DARK), "T1:curated:dark"); assert.equal(slotCode(dev, LIGHT), "T1:curated:light");
+  const d2 = { theme: "T1:curated:dark" }; migrateSlots(d2, { returning: false, env: LIGHT }); assert.equal(d2.switch.mode, "system", "the default theme key 1.1 wrote on first load does not make a device a returning one");
+});
+
+test("the hold rule: a manual flip under an automation holds until the automation next switches, then it resumes", () => {
+  const dev = { day: "D", night: "N", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }, slot: "day", holdAuto: null };
+  assert.equal(activeSlot(dev, DARK), "night");
+  flipSlot(dev, DARK);                                            // the user wants Day on a dark system
+  assert.equal(activeSlot(dev, DARK), "day"); assert.equal(dev.holdAuto, "night"); assert.equal(slotCode(dev, DARK), "D");
+  assert.equal(settleHold(dev, DARK), false, "still dark: the hold stands");
+  assert.equal(settleHold(dev, LIGHT), true, "the system went light: the hold is spent"); assert.equal(dev.holdAuto, null);
+  assert.equal(activeSlot(dev, LIGHT), "day"); assert.equal(activeSlot(dev, DARK), "night", "and the automation is back in charge");
+  flipSlot(dev, DARK); flipSlot(dev, DARK);                       // flip away and back
+  assert.equal(dev.holdAuto, null, "flipping back to what the automation wants holds nothing"); assert.equal(activeSlot(dev, DARK), "night");
+  // the same under a schedule, with the clock moving
+  const s = { day: "D", night: "N", switch: { mode: "schedule", dayAt: "07:00", nightAt: "19:00" }, slot: "day", holdAuto: null };
+  const noon = { now: at("2026-09-05T12:00:00") }, evening = { now: at("2026-09-05T19:00:00") };
+  flipSlot(s, noon); assert.equal(activeSlot(s, noon), "night"); assert.equal(s.holdAuto, "day");
+  assert.equal(activeSlot(s, evening), "night", "still night when the schedule catches up"); assert.equal(settleHold(s, evening), true);
+  assert.equal(activeSlot(s, { now: at("2026-09-06T08:00:00") }), "day", "the next morning the schedule switches as usual");
+  // by hand there is nothing to hold
+  const h = { day: "D", night: "N", switch: { mode: "hand" }, slot: "day" }; flipSlot(h, DARK); assert.equal(h.slot, "night"); assert.equal(h.holdAuto, null); assert.equal(activeSlot(h, LIGHT), "night");
+  assert.equal(autoSlot(h, DARK), null);
+});
+
+test("the switch: turning an automation off keeps what is on; turning one on forgets a hold", () => {
+  const dev = { day: "D", night: "N", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }, slot: "day", holdAuto: "night" };
+  assert.equal(activeSlot(dev, DARK), "day", "held on Day");
+  setSwitchMode(dev, "hand", DARK); assert.equal(dev.switch.mode, "hand"); assert.equal(dev.slot, "day"); assert.equal(dev.holdAuto, null); assert.equal(activeSlot(dev, LIGHT), "day");
+  setSwitchMode(dev, "schedule", { now: at("2026-09-05T23:00:00") }); assert.equal(dev.switch.mode, "schedule"); assert.equal(dev.switch.dayAt, "07:00"); assert.equal(activeSlot(dev, { now: at("2026-09-05T23:00:00") }), "night");
+  setSwitchMode(dev, "nonsense", DARK); assert.equal(dev.switch.mode, "schedule", "an unknown mode is ignored");
+});
+
+test("the crossfade: colours interpolate in OKLab, the rest swaps at the midpoint, the ends are the themes themselves", () => {
+  assert.equal(mixHex("#000000", "#FFFFFF", 0), "#000000"); assert.equal(mixHex("#000000", "#FFFFFF", 1), "#FFFFFF");
+  const mid = hexToOklch(mixHex("#000000", "#FFFFFF", 0.5)); assert.ok(mid.L > 0.45 && mid.L < 0.55, "perceptual midpoint " + mid.L);
+  const a = curated("light"), b = curated("dark");
+  assert.equal(cssTextBetween(a, b, 0), cssText(a)); assert.equal(cssTextBetween(a, b, 1), cssText(b));
+  const q = cssTextBetween(a, b, 0.3), h = cssTextBetween(a, b, 0.7);
+  const ink = css => css.match(/--ink:(#[0-9A-F]{6})/)[1];
+  assert.ok(ink(q) !== a.colors.ink && ink(q) !== b.colors.ink, "an in-between ink");
+  assert.ok(hexToOklch(ink(q)).L > hexToOklch(ink(h)).L, "darker as it goes");
+  assert.ok(q.includes("color-scheme:light") && q.includes("--strike-shadow:none"), "before the midpoint: the first theme's fonts, scheme and shadows");
+  assert.ok(h.includes("color-scheme:dark") && h.includes("--strike-shadow:0 0 10px"), "after it: the second's");
+  assert.ok(/--hair:rgba\(\d+,\d+,\d+,0\.\d+\)/.test(q), "rgba hairlines interpolate too");
+  for (const t of [0.1, 0.5, 0.9]) assert.equal((cssTextBetween(a, b, t).match(/--ink:/g) || []).length, 1);
 });
 
 console.log(`\n${passed} theme tests passed`);

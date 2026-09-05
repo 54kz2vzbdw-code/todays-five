@@ -6,7 +6,7 @@
   <title>Today's Five</title>
   <meta name="description" content="A short list built to be left open on screen all day. Encrypted on your device; the link is the key. No account.">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-MwYdZmcd5WtJpDGtTAUiOLp/uNHWeenj2aBDPCEA95k='; style-src 'self' 'sha256-yNknL13COQN52cpZ0PepUU2IyZOt8ZfrghaJG5Kz+t4='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://xyfjxdbwhysbaltcwvcx.supabase.co wss://xyfjxdbwhysbaltcwvcx.supabase.co; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-MwYdZmcd5WtJpDGtTAUiOLp/uNHWeenj2aBDPCEA95k='; style-src 'self' 'sha256-oE1HVK8YytWGTI+f5YZEZpzJkHu5EBNa0YFHsWkjQgQ='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://xyfjxdbwhysbaltcwvcx.supabase.co wss://xyfjxdbwhysbaltcwvcx.supabase.co; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
   <meta name="theme-color" content="#1A1D21">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,7 +23,11 @@
   <link rel="modulepreload" href="fx.js">
   <link rel="modulepreload" href="config.js">
   <link rel="modulepreload" href="version.js">
-  <style id="theme-vars">:root{--ink:#1A1D21;--ink-2:#23272C;--ink-3:#2E343A;--text:#F5F1EA;--muted:#9AA0A8;--dim:#7F858C;--done:#7F858C;--muted-2:#9AA0A8;--dim-2:#979DA4;--accent:#D26128;--accent-hi:#E8814A;--accent-deep:#A34A1C;--accent-text:#E8814A;--danger:#E0745A;--hair:rgba(245,241,234,.10);--hair-hi:rgba(245,241,234,.30);--hair-solid:#65696E;--glow:radial-gradient(125% 78% at 50% 34%, rgba(210,97,40,.10), rgba(210,97,40,0) 62%);--strike-shadow:0 0 10px rgba(210,97,40,.38);--box-done-bg:#D26128;--strike-bg:#D26128;--strike-size:auto;--strike-anim:none;--finale-style:normal;--font-task:"Lato","Helvetica Neue",Helvetica,Arial,sans-serif;--font-ui:"PT Sans","Helvetica Neue",Helvetica,Arial,sans-serif;--task-w:900;--task-ls:-.025em;--task-lh:1.14;color-scheme:dark}</style>
+  <!-- the tokens below paint the first frame: a returning device swaps in its cached theme through the boot script;
+       a fresh device gets Dark on a dark system and Light on a light one, which is what 1.2's default switch
+       (With the system) picks a moment later. Both rules are replaced by theme.js as soon as it runs. -->
+  <style id="theme-vars">:root{--ink:#1A1D21;--ink-2:#23272C;--ink-3:#2E343A;--text:#F5F1EA;--muted:#9AA0A8;--dim:#7F858C;--done:#7F858C;--muted-2:#9AA0A8;--dim-2:#979DA4;--accent:#D26128;--accent-hi:#E8814A;--accent-deep:#A34A1C;--accent-text:#E8814A;--danger:#E0745A;--hair:rgba(245,241,234,.10);--hair-hi:rgba(245,241,234,.30);--hair-solid:#65696E;--glow:radial-gradient(125% 78% at 50% 34%, rgba(210,97,40,.10), rgba(210,97,40,0) 62%);--strike-shadow:0 0 10px rgba(210,97,40,.38);--box-done-bg:#D26128;--strike-bg:#D26128;--strike-size:auto;--strike-anim:none;--finale-style:normal;--font-task:"Lato","Helvetica Neue",Helvetica,Arial,sans-serif;--font-ui:"PT Sans","Helvetica Neue",Helvetica,Arial,sans-serif;--task-w:900;--task-ls:-.025em;--task-lh:1.14;color-scheme:dark}
+@media (prefers-color-scheme:light){:root{--ink:#FAF8F4;--ink-2:#F1ECE3;--ink-3:#E4DED2;--text:#494F55;--muted:#707174;--dim:#6F7378;--done:#6E7278;--muted-2:#5F6063;--dim-2:#5E6267;--accent:#CB6015;--accent-hi:#E07B33;--accent-deep:#9E4A10;--accent-text:#9E4A10;--danger:#B8402A;--hair:rgba(73,79,85,.16);--hair-hi:rgba(73,79,85,.42);--hair-solid:#918F8B;--glow:radial-gradient(125% 78% at 50% 30%, rgba(210,97,40,0.07), rgba(210,97,40,0) 60%);--strike-shadow:none;--box-done-bg:#CB6015;--strike-bg:#CB6015;--strike-size:auto;--strike-anim:none;--finale-style:normal;--font-task:"Lato","Helvetica Neue",Helvetica,Arial,sans-serif;--font-ui:"PT Sans","Helvetica Neue",Helvetica,Arial,sans-serif;--task-w:900;--task-ls:-.025em;--task-lh:1.14;color-scheme:light}}</style>
   <script>
   /* Boot, before first paint. This script is hashed in the CSP above: change it and re-run tools/csp-hash.
      1. re-apply the cached theme tokens through the CSSOM (the inline stylesheet's text is hashed too, so it
@@ -112,6 +116,7 @@
         <button id="v-today" role="tab" aria-selected="true" aria-controls="today" title="Today (A)">Today</button>
         <button id="v-all" role="tab" aria-selected="false" aria-controls="all" title="Everything (A)">Everything</button>
       </div>
+      <button class="chip icon" id="daynight" type="button" title="Night · T" aria-label="Switch to night" data-next="night"><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.5 1.5M17.2 17.2l1.5 1.5M5.3 18.7l1.5-1.5M17.2 6.8l1.5-1.5"/></svg><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6z"/></svg></button>
       <button class="chip" id="share" title="Share this list" aria-haspopup="dialog">Share</button>
       <button class="chip icon" id="more" title="More" aria-haspopup="dialog" aria-label="More">⋯</button>
     </div>
@@ -155,7 +160,7 @@
 </div>
 
 <div id="toast" role="status" aria-live="polite"><span class="msg"></span><button class="chip" id="toast-undo" type="button" hidden>Undo</button></div>
-<div id="whatsnew" role="status" hidden><span class="msg" id="wn-msg"></span><button class="chip" id="wn-more" type="button">Read it</button><button class="x" id="wn-x" type="button" aria-label="Dismiss">×</button></div>
+<div id="whatsnew" role="status" hidden><span class="msg" id="wn-msg"></span><button class="chip" id="wn-more" type="button">What's new</button><button class="x" id="wn-x" type="button" aria-label="Dismiss">×</button></div>
 <div id="bar" aria-hidden="true"><div id="fill"></div></div>
 <div id="install" role="status" hidden><span>Add this to your Home Screen: tap <b>Share</b>, then <b>Add to Home Screen</b>.</span><button class="x" id="install-x" type="button" aria-label="Dismiss">×</button></div>
 <input type="checkbox" switch id="haptic" class="haptic" tabindex="-1" aria-hidden="true">
@@ -186,15 +191,13 @@
 
   <h3>Appearance</h3>
   <div class="menu">
-    <button type="button" class="row-set" data-set="theme"><span class="lb">Theme<span class="sub" id="set-theme-sub"></span></span><span class="k state" id="set-theme-k">Dark</span></button>
-    <button type="button" class="row-toggle" data-set="follow" aria-pressed="false"><span class="lb">Follow system<span class="sub">Dark and light slots follow the device</span></span><span class="sw" aria-hidden="true"></span></button>
-    <button type="button" class="row-toggle" data-set="schedule" aria-pressed="false"><span class="lb">Schedule<span class="sub" id="set-schedule-sub">A day theme and a night theme, by the clock</span></span><span class="sw" aria-hidden="true"></span></button>
+    <button type="button" class="row-set" data-set="day" aria-haspopup="dialog"><span class="lb">Day theme<span class="sub" id="set-day-sub">What's on by day. Any theme, light or dark.</span></span><span class="k state" id="set-day-k">Light</span></button>
+    <button type="button" class="row-set" data-set="night" aria-haspopup="dialog"><span class="lb">Night theme<span class="sub" id="set-night-sub">What's on after dark. Any theme, light or dark.</span></span><span class="k state" id="set-night-k">Dark</span></button>
+    <label class="item" for="set-switch"><span class="lb">Switch<span class="sub" id="set-switch-sub">The sun and moon in the top bar flip it.</span></span><select id="set-switch" aria-label="How the switch happens"><option value="hand">By hand</option><option value="system">With the system</option><option value="schedule">On a schedule</option></select></label>
     <div class="sub-block" id="schedule-block" hidden>
       <div class="grid2">
         <label>Day from<input type="time" id="sch-day-at" step="300"></label>
         <label>Night from<input type="time" id="sch-night-at" step="300"></label>
-        <label>Day theme<select id="sch-day"></select></label>
-        <label>Night theme<select id="sch-night"></select></label>
       </div>
     </div>
   </div>
@@ -252,11 +255,15 @@
 </div></dialog>
 
 <dialog class="panel" id="p-theme" aria-labelledby="p-theme-h"><div class="body">
-  <h2><span id="p-theme-h">Theme</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
-  <div class="swatches" id="swatches"></div>
-  <div class="row-actions">
-    <button class="chip" id="follow" type="button" aria-pressed="false">Follow system: off</button>
-  </div>
+  <h2><span id="p-theme-h">Day theme</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <p class="fine" id="theme-msg">Any theme can go in either slot: the slot is about when, not what. Each one names its partner for the other side.</p>
+  <h3 class="first" id="sw-day-h">Made for day</h3>
+  <div class="swatches" id="sw-day"></div>
+  <h3 id="sw-night-h">Made for night</h3>
+  <div class="swatches" id="sw-night"></div>
+  <h3 id="sw-yours-h" hidden>Yours</h3>
+  <div class="swatches" id="sw-yours" hidden></div>
+  <div class="row-actions partner-offer" id="partner-offer" hidden><button class="chip accent" id="partner-use" type="button">Use Dark for Night</button></div>
   <h3>Your own</h3>
   <div class="field">
     <label for="c-hex">Accent</label>
@@ -290,8 +297,9 @@
     </div>
   </div>
   <div class="row-actions">
-    <button class="chip accent" id="c-use" type="button">Use</button>
+    <button class="chip accent" id="c-use" type="button">Use for Day</button>
     <button class="chip" id="c-save" type="button">Save to this list</button>
+    <button class="chip" id="c-partner" type="button" title="The same accent and sound on the flipped base, saved beside this one">Make its partner</button>
     <button class="chip" id="c-surprise" type="button">Surprise me</button>
     <button class="chip" id="c-export" type="button">Copy code</button>
   </div>

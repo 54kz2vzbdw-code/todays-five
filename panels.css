@@ -65,8 +65,14 @@ dialog.panel .x:focus-visible,dialog.panel .chip:focus-visible,dialog.panel .men
 input[type="range"]{width:100%;accent-color:var(--accent);min-height:44px}
 input[type="color"]{width:44px;height:44px;border:1px solid var(--hair);border-radius:10px;background:var(--ink);padding:2px;cursor:pointer;flex:0 0 auto}
 
-/* theme picker */
+/* theme picker (1.2: for one slot at a time; the kits grouped by their lean, then yours; the partner on offer under the group it came from) */
 .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(7.4rem,1fr));gap:.5rem}
+#p-theme h3{margin-top:.9rem}
+#p-theme h3.first{margin-top:.4rem}
+#theme-msg{margin:0 0 .2rem}
+.partner-offer{margin:.5rem 0 .2rem}
+.partner-offer .chip{font-family:var(--font-ui);font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;min-height:40px}
+@media (max-width:680px){ .swatches{grid-template-columns:repeat(3,1fr);gap:.4rem} .swatch{padding:.5rem .55rem;min-height:4.2rem} .swatch .nm{font-size:14px} .swatch .sm{font-size:9px;letter-spacing:.08em} }
 .swatch{
   position:relative;display:flex;flex-direction:column;justify-content:flex-end;gap:.2rem;
   min-height:4.6rem;border-radius:12px;border:1px solid var(--hair);padding:.6rem .7rem;cursor:pointer;
@@ -187,12 +193,7 @@ dialog.panel h3.first{margin-top:.2rem}
 .help .row-actions{margin:.3rem 0 .6rem}
 .help b{color:var(--text)}
 
-/* about page: the changelog */
-.prose .version{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:.2rem 0 1rem}
-.prose .log{list-style:none;padding:0}
-.prose .log li{margin:.7rem 0}
-.prose .log .v{font-weight:700;color:var(--text)}
-.prose .log ul{margin:.25rem 0 0 1.1rem;padding:0}
+/* the About page's version line and changelog live in styles.css (the only sheet About loads) */
 
 
 

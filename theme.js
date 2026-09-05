@@ -107,7 +107,10 @@ export function pairFamilies(pairId) {
    Harbor pops; the rest keep their v3 engines. A device can override the pack in Settings → Sound.
    Dark, Light and Pink carry v1's exact tokens, fonts, sounds and confetti,
    with one exception recorded in DECISIONS.md: the two secondary greys (dim,
-   muted) in Dark and Light are nudged to the nearest values that pass 4.5:1.   */
+   muted) in Dark and Light are nudged to the nearest values that pass 4.5:1.
+   1.2: every kit leans day or night and names its designed partner (the pairs are in DECISIONS.md, "1.2
+   decisions"). Blush (Pink's day) and Teletype (Terminal's day) are new: each shares its partner's font pair and
+   sound engine with its own palette, parameters and confetti, the way Light relates to Dark.                */
 
 const V1_GLOW = (c, a, y = 34, stop = 62) => `radial-gradient(125% 78% at 50% ${y}%, ${rgba(c, a)}, ${rgba(c, 0)} ${stop}%)`;
 
@@ -122,7 +125,7 @@ const RAW = [
     accent: "#D26128", accentHi: "#E8814A", accentDeep: "#A34A1C", accentText: "#E8814A", danger: "#E0745A",
     hair: "rgba(245,241,234,.10)", hairHi: "rgba(245,241,234,.30)",
     glow: V1_GLOW("#D26128", .10), strikeShadow: "0 0 10px rgba(210,97,40,.38)"
-  }, { engine: "knock" }, ["#D26128", "#E8814A", "#F5F1EA", "#A34A1C", "#7D8288"]),
+  }, { engine: "knock" }, ["#D26128", "#E8814A", "#F5F1EA", "#A34A1C", "#7D8288"], { lean: "night", partner: "light" }),
 
   kit("light", "Light", "light", "lato", {
     ink: "#FAF8F4", ink2: "#F1ECE3", ink3: "#E4DED2",
@@ -130,7 +133,7 @@ const RAW = [
     accent: "#CB6015", accentHi: "#E07B33", accentDeep: "#9E4A10", accentText: "#9E4A10", danger: "#B8402A",
     hair: "rgba(73,79,85,.16)", hairHi: "rgba(73,79,85,.42)",
     glow: V1_GLOW("#D26128", .07, 30, 60), strikeShadow: "none"
-  }, { engine: "knock" }, ["#D26128", "#E8814A", "#A34A1C", "#4B4F54", "#A4BCC4"]),
+  }, { engine: "knock" }, ["#D26128", "#E8814A", "#A34A1C", "#4B4F54", "#A4BCC4"], { lean: "day", partner: "dark" }),
 
   kit("pink", "Pink", "dark", "fraunces", {
     ink: "#2E0A1C", ink2: "#421029", ink3: "#58163A",
@@ -142,35 +145,35 @@ const RAW = [
     boxDoneBg: "linear-gradient(135deg,#FF3D9A,#FFD36E)",
     strikeBg: "linear-gradient(90deg,#FF3D9A,#FFD36E,#FF8FBE,#FF3D9A)", strikeSize: "300% 100%", strikeAnim: "shimmer 3.4s linear infinite",
     finaleStyle: "italic"
-  }, { engine: "bell" }, ["#FF3D9A", "#FF8FBE", "#FFD36E", "#FFFFFF", "#FF6FAF", "#FFB8D9"], { shapes: 3 }),
+  }, { engine: "bell" }, ["#FF3D9A", "#FF8FBE", "#FFD36E", "#FFFFFF", "#FF6FAF", "#FFB8D9"], { shapes: 3, lean: "night", partner: "blush" }),
 
   kit("midnight", "Midnight", "dark", "grotesk", {
     ink: "#0E1424", ink2: "#151C30", ink3: "#1E2740",
     text: "#E8EEF8", muted: "#A6B4CC", dim: "#8B98B0", done: "#8B98B0",
     accent: "#7FB3FF", accentHi: "#B5D4FF", accentDeep: "#3B7BD8", accentText: "#8FBCFF", danger: "#FF7B8A",
     glow: V1_GLOW("#7FB3FF", .12), strikeShadow: "0 0 12px rgba(127,179,255,.45)"
-  }, { engine: "bell", pitch: 0.75, decay: 1.4, bright: 0.5 }, ["#7FB3FF", "#B5D4FF", "#FFFFFF", "#3B7BD8", "#9AA7C4"]),
+  }, { engine: "bell", pitch: 0.75, decay: 1.4, bright: 0.5 }, ["#7FB3FF", "#B5D4FF", "#FFFFFF", "#3B7BD8", "#9AA7C4"], { lean: "night", partner: "paper" }),
 
   kit("forest", "Forest", "dark", "outfit", {
     ink: "#10201A", ink2: "#172A22", ink3: "#20362C",
     text: "#EAF2E6", muted: "#A9C4A2", dim: "#8AA884", done: "#8AA884",
     accent: "#8BD17A", accentHi: "#B8E6A6", accentDeep: "#4E9A45", accentText: "#9EDB8E", danger: "#F08A6A",
     glow: V1_GLOW("#8BD17A", .10), strikeShadow: "0 0 10px rgba(139,209,122,.40)"
-  }, { engine: "marble", pitch: 0.82, decay: 1.3 }, ["#8BD17A", "#B8E6A6", "#F2E9B8", "#4E9A45", "#EAF2E6"]),
+  }, { engine: "marble", pitch: 0.82, decay: 1.3 }, ["#8BD17A", "#B8E6A6", "#F2E9B8", "#4E9A45", "#EAF2E6"], { lean: "night", partner: "harbor" }),
 
   kit("paper", "Paper", "light", "playfair", {
     ink: "#F7F2E8", ink2: "#EFE8DA", ink3: "#E3DAC8",
     text: "#1F1B16", muted: "#5E5749", dim: "#6C6559", done: "#6C6559",
     accent: "#C8321F", accentHi: "#E0563F", accentDeep: "#8E2214", accentText: "#9E2717", danger: "#B02A1A",
     glow: V1_GLOW("#C8321F", .06, 30, 60), strikeShadow: "none"
-  }, { engine: "typewriter", pitch: 1, decay: 1, noise: 1 }, ["#C8321F", "#1F1B16", "#E0563F", "#D9C9A8", "#F7F2E8"]),
+  }, { engine: "typewriter", pitch: 1, decay: 1, noise: 1 }, ["#C8321F", "#1F1B16", "#E0563F", "#D9C9A8", "#F7F2E8"], { lean: "day", partner: "midnight" }),
 
   kit("terminal", "Terminal", "dark", "mono", {
     ink: "#070A08", ink2: "#0E140F", ink3: "#152017",
     text: "#D8FFD8", muted: "#7FCB86", dim: "#67A96E", done: "#67A96E",
     accent: "#4AF07A", accentHi: "#9CFFB5", accentDeep: "#21A64F", accentText: "#5DF58A", danger: "#FF6B57",
     glow: V1_GLOW("#4AF07A", .08), strikeShadow: "0 0 14px rgba(74,240,122,.55)"
-  }, { engine: "blip" }, ["#4AF07A", "#9CFFB5", "#FFFFFF", "#21A64F", "#D8FFD8"]),
+  }, { engine: "blip" }, ["#4AF07A", "#9CFFB5", "#FFFFFF", "#21A64F", "#D8FFD8"], { lean: "night", partner: "teletype" }),
 
   kit("sunset", "Sunset", "dark", "dmserif", {
     ink: "#2A1622", ink2: "#3A1F2E", ink3: "#4C2A3C",
@@ -181,7 +184,7 @@ const RAW = [
     boxDoneBg: "linear-gradient(135deg,#FF7A59,#FFC26B)",
     strikeBg: "linear-gradient(90deg,#FF7A59,#FFC26B,#FF9EB5,#FF7A59)", strikeSize: "300% 100%", strikeAnim: "shimmer 4s linear infinite",
     finaleStyle: "italic"
-  }, { engine: "bell", pitch: 0.84, decay: 1.2, bright: 0.6 }, ["#FF7A59", "#FFC26B", "#FF9EB5", "#FFF1E6", "#C2452B"], { shapes: 2 }),
+  }, { engine: "bell", pitch: 0.84, decay: 1.2, bright: 0.6 }, ["#FF7A59", "#FFC26B", "#FF9EB5", "#FFF1E6", "#C2452B"], { shapes: 2, lean: "day", partner: "dusk" }),
 
   kit("dusk", "Dusk", "dark", "cormorant", {
     ink: "#171226", ink2: "#211A35", ink3: "#2C2446",
@@ -189,28 +192,48 @@ const RAW = [
     accent: "#B49CFF", accentHi: "#D8CBFF", accentDeep: "#7C5CE6", accentText: "#C0ABFF", danger: "#FF7B9C",
     glow: V1_GLOW("#B49CFF", .14, 38, 66), strikeShadow: "0 0 12px rgba(180,156,255,.50)",
     finaleStyle: "italic"
-  }, { engine: "bell", pitch: 1.12, decay: 1.6, bright: 0.35 }, ["#B49CFF", "#D8CBFF", "#FFFFFF", "#FFD27A", "#7C5CE6"], { shapes: 3 }),
+  }, { engine: "bell", pitch: 1.12, decay: 1.6, bright: 0.35 }, ["#B49CFF", "#D8CBFF", "#FFFFFF", "#FFD27A", "#7C5CE6"], { shapes: 3, lean: "night", partner: "sunset" }),
 
   kit("harbor", "Harbor", "light", "manrope", {
     ink: "#EEF5F4", ink2: "#E2EDEB", ink3: "#D2E2DF",
     text: "#123A3E", muted: "#3F6A6E", dim: "#4C777A", done: "#4C777A",
     accent: "#0F8C8C", accentHi: "#38B3AF", accentDeep: "#0A6666", accentText: "#0C7070", danger: "#C24A3A",
     glow: V1_GLOW("#0F8C8C", .08, 30, 60), strikeShadow: "none"
-  }, { engine: "pop", pitch: 0.95, decay: 1.1 }, ["#0F8C8C", "#38B3AF", "#E8D8B0", "#FFFFFF", "#7ED0C8"]),
+  }, { engine: "pop", pitch: 0.95, decay: 1.1 }, ["#0F8C8C", "#38B3AF", "#E8D8B0", "#FFFFFF", "#7ED0C8"], { lean: "day", partner: "forest" }),
 
   kit("ember", "Ember", "dark", "archivo", {
     ink: "#1B0F0D", ink2: "#271512", ink3: "#351C18",
     text: "#FFEDE4", muted: "#E0AA97", dim: "#C48B78", done: "#C48B78",
     accent: "#FF4D2E", accentHi: "#FFB02E", accentDeep: "#B4291A", accentText: "#FF6A4F", danger: "#FF6B8A",
     glow: V1_GLOW("#FF4D2E", .14, 36, 64), strikeShadow: "0 0 14px rgba(255,77,46,.55)"
-  }, { engine: "knock", pitch: 0.7, decay: 1.3, noise: 1.8, filter: 3200, tone: "sawtooth" }, ["#FF4D2E", "#FFB02E", "#FF8A3D", "#FFEDE4", "#B4291A"]),
+  }, { engine: "knock", pitch: 0.7, decay: 1.3, noise: 1.8, filter: 3200, tone: "sawtooth" }, ["#FF4D2E", "#FFB02E", "#FF8A3D", "#FFEDE4", "#B4291A"], { lean: "night", partner: "cocoa" }),
 
   kit("cocoa", "Cocoa", "dark", "lora", {
     ink: "#2A1F1A", ink2: "#362923", ink3: "#45352D",
     text: "#F6EBDD", muted: "#CFB8A2", dim: "#B39C86", done: "#B39C86",
     accent: "#D9A066", accentHi: "#F0C48A", accentDeep: "#A66A34", accentText: "#E4AE76", danger: "#E8846A",
     glow: V1_GLOW("#D9A066", .10), strikeShadow: "0 0 10px rgba(217,160,102,.35)"
-  }, { engine: "knock", pitch: 0.85, decay: 1.25, noise: 0.5, filter: 1400 }, ["#D9A066", "#F0C48A", "#F6EBDD", "#8C5A3C", "#A66A34"])
+  }, { engine: "knock", pitch: 0.85, decay: 1.25, noise: 0.5, filter: 1400 }, ["#D9A066", "#F0C48A", "#F6EBDD", "#8C5A3C", "#A66A34"], { lean: "day", partner: "ember" }),
+
+  // 1.2: Pink's day. The same Fraunces, the same bell (lighter and quicker), the same hearts and stars, on blush paper.
+  kit("blush", "Blush", "light", "fraunces", {
+    ink: "#FFF5F8", ink2: "#FBE9F0", ink3: "#F4DAE5",
+    text: "#3E1228", muted: "#7A3D58", dim: "#874A64", done: "#874A64",
+    accent: "#E02A80", accentHi: "#FF78B4", accentDeep: "#A8145A", accentText: "#B0175F", danger: "#C0392B",
+    glow: "radial-gradient(120% 92% at 50% 40%, rgba(224,42,128,.10), rgba(255,143,190,.05) 46%, rgba(224,42,128,0) 74%)",
+    strikeShadow: "none",
+    boxDoneBg: "linear-gradient(135deg,#E02A80,#F2A33A)",
+    strikeBg: "linear-gradient(90deg,#E02A80,#F2A33A,#FF8FBE,#E02A80)", strikeSize: "300% 100%", strikeAnim: "shimmer 3.4s linear infinite",
+    finaleStyle: "italic"
+  }, { engine: "bell", pitch: 1.12, decay: 0.85, bright: 0.7 }, ["#E02A80", "#FF78B4", "#F2A33A", "#FFFFFF", "#FFD1E4", "#A8145A"], { shapes: 3, lean: "day", partner: "pink" }),
+
+  // 1.2: Terminal's day. The same mono pair and the same blip (lower, softer: paper, not phosphor), green ink on printout paper.
+  kit("teletype", "Teletype", "light", "mono", {
+    ink: "#F3F6EF", ink2: "#E9EEE3", ink3: "#DCE4D5",
+    text: "#14261B", muted: "#3E5A47", dim: "#4B6753", done: "#4B6753",
+    accent: "#1E9A4F", accentHi: "#4CC77A", accentDeep: "#137039", accentText: "#14703A", danger: "#B8402A",
+    glow: V1_GLOW("#1E9A4F", .06, 30, 60), strikeShadow: "none"
+  }, { engine: "blip", pitch: 0.9, decay: 0.8, noise: 0.6 }, ["#1E9A4F", "#4CC77A", "#14261B", "#FFFFFF", "#DCE4D5"], { lean: "day", partner: "terminal" })
 ];
 
 const ORIGINAL = new Set(["dark", "light", "pink"]);
@@ -251,6 +274,11 @@ function hairSolidFor(ink, text) {
 
 export const CURATED = RAW.map(finalize);
 export function curated(id) { return CURATED.find(t => t.id === id); }
+/** The pairs, day first, in the order the picker shows them (a day kit and its night partner share an index). */
+export const CURATED_DAY = ["light", "paper", "harbor", "blush", "teletype", "sunset", "cocoa"].map(curated);
+export const CURATED_NIGHT = CURATED_DAY.map(t => curated(t.partner));
+/** A curated theme's designed partner (the other side of its pair), or null for a theme that has none. */
+export function partnerOf(t) { return t && t.kind === "curated" && t.partner ? curated(t.partner) || null : null; }
 
 /* ---------------- custom derivation ---------------- */
 
@@ -328,6 +356,15 @@ export function derive({ accent, base = "dark", pair, name = "", id, pack }) {
 /** What the hue rule would pick for this accent (the builder's "Auto" label). */
 export function hueSound(accent, base = "dark") { return derive({ accent, base }).sound.engine; }
 
+/** The partner of a theme you made (1.2, "Make its partner"): the same accent and sound pack on the flipped base,
+    through the same derivation. A pair chosen by hand is kept; an automatic one is picked again for the new base.
+    `pairChosen` says which; a saved theme's code always names a pair, so from a record it counts as chosen.   */
+export function makePartner({ accent, base = "dark", pair, pack, name = "Custom", pairChosen = true }) {
+  const flipped = base === "dark" ? "light" : "dark";
+  const nm = (name || "Custom").replace(/ · (day|night)$/, "");
+  return derive({ accent, base: flipped, pair: pairChosen && pairOf(pair) ? pair : undefined, pack, name: nm + " · " + (flipped === "dark" ? "night" : "day") });
+}
+
 export function normalizeHex(s) {
   if (typeof s !== "string") return null;
   const m = s.trim().replace(/^#/, "");
@@ -377,7 +414,118 @@ export function parseCode(code) {
   return derive({ accent, base, pair, name, pack });
 }
 
+/* ---------------- Day and Night (1.2) ----------------
+   Two slots on every device and one switch. Pure functions over the device record (`dev`, meta.device) and an
+   environment { systemDark, now }; app.js owns the DOM and the clock. Fields on dev, all additive, migrated on
+   read, never wiped (COMPATIBILITY.md §5):
+     day, night   the theme code in each slot (any theme, light or dark: the slot is about when, not what)
+     switch       { mode: "hand" | "system" | "schedule", dayAt: "07:00", nightAt: "19:00" }
+     slot         the slot chosen by hand ("day" | "night")
+     holdAuto     under an automation, the automation's slot at the moment of a manual flip: the flip holds
+                  until the automation next changes its mind, then the automation resumes (as iOS treats it)
+   The 1.1 fields (theme, darkSlot, lightSlot, follow, schedule) stay where they are; migrateSlots() reads them
+   once, and app.js keeps `theme` mirrored to the active code so a device that ever ran the old code again would
+   still open on the theme it last saw.                                                                       */
+
+export const SLOT_DEFAULT = { day: "T1:curated:light", night: "T1:curated:dark" };
+export const SWITCH_MODES = ["hand", "system", "schedule"];
+const otherSlot = s => (s === "day" ? "night" : "day");
+
+/** Day or night by the clock: day from `dayAt`, night from `nightAt` (a schedule that wraps midnight works too). */
+export function scheduledSlot(sw, now = new Date()) {
+  const mins = t => { const m = /^(\d{1,2}):(\d{2})$/.exec(t || ""); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+  const d = mins(sw && sw.dayAt), n = mins(sw && sw.nightAt), cur = now.getHours() * 60 + now.getMinutes();
+  if (d === null || n === null || d === n) return "day";
+  if (d < n) return (cur >= d && cur < n) ? "day" : "night";
+  return (cur >= n && cur < d) ? "night" : "day";
+}
+/** The slot the automation wants right now; null when the switch is by hand. */
+export function autoSlot(dev, env = {}) {
+  const m = dev.switch && dev.switch.mode;
+  if (m === "system") return env.systemDark ? "night" : "day";
+  if (m === "schedule") return scheduledSlot(dev.switch, env.now || new Date());
+  return null;
+}
+/** The slot that is on: by hand the chosen one; under an automation its pick, unless a manual flip still holds. */
+export function activeSlot(dev, env = {}) {
+  const hand = dev.slot === "night" ? "night" : "day";
+  const a = autoSlot(dev, env);
+  if (a === null) return hand;
+  return dev.holdAuto && dev.holdAuto === a ? hand : a;
+}
+/** The code of the theme that is on. */
+export function slotCode(dev, env = {}) { const s = activeSlot(dev, env); return dev[s] || SLOT_DEFAULT[s]; }
+/** A tap on the sun or moon. Mutates and returns dev; the caller saves and applies. */
+export function flipSlot(dev, env = {}) {
+  const next = otherSlot(activeSlot(dev, env));
+  const a = autoSlot(dev, env);
+  dev.slot = next;
+  dev.holdAuto = (a !== null && next !== a) ? a : null; // flipped back to what the automation wants: nothing to hold
+  return dev;
+}
+/** The automation has changed its mind since a manual flip: the hold is spent. True when something changed. */
+export function settleHold(dev, env = {}) {
+  if (dev.holdAuto && dev.holdAuto !== autoSlot(dev, env)) { dev.holdAuto = null; return true; }
+  return false;
+}
+export function setSwitchMode(dev, mode, env = {}) {
+  if (!SWITCH_MODES.includes(mode)) return dev;
+  if (mode === "hand") dev.slot = activeSlot(dev, env); // what is on stays on
+  dev.holdAuto = null;
+  dev.switch = { dayAt: "07:00", nightAt: "19:00", ...(dev.switch || {}), mode };
+  return dev;
+}
+/** First open of 1.2 on a device (true when something was written). A fresh device gets the defaults: Light by
+    day, Dark by night, with the system, so the first open matches the device's setting. A device from before
+    keeps what it sees: the theme that is on goes into the slot matching its base and stays on, the other slot
+    gets its partner (or that side's default); Follow system becomes With the system with both slots carried
+    over; the schedule becomes On a schedule with its themes and times; neither is By hand.                  */
+export function migrateSlots(dev, { returning = false, env = {} } = {}) {
+  if (dev.switch && typeof dev.switch === "object" && SWITCH_MODES.includes(dev.switch.mode) && typeof dev.day === "string" && typeof dev.night === "string") return false;
+  const times = s => ({ dayAt: (s && s.dayAt) || "07:00", nightAt: (s && s.nightAt) || "19:00" });
+  const sch = dev.schedule && typeof dev.schedule === "object" ? dev.schedule : null;
+  if (!returning) {
+    dev.day = SLOT_DEFAULT.day; dev.night = SLOT_DEFAULT.night; dev.switch = { mode: "system", ...times(sch) };
+  } else if (sch && sch.on) {
+    dev.day = sch.day || dev.lightSlot || SLOT_DEFAULT.day; dev.night = sch.night || dev.darkSlot || SLOT_DEFAULT.night;
+    dev.switch = { mode: "schedule", ...times(sch) };
+  } else if (dev.follow) {
+    dev.day = dev.lightSlot || SLOT_DEFAULT.day; dev.night = dev.darkSlot || SLOT_DEFAULT.night;
+    dev.switch = { mode: "system", ...times(sch) };
+  } else {
+    const code = dev.theme || SLOT_DEFAULT.night, t = parseCode(code) || curated("dark");
+    const slot = t.base === "light" ? "day" : "night", p = partnerOf(t);
+    dev[slot] = code; dev[otherSlot(slot)] = p ? themeCode(p) : SLOT_DEFAULT[otherSlot(slot)];
+    dev.switch = { mode: "hand", ...times(sch) };
+    dev.slot = slot;
+  }
+  if (dev.slot !== "day" && dev.slot !== "night") dev.slot = autoSlot(dev, env) || "day";
+  dev.holdAuto = null;
+  return true;
+}
+
 /* ---------------- CSS ---------------- */
+
+/** Two hex colours mixed in OKLab (t = 0 → a, 1 → b), for the crossfade between slots. */
+export function mixHex(a, b, t) {
+  const A = linToOklab(hexToRgb(a).map(toLin)), B = linToOklab(hexToRgb(b).map(toLin));
+  return rgbToHex(oklabToLin(A.map((v, i) => v + (B[i] - v) * t)).map(v => toSrgb(Math.min(1, Math.max(0, v)))));
+}
+const HEX_RE = /^#[0-9A-Fa-f]{6}$/, RGBA_RE = /^rgba\((\d+),(\d+),(\d+),([\d.]+)\)$/;
+function mixToken(a, b, t) {
+  if (a === b) return a;
+  if (HEX_RE.test(a) && HEX_RE.test(b)) return mixHex(a, b, t);
+  const ma = RGBA_RE.exec(a), mb = RGBA_RE.exec(b);
+  if (ma && mb) { const v = i => +ma[i] + (+mb[i] - +ma[i]) * t; return `rgba(${Math.round(v(1))},${Math.round(v(2))},${Math.round(v(3))},${v(4).toFixed(3)})`; }
+  return t < 0.5 ? a : b; // gradients, shadows, keywords: swapped at the midpoint, like the fonts
+}
+/** The token rule part-way between two themes: colours interpolated, everything else swapped at the midpoint. */
+export function cssTextBetween(a, b, t) {
+  if (t <= 0) return cssText(a); if (t >= 1) return cssText(b);
+  const colors = {};
+  for (const k of Object.keys(b.colors)) colors[k] = mixToken(String(a.colors[k] ?? b.colors[k]), String(b.colors[k]), t);
+  return cssText({ colors, pair: t < 0.5 ? a.pair : b.pair, base: t < 0.5 ? a.base : b.base });
+}
 
 export function cssText(t) {
   const c = t.colors, p = pairOf(t.pair) || PAIRS.lato;

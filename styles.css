@@ -484,6 +484,16 @@ body.page{overflow:auto;height:auto;min-height:100%}
 .prose .crumb a{color:var(--dim);text-decoration:none}
 .prose .crumb a:hover{color:var(--text)}
 .prose .fine{margin-top:2rem}
+/* the version line and the changelog (1.2): a headline per version, then up to three tagged items (About loads this sheet only) */
+.prose .version{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:.2rem 0 1rem}
+.prose .log{list-style:none;padding:0}
+.prose .log>li{margin:1rem 0}
+.prose .log .v{font-weight:700;color:var(--text)}
+.prose .log .hl{color:var(--text)}
+.prose .log ul{list-style:none;margin:.35rem 0 0;padding:0}
+.prose .log ul li{display:flex;gap:.6rem;align-items:baseline;margin:.3rem 0}
+.prose .log .tag{flex:0 0 5.2em;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-text);border:1px solid var(--hair-hi);border-radius:999px;padding:.15em .6em;text-align:center}
+.prose .log .tag.fixed{color:var(--muted)}
 
 
 /* ================= v4 ================= */
@@ -620,6 +630,10 @@ body.install-on #toast,body.install-on #whatsnew{bottom:calc(96px + env(safe-are
 
 /* the rail (1.1): date · count with the sync dot beside it (and the presence dots) · Today/Everything · Share · ⋯ */
 .rail-r .status{display:inline-flex;align-items:center;gap:.4rem;min-width:0}
+/* the sun/moon (1.2): between the views and Share, showing where a tap goes (the moon by day, the sun by night); it fades with the rail */
+#daynight{display:inline-grid;place-items:center;padding:.45em .6em}
+#daynight svg{width:15px;height:15px;display:block;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#daynight[data-next="night"] .sun,#daynight[data-next="day"] .moon{display:none}
 /* welcome: no rail, no footer */
 body.welcome .rail,body.welcome #foot{display:none}
 /* idle fade (desktop): the rail and the footer step back to the date and the count; the presence dots stay */

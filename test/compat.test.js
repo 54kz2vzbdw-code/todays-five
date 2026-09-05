@@ -117,6 +117,18 @@ test("revival: the old client rolled over before any v4 device saw the check-off
   assert.equal(M.rollover(M.merge(mac, del), "2026-09-02", T0 + 86400000).doc.items.c.deleted, true);
 });
 
+test("1.2: a saved theme's `partner` field is additive — the old client strips it, and the richer record wins the tie on the way back", () => {
+  const d = v4doc();
+  d.themes.t1 = { ...d.themes.t1, partner: "t2" };
+  d.themes.t2 = { id: "t2", name: "Mine · day", code: "T2:l:FF3D9A:fraunces::Mine · day", partner: "t1", updatedAt: 1000 };
+  const d3 = V3.normalize(d, "L");
+  assert.equal(d3.themes.t1.code, d.themes.t1.code, "the old client still reads the theme");
+  assert.ok(!("partner" in d3.themes.t1) && !("partner" in d3.themes.t2), "and does not know the link");
+  const pushed = V3.merge(d3, d3);
+  for (const [x, y] of [[d, pushed], [pushed, d]]) { const m = M.merge(x, y); assert.equal(m.themes.t1.partner, "t2"); assert.equal(m.themes.t2.partner, "t1"); }
+  assert.equal(M.normalize(d, "L").themes.t2.partner, "t1", "normalize keeps it"); assert.doesNotThrow(() => V3.diff(d3, V3.normalize(d, "L")));
+});
+
 test("v4 docs read by v4 keep v:3, and a v2-stamped doc from an old client is accepted as it is", () => {
   const d = M.normalize({ ...v4doc(), v: 2 }, "L");
   assert.equal(d.v, 3); assert.equal(Object.keys(d.rules).length, 2);

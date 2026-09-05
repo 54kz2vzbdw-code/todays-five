@@ -1,41 +1,31 @@
 {
-  "build": 49,
+  "build": 55,
   "versions": [
     {
+      "version": "1.2",
+      "headline": "Day and night, your way.",
+      "items": [
+        { "tag": "New", "text": "Pick a Day theme and a Night theme; the sun and moon flip them." },
+        { "tag": "New", "text": "Every theme has a partner one tap away. Your own can make theirs." },
+        { "tag": "Improved", "text": "Shorter update notes, like this one." }
+      ]
+    },
+    {
       "version": "1.1",
-      "lines": [
-        "It got quieter. A line is the checkbox and the words now—hover it on the Mac or hold it on the phone and the menu shows up. The top bar lost three chips, and the controls fade when you leave the list alone.",
-        "The tour is gone. The first list teaches the basics, and a one-line hint turns up the first time you open Everything, hold a line, or edit one. Theme, Sound and Full screen live in ⋯ now; T, M and F still work.",
-        "Your own theme can carry a sound pack. And the numbers are plain from here on: this is 1.1, and what shipped as 4.0.0 was 1.0."
+      "headline": "It got quieter.",
+      "items": [
+        { "tag": "Improved", "text": "A line shows its menu on hover or hold." },
+        { "tag": "Improved", "text": "Fewer controls up top, and they fade while you work." },
+        { "tag": "New", "text": "Your own theme can carry a sound." }
       ]
     },
     {
       "version": "1.0",
-      "lines": [
-        "Lines can repeat now—every day, weekdays, days you pick, or monthly—and \"Not today\" moves one to tomorrow. Both live in the line's own menu.",
-        "Sound sticks on the iPhone after a call or a lock. Three new sound packs, one-thing mode (press O or tap the count), search in Everything, templates, a Recently deleted shelf, and a URL that adds a line from anywhere.",
-        "Settings has a home now: ⋯ → Settings. Deleting a list everywhere is at the bottom of ⋯, with ten seconds to change your mind."
-      ]
-    },
-    {
-      "version": "0.3",
-      "lines": [
-        "Every list is encrypted on your device before it goes anywhere. The link is the key; a view link lets someone watch without touching.",
-        "Fonts and the realtime client are served from this site—nothing loads from Google or a CDN—and the phone menu became a proper bottom sheet.",
-        "A five-step tour on the first list, and a save-your-link sheet you can't miss."
-      ]
-    },
-    {
-      "version": "0.2",
-      "lines": [
-        "Sync between devices through a secret link, no account. Sections and several lists; Everything holds the backlog.",
-        "Twelve curated themes plus your own from one accent colour, each with its own fonts, sounds and confetti. Installable on the phone and the Mac."
-      ]
-    },
-    {
-      "version": "0.1",
-      "lines": [
-        "Five lines in big type, a strike that draws across, a knock or a bell, confetti, and a finale when the list is done."
+      "headline": "The first full release.",
+      "items": [
+        { "tag": "New", "text": "Repeating lines, Not today, one-thing mode, search, templates, add from anywhere." },
+        { "tag": "New", "text": "One Settings sheet, and delete a list everywhere with ten seconds to undo." },
+        { "tag": "Fixed", "text": "Sound on the iPhone after a call." }
       ]
     }
   ]

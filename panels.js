@@ -1,12 +1,12 @@
 // panels.js — everything that lives behind a panel: the theme picker, share and save sheets, Lists, History,
 // Settings, the section and line menus, the repeat picker, templates, move-to-list, delete everywhere with its
-// undo, export/import, the first-run tour, and How it works. Loaded by app.js on first use; `A` is its api.
+// undo, export/import, the ? reference, and How it works. Loaded by app.js on first use; `A` is its api.
 let A = null, $ = null, $$ = null, M = null, T = null, C = null;
 
 export function init(api) {
   if (A) return;
   A = api; $ = api.$; $$ = api.$$; M = api.M; T = api.T; C = api.C;
-  wireTheme(); wireShare(); wireSave(); wireLists(); wireSettings(); wireSection(); wireLine(); wireRepeat(); wireTour();
+  wireTheme(); wireShare(); wireSave(); wireLists(); wireSettings(); wireSection(); wireLine(); wireRepeat(); wireKeys(); wireMisc();
 }
 const dev = () => A.dev, meta = () => A.meta;
 
@@ -188,7 +188,7 @@ async function rotateLink() {
 
 /* ---------------- save-your-link sheet ---------------- */
 export function showSaveLink({ migrated = false } = {}) {
-  const link = A.editLink(); if (!link) return maybeTour();
+  const link = A.editLink(); if (!link) return;
   $("#save-title").textContent = migrated ? "Your link changed" : "Save your link";
   $("#save-msg").textContent = migrated
     ? "Your list is now encrypted on your device and lives behind this new link. The old link is dead. Save this one—it's the only way back, and the only key that can read the list."
@@ -208,7 +208,6 @@ function wireSave() {
   $("#p-save").addEventListener("close", () => {
     const e = meta().lists.find(l => l.id === A.listId);
     if (e) { e.linkSaved = true; e.migrated = false; A.saveDevice(); }
-    setTimeout(maybeTour, 250);
   });
 }
 
@@ -623,31 +622,31 @@ export async function deleteEverywhere() {
   } });
 }
 
-/* ---------------- how it works ---------------- */
+/* ---------------- how it works: the long-form page (⋯ → How it works) ---------------- */
 export function openHelp(section) {
   const touch = A.touchUi();
   const W = A.ref && A.ref.mode === "edit" ? A.ref.W : null;
   const add = W ? M.addUrl(A.BASE, W) : A.BASE + "#/l/<your list>/add?text=";
   const esc = A.escapeHtml;
   const bm = `javascript:(function(){var t=prompt("Line for Today's Five");if(t)open(${JSON.stringify(add)}+encodeURIComponent(t))})()`;
-  const keys = [["1 – 9", "Check off a line by position"], ["N", "New line"], ["E", "Edit the focused line"], ["O", "One thing at a time"], ["-", "Not today (the focused line)"], ["/", "Search Everything"], ["Enter", "While editing: save and start a new line below"], ["Esc", "While editing: cancel · clear the search"], ["⌫", "On an empty line: remove it"], ["A", "Today ↔ Everything"], ["⌥ ↑ / ↓", "Move the focused line"], ["⌘ Z", "Undo"], ["T", "Theme"], ["M", "Mute"], ["F", "Full screen"], ["?", "This page"]];
-  const gestures = [["Tap a line", "Cross it off, or bring it back"], ["Swipe left", "Not today: the line leaves Today until tomorrow's rollover (Settings → Behavior turns it off)"], ["Press and hold, then drag", "Reorder a line, or move it to another section in Everything"], ["Tap the count", "One thing at a time"], ["Pencil", "Edit the line and its note; the Repeat chip is in there"], ["⋯ on a line", "Its menu: repeat, not today, move to another list, delete"], ["Today toggle", "In Everything: put a line on Today, or take it off"], ["Swipe down or tap outside", "Close a sheet like this one"]];
   $("#help-body").innerHTML = `
-    <div class="row-actions"><button class="chip accent" id="help-tour" type="button">Replay the tour</button></div>
     <h3 id="h-basics">The basics</h3>
-    <p>Today is the short list you keep on screen. Everything is the backlog, in sections, with a <b>Today</b> toggle on every line. Cross a line off and it sinks; finish them all and the finale plays. Finished lines move to History at the start of the next day; unfinished ones carry over.</p>
-    <h3>${touch ? "Gestures" : "Keys"}</h3>
-    ${touch ? `<div class="gestures">${gestures.map(g => `<div class="g"><b>${esc(g[0])}</b><span>${esc(g[1])}</span></div>`).join("")}</div>` : `<div class="keys">${keys.map(k => `<kbd>${esc(k[0])}</kbd><span>${esc(k[1])}</span>`).join("")}</div>`}
+    <p>Today is the short list you keep on screen. Everything is the backlog, in sections, with a star on every line that puts it on Today or takes it off. Cross a line off and it sinks; finish them all and the finale plays. Finished lines move to History at the start of the next day; unfinished ones carry over.</p>
+    <p>A line is the checkbox and the words, nothing else. ${touch
+      ? "Hold a line and it lifts: drag to move it, or let go for its menu—edit, repeat, not today, move to another list, delete. Swipe right opens the same menu; swipe left is Not today."
+      : "Hover a line and ⋯ appears at its end: click it for the menu—edit, repeat, not today, move to another list, delete—or drag it to move the line. Double-click a line to edit it, or press E."}</p>
+    <p>There's no tour. The first list you make is the tutorial, and a one-line hint turns up the first time you open Everything, ${touch ? "hold a line" : "hover a line's ⋯"}, or edit one—once each, then never again. Everything else is on the reference sheet:</p>
+    <div class="row-actions"><button class="chip accent" id="help-keys" type="button">${touch ? "Gestures" : "Keys and gestures"}</button></div>
     <h3 id="h-repeat">Repeat, and not today</h3>
-    <p>A line can repeat every day, on weekdays, on days you pick, or monthly on a date: set it from the line's menu (⋯) or the Repeat chip in the editor. A finished repeating line goes to History at the next rollover and comes back undone on its next day. It never gets deleted by finishing it. A ↻ on the line marks it.</p>
+    <p>A line can repeat every day, on weekdays, on days you pick, or monthly on a date: set it from the line's menu or the Repeat chip in the editor. A finished repeating line goes to History at the next rollover and comes back undone on its next day. It never gets deleted by finishing it. A ↻ on the line marks it.</p>
     <p><b>Not today</b> (${touch ? "swipe left, or the line's menu" : "press - with a line focused, or the line's menu"}) takes a line off Today until tomorrow's rollover puts it back. Everything shows a small “tomorrow” tag on it meanwhile.</p>
     <h3 id="h-one">One thing at a time</h3>
     <p>${touch ? "Tap the count in the top bar" : "Press O, or click the count in the top bar"}: only the top undone line, as big as the screen allows. Cross it off and the next one slides in. The finale ends it; ${touch ? "the count" : "O"} brings the whole list back. It's remembered on this device.</p>
     <h3 id="h-lists">Lists, sections, templates</h3>
-    <p>Sections live in Everything; a section's menu (⋯) can rename it, put every line on Today or take them off, save the section as a <b>template</b> (its lines, no done state), or insert a template. Templates are kept in the list itself, so they sync, and Settings → Lists manages them. A line's menu can <b>move it to another list</b> on this device.</p>
+    <p>Sections live in Everything; the ⋯ in a section's header can rename it, put every line on Today or take them off, save the section as a <b>template</b> (its lines, no done state), or insert a template. Templates are kept in the list itself, so they sync, and Settings → Lists manages them. A line's menu can <b>move it to another list</b> on this device. Past eight lines, Search shows up at the top of Everything${touch ? "" : "; / opens it any time"}.</p>
     <p><b>Remove from this device</b> (Lists) only hides a list here; the server and your other devices keep it, and Lists → Removed brings it back. <b>Delete this list everywhere</b> (bottom of ⋯) removes it from the server and from here, with ten seconds to undo. Deleted lines sit in <b>Recently deleted</b> at the bottom of Everything for 30 days, with Restore.</p>
     <h3 id="h-links">Links</h3>
-    <p>Your link is the key. The edit link lets anyone change the list and make new links; the view link lets someone watch, with live updates, sound and confetti when you cross a line off. Rotate (in Share) replaces both. Lose the link, lose the list: nobody can recover it, and Settings → Advanced → Export is the only backup there is.</p>
+    <p>Your link is the key. The edit link lets anyone change the list and make new links; the view link lets someone watch, with live updates, sound and confetti when you cross a line off. Rotate (in Share) replaces both. Lose the link, lose the list: nobody can recover it, and Settings → Advanced → Export &amp; import is the only backup there is.</p>
     <h3 id="h-add">Add from anywhere</h3>
     <p>Open this URL with text on the end and the line lands on Today${W ? "" : " (open an edit link to see yours)"}. Several lines: put a newline between them. Optional <code>&amp;section=Name</code> files it under a section.</p>
     <input class="link" type="text" readonly value="${esc(add)}" aria-label="Add-from-anywhere URL" spellcheck="false">
@@ -655,107 +654,29 @@ export function openHelp(section) {
     <p><b>A Mac bookmarklet:</b> drag this to the bookmarks bar, or make a bookmark whose address is the code below. Click it, type the line, done.</p>
     <p><a class="chip" href="${esc(bm)}" onclick="return false" draggable="true" title="Drag me to the bookmarks bar">+ Today's Five</a></p>
     <input class="link" type="text" readonly value="${esc(bm)}" aria-label="Bookmarklet code" spellcheck="false">
-    <h3 id="h-who">Who's here, sound, the rest</h3>
-    <p>A small dot beside the sync dot for each other device that has the list open right now—a random session id, nothing else, and Settings → Advanced turns it off. Every theme picks a sound pack; Settings → Sound overrides it. On an iPhone, the ring/silent switch mutes the app's sounds too. The theme can follow the system or a schedule, one or the other.</p>`;
-  $("#help-tour").addEventListener("click", () => { A.closePanel(); startTour(); });
+    <h3 id="h-who">Theme, sound, who's here</h3>
+    <p>Theme, Sound and Full screen live in ⋯${touch ? "" : " (T, M and F from the keyboard)"}; Settings → Appearance and Sound hold the rest. Every theme picks a sound pack, a theme you make can carry its own, and Settings → Sound overrides it on this device. On an iPhone, the ring/silent switch mutes the app's sounds too. The theme can follow the system or a schedule, one or the other.</p>
+    <p>A small dot beside the sync dot marks each other device that has the list open right now—a random session id, nothing else, and Settings → Advanced turns it off.${touch ? "" : " Leave the mouse alone for a few seconds and the top bar and the footer fade to the date and the count; move it and they're back (Settings → Behavior turns that off)."}</p>`;
+  $("#help-keys").addEventListener("click", () => { A.closePanel(); openKeys(); });
   $$("#help-body .link").forEach(el => el.addEventListener("focus", () => { try { el.select(); } catch (e) { /* ignore */ } }));
   A.showPanel("p-help");
   if (section) { const h = document.getElementById("h-" + section); if (h) h.scrollIntoView({ block: "start" }); }
 }
 
-/* ---------------- first-run tour ----------------
-   Five coach marks over the real controls, one line each. Dismissable at any step, never shown again on this
-   device unless asked for (⋯ → How it works → Replay). Gestures on touch, keys on the desktop.              */
-let tourStep = 0, tourViewBefore = "today", tourFocusBefore = null, tourUsedKeys = false;
-function tourSteps() {
-  const touch = A.touchUi();
-  const firstToday = () => $("#list .row .check") || $("#list") || $("#addtoday");
-  const firstAll = () => $("#all .row");
-  return [
-    { view: "today", needsRow: true, target: firstToday, text: touch ? "Tap a line to cross it off. Tap again and it's back." : "Click a line to cross it off, or press its number. Click again and it's back." },
-    { view: "today", target: () => $(".seg"), text: "Today is the short list you keep on screen. Everything is where the rest lives." },
-    { view: "all", needsRow: true, target: () => { const r = firstAll(); return (r && r.querySelector(".tool.today")) || $("#all"); }, text: "Over in Everything, the Today toggle puts a line on Today—or takes it off." },
-    { view: "all", needsRow: true, target: () => { const r = firstAll(); return touch ? (r || $("#all")) : ((r && r.querySelector(".tool.handle")) || $("#all")); }, text: touch ? "Press and hold a line, then drag it where you want it—up, down, or into another section." : "Grab the handle to drag a line where you want it—up, down, or into another section. ⌥ ↑/↓ does the same from the keyboard." },
-    { view: "today", target: () => (!$("#share").hidden && $("#share").offsetParent) ? $("#share") : $("#more"), text: "Your link is the key. Save it from Share, and hand it only to people who should see the list. Lose the link, lose the list." }
-  ];
+/* ---------------- the reference (?): every key on the desktop, every gesture on touch ---------------- */
+export function openKeys() {
+  const touch = A.touchUi(), esc = A.escapeHtml;
+  const keys = [["1 – 9", "Cross off a line by position"], ["N", "New line"], ["E", "Edit the focused line"], ["O", "One thing at a time"], ["-", "Not today (the focused line)"], ["/", "Search Everything"], ["A", "Today ↔ Everything"], ["⌥ ↑ / ↓", "Move the focused line"], ["⌘ Z", "Undo"], ["T", "Theme"], ["M", "Mute"], ["F", "Full screen"], ["Enter", "While editing: save, and start a new line below"], ["Tab", "While editing: over to the note"], ["Esc", "While editing: cancel · close a panel · clear the search"], ["⌫", "On an empty line: remove it"], ["?", "This sheet"]];
+  const mouse = [["Click a line", "Cross it off, or bring it back"], ["Double-click", "Edit the line and its note; the Repeat chip is in there"], ["Hover a line, then ⋯", "Click for the menu: edit, repeat, not today, move, delete. Drag it to move the line"], ["Star, in Everything", "Put the line on Today, or take it off"], ["The count", "One thing at a time"]];
+  const gestures = [["Tap a line", "Cross it off, or bring it back"], ["Hold a line", "It lifts: drag to move it, or let go for its menu—edit, repeat, not today, move, delete"], ["Swipe right", "The line's menu"], ["Swipe left", "Not today: the line leaves Today until tomorrow's rollover (Settings → Behavior turns it off)"], ["Star, in Everything", "Put the line on Today, or take it off"], ["Tap the count", "One thing at a time"], ["Swipe down, or tap outside", "Close a sheet like this one"]];
+  const g = list => `<div class="gestures">${list.map(x => `<div class="g"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join("")}</div>`;
+  $("#p-keys-h").textContent = touch ? "Gestures" : "Keys";
+  $("#keys-body").innerHTML = touch ? g(gestures) : `<div class="keys">${keys.map(k => `<kbd>${esc(k[0])}</kbd><span>${esc(k[1])}</span>`).join("")}</div><h3>Mouse</h3>${g(mouse)}`;
+  A.showPanel("p-keys");
 }
-export function maybeTour() {
-  if (dev().tourDone || !A.doc || A.listMode !== "edit" || A.openPanel || A.tourOn) return;
-  setTimeout(() => { if (!dev().tourDone && A.doc && A.listMode === "edit" && !A.openPanel && !A.tourOn) startTour(); }, 400);
-}
-export function startTour() {
-  if (!A.doc) return;
-  if (A.openPanel) A.closePanel();
-  if (A.editing) A.commitEdit();
-  A.tourOn = true; tourStep = 0; tourViewBefore = A.view; tourFocusBefore = document.activeElement; tourUsedKeys = false;
-  const t = $("#tour"); t.hidden = false;
-  try { $("#shell").inert = true; } catch (e) { /* older engines: the overlay still covers the page */ }
-  showTourStep();
-}
-function endTour() {
-  if (!A.tourOn) return;
-  A.tourOn = false;
-  $("#tour").hidden = true;
-  try { $("#shell").inert = false; } catch (e) { /* ignore */ }
-  $$(".row.tour-show").forEach(r => r.classList.remove("tour-show"));
-  dev().tourDone = true; for (const l of meta().lists) delete l.fresh; A.saveDevice();
-  if (A.view !== tourViewBefore) A.setView(tourViewBefore);
-  // give focus back to where it was; a keyboard user who started on the page body lands on the first line. A finger
-  // never had focus anywhere, so nothing is focused (and no ring appears on the phone).
-  const back = tourFocusBefore && tourFocusBefore.isConnected && tourFocusBefore !== document.body ? tourFocusBefore : (tourUsedKeys ? ($("#list .row .check") || $("#more")) : null);
-  if (back) { try { back.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
-}
-function showTourStep() {
-  const steps = tourSteps();
-  const s = steps[tourStep];
-  if (!s) return endTour();
-  if (s.needsRow && !$("#list .row") && !$("#all .row")) { tourStep++; return showTourStep(); }
-  if (A.view !== s.view) A.setView(s.view);
-  $("#tour-text").textContent = s.text;
-  $("#tour-step").textContent = `Step ${tourStep + 1} of ${steps.length}.`;
-  $("#tour-next").textContent = tourStep === steps.length - 1 ? "Done" : "Next";
-  $("#tour-dots").innerHTML = steps.map((_, i) => `<i class="${i === tourStep ? "on" : ""}"></i>`).join("");
-  $$(".row.tour-show").forEach(r => r.classList.remove("tour-show"));
-  requestAnimationFrame(placeTour);
-}
-function placeTour() {
-  if (!A.tourOn) return;
-  const s = tourSteps()[tourStep]; if (!s) return;
-  const el = s.target();
-  const tour = $("#tour"), hole = $("#tour-hole"), card = $("#tour-card");
-  const row = el && el.closest ? el.closest(".row") : null; if (row) row.classList.add("tour-show");
-  const r = el ? el.getBoundingClientRect() : null;
-  const pad = 8;
-  if (!r || (r.width === 0 && r.height === 0)) {
-    tour.classList.add("center");
-    hole.style.cssText = `left:${innerWidth / 2}px;top:${innerHeight / 2}px;width:0;height:0`;
-  } else {
-    tour.classList.remove("center");
-    hole.style.cssText = `left:${r.left - pad}px;top:${r.top - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px`;
-  }
-  const cw = Math.min(352, innerWidth - 32);
-  card.style.width = cw + "px";
-  const ch = card.offsetHeight || 140;
-  let left = r ? r.left + r.width / 2 - cw / 2 : innerWidth / 2 - cw / 2;
-  left = Math.max(16, Math.min(innerWidth - cw - 16, left));
-  let top, place = "below";
-  if (!r) { top = innerHeight / 2 - ch / 2; place = "center"; }
-  else if (r.bottom + pad + 16 + ch < innerHeight - 16) top = r.bottom + pad + 16;
-  else { top = Math.max(16, r.top - pad - 16 - ch); place = "above"; }
-  tour.dataset.place = place;
-  card.style.left = left + "px"; card.style.top = top + "px";
-  // the arrow points at the target's centre when the card had to slide sideways
-  const arrowX = r ? Math.max(18, Math.min(cw - 18, r.left + r.width / 2 - left)) : cw / 2;
-  card.style.setProperty("--arrow-x", arrowX + "px");
-  card.focus({ preventScroll: true }); // the card is announced (label + description) and Tab reaches Skip/Next
-}
-function wireTour() {
-  $("#tour-next").addEventListener("click", () => { tourStep++; showTourStep(); });
-  $("#tour-skip").addEventListener("click", endTour);
-  $("#tour").addEventListener("click", e => { if (e.target === e.currentTarget || e.target.id === "tour-hole") endTour(); });
-  document.addEventListener("keydown", e => { if (!A.tourOn) return; tourUsedKeys = true; if (e.key === "Escape") { e.preventDefault(); endTour(); } }, true);
+function wireKeys() { $("#keys-help").addEventListener("click", () => { A.closePanel(); openHelp(); }); }
+/* the hover tooltips hide on Escape and come back on the next mouse move */
+function wireMisc() {
   document.addEventListener("keydown", e => { if (e.key === "Escape") document.body.classList.add("no-tip"); }, true);
   document.addEventListener("pointermove", () => document.body.classList.remove("no-tip"), { passive: true });
-  addEventListener("tf:relayout", () => { if (A.tourOn) placeTour(); });
-  window.__tfTourStep = () => tourStep;
 }

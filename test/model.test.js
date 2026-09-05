@@ -242,9 +242,9 @@ test("reorderPlan: new rows and removed rows, and random permutations always lan
 test("seed: five Today lines that teach the basics without naming keys", () => {
   assert.equal(SEED_LINES.length, 5);
   assert.ok(SEED_LINES[0].includes("Tap or click"));
-  assert.ok(SEED_LINES.some(l => /Today toggle/.test(l)));
-  assert.ok(SEED_LINES.some(l => /link is the key/.test(l)));
-  assert.ok(SEED_LINES.every(l => l.length <= 70), "short enough for big type on a phone");
+  assert.ok(SEED_LINES.some(l => /Everything/.test(l)), "sends you to Everything");
+  assert.ok(SEED_LINES.some(l => /link/.test(l)), "says to save the link");
+  assert.ok(SEED_LINES.every(l => l.length <= 32), "32 characters or fewer: all five fit without scrolling on a phone and a laptop"); assert.match(SEED_LINES[4], /all five/, "the payoff line is last");
 });
 
 console.log(`\n${passed} model tests passed`);

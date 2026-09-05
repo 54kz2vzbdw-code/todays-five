@@ -605,3 +605,21 @@ body.install-on #toast,body.install-on #whatsnew{bottom:calc(96px + env(safe-are
   body.one #list .row.one-now.arrive{animation:none}
   .row.swipe-out{transition:none}
 }
+
+/* ================= 1.1 ================= */
+
+/* just-in-time hints: one line beside the real control, once per device; the control gets a ring meanwhile */
+#mark{
+  position:fixed;z-index:65;max-width:min(24rem,calc(100vw - 2rem));pointer-events:none;
+  font-family:var(--font-ui);font-size:14px;line-height:1.4;color:var(--text);
+  background:var(--ink-2);border:1px solid var(--hair-hi);border-radius:12px;padding:.55rem .85rem;
+  box-shadow:0 12px 40px rgba(0,0,0,.35);--dim:var(--dim-2);--muted:var(--muted-2);
+  animation:mark-in .22s cubic-bezier(.22,1,.36,1);
+}
+#mark::before{content:"";position:absolute;width:12px;height:12px;background:var(--ink-2);border:1px solid var(--hair-hi);transform:rotate(45deg);left:var(--arrow-x,50%);margin-left:-6px}
+#mark[data-place="below"]::before{top:-7px;border-right:0;border-bottom:0}
+#mark[data-place="above"]::before{bottom:-7px;border-left:0;border-top:0}
+@keyframes mark-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.marked{outline:2px solid var(--accent) !important;outline-offset:3px}
+.row.marked-row .tool{opacity:1}
+@media (prefers-reduced-motion:reduce){#mark{animation:none}}

@@ -1,9 +1,9 @@
-/* Today's Five v4 — the panels' stylesheet: every dialog, the sheets, the theme picker, Settings, the tour, How it works.
+/* Today's Five v4 — the panels' stylesheet: every dialog, the sheets, the theme picker, Settings, How it works.
    Loaded by app.js right after boot (not render-blocking); app.js waits for it before opening any panel. */
 
 /* ---------------- panels (dialogs) ---------------- */
 /* text on the elevated surfaces (--ink-2 / --ink-3) uses the greys guaranteed to clear 4.5:1 there */
-dialog.panel,#tour .tour-card{--dim:var(--dim-2);--muted:var(--muted-2)}
+dialog.panel{--dim:var(--dim-2);--muted:var(--muted-2)}
 dialog.panel{
   color:var(--text);background:var(--ink-2);border:1px solid var(--hair-hi);border-radius:18px;
   padding:0;width:min(92vw,30rem);max-height:min(88vh,52rem);
@@ -144,35 +144,6 @@ input[type="color"]{width:44px;height:44px;border:1px solid var(--hair);border-r
   dialog.panel.sheet[open]{animation:sheet-in .26s cubic-bezier(.22,1,.36,1)}
 }
 
-/* ---------------- first-run tour ---------------- */
-#tour{position:fixed;inset:0;z-index:70;font-family:var(--font-ui)}
-#tour .tour-hole{
-  position:absolute;border-radius:14px;pointer-events:none;
-  box-shadow:0 0 0 9999px rgba(0,0,0,.58),0 0 0 3px var(--accent);
-  transition:left .28s cubic-bezier(.22,1,.36,1),top .28s cubic-bezier(.22,1,.36,1),width .28s cubic-bezier(.22,1,.36,1),height .28s cubic-bezier(.22,1,.36,1);
-}
-#tour.center .tour-hole{box-shadow:0 0 0 9999px rgba(0,0,0,.58)}
-#tour .tour-card:focus{outline:none}
-#tour .tour-card{
-  position:absolute;width:min(22rem,calc(100vw - 2rem));background:var(--ink-2);color:var(--text);
-  border:1px solid var(--hair-hi);border-radius:16px;padding:1rem 1.1rem .9rem;box-shadow:0 24px 60px rgba(0,0,0,.45);
-  transition:left .28s cubic-bezier(.22,1,.36,1),top .28s cubic-bezier(.22,1,.36,1);
-}
-#tour .tour-card p{font-size:16px;line-height:1.45;margin:0 0 .8rem;color:var(--text)}
-#tour .tour-foot{display:flex;align-items:center;gap:.5rem}
-#tour .tour-dots{flex:1 1 auto;display:flex;gap:.35rem}
-#tour .tour-dots i{width:.45rem;height:.45rem;border-radius:50%;background:var(--dim-2)}
-#tour .tour-dots i.on{background:var(--accent)}
-#tour .chip{font-family:var(--font-ui);font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;min-height:40px}
-#tour .tour-card::before{
-  content:"";position:absolute;width:14px;height:14px;background:var(--ink-2);border:1px solid var(--hair-hi);
-  transform:rotate(45deg);left:calc(50% - 7px);
-}
-#tour[data-place="below"] .tour-card::before{top:-8px;border-right:0;border-bottom:0}
-#tour[data-place="above"] .tour-card::before{bottom:-8px;border-left:0;border-top:0}
-#tour.center .tour-card::before{display:none}
-
-
 /* settings and the other sheets: the shared primitives */
 dialog.panel h3.first{margin-top:.2rem}
 .row-toggle,.row-set{display:flex;align-items:center;justify-content:space-between;gap:1rem}
@@ -233,10 +204,9 @@ dialog.panel h3.first{margin-top:.2rem}
 @media (hover:none){
   .swatch .del{width:44px;height:44px}
   dialog.panel .x{width:44px;height:44px}
-  .row-actions .chip,.seg2 button,#tour .chip{min-height:44px}
+  .row-actions .chip,.seg2 button{min-height:44px}
 }
 
 @media (prefers-reduced-motion:reduce){
   dialog.panel.sheet[open]{animation:none}
-  #tour .tour-hole,#tour .tour-card{transition:none}
 }

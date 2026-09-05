@@ -558,12 +558,15 @@ export function migrateV1(v1, id, ts = now()) {
   return doc;
 }
 
+/** The first list is the tutorial. Five lines of 32 characters or fewer, so all five fit without scrolling on a
+    phone and on a laptop with the payoff last; they teach the basics without naming keys, so they read the same
+    everywhere. Everything else is taught by a one-line hint the first time it is needed (app.js). */
 export const SEED_LINES = [
-  "Tap or click this line to cross it off",
-  "Add a line with + New line; the pencil edits one",
-  "Everything holds the rest; its Today toggle brings a line here",
-  "Your link is the key: save it from Share before you close this",
-  "Cross off all five and see what happens"
+  "Tap or click to cross this off",
+  "Add a line with + New line",
+  "The rest lives in Everything",
+  "Save your link. It's the key.",
+  "Cross off all five and see"
 ];
 
 export function seedDoc(id, ts = now()) {

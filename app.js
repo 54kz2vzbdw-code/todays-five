@@ -1,7 +1,7 @@
 // app.js — the UI: boot, registry, open/switch lists, rendering, inline editing, drag, keyboard, undo, rollover,
 // sync wiring, the ⋯ menu, one-thing mode, search, not-today, presence, add-from-URL, the what's-new toast.
 // Everything used only from a panel (theme picker, share/save sheets, Lists, History, Settings, section and line
-// menus, templates, delete-everywhere, move, export, the tour, How it works) lives in panels.js and loads on first
+// menus, templates, delete-everywhere, move, export, the ? reference, How it works) lives in panels.js and loads on first
 // use: Today's first paint pays for none of it. panels.js gets one object, `api`, with live getters for the
 // state here and the actions it needs.
 import * as M from "./model.js";
@@ -50,13 +50,16 @@ if (!dev.darkSlot) dev.darkSlot = "T1:curated:dark";
 if (!dev.lightSlot) dev.lightSlot = "T1:curated:light";
 // v4 settings all default off (or to the v3 behaviour) when absent; nothing is rewritten on a returning device
 if (!dev.schedule || typeof dev.schedule !== "object") dev.schedule = { on: false, dayAt: "07:00", nightAt: "19:00", day: "T1:curated:light", night: "T1:curated:dark" };
-// a device that already holds an established list is a returning user: never show it the tour unasked.
-// A list registered moments ago (`fresh`, cleared when the tour ends) does not count: iOS Safari reloads the page
+// a device that already holds an established list is a returning user (the latch the tour used; the hints and what's-new read it).
+// A list registered moments ago (`fresh`) does not count: iOS Safari reloads the page
 // right after the first list is created, and that reload must not look like a returning device.
 if (!dev.tourDone && meta.lists.some(l => !l.fresh)) dev.tourDone = true;
 // what's new: a device that has never held a list is on its first run and sees nothing; anyone else sees the toast once per version
 const whatsNewPending = M.whatsNewDue({ seenVersion: dev.seenVersion, hasLists: meta.lists.length > 0 || !!dev.tourDone }, VERSION);
 if (!dev.seenVersion && !whatsNewPending) dev.seenVersion = VERSION;
+// just-in-time hints (1.1), once per device. A device that held a list before 1.1 went through the tour, or simply
+// knows the app, and must see exactly one new thing on update (the what's-new toast): its hints count as seen.
+if (!dev.hints || typeof dev.hints !== "object") dev.hints = (dev.tourDone || meta.lists.some(l => !l.fresh)) ? { today: true, drag: true, menu: true } : {};
 function saveDevice() {
   // another tab may have changed the registry since this tab loaded: union lists, respect rotations, keep our device settings
   const stored = loadMeta();
@@ -101,7 +104,7 @@ let toastTimer = 0;
 let drag = null;
 let wakeLock = null;
 let openPanel = null;
-let tourOn = false;
+let markTarget = null, markKey = ""; // the just-in-time hint on screen, if any (declared up here: boot() reaches it)
 let query = "";                // Everything's search
 let pendingAdd = null;         // { text: [...], section } from an add-from-anywhere link, applied once the doc is ready
 let whoCount = 0;
@@ -367,7 +370,6 @@ async function openList(r) {
   if (local) applyPendingAdd();
   flushNotice();
   if (mode === "edit" && entry.created && !entry.linkSaved) panels().then(p => p.showSaveLink({ migrated: !!entry.migrated }));
-  else maybeTour();
   maybeWhatsNew();
 }
 
@@ -516,6 +518,7 @@ function setView(v, { force } = {}) {
   if (!doc) return;
   if (editing) commitEdit();
   if (drag) abortDrag();
+  hideMark();
   if (v !== view || force) { rows.clear(); $("#list").innerHTML = ""; clearAll(); }
   view = v;
   $("#v-today").setAttribute("aria-selected", v === "today" ? "true" : "false");
@@ -524,6 +527,7 @@ function setView(v, { force } = {}) {
   $("#all").hidden = v !== "all";
   $("#welcome").hidden = true;
   render({ animate: false });
+  if (v === "all") hintToday();
 }
 
 function render({ animate = true, quiet = false } = {}) {
@@ -792,7 +796,7 @@ function layoutAll(only) {
   const els = only && only.length ? only : Array.from(rows.values());
   for (const el of els) layoutStrikes(el, true);
 }
-function relayout() { clearTimeout(rz); rz = setTimeout(() => { layoutAll(); if (tourOn) dispatchEvent(new CustomEvent("tf:relayout")); }, 130); }
+function relayout() { clearTimeout(rz); rz = setTimeout(() => { layoutAll(); placeMark(); }, 130); }
 addEventListener("resize", relayout);
 if (window.ResizeObserver) new ResizeObserver(relayout).observe($("#main"));
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => layoutAll());
@@ -806,10 +810,10 @@ function paint() {
   const fill = $("#fill");
   fill.style.width = (n ? (d / n * 100) : 0) + "%";
   fill.classList.toggle("full", n > 0 && d === n);
-  const fs = document.fullscreenEnabled ? " &nbsp;·&nbsp; <em>F</em> full screen" : "";
+  // four items per view; everything else is one keystroke away in the ? reference
   $("#hint").innerHTML = view === "today"
-    ? `<em>1–${Math.min(n, 9)}</em> check off &nbsp;·&nbsp; <em>N</em> new &nbsp;·&nbsp; <em>E</em> edit &nbsp;·&nbsp; <em>O</em> one thing &nbsp;·&nbsp; <em>A</em> everything &nbsp;·&nbsp; <em>T</em> theme &nbsp;·&nbsp; <em>M</em> mute${fs} &nbsp;·&nbsp; <em>?</em> help`
-    : `<em>A</em> today &nbsp;·&nbsp; <em>N</em> new &nbsp;·&nbsp; <em>E</em> edit &nbsp;·&nbsp; <em>/</em> search &nbsp;·&nbsp; <em>-</em> not today &nbsp;·&nbsp; <em>⌥↑↓</em> move &nbsp;·&nbsp; <em>?</em> help`;
+    ? `<em>${n > 1 ? "1–" + Math.min(n, 9) : "1"}</em> check off &nbsp;·&nbsp; <em>N</em> new &nbsp;·&nbsp; <em>E</em> edit &nbsp;·&nbsp; <em>?</em> help`
+    : `<em>A</em> today &nbsp;·&nbsp; <em>N</em> new &nbsp;·&nbsp; <em>/</em> search &nbsp;·&nbsp; <em>?</em> help`;
   const fin = $("#finale"), hint = $("#hint");
   const finale = view === "today" && allDoneToday() && !editing;
   if (finale) { fin.classList.add("on"); hint.classList.add("off"); }
@@ -884,7 +888,6 @@ function applyRemote(prev) {
   const before = wasAll;
   const nowAll = allDoneToday();
   render({ animate: true, quiet: true });
-  if (tourOn) requestAnimationFrame(() => dispatchEvent(new CustomEvent("tf:relayout")));
   wasAll = nowAll;
   paintListName();
   if (editing && !doc.items[editing.id]) cancelEdit(true);
@@ -1427,6 +1430,7 @@ function endDrag(move, up, cancelled, aborted) {
 function showPanel(id) {
   if (!panelCssReady) { panelCss.then(() => showPanel(id)); return; } // never paint a dialog before its stylesheet
   const d = document.getElementById(id);
+  hideMark();
   if (openPanel && openPanel !== d) openPanel.close();
   openPanel = d;
   d.classList.remove("closing"); d.style.transform = ""; d.removeAttribute("data-drag");
@@ -1645,7 +1649,7 @@ $("#search").addEventListener("blur", () => { if (!query) { $("#search").hidden 
 function maybeWhatsNew() {
   if (!whatsNewPending || whatsNewShown) return;
   setTimeout(async () => {
-    if (whatsNewShown || openPanel || tourOn) { if (!whatsNewShown) setTimeout(maybeWhatsNew, 3000); return; }
+    if (whatsNewShown || openPanel) { if (!whatsNewShown) setTimeout(maybeWhatsNew, 3000); return; }
     whatsNewShown = true;
     dev.seenVersion = VERSION; saveDevice();
     let line = "It got quieter: nothing on a line but the words until you hover or hold, a shorter top bar, and controls that fade when you leave the list alone.";
@@ -1670,7 +1674,7 @@ function wireUi() {
   $("#addtoday").addEventListener("click", () => newItem({ today: true }));
   $("#toast-undo").addEventListener("click", () => { const a = toastAction; hideToast(); if (a) a(); else undo(); });
   $("#install-x").addEventListener("click", () => { $("#install").hidden = true; document.body.classList.remove("install-on"); dev.installHint = true; saveDevice(); });
-  if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc && !openPanel && !tourOn) { $("#install").hidden = false; document.body.classList.add("install-on"); } }, 2500);
+  if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc && !openPanel) { $("#install").hidden = false; document.body.classList.add("install-on"); } }, 2500);
   document.addEventListener("pointerdown", () => sound.prime(), { once: true, capture: true });
   document.body.classList.toggle("one", !!dev.oneThing);
 }
@@ -1702,7 +1706,7 @@ document.addEventListener("keydown", e => {
     if (!canEdit()) return;
     e.preventDefault(); undo(); return;
   }
-  if (openPanel || editing || inField || tourOn) return;
+  if (openPanel || editing || inField) return;
   if (!doc) return;
   const edit = canEdit();
   if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) { if (edit) { e.preventDefault(); moveFocused(e.key === "ArrowUp" ? -1 : 1); } return; }
@@ -1725,16 +1729,57 @@ document.addEventListener("keydown", e => {
   else if (k === "o" || k === "O") { if (!edit) return; e.preventDefault(); setOneThing(!dev.oneThing); }
   else if (k === "/") { e.preventDefault(); openSearch(); }
   else if (k === "-") { if (!edit) return; e.preventDefault(); const id = focusedRowId(); if (id && doc.items[id] && doc.items[id].today) notToday(id); }
-  else if (k === "?") { e.preventDefault(); panels().then(p => p.openHelp()); }
+  else if (k === "?") { e.preventDefault(); panels().then(p => p.openKeys()); }
 });
 function sectionOfFocused() {
   const id = focusedRowId();
   const it = id && doc.items[id];
   return it && !it.deleted && doc.sections[it.sectionId] && !doc.sections[it.sectionId].deleted ? it.sectionId : "";
 }
-function maybeTour() {
-  if (dev.tourDone || !doc || listMode !== "edit" || openPanel || tourOn) return;
-  panels().then(p => p.maybeTour());
+/* ---------------- just-in-time hints (1.1) ----------------
+   One line beside the real control, once per device, in place of the tour: the star the first time Everything
+   opens, drag the first time a line is held (or its ⋯ hovered), the menu the first time a line is edited. Gone on
+   the next tap or key, or when the control it points at goes away. Nothing appears unasked on Today.            */
+function hintDue(key) { return canEdit() && !openPanel && !(dev.hints && dev.hints[key]); }
+function showMark(key, target, text) {
+  if (!hintDue(key) || !target || !target.isConnected) return false;
+  dev.hints = { ...(dev.hints || {}), [key]: true }; saveDevice(); // once, read to the end or not
+  hideMark();
+  markTarget = target; markKey = key;
+  target.classList.add("marked"); const row = target.closest(".row"); if (row) row.classList.add("marked-row");
+  $("#mark-text").textContent = text;
+  $("#mark").hidden = false;
+  placeMark();
+  return true;
+}
+function hideMark() {
+  if (!markTarget) return;
+  markTarget.classList.remove("marked"); const row = markTarget.closest(".row"); if (row) row.classList.remove("marked-row");
+  markTarget = null; markKey = "";
+  $("#mark").hidden = true;
+}
+function placeMark() {
+  if (!markTarget) return;
+  if (!markTarget.isConnected) { hideMark(); return; }
+  const m = $("#mark"), r = markTarget.getBoundingClientRect();
+  m.style.left = "0px"; m.style.top = "0px";
+  const w = m.offsetWidth, h = m.offsetHeight;
+  const left = Math.max(12, Math.min(innerWidth - w - 12, r.left + r.width / 2 - w / 2));
+  const below = r.bottom + 14 + h < innerHeight - 12;
+  m.dataset.place = below ? "below" : "above";
+  m.style.left = left + "px"; m.style.top = (below ? r.bottom + 12 : Math.max(12, r.top - 12 - h)) + "px";
+  m.style.setProperty("--arrow-x", Math.max(16, Math.min(w - 16, r.left + r.width / 2 - left)) + "px");
+}
+document.addEventListener("pointerdown", hideMark, true);
+document.addEventListener("pointerup", () => { if (markTarget) setTimeout(hideMark, 80); }, true); // a hold's hint goes when the finger lifts
+document.addEventListener("keydown", hideMark, true);
+$("#all").addEventListener("scroll", placeMark, { passive: true });
+$("#list").addEventListener("scroll", placeMark, { passive: true });
+/** The first time Everything opens: the star on the first line. */
+function hintToday() {
+  if (!hintDue("today")) return;
+  const star = $("#all .row .tool.today"); if (!star) return;
+  requestAnimationFrame(() => showMark("today", star, "The star puts a line on Today, or takes it off."));
 }
 
 /* ---------------- what the lazy modules see ---------------- */
@@ -1744,7 +1789,6 @@ const api = {
   get doc() { return doc; }, set doc(v) { doc = v; },
   get listId() { return listId; }, get listMode() { return listMode; }, get ref() { return ref; }, get sync() { return sync; }, get transport() { return transport; },
   get theme() { return theme; }, get view() { return view; }, get syncStatus() { return syncStatus; }, get editing() { return editing; }, get openPanel() { return openPanel; },
-  get tourOn() { return tourOn; }, set tourOn(v) { tourOn = v; },
   get whoCount() { return whoCount; },
   todayList, allDoneToday, setWasAll: () => { wasAll = allDoneToday(); },
   afterChange, applyRemote, render, setView, paint, paintListName, paintMute, paintStatus, paintMenu, paintWho, toast, hideToast, ask, showPanel, closePanel,
@@ -1757,8 +1801,7 @@ const api = {
 };
 
 /* test hook (read-only) */
-window.__tf = () => ({ stats: { ...stats }, view, listId, mode: listMode, lookupId: ref ? ref.lookupId : null, R: ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, tour: tourOn ? tourStep() : -1, tourDone: !!dev.tourDone, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY });
-function tourStep() { return window.__tfTourStep ? window.__tfTourStep() : 0; }
+window.__tf = () => ({ stats: { ...stats }, view, listId, mode: listMode, lookupId: ref ? ref.lookupId : null, R: ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY });
 // test-only controls, on the local transport: simulate what iOS does to the audio context
 if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneToday(); } }, presence: n => paintWho(n) };
 

@@ -120,7 +120,7 @@ await test("delete everywhere, then undo within ten seconds: the row is gone, th
   s2.open(e, doc, { rev: 0, dirty: true, created: true });
   assert.ok(await until(() => s2.status === "synced" && s2.current().rev >= 1), "re-created: " + s2.status);
   const back = JSON.parse((await rawRpc("get_list_v3", { p_id: e.lookupId, p_rev: null })).text);
-  assert.equal(Object.keys((await C.open(e.key, back.doc)).items).length, 5, "the same five lines, same lookup id");
+  assert.equal(Object.keys((await C.open(e.key, back.doc)).items).length, 3, "the same three lines, same lookup id");
   s2.close();
 });
 

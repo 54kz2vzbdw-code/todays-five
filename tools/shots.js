@@ -89,7 +89,9 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await step("keys", async () => { if (touch) { await openMore("help"); await page.waitForSelector("#p-help[open]"); const b = await page.$("#help-keys"); if (!b) { await esc(); return; } await b.tap(); } else await page.keyboard.press("?"); await page.waitForSelector("#p-keys[open]"); await wait(400); await shot("keys"); await esc(); });
   await step("today-again", async () => { await press("#v-today"); await page.waitForSelector("#today:not([hidden])"); await page.mouse.move(2, 2); await wait(300); });
   if (!touch) await step("idle", async () => { if (!(await page.evaluate(() => "idle" in window.__tf()))) return; await wait(5600); await shot("idle"); await page.mouse.move(700, 400); await wait(400); });
-  await step("finale", async () => { for (let i = 0; i < 5; i++) { await press("#list .row:not(.done) .check"); await wait(650); } await wait(3200); await shot("finale"); });
+  await step("finale", async () => { // 1.3: three seed lines, and the earlier steps may have crossed them all off — add two, then finish the list
+    if (!(await page.$("#list .row:not(.done) .check"))) { const id = await page.evaluate(() => window.__tf().listId); await page.goto(BASE + "?transport=local#/l/" + id + "/add?text=Walk%20the%20dog%0ACall%20the%20engineer%20back"); await wait(1200); }
+    for (let i = 0; i < 5; i++) { if (!(await page.$("#list .row:not(.done) .check"))) break; await press("#list .row:not(.done) .check"); await wait(650); } await wait(3200); await shot("finale"); });
   await step("about", async () => { await page.goto(BASE + "about.html"); await wait(600); await shot("about"); });
   await ctx.close();
 }

@@ -196,3 +196,53 @@ await test("429 on create → status busy, list kept locally, retry scheduled la
 });
 
 console.log(`\n${passed} sync tests passed`);
+
+/* ---- v4 ---- */
+
+await test("presence: the engine tracks under its session key only when enabled, and reports other keys", async () => {
+  const srv = fakeServer();
+  let seen = null, counts = [];
+  srv.subscribe = (id, onMsg, onState, presence) => { seen = presence; setTimeout(() => { onState("joined"); if (presence) presence.onCount(2); }, 0); return { alive: () => true, send() {}, close() {} }; };
+  const W = M.newId(); const e = await C.fromWrite(W);
+  let on = true;
+  const s = S.createSync({ transport: srv, deviceId: "d", presence: { key: "sess1", enabled: () => on, onCount: n => counts.push(n) } });
+  s.open(e, M.seedDoc(W), { rev: 0, dirty: true, created: true });
+  await until(() => counts.length > 0);
+  assert.deepEqual(seen, { key: "sess1", onCount: seen.onCount }); assert.deepEqual(counts, [2]); assert.equal(s.current().presence, true);
+  on = false; s.resubscribe(); await tick(20);
+  assert.equal(seen, undefined, "off: no presence on the channel at all"); assert.equal(counts[counts.length - 1], 0); assert.equal(s.current().presence, false);
+  s.close();
+});
+
+await test("delete everywhere, then undo: the row is removed and re-created under the same lookup id with the same token", async () => {
+  const srv = fakeServer();
+  const W = M.newId(); const e = await C.fromWrite(W);
+  const s = S.createSync({ transport: srv, deviceId: "d" });
+  s.open(e, M.seedDoc(W), { rev: 0, dirty: true, created: true });
+  await until(() => s.status === "synced" && srv.rows.has(e.lookupId));
+  const doc = M.normalize(S.loadLocal(W).doc, W);
+  s.close();
+  assert.equal(await s.remove(e.lookupId, e.token), true); assert.equal(srv.rows.has(e.lookupId), false);
+  assert.equal(await srv.del(e.lookupId, e.token), false, "nothing to delete twice");
+  // undo within ten seconds: the client still holds W and the document
+  const s2 = S.createSync({ transport: srv, deviceId: "d" });
+  s2.open(e, doc, { rev: 0, dirty: true, created: true });
+  await until(() => s2.status === "synced" && srv.rows.has(e.lookupId));
+  const row = srv.rows.get(e.lookupId);
+  assert.equal(row.rev, 1); assert.equal(row.token, e.token);
+  assert.equal(Object.keys(await C.open(e.key, row.doc)).length > 0, true);
+  assert.equal(Object.keys((await C.open(e.key, row.doc)).items).length, 5, "the same five lines");
+  s2.close();
+});
+
+await test("a device that never created the list cannot re-create a deleted row by accident", async () => {
+  const srv = fakeServer();
+  const W = M.newId(); const e = await C.fromWrite(W);
+  const s = S.createSync({ transport: srv, deviceId: "x" });
+  s.open(e, M.seedDoc(W), { rev: 3, dirty: true, created: false });
+  await until(() => s.status === "gone");
+  assert.equal(srv.rows.size, 0);
+  s.close();
+});
+
+console.log(`${passed} sync tests passed (with v4)`);

@@ -1,9 +1,10 @@
 // Service worker: offline shell + assets, no third-party hosts. Same-origin HTML/JS/CSS are network-first so a
 // deploy lands on the next load; icons, fonts and the vendored realtime client are cache-first. Bump VERSION on deploy.
-const VERSION = "tf-v3.0.0";
+const VERSION = "tf-v4.0.0"; // = "tf-v" + version.js; bumped with every deploy
 const SHELL = [
-  "./", "./index.html", "./about.html", "./styles.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js",
-  "./sound.js", "./fx.js", "./qr.js", "./config.js", "./manifest.webmanifest", "./vendor/realtime.js",
+  "./", "./index.html", "./about.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js",
+  "./sound.js", "./packs.js", "./fx.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json",
+  "./manifest.webmanifest", "./vendor/realtime.js",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-512-maskable.png", "./icons/apple-touch-icon.png"
 ];
 
@@ -33,7 +34,7 @@ self.addEventListener("fetch", e => {
   // shell: network first, cache fallback (and refresh the cache on success)
   e.respondWith(
     fetch(req).then(res => {
-      if (res && res.ok && (path.endsWith("/") || /\.(html|js|css|webmanifest|png)$/.test(path))) {
+      if (res && res.ok && (path.endsWith("/") || /\.(html|js|css|webmanifest|png|json)$/.test(path))) {
         const copy = res.clone();
         caches.open(VERSION).then(c => c.put(req, copy));
       }

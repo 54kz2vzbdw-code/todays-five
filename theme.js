@@ -103,6 +103,8 @@ export function pairFamilies(pairId) {
 }
 
 /* ---------------- curated kits ----------------
+   Sound packs (v4): knock, bell, blip, typewriter, marble, pop — see packs.js. Paper types, Forest drops marbles,
+   Harbor pops; the rest keep their v3 engines. A device can override the pack in Settings → Sound.
    Dark, Light and Pink carry v1's exact tokens, fonts, sounds and confetti,
    with one exception recorded in DECISIONS.md: the two secondary greys (dim,
    muted) in Dark and Light are nudged to the nearest values that pass 4.5:1.   */
@@ -154,14 +156,14 @@ const RAW = [
     text: "#EAF2E6", muted: "#A9C4A2", dim: "#8AA884", done: "#8AA884",
     accent: "#8BD17A", accentHi: "#B8E6A6", accentDeep: "#4E9A45", accentText: "#9EDB8E", danger: "#F08A6A",
     glow: V1_GLOW("#8BD17A", .10), strikeShadow: "0 0 10px rgba(139,209,122,.40)"
-  }, { engine: "knock", pitch: 0.78, decay: 1.5, noise: 1.2, filter: 1800 }, ["#8BD17A", "#B8E6A6", "#F2E9B8", "#4E9A45", "#EAF2E6"]),
+  }, { engine: "marble", pitch: 0.82, decay: 1.3 }, ["#8BD17A", "#B8E6A6", "#F2E9B8", "#4E9A45", "#EAF2E6"]),
 
   kit("paper", "Paper", "light", "playfair", {
     ink: "#F7F2E8", ink2: "#EFE8DA", ink3: "#E3DAC8",
     text: "#1F1B16", muted: "#5E5749", dim: "#6C6559", done: "#6C6559",
     accent: "#C8321F", accentHi: "#E0563F", accentDeep: "#8E2214", accentText: "#9E2717", danger: "#B02A1A",
     glow: V1_GLOW("#C8321F", .06, 30, 60), strikeShadow: "none"
-  }, { engine: "knock", pitch: 1.35, decay: 0.55, noise: 2.2, filter: 6000, tone: "sine" }, ["#C8321F", "#1F1B16", "#E0563F", "#D9C9A8", "#F7F2E8"]),
+  }, { engine: "typewriter", pitch: 1, decay: 1, noise: 1 }, ["#C8321F", "#1F1B16", "#E0563F", "#D9C9A8", "#F7F2E8"]),
 
   kit("terminal", "Terminal", "dark", "mono", {
     ink: "#070A08", ink2: "#0E140F", ink3: "#152017",
@@ -194,7 +196,7 @@ const RAW = [
     text: "#123A3E", muted: "#3F6A6E", dim: "#4C777A", done: "#4C777A",
     accent: "#0F8C8C", accentHi: "#38B3AF", accentDeep: "#0A6666", accentText: "#0C7070", danger: "#C24A3A",
     glow: V1_GLOW("#0F8C8C", .08, 30, 60), strikeShadow: "none"
-  }, { engine: "knock", pitch: 0.9, decay: 1.1, noise: 0.6, filter: 900, tone: "sine" }, ["#0F8C8C", "#38B3AF", "#E8D8B0", "#FFFFFF", "#7ED0C8"]),
+  }, { engine: "pop", pitch: 0.95, decay: 1.1 }, ["#0F8C8C", "#38B3AF", "#E8D8B0", "#FFFFFF", "#7ED0C8"]),
 
   kit("ember", "Ember", "dark", "archivo", {
     ink: "#1B0F0D", ink2: "#271512", ink3: "#351C18",

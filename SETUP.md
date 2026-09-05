@@ -22,6 +22,10 @@ A list that exists only on the phone (the stray one) migrates the same way the f
 
 Drops the v2 RPCs, deletes any plaintext row still on the server, and makes the token mandatory. Run it once every list you care about has been opened in the new app (each migration shows the sheet). It prints the count of encrypted lists that remain.
 
+## v4: nothing to paste
+
+v4 changed no table and no function. Every feature lives inside the encrypted document, the three v3 RPCs and the existing realtime channel (presence rides on the same `list:<id>` channel). If Realtime's "Allow public access to channels" were ever turned off, the who's-here dots would go quiet along with the live updates; the poll carries on either way.
+
 ## Things to know
 
 - **Pause/resume.** A free Supabase project pauses after 7 days without database activity. Opening the app on any device counts, so normal use keeps it alive; a two-week holiday will pause it. If the rail dot turns red with "Sync trouble", go to https://supabase.com/dashboard, open the paused `todays-five` project, click **Resume project**, and wait a couple of minutes. Nothing is lost: every device keeps its own copy and pushes when the project is back.

@@ -253,3 +253,218 @@ What was actually run, and what it found.
 Mobile warm performance sits at the 95 bar with run-to-run variance of ±2; the remaining cost is the module graph on a simulated slow phone (FCP 1.7–1.9 s). Splitting `app.js` so panels and the tour load on first use would buy a few points and is the next lever if it is ever needed.
 
 Not verified in this build: the project's hosting region (the About page says "United States", inferred from round-trip latency, not read from the dashboard); Lighthouse's `bf-cache` audit (disabled by flags in the test Chrome); a real iPhone (the simulator stood in, as in v2).
+
+---
+
+# Today's Five v4 — plan
+
+v4 is fixes, sixteen features, and a structure that keeps the app from ballooning. Everything here was designed
+before the code, with two constraints ahead of every feature: other people's lists, links and Home Screen icons
+must survive a mixed-version period (COMPATIBILITY.md, written first), and nothing may be glued on. The v2 and v3
+sections above still hold unless this one overrides them.
+
+## Information architecture
+
+Three surfaces, and what each may hold:
+
+| surface | rule | v4 change |
+|---|---|---|
+| the rail | never gains a control | presence dots beside the sync dot; the count becomes a button (one-thing mode) |
+| Today | never gains a control | one-thing mode is `O` or the count; the day review card sits under "That's the list" |
+| ⋯ | short and contextual | Share · How it works · Lists · Settings · About · Delete this list |
+
+Everything else lives in one Settings sheet with five sections: **Appearance** (theme, follow system, schedule) ·
+**Sound** (pack, volume, celebrate changes from other devices) · **Behavior** (day review, keep screen awake,
+not-today swipe, single-key shortcuts, full screen where the platform has it) · **Lists** (templates, removed
+lists, history) · **Advanced** (add from anywhere, export / import, who's here). The v3 menu items that were
+settings (wake lock, sound, volume, single-key shortcuts) move there; Theme keeps its rail chip and `T`; History
+moves under Lists because it is a per-list record, not a control.
+
+Features live where they are used: the repeat rule inside the line editor, templates and "Put all on Today" in the
+section header menu, search at the top of Everything, "Move to…" and "Not today" in the line's own menu, presence
+in the rail. New behaviours default off; a v3 user who updates sees the what's-new toast and nothing else.
+
+One visual language: the same bottom sheet, chip, tab strip, toggle row and list row everywhere. v4 adds two
+primitives that v3 lacked and uses them in every new surface: a **toggle row** (label, optional sub-line, on/off
+state as `aria-pressed`) and a **line menu** (a sheet listing what a line can do). The section menu, the ⋯ menu and
+the Lists panel already use the list-row component; Settings and the new sheets reuse it unchanged.
+
+## Structure of the code
+
+`app.js` was one 100 KB module. Today's first paint must not get slower, so v4 splits it by *when the code is
+needed*, not by feature:
+
+| module | loaded | holds |
+|---|---|---|
+| `app.js` | always | boot, registry, open/switch lists, rendering, toggle, edit, drag, keyboard, undo, rollover tick, sync wiring, status, the ⋯ menu, one-thing mode, search, not-today, presence painting, add-from-URL, celebrate-remote, the what's-new toast |
+| `panels.js` | first panel | theme picker, share and save sheets, Lists, History, Settings, section and line menus, templates, delete-everywhere and its undo, move-to-list, the tour, How it works |
+| `exporter.js` | first export / import | JSON and Markdown export, import, share/download/clipboard hand-off |
+| `packs.js` | first sound | the six engines; `sound.js` keeps only the audio-context state machine and the API |
+| `qr.js`, `vendor/realtime.js` | as in v3 | QR encoder; realtime client (presence rides on it) |
+| `panels.css` | after first paint | every dialog's styles (sheets, the theme picker, Settings, the tour, How it works); `styles.css` keeps only what Today needs, so the render-blocking CSS is no larger than v3's |
+
+`app.js` hands the lazy modules one object (`api`) with live getters for its state (`doc`, `listId`, `ref`,
+`sync`, `theme`, `view`…) and the actions they need (`afterChange`, `toast`, `ask`, `showPanel`, `render`,
+`switchTo`, `openList`…). Nothing else is exported; the DOM for the panels stays in `index.html` (hidden dialogs
+cost nothing at first paint) so the lazy code only wires behaviour.
+
+## Document shape (inner `v: 3`, additive)
+
+```
+{
+  v: 3, id, name, nameAt, updatedAt,
+  sections, items, history, themes,                    (v2 shape, unchanged)
+  items[id]  += nothing; a tombstone may carry { text, note, sectionId }   (Recently deleted)
+  rules:     { [itemId]: { id, kind, days?, day?, text, note, sectionId, updatedAt, deleted? } }
+  returns:   { [itemId]: { id, on: "YYYY-MM-DD", updatedAt, deleted? } }
+  templates: { [id]: { id, name, lines: [{ text, note }], updatedAt, deleted? } }
+}
+```
+
+- **Why side collections.** A v3 client's `normalize()` rebuilds every record from the fields it knows, so any
+  new field on an item is stripped the moment the old phone re-emits the record, and a check-off on that phone
+  re-emits it with a newer timestamp. The recurrence rule and the not-today return are therefore records of their
+  own, keyed by the item id: the old client drops the collection and never sends it back, and every v4 client keeps
+  its copy through the per-key union in `merge`. Only data that merely has to *pass through* an old client (a
+  tombstone's text) rides on the record itself, protected by the new tie-break.
+- **Tie-break.** Equal `updatedAt`: tombstone, then the longer canonical JSON, then the lexically larger. A record
+  an old client stripped is shorter, so the v4 copy wins the tie and is pushed back. Still a total order, so merge
+  stays commutative, associative and idempotent (fuzzed in `test/model.test.js`).
+- **`normalize()` keeps unknown keys** on the document, on records and on tombstones, so the same courtesy v4
+  needed from v3 is given to v5. `v: 2` documents are accepted as they are (a v3 client rewrites `v` to 2 on every
+  push, so `v` can never gate a feature).
+- **Recurrence and rollover.** `rollover(doc, today)` stays a pure, idempotent function:
+  1. a done item finished on an earlier date goes to History for that date; if it has a live rule it is *reset*
+     (`done: false, doneAt: 0, today: due(rule, today)`, stamped `updatedAt + 2`), otherwise tombstoned (`+ 1`) as
+     in v3. The reset beats the tombstone a v3 device produces from the same done record (`+ 1`), so a mixed pair
+     converges on the reset;
+  2. an undone recurring line that is off Today and due today goes on Today (`+ 1`);
+  3. a return whose date has come puts its line back on Today (`+ 1`) and tombstones itself;
+  4. **revival**: a live rule whose item is a tombstone stamped one or two milliseconds above the item's latest
+     History entry is a v3 rollover that ran before any v4 device saw the done record (a deliberate delete is
+     stamped with the wall clock, minutes or days later). The line is recreated under its id from the rule's
+     snapshot (`text`, `note`, `sectionId`), stamped `tombstone.updatedAt + 1`. Deterministic, so two v4 devices
+     produce the identical record.
+  Due dates: `daily` every day; `weekdays` Monday–Friday; `weekly` on `days` (0 = Sunday); `monthly` on `day`,
+  clamped to the month's length. The rule keeps a snapshot of the line's text so revival has something to say.
+- **Not today** sets `today: false` on the item (an old client sees it leave Today too) and writes `returns[id]`
+  for tomorrow's local date; rollover puts it back. The Everything marker reads the return record.
+- **Recently deleted** are tombstones that carry `text`; rollover tombstones and moves carry none, so History and
+  moved lines do not show up as deleted. Restore re-creates the line from the tombstone with the current time.
+- **Templates** are lines without state (`text`, `note`), named, stored in the document so they sync and are
+  encrypted with it.
+- **Budget.** A typical list (five sections, forty lines, a few rules and templates, ninety days of history) is
+  measured on the live backend in the real-backend suite; the target is under 20 KB encrypted.
+
+## Fixes
+
+- **iPhone sound.** iOS suspends the `AudioContext` on background and *interrupts* it (state `interrupted`, or
+  `suspended` on older builds) on calls, Siri and other apps' audio; a `resume()` after an interruption can fail
+  silently, and v1's code only resumed from `suspended`. v4's `sound.js` is a state machine run inside every tap:
+  if the context is not `running`, call `resume()`; if the previous tap's resume did not lead to `running` by the
+  time of this tap, or the state is `closed`, close the context and create a fresh one inside this gesture. On
+  return to the foreground the context is resumed as well (outside a gesture that is allowed after the first
+  gesture). Tested in Node against a fake context that models suspend, interrupt, refuse and close.
+  One-time hint: the first check-off with sound on, on iOS, shows a toast that the ring/silent switch mutes web
+  audio; iOS exposes no signal for the switch, so the hint is shown once rather than detected.
+- **View-only lists celebrate.** `applyRemote` diffs the previous and the next document; a Today line that became
+  done plays the check sound and a burst at its row, and the finale fires when everything is done. Always on a view
+  link (watching is the point); on an edit link only with Settings → Sound → "Celebrate changes from other devices",
+  off by default, because a Mac left open all day would otherwise chime for every phone tap.
+- **Line at the bottom.** Reproduced in the iOS 18.1 simulator: the empty progress track (`#bar`, 3 px of
+  `--ink-3`) sits at `bottom: 0`, under the home indicator, and reads as a hairline in both Safari and the
+  installed app. Fix: the track is transparent (only the fill draws), the bar sits above the safe-area inset, and the
+  shell's background is the page's, seamless to the edge.
+- **Menu's first item.** "Share this list" on a phone (a QR code for someone else's camera, copy, and the system
+  share sheet), "Share & open on phone" on a desktop. Same sheet underneath.
+- **Remove from this device.** Archive renamed; it only hides the list from this device's switcher. Lists →
+  Removed restores it. How it works says so.
+- **Delete this list everywhere.** ⋯ → bottom, destructive; a sheet naming the list; `delete_list_v3` with the write
+  token; local copy and registry entry cleared; `announceGone` so other devices show "This link no longer works"
+  at once. Undo for ten seconds re-creates it under the same link: the client still holds `W` and the document,
+  and a `put` with `base_rev = 0` inserts it again (counted as a create by the rate limit). Offline: the revocation
+  is queued in `pendingKill` exactly like Rotate. View links have no token and no Delete entry.
+
+## Features
+
+1. **Recurring lines** — above. A repeat glyph on the line; the rule is set in the line editor (never · every day ·
+   weekdays · chosen days · monthly on a date).
+2. **Add from anywhere** — `…/#/l/<W>/add?text=…&section=…`. `hashRef` reads the id as before and the `/add`
+   suffix separately; newlines make several lines. The app opens the list (registering it if the device lacked
+   it), waits for a document (local, or the first pull), adds the lines to Today (into `section` when it names an
+   existing one), pushes, highlights the new lines with an "Added" toast, and rewrites the address to the plain
+   link so a reload cannot repeat it. Empty text opens the new-line editor. A view link is refused with a sentence.
+   Settings → Advanced shows the personalised URL with copy; How it works documents an iOS Shortcut (Ask for Input →
+   URL Encode → Open URL) and a Mac bookmarklet.
+3. **One-thing mode** — `O` or a tap on the count: Today shows only the top undone line, enormous; crossing it off
+   slides the next in; the finale ends it; `O` or the count toggles it. Remembered per device (`dev.oneThing`).
+4. **Day review** — Settings → Behavior, off by default. A quiet card under "That's the list": streak, days finished
+   this week, today's lines. No modal, no sound; any key or tap dismisses it until the next finale.
+5. **Who's here** — Realtime Presence on the existing `list:<lookupId>` channel. Each page load tracks a random
+   session id and nothing else; the transport reports the number of other keys on `sync`; the rail shows one dot
+   per other device (five, then "+n"), tooltip "n others have this list open", fading in and out. View-only devices
+   count. Settings → Advanced → "Show who's here", on by default; off means this device neither tracks nor shows.
+   The client's default heartbeat only; a presence join per page load is the only added traffic.
+6. **Time-of-day theme** — Settings → Appearance → Schedule: off, or a day time and a night time with a theme for
+   each. Per device. Mutually exclusive with Follow system: turning one on turns the other off and the row says so.
+   Applied at boot and checked by the minute tick.
+7. **Sound packs** — three new engines beside knock, bell and blip: **typewriter** (key strike; carriage return on
+   the finale), **marble** (a glass marble dropped on wood, with bounces; a cascade on the finale), and **pop** (a
+   soft bubble; a fizz on the finale). Every pack has check, uncheck and finale, parameterised per theme. Best-fit
+   packs: Paper → typewriter, Forest → marble, Harbor → pop; the other kits keep theirs. Settings → Sound overrides
+   the pack per device, with a preview on select.
+8. **Templates** — section menu → "Save as template" (name, lines, no state) and "Insert template" into any section
+   of any list; managed in Settings → Lists.
+9. **Export / import** — Settings → Advanced. JSON is the full, versioned document (`{ app, format, exportedAt,
+   doc }`) written with sorted keys so a round trip is byte-identical; Markdown is readable (sections, lines, notes,
+   done state, history). Import JSON into a new list or merge into the current one (`merge`). iOS hands the file to
+   the share sheet (`navigator.share` with a file), elsewhere a download, and the clipboard is the fallback. The
+   sheet says plainly that this is the only backup that exists.
+10. **Not today** — swipe left on a phone, `-` on a keyboard, or the line menu. The swipe can be turned off in
+    Settings → Behavior.
+11. **Move to…** — line menu → list picker. The line is added to the target list's local copy (new id, rule
+    carried along) and saved dirty, then tombstoned in the source; `flushOthers` pushes the target when it can, so
+    offline the move waits in the target's local copy exactly like any other unsynced edit.
+12. **Recently deleted** — Everything ends with "Recently deleted (n)" and Restore.
+13. **Search** — `/` or the search icon in the Everything header; live filter on text and notes; Escape clears.
+14. **Put all on Today / Take all off Today** — section menu.
+15. **iOS haptics** — a visually hidden `<input type="checkbox" switch>` toggled inside the tap. Ships only if it
+    has no visual or focus side effect in the simulator; the haptic itself cannot be observed there (DECISIONS.md).
+16. **What's new** — `whatsnew.json`; `dev.seenVersion`; a toast on the first open after an update, never on first
+    run; About shows the version and the changelog; `sw.js`'s cache name carries the app version.
+
+## Verification plan
+
+1. Node: audio-context state machine; recurring rollover (pure, idempotent, converges from two devices, beats a
+   v3 tombstone, revival); not-today; templates; move between lists; delete and undo re-creation; export → import
+   byte-identical; add-URL parsing; what's-new shows once; the frozen-v3 compatibility test; version numbers agree.
+2. Real backend: presence dots across two clients; delete everywhere and the ten-second undo; add-from-URL end to
+   end; unchanged polls still 29 bytes; the doc-size measurement.
+3. Browser suite (`tools/e2e4.js`, local transport, 1440×900 and 390×844): every feature, one-thing mode, search,
+   recently deleted, the Settings sheet on both, view-only celebration, every sound pack without console errors,
+   the bottom-of-screen line (a pixel probe), audio recovery after a simulated interruption.
+4. A device with a v3 list opens v4: the what's-new toast, nothing else, list intact. Lighthouse before and after.
+5. Live URL after deploy: fresh device and v3 device.
+
+## Verification results (v4, 2026-09-05)
+
+What was actually run, and what it found.
+
+| suite | result |
+|---|---|
+| Node `test/model.test.js` | 22 pass (v3's merge, rollover, reorder and seed tests, unchanged, against the v4 model) |
+| Node `test/features.test.js` | 18 pass (pass-through of unknown keys, the richer-record tie-break fuzzed for commutativity and associativity, `isDue` for every rule kind including the 31st in February, rollover reset at +2 and convergence from two devices, weekly lines leaving and returning to Today once per day, not-today and its return, recently deleted and restore, templates, put-all-on-Today, move between lists with rule and return, export → import byte-identical without the secret, add-URL parsing with newlines and a view link, what's-new once per version, the day review, orphan purge, the version in three files) |
+| Node `test/compat.test.js` | 6 pass (a v4 document with rules, returns, templates, a remembering tombstone and a field from the future through the frozen v3 model: nothing the old client can see is dropped, its edits survive, every v4 field comes back after a merge; both rollovers converge on the reset; revival after a v3 rollover; a deliberate old-client delete is honoured) |
+| Node `test/sound.test.js` | 8 pass (the state machine against a fake context: first gesture, background resume, an interruption whose resume never lands → a fresh context on the next tap, a closed context, foreground, every pack's check/uncheck/finale, the override, an unknown engine) |
+| Node `test/sync.test.js` | 13 pass (v3's ten, plus presence only when enabled, delete then re-create under the same lookup id with the same token, a device that never created the list cannot re-create it) |
+| Node `test/theme.test.js`, `test/crypto.test.js` | 13 and 9 pass (best-fit packs; the pinned derivation vectors untouched) |
+| Browser suite `tools/e2e4.js` (Chrome 152, local transport, 1440×900 mouse and 390×844 touch) | 46 pass: new list and tour; the six-row ⋯ menu worded per device; Settings' five sections, toggles that hold across a reload, schedule and follow-system exclusive; a repeat rule from the line menu, the glyph, History and the reset after a rollover; not today by `-` and by a real left swipe, the tomorrow tag, the return; one-thing mode (one row, enormous, the next slides in, the finale ends it, remembered); search; recently deleted and restore; section menu templates and put-all-on-Today; move to another list and back; delete everywhere and the undo; add from anywhere (two lines, a cleaned address, a reload that adds nothing, a view link refused out loud, on the phone through the iOS reload); a view link that plays the check, bursts and gets the finale from the editor's taps, an edit link quiet by default and celebrating with the setting; presence dots between two tabs, the cap at five, fade-out, and off; every sound pack scheduling audio with zero console errors; audio recovery from a suspended and from a dead context; the bottom edge is the page background pixel for pixel and the track is transparent; export byte-identical, Markdown, a download, an import merged; the day review card; remove from this device and restore; a v3 device updating sees the what's-new toast once and nothing else; How it works with the Shortcut recipe and bookmarklet, replaying the five-mark tour; zero page errors, CSP violations and third-party requests |
+| Real Supabase `tools/realsync4.js` | 6 pass: envelopes on the wire; a view link's put refused with 403; the unchanged poll is **29 bytes** (the same as v3); presence between two sockets, the count dropping on leave, an opted-out device invisible; delete everywhere then re-creation under the same link with the same token, and a device that never created the list reports "gone"; add from a URL end to end with a second device seeing the line; the doc-size measurement below |
+| Doc size on the live backend | a realistic list (5 sections, 40 lines with notes, 2 rules, a template, 90 days × 5 lines of history): **69,636 bytes plain → 6,505 bytes encrypted** (envelope as stored); the seed list is 697 bytes. Budget: under 20 KB |
+| Lighthouse 12 (Chrome 152, gzip like GitHub Pages, same harness for both, two runs each) | v3 baseline: desktop 100 / 100 / 100, mobile cold 99 / 100 / 100, mobile warm 100 / 100 / 100 (perf / a11y / best practices), mobile-cold FCP 1.43–1.73 s. v4 before the stylesheet split: mobile cold 98–99, FCP 1.66–1.85 s. v4 final (panel CSS off the critical path, two identical runs): desktop 100 / 100 / 100, mobile cold 99 / 100 / 100 with FCP 1.58 s, mobile warm 100 / 100 / 100 with FCP 1.24 s; TBT 0 everywhere; installability errors none beyond the harness's own |
+| iOS 18.1 simulator, iPhone 16 Pro (Safari and a fresh Home Screen clip of the v4 build) | Safari: the bottom-edge pixel probe reads `#1A1D21` (the page's ink) to the last row, no `#2E343A` hairline (v3 read 9 device px of it). Home Screen app, standalone: the same, seamless to the edge; the only rows that differ are the home-indicator pill. Audio: the first gesture's context stayed `suspended` with its resume pending; the next tap closed it and made a fresh one that reports `running`; after Device → Home and a relaunch the context is still `running` and the next tap counts a check — the machine does on WebKit what the Node test models. The Add to Home Screen path still carries `start_url` with the list's fragment (the head script is byte-identical, its CSP hash unchanged) |
+| A device carrying a v3 list | a persistent Chrome profile created its list on the live v3 site before the deploy (the live check after the deploy is in the final message) |
+
+Found and fixed along the way: two module-level `let`s below the boot call (the temporal dead zone the v3 notes warn about — the smoke test caught it on the first run); the view-link refusal toast dying in the reload iOS Safari needs (a notice that survives it); one-thing type too small on a phone (`13vw`/`18vh`); a presence peer that closed its tab without a leave on the local transport (pagehide says goodbye, as a closed socket does on the real server).
+
+Standalone viewport note: in the simulator's Home Screen app the layout viewport (`inset: 0`, `100dvh`) ends 62 pt above the screen's bottom edge, so fixed elements sit that much higher than in Safari; the body background paints the rest, which is why the edge is seamless and why the v3 track showed as a floating hairline there. Whether a real iPhone does the same could not be checked in this build.

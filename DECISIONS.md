@@ -157,3 +157,62 @@ Calls made where the v3 brief left things open, plus the two places it was exten
 - **The Today toggle keeps a stable name** ("Today", state in `aria-pressed`, the action in `aria-description`); its hover tooltip stays while hovered and hides on Escape.
 - **Remaining contrast spots fixed**: the footer hint no longer relies on opacity, placeholders are opaque, tour progress dots use the elevated grey; all touch targets in sheets, the tour and the volume slider are 44 px on touch; text fields show a real focus ring.
 - **Everything `boot()` can reach is declared above the boot call.** The accessibility pass briefly introduced module-level `let`/`const` bindings below it; a page that boots straight into a link (a Home Screen icon) then died in a temporal dead zone while the welcome-first test path never touched it. The browser suite now boots a fresh page directly into a link and fails on any page error.
+
+---
+
+# v4 decisions
+
+Calls made where the v4 brief left things open. The design is in PLAN.md, "Today's Five v4 — plan"; the rules every change must keep are in COMPATIBILITY.md.
+
+## Compatibility and the document
+
+- **New per-line data lives in side collections keyed by the line id** (`rules`, `returns`), not on the line. A v3 client rebuilds every record from the fields it knows, and a check-off on the old phone re-emits the line with a newer timestamp, which would win the merge and silently drop a field on it. A collection the old client never knew is dropped by it and never sent back, so every v4 device keeps its copy through the per-key union.
+- **The tie-break gained a middle rule**: on equal `updatedAt`, a tombstone wins, then the record with the longer canonical JSON, then the lexically larger. A record an old client stripped is shorter, so the richer copy wins the tie and is pushed back. It stays a total order, so merge stays commutative, associative and idempotent (fuzzed). Without it, every stripped record would have won its tie, because `}` sorts after `,`.
+- **`normalize()` keeps unknown keys** on the document, on records and on tombstones, so v5 gets from v4 the courtesy v4 needed from v3. The compat test runs a document with a field from the future through both models.
+- **The inner document says `v: 3`, and `v` gates nothing.** A v3 client rewrites it to 2 on every push, so a feature that depended on `v` would flicker between devices.
+- **Recurring lines reset at `updatedAt + 2`, plain lines still tombstone at `+ 1`**, so a v4 rollover beats the tombstone a v3 rollover produces from the same done record, and two v4 devices produce identical records. Rollover also **revives** a recurring line whose bare tombstone sits one or two milliseconds above its latest History entry: that is the fingerprint of a v3 rollover that ran before any v4 device saw the check-off (a real delete is stamped with the clock, minutes or days later). A deliberate v4 delete also tombstones the rule, so nothing revives it.
+- **A rule remembers the date it last put its line on Today** (`placed`). Rollover runs every minute, so without a marker a due line the user had just taken off Today would jump back a minute later. Taking a line off Today sticks until its next due day.
+- **Not today is `today: false` plus a return record.** The old phone sees the line leave Today (it understands `today`); the v4 rollover puts it back. A line that was finished in the meantime just retires its return.
+- **Tombstones carry `text`, `note` and `sectionId` only when a user deleted the line.** Rollover tombstones and moved lines stay bare, so History and moves never show up as "Recently deleted". Restore re-creates the line at the end of its section, off Today.
+- **The doc-level `updatedAt` is still stamped with the clock** on rollover (as in v3). It is informational; the compat and feature tests compare records and ignore it.
+- **Purge drops rules and returns whose line is gone for good** (its tombstone already purged), so a side collection cannot grow orphans.
+
+## Sound
+
+- **Every tap runs the state machine, and a resume that never landed is the signal.** iOS reports `interrupted` on some builds and `suspended` on others, and neither is reliable after a call, so the code does not branch on the name: if the context is not running, ask for a resume and remember that we asked; if it is still not running on the next tap, close it and make a fresh one inside that gesture. The Node test models suspend, interrupt-with-no-resume and close against a fake context.
+- **The silent-switch hint is shown once, not detected.** iOS exposes nothing about the ring/silent switch to a page, and an output-level probe would need a permission prompt for nothing. The first check-off with sound on, on iOS, shows one toast.
+- **The engines load on the first gesture** (`packs.js`, from `sound.prime`), so the first check-off on a cold page can arrive a beat late; nothing else is lost, and Today's first paint never pays for six engines.
+- **Best-fit packs**: Paper types (a pencil scratch was always the wrong sound for a typewriter theme), Forest drops marbles (wood and glass), Harbor pops (water). The other nine kits keep what they had; a device override in Settings → Sound keeps the theme's pitch and decay parameters.
+- **Celebrating remote changes is on for a view link and off by default for an edit link.** Watching is the point of a view link; a Mac left open all day would otherwise chime for every tap on the phone.
+
+## Structure
+
+- **The count in the rail is the one-thing toggle.** It was already the one control that means "how far through Today am I"; making it a button adds no new control. `O` does the same.
+- **History lives under Settings → Lists**, because ⋯ is fixed at six rows and History is a per-list record, not a control. The day review card links there in spirit; Settings → Lists → History opens the panel.
+- **Full screen is a row in Settings → Behavior** where the platform has the API. It is an action, not a setting, but ⋯ stays short and the rail chip covers the desktop.
+- **The search field lives in a header row inside Everything**, not the rail. The rail never gains a control.
+- **The line menu is a ⋯ tool on the row**, on Today and in Everything. Today's screen gains no control; the row already had tools, and the menu is where "Not today", "Repeat", "Move to…" and "Delete" belong without four more icons.
+- **The section menu also exists for Unsorted** once a section exists (v3 hid it), because templates and "Put all on Today" apply there too. A list with no sections has no headers and therefore no section menu; Settings → Lists → Templates offers "Insert into Unsorted" for that case.
+- **Panels load lazily as one module** (`panels.js`, 53 KB) rather than one file per panel. One request on first use, cached by the service worker after; splitting further would add round trips for no first-paint gain.
+- **Dialog markup stays in `index.html`, dialog styles do not.** Hidden dialogs cost nothing at first paint, and injecting markup from the lazy module would have doubled the surface for id typos. Their CSS is another matter: Lighthouse's simulated slow phone painted v4 about 8% later than v3 with everything in one render-blocking stylesheet, so `panels.css` (15 KB: sheets, the theme picker, Settings, the tour, How it works) loads right after boot and every panel waits for it; `styles.css` is back to v3's size.
+
+## Features
+
+- **Add from anywhere waits for a real document** on a device that never held the list: the lines are added after the first pull, so they land on the list rather than on an empty placeholder that would then merge oddly. On a link that turns out to be gone, nothing is added and the toast says so. The address is rewritten to the plain link the moment the add is read, so a reload cannot repeat it.
+- **The add URL puts the text in the fragment**, so it never reaches the server (the same reason the list secret lives there).
+- **Move to another list needs the target on this device**, because both lists are encrypted with their own keys and only a device holding both can write both. The picker says "Not on this device yet" for a list the registry knows but has never opened. The moved line keeps its done and Today state; it lands at the end of the target's Unsorted. Undo moves it back the same way.
+- **Delete everywhere adds the id to `dead`** so another tab's copy of the registry cannot resurrect the entry, and the ten-second undo removes it from `dead` again. The undo re-creates the row with `base_rev = 0`, which the server counts as a create (the per-address rate limit applies).
+- **The what's-new toast treats a device that holds a list but no version marker as a returning v3 device** and a device with neither as a first run. First run marks the version seen silently.
+- **Export strips the list id** before serialising, because the id is the edit secret and a JSON file travels. Import sets the id from the list it lands in. Byte-identical round trips come from sorted keys and an idempotent `normalize`.
+- **Templates hold text and note only.** No done state, no Today flag, no order: inserted lines start fresh at the end of their section.
+- **One-thing mode exits at the finale and saves the exit**, so the next day starts with the whole list; a new line also leaves the mode (it is written in the full list). The toggle itself is remembered per device.
+- **Presence tracks an empty payload under a random per-load key.** The key is the only identifier; it never touches storage. "Show who's here" off means the channel is joined without presence at all: nothing is tracked, nothing is listened to.
+- **The theme schedule and Follow system are exclusive by construction**: turning one on turns the other off with a toast, and the Settings sub-line says which one holds the theme right now. The schedule is checked by the same minute tick as rollover.
+- **The iOS haptic switch ships**, guarded to iOS with the `switch` attribute supported: a visually hidden `<input type="checkbox" switch>` is clicked inside the tap. The simulator shows no visual or focus side effect (focus is handed back if the click moved it); the haptic itself cannot be observed in the simulator, so whether it fires on hardware is unverified (final message).
+- **The swipe for Not today is touch-only and leftwards**, past 90 px; a scroll (vertical first) or a long-press (drag) wins over it, and the click iOS synthesises afterwards is swallowed like the one after a drag.
+
+## Process
+
+- **The suites now live in the repo** (`tools/e2e4.js`, `tools/realsync4.js`, `tools/serve.js`, `tools/smoke.mjs`) because the release checklist in COMPATIBILITY.md depends on them; the v3 suites lived outside the repo and were lost with that session.
+- **Playwright drives the installed Chrome** (`channel: "chrome"`) from a package already on this Mac; nothing was downloaded for the browser suite. Lighthouse 12 was installed into the session scratchpad.
+- **The simulator was driven with `simctl` only** (open URL, screenshot, pixel probe). The native simulator tool needs `xcode-select`, as in v2 and v3.

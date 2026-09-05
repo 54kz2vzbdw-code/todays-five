@@ -102,6 +102,7 @@ let wakeLock = null;
 let openPanel = null;
 let markTarget = null, markKey = ""; // the just-in-time hint on screen, if any (declared up here: boot() reaches it)
 let menuHintFor = null;        // the line whose edit just ended by hand: the menu hint points at it once the editor is gone
+let idleTimer = 0, idleOn = false, finaleOn = false; // the idle fade (desktop)
 let query = "";                // Everything's search
 let pendingAdd = null;         // { text: [...], section } from an add-from-anywhere link, applied once the doc is ready
 let whoCount = 0;
@@ -163,7 +164,7 @@ function scheduledSlot(now = new Date()) {
 function applyThemeCode(code) {
   theme = T.parseCode(code) || T.curated("dark");
   T.applyTheme(theme);
-  $("#theme").textContent = theme.name;
+  $("#menu-theme-k").textContent = theme.name;
   dispatchEvent(new CustomEvent("tf:theme"));
 }
 function chooseTheme(t) {
@@ -305,6 +306,7 @@ async function openList(r) {
     if (roll.moved.length || roll.doc !== doc) { doc = roll.doc; rolled = true; }
   }
   document.documentElement.dataset.mode = mode;
+  document.body.classList.remove("welcome");
   history.replaceState(null, "", BASE + SEARCH + frag({ id: r.id, mode }));
   if (window.__tfManifest) window.__tfManifest(frag({ id: r.id, mode }));
   $("#welcome").hidden = true;
@@ -375,6 +377,7 @@ function showWelcome(msg) {
   listId = null; doc = null; ref = null; undoStack = []; hideToast();
   meta.current = null; meta.currentMode = null; saveDevice();
   document.documentElement.dataset.mode = "edit";
+  document.body.classList.add("welcome"); // no rail, no footer: the title, three sentences, two buttons, one link
   $("#today").hidden = true; $("#all").hidden = true; $("#welcome").hidden = false;
   $("#w-err").textContent = msg || "";
   $("#dot").hidden = true; // no list yet: nothing to report
@@ -816,6 +819,7 @@ function paint() {
   const finale = view === "today" && allDoneToday() && !editing;
   if (finale) { fin.classList.add("on"); hint.classList.add("off"); }
   else { fin.classList.remove("on"); hint.classList.remove("off"); }
+  if (finale !== finaleOn) { finaleOn = finale; idleReset(); } // the controls never fade during the finale
   paintReview(finale);
   $("#streak-k").textContent = (s => s ? s + " day" + (s > 1 ? "s" : "") : "")(M.streak(doc));
 }
@@ -1450,10 +1454,11 @@ function showPanel(id) {
   openPanel = d;
   d.classList.remove("closing"); d.style.transform = ""; d.removeAttribute("data-drag");
   if (!d.open) d.showModal();
+  idleReset();
 }
 function closePanel() { if (openPanel) { const d = openPanel; openPanel = null; d.close(); } } // forget it now, not when the close event lands: what follows may need the panel gone
 $$("dialog.panel").forEach(d => {
-  d.addEventListener("close", () => { if (openPanel === d) openPanel = null; });
+  d.addEventListener("close", () => { if (openPanel === d) openPanel = null; idleReset(); });
   d.addEventListener("click", e => { if (e.target === d && !clickAfterDrag()) d.close(); }); // not the click a browser synthesises after the hold that opened it
   d.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => d.close()));
   if (d.classList.contains("sheet")) wireSheetSwipe(d);
@@ -1506,24 +1511,47 @@ function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger =
   });
 }
 
-/* the ⋯ menu: short and contextual */
+/* the ⋯ menu: Share · Theme · Sound · Full screen · How it works · Lists · Settings · About · Delete (nine rows is the ceiling) */
 $("#more").addEventListener("click", () => { paintMenu(); showPanel("p-menu"); });
 function paintMenu() {
   $("#menu-share-lb").textContent = listMode === "view" ? "Share the view link" : (sheetUi() ? "Share this list" : "Share & open on phone");
   $('#p-menu [data-act="share"] .k').hidden = sheetUi();
+  $("#menu-theme-k").textContent = theme ? theme.name : "";
+  paintMute();
+  $("#menu-full").hidden = !document.fullscreenEnabled;
   $("#menu-delete").hidden = !doc || listMode !== "edit";
   $("#settings-k").textContent = "";
 }
 $("#p-menu").addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const act = b.dataset.act;
+  if (act === "sound") { toggleMute(); return; } // a toggle row: the menu stays, the state flips
   closePanel();
   if (act === "share") panels().then(p => p.openShare());
+  else if (act === "theme") panels().then(p => p.openTheme());
+  else if (act === "full") toggleFullscreen();
   else if (act === "help") panels().then(p => p.openHelp());
   else if (act === "lists") panels().then(p => p.openLists());
   else if (act === "settings") panels().then(p => p.openSettings());
   else if (act === "delete") panels().then(p => p.deleteEverywhere());
 });
+
+/* ---------------- idle fade (desktop) ----------------
+   About four seconds without the mouse or a key and the rail and the footer fade to the date and the count (the
+   presence dots stay). Any move or key brings them back. Off while a panel is open, off during the finale, off under
+   prefers-reduced-motion, and Settings → Behavior turns it off for good.                                        */
+const IDLE_MS = 4000;
+function idleAllowed() { return HOVER.matches && !dev.idleFadeOff && !RM.matches && !!doc && !openPanel && !finaleOn && !drag; }
+function idleReset() {
+  if (idleOn) { idleOn = false; document.body.classList.remove("idle"); }
+  clearTimeout(idleTimer); idleTimer = 0;
+  if (idleAllowed()) idleTimer = setTimeout(() => { idleTimer = 0; if (idleAllowed()) { idleOn = true; document.body.classList.add("idle"); } }, IDLE_MS);
+}
+document.addEventListener("pointermove", idleReset, { passive: true, capture: true });
+document.addEventListener("pointerdown", idleReset, { passive: true, capture: true });
+document.addEventListener("keydown", idleReset, true);
+document.addEventListener("focusin", idleReset);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") idleReset(); });
 $("#volume").addEventListener("input", e => { dev.volume = (+e.target.value) / 100; saveDevice(); });
 $("#volume").addEventListener("change", () => { if (!dev.muted) sound.tick(); });
 
@@ -1680,11 +1708,6 @@ $("#wn-more").addEventListener("click", () => { $("#whatsnew").hidden = true; lo
 function wireUi() {
   $("#v-today").addEventListener("click", () => setView("today"));
   $("#v-all").addEventListener("click", () => setView("all"));
-  $("#mute").addEventListener("click", toggleMute);
-  const fsBtn = $("#full");
-  if (!document.fullscreenEnabled) fsBtn.hidden = true;
-  fsBtn.addEventListener("click", toggleFullscreen);
-  $("#theme").addEventListener("click", () => panels().then(p => p.openTheme()));
   $("#again").addEventListener("click", startAgain);
   $("#addtoday").addEventListener("click", () => newItem({ today: true }));
   $("#toast-undo").addEventListener("click", () => { const a = toastAction; hideToast(); if (a) a(); else undo(); });
@@ -1694,7 +1717,7 @@ function wireUi() {
   document.body.classList.toggle("one", !!dev.oneThing);
 }
 function toggleMute() { dev.muted = !dev.muted; saveDevice(); paintMute(); if (!dev.muted) sound.tick(); dispatchEvent(new CustomEvent("tf:settings")); }
-function paintMute() { const b = $("#mute"); b.textContent = dev.muted ? "Muted" : "Sound on"; b.setAttribute("aria-pressed", dev.muted ? "true" : "false"); }
+function paintMute() { $("#menu-sound-k").textContent = dev.muted ? "Off" : "On"; $('#p-menu [data-act="sound"]').setAttribute("aria-pressed", dev.muted ? "false" : "true"); }
 function toggleFullscreen() {
   if (document.fullscreenElement) document.exitFullscreen();
   else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
@@ -1809,14 +1832,14 @@ const api = {
   afterChange, applyRemote, render, setView, paint, paintListName, paintMute, paintStatus, paintMenu, paintWho, toast, hideToast, ask, showPanel, closePanel,
   focusRow, newItem, startEdit, commitEdit, deleteItem, toggle, toggleToday, notToday, pushUndo, undo, restoreItem,
   saveDevice, registerList, switchTo, openList, showWelcome, createList, parseLink, flushQuick, flushOthers, killRemote, queueKill, retryPendingKills,
-  applyThemeCode, chooseTheme, currentThemeCode, tickTheme, setWake, toggleMute, toggleFullscreen, setOneThing, setSearch, ruleLabel,
+  applyThemeCode, chooseTheme, currentThemeCode, tickTheme, setWake, toggleMute, toggleFullscreen, setOneThing, setSearch, ruleLabel, idleReset,
   editLink, viewLink, copyText, nativeShare, escapeHtml, drawQr, frag,
   resubscribePresence: () => { if (sync) sync.resubscribe(); paintWho(dev.whoOff ? 0 : whoCount); },
   loadLocal, saveLocal, removeLocal
 };
 
 /* test hook (read-only) */
-window.__tf = () => ({ stats: { ...stats }, view, listId, mode: listMode, lookupId: ref ? ref.lookupId : null, R: ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY });
+window.__tf = () => ({ stats: { ...stats }, view, listId, mode: listMode, lookupId: ref ? ref.lookupId : null, R: ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY });
 // test-only controls, on the local transport: simulate what iOS does to the audio context
 if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneToday(); } }, presence: n => paintWho(n) };
 

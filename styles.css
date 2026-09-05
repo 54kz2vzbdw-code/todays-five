@@ -80,10 +80,7 @@ button{font:inherit;color:inherit}
 .chip.plain{border-color:transparent;padding-left:.4em;padding-right:.4em}
 .chip.icon{padding:.45em .7em;font-size:1.15em;line-height:1;letter-spacing:0}
 #listname{color:var(--muted);max-width:14em;overflow:hidden;text-overflow:ellipsis}
-.pill{
-  font:inherit;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-text);
-  border:1px solid var(--accent);border-radius:999px;padding:.35em .75em;white-space:nowrap;opacity:.9;
-}
+.pill{font:inherit;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-text);padding:.35em .2em;white-space:nowrap;opacity:.9}
 .fine{font-size:12px;color:var(--muted)}
 .fine a{color:var(--muted)}
 .fine a:hover{color:var(--text)}
@@ -108,7 +105,7 @@ button{font:inherit;color:inherit}
 }
 .dot:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:999px}
 .dot::before{
-  content:"";width:8px;height:8px;border-radius:50%;
+  content:"";width:6px;height:6px;border-radius:50%;
   background:var(--accent);box-shadow:0 0 0 0 var(--accent);
   transition:background-color .3s ease,box-shadow .3s ease,opacity .3s ease;
 }
@@ -418,7 +415,7 @@ html[data-mode="view"] #hint{visibility:hidden}
 @media (max-width:900px){ #date{display:none} }
 @media (max-width:680px){
   .rail{letter-spacing:.1em;gap:.5rem}
-  #full,#theme,#mute,#share{display:none}
+  #share{display:none}
   .chip,.seg button{min-height:44px}
   .chip.icon{min-width:44px}
   .seg button{padding:.45em .7em}
@@ -432,10 +429,10 @@ html[data-mode="view"] #hint{visibility:hidden}
 @media (hover:none){
   .chip,.seg,.add,.dot,.tool{--dim:var(--dim-2);--muted:var(--muted-2)}
   .chip,.seg,.add{background:var(--ink-2);border-color:var(--hair-hi)}
-  .chip.plain{background:var(--ink-2);border-color:var(--hair);padding-left:.8em;padding-right:.8em}
+  .chip.plain{background:transparent;border-color:transparent}
   .seg button[aria-selected="true"]{background:var(--ink-3)}
   .tool.today{border-color:transparent;background:transparent}
-  .dot{padding:.3em .55em;border:1px solid var(--hair);border-radius:999px;background:var(--ink-2);min-height:44px;min-width:44px;justify-content:center}
+  .dot{min-height:44px;min-width:32px;justify-content:center}
   .sec-h .chip{min-width:44px}
   .row .tool{opacity:1}
 }
@@ -616,3 +613,11 @@ body.install-on #toast,body.install-on #whatsnew{bottom:calc(96px + env(safe-are
 .marked{outline:2px solid var(--accent) !important;outline-offset:3px}
 .row.marked-row .tool{opacity:1}
 @media (prefers-reduced-motion:reduce){#mark{animation:none}}
+
+/* the rail (1.1): date · count with the sync dot beside it (and the presence dots) · Today/Everything · Share · ⋯ */
+.rail-r .status{display:inline-flex;align-items:center;gap:.4rem;min-width:0}
+/* welcome: no rail, no footer */
+body.welcome .rail,body.welcome #foot{display:none}
+/* idle fade (desktop): the rail and the footer step back to the date and the count; the presence dots stay */
+.rail-r > *,.rail-l > *,#foot{transition:opacity .25s ease}
+body.idle .rail-r > :not(.status),body.idle .rail-l > :not(#date),body.idle #foot{opacity:0;transition:opacity 1.4s ease}

@@ -316,7 +316,7 @@ function paintSettings() {
   set("wake", !!d.wake); $('#p-settings [data-set="wake"]').hidden = !("wakeLock" in navigator);
   set("swipe", !d.swipeOff); $("#set-swipe").hidden = !A.touchUi();
   set("keys", !d.keysOff); $("#set-keys").hidden = A.touchUi();
-  $("#set-full").hidden = !document.fullscreenEnabled;
+  set("fade", !d.idleFadeOff); $("#set-fade").hidden = A.touchUi();
   const tpls = A.doc ? M.liveTemplates(A.doc).length : 0;
   $("#set-tpl-k").textContent = tpls ? String(tpls) : "";
   const removed = meta().lists.filter(l => l.archived).length;
@@ -344,7 +344,7 @@ function wireSettings() {
     else if (k === "wake") { await A.setWake(!d.wake); paintSettings(); }
     else if (k === "swipe") { d.swipeOff = !d.swipeOff; A.saveDevice(); paintSettings(); }
     else if (k === "keys") { d.keysOff = !d.keysOff; A.saveDevice(); paintSettings(); A.toast(d.keysOff ? "Single-key shortcuts off (Cmd/Ctrl+Z, Esc and ⌥↑↓ still work)" : "Single-key shortcuts on"); }
-    else if (k === "full") { A.closePanel(); A.toggleFullscreen(); }
+    else if (k === "fade") { d.idleFadeOff = !d.idleFadeOff; A.saveDevice(); paintSettings(); A.idleReset(); }
     else if (k === "templates") { A.closePanel(); openTemplates(); }
     else if (k === "removed") { A.closePanel(); openLists({ removed: true }); }
     else if (k === "history") { A.closePanel(); openHistory(); }

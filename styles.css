@@ -687,3 +687,7 @@ body.one #list .row.one-now.wobble{animation:wobble .36s ease}
 #shake-ask .chip{font-family:var(--font-ui);font-weight:700;font-size:10px;letter-spacing:.12em;text-transform:uppercase;min-height:36px;color:var(--accent-text);border-color:var(--accent)}
 #shake-ask .x{width:36px;height:36px;border-radius:999px;border:0;background:transparent;color:var(--dim);font-size:18px;cursor:pointer}
 @media (hover:none){ #shake-ask .x{width:44px;height:44px} #shake-ask .chip{min-height:44px} }
+/* the hints stack instead of overlapping: install hint at the bottom, the shake hint above it, the toast above both */
+body.shake-on #toast,body.shake-on #whatsnew{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+body.install-on #shake-ask{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+body.install-on.shake-on #toast,body.install-on.shake-on #whatsnew{bottom:calc(178px + env(safe-area-inset-bottom,0px))}

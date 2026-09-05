@@ -687,3 +687,47 @@ What was actually run, and what it found.
 | Real Supabase `tools/realsync4.js` | 6 pass, the suite unchanged: envelopes on the wire, a view link's put refused, the unchanged poll still **29 bytes**, presence, delete and undo, add from a URL; the seed list 617 bytes encrypted, the realistic list 6,549 bytes |
 | Lighthouse 12 (Chrome 152, gzip like GitHub Pages, the same harness and machine for both, an untouched clone of `main` as the 1.1 baseline, two rounds each) | **1.1 baseline** (the untouched clone of `main`): desktop 100 / 100 / 100 in both rounds (FCP 0.30–0.38 s, LCP 0.41–0.42 s); mobile cold 98, 99, 98, 98 (FCP 1.29–1.66 s, LCP 1.83–1.89 s); mobile warm 98, 99, 98, 99 (FCP 1.28–1.66 s, LCP 1.82–1.88 s). **1.2**: desktop 100 / 100 / 100 in both rounds (FCP 0.30 s, LCP 0.41 s); mobile cold 98, 98, 98, 98 (FCP 1.29–1.51 s, LCP 1.82–1.83 s); mobile warm 99, 99, 98, 99 (FCP 1.29–1.66 s, LCP 1.82–1.88 s). Performance / accessibility / best practices; TBT ≤ 8 ms everywhere. The harness falls into one of two modes on either build — a first paint at 1.29 s with a 0.07 layout shift (Lato arriving after the paint), scored 98, or a paint at 1.66 s with none, scored 99 — and both builds land in both; 1.2 matched the baseline mode for mode (the first cold rounds to the millisecond), the cold medians are the same (98) and the warm median is a point better (99 against 98.5): not worse, on eight mobile runs a side. The six extra kilobytes on the wire (146 KB against 140) sit inside the simulation's granularity. Lighthouse 12 has no installability audit; the install path was not re-checked in this build (the head script and the manifest are byte-identical to 1.1's) |
 | Sizes on the critical path (gzip) | `styles.css` 9.2 KB (1.1: 8.8), `app.js` 35.5 KB (34.2), `index.html` 9.1 KB (8.4, the light tokens for the first frame and the new markup), `theme.js` 12.4 KB (8.9, two kits and the slot logic); off the critical path `panels.css` 4.0 KB (3.9) and `panels.js` 16.4 KB (14.9). Lighthouse's mobile page weight 146 KB against 140 |
+
+---
+
+# Today's Five 1.3 — plan
+
+The problem this round solves: a texted link looked like spam, the first thing a person saw after tapping Start
+was a QR code, and nobody understood that the edit link is a password. Plus one feature, shuffle in one-thing mode.
+Nothing on the server changes; the domain stays as it is. The earlier sections still hold unless this one
+overrides them; the calls made where the brief left things open are in DECISIONS.md, "1.3 decisions".
+
+## What changed, by surface
+
+| surface | 1.2 | 1.3 |
+|---|---|---|
+| a texted link | a bare URL | a card: `og:title`, a one-sentence `og:description`, `og:image` (`icons/og.png`, 1200×630, the Today screen in Dark with the title, 34 KB), `og:url`, `twitter:card`, a canonical link — in the static HTML of `index.html` and `about.html`, which is all a previewer reads |
+| the welcome | the title, three sentences, Start a list, Paste a link | the title and one sentence above a live list of three lines (the Today renderer on a local document: a tap strikes, knocks and throws confetti; nothing stored, no secret, nothing on the server) and, below it, Keep this list once a line of your own is added or all three are crossed off, Skip — start my list, Already have a list? Paste your link, and How it works & privacy. No rail, no footer, no tour, no hint, no toast. A link still opens its list as before |
+| Keep | Start a list made the seed list | the same document under a real id, lines and check marks included, through the ordinary create path; the save sheet follows |
+| Save your link | one sheet: the sentence, a QR, the link, Copy, Share…, three hints, I've saved it; closing it counted as saved | one sentence — this link is your list's only key, anyone holding it can open the list, and there is no spare — then the lead the device calls for: Safari on a phone leads with Add to Home Screen (two steps; the icon carries the link), then Copy, no QR; the installed app says the icon holds the link, with Copy as a backup; a desktop leads with Bookmark this page (⌘D / Ctrl+D), then Copy, then Open it on your phone with the QR. Copy and I've saved it count as saved; until then ⋯ carries a Save your link row with a dot and the Share sheet repeats the key line. Devices from before are grandfathered on update |
+| Share | Edit link / View link tabs, a QR for either, Copy, Share…, Rotate links, a "fair warning" line | the View link first and by default (view only beside it; shows the list and can't change it — a second screen, or someone who should watch; check-offs from your other devices show up with the sound and the confetti; the QR on the desktop), Copy grabs it first; the Private link last, under a warning line in the danger colour, with the key sentence, the redirect to the View link, Copy private link and New keys (the old links stop working everywhere); Tell a friend apart at the bottom, handing the system share sheet a two-sentence note about the app and the bare app URL |
+| the names | edit link, view link, Rotate links, "View only" | Private link, View link (view only), New keys, everywhere: the sheets, How it works (a Second screen example beside Let someone watch), About, Settings › Advanced, the refusal of an add on a View link, the pill ("View link · view only" on the desktop, "View only" on the phone). No URL changed |
+| one-thing mode | the top undone line | plus shuffle: a different undone line, never the same twice in a row, never a reorder, held until crossed off or shuffled again, the top line back after a check-off, a wobble with one line left. `S`, a ↻ beside the count that exists only in the mode, and a shake of the phone (asked once with Allow; declined means ↻ only). The line slides out and the next slides in with the theme's tick and a haptic; instant under reduced motion |
+| ⋯ | nine rows | nine rows, with a Save your link row above them only until the link is saved; Share this list on both devices |
+| the changelog | 1.2 | 1.3 — A better first minute: the welcome you can try, the links named for what they do with the save sheet fitting the device, shuffle |
+
+## Structure of the change
+
+- `app.js`: `demo` (the welcome's live document), `showWelcome` rendering it through `setView`/`renderToday`, `demoNudge` and `keepDemo`, `afterChange` skipping storage in the demo, the keys and hints held back on the welcome; `unsavedEntry` and the ⋯ row; `shuffledId` in `renderToday`, `shuffle`, the ↻, the `S` key, `onMotion`/`startMotion`/`shakeReady` and the permission hint; the grandfathering on the first open of 1.3; the refusal toast's names.
+- `panels.js`: the Share sheet (the View block, the Private block, Tell a friend, `friendNote`), the save sheet by device (`showSaveLink`, `markSaved`), New keys through the save sheet, How it works and the reference with the names and shuffle, Settings › Advanced's wording.
+- `index.html`: the tags and the canonical link, the welcome as title + sentence with `#demo-foot` below the list, the ↻ beside the count, the pill, the ⋯ Save row, the two sheets rebuilt, the shake hint bar. `about.html`: the tags, the Sharing section. `model.js`: three seed lines. `styles.css` / `panels.css`: the welcome's layout by `order`, the ↻, the shuffle animations, the hint bar, the sheets' blocks and leads.
+- `tools/og.html` + `tools/og.mjs`: the card and its renderer; `icons/og.png` the result. `tools/e2e4.js`: the 1.2 checks updated for the welcome and the names, plus the 1.3 checks. `tools/shots.js`: the welcome played, the save sheet's desktop expander, the Share sheet's foot, one-thing mode.
+- Per-device state, additive inside `meta.device`: `savedGrandfathered`, `shake`; the registry's `linkSaved` keeps its meaning with a stricter setter. No document field changed; no server call changed; no URL changed (COMPATIBILITY.md §1, §3, §4).
+
+## Before and after
+
+Every surface at 1440×900 and 390×844, taken by `tools/shots.js` on the local transport (a dark system) before the
+first change and after the last. Before is the left of each pair.
+
+__SHOTS_TABLE__
+
+## Verification results (1.3)
+
+What was actually run, and what it found.
+
+__RESULTS_TABLE__

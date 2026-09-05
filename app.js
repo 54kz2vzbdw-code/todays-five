@@ -1778,7 +1778,7 @@ function setOneThing(on, { silent = false, keep = false } = {}) {
   document.body.classList.toggle("one", !!on && !!doc && listMode === "edit" && !demo);
   if (doc) { if (editing) commitEdit(); if (view !== "today" && on) setView("today"); else render({ animate: false }); }
   if (!silent) toast(on ? "One thing at a time. O or the count brings the list back." : "The whole list");
-  if (on && doc && !demo) shakeReady();
+  if (on && doc && !demo) shakeReady(); else shakeAsk(false); // the hint belongs to the mode
 }
 $("#count").addEventListener("click", () => { if (!doc || listMode !== "edit" || demo) return; setOneThing(!dev.oneThing); });
 
@@ -1816,22 +1816,24 @@ function onMotion(e) {
   lastAcc = mag;
 }
 function startMotion() { if (motionOn || typeof DeviceMotionEvent === "undefined") return; motionOn = true; addEventListener("devicemotion", onMotion); }
+/** the shake hint: a body class lifts the toast (and the install hint's neighbour) above it */
+function shakeAsk(on) { $("#shake-ask").hidden = !on; document.body.classList.toggle("shake-on", !!on); }
 function shakeReady() {
   if (!touchUi() || typeof DeviceMotionEvent === "undefined") return;
-  const asks = typeof DeviceMotionEvent.requestPermission === "function";
+  const asks = IOS && typeof DeviceMotionEvent.requestPermission === "function"; // iOS asks; Chrome exposes the call too but needs no permission
   if (dev.shake === "allowed") { startMotion(); return; }
   if (dev.shake === "declined") return;
   if (!asks) { dev.shake = "allowed"; saveDevice(); startMotion(); return; } // Android: no permission to ask for
-  if (!openPanel) $("#shake-ask").hidden = false; // asked once, remembered either way
+  if (!openPanel) shakeAsk(true); // asked once, remembered either way
 }
 $("#shake-allow").addEventListener("click", async () => {
-  $("#shake-ask").hidden = true;
+  shakeAsk(false);
   let r = "granted";
   try { r = await DeviceMotionEvent.requestPermission(); } catch (e) { r = "denied"; }
   dev.shake = r === "granted" ? "allowed" : "declined"; saveDevice();
   if (dev.shake === "allowed") { startMotion(); toast("Shake the phone for a different line"); }
 });
-$("#shake-x").addEventListener("click", () => { $("#shake-ask").hidden = true; dev.shake = "declined"; saveDevice(); });
+$("#shake-x").addEventListener("click", () => { shakeAsk(false); dev.shake = "declined"; saveDevice(); });
 function setSearch(q, { silent = false } = {}) {
   query = String(q || "").trim();
   const inp = $("#search"), btn = $("#search-btn");

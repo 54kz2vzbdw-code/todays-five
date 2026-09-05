@@ -556,7 +556,10 @@ function makeRow(it) {
   grip.addEventListener("pointerdown", e => { if (e.button !== 0 || e.pointerType === "touch") return; e.preventDefault(); gripPress(li, e); });
   grip.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") showMark("drag", grip, "Drag ⋯ to move the line. Click it for the menu."); });
   tools.appendChild(grip);
-  li.addEventListener("click", e => { if (clickAfterDrag()) { e.stopPropagation(); e.preventDefault(); } }, true);
+  // the click a browser synthesises after a touch tap can land on a neighbour when the page moved in between (the
+  // finale's review card re-centres the list, a done line sinks): the tap has already done its work, so that click
+  // is swallowed wherever it lands
+  li.addEventListener("click", e => { if (clickAfterDrag() || (tapped && tapped.touch && performance.now() - tapped.t < 700 && tapped.id !== it.id)) { e.stopPropagation(); e.preventDefault(); } }, true);
   // taps are recognised from pointer events (see onPress/onRelease); the click path serves keyboards and assistive tech
   li.querySelector(".check").addEventListener("click", e => { if (clickAfterDrag()) return; if (recentlyTapped(it.id)) return; toggle(it.id, e.clientX, e.clientY, e.detail > 0); });
   li.querySelector(".check").addEventListener("focus", () => { lastRowId = it.id; });
@@ -982,7 +985,7 @@ document.addEventListener("pointerup", e => {
   const sameRow = !!row && row.dataset.id === p.id && !!(under.closest(".check"));
   if (!sameRow && moved > 10) return; // released somewhere else on purpose
   if (!doc || !doc.items[p.id] || !rows.has(p.id)) return;
-  tapped = { id: p.id, t: performance.now() };
+  tapped = { id: p.id, t: performance.now(), touch: p.type === "touch" };
   toggle(p.id, e.clientX, e.clientY, true);
 }, true);
 document.addEventListener("pointercancel", () => { press = null; }, true);
@@ -1475,6 +1478,7 @@ function showPanel(id, { anchor = null } = {}) {
 function closePanel() { if (openPanel) { const d = openPanel; openPanel = null; d.close(); } } // forget it now, not when the close event lands: what follows may need the panel gone
 $$("dialog.panel").forEach(d => {
   d.addEventListener("close", () => { if (openPanel === d) openPanel = null; idleReset(); });
+  d.addEventListener("cancel", () => { if (openPanel === d) openPanel = null; }); // Escape: forget it now, the close event lands a tick later
   d.addEventListener("click", e => { if (e.target === d && !clickAfterDrag()) d.close(); }); // not the click a browser synthesises after the hold that opened it
   d.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => d.close()));
   if (d.classList.contains("sheet")) wireSheetSwipe(d);

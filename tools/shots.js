@@ -83,7 +83,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await step("help", async () => { await openMore("help"); await page.waitForSelector("#p-help[open]"); await wait(400); await shot("help"); await esc(); });
   await step("keys", async () => { if (touch) { await openMore("help"); await page.waitForSelector("#p-help[open]"); const b = await page.$("#help-keys"); if (!b) { await esc(); return; } await b.tap(); } else await page.keyboard.press("?"); await page.waitForSelector("#p-keys[open]"); await wait(400); await shot("keys"); await esc(); });
   await step("today-again", async () => { await press("#v-today"); await page.waitForSelector("#today:not([hidden])"); await page.mouse.move(2, 2); await wait(300); });
-  if (!touch) await step("idle", async () => { if (!(await page.$("body.idle, .rail.fade, [data-idle]")) && !(await page.evaluate(() => "__tfIdle" in window))) return; await wait(5200); await shot("idle"); await page.mouse.move(700, 400); await wait(400); });
+  if (!touch) await step("idle", async () => { if (!(await page.evaluate(() => "idle" in window.__tf()))) return; await wait(5600); await shot("idle"); await page.mouse.move(700, 400); await wait(400); });
   await step("finale", async () => { for (let i = 0; i < 5; i++) { await press("#list .row:not(.done) .check"); await wait(650); } await wait(3200); await shot("finale"); });
   await step("about", async () => { await page.goto(BASE + "about.html"); await wait(600); await shot("about"); });
   await ctx.close();

@@ -216,3 +216,64 @@ Calls made where the v4 brief left things open. The design is in PLAN.md, "Today
 - **The suites now live in the repo** (`tools/e2e4.js`, `tools/realsync4.js`, `tools/serve.js`, `tools/smoke.mjs`) because the release checklist in COMPATIBILITY.md depends on them; the v3 suites lived outside the repo and were lost with that session.
 - **Playwright drives the installed Chrome** (`channel: "chrome"`) from a package already on this Mac; nothing was downloaded for the browser suite. Lighthouse 12 was installed into the session scratchpad.
 - **The simulator was driven with `simctl` only** (open URL, screenshot, pixel probe). The native simulator tool needs `xcode-select`, as in v2 and v3.
+
+---
+
+# 1.1 decisions
+
+Calls made where the 1.1 brief left things open. The design is in PLAN.md, "Today's Five 1.1 — plan"; the rules every change must keep are in COMPATIBILITY.md.
+
+## Version scheme
+
+- **The build number is written by hand at release, not computed at load.** The app has no build step, so `BUILD` in `version.js` and `build` in `whatsnew.json` carry the commit count on `main` after the merge. The merge is a fast-forward, so the number in the branch's last commit is the count; COMPATIBILITY.md §7 says how, and `test/features.test.js` checks the two agree and that About shows one file's number.
+- **The service worker's cache name carries the marketing version only** (`tf-v1.1`). The shell is network-first, so a deploy lands on the next open whatever the cache is called; the name only decides which old caches are reaped. A build with the same marketing version reuses the cache, a fix (`1.0.x`) or a round (`1.x`) gets a new one.
+- **What's-new keys on the string changing, never on its order**, which is why the renumbering (4.0.0 → 1.0) fires the toast exactly once on every existing device and never again. The toast shows the first line, which says the app got quieter and nothing about numbers; the third line, on the About page only, says what 4.0.0 became so the renumbered changelog reads right.
+- **No dates anywhere**: the `date` field left `whatsnew.json`, the About changelog and its CSS lost the date column, and the About script was re-hashed for the CSP (`tools/csp-hash.js`, which the v3 comment in `index.html` always referred to and which now exists).
+
+## One teaching channel per moment
+
+- **The seed lines** are "Tap or click to cross this off · Add a line with + New line · The rest lives in Everything · Save your link. It's the key. · Cross off all five and see", 26–30 characters each, one line at 1440×900 and two at 390×844, all five and the add button on screen without scrolling on both. Editing is not taught by a seed line: the desktop footer says `E edit`, the ⋯ and the hold are one hover or one press away, and the menu hint arrives with the first edit.
+- **Hints are remembered per device in `dev.hints`** (`{ today, drag, menu }`), a new key inside `meta.device` as COMPATIBILITY.md §5 allows. A hint counts as seen the moment it is shown, read to the end or not. Any tap, any key, a release after a hold, or the control going away dismisses it; a mark never has buttons.
+- **A device that held a list before 1.1 starts with every hint seen.** It went through the tour (or knows the app), and the non-negotiable is that it sees exactly one new thing on update, the what's-new toast. The same latch the tour used (`tourDone`, or a list that was not registered moments ago) decides it; the first-run reload iOS Safari does after the first list is created still does not look like a returning device.
+- **The drag hint on the phone shows during the hold**, on the lifted line ("Drag to move it. Let go for the menu."), and goes when the finger lifts; on the desktop it shows on the first hover of a line's ⋯ ("Drag ⋯ to move the line. Click it for the menu."). One key, two moments, because the control is the same.
+- **The menu hint waits for the editor to close.** "The first time a line is edited" means an existing line's editor closed by hand (Enter, Escape, a tap elsewhere); a new line being written does not count, and Enter that opens the next line defers the hint until no editor is open, so it never sits beside a field being typed in. On the desktop it points at the line's ⋯ (forced visible meanwhile); on the phone, where there is nothing on the row, at the line itself and it says to hold it.
+- **`?` is a reference sheet of its own** (`#p-keys`: every key and the mouse on the desktop, every gesture on touch) rather than a scroll into How it works, which stays the long-form page (⋯ → How it works) and links to the reference instead of listing the keys twice. "Replay the tour" is gone with the tour.
+- **The Today footer says `1–n check off`** for the lines on screen (`1–5` with five, the brief's literal), `1 check off` with one.
+
+## Quiet rows
+
+- **⋯ is also the drag handle on the desktop.** One control on hover: click it for the menu, press and move it to drag (four pixels of movement decide). Nothing else appears on a row, so the brief's "exactly one control" holds and the pencil, the delete cross, the note chevron and the six-dot handle are gone. `⌥↑/↓` still moves from the keyboard.
+- **On the phone the ⋯ stays in the DOM, visually hidden** (one pixel, clipped, no pointer events), so VoiceOver still finds "Line menu"; a person gets the menu from a hold released in place or a swipe right, and "Not today" from a swipe left as before. The Settings switch for the swipe governs the left one only.
+- **A hold on a done line opens its menu straight away** (done lines cannot be dragged); a hold on an undone line lifts it, a move drags, a release without moving opens the menu.
+- **Notes show under the line on Today** now that the chevron is gone; Everything always did. A line with a note reads the same in both views.
+- **The star**: hollow in the dim grey when off, filled in the muted grey when on, the accent only on hover or press. `aria-pressed`, the stable name "Today" and the hover tooltip stay from v3.
+- **Double-click still edits on the desktop but is no longer documented.** Its first click toggles the line and its second toggles it back before the editor opens, a v2 artefact of tap-from-pointer-events; `E` and ⋯ → Edit are the taught paths.
+- **Two clicks a browser makes up are now swallowed.** The click iOS synthesises after a hold released in place used to land on the sheet the release had just opened and close it; the click it synthesises after a tap can land on a neighbouring line when the page moved in between (the finale's review card re-centres the list; v4's taller rows hid this). Both are ignored: the first through the drag-ended window the sheet already respects, the second by dropping any click that follows a touch tap and lands on another line.
+- **A closed panel is forgotten at once**, not when the dialog's `close` event lands a task later: `closePanel()` and the `cancel` Escape fires both null the state, so a keystroke or a hint right after a sheet closes is not refused.
+
+## Rail diet and the idle fade
+
+- **The list-name chip and the "View only" marker stay in the rail** as plain text (no border, no fill on touch): the first is the switcher for people with several lists, the second is the state assistive tech and the v3 accessibility pass rely on. Neither is a control the brief listed, and both go quiet.
+- **The Sound row in ⋯ is a toggle that keeps the menu open** and shows On/Off; Theme shows the current theme's name and opens the picker; Full screen is hidden where the platform has no API (an iPhone shows eight rows). The Settings › Behavior "Full screen" row went with it, so nine stays the ceiling.
+- **The section header's ⋯ stays at rest.** It is the only way into templates and "Put all on Today", it sits in a header rather than on a line, and it is quiet (a dim glyph, no fill).
+- **The idle fade is four seconds and a 1.4 s fade, desktop only** (`hover: hover`); touch never fades because nothing can be hovered back. Mouse movement, a press, a key or keyboard focus resets it; it never starts with a panel open, during the finale, while dragging, under `prefers-reduced-motion`, or with Behavior → "Fade controls when idle" off. The presence dots live in the count-and-dot group and stay.
+
+## Menus and panels
+
+- **Popovers are still `<dialog>`s opened modally**, so Escape and a click outside close them exactly as the sheets do; only the backdrop is transparent and the box is positioned under the control that opened it, right-aligned to it and flipped above when there is no room below. The dialog's own title row is hidden in a popover (the anchor is the context) but keeps naming the dialog for assistive tech.
+- **The search affordance appears past eight live lines** in the list, hidden otherwise, and `/` opens the field regardless (the header row shows for as long as the field is open). It is a worded chip ("Search /", the key hint hidden on touch), not an icon.
+- **Export & import keeps its element ids** inside the new sub-sheet, so the wiring, the browser suite's download check and the import flow did not change; only where the controls live did.
+- **The About row in ⋯ lost a stray `link` class** that had given it the monospace input style since v4.
+
+## A sound that lives with the theme
+
+- **The pack is a field on the custom theme (`pack`) and a fifth field in the code** (`T2:<d|l>:<hex>:<pair>:<pack>:<name>`, empty pack = the hue rule). Curated codes are unchanged (`T1:curated:<id>`), so every device reads them; a `T1:` custom code parses as it always did and gets the hue rule; a `T3:` is refused rather than misread.
+- **The accent still sets pitch and decay; the pack only sets the voice.** The builder's Auto option names what the hue rule picks for the current accent ("Auto · Bell"), and a pick previews through the app's sound machine inside the change gesture.
+- **A 1.0 device shown a saved `T2:` theme skips it in its picker** (its parser returns null and the list filters nulls), never crashes, and the theme is back when that device updates. Documented rather than solved: a code written for 1.1 has to carry the pack somewhere, and the theme record's `code` string is that somewhere.
+- **Settings › Sound says which pack wins**: "Theme's pick (Marble)" names the theme's pack, and the sub-line reads either "Marbles picks Marble, and that's what plays" or "Marbles picks Marble; this device plays Pop".
+
+## Process
+
+- **Node came from the Codex runtime cache on this Mac** (`~/.cache/codex-runtimes/…/node`, v24, with Playwright 1.62 and pngjs beside it); Lighthouse 12 was installed into the session scratchpad with the bundled pnpm, as in v4. The earlier session's dev server was still listening on 8790 and serving the 1.0 clone, so this round's server ran on 8791 (`BASE=…` for the suites) and the old one doubled as the Lighthouse baseline.
+- **Edits were applied as exact-match patches** (a small scratchpad tool that refuses to write unless every old text matches exactly once), one logical commit per brief section, each pushed.
+- **Before/after screenshots are taken by `tools/shots.js`** into `shots/1.1/{before,after}` at both viewports, quantised PNGs (about 40 KB each) so the repo stays small; PLAN.md shows them side by side.

@@ -649,7 +649,7 @@ export function openHelp(section) {
     <p>Today is the short list you keep on screen. Everything is the backlog, in sections, with a star on every line that puts it on Today or takes it off. Cross a line off and it sinks; finish them all and the finale plays. Finished lines move to History at the start of the next day; unfinished ones carry over.</p>
     <p>A line is the checkbox and the words, nothing else. ${touch
       ? "Hold a line and it lifts: drag to move it, or let go for its menu—edit, repeat, not today, move to another list, delete. Swipe right opens the same menu; swipe left is Not today."
-      : "Hover a line and ⋯ appears at its end: click it for the menu—edit, repeat, not today, move to another list, delete—or drag it to move the line. Double-click a line to edit it, or press E."}</p>
+      : "Hover a line and ⋯ appears at its end: click it for the menu—edit, repeat, not today, move to another list, delete—or drag it to move the line. E edits the focused line."}</p>
     <p>There's no tour. The first list you make is the tutorial, and a one-line hint turns up the first time you open Everything, ${touch ? "hold a line" : "hover a line's ⋯"}, or edit one—once each, then never again. Everything else is on the reference sheet:</p>
     <div class="row-actions"><button class="chip accent" id="help-keys" type="button">${touch ? "Gestures" : "Keys and gestures"}</button></div>
     <h3 id="h-repeat">Repeat, and not today</h3>
@@ -682,7 +682,7 @@ export function openHelp(section) {
 export function openKeys() {
   const touch = A.touchUi(), esc = A.escapeHtml;
   const keys = [["1 – 9", "Cross off a line by position"], ["N", "New line"], ["E", "Edit the focused line"], ["O", "One thing at a time"], ["-", "Not today (the focused line)"], ["/", "Search Everything"], ["A", "Today ↔ Everything"], ["⌥ ↑ / ↓", "Move the focused line"], ["⌘ Z", "Undo"], ["T", "Theme"], ["M", "Mute"], ["F", "Full screen"], ["Enter", "While editing: save, and start a new line below"], ["Tab", "While editing: over to the note"], ["Esc", "While editing: cancel · close a panel · clear the search"], ["⌫", "On an empty line: remove it"], ["?", "This sheet"]];
-  const mouse = [["Click a line", "Cross it off, or bring it back"], ["Double-click", "Edit the line and its note; the Repeat chip is in there"], ["Hover a line, then ⋯", "Click for the menu: edit, repeat, not today, move, delete. Drag it to move the line"], ["Star, in Everything", "Put the line on Today, or take it off"], ["The count", "One thing at a time"]];
+  const mouse = [["Click a line", "Cross it off, or bring it back"], ["Hover a line, then ⋯", "Click for the menu: edit (the Repeat chip is in the editor), repeat, not today, move, delete. Drag it to move the line"], ["Star, in Everything", "Put the line on Today, or take it off"], ["The count", "One thing at a time"]];
   const gestures = [["Tap a line", "Cross it off, or bring it back"], ["Hold a line", "It lifts: drag to move it, or let go for its menu—edit, repeat, not today, move, delete"], ["Swipe right", "The line's menu"], ["Swipe left", "Not today: the line leaves Today until tomorrow's rollover (Settings → Behavior turns it off)"], ["Star, in Everything", "Put the line on Today, or take it off"], ["Tap the count", "One thing at a time"], ["Swipe down, or tap outside", "Close a sheet like this one"]];
   const g = list => `<div class="gestures">${list.map(x => `<div class="g"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join("")}</div>`;
   $("#p-keys-h").textContent = touch ? "Gestures" : "Keys";

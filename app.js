@@ -28,11 +28,7 @@ const SEARCH = location.search;
 const TRANSPORT_KIND = (new URLSearchParams(SEARCH).get("transport") === "local" || (() => { try { return localStorage.getItem("tf/v2/transport") === "local"; } catch (e) { return false; } })()) ? "local" : "supabase";
 const CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12.6l5 5.2L19.5 6.4"/></svg>';
 const ICONS = {
-  pencil: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M13.5 6.5l3 3"/></svg>',
   star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.8l6.1-.7z"/></svg>',
-  handle: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"/></svg>',
-  kill: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
-  more: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>',
   menu: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>'
 };
 const touchUi = () => !HOVER.matches;
@@ -105,6 +101,7 @@ let drag = null;
 let wakeLock = null;
 let openPanel = null;
 let markTarget = null, markKey = ""; // the just-in-time hint on screen, if any (declared up here: boot() reaches it)
+let menuHintFor = null;        // the line whose edit just ended by hand: the menu hint points at it once the editor is gone
 let query = "";                // Everything's search
 let pendingAdd = null;         // { text: [...], section } from an add-from-anywhere link, applied once the doc is ready
 let whoCount = 0;
@@ -541,37 +538,39 @@ function makeRow(it) {
   li.className = "row"; li.dataset.id = it.id;
   li.innerHTML = `<button class="check" type="button" role="checkbox" aria-checked="false"><span class="box">${CHECK}</span><span class="tx"></span></button><span class="lines" aria-hidden="true"></span><div class="tools"></div>`;
   const tools = li.querySelector(".tools");
-  const mk = (cls, icon, label) => { const b = document.createElement("button"); b.type = "button"; b.className = "tool " + cls; b.innerHTML = ICONS[icon]; b.title = label; b.setAttribute("aria-label", label); return b; };
-  if (view === "today") {
-    const more = mk("more", "more", "Show note"); more.hidden = true; more.setAttribute("aria-expanded", "false"); tools.appendChild(more);
-    tools.appendChild(mk("pencil", "pencil", "Edit (E)"));
-    tools.appendChild(mk("lmenu", "menu", "Line menu"));
-  } else {
-    // the promote control explains itself: a labelled toggle, not a bare star
+  // quiet rows (1.1): the checkbox and the words, plus a small star in Everything. The one control, ⋯, appears on hover
+  // on the desktop (click: the line's menu, Edit at the top; drag: move the line). On the phone it is kept for assistive
+  // tech only; a hold lifts the line (drag to move, let go for the menu) and a swipe right opens the menu.
+  if (view === "all") {
     const today = document.createElement("button"); today.type = "button"; today.className = "tool today";
-    today.innerHTML = ICONS.star + '<span class="lb">Today</span>'; today.setAttribute("aria-pressed", "false"); today.setAttribute("aria-label", "Today");
+    today.innerHTML = ICONS.star; today.setAttribute("aria-pressed", "false"); today.setAttribute("aria-label", "Today");
+    today.addEventListener("click", e => { e.stopPropagation(); toggleToday(it.id); });
     tools.appendChild(today);
-    tools.appendChild(mk("pencil", "pencil", "Edit (E)"));
-    tools.appendChild(mk("kill", "kill", "Delete"));
-    tools.appendChild(mk("lmenu", "menu", "Line menu"));
-    tools.appendChild(mk("handle", "handle", "Drag to reorder"));
   }
+  const grip = document.createElement("button"); grip.type = "button"; grip.className = "tool lmenu"; grip.innerHTML = ICONS.menu;
+  grip.title = "Line menu · drag to move"; grip.setAttribute("aria-label", "Line menu"); grip.setAttribute("aria-haspopup", "dialog");
+  grip.addEventListener("click", e => { e.stopPropagation(); if (clickAfterDrag()) return; openLineMenu(it.id); });
+  grip.addEventListener("pointerdown", e => { if (e.button !== 0 || e.pointerType === "touch") return; e.preventDefault(); gripPress(li, e); });
+  grip.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") showMark("drag", grip, "Drag ⋯ to move the line. Click it for the menu."); });
+  tools.appendChild(grip);
   li.addEventListener("click", e => { if (clickAfterDrag()) { e.stopPropagation(); e.preventDefault(); } }, true);
   // taps are recognised from pointer events (see onPress/onRelease); the click path serves keyboards and assistive tech
   li.querySelector(".check").addEventListener("click", e => { if (clickAfterDrag()) return; if (recentlyTapped(it.id)) return; toggle(it.id, e.clientX, e.clientY, e.detail > 0); });
   li.querySelector(".check").addEventListener("focus", () => { lastRowId = it.id; });
   li.addEventListener("pointerenter", () => { lastRowId = it.id; });
   li.addEventListener("dblclick", e => { if (!HOVER.matches) return; e.preventDefault(); startEdit(it.id); });
-  li.querySelector(".pencil").addEventListener("click", e => { e.stopPropagation(); if (clickAfterDrag()) return; startEdit(it.id); });
-  li.querySelector(".lmenu").addEventListener("click", e => { e.stopPropagation(); if (clickAfterDrag()) return; openLineMenu(it.id); });
-  const today = li.querySelector(".today"); if (today) today.addEventListener("click", e => { e.stopPropagation(); toggleToday(it.id); });
-  const kill = li.querySelector(".kill"); if (kill) kill.addEventListener("click", e => { e.stopPropagation(); deleteItem(it.id); });
-  const more = li.querySelector(".more"); if (more) more.addEventListener("click", e => { e.stopPropagation(); li.classList.toggle("open"); more.setAttribute("aria-expanded", li.classList.contains("open") ? "true" : "false"); layoutStrikes(li, true); });
-  const handle = li.querySelector(".handle"); if (handle) handle.addEventListener("pointerdown", e => { if (e.button !== 0) return; e.preventDefault(); beginDrag(li, e); });
   li.addEventListener("pointerdown", e => { onPress(li, e); longPressStart(li, e); swipeStart(li, e); });
   li.addEventListener("contextmenu", e => { if (e.pointerType === "touch" || !HOVER.matches) e.preventDefault(); });
   li.addEventListener("animationend", () => { li.classList.remove("kick"); li.classList.remove("arrive"); });
   return li;
+}
+/** ⋯ pressed with a mouse: a drag once the pointer moves, otherwise the click that follows opens the menu. */
+function gripPress(li, e) {
+  if (!canEdit() || drag || editing) return;
+  const sx = e.clientX, sy = e.clientY, pid = e.pointerId;
+  const stop = () => { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", stop); document.removeEventListener("pointercancel", stop); };
+  const move = ev => { if (ev.pointerId !== pid) return; if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 4) { stop(); beginDrag(li, ev); } };
+  document.addEventListener("pointermove", move); document.addEventListener("pointerup", stop); document.addEventListener("pointercancel", stop);
 }
 
 function updateRow(li, it) {
@@ -599,7 +598,6 @@ function updateRow(li, it) {
     today.setAttribute("aria-description", it.today ? "Take this line off Today" : "Put this line on Today");
     today.dataset.tip = it.today ? "On Today — click to take it off" : "Put this line on Today";
   }
-  const more = li.querySelector(".more"); if (more) more.hidden = !it.note;
   if (view === "all") li.classList.toggle("miss", !!query && !matches(it, query));
   return changedText;
 }
@@ -979,30 +977,30 @@ document.addEventListener("pointerup", e => {
 }, true);
 document.addEventListener("pointercancel", () => { press = null; }, true);
 
-/* not today by swipe: a finger dragged leftwards across a line (touch only; off in Settings → Behavior) */
+/* swipes across a line (touch only): leftwards is "Not today" (off in Settings → Behavior), rightwards opens the line's menu */
 function swipeStart(li, e) {
-  if (!canEdit() || dev.swipeOff || e.pointerType !== "touch" || e.button !== 0 || editing || drag) return;
+  if (!canEdit() || e.pointerType !== "touch" || e.button !== 0 || editing || drag) return;
   if (e.target.closest(".tool")) return;
   const it = doc.items[li.dataset.id]; if (!it || it.deleted) return;
-  swipe = { id: li.dataset.id, li, x: e.clientX, y: e.clientY, pointerId: e.pointerId, moving: false, dx: 0 };
+  swipe = { id: li.dataset.id, li, x: e.clientX, y: e.clientY, pointerId: e.pointerId, moving: false, dx: 0, dir: "" };
   const move = ev => {
     if (!swipe || ev.pointerId !== swipe.pointerId) return;
     const dx = ev.clientX - swipe.x, dy = ev.clientY - swipe.y;
     if (!swipe.moving) {
       if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { end(); return; } // a scroll
-      if (dx > -14) return;
-      if (drag) { end(); return; }
-      swipe.moving = true; press = null; li.classList.add("swiping");
+      if (Math.abs(dx) < 14) return;
+      if (drag || (dx < 0 && dev.swipeOff)) { end(); return; }
+      swipe.moving = true; swipe.dir = dx < 0 ? "left" : "right"; press = null; li.classList.add("swiping");
       try { li.setPointerCapture(ev.pointerId); } catch (x) { /* ignore */ }
     }
-    swipe.dx = Math.min(0, dx);
-    li.style.transform = `translateX(${swipe.dx}px)`; li.style.opacity = String(Math.max(0.35, 1 + swipe.dx / 260));
+    swipe.dx = swipe.dir === "left" ? Math.min(0, dx) : Math.max(0, Math.min(72, dx));
+    li.style.transform = `translateX(${swipe.dx}px)`; li.style.opacity = swipe.dir === "left" ? String(Math.max(0.35, 1 + swipe.dx / 260)) : "";
   };
   const up = ev => {
     if (!swipe || ev.pointerId !== swipe.pointerId) return;
     const s = swipe; end();
-    if (s.moving && s.dx < -90 && !s.li.classList.contains("done")) { s.li.classList.add("swipe-out"); s.li.style.transform = "translateX(-110%)"; setTimeout(() => { s.li.classList.remove("swipe-out"); s.li.style.transform = ""; s.li.style.opacity = ""; notToday(s.id); }, RM.matches ? 0 : 180); }
-    else { s.li.style.transform = ""; s.li.style.opacity = ""; }
+    if (s.moving && s.dir === "left" && s.dx < -90 && !s.li.classList.contains("done")) { s.li.classList.add("swipe-out"); s.li.style.transform = "translateX(-110%)"; setTimeout(() => { s.li.classList.remove("swipe-out"); s.li.style.transform = ""; s.li.style.opacity = ""; notToday(s.id); }, RM.matches ? 0 : 180); }
+    else { s.li.style.transform = ""; s.li.style.opacity = ""; if (s.moving && s.dir === "right" && s.dx >= 48) openLineMenu(s.id); }
     if (s.moving) { dragEndedAt = performance.now(); } // the click that follows must not toggle
   };
   const end = () => { if (!swipe) return; swipe.li.classList.remove("swiping"); li.removeEventListener("pointermove", move); li.removeEventListener("pointerup", up); li.removeEventListener("pointercancel", cancel); try { li.releasePointerCapture(swipe.pointerId); } catch (x) { /* ignore */ } swipe = null; };
@@ -1152,17 +1150,17 @@ function startEdit(id, { isNew = false } = {}) {
   const grow = () => { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; };
   ta.addEventListener("input", grow);
   ta.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); const cur = editing; const had = ta.value.trim(); commitEdit(); if (had) newItem({ afterId: cur.id, sectionId: doc.items[cur.id] ? doc.items[cur.id].sectionId : "" }); }
-    else if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); const cur = editing; const had = ta.value.trim(); cur.byUser = true; commitEdit(); if (had) newItem({ afterId: cur.id, sectionId: doc.items[cur.id] ? doc.items[cur.id].sectionId : "" }); }
+    else if (e.key === "Escape") { e.preventDefault(); editing.byUser = true; cancelEdit(); }
     else if (e.key === "Backspace" && ta.value === "") { e.preventDefault(); const cur = editing; editing = null; li.classList.remove("editing"); erow.remove(); deleteItem(cur.id, { silent: cur.isNew || !cur.orig }); focusRow(neighbourOf(cur.id)); }
     else if (e.key === "Tab" && !e.shiftKey) { e.preventDefault(); note.focus(); }
   });
   note.addEventListener("keydown", e => {
-    if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
-    else if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
+    if (e.key === "Enter") { e.preventDefault(); editing.byUser = true; commitEdit(); }
+    else if (e.key === "Escape") { e.preventDefault(); editing.byUser = true; cancelEdit(); }
     else if (e.key === "Tab" && e.shiftKey) { e.preventDefault(); ta.focus(); }
   });
-  const onBlur = () => setTimeout(() => { if (editing && editing.id === id && document.activeElement !== ta && document.activeElement !== note && document.activeElement !== rep) commitEdit(); }, 0);
+  const onBlur = () => setTimeout(() => { if (editing && editing.id === id && document.activeElement !== ta && document.activeElement !== note && document.activeElement !== rep) { editing.byUser = true; commitEdit(); } }, 0);
   ta.addEventListener("blur", onBlur); note.addEventListener("blur", onBlur);
   editing = { id, el: li, ta, note, erow, isNew, orig: it.text, origNote: it.note || "" };
   li.querySelector(".lines").innerHTML = "";
@@ -1187,6 +1185,17 @@ function endEditDom() {
   const tx = e.el.querySelector(".tx"); tx.hidden = false;
   e.el.classList.remove("editing");
   editing = null;
+  // the first line edited by hand earns the menu hint, shown once no editor is open (Enter may have opened the next line)
+  if (e.byUser && !e.isNew && hintDue("menu")) menuHintFor = e.id;
+  if (menuHintFor) setTimeout(hintMenu, 80);
+}
+/** The first time a line is edited: ⋯ (or, on the phone, the line itself) holds the rest of what a line can do. */
+function hintMenu() {
+  if (editing || !menuHintFor || !hintDue("menu")) return;
+  const li = rows.get(menuHintFor) || rows.values().next().value; menuHintFor = null;
+  if (!li) return;
+  if (touchUi()) showMark("menu", li, "Hold a line for the rest: repeat, not today, move, delete.");
+  else showMark("menu", li.querySelector(".tool.lmenu"), "⋯ has the rest: repeat, not today, move, delete.");
 }
 function commitEdit() {
   const e = editing; if (!e) return;
@@ -1287,12 +1296,13 @@ const downPointers = new Set();
 document.addEventListener("pointerdown", e => downPointers.add(e.pointerId), true);
 document.addEventListener("pointerup", e => downPointers.delete(e.pointerId), true);
 document.addEventListener("pointercancel", e => downPointers.delete(e.pointerId), true);
+/* a hold on the phone: the line lifts; drag to move it, let go without moving for its menu (a done line goes straight to the menu) */
 function longPressStart(li, e) {
   if (!canEdit()) return;
   if (e.pointerType !== "touch" || e.button !== 0) return;
   if (editing || drag || e.target.closest(".tool")) return;
   const id = li.dataset.id, it = doc.items[id];
-  if (!it || it.done) return;
+  if (!it || it.deleted) return;
   const sx = e.clientX, sy = e.clientY, pid = e.pointerId;
   let t = 0;
   const cancel = () => { clearTimeout(t); li.removeEventListener("pointermove", onMove); li.removeEventListener("pointerup", cancel); li.removeEventListener("pointercancel", cancel); };
@@ -1302,7 +1312,11 @@ function longPressStart(li, e) {
     if (!downPointers.has(pid) || drag || editing || (swipe && swipe.moving)) return; // finger already lifted, or something else started
     press = null; // a hold is not a tap
     try { navigator.vibrate && navigator.vibrate(12); } catch (x) { /* ignore */ }
+    const cur = doc.items[id];
+    if (!cur || cur.deleted) return;
+    if (cur.done) { dragEndedAt = performance.now(); openLineMenu(id); return; }
     beginDrag(li, e, true);
+    if (drag) showMark("drag", li, "Drag to move it. Let go for the menu.");
   }, 400);
   li.addEventListener("pointermove", onMove);
   li.addEventListener("pointerup", cancel);
@@ -1319,7 +1333,7 @@ function beginDrag(li, e, fromLongPress) {
   press = null;
   if (swipe) { swipe.li.style.transform = ""; swipe.li.style.opacity = ""; swipe = null; }
   const rect = li.getBoundingClientRect();
-  drag = { id, li, offY: e.clientY - rect.top, startTop: rect.top, pointerId: e.pointerId, overSec: null, lastY: e.clientY, raf: 0 };
+  drag = { id, li, offY: e.clientY - rect.top, startTop: rect.top, pointerId: e.pointerId, overSec: null, lastY: e.clientY, raf: 0, fromHold: !!fromLongPress, startY: e.clientY, moved: false };
   li.classList.add("dragging"); document.body.classList.add("is-dragging");
   try { li.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ }
   document.addEventListener("touchmove", preventTouch, { passive: false });
@@ -1339,6 +1353,7 @@ function dragStep() {
   if (!drag) return;
   drag.raf = 0;
   const y = drag.lastY, li = drag.li;
+  if (Math.abs(y - drag.startY) > 8) drag.moved = true;
   // measure without the current transform, so the offset is always relative to the row's real slot
   li.style.transform = "";
   // autoscroll
@@ -1392,7 +1407,7 @@ function domMove(li, list, ref) {
 }
 function endDrag(move, up, cancelled, aborted) {
   if (!drag) return;
-  const { id, li } = drag;
+  const { id, li, fromHold, moved } = drag;
   li.removeEventListener("pointermove", move); li.removeEventListener("pointerup", up); li.removeEventListener("pointercancel", cancelled);
   document.removeEventListener("touchmove", preventTouch);
   try { li.releasePointerCapture(drag.pointerId); } catch (x) { /* ignore */ }
@@ -1415,7 +1430,7 @@ function endDrag(move, up, cancelled, aborted) {
   const secId = view === "today" ? it.sectionId : list.closest(".sec").dataset.id;
   if (o === null) { renumber(view === "today" ? null : secId, key); o = M.orderBetween(prev ? prev[key] : undefined, next ? next[key] : undefined) || M.lastOrder(sib.map(r => doc.items[r.dataset.id]), i => i[key]); }
   const changed = it[key] !== o || (view === "all" && it.sectionId !== secId);
-  if (!changed) { render({ animate: false }); return; }
+  if (!changed) { render({ animate: false }); if (fromHold && !moved) openLineMenu(id); return; } // a hold released in place: the menu
   pushUndo("Moved", [id]);
   it[key] = o;
   if (view === "all") it.sectionId = secId;
@@ -1436,10 +1451,10 @@ function showPanel(id) {
   d.classList.remove("closing"); d.style.transform = ""; d.removeAttribute("data-drag");
   if (!d.open) d.showModal();
 }
-function closePanel() { if (openPanel) { openPanel.close(); } }
+function closePanel() { if (openPanel) { const d = openPanel; openPanel = null; d.close(); } } // forget it now, not when the close event lands: what follows may need the panel gone
 $$("dialog.panel").forEach(d => {
   d.addEventListener("close", () => { if (openPanel === d) openPanel = null; });
-  d.addEventListener("click", e => { if (e.target === d) d.close(); });
+  d.addEventListener("click", e => { if (e.target === d && !clickAfterDrag()) d.close(); }); // not the click a browser synthesises after the hold that opened it
   d.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => d.close()));
   if (d.classList.contains("sheet")) wireSheetSwipe(d);
 });
@@ -1801,7 +1816,7 @@ const api = {
 };
 
 /* test hook (read-only) */
-window.__tf = () => ({ stats: { ...stats }, view, listId, mode: listMode, lookupId: ref ? ref.lookupId : null, R: ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY });
+window.__tf = () => ({ stats: { ...stats }, view, listId, mode: listMode, lookupId: ref ? ref.lookupId : null, R: ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY });
 // test-only controls, on the local transport: simulate what iOS does to the audio context
 if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneToday(); } }, presence: n => paintWho(n) };
 

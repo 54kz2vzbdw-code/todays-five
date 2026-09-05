@@ -172,8 +172,7 @@ button{font:inherit;color:inherit}
   display:block;font-family:var(--font-ui);font-weight:400;font-size:clamp(11px,.34em,15px);
   letter-spacing:.02em;text-transform:none;color:var(--muted);line-height:1.35;margin-top:.15em;
 }
-#list .note{display:none}
-#list .row.open .note{display:block}
+#list .note{display:block}
 
 /* checkbox */
 .box{
@@ -232,16 +231,12 @@ button{font:inherit;color:inherit}
 .tool svg{width:1.05em;height:1.05em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .tool:hover{color:var(--text);border-color:var(--hair-hi);background:var(--ink-3)}
 .tool:focus-visible{outline:2px solid var(--accent);outline-offset:2px;opacity:1}
-.tool.today{
-  width:auto;padding:0 .7em 0 .55em;gap:.35em;border-radius:999px;border-color:var(--hair);
-  font-family:var(--font-ui);font-weight:700;font-size:.72em;letter-spacing:.12em;text-transform:uppercase;
-  position:relative;
-}
-.tool.today .lb{line-height:1}
-.tool.today[aria-pressed="true"]{color:var(--accent-text);border-color:var(--accent)}
+/* the Today toggle (Everything): a small star, hollow when off, filled when on; no pill, and no orange until hover or press */
+.tool.today{position:relative;color:var(--dim)}
+.tool.today svg{width:1.15em;height:1.15em}
+.tool.today[aria-pressed="true"]{color:var(--muted)}
 .tool.today[aria-pressed="true"] svg{fill:currentColor}
-.tool.today:hover{border-color:var(--hair-hi)}
-.tool.today[aria-pressed="true"]:hover{border-color:var(--accent)}
+.tool.today:hover,.tool.today:active,.tool.today[aria-pressed="true"]:hover{color:var(--accent-text);border-color:var(--hair-hi);background:var(--ink-3)}
 /* hover tooltip on pointer devices only: the label already says what it does */
 @media (hover:hover){
   .tool[data-tip]::after{
@@ -253,17 +248,17 @@ button{font:inherit;color:inherit}
   .tool[data-tip]:hover::after,.tool[data-tip]:focus-visible::after{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
   body.no-tip .tool[data-tip]::after{opacity:0 !important;pointer-events:none !important}
 }
-.tool.handle{cursor:grab}
-.tool.kill:hover{color:var(--danger);border-color:var(--danger)}
+.tool.lmenu{cursor:pointer}
+/* quiet rows: nothing at rest on the desktop but the star; ⋯ (menu, and the drag handle) appears on hover */
 @media (hover:hover){
   .row .tool{opacity:0}
-  .row:hover .tool,.row:focus-within .tool,.row .tool.today[aria-pressed="true"]{opacity:1}
+  .row:hover .tool,.row:focus-within .tool,.row .tool.today{opacity:1}
 }
 @media (hover:none){
   .tool{min-width:44px;min-height:44px}
-  .tool.handle{display:none}
   .check{min-height:44px}
-  .tool.today{padding:0 .8em 0 .65em}
+  /* no persistent per-row buttons on the phone: ⋯ stays for assistive tech only (a hold or a swipe right opens the menu) */
+  .tool.lmenu{position:absolute;width:1px;height:1px;min-width:0;min-height:0;overflow:hidden;clip:rect(0 0 0 0);opacity:0;pointer-events:none}
 }
 
 /* inline edit */
@@ -439,8 +434,7 @@ html[data-mode="view"] #hint{visibility:hidden}
   .chip,.seg,.add{background:var(--ink-2);border-color:var(--hair-hi)}
   .chip.plain{background:var(--ink-2);border-color:var(--hair);padding-left:.8em;padding-right:.8em}
   .seg button[aria-selected="true"]{background:var(--ink-3)}
-  .tool{border-color:var(--hair);background:var(--ink-2)}
-  .tool.today{border-color:var(--hair-hi)}
+  .tool.today{border-color:transparent;background:transparent}
   .dot{padding:.3em .55em;border:1px solid var(--hair);border-radius:999px;background:var(--ink-2);min-height:44px;min-width:44px;justify-content:center}
   .sec-h .chip{min-width:44px}
   .row .tool{opacity:1}
@@ -592,7 +586,6 @@ body.install-on #toast,body.install-on #whatsnew{bottom:calc(96px + env(safe-are
 .haptic{position:fixed;left:-200px;top:-200px;width:1px;height:1px;opacity:0;pointer-events:none}
 
 @media (hover:none){
-  .row .tool.lmenu{opacity:1}
   .sw{width:46px;height:28px}
   .sw::after{width:20px;height:20px}
   .row-toggle[aria-pressed="true"] .sw::after{transform:translateX(18px)}

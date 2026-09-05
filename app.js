@@ -1655,8 +1655,8 @@ function wireUi() {
   $("#again").addEventListener("click", startAgain);
   $("#addtoday").addEventListener("click", () => newItem({ today: true }));
   $("#toast-undo").addEventListener("click", () => { const a = toastAction; hideToast(); if (a) a(); else undo(); });
-  $("#install-x").addEventListener("click", () => { $("#install").hidden = true; dev.installHint = true; saveDevice(); });
-  if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc && !openPanel && !tourOn) $("#install").hidden = false; }, 2500);
+  $("#install-x").addEventListener("click", () => { $("#install").hidden = true; document.body.classList.remove("install-on"); dev.installHint = true; saveDevice(); });
+  if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc && !openPanel && !tourOn) { $("#install").hidden = false; document.body.classList.add("install-on"); } }, 2500);
   document.addEventListener("pointerdown", () => sound.prime(), { once: true, capture: true });
   document.body.classList.toggle("one", !!dev.oneThing);
 }

@@ -758,6 +758,7 @@ body.one .one-more{display:block}
 #whatsnew .chip{font-family:var(--font-ui);font-weight:700;font-size:10px;letter-spacing:.12em;text-transform:uppercase;min-height:36px;color:var(--accent-text);border-color:var(--accent);flex:0 0 auto}
 #whatsnew .x{width:36px;height:36px;border-radius:999px;border:0;background:transparent;color:var(--dim);font-size:18px;cursor:pointer;flex:0 0 auto}
 body.one #whatsnew,body.one #toast{bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+body.install-on #toast,body.install-on #whatsnew{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 
 /* the iOS haptic switch: off screen, never focusable, never painted where it can be seen */
 .haptic{position:fixed;left:-200px;top:-200px;width:1px;height:1px;opacity:0;pointer-events:none}

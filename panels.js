@@ -300,7 +300,7 @@ function themeOptions(sel, value) {
 function paintSettings() {
   const d = dev(), set = (name, on) => { const b = $(`#p-settings [data-set="${name}"]`); if (b) b.setAttribute("aria-pressed", on ? "true" : "false"); };
   $("#set-theme-k").textContent = A.theme ? A.theme.name : "";
-  $("#set-theme-sub").textContent = d.schedule && d.schedule.on ? "Set by the schedule right now" : d.follow ? "Set by the system right now" : "T opens the picker";
+  $("#set-theme-sub").textContent = d.schedule && d.schedule.on ? "Set by the schedule right now" : d.follow ? "Set by the system right now" : (A.touchUi() ? "Twelve kits, or your own from one colour" : "T opens the picker");
   set("follow", !!d.follow);
   set("schedule", !!(d.schedule && d.schedule.on));
   $("#set-schedule-sub").textContent = d.schedule && d.schedule.on ? `Day from ${d.schedule.dayAt}, night from ${d.schedule.nightAt}` : (d.follow ? "Turning this on turns Follow system off" : "A day theme and a night theme, by the clock");

@@ -86,13 +86,16 @@ await test("presence: two clients on one list see each other, and the count drop
   const a = S.createSync({ transport, deviceId: "a", presence: { key: "sessA" + M.shortId(), enabled: () => true, onCount: n => countsA.push(n) } });
   a.open(e, M.seedDoc(W), { rev: 0, dirty: true, created: true });
   assert.ok(await until(() => a.status === "synced" && a.live, 20000), "A live: " + a.status + " " + a.live);
-  const b = S.createSync({ transport, deviceId: "b", presence: { key: "sessB" + M.shortId(), enabled: () => true, onCount: n => countsB.push(n) } });
+  // a second device is a second realtime socket (one client would hand back the channel it already joined)
+  const transportB = await S.makeTransport("supabase", config);
+  const b = S.createSync({ transport: transportB, deviceId: "b", presence: { key: "sessB" + M.shortId(), enabled: () => true, onCount: n => countsB.push(n) } });
   b.open(e, M.seedDoc(W), { rev: 0, dirty: false, created: false });
   assert.ok(await until(() => countsA.includes(1) && countsB.includes(1), 20000), "both see one other: A=" + JSON.stringify(countsA) + " B=" + JSON.stringify(countsB));
   b.close();
   assert.ok(await until(() => countsA[countsA.length - 1] === 0, 20000), "A sees B leave: " + JSON.stringify(countsA));
   // presence off: a third client that neither tracks nor listens is invisible to A
-  const c = S.createSync({ transport, deviceId: "c", presence: { key: "sessC", enabled: () => false, onCount: () => { throw new Error("must not report"); } } });
+  const transportC = await S.makeTransport("supabase", config);
+  const c = S.createSync({ transport: transportC, deviceId: "c", presence: { key: "sessC", enabled: () => false, onCount: () => { throw new Error("must not report"); } } });
   c.open(e, M.seedDoc(W), { rev: 0, dirty: false, created: false });
   await until(() => c.live, 20000); await tick(2500);
   assert.equal(countsA[countsA.length - 1], 0, "an opted-out device is not counted: " + JSON.stringify(countsA));
@@ -109,7 +112,7 @@ await test("delete everywhere, then undo within ten seconds: the row is gone, th
   assert.equal(await s.remove(e.lookupId, e.token), true);
   assert.equal((await rawRpc("get_list_v3", { p_id: e.lookupId, p_rev: null })).text, "null", "gone from the server");
   // another device holding the link finds nothing and reports gone, never re-creating it
-  const other = S.createSync({ transport, deviceId: "d2" });
+  const other = S.createSync({ transport: await S.makeTransport("supabase", config), deviceId: "d2" });
   other.open(e, doc, { rev: 1, dirty: true, created: false });
   assert.ok(await until(() => other.status === "gone"), "other device: " + other.status); other.close();
   // the undo: this device still holds W and the document
@@ -134,7 +137,7 @@ await test("add from a URL, end to end: parse → open → add to Today → push
   s.update(doc);
   await until(() => s.status === "synced" && !s.current().dirty);
   let seen = null;
-  const d2 = S.createSync({ transport, deviceId: "d2", onRemote: d => { seen = d; } });
+  const d2 = S.createSync({ transport: await S.makeTransport("supabase", config), deviceId: "d2", onRemote: d => { seen = d; } });
   d2.open(e, M.normalize({}, W), { rev: 0, dirty: false, created: false });
   assert.ok(await until(() => seen && Object.values(seen.items).some(i => i.text === "Buy milk")), "second device sees the added line");
   assert.equal(M.parseHash("#/r/" + e.R + "/add?text=x").mode, "view", "a view link is recognisable and refused by the app");

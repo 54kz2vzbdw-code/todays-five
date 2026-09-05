@@ -3,7 +3,15 @@
 The full history, for the record. What people see is `whatsnew.json` (1.0 and later, a headline and up to three
 items per version, rendered on the About page and in the what's-new toast); the pre-release entries below never
 render. No dates anywhere, by design: versions are the marketing version plus a build number (About shows
-`1.3 (build N)`), and what shipped as 4.0.0 is 1.0.
+`1.4 (build N)`), and what shipped as 4.0.0 is 1.0.
+
+## 1.4 — Yours, and shared with you.
+
+- **New** — Lists know whether they are yours or shared with you.
+- **Improved** — Share is laid out by what you are doing—another device, a screen, a friend.
+- **New** — Every panel has a way back, and the Home Screen steps fit iOS 26.
+
+For the record: every list on a device now has an origin, mine or shared, kept in the device's own registry (existing lists are mine; nothing on the wire changes); a private link copied from Share's Open on my other device carries `/mine` and one from Let someone edit carries `/shared`, a link with no hint asks once whose list it is, and a shared list files under Shared with me, takes a local nickname, shows a Shared pill, and never offers New keys or Delete everywhere. The Share sheet is four blocks by intent with New keys last. Panels are one stack: ‹ Back returns to the parent with its scroll and its values, × closes the stack, Escape goes back a level, a history entry per level makes Android's back button and the browser's Back go back a level, and on a phone an edge swipe from the left goes back. The save sheet's phone steps cover iOS 26's Safari layouts (Share may sit behind ⋯), the Home Screen name is Today's Five, and a page open across a deploy keeps loading its own build's modules from its own cache, reloading only when a module truly cannot be served—after flushing edits and remembering the view and the panel asked for.
 
 ## 1.3 — A better first minute.
 

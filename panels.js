@@ -3,7 +3,7 @@
 // repeat picker, templates, move-to-list, delete everywhere with its undo, export/import, the ? reference, and How it
 // works. Loaded by app.js on first use; `A` is its api.
 let A = null, $ = null, $$ = null, M = null, T = null, C = null;
-const PANELS_BUILD = 62; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
+const PANELS_BUILD = 70; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
 export const RELOADING = "Today's Five updated: reloading";
 
 export function init(api) {
@@ -15,11 +15,24 @@ export function init(api) {
   if (document.documentElement.getAttribute("data-build") !== String(PANELS_BUILD)) {
     let again = false;
     try { again = sessionStorage.getItem("tf/reloaded") === String(PANELS_BUILD); sessionStorage.setItem("tf/reloaded", String(PANELS_BUILD)); } catch (e) { /* no storage: reload anyway */ }
-    if (!again) { location.reload(); throw new Error(RELOADING); }
+    if (!again) {
+      // the last resort (COMPATIBILITY.md §6): keep what is pending, remember the view and the panel asked for, reload
+      try { sessionStorage.setItem("tf/resume", JSON.stringify({ view: api.view || "today", panel: api.askedPanel || null })); } catch (e) { /* no storage */ }
+      try { if (api.editing && api.commitEdit) api.commitEdit(); } catch (e) { /* nothing to keep */ }
+      (api.flushQuick ? api.flushQuick() : Promise.resolve()).catch(() => {}).then(() => location.reload());
+      throw new Error(RELOADING);
+    }
   }
   A = api; $ = api.$; $$ = api.$$; M = api.M; T = api.T; C = api.C;
   wireTheme(); wireShare(); wireSave(); wireLists(); wireSettings(); wireSection(); wireLine(); wireRepeat(); wireKeys(); wireMisc();
+  // 1.4: how each panel repaints itself when ‹ Back lands on it (one primitive in app.js, no per-panel buttons)
+  if (A.registerOpeners) A.registerOpeners({
+    "p-theme": () => openTheme(pickSlot), "p-settings": openSettings, "p-lists": () => openLists(), "p-list": () => { if (detailId) openListDetail(detailId); },
+    "p-share": () => { openShare(); }, "p-save": () => showSaveLink(), "p-help": () => openHelp(lastHelp), "p-keys": openKeys, "p-export": openExport, "p-history": openHistory,
+    "p-pick": () => { if (lastPick) openPick(lastPick); }, "p-line": () => { if (lineId) openLineMenu(lineId); }, "p-sec": () => { if (secMenuId !== null && secMenuId !== undefined) openSectionMenu(secMenuId); }, "p-repeat": () => { if (lineId) openRepeat(lineId); }
+  });
 }
+let lastHelp, lastPick = null, detailId = null;
 const dev = () => A.dev, meta = () => A.meta;
 
 /* ---------------- the theme picker: one slot at a time (1.2) ----------------
@@ -202,32 +215,43 @@ function wireTheme() {
 const APP_NOTE = "Today's Five is the short list I keep open on screen all day—big type, a knock and confetti when you cross one off. It's free and there's no account: open the link and start.";
 /** The note Tell a friend hands over: two sentences about the app, then the app's own address. */
 export function friendNote() { return { text: APP_NOTE, url: A.BASE }; }
+/** No system sheet: the note goes to the clipboard, and when that is refused too it is shown to select, not "the link". */
+async function noteFallback(n) {
+  const text = n.text + "\n" + n.url;
+  try { await navigator.clipboard.writeText(text); A.toast("Note copied—paste it into a message"); }
+  catch (e) { const ta = $("#share-note"); ta.hidden = false; ta.value = text; ta.focus(); try { ta.select(); } catch (x) { /* ignore */ } A.toast("Select the note and copy it"); }
+}
+/* 1.4: four blocks by what you are doing. Open on my other device is the Private link marked `/mine`; Show it somewhere
+   is the View link; Let someone edit is the Private link marked `/shared`, under the warning; Tell a friend is the note;
+   New keys sits last and never on a list shared with this device. Same links as 1.3 on the wire. */
 export async function openShare() {
   if (!A.doc || !A.ref) return;
   if (!A.transport) { A.toast("Sync isn't set up, so a link would open an empty list somewhere else"); return; }
-  const view = A.listMode === "view";
-  $("#share-private").hidden = view;
+  const view = A.listMode === "view", shared = !!(A.isShared && A.isShared());
+  $("#share-mine").hidden = view; $("#share-private").hidden = view; $("#share-keys").hidden = view || shared;
   $("#share-unsaved").hidden = view || !A.unsavedEntry();
   $("#share-native").hidden = !navigator.share;
-  $("#qr").hidden = A.sheetUi(); // the code has room on the desktop; the phone has Copy and Share…
+  $("#qr").hidden = A.sheetUi(); $("#qr-mine").hidden = A.sheetUi(); // the codes have room on the desktop; the phone has Copy (and Share… for the View link)
   $("#share-link").value = A.viewLink();
-  if (!view) $("#share-link-private").value = A.editLink();
+  if (!view) { $("#share-link-mine").value = M.hintLink(A.editLink(), "mine"); $("#share-link-private").value = M.hintLink(A.editLink(), "shared"); }
   A.showPanel("p-share");
-  if (!A.sheetUi()) A.drawQr($("#qr-c"), A.viewLink()).catch(() => {});
+  if (!A.sheetUi()) { if (!view) A.drawQr($("#qr-mine-c"), $("#share-link-mine").value).catch(() => {}); A.drawQr($("#qr-c"), A.viewLink()).catch(() => {}); }
 }
 function wireShare() {
+  $("#share-copy-mine").addEventListener("click", () => A.copyText($("#share-link-mine").value, "Link copied—open it on your other device"));
   $("#share-copy").addEventListener("click", () => A.copyText($("#share-link").value, "View link copied"));
   $("#share-native").addEventListener("click", () => A.nativeShare($("#share-link").value));
   $("#share-copy-private").addEventListener("click", () => A.copyText($("#share-link-private").value, "Private link copied—it's the key"));
-  $("#share-save").addEventListener("click", () => { A.closePanel(); showSaveLink(); });
-  $("#share-friend-go").addEventListener("click", async () => {
+  $("#share-save").addEventListener("click", () => showSaveLink());
+  $("#share-friend-go").addEventListener("click", () => {
     const n = friendNote();
-    if (navigator.share) { try { await navigator.share({ text: n.text, url: n.url }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
-    A.copyText(n.text + "\n" + n.url, "Note copied—paste it into a message");
+    // the system sheet wants the tap's own tick: nothing awaited before it (iOS refuses a share that comes later)
+    if (navigator.share) { navigator.share({ text: n.text, url: n.url }).catch(e => { if (!(e && e.name === "AbortError")) noteFallback(n); }); return; }
+    noteFallback(n);
   });
   $("#share-rotate").addEventListener("click", async () => {
     A.closePanel();
-    if (!A.canEdit()) return;
+    if (!A.canEdit() || (A.isShared && A.isShared())) return; // never a friend's keys
     if (A.syncStatus !== "synced") { A.toast("New keys need a live connection—try again once synced"); return; }
     const ok = await A.ask({ title: "New keys?", msg: "A new View link and a new Private link replace the current ones. The old links stop working everywhere—your other devices and anyone watching included. Open the new link there.", confirm: "New keys", danger: true });
     if (!ok) return;
@@ -275,7 +299,7 @@ export function showSaveLink({ migrated = false } = {}) {
   $("#save-title").textContent = migrated ? "Your link changed" : "Save your link";
   $("#save-migrated").hidden = !migrated;
   $("#save-lead-home").hidden = !phone; $("#save-lead-icon").hidden = !standalone; $("#save-lead-bm").hidden = !desktop;
-  $("#save-lead-home-how").textContent = A.IOS ? "Tap Share, then Add to Home Screen. The icon carries the link, so it opens straight to this list." : "Open the browser's menu, then Add to Home screen. The icon carries the link, so it opens straight to this list.";
+  $("#save-steps").hidden = !(phone && A.IOS); $("#save-lead-home-how").hidden = !(phone && !A.IOS); // iOS: the three steps with the glyphs (Share may sit behind ⋯ in iOS 26's compact layout); other phones: their browser's menu
   $("#save-bm-key").textContent = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘D" : "Ctrl+D";
   $("#save-link").hidden = !desktop; // the phone has Copy; the desktop shows what the bookmark holds
   $("#save-link").value = link;
@@ -298,22 +322,90 @@ function wireSave() {
 export function openLists({ removed = false } = {}) {
   const menu = $("#lists-menu"), rm = $("#lists-removed"); menu.innerHTML = ""; rm.innerHTML = "";
   const active = meta().lists.filter(l => !l.archived), archived = meta().lists.filter(l => l.archived);
+  const mine = active.filter(l => l.origin !== "shared"), shared = active.filter(l => l.origin === "shared");
   const mk = (l, arch) => {
+    const row = document.createElement("div"); row.className = "row";
     const b = document.createElement("button"); b.type = "button";
-    const loc = A.loadLocal(l.id);
-    const name = (loc && loc.doc.name) || l.name || "Untitled list";
+    const docName = listDocName(l), nick = l.origin === "shared" && l.nickname ? l.nickname : "";
+    const name = nick || docName || "Untitled list";
     const tags = [l.mode === "view" ? "view-only" : ""].filter(Boolean).map(t => `<span class="sub">${t}</span>`).join(" ");
-    b.innerHTML = `<span class="lb ${l.id === A.listId ? "cur" : ""}">${A.escapeHtml(name)} ${tags}</span><span class="id">${arch ? "Restore" : l.id.slice(0, 6) + "…"}</span>`;
+    const own = nick && docName && docName !== nick ? `<span class="sub name">${A.escapeHtml(docName)}</span>` : ""; // a nickname shows with the list's own name under it
+    b.innerHTML = `<span class="lb ${l.id === A.listId ? "cur" : ""}">${A.escapeHtml(name)} ${tags}${own}</span><span class="id">${arch ? "Restore" : l.id.slice(0, 6) + "…"}</span>`;
     b.addEventListener("click", () => { A.closePanel(); if (arch) { l.archived = false; A.saveDevice(); A.toast("Back on this device"); } A.switchTo({ id: l.id, mode: l.mode === "view" ? "view" : "edit" }); });
-    return b;
+    row.appendChild(b);
+    if (!arch) { const d = document.createElement("button"); d.type = "button"; d.className = "more"; d.setAttribute("aria-label", "Details: " + name); d.textContent = "›"; d.addEventListener("click", () => openListDetail(l.id)); row.appendChild(d); }
+    return row;
   };
-  active.forEach(l => menu.appendChild(mk(l, false)));
+  const head = t => { const h = document.createElement("div"); h.className = "group-h"; h.textContent = t; menu.appendChild(h); };
+  if (shared.length) { head("My lists"); mine.forEach(l => menu.appendChild(mk(l, false))); head("Shared with me"); shared.forEach(l => menu.appendChild(mk(l, false))); } // the groups appear only once there is something to group
+  else mine.forEach(l => menu.appendChild(mk(l, false)));
   archived.forEach(l => rm.appendChild(mk(l, true)));
   $("#lists-removed-h").hidden = !archived.length; rm.hidden = !archived.length;
   $("#l-archive").hidden = !A.listId;
-  $("#l-rename").hidden = !A.listId || A.listMode !== "edit";
+  $("#l-rename").hidden = !A.listId || (A.listMode !== "edit" && !A.isShared());
+  $("#l-rename").textContent = A.listId && A.isShared() ? "Nickname this list" : "Rename this list";
   A.showPanel("p-lists");
   if (removed && archived.length) $("#lists-removed-h").scrollIntoView({ block: "start" });
+}
+function listDocName(l) { const loc = A.loadLocal(l.id); return (loc && loc.doc.name) || l.name || ""; }
+/** 1.4: a shared list's nickname is this device's own name for it; the name inside the document is never touched. */
+async function nicknameList(id) {
+  const e = A.entryOf(id); if (!e) return;
+  const nick = await A.ask({ title: "Nickname", label: "What this list is called here", value: e.nickname || listDocName(e) || "" });
+  if (nick === null) return;
+  const v = nick.trim().slice(0, 60);
+  e.nickname = v; // empty means none
+  A.saveDevice(); A.paintListName();
+}
+/** Remove from this device: hide it here, keep it everywhere else. */
+async function archiveList(id) {
+  const e = A.entryOf(id); if (!e) return;
+  await A.flushQuick();
+  e.archived = true; A.saveDevice();
+  A.toast("Removed from this device. The server and your other devices still have it—Lists → Removed brings it back.");
+  if (id !== A.listId) return;
+  const next = meta().lists.find(l => !l.archived);
+  if (next) A.switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else A.showWelcome();
+}
+/** A list's detail: open it, rename or nickname it, say whose it is, remove it from this device. */
+export function openListDetail(id) {
+  const l = A.entryOf(id); if (!l) return; detailId = id;
+  const docName = listDocName(l), shared = l.origin === "shared", nick = shared && l.nickname ? l.nickname : "";
+  $("#p-list-h").textContent = nick || docName || "Untitled list";
+  $("#list-detail-sub").textContent = shared ? (nick && docName && docName !== nick ? `Shared with me · its own name is “${docName}”` : "Shared with me") : (l.created ? "Made on this device" : "Mine, from another device");
+  $("#list-detail-rename").textContent = shared ? "Nickname" : "Rename";
+  $('#list-detail-menu [data-lact="rename"]').hidden = shared ? false : !(id === A.listId && A.listMode === "edit"); // a rename edits the document, so the list must be open
+  const o = $("#list-detail-origin"); o.hidden = !!l.created && !shared; // a list made on this device is mine, no switch
+  o.setAttribute("aria-pressed", shared ? "false" : "true");
+  $("#list-detail-origin-sub").textContent = shared ? "Off: shared with me. On: filed under My lists, New keys and Delete everywhere back." : "On: mine. Off: someone else's, filed under Shared with me, no New keys and no Delete everywhere.";
+  $('#list-detail-menu [data-lact="open"]').hidden = id === A.listId;
+  A.showPanel("p-list");
+}
+function wireListDetail() {
+  $("#list-detail-menu").addEventListener("click", async e => {
+    const b = e.target.closest("[data-lact]"); if (!b || !detailId) return;
+    const l = A.entryOf(detailId); if (!l) return;
+    const act = b.dataset.lact;
+    if (act === "open") { A.closePanel(); A.switchTo({ id: l.id, mode: l.mode === "view" ? "view" : "edit" }); }
+    else if (act === "rename") { A.closePanel(); if (l.origin === "shared") nicknameList(l.id); else renameOpenList(); }
+    else if (act === "origin") {
+      l.origin = l.origin === "shared" ? "mine" : "shared";
+      if (l.origin === "mine") l.nickname = ""; // a list of one's own goes by its name (empty, not deleted: the registry merge on save keeps stored fields)
+      A.saveDevice(); A.paintListName(); A.paintOrigin(); openListDetail(l.id);
+      A.toast(l.origin === "shared" ? "Filed under Shared with me" : "Filed under My lists");
+    }
+    else if (act === "remove") { A.closePanel(); archiveList(l.id); }
+  });
+}
+/** Rename the open list: the name inside the document, which syncs. */
+async function renameOpenList() {
+  if (!A.canEdit()) return;
+  const name = await A.ask({ title: "Rename list", label: "Name", value: A.doc.name || "" });
+  if (name === null) return;
+  A.doc.name = name.trim().slice(0, 60); A.doc.nameAt = M.now();
+  const e = meta().lists.find(l => l.id === A.listId); if (e) e.name = A.doc.name;
+  A.saveDevice();
+  A.afterChange({ animate: false });
 }
 function wireLists() {
   $("#l-new").addEventListener("click", async () => {
@@ -323,25 +415,9 @@ function wireLists() {
     const id = M.newId();
     A.createList(M.emptyDoc(id, (name || "").trim().slice(0, 60)), id);
   });
-  $("#l-rename").addEventListener("click", async () => {
-    A.closePanel();
-    if (!A.canEdit()) return;
-    const name = await A.ask({ title: "Rename list", label: "Name", value: A.doc.name || "" });
-    if (name === null) return;
-    A.doc.name = name.trim().slice(0, 60); A.doc.nameAt = M.now();
-    const e = meta().lists.find(l => l.id === A.listId); if (e) e.name = A.doc.name;
-    A.saveDevice();
-    A.afterChange({ animate: false });
-  });
-  $("#l-archive").addEventListener("click", async () => {
-    A.closePanel();
-    const e = meta().lists.find(l => l.id === A.listId); if (!e) return;
-    await A.flushQuick();
-    e.archived = true; A.saveDevice();
-    A.toast("Removed from this device. The server and your other devices still have it—Lists → Removed brings it back.");
-    const next = meta().lists.find(l => !l.archived);
-    if (next) A.switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else A.showWelcome();
-  });
+  $("#l-rename").addEventListener("click", () => { A.closePanel(); if (A.isShared()) nicknameList(A.listId); else renameOpenList(); }); // 1.4: a shared list takes a nickname, its own name stays
+  $("#l-archive").addEventListener("click", () => { A.closePanel(); archiveList(A.listId); });
+  wireListDetail();
   $("#l-paste-go").addEventListener("click", () => { const r = A.parseLink($("#l-paste").value); if (!r) { A.toast("That doesn't look like a list link"); return; } A.closePanel(); A.switchTo(r, { paste: true }); });
 }
 
@@ -423,7 +499,7 @@ function wireSettings() {
   $("#p-settings").addEventListener("click", async e => {
     const b = e.target.closest("[data-set]"); if (!b) return;
     const k = b.dataset.set;
-    if (k === "day" || k === "night") { A.closePanel(); openTheme(k); }
+    if (k === "day" || k === "night") openTheme(k);
     else if (k === "sound") { A.toggleMute(); paintSettings(); }
     else if (k === "celebrate") { d.celebrateRemote = !d.celebrateRemote; A.saveDevice(); paintSettings(); }
     else if (k === "review") { d.review = !d.review; A.saveDevice(); paintSettings(); A.paint(); }
@@ -431,11 +507,11 @@ function wireSettings() {
     else if (k === "swipe") { d.swipeOff = !d.swipeOff; A.saveDevice(); paintSettings(); }
     else if (k === "keys") { d.keysOff = !d.keysOff; A.saveDevice(); paintSettings(); A.toast(d.keysOff ? "Single-key shortcuts off (Cmd/Ctrl+Z, Esc and ⌥↑↓ still work)" : "Single-key shortcuts on"); }
     else if (k === "fade") { d.idleFadeOff = !d.idleFadeOff; A.saveDevice(); paintSettings(); A.idleReset(); }
-    else if (k === "templates") { A.closePanel(); openTemplates(); }
-    else if (k === "removed") { A.closePanel(); openLists({ removed: true }); }
-    else if (k === "history") { A.closePanel(); openHistory(); }
+    else if (k === "templates") openTemplates();
+    else if (k === "removed") openLists({ removed: true });
+    else if (k === "history") openHistory();
     else if (k === "who") { d.whoOff = !d.whoOff; A.saveDevice(); A.resubscribePresence(); paintSettings(); }
-    else if (k === "export") { A.closePanel(); openExport(); }
+    else if (k === "export") openExport();
   });
   $("#set-switch").addEventListener("change", e => { A.setSwitchMode(e.target.value); paintSettings(); });
   const sch = () => { A.setSwitchTimes($("#sch-day-at").value, $("#sch-night-at").value); paintSettings(); };
@@ -447,7 +523,7 @@ function wireSettings() {
   $("#set-import-file").addEventListener("change", async e => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
     try {
-      const { readFile } = await import("./exporter.js");
+      const { readFile } = await import("./exporter.js?v=" + PANELS_BUILD);
       importedDoc = M.importJSON(await readFile(f));
       $("#set-import-name").textContent = `${f.name}: ${Object.values(importedDoc.items).filter(i => !i.deleted).length} lines, ${M.liveSections(importedDoc).length} sections, ${M.historyDays(importedDoc).length} days of history${importedDoc.name ? ", named “" + importedDoc.name + "”" : ""}`;
     } catch (err) { importedDoc = null; $("#set-import-name").textContent = err.message || "That file couldn't be read."; }
@@ -479,7 +555,7 @@ function paintExport() {
 export function openExport() { paintExport(); A.showPanel("p-export"); }
 async function exportList(kind) {
   if (!A.doc) return;
-  const { handOff, filenameFor } = await import("./exporter.js");
+  const { handOff, filenameFor } = await import("./exporter.js?v=" + PANELS_BUILD);
   const json = kind === "json";
   const text = json ? M.exportJSON(A.doc) : M.exportMarkdown(A.doc);
   const res = await handOff({ text, filename: filenameFor(A.doc.name, json ? "json" : "md"), mime: json ? "application/json" : "text/markdown", ios: A.IOS });
@@ -577,6 +653,7 @@ function showLines(t) {
 }
 /** One picker sheet for lists, templates and sections: rows with a label, a sub-line, an optional delete. */
 function openPick({ title, msg = "", rows = [], actions = [] }) {
+  lastPick = { title, msg, rows, actions };
   $("#p-pick-h").textContent = title;
   $("#pick-msg").textContent = msg; $("#pick-msg").hidden = !msg;
   const menu = $("#pick-menu"); menu.innerHTML = "";
@@ -688,7 +765,7 @@ function moveTo(id, target) {
 
 /* ---------------- delete this list everywhere ---------------- */
 export async function deleteEverywhere() {
-  if (!A.canEdit() || !A.ref) return;
+  if (!A.canEdit() || !A.ref || (A.isShared && A.isShared())) return; // 1.4: a list shared with this device is someone else's to delete
   const name = A.doc.name || (meta().lists.find(l => l.id === A.listId) || {}).name || "this list";
   const n = Object.values(A.doc.items).filter(i => !i.deleted).length;
   const ok = await A.ask({ title: "Delete this list everywhere?", msg: `“${name}” (${n} line${n === 1 ? "" : "s"}) is removed from the server and from this device. Every other device with the link loses it too. You get ten seconds to change your mind, and no way back after that.`, confirm: "Delete everywhere", danger: true });
@@ -719,6 +796,7 @@ export async function deleteEverywhere() {
 
 /* ---------------- how it works: the long-form page (⋯ → How it works) ---------------- */
 export function openHelp(section) {
+  lastHelp = section;
   const touch = A.touchUi();
   const W = A.ref && A.ref.mode === "edit" ? A.ref.W : null;
   const add = W ? M.addUrl(A.BASE, W) : A.BASE + "#/l/<your list>/add?text=";
@@ -746,6 +824,8 @@ export function openHelp(section) {
     <p><b>Second screen:</b> open the View link on the work computer or a TV, keep the Private link on your phone, and cross things off from the phone—each check-off lands on the big screen with the sound and the confetti.</p>
     <p><b>Let someone watch:</b> hand them the View link and they see the list as it stands, live, without being able to touch it—the same check-offs, the same sound and confetti when you finish.</p>
     <p><b>New keys</b> (in Share) replaces both links at once; the old links stop working everywhere, your other devices included, so open the new one there.</p>
+    <p><b>Mine and shared with me.</b> A list you make here is yours. A link opened from anywhere else asks once whose list it is—yours from another device, or someone else's—unless the link already says: Share's <b>Open on my other device</b> marks the Private link as yours and <b>Let someone edit</b> marks it as shared. A shared list sits under Shared with me, takes a nickname of its own here (the name inside the list stays as it is), and never offers New keys or Delete everywhere—Remove from this device is the way out. The › beside a list in Lists changes whose it is.</p>
+    <p><b>Share</b> is laid out by what you're doing: Open on my other device (the Private link marked as yours, with a code to scan), Show it somewhere (the View link), Let someone edit (the Private link marked as shared, under the warning), Tell a friend (a note about the app), and New keys at the bottom.</p>
     <h3 id="h-add">Add from anywhere</h3>
     <p>Open this URL with text on the end and the line lands on Today${W ? "" : " (open a Private link to see yours)"}. Several lines: put a newline between them. Optional <code>&amp;section=Name</code> files it under a section.</p>
     <input class="link" type="text" readonly value="${esc(add)}" aria-label="Add-from-anywhere URL" spellcheck="false">
@@ -757,7 +837,7 @@ export function openHelp(section) {
     <p>Every device has a <b>Day theme</b> and a <b>Night theme</b>. The sun or moon in the top bar flips between them${touch ? "" : " (T does too; Shift+T opens Appearance)"}. Settings → Appearance holds both slots and the switch: by hand, with the device's light or dark setting, or on a schedule with a day time and a night time. Under either automation a tap on the sun or moon holds until the next automatic switch, then the automation takes over again.</p>
     <p>Any theme can go in either slot—light, dark, or one of yours; the slot is about when, not what. Every theme names a partner for the other side, one tap away when you pick it, and the builder can make a partner for a theme of your own: same accent, same sound, flipped base. Every theme picks a sound pack, a theme you make can carry its own, and Settings → Sound overrides it on this device. On an iPhone, the ring/silent switch mutes the app's sounds too.</p>
     <p>A small dot beside the sync dot marks each other device that has the list open right now—a random session id, nothing else, and Settings → Advanced turns it off.${touch ? "" : " Leave the mouse alone for a few seconds and the top bar and the footer fade to the date and the count; move it and they're back (Settings → Behavior turns that off)."}</p>`;
-  $("#help-keys").addEventListener("click", () => { A.closePanel(); openKeys(); });
+  $("#help-keys").addEventListener("click", () => openKeys());
   $$("#help-body .link").forEach(el => el.addEventListener("focus", () => { try { el.select(); } catch (e) { /* ignore */ } }));
   A.showPanel("p-help");
   if (section) { const h = document.getElementById("h-" + section); if (h) h.scrollIntoView({ block: "start" }); }
@@ -774,7 +854,7 @@ export function openKeys() {
   $("#keys-body").innerHTML = touch ? g(gestures) : `<div class="keys">${keys.map(k => `<kbd>${esc(k[0])}</kbd><span>${esc(k[1])}</span>`).join("")}</div><h3>Mouse</h3>${g(mouse)}`;
   A.showPanel("p-keys");
 }
-function wireKeys() { $("#keys-help").addEventListener("click", () => { A.closePanel(); openHelp(); }); }
+function wireKeys() { $("#keys-help").addEventListener("click", () => openHelp()); }
 /* the hover tooltips hide on Escape and come back on the next mouse move */
 function wireMisc() {
   document.addEventListener("keydown", e => { if (e.key === "Escape") document.body.classList.add("no-tip"); }, true);

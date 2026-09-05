@@ -692,3 +692,6 @@ body.one #list .row.one-now.wobble{animation:wobble .36s ease}
 body.shake-on #toast,body.shake-on #whatsnew{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 body.install-on #shake-ask{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 body.install-on.shake-on #toast,body.install-on.shake-on #whatsnew{bottom:calc(178px + env(safe-area-inset-bottom,0px))}
+
+/* 1.4: the Shared pill sits beside the view-only pill when both apply */
+#shared{margin-left:.35rem}

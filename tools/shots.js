@@ -29,7 +29,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   };
   const press = async sel => { const h = await page.$(sel); if (!h) throw new Error("no " + sel); if (touch) await h.tap(); else { await h.hover(); await h.click(); } };
   const step = async (name, fn) => { try { await fn(); } catch (e) { console.log("skip", label, name, "—", (e.message || e).split("\n")[0]); try { await page.keyboard.press("Escape"); } catch (x) { /* ignore */ } } };
-  const esc = async () => { await page.keyboard.press("Escape"); await wait(300); };
+  const esc = async () => { for (let i = 0; i < 5; i++) { if (!(await page.$("dialog[open]"))) break; await page.keyboard.press("Escape"); await wait(250); } }; // 1.4: Escape goes back a level, so keep going until the stack is closed
   const mark = async name => { if (await page.$("#mark:not([hidden])")) await shot(name); };
   const openMore = async act => { await press("#more"); await page.waitForSelector("#p-menu[open]"); if (act) { await page.click(`#p-menu [data-act="${act}"]`); } };
   const hold = async (sel, ms) => { const b = await (await page.$(sel)).boundingBox(); const cdp = await ctx.newCDPSession(page); const x = b.x + Math.min(60, b.width / 2), y = b.y + b.height / 2; await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] }); await wait(ms); return async () => { await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await cdp.detach(); }; };
@@ -74,6 +74,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const sel = '#all .sec:not([data-id=""]) .sec-more'; if (!touch) await page.hover('#all .sec:not([data-id=""]) .sec-h'); await press(sel); await page.waitForSelector("#p-sec[open]"); await wait(400); await shot("section-menu"); await esc();
   });
   await step("settings", async () => { await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await wait(400); await shot("settings"); await page.$eval("#p-settings h3:last-of-type", el => el.scrollIntoView({ block: "start" })); await wait(300); await shot("settings-advanced"); await esc(); });
+  await step("settings-theme-back", async () => { if (!(await page.$("#p-theme h2"))) return; await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('#p-settings [data-set="day"]'); await page.waitForSelector("#p-theme[open]"); await wait(400); if (!(await page.$("#p-theme h2 .back"))) { await esc(); return; } await shot("settings-theme-back"); await esc(); }); // 1.4: ‹ Back at the top-left of a sub-panel
+  await step("export-back", async () => { await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('#p-settings [data-set="export"]'); await page.waitForSelector("#p-export[open]"); await wait(400); if (!(await page.$("#p-export h2 .back"))) { await esc(); return; } await shot("export-back"); await esc(); });
   await step("theme", async () => {
     const chip = await page.$("#theme:not([hidden])");
     if (chip && await chip.isVisible()) await press("#theme");
@@ -92,6 +94,19 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await step("finale", async () => { // 1.3: three seed lines, and the earlier steps may have crossed them all off — add two, then finish the list
     if (!(await page.$("#list .row:not(.done) .check"))) { const id = await page.evaluate(() => window.__tf().listId); await page.goto(BASE + "?transport=local#/l/" + id + "/add?text=Walk%20the%20dog%0ACall%20the%20engineer%20back"); await wait(1200); }
     for (let i = 0; i < 5; i++) { if (!(await page.$("#list .row:not(.done) .check"))) break; await press("#list .row:not(.done) .check"); await wait(650); } await wait(3200); await shot("finale"); });
+  await step("whose", async () => { // 1.4: a second list this device then forgets, opened from a bare link — the one question
+    if (!(await page.$("#whose"))) return;
+    await openMore("lists"); await page.waitForSelector("#p-lists[open]"); await page.click("#l-new"); await page.waitForSelector("#ask[open]"); await page.fill("#ask-input", "Groceries"); await page.click("#ask-ok"); await wait(1800);
+    const other = await page.evaluate(() => window.__tf().listId); const home = await page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).lists.find(l => l.id !== window.__tf().listId).id);
+    await page.goto(BASE + "?transport=local#/l/" + home); await wait(1500);
+    await page.evaluate(id => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.lists = m.lists.filter(l => l.id !== id); localStorage.setItem("tf/v2/meta", JSON.stringify(m)); localStorage.removeItem("tf/v3/list/" + id); }, other);
+    await page.goto(BASE + "?transport=local#/l/" + other); await page.waitForFunction(() => document.getElementById("whose").open, null, { timeout: 9000 }); await wait(400); await shot("whose");
+    await press('#whose [data-whose="shared"]'); await page.waitForFunction(id => window.__tf().listId === id && !document.getElementById("whose").open, other, { timeout: 9000 }); await wait(800);
+    await openMore("lists"); await page.waitForSelector("#p-lists[open]"); await page.click("#l-rename"); await page.waitForSelector("#ask[open]"); await page.fill("#ask-input", "Sarah's groceries"); await page.click("#ask-ok"); await wait(500);
+    await shot("today-shared");
+    await openMore("lists"); await page.waitForSelector("#p-lists[open]"); await wait(400); await shot("lists-grouped");
+    await page.click("#lists-menu .row:last-child .more"); await page.waitForSelector("#p-list[open]"); await wait(400); await shot("list-detail"); await esc();
+  });
   await step("about", async () => { await page.goto(BASE + "about.html"); await wait(600); await shot("about"); });
   await ctx.close();
 }

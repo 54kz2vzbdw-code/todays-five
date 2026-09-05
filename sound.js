@@ -1,3 +1,4 @@
+import { BUILD } from "./version.js"; // 1.4: the packs a page loads later come from its own build
 // sound.js — the audio-context state machine and the sound API. The engines live in packs.js and load on the
 // first gesture (sound.prime), so Today's first paint never pays for them. Sounds are triggered by local actions,
 // by remote check-offs on a view link, and (opt-in) by remote check-offs on an edit link.
@@ -51,7 +52,7 @@ export function createSound(opts) {
   }
   function loadPacks() {
     if (packs || packsP) return packsP;
-    packsP = (opts.loadPacks ? opts.loadPacks() : import("./packs.js")).then(m => { packs = m.PACKS; return packs; }).catch(() => { packsP = null; });
+    packsP = (opts.loadPacks ? opts.loadPacks() : import("./packs.js?v=" + BUILD)).then(m => { packs = m.PACKS; return packs; }).catch(() => { packsP = null; });
     return packsP;
   }
   function play(fn, step) {

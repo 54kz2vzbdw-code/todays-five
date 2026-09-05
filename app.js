@@ -38,6 +38,7 @@ const sheetUi = () => !HOVER.matches || NARROW.matches;
 let meta = loadMeta();
 if (!meta.device) meta.device = {};
 if (!meta.lists) meta.lists = [];
+M.normalizeRegistry(meta); // 1.4: every entry has an origin — mine unless recorded as shared — migrated on read, nothing else touched
 const dev = meta.device;
 if (!dev.id) dev.id = M.shortId();
 if (typeof dev.volume !== "number") dev.volume = 1;
@@ -71,6 +72,7 @@ function saveDevice() {
   const byId = new Map();
   for (const l of [...(stored.lists || []), ...(meta.lists || [])]) if (l && l.id && !dead.has(l.id)) byId.set(l.id, { ...(byId.get(l.id) || {}), ...l });
   meta.lists = Array.from(byId.values());
+  M.normalizeRegistry(meta);
   meta.dead = Array.from(dead);
   meta.redirect = { ...(stored.redirect || {}), ...(meta.redirect || {}) };
   const kills = new Map(); for (const k of [...(stored.pendingKill || []), ...(meta.pendingKill || [])]) if (k && k.lookupId) kills.set(k.lookupId, k);
@@ -88,7 +90,7 @@ function resolveRef(r) {
   const seen = new Set();
   let id = r.id;
   while (map[id] && !seen.has(id)) { seen.add(id); id = map[id]; }
-  return { id, mode: "edit" };
+  return { id, mode: "edit", origin: r.origin };
 }
 // per-tab identity: two tabs on one device must not ignore each other's broadcasts; presence tracks a per-load key
 const TAB_ID = dev.id + ":" + M.shortId();
@@ -108,11 +110,14 @@ let toastTimer = 0;
 let drag = null;
 let wakeLock = null;
 let openPanel = null;
+// 1.4: panels are one stack (see showPanel): the frames below the open panel, the history entries pushed for them, and the flags the moves set
+const panelStack = []; let panelDepth = 0, panelSwitching = false, panelRestoring = false, historyGuard = 0, pendingPush = 0;
+const openers = {}; // panel id → repaint-and-show, registered by panels.js (the ⋯ menu's is in this file)
 let markTarget = null, markKey = ""; // the just-in-time hint on screen, if any (declared up here: boot() reaches it)
 let menuHintFor = null;        // the line whose edit just ended by hand: the menu hint points at it once the editor is gone
 let idleTimer = 0, idleOn = false, finaleOn = false; // the idle fade (desktop)
 let query = "";                // Everything's search
-let pendingAdd = null;         // { text: [...], section } from an add-from-anywhere link, applied once the doc is ready
+let pendingAdd = null, pendingOrigin = null; // { text: [...], section } from an add-from-anywhere link, applied once the doc is ready
 let whoCount = 0;
 let lastRemoteCelebrate = 0;
 const canEdit = () => listMode === "edit" && !!doc;
@@ -139,14 +144,21 @@ let lastAcc = null, lastShake = 0, motionOn = false; // shake to shuffle
 /** The panels' stylesheet is not render-blocking: it is asked for a beat after load, so it never competes with the
     first paint for the connection, and every panel waits for it. */
 const panelCss = new Promise(res => {
-  const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "panels.css";
+  const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "panels.css?v=" + BUILD; // 1.4: this page's own build, from its cache after a deploy
   l.onload = () => { panelCssReady = true; res(true); }; l.onerror = () => { panelCssReady = true; res(false); };
   const go = () => setTimeout(() => document.head.appendChild(l), 250);
   if (document.readyState === "complete") go(); else addEventListener("load", go, { once: true });
 });
-/** The lazy module with every panel. Loaded on first use, then kept. */
+/** What the person asked for last (a panel's name), so a page that has to reload itself can reopen it (COMPATIBILITY.md §6). */
+let askedPanel = null;
+const RESUME = { share: p => p.openShare(), lists: p => p.openLists(), settings: p => p.openSettings(), help: p => p.openHelp(), theme: p => p.openTheme(), history: p => p.openHistory(), keys: p => p.openKeys(), export: p => p.openExport(), save: p => p.showSaveLink(), menu: () => { paintMenu(); showPanel("p-menu", { anchor: $("#more") }); } };
+/** The lazy module with every panel. Loaded on first use, then kept; pinned to this page's build. */
 function panels() {
-  if (!panelsP) panelsP = Promise.all([import("./panels.js"), panelCss]).then(([m]) => { m.init(api); return m; }).catch(e => { panelsP = null; if (!(e && /updated: reloading/.test(e.message))) toast("Couldn't load that part of the app—check the connection and try again"); throw e; });
+  if (!panelsP) panelsP = Promise.all([import("./panels.js?v=" + BUILD), panelCss]).then(([m]) => { m.init(api); return m; }).catch(e => {
+    panelsP = null;
+    if (e && /updated: reloading/.test(e.message)) return new Promise(() => {}); // the page is reloading itself: nothing to say, nothing to run
+    toast("Couldn't load that part of the app—check the connection and try again"); throw e;
+  });
   return panelsP;
 }
 const HAPTIC = IOS && (() => { const h = document.getElementById("haptic"); return !!h && "switch" in h; })();
@@ -244,16 +256,46 @@ registerSw();
 function frag(r) { return "#/" + (r.mode === "view" ? "r" : "l") + "/" + r.id; }
 function hashRef() {
   const h = M.parseHash(location.hash);
-  return h ? { id: h.id, mode: h.mode } : null;
+  return h ? { id: h.id, mode: h.mode, origin: h.hint || undefined } : null; // 1.4: the origin hint rides with the ref
 }
-/** An add-from-anywhere link: remember what to add, refuse it on a view link, and clean the address either way. */
-function takeAddFromHash() {
+/** What a link carries after its id: an add-from-anywhere (remember what to add, refuse it on a view link) or a 1.4
+    origin hint (`/mine`, `/shared`: remember whose list it is for the list it opens). The address is cleaned of
+    anything after the id either way, so a reload cannot repeat it. */
+function takeExtrasFromHash() {
   const h = M.parseHash(location.hash);
-  if (!h || !h.add) return;
-  if (h.mode === "view") { pendingAdd = null; notice("A View link only shows the list. Open the Private link to add a line."); }
-  else pendingAdd = h.add;
-  history.replaceState(null, "", BASE + SEARCH + frag(h));
+  if (!h) return;
+  if (h.add) {
+    if (h.mode === "view") { pendingAdd = null; notice("A View link only shows the list. Open the Private link to add a line."); }
+    else pendingAdd = h.add;
+  }
+  if (h.hint) pendingOrigin = { id: h.id, origin: h.hint };
+  if (M.hashHasExtras(location.hash)) history.replaceState(null, "", BASE + SEARCH + frag(h));
 }
+/** 1.4: one question before a list this device does not hold opens from a link with no hint — whose list is this?
+    Not cancelable: the answer is how the list is filed from here on, and Lists can change it. */
+function askWhose() {
+  return new Promise(resolve => {
+    const d = $("#whose");
+    const finish = v => { d.removeEventListener("click", onClick); d.removeEventListener("cancel", onCancel); resolve(v === "shared" ? "shared" : "mine"); d.close(); };
+    const onClick = e => { const b = e.target.closest("[data-whose]"); if (b) finish(b.dataset.whose); };
+    const onCancel = e => e.preventDefault();
+    d.addEventListener("click", onClick); d.addEventListener("cancel", onCancel);
+    panelCss.then(() => { if (!d.open) d.showModal(); });
+  });
+}
+/** A View link's id against the lists this device holds under their Private links: the origin of the one it belongs to, or null. */
+async function originOfHeldView(R) {
+  for (const l of meta.lists) {
+    if (!l || l.mode !== "edit" || !M.isListId(l.id)) continue;
+    try { const d = await C.fromLink("edit", l.id); if (d && d.R === R) return l.origin === "shared" ? "shared" : "mine"; } catch (e) { /* the next one */ }
+  }
+  return null;
+}
+/** The open list's registry entry, and whether it is one shared with this device. */
+function entryOf(id) { return (id && meta.lists.find(l => l.id === id)) || null; }
+function isShared(id = listId) { const e = entryOf(id); return !!(e && e.origin === "shared"); }
+/** 1.4: the Shared pill, beside the view-only pill when both apply. */
+function paintOrigin() { $("#shared").hidden = !(doc && !demo && isShared()); }
 /** A toast that survives the reload iOS Safari needs when the list changes (it is shown once the list is painted). */
 function notice(msg) { try { sessionStorage.setItem("tf/notice", msg); } catch (e) { /* ignore */ } setTimeout(flushNotice, 600); }
 function flushNotice() {
@@ -261,7 +303,7 @@ function flushNotice() {
   if (msg) toast(msg);
 }
 function boot() {
-  takeAddFromHash();
+  takeExtrasFromHash();
   const h = hashRef();
   if (h) return openList(resolveRef(h));
   if (meta.current && (loadLocal(meta.current) || loadLegacyLocal(meta.current))) return openList({ id: meta.current, mode: meta.currentMode === "view" ? "view" : "edit" });
@@ -313,7 +355,7 @@ async function flushOthers() {
 }
 addEventListener("hashchange", () => {
   if (reloading) return;
-  takeAddFromHash();
+  takeExtrasFromHash();
   const h = hashRef(); if (!h) return;
   const r = resolveRef(h);
   if (r.id === listId && r.mode === listMode) { history.replaceState(null, "", BASE + SEARCH + frag(r)); applyPendingAdd(); return; } // a stale (redirected) link: show the real one
@@ -327,15 +369,21 @@ async function retryTransport() {
 addEventListener("online", retryTransport);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") retryTransport(); });
 
-function registerList(id, name, mode) {
+function registerList(id, name, mode, origin) {
   let e = meta.lists.find(l => l.id === id);
-  if (!e) { e = { id, mode: mode === "view" ? "view" : "edit", name: name || "", addedAt: Date.now(), fresh: !dev.tourDone }; meta.lists.push(e); }
+  if (!e) { e = { id, mode: mode === "view" ? "view" : "edit", name: name || "", addedAt: Date.now(), fresh: !dev.tourDone, origin: origin === "shared" ? "shared" : "mine" }; meta.lists.push(e); }
   else if (mode && e.mode !== mode) e.mode = mode;
   return e;
 }
 
 async function openList(r) {
   if (!r || !M.isListId(r.id)) return showWelcome("That link doesn't look right.");
+  if (!entryOf(r.id)) { // 1.4: a list this device does not hold yet gets its origin from the link's hint, or from one question first
+    let origin = r.origin || (pendingOrigin && pendingOrigin.id === r.id ? pendingOrigin.origin : null); pendingOrigin = null;
+    if (!origin && r.mode === "view") origin = await originOfHeldView(r.id); // the View link of a list this device holds under its Private link: no question
+    if (!origin) origin = await askWhose();
+    r = { ...r, origin };
+  }
   const mode = r.mode === "view" ? "view" : "edit";
   if (editing) cancelEdit();
   if (sync) { await flushQuick(); sync.close(); sync = null; }
@@ -346,7 +394,7 @@ async function openList(r) {
   demo = false; shuffledId = null; $("#demo-foot").hidden = true; $("#w-keep").hidden = true;
   listId = r.id; listMode = mode; ref = null;
   meta.current = r.id; meta.currentMode = mode;
-  const entry = registerList(r.id, "", mode);
+  const entry = registerList(r.id, "", mode, r.origin);
   saveDevice();
   let local = loadLocal(r.id);
   const legacy = (!local && mode === "edit") ? loadLegacyLocal(r.id) : null; // a v2 list this device still holds in plaintext
@@ -365,6 +413,7 @@ async function openList(r) {
   $("#welcome").hidden = true;
   $("#dot").hidden = false;
   $("#ro").hidden = mode !== "view";
+  paintOrigin();
   rows.clear(); $("#list").innerHTML = ""; clearAll();
   wasAll = allDoneToday();
   paintWho(0);
@@ -417,6 +466,8 @@ async function openList(r) {
   settleMigrations();
   applyCarry();
   if (sessionStorage.getItem("tf/reopenShare")) { sessionStorage.removeItem("tf/reopenShare"); setTimeout(() => panels().then(p => p.openShare()), 300); }
+  let resume = null; try { resume = JSON.parse(sessionStorage.getItem("tf/resume") || "null"); sessionStorage.removeItem("tf/resume"); } catch (e) { resume = null; } // 1.4: back where the person was after a reload the panels had to ask for
+  if (resume && typeof resume === "object") { if (resume.view && resume.view !== view) setView(resume.view); const open = RESUME[resume.panel]; if (open) setTimeout(() => panels().then(p => open(p)), 300); }
   if (rolled) sync.update(doc);
   if (entry && !entry.name && doc.name) entry.name = doc.name;
   if (local) applyPendingAdd();
@@ -575,7 +626,8 @@ function paintListName() {
   const btn = $("#listname");
   const active = meta.lists.filter(l => !l.archived);
   const entry = meta.lists.find(l => l.id === listId);
-  const name = doc && doc.name ? doc.name : (entry && entry.name) || "";
+  const docName = doc && doc.name ? doc.name : (entry && entry.name) || "";
+  const name = (entry && entry.origin === "shared" && entry.nickname) || docName; // 1.4: a shared list goes by its nickname here
   btn.hidden = !(doc && (active.length > 1 || name));
   btn.textContent = name || "List";
   $("#list-h1").textContent = name ? name + " — Today's Five" : "Today's Five";
@@ -604,7 +656,7 @@ function setView(v, { force } = {}) {
   $("#v-all").setAttribute("aria-selected", v === "all" ? "true" : "false");
   $("#today").hidden = v !== "today";
   $("#all").hidden = v !== "all";
-  $("#welcome").hidden = !demo; // the welcome's title and sentence sit above the live list
+  $("#welcome").hidden = !demo; if (demo) $("#shared").hidden = true; // the welcome's title and sentence sit above the live list
   render({ animate: false });
   if (v === "all") hintToday();
 }
@@ -1539,11 +1591,26 @@ function endDrag(move, up, cancelled, aborted) {
 /* ---------------- panels: plumbing shared by every dialog ---------------- */
 /** Open a dialog. With an anchor on the desktop it is a popover under that control (the ⋯, line and section menus);
     on the phone, or without one, it is the sheet or the centred panel it always was. */
+/* ---------------- panels: one stack (1.4) ----------------
+   A panel opened while another is open sits on top of it. ‹ Back returns to the parent, repainted by its own opener (a
+   value changed below shows) and scrolled to where it was; × closes the whole stack; Escape goes back one level and
+   closes at the root; a sheet still closes on a swipe down, and an edge swipe from the left goes back. Each level pushes
+   one history entry (state only — the URL and the hash are untouched), so Android's back button and the browser's Back
+   go back one level instead of leaving the list. panels.js registers each panel's opener. The ⋯ menu is a launcher, not
+   a parent: what it opens is a root, and Back appears only inside a panel. */
+const backBtn = document.createElement("button"); backBtn.type = "button"; backBtn.className = "back"; backBtn.setAttribute("aria-label", "Back"); backBtn.innerHTML = '<span class="chev" aria-hidden="true">‹</span> Back';
+backBtn.addEventListener("click", () => goBack());
+function registerOpeners(map) { Object.assign(openers, map); }
+function panelStackIds() { return [...panelStack.map(f => f.id), openPanel ? openPanel.id : null].filter(Boolean); }
 function showPanel(id, { anchor = null } = {}) {
   if (!panelCssReady) { panelCss.then(() => showPanel(id, { anchor })); return; } // never paint a dialog before its stylesheet
   const d = document.getElementById(id);
   hideMark();
-  if (openPanel && openPanel !== d) openPanel.close();
+  const parent = openPanel && openPanel !== d ? openPanel : null;
+  if (parent) {
+    if (!panelRestoring) { const pb = parent.querySelector(".body"); panelStack.push({ id: parent.id, scroll: pb ? pb.scrollTop : 0 }); }
+    panelSwitching = true; parent.close(); panelSwitching = false;
+  }
   openPanel = d;
   d.classList.remove("closing"); d.style.transform = ""; d.removeAttribute("data-drag");
   const pop = !!anchor && !sheetUi() && anchor.isConnected;
@@ -1556,16 +1623,57 @@ function showPanel(id, { anchor = null } = {}) {
     const top = r.bottom + 6 + h <= innerHeight - 8 ? r.bottom + 6 : Math.max(8, r.top - 6 - h);
     d.style.left = left + "px"; d.style.top = top + "px";
   }
+  const h2 = d.querySelector("h2");
+  if (h2) { if (panelStack.length) h2.prepend(backBtn); else if (backBtn.parentNode) backBtn.remove(); }
+  d.classList.toggle("nested", panelStack.length > 0);
+  if (!panelRestoring) { const depth = panelStack.length + 1; if (depth > panelDepth) { if (historyGuard) pendingPush = depth; else { history.pushState({ tfPanel: depth }, "", location.href); panelDepth = depth; } } }
   idleReset();
 }
-function closePanel() { if (openPanel) { const d = openPanel; openPanel = null; d.close(); } } // forget it now, not when the close event lands: what follows may need the panel gone
-$$("dialog.panel").forEach(d => {
-  d.addEventListener("close", () => { if (openPanel === d) openPanel = null; idleReset(); });
-  d.addEventListener("cancel", () => { if (openPanel === d) openPanel = null; }); // Escape: forget it now, the close event lands a tick later
-  d.addEventListener("click", e => { if (e.target === d && !clickAfterDrag()) d.close(); }); // not the click a browser synthesises after the hold that opened it
-  d.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => d.close()));
-  if (d.classList.contains("sheet")) wireSheetSwipe(d);
+/** Back one level, as the person asked: through history when the level has an entry (its popstate does the work), else directly. */
+function goBack() { if (panelDepth > 0) history.back(); else popPanel(); }
+/** The level below: the parent repainted by its opener and scrolled to where it was; at the root, everything closes. */
+function popPanel() {
+  if (!openPanel && !panelStack.length) return;
+  if (!panelStack.length) { closeAll({ unwind: false }); return; }
+  const frame = panelStack.pop();
+  const cur = openPanel; openPanel = null;
+  if (cur && cur.open) { panelSwitching = true; cur.close(); panelSwitching = false; }
+  panelRestoring = true;
+  try { if (openers[frame.id]) openers[frame.id](); else showPanel(frame.id); } finally { panelRestoring = false; }
+  const restore = () => { const body = openPanel && openPanel.querySelector(".body"); if (body && body.scrollTop !== frame.scroll) body.scrollTop = frame.scroll; };
+  restore(); requestAnimationFrame(restore); setTimeout(restore, 60); // showModal's focus lands a beat later and scrolls the row it picks into view; the parent's own place wins
+}
+/** The whole stack closes (×, the backdrop, a swipe down, a done action), and its history entries go with it. */
+function closeAll({ unwind = true } = {}) {
+  const cur = openPanel; openPanel = null; panelStack.length = 0;
+  if (cur && cur.open) { panelSwitching = true; cur.close(); panelSwitching = false; }
+  if (backBtn.parentNode) backBtn.remove();
+  if (unwind && panelDepth > 0) { historyGuard++; history.go(-panelDepth); }
+  panelDepth = 0;
+}
+function closePanel() { closeAll(); } // forget it now, not when the close event lands: what follows may need the panel gone
+addEventListener("popstate", e => {
+  if (historyGuard > 0) { historyGuard--; if (pendingPush) { history.pushState({ tfPanel: pendingPush }, "", location.href); panelDepth = pendingPush; pendingPush = 0; } return; } // our own unwind landing; a panel opened meanwhile gets its entry now
+  if (!openPanel && !panelStack.length) { panelDepth = 0; return; } // nothing open: a leftover entry, nothing to do
+  const target = e.state && e.state.tfPanel ? e.state.tfPanel : 0;
+  while (panelDepth > target && (openPanel || panelStack.length)) { panelDepth--; popPanel(); }
+  if (target === 0 && (openPanel || panelStack.length)) closeAll({ unwind: false });
 });
+$$("dialog.panel").forEach(d => {
+  d.addEventListener("close", () => { if (!panelSwitching && openPanel === d) closeAll(); idleReset(); }); // a close from anywhere else takes the stack with it
+  d.addEventListener("cancel", e => { if (openPanel !== d) return; e.preventDefault(); goBack(); }); // Escape: back one level, closed at the root
+  d.addEventListener("click", e => { if (e.target === d && !clickAfterDrag()) { if (openPanel === d) closeAll(); else d.close(); } }); // not the click a browser synthesises after the hold that opened it
+  d.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => { if (openPanel === d) closeAll(); else d.close(); }));
+  if (d.classList.contains("sheet")) wireSheetSwipe(d);
+  wireBackSwipe(d);
+});
+/** On a phone, a swipe in from the left edge goes back one level (the system's own edge gesture, where there is one, lands as history and does the same). */
+function wireBackSwipe(d) {
+  let st = null;
+  d.addEventListener("pointerdown", e => { if (!touchUi() || e.pointerType === "mouse" || e.clientX > 28 || !panelStack.length || openPanel !== d) return; st = { x: e.clientX, y: e.clientY, id: e.pointerId }; });
+  d.addEventListener("pointermove", e => { if (!st || e.pointerId !== st.id) return; const dx = e.clientX - st.x, dy = e.clientY - st.y; if (Math.abs(dy) > 40) { st = null; return; } if (dx > 60) { st = null; goBack(); } });
+  const end = () => { st = null; }; d.addEventListener("pointerup", end); d.addEventListener("pointercancel", end);
+}
 /** Bottom sheets close on a downward swipe (from the grip, the header, or the body when it is scrolled to the top). */
 function wireSheetSwipe(d) {
   let st = null;
@@ -1588,7 +1696,7 @@ function wireSheetSwipe(d) {
     d.removeAttribute("data-drag");
     if (s.moving && (dy > 90 || (dy > 30 && dy / dt > 0.5))) {
       d.classList.add("closing"); d.style.transform = "";
-      setTimeout(() => { d.classList.remove("closing"); if (d.open) d.close(); }, RM.matches ? 0 : 200);
+      setTimeout(() => { d.classList.remove("closing"); if (d.open) { if (openPanel === d) closeAll(); else d.close(); } }, RM.matches ? 0 : 200);
     } else d.style.transform = "";
   };
   d.addEventListener("pointerup", end); d.addEventListener("pointercancel", end);
@@ -1618,7 +1726,7 @@ function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger =
    1.3: a Save your link row stands above them, with a dot, only until this device's list has its link saved */
 $("#more").addEventListener("click", () => { paintMenu(); showPanel("p-menu", { anchor: $("#more") }); });
 /** The registry entry of the open list when its link has not been saved yet (a list this device made). */
-function unsavedEntry() { const e = listId && meta.lists.find(l => l.id === listId); return e && e.created && e.linkSaved === false && listMode === "edit" ? e : null; }
+function unsavedEntry() { const e = listId && meta.lists.find(l => l.id === listId); return e && e.created && e.linkSaved === false && e.origin !== "shared" && listMode === "edit" ? e : null; }
 function paintMenu() {
   $("#menu-save").hidden = !doc || !unsavedEntry();
   $("#menu-share-lb").textContent = listMode === "view" ? "Share the View link" : "Share this list";
@@ -1626,12 +1734,13 @@ function paintMenu() {
   $("#menu-theme-k").textContent = theme ? theme.name : "";
   paintMute();
   $("#menu-full").hidden = !document.fullscreenEnabled;
-  $("#menu-delete").hidden = !doc || listMode !== "edit";
+  $("#menu-delete").hidden = !doc || listMode !== "edit" || isShared(); // 1.4: never for a list shared with this device
   $("#settings-k").textContent = "";
 }
 $("#p-menu").addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const act = b.dataset.act;
+  askedPanel = act; // what to reopen if loading the panels means reloading the page
   if (act === "sound") { toggleMute(); return; } // a toggle row: the menu stays, the state flips
   closePanel();
   if (act === "save") panels().then(p => p.showSaveLink());
@@ -1693,7 +1802,7 @@ setInterval(() => { tickDay(); retryPendingKills(); settleMigrations(); }, 60000
 function editLink() { return ref && ref.mode === "edit" ? BASE + "#/l/" + ref.W : null; }
 function viewLink() { return ref ? BASE + "#/r/" + ref.R : null; }
 async function drawQr(canvas, text) {
-  const { default: qrcode } = await import("./qr.js");
+  const { default: qrcode } = await import("./qr.js?v=" + BUILD);
   const q = qrcode(0, "M"); q.addData(text); q.make();
   const n = q.getModuleCount(), scale = Math.max(3, Math.floor(200 / n)), quiet = 2;
   const size = (n + quiet * 2) * scale;
@@ -1710,7 +1819,7 @@ function nativeShare(text) {
   return true;
 }
 $$(".link").forEach(el => el.addEventListener("focus", () => { try { el.select(); } catch (e) { /* ignore */ } }));
-$("#share").addEventListener("click", () => panels().then(p => p.openShare()));
+$("#share").addEventListener("click", () => { askedPanel = "share"; panels().then(p => p.openShare()); });
 async function killRemote(k) {
   if (!transport) { queueKill(k); return false; }
   try {
@@ -1737,8 +1846,8 @@ function createList(d, id) {
 }
 function parseLink(s) {
   const t = String(s || "").trim();
-  const m = t.match(/#\/(l|r)\/([0-9A-Za-z]{22,64})/);
-  if (m) return { id: m[2], mode: m[1] === "r" ? "view" : "edit" };
+  const m = t.match(/#\/(l|r)\/([0-9A-Za-z]{22,64})(?:\/(mine|shared))?/);
+  if (m) return { id: m[2], mode: m[1] === "r" ? "view" : "edit", origin: m[1] === "l" && m[3] ? m[3] : undefined };
   const bare = t.match(/^([0-9A-Za-z]{22,64})$/);
   return bare ? { id: bare[1], mode: "edit" } : null;
 }
@@ -1749,7 +1858,10 @@ function switchTo(r, { paste = false } = {}) {
     meta.redirect = { ...(meta.redirect || {}), [listId]: r.id };
     meta.carry = { from: listId, to: r.id };
   }
-  meta.current = r.id; meta.currentMode = r.mode; saveDevice();
+  meta.current = r.id; meta.currentMode = r.mode;
+  const hinted = r.origin || (pendingOrigin && pendingOrigin.id === r.id ? pendingOrigin.origin : null); // 1.4: a hinted link's origin (the hash is already clean) survives the reload iOS Safari does next
+  if (hinted && !entryOf(r.id)) { registerList(r.id, "", r.mode, hinted); pendingOrigin = null; }
+  saveDevice();
   if (IOS && !STANDALONE) {
     reloading = true;
     const target = BASE + SEARCH + frag(r);
@@ -1759,7 +1871,7 @@ function switchTo(r, { paste = false } = {}) {
   }
   openList(r);
 }
-$("#listname").addEventListener("click", () => panels().then(p => p.openLists()));
+$("#listname").addEventListener("click", () => { askedPanel = "lists"; panels().then(p => p.openLists()); });
 $("#w-keep").addEventListener("click", keepDemo);
 $("#w-skip").addEventListener("click", keepDemo); // Skip is Keep without the play: the same three lines, as they stand
 $("#w-paste-show").addEventListener("click", () => { $("#w-paste-form").hidden = false; $("#w-paste").focus(); });
@@ -1995,13 +2107,13 @@ function hintToday() {
 const api = {
   M, C, T, VERSION, BUILD, VERSION_LABEL, config, $, $$, IOS, STANDALONE, BASE, SEARCH, TRANSPORT_KIND, HOVER, NARROW, RM, DARK_MQ, touchUi, sheetUi, canEdit,
   meta, dev, rows, sound, fx,
-  get demo() { return demo; }, unsavedEntry, shuffle,
+  get demo() { return demo; }, get askedPanel() { return askedPanel; }, unsavedEntry, shuffle, entryOf, isShared, paintOrigin,
   get doc() { return doc; }, set doc(v) { doc = v; },
   get listId() { return listId; }, get listMode() { return listMode; }, get ref() { return ref; }, get sync() { return sync; }, get transport() { return transport; },
   get theme() { return theme; }, get view() { return view; }, get syncStatus() { return syncStatus; }, get editing() { return editing; }, get openPanel() { return openPanel; },
   get whoCount() { return whoCount; },
   todayList, allDoneToday, setWasAll: () => { wasAll = allDoneToday(); },
-  afterChange, applyRemote, render, setView, paint, paintListName, paintMute, paintStatus, paintMenu, paintWho, toast, hideToast, ask, showPanel, closePanel,
+  afterChange, applyRemote, render, setView, paint, paintListName, paintMute, paintStatus, paintMenu, paintWho, toast, hideToast, ask, showPanel, closePanel, goBack, registerOpeners,
   focusRow, newItem, startEdit, commitEdit, deleteItem, toggle, toggleToday, notToday, pushUndo, undo, restoreItem,
   saveDevice, registerList, switchTo, openList, showWelcome, createList, parseLink, flushQuick, flushOthers, killRemote, queueKill, retryPendingKills,
   applyThemeCode, currentThemeCode, tickTheme, setSlotTheme, flipSlot, setSwitchMode, setSwitchTimes, activeSlot: () => T.activeSlot(dev, envNow()), autoSlot: () => T.autoSlot(dev, envNow()),
@@ -2012,7 +2124,7 @@ const api = {
 };
 
 /* test hook (read-only) */
-window.__tf = () => ({ stats: { ...stats }, view, listId, mode: listMode, lookupId: ref ? ref.lookupId : null, R: ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, demo, shuffled: shuffledId, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry() });
+window.__tf = () => ({ stats: { ...stats }, view, listId, mode: listMode, lookupId: ref ? ref.lookupId : null, R: ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, demo, shuffled: shuffledId, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry(), origin: (entryOf(listId) || {}).origin || null, nickname: (entryOf(listId) || {}).nickname || null, whose: $("#whose").open, panels: panelStackIds() });
 // test-only controls, on the local transport: simulate what iOS does to the audio context
 if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneToday(); } }, presence: n => paintWho(n) };
 

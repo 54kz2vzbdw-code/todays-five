@@ -1,5 +1,6 @@
 // Node tests for model.js. Run: node test/model.test.js
 import assert from "node:assert/strict";
+import * as M from "../model.js";
 import {
   newId, isListId, emptyDoc, normalize, merge, canon, docEquals, purgeTombstones,
   rollover, localDate, todayItems, itemsInSection, sectionsOrdered, orderBetween,
@@ -253,6 +254,40 @@ test("seed: three Today lines that teach the basics without naming keys (1.3: th
   assert.ok(/your own/.test(SEED_LINES[1]), "asks for a line of your own");
   assert.ok(/all three/.test(SEED_LINES[2]), "ends on the payoff");
   assert.ok(!SEED_LINES.some(l => /\b[A-Z]\b/.test(l)), "no keys named");
+});
+
+/* ---------------- 1.4: hints in the link, the registry's origin ---------------- */
+import { parseHash as parseHash13 } from "./fixtures/parse-1.3.js";
+const W = "AbCdEfGhIjKlMnOpQrStUv", R = "1234567890abcdefghijkl";
+test("1.4: a private link's origin hint parses and the id stays readable — /mine, /shared, nothing on a view link, unknown suffixes ignored", () => {
+  assert.deepEqual(M.parseHash("#/l/" + W), { id: W, mode: "edit", add: null, hint: null });
+  assert.equal(M.parseHash("#/l/" + W + "/mine").hint, "mine"); assert.equal(M.parseHash("#/l/" + W + "/mine").id, W);
+  assert.equal(M.parseHash("#/l/" + W + "/shared").hint, "shared");
+  assert.equal(M.parseHash("#/r/" + R + "/mine").hint, null, "a view link carries no hint"); assert.equal(M.parseHash("#/r/" + R + "/mine").id, R, "and still opens");
+  assert.equal(M.parseHash("#/l/" + W + "/later?x=1").id, W, "a suffix from a later version leaves the id readable"); assert.equal(M.parseHash("#/l/" + W + "/later").hint, null);
+  const add = M.parseHash("#/l/" + W + "/add?text=Milk%0AEggs"); assert.deepEqual(add.add.text, ["Milk", "Eggs"]); assert.equal(add.hint, null, "add is add, not a hint");
+  assert.equal(M.parseHash("#/l/short"), null); assert.equal(M.parseHash("#/x/" + W), null);
+  assert.equal(M.hintLink("https://x/#/l/" + W, "mine"), "https://x/#/l/" + W + "/mine"); assert.equal(M.hintLink("https://x/#/l/" + W, null), "https://x/#/l/" + W);
+  assert.ok(M.hashHasExtras("#/l/" + W + "/mine") && M.hashHasExtras("#/l/" + W + "/add?text=a") && !M.hashHasExtras("#/l/" + W) && !M.hashHasExtras("#/r/" + R), "what the address bar must lose");
+});
+test("1.4: the registry migrates on read — existing entries become mine, a shared entry stays shared, no nickname appears, nothing else moves", () => {
+  const meta = { lists: [{ id: W, mode: "edit", name: "Work", created: true, linkSaved: true }, { id: R, mode: "view", name: "" }, { id: "x", mode: "edit", origin: "shared", nickname: "Sarah's" }, null] };
+  const out = M.normalizeRegistry(meta);
+  assert.equal(out, meta, "in place");
+  assert.equal(meta.lists[0].origin, "mine"); assert.equal(meta.lists[1].origin, "mine"); assert.equal(meta.lists[2].origin, "shared");
+  assert.ok(!("nickname" in meta.lists[0]) && !("nickname" in meta.lists[1]), "no nickname unless set by hand"); assert.equal(meta.lists[2].nickname, "Sarah's");
+  assert.deepEqual(Object.keys(meta.lists[0]), ["id", "mode", "name", "created", "linkSaved", "origin"], "the entry keeps its shape and gains one field");
+  assert.equal(M.normalizeRegistry(null), null); assert.deepEqual(M.normalizeRegistry({}), {});
+});
+test("1.4: the frozen 1.3 parser and a hinted link — what a page still running 1.3 does", () => {
+  assert.equal(parseHash13("#/l/" + W).id, W, "1.3 reads a plain link");
+  assert.equal(parseHash13("#/l/" + W + "/add?text=Milk").add.text[0], "Milk", "and an add link");
+  // 1.3 wanted an exact match, so a hinted link is not a link to it: a page still running 1.3 that receives one without a
+  // reload ignores it and stays on its current list (a fresh navigation loads 1.4 first). Recorded in DECISIONS.md.
+  assert.equal(parseHash13("#/l/" + W + "/mine"), null);
+  assert.equal(parseHash13("#/l/" + W + "/shared"), null);
+  // nothing about a link reaches the document: a document opened from a hinted link normalizes as any other
+  assert.equal(M.normalize(M.emptyDoc(W, "Shared"), W).name, "Shared");
 });
 
 console.log(`\n${passed} model tests passed`);

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-base="dark" data-build="62">
+<html lang="en" data-base="dark" data-build="70">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -17,7 +17,7 @@
   <meta property="og:image:alt" content="Today's Five: a short list in big type, one line crossed off">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-/CbwMwU95exk9O+gGsatEPIVZxOIe23QV9Zj3lu/5gw='; style-src 'self' 'sha256-oE1HVK8YytWGTI+f5YZEZpzJkHu5EBNa0YFHsWkjQgQ='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://xyfjxdbwhysbaltcwvcx.supabase.co wss://xyfjxdbwhysbaltcwvcx.supabase.co; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-zkz7m7ZkRTzmIS2mLcWojpK0SbqcWhN0iLqFLCFlZjA='; style-src 'self' 'sha256-oE1HVK8YytWGTI+f5YZEZpzJkHu5EBNa0YFHsWkjQgQ='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://xyfjxdbwhysbaltcwvcx.supabase.co wss://xyfjxdbwhysbaltcwvcx.supabase.co; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
   <meta name="theme-color" content="#1A1D21">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -77,7 +77,7 @@
       var man = {
         id: base,
         name: "Today's Five",
-        short_name: "Five",
+        short_name: "Today's Five",
         description: "A short list built to be left open on screen all day.",
         start_url: base + (frag || ""),
         scope: base,
@@ -119,6 +119,7 @@
       <span id="date"></span>
       <button class="chip plain" id="listname" hidden title="Switch list">List</button>
       <span class="pill" id="ro" hidden title="This is the View link: it shows the list and can't change it"><span class="ro-l">View link · </span>view only</span>
+      <span class="pill" id="shared" hidden title="Someone else's list, filed under Shared with me on this device">Shared</span>
     </div>
     <div class="rail-r">
       <span class="status">
@@ -335,14 +336,21 @@
 <dialog class="panel sheet" id="p-share" aria-labelledby="p-share-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
   <h2><span id="p-share-h">Share</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
-  <!-- 1.3: the View link first and by default, the Private link last under a warning, Tell a friend apart from both -->
+  <!-- 1.4: four blocks by what you're doing — my other device, a screen, someone who edits, a friend — and New keys last; the links themselves are 1.3's -->
   <div class="sub-block notice" id="share-unsaved" hidden>
     <span class="lb">This link is your list's only key, and it isn't saved yet.</span>
     <div class="row-actions"><button class="chip accent" id="share-save" type="button">Save your link</button></div>
   </div>
+  <section class="share-block" id="share-mine">
+    <h3>Open on my other device</h3>
+    <p class="share-msg">The Private link, marked as yours: open it on the phone or the other computer and the list files under My lists there.</p>
+    <div class="qr" id="qr-mine"><canvas id="qr-mine-c" width="1" height="1" aria-label="QR code for the Private link, marked as yours" role="img"></canvas></div>
+    <input class="link" id="share-link-mine" type="text" readonly aria-label="The Private link, marked as yours" spellcheck="false">
+    <div class="row-actions"><button class="chip accent" id="share-copy-mine" type="button">Copy link</button></div>
+  </section>
   <section class="share-block" id="share-view">
-    <h3>View link <span class="sub-h">view only</span></h3>
-    <p class="share-msg">Shows the list and can't change it. Put it on a second screen—a work computer, a TV—and cross things off from your phone; or hand it to someone who should watch.</p>
+    <h3>Show it somewhere <span class="sub-h">view only</span></h3>
+    <p class="share-msg">The View link shows the list and can't change it. Put it on a second screen—a work computer, a TV—and cross things off from your phone; or hand it to someone who should watch.</p>
     <p class="fine" id="share-view-more">Check-offs from your other devices show up here with the sound and the confetti.</p>
     <div class="qr" id="qr"><canvas id="qr-c" width="1" height="1" aria-label="QR code for the View link" role="img"></canvas></div>
     <input class="link" id="share-link" type="text" readonly aria-label="The View link" spellcheck="false">
@@ -352,20 +360,21 @@
     </div>
   </section>
   <section class="share-block private" id="share-private">
-    <p class="warn" id="share-warn">Careful—this one can change everything.</p>
-    <h3>Private link</h3>
-    <p class="share-msg">This link is your list's only key. Anyone holding it can open the list, and there is no spare. Anything that should show the list but not change it gets the View link instead.</p>
-    <input class="link" id="share-link-private" type="text" readonly aria-label="The Private link" spellcheck="false">
-    <div class="row-actions">
-      <button class="chip" id="share-copy-private" type="button">Copy private link</button>
-      <button class="chip" id="share-rotate" type="button">New keys</button>
-    </div>
-    <p class="fine" id="share-rotate-note">New keys: the old links stop working everywhere.</p>
+    <p class="warn" id="share-warn">Careful—this one can change everything, and there is no spare.</p>
+    <h3>Let someone edit</h3>
+    <p class="share-msg">The Private link, marked as shared: whoever opens it can add, edit and cross off, and the list files under Shared with me on their device. Anything that should only show the list gets the View link instead.</p>
+    <input class="link" id="share-link-private" type="text" readonly aria-label="The Private link, marked as shared" spellcheck="false">
+    <div class="row-actions"><button class="chip" id="share-copy-private" type="button">Copy private link</button></div>
   </section>
   <section class="share-block friend" id="share-friend">
     <h3>Tell a friend</h3>
     <p class="share-msg">A short note about the app—not this list, and none of your links—ready to send.</p>
     <div class="row-actions"><button class="chip" id="share-friend-go" type="button">Send a note</button></div>
+    <textarea class="link" id="share-note" rows="3" readonly hidden aria-label="The note, to select and copy" spellcheck="false"></textarea>
+  </section>
+  <section class="share-block keys" id="share-keys">
+    <div class="row-actions"><button class="chip" id="share-rotate" type="button">New keys</button></div>
+    <p class="fine" id="share-rotate-note">New keys: the old links stop working everywhere.</p>
   </section>
 </div></dialog>
 
@@ -375,7 +384,14 @@
   <p id="save-msg" class="save-msg">This link is your list's only key. Anyone holding it can open the list, and there is no spare.</p>
   <p id="save-migrated" class="save-msg" hidden>The old link is dead everywhere. Open this one on your other devices and add it to the Home Screen again.</p>
   <!-- 1.3: the lead depends on the device — Safari on a phone, the installed app, or a desktop -->
-  <div class="save-lead" id="save-lead-home" hidden><b>Add it to your Home Screen</b><span id="save-lead-home-how">Tap Share, then Add to Home Screen. The icon carries the link, so it opens straight to this list.</span></div>
+  <div class="save-lead" id="save-lead-home" hidden><b>Add it to your Home Screen</b>
+    <ol class="steps" id="save-steps" hidden>
+      <li>Tap Share <svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="M8.5 6.5 12 3l3.5 3.5"/><path d="M6 10v10h12V10"/></svg> (the square with the arrow). If you don't see it, tap <svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg> first.</li>
+      <li>Scroll down.</li>
+      <li>Add to Home Screen. The icon carries the link, so it opens straight to this list.</li>
+    </ol>
+    <span id="save-lead-home-how" hidden>Open the browser's menu, then Add to Home screen. The icon carries the link, so it opens straight to this list.</span>
+  </div>
   <div class="save-lead" id="save-lead-icon" hidden><b>Saved—this icon holds your link.</b><span>Copy it too, as a backup.</span></div>
   <div class="save-lead" id="save-lead-bm" hidden><b>Bookmark this page <kbd id="save-bm-key">⌘D</kbd></b><span>The bookmark carries the link. Copy it too, as a backup.</span></div>
   <input class="link" id="save-link" type="text" readonly aria-label="Your link" spellcheck="false">
@@ -412,6 +428,18 @@
   </div>
 </div></dialog>
 
+<!-- 1.4: a list's detail, opened from Lists: open it, rename it (a nickname when it is shared with this device), say whose it is, remove it -->
+<dialog class="panel sheet" id="p-list" aria-labelledby="p-list-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
+  <h2><span id="p-list-h">List</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <p class="fine" id="list-detail-sub"></p>
+  <div class="menu" id="list-detail-menu">
+    <button type="button" data-lact="open"><span class="lb">Open</span></button>
+    <button type="button" data-lact="rename"><span class="lb" id="list-detail-rename">Rename</span></button>
+    <button type="button" class="row-toggle" data-lact="origin" id="list-detail-origin" aria-pressed="false"><span class="lb" id="list-detail-origin-lb">It's mine after all<span class="sub" id="list-detail-origin-sub"></span></span><span class="sw" aria-hidden="true"></span></button>
+    <button type="button" data-lact="remove"><span class="lb">Remove from this device</span></button>
+  </div>
+</div></dialog>
 <dialog class="panel sheet" id="p-history" aria-labelledby="p-history-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
   <h2><span id="p-history-h">History</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
@@ -486,6 +514,15 @@
   <div class="row-actions" id="pick-actions" hidden></div>
 </div></dialog>
 
+<!-- 1.4: one question before a list this device does not hold opens from a link with no hint; not cancelable -->
+<dialog class="panel" id="whose" aria-labelledby="whose-h"><div class="body">
+  <h2><span id="whose-h">Whose list is this?</span></h2>
+  <p>Yours from another device, or one somebody sent you. Lists can change it later.</p>
+  <div class="menu" id="whose-menu">
+    <button type="button" data-whose="mine"><span class="lb">Mine, from another device</span></button>
+    <button type="button" data-whose="shared"><span class="lb">Someone else's</span></button>
+  </div>
+</div></dialog>
 <dialog class="panel" id="ask" aria-labelledby="ask-title" aria-describedby="ask-msg"><form method="dialog" class="body" id="ask-form">
   <h2 id="ask-h"><span id="ask-title"></span><button class="x" type="button" data-close aria-label="Close">×</button></h2>
   <p id="ask-msg"></p>

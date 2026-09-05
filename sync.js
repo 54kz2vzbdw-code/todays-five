@@ -7,6 +7,7 @@
 // A view ref has no token and never pushes. Polls carry the known rev so an idle list costs bytes.
 
 import { merge, normalize, canon } from "./model.js";
+import { BUILD } from "./version.js"; // 1.4: the realtime client a page loads later comes from its own build
 import * as C from "./crypto.js";
 
 /* ---------------- localStorage ---------------- */
@@ -82,7 +83,7 @@ async function makeSupabaseTransport(cfg) {
   let clientP = null;
   function client() {
     if (!clientP) {
-      clientP = import("./vendor/realtime.js").then(m => new m.RealtimeClient(base.replace(/^http/, "ws") + "/realtime/v1", {
+      clientP = import("./vendor/realtime.js?v=" + BUILD).then(m => new m.RealtimeClient(base.replace(/^http/, "ws") + "/realtime/v1", {
         params: { apikey: cfg.key },
         heartbeatIntervalMs: 30000
       })).catch(e => { clientP = null; throw e; });

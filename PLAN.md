@@ -794,3 +794,62 @@ Price's phone had the app open through the deploy; its first panel afterwards fe
 The fix: `<html data-build>` says the page's build, `panels.js` says the build its wiring expects, and on a mismatch `init` reloads the page once (remembered in `sessionStorage`, so never a loop); app.js holds the failure toast while the reload is on its way. The features test checks the build in four places now; the browser suite opens a panel on a page marked as another build and sees one reload, no toast, and no second reload afterwards.
 
 Run before the deploy: the seven Node suites (22, 24, 9, 13, 8, 20, 7 — the features test now checks the build in four places); the browser suite at both viewports, 101 tests with 100 passes and one failure in 1.2's crossfade timing check (a 400 ms sampling of the row colour mid-flip, untouched code) that passed twice on its own straight after; the real-backend suite was not re-run — the hour's creates were spent by the release's own run and live checks, and the hotfix touches no wire code since that run's six passes at 16:57. Lighthouse and the sizes were not re-run: the change is one attribute on `<html>`, a guard in `panels.js` and a test on the loader's toast. Live, build 61 at 17:47 (Pages served it on the second poll; the local transport, so nothing was created on the server): on both viewports a page marked as build 60 reloaded itself once on its first panel with no failure toast, remembered the reload, and opened Share with all three blocks; the same mismatch on a page that had already reloaded opened its panels with no second reload. A fresh load of the live site in the simulator's Safari opened Share with all three blocks and no errors. The record commit stamps build 62 and changes nothing else.
+
+---
+
+# Today's Five 1.4 — plan
+
+Mine and shared with me, a Share sheet by intent, a way back inside panels, iOS 26, and pages open across a deploy. Every earlier decision stands; the calls made here are in DECISIONS.md under "1.4 decisions". Nothing on the server changes; links, keys and the document shape are untouched (origin and nickname are device-local).
+
+## What changed, by surface
+
+| surface | 1.3 | 1.4 |
+|---|---|---|
+| A link with no hint on a device that does not hold the list | opens at once | one question first — Whose list is this? Mine, from another device · Someone else's — one tap, not cancelable; hinted links (`/mine`, `/shared`) skip it; view links ask |
+| The rail | the view-only pill | a Shared pill beside it for a list shared with this device; a shared list goes by its nickname |
+| Lists | one flat menu | My lists and Shared with me once there is something to group; › opens a list's detail (Open, Rename or Nickname, It's mine after all, Remove from this device) |
+| ⋯ | nine rows | the same; Delete everywhere hidden on a shared list |
+| Share | View link first, Private link last, Tell a friend | Open on my other device (Private link marked as mine, code then Copy) · Show it somewhere (View link) · Let someone edit (Private link marked as shared, under the warning, Copy only) · Tell a friend · New keys last, never on a shared list; the system sheet is called in the tap's own tick; the fallback shows the note |
+| Every panel | × only | ‹ Back on a sub-panel returns to its parent with scroll and values, × closes the stack, Escape goes back a level, one history entry per level, an edge swipe on the phone |
+| Save your link (phone) | Tap Share, then Add to Home Screen | three steps with glyphs: Tap Share (the square with the arrow) — if you don't see it, tap ⋯ first · Scroll down · Add to Home Screen |
+| Home Screen | "Five" under the icon | "Today's Five" |
+| A page open across a deploy | reloads once on its first panel | keeps loading its own build's modules from its own cache; reloads only when a module cannot be served, after flushing, and comes back to its view with the panel it asked for |
+| How it works | the links | plus Mine and shared with me, and the Share blocks |
+
+## Structure of the change
+
+- `model.js`: `parseHash` reads `/mine` and `/shared` (and matches the id as a prefix, per COMPATIBILITY.md §1), `hintLink`, `hashHasExtras`, `normalizeRegistry`.
+- `app.js`: the registry migrated on read; `pendingOrigin` and `askWhose`; `registerList` with an origin; the nickname in the rail; the Shared pill; the ⋯ row and the save nudges gated; the panel stack (`showPanel`, `goBack`, `popPanel`, `closeAll`, the history entries, the edge swipe); every lazy import pinned to `BUILD`; the reload path's flush and `tf/resume`.
+- `panels.js`: the Share sheet by intent with the synchronous share; Lists grouped with a detail sub-panel, nicknames, the origin switch; the openers for Back; the three-step save lead; How it works; `PANELS_BUILD` and the reload path.
+- `index.html`: the question, the pill, the four Share blocks and the keys block, the steps with inline SVG glyphs, a list's detail, `short_name`, `data-build`.
+- `sw.js`: a cache per build, `?v=<build>` answered from that build's cache, the previous generation kept.
+- `sound.js`, `sync.js`: their lazy modules pinned to the build.
+- `COMPATIBILITY.md` §6 rewritten; `whatsnew.json`, `CHANGELOG.md`, `README.md`; the Node, browser and screenshot suites.
+
+## Before and after
+
+__SHOTS_TABLE__
+
+## iOS 26 against 18.1
+
+Both runtimes ran the local build in their own Safari under `safaridriver` (the app's pointer handling ignores WebDriver taps, so the flow was driven with DOM clicks and checked in the DOM and in screenshots; `scratchpad/sim14.mjs`). iPhone 16 Pro on iOS 18.1 (Safari 18.1) and iPhone 17 Pro on iOS 26.5 (Safari 26.5).
+
+| item | iOS 18.1 | iOS 26.5 |
+|---|---|---|
+| The welcome and the demo lines | three live lines, no rail; a tap strikes with the knock and a burst, nothing stored | the same |
+| The viewport Safari leaves the page | 402 × 678 | 402 × 714 — the new chrome is shorter, so the page gets 36 px more; the safe-area insets read 0 inside the browser page on both (Safari keeps its own chrome clear) |
+| `theme-color` | the Light ink (#FAF8F4) on the welcome, the Dark ink (#1A1D21) after the flip, read from the meta as the app sets it | the same values; on 26 the tint is Safari's to apply behind its translucent chrome, and the screenshots show it |
+| The save sheet (Safari on a phone) | Add it to your Home Screen with the three steps and the two glyphs, Copy, I've saved it; no code, no link field | identical |
+| The Share sheet | Open on my other device (`/mine`) · Show it somewhere · Let someone edit (`/shared`) · Tell a friend · New keys; no codes on a phone; Share… present | identical |
+| Tell a friend | `navigator.share` was called inside the tap's own event (stubbed to record it) | identical |
+| The stack | Settings → Day theme shows ‹ Back with two history entries; Back lands on Settings at its scroll (120) with one entry; `history.back()` closes it | identical |
+| The sun/moon flip | Light → Dark with the tint following | identical |
+| One-thing mode | the ↻ beside the count, the Shake to shuffle? bar under the toast, not behind it | identical |
+| A view-only window's celebration | a second Safari window on the View link (own list: no question, view-only pill, no Shared pill) got the editor's check-off with a burst | `window.open` from the page produced no second window on 26.5 (blocked), so not repeated there; the browser suite covers it |
+| The Home Screen name | the manifest the boot script builds says name and short_name "Today's Five", the apple title too | identical |
+
+Not reached on either runtime, because nothing available could tap Safari's own chrome or a native sheet (the native simulator tool wants an `xcode-select` that needs a password, and screen control of the Simulator window was declined): the Share and ⋯ menus of the Compact, Bottom and Top layouts, the Add to Home Screen sheet and the name it prefills, the Home Screen label, the standalone launch and its `start_url`, the bottom edge under the standalone chrome, the motion prompt's Allow and a real shake. The wording of the three steps follows Apple's iOS 26 Safari layouts as documented (Compact keeps Share behind ⋯; Bottom and Top show the Share button), and the browser suite covers the sheet's variants and the standalone copy with mocks.
+
+## Verification results (1.4)
+
+__RESULTS_TABLE__

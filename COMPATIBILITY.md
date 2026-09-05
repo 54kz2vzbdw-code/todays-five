@@ -80,21 +80,31 @@ invariants, and the checklist to run before anything reaches `main`. Read this b
 - Anything the app writes to localStorage that another version might read (the registry, the
   theme cache) keeps its shape; new per-device settings are new keys inside `meta.device`.
 
-## 6. The service worker never forces a reload
+## 6. An open page keeps its own code; a reload is the last resort
 
-- The shell (HTML, JS, CSS) is network-first with a cache fallback, so a deploy lands on the next
-  open and never interrupts a list left on screen. Assets (fonts, icons, the vendored client) are
-  cache-first. The cache name is versioned (`tf-v<app version>`) and only the app's own `tf-*`
-  caches are reaped, because the origin is shared.
-- No `skipWaiting`-driven reload, no `postMessage` telling the page to refresh, no "update
-  available" banner. An old page and a new service worker must coexist until the page is next opened.
-- Every new module must be listed in the shell precache so an installed app works offline after
-  its first online open of the new version.
-- What "next open" means on iOS, observed on the v3 → v4 deploy: a tab Safari merely re-fronted still
-  ran the old code, and so did a tap on Safari's reload (the old worker's network-first fetch was
-  answered from Safari's HTTP cache); the first fresh navigation to the URL brought the new version,
-  intact list and what's-new toast included. A Home Screen app relaunched from its icon is a fresh
-  navigation. So: never promise a user that a refresh updates them; the next open does.
+- The shell (HTML, JS, CSS) is network-first with a cache fallback, so a deploy lands on the next open and never
+  interrupts a list left on screen. Assets (fonts, icons, the vendored client) are cache-first. The cache name is
+  per build (`tf-v<version>-b<build>`) and only the app's own `tf-*` caches are reaped, because the origin is shared.
+- Every module a page loads later — `panels.js` and `panels.css`, the sound packs, the QR maker, the exporter, the
+  realtime client — is asked for with the page's own build (`?v=<build>`), and the service worker answers from that
+  build's cache, so a page open across a deploy keeps loading its own code. The previous build's cache is kept for
+  exactly that; older generations are reaped on activation. Every new module must be listed in the shell precache
+  so an installed app works offline after its first online open of the new version, and so its build's cache can
+  answer for it later.
+- A reload is the last resort, only when a module truly cannot be served from its own build (a page two deploys old,
+  a cache the browser evicted): the page flushes what is pending (an edit in progress is committed, the sync engine
+  is given a moment), remembers its view and the panel that was asked for, reloads, and comes back to that view
+  with that panel open. Nothing else may reload a page: no `skipWaiting`-driven reload, no `postMessage` telling the
+  page to refresh, no "update available" banner. An old page and a new service worker coexist until the page is
+  next opened or a module forces the one reload above.
+- `<html data-build>` says which build a page's markup is and `panels.js` says which build it wires
+  (`PANELS_BUILD`); `test/features.test.js` keeps them in step with `version.js`. A mismatch is what triggers the
+  reload above, once per build (`sessionStorage`), never a loop.
+- What "next open" means on iOS, observed on the v3 → v4 deploy: a tab Safari merely re-fronted still ran the old
+  code, and so did a tap on Safari's reload (the old worker's network-first fetch was answered from Safari's HTTP
+  cache); the first fresh navigation to the URL brought the new version, intact list and what's-new toast included.
+  A Home Screen app relaunched from its icon is a fresh navigation. So: never promise a user that a refresh updates
+  them; the next open does — and, since 1.4, an open page's panels keep working until then.
 
 ## 7. Release checklist
 

@@ -755,16 +755,33 @@ export function exportMarkdown(doc, { today = localDate() } = {}) {
 
 /** Parse a location hash. `#/l/<W>` and `#/r/<R>` as ever; `#/l/<W>/add?text=…&section=…` adds lines
     (newlines make several). An old client matches only the prefix, so the id stays readable to it. */
+/** A list link's hash: the id and the mode, plus what follows the id — `/add?text=…` (v4) or a 1.4 origin hint,
+    `/mine` or `/shared` on a private link (view links carry none, so a hint on an `r` link is ignored). The id is
+    matched as a prefix: whatever a later version appends still opens the list here (COMPATIBILITY.md §1). */
 export function parseHash(hash) {
-  const m = String(hash || "").match(/^#\/(l|r)\/([0-9A-Za-z]{22,64})(\/add(?:\?(.*))?)?$/);
+  const m = String(hash || "").match(/^#\/(l|r)\/([0-9A-Za-z]{22,64})(?:\/([A-Za-z]*)(?:\?([^#]*))?)?/);
   if (!m) return null;
-  const out = { id: m[2], mode: m[1] === "r" ? "view" : "edit", add: null };
-  if (m[3]) {
+  const out = { id: m[2], mode: m[1] === "r" ? "view" : "edit", add: null, hint: null };
+  if (m[3] === "add") {
     const q = new URLSearchParams(m[4] || "");
     const text = (q.get("text") || "").split(/\r?\n/).map(t => t.trim().replace(/\s+/g, " ")).filter(Boolean).map(t => t.slice(0, TEXT_MAX));
     out.add = { text, section: (q.get("section") || "").trim().slice(0, 60) };
-  }
+  } else if ((m[3] === "mine" || m[3] === "shared") && out.mode === "edit") out.hint = m[3];
   return out;
+}
+/** A private link with an origin hint on the end (`/mine` from Open on my other device, `/shared` from Let someone edit). */
+export function hintLink(link, hint) { return hint === "mine" || hint === "shared" ? link + "/" + hint : link; }
+/** True when the hash carries anything after the id that the address bar should lose once handled. */
+export function hashHasExtras(hash) { return /^#\/(l|r)\/[0-9A-Za-z]{22,64}\/./.test(String(hash || "")); }
+
+/* ---------------- the registry (device-local) ---------------- */
+
+/** Migrate the list registry on read (COMPATIBILITY.md §5): every entry has an origin, `mine` unless it was recorded as
+    `shared`; a nickname is only ever set by hand, so nothing is added here. Entries are kept as they are otherwise. */
+export function normalizeRegistry(meta) {
+  if (!meta || !Array.isArray(meta.lists)) return meta;
+  for (const l of meta.lists) if (l && typeof l === "object" && l.origin !== "shared") l.origin = "mine";
+  return meta;
 }
 /** The personalised add URL for an edit link (text left for the caller to append). */
 export function addUrl(base, W) { return base + "#/l/" + W + "/add?text="; }

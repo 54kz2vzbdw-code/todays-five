@@ -1,7 +1,7 @@
 {
   "id": "./",
   "name": "Today's Five",
-  "short_name": "Five",
+  "short_name": "Today's Five",
   "description": "A short list built to be left open on screen all day.",
   "start_url": "./",
   "scope": "./",

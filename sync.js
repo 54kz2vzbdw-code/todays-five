@@ -187,11 +187,13 @@ function makeLocalTransport() {
         onMsg(d.payload);
       };
       if (bc) bc.addEventListener("message", h);
+      const bye = () => say("bye"); // a closed tab leaves at once, as a closed socket does on the real server
+      if (typeof window !== "undefined" && presence) window.addEventListener("pagehide", bye);
       setTimeout(() => { if (closed) return; onState(hook("rtfail") ? "channel_error" : "joined"); if (presence) { say("hello"); beat = setInterval(() => { say("here"); count(); }, 5000); } }, 0);
       return {
         alive: () => !hook("rtfail"),
         send(payload) { if (bc) bc.postMessage({ topic: id, payload }); },
-        close() { closed = true; clearInterval(beat); say("bye"); if (bc) bc.removeEventListener("message", h); }
+        close() { closed = true; clearInterval(beat); say("bye"); if (typeof window !== "undefined") window.removeEventListener("pagehide", bye); if (bc) bc.removeEventListener("message", h); }
       };
     }
   };

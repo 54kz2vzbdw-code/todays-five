@@ -191,9 +191,15 @@ function hashRef() {
 function takeAddFromHash() {
   const h = M.parseHash(location.hash);
   if (!h || !h.add) return;
-  if (h.mode === "view") { pendingAdd = null; setTimeout(() => toast("A view link can only watch. Open the edit link to add a line."), 600); }
+  if (h.mode === "view") { pendingAdd = null; notice("A view link can only watch. Open the edit link to add a line."); }
   else pendingAdd = h.add;
   history.replaceState(null, "", BASE + SEARCH + frag(h));
+}
+/** A toast that survives the reload iOS Safari needs when the list changes (it is shown once the list is painted). */
+function notice(msg) { try { sessionStorage.setItem("tf/notice", msg); } catch (e) { /* ignore */ } setTimeout(flushNotice, 600); }
+function flushNotice() {
+  let msg = null; try { msg = sessionStorage.getItem("tf/notice"); if (msg) sessionStorage.removeItem("tf/notice"); } catch (e) { /* ignore */ }
+  if (msg) toast(msg);
 }
 function boot() {
   takeAddFromHash();
@@ -353,6 +359,7 @@ async function openList(r) {
   if (rolled) sync.update(doc);
   if (entry && !entry.name && doc.name) entry.name = doc.name;
   if (local) applyPendingAdd();
+  flushNotice();
   if (mode === "edit" && entry.created && !entry.linkSaved) panels().then(p => p.showSaveLink({ migrated: !!entry.migrated }));
   else maybeTour();
   maybeWhatsNew();
@@ -1747,6 +1754,14 @@ window.__tf = () => ({ stats: { ...stats }, view, listId, mode: listMode, lookup
 function tourStep() { return window.__tfTourStep ? window.__tfTourStep() : 0; }
 // test-only controls, on the local transport: simulate what iOS does to the audio context
 if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneToday(); } }, presence: n => paintWho(n) };
+
+/* debug badge (?debug=1): the audio state machine, readable from a simulator screenshot */
+if (new URLSearchParams(SEARCH).get("debug") === "1") {
+  const b = document.createElement("div"); b.id = "dbg";
+  b.style.cssText = "position:fixed;left:8px;top:calc(8px + env(safe-area-inset-top,0px));z-index:99;font:12px/1.4 ui-monospace,Menlo,monospace;color:#0f0;background:rgba(0,0,0,.75);padding:4px 6px;border-radius:6px;pointer-events:none;white-space:pre";
+  document.body.appendChild(b);
+  setInterval(() => { const a = sound.state(); b.textContent = `audio ${a.state} pending=${a.pending} made=${a.made} packs=${a.packs}\nchecks=${stats.check} finish=${stats.finish} sync=${syncStatus}`; }, 250);
+}
 
 /* ---------------- service worker ---------------- */
 function registerSw() {

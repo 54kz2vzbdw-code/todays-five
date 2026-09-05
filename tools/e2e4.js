@@ -14,13 +14,22 @@ const { PNG } = require("pngjs");
 const BASE = process.env.BASE || "http://127.0.0.1:8790/";
 const browser = await chromium.launch({ channel: "chrome", headless: true, args: ["--autoplay-policy=no-user-gesture-required"] });
 let passed = 0, failed = 0; const failures = [];
-async function test(name, fn) { try { await fn(); passed++; console.log("ok -", name); } catch (e) { failed++; failures.push(name + ": " + (e.message || e).split("\n")[0]); console.log("FAIL -", name, "\n    ", (e.message || String(e)).split("\n")[0]); } }
+const ONLY = process.env.ONLY || ""; // run only the tests whose name contains this
+const open = new Set(); // contexts a failed test left behind are closed before the next test runs
+async function test(name, fn) {
+  if (ONLY && !name.includes(ONLY)) return;
+  try { await fn(); passed++; console.log("ok -", name); } catch (e) { failed++; failures.push(name + ": " + (e.message || e).split("\n")[0]); console.log("FAIL -", name, "\n    ", (e.message || String(e)).split("\n")[0]); if (process.env.DEBUG && e.stack) console.log("     " + e.stack.split("\n").filter(l => /e2e4/.test(l)).slice(0, 3).join("\n     ")); }
+  for (const c of open) { try { await c.close(); } catch (x) { /* already closed */ } }
+  open.clear();
+}
 const assert = { ok(v, m) { if (!v) throw new Error(m || "expected truthy"); }, equal(a, b, m) { if (a !== b) throw new Error((m || "") + " expected " + JSON.stringify(b) + " got " + JSON.stringify(a)); } };
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
 const VIEWPORTS = [["desktop 1440×900", { viewport: { width: 1440, height: 900 } }, false], ["phone 390×844", { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }, true]];
-async function fresh(opts, { url = BASE + "?transport=local", list = true } = {}) {
-  const ctx = await browser.newContext(opts);
+async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: shared = null } = {}) {
+  // a second "device" on the local transport is a second tab of the same context: the local server lives in localStorage
+  const ctx = shared || await browser.newContext(opts);
+  open.add(ctx);
   const page = await ctx.newPage(); page.setDefaultTimeout(6000);
   const errors = [], csp = [], thirdParty = [], consoleErrors = [];
   page.on("pageerror", e => errors.push(e.message));
@@ -33,8 +42,14 @@ async function fresh(opts, { url = BASE + "?transport=local", list = true } = {}
     await page.waitForSelector("#tour:not([hidden])"); await page.click("#tour-skip"); await wait(200);
   }
   const s = () => page.evaluate(() => window.__tf());
-  const press = async sel => { const h = await page.$(sel); if (!h) throw new Error("no " + sel); if (opts.hasTouch) await h.tap(); else { await h.hover(); await h.click(); } };
-  return { ctx, page, errors, csp, thirdParty, consoleErrors, s, press, close: () => ctx.close() };
+  const press = async sel => {
+    await page.bringToFront();
+    // the one-time iOS install hint sits over the footer; a person would dismiss it, so does the suite
+    const hint = await page.$("#install:not([hidden])"); if (hint) { await page.click("#install-x"); await wait(150); }
+    const h = await page.$(sel); if (!h) throw new Error("no " + sel); if (opts.hasTouch) await h.tap(); else { await h.hover(); await h.click(); }
+  };
+  const front = () => page.bringToFront();
+  return { ctx, page, errors, csp, thirdParty, consoleErrors, s, press, front, close: () => shared ? page.close() : ctx.close() };
 }
 
 for (const [label, opts, touch] of VIEWPORTS) {
@@ -43,7 +58,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": a new list — save sheet, five-mark tour, five lines, no console noise", async () => {
     const t = await fresh(opts);
     assert.equal(await t.page.locator("#list .row").count(), 5);
-    assert.equal(await t.page.locator("#tour-dots i").count(), 0); // tour closed
+    assert.ok(await t.page.locator("#tour").isHidden(), "tour closed");
     const st = await t.s(); assert.equal(st.tourDone, true); assert.ok(st.seenVersion === "4.0.0", "first run marks the version seen silently: " + st.seenVersion);
     assert.ok(await t.page.locator("#whatsnew").isHidden(), "no what's-new on first run");
     assert.equal(t.errors.length, 0, "page errors: " + t.errors); assert.equal(t.csp.length, 0, "csp: " + t.csp); assert.equal(t.thirdParty.length, 0, "third party: " + t.thirdParty);
@@ -133,7 +148,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const vis = await t.page.$$eval("#list .row", rows => rows.filter(r => getComputedStyle(r).display !== "none").length);
     assert.equal(vis, 1, "one visible row");
     const size = await t.page.$eval("#list .row.one-now", r => parseFloat(getComputedStyle(r).fontSize));
-    assert.ok(size > 40, "enormous: " + size);
+    assert.ok(size > (touch ? 44 : 100), "enormous: " + size);
     const first = await t.page.getAttribute("#list .row.one-now", "data-id");
     await t.press("#list .row.one-now .check"); await wait(900);
     const second = await t.page.getAttribute("#list .row.one-now", "data-id");
@@ -251,8 +266,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": view-only link celebrates remote check-offs; an edit link only with the setting", async () => {
     const editor = await fresh(opts);
     const { R, listId } = await editor.s();
-    await editor.page.waitForFunction(() => window.__tf().status === "synced");
-    const viewer = await fresh(opts, { url: BASE + "?transport=local#/r/" + R, list: false });
+    await editor.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
+    const viewer = await fresh(opts, { url: BASE + "?transport=local#/r/" + R, list: false, ctx: editor.ctx });
     await viewer.page.waitForSelector("#list .row"); await wait(500);
     await viewer.page.evaluate(() => document.dispatchEvent(new PointerEvent("pointerdown"))); // primes the audio context like a first tap would
     const before = (await viewer.s()).stats;
@@ -261,22 +276,22 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.ok(after.check > before.check, "viewer played the check: " + JSON.stringify(after));
     assert.ok(after.burst > before.burst, "viewer burst confetti");
     // finish the rest: the viewer gets the finale
-    for (let i = 2; i <= 5; i++) { await editor.press(`#list .row:nth-child(${i}) .check`); await wait(700); }
+    for (let i = 2; i <= 5; i++) { await editor.press("#list .row:not(.done) .check"); await wait(700); }
     await wait(1800);
     assert.ok((await viewer.s()).stats.finish >= 1, "viewer finale");
     assert.equal(viewer.errors.length, 0, viewer.errors.join("; "));
     // a second editor (edit link) stays quiet by default, and celebrates with the setting on
-    const other = await fresh(opts, { url: BASE + "?transport=local#/l/" + listId, list: false });
-    await other.page.waitForSelector("#list .row"); await other.page.waitForFunction(() => window.__tf().status === "synced");
+    const other = await fresh(opts, { url: BASE + "?transport=local#/l/" + listId, list: false, ctx: editor.ctx });
+    await other.front(); await other.page.waitForSelector("#list .row"); await other.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
     await editor.press("#again"); await wait(1200);
     const q0 = (await other.s()).stats;
     await editor.press("#list .row:first-child .check"); await wait(1500);
     assert.equal((await other.s()).stats.check, q0.check, "edit link is quiet by default");
     await other.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device.celebrateRemote = true; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
-    await other.page.reload(); await other.page.waitForSelector("#list .row"); await other.page.waitForFunction(() => window.__tf().status === "synced");
+    await other.front(); await other.page.reload(); await other.page.waitForSelector("#list .row"); await other.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
     await other.page.evaluate(() => document.dispatchEvent(new PointerEvent("pointerdown")));
     const q1 = (await other.s()).stats;
-    await editor.press("#list .row:nth-child(2) .check"); await wait(1500);
+    await editor.press("#list .row:not(.done) .check"); await wait(1500);
     assert.ok((await other.s()).stats.check > q1.check, "celebrates with the setting on");
     await viewer.close(); await other.close(); await editor.close();
   });
@@ -284,22 +299,32 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": presence dots between two tabs, capped at five, off when the device says so", async () => {
     const a = await fresh(opts);
     const { listId } = await a.s();
-    await a.page.waitForFunction(() => window.__tf().status === "synced");
-    const b = await fresh(opts, { url: BASE + "?transport=local#/l/" + listId, list: false });
+    await a.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
+    const b = await fresh(opts, { url: BASE + "?transport=local#/l/" + listId, list: false, ctx: a.ctx });
     await b.page.waitForSelector("#list .row");
-    await a.page.waitForFunction(() => window.__tf().who === 1, null, { timeout: 8000 });
-    await b.page.waitForFunction(() => window.__tf().who === 1, null, { timeout: 8000 });
+    if (process.env.DEBUG) {
+      await wait(1500);
+      const tryWait = async (label, fn) => { try { await fn(); console.log("    debug", label, "ok"); } catch (e) { console.log("    debug", label, "FAILED:", e.message.split("\n")[0]); } };
+      await tryWait("string predicate", () => a.page.waitForFunction("window.__tf().who === 1", null, { timeout: 2000 }));
+      await tryWait("fn predicate raf", () => a.page.waitForFunction(() => window.__tf().who === 1, null, { timeout: 2000 }));
+      await tryWait("fn predicate poll", () => a.page.waitForFunction(() => window.__tf().who === 1, null, { timeout: 2000, polling: 200 }));
+      await tryWait("fn true", () => a.page.waitForFunction(() => true, null, { timeout: 2000 }));
+      await tryWait("fn __tf exists", () => a.page.waitForFunction(() => typeof window.__tf, null, { timeout: 2000 }));
+      console.log("    debug typeof in wff:", await a.page.evaluate(() => typeof window.__tf), "who via evaluate:", await a.page.evaluate(() => window.__tf().who));
+    }
+    await a.page.waitForFunction(() => window.__tf().who === 1, null, { timeout: 8000, polling: 200 });
+    await b.page.waitForFunction(() => window.__tf().who === 1, null, { timeout: 8000, polling: 200 });
     assert.equal(await a.page.locator("#who .dots i.on").count(), 1);
     assert.ok(/1 other device/.test(await a.page.getAttribute("#who", "title")));
     await a.page.evaluate(() => window.__tfTest.presence(7)); await wait(300);
     assert.equal(await a.page.locator("#who .dots i").count(), 5); assert.equal(await a.page.textContent("#who .plus"), "+2");
     await b.close(); 
-    await a.page.waitForFunction(() => window.__tf().who === 0, null, { timeout: 8000 });
+    await a.page.waitForFunction(() => window.__tf().who === 0, null, { timeout: 8000, polling: 200 });
     await wait(600); assert.ok(await a.page.locator("#who").isHidden(), "dots fade out");
     // off: neither shows nor broadcasts
     await a.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device.whoOff = true; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
-    await a.page.reload(); await a.page.waitForSelector("#list .row"); await a.page.waitForFunction(() => window.__tf().status === "synced");
-    const c = await fresh(opts, { url: BASE + "?transport=local#/l/" + listId, list: false });
+    await a.front(); await a.page.reload(); await a.page.waitForSelector("#list .row"); await a.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
+    const c = await fresh(opts, { url: BASE + "?transport=local#/l/" + listId, list: false, ctx: a.ctx });
     await c.page.waitForSelector("#list .row"); await wait(2500);
     assert.equal((await c.s()).who, 0, "the opted-out tab is invisible");
     assert.equal((await a.s()).who, 0); assert.equal((await a.s()).cur.presence, false);
@@ -309,7 +334,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": every sound pack plays check, uncheck and finale without console errors; the theme's pick and the override", async () => {
     const t = await fresh(opts);
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
-    await t.page.waitForFunction(() => window.__tf().audio.packs === true, null, { timeout: 5000 });
+    await t.page.waitForFunction(() => window.__tf().audio.packs === true, null, { timeout: 5000, polling: 200 }, null, { polling: 200 });
     for (const pack of ["knock", "bell", "blip", "typewriter", "marble", "pop"]) {
       await t.page.selectOption("#set-pack", pack); await wait(150);
       const ok = await t.page.evaluate(() => { const s = window.__tf(); return s.audio.state === "running"; });
@@ -328,7 +353,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": audio recovers — a suspended context resumes on the next tap, a dead one is replaced", async () => {
     const t = await fresh(opts);
     await t.press("#list .row:first-child .check"); await wait(600);
-    await t.page.waitForFunction(() => window.__tf().audio.state === "running");
+    await t.page.waitForFunction(() => window.__tf().audio.state === "running", null, { polling: 200 });
     await t.page.evaluate(() => window.__tfTest.suspendAudio()); await wait(200);
     assert.equal((await t.s()).audio.state, "suspended", "suspended like a background");
     await t.press("#list .row:nth-child(2) .check"); await wait(600);
@@ -378,7 +403,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const t = await fresh(opts);
     await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device.review = true; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
     await t.page.reload(); await t.page.waitForSelector("#list .row");
-    for (let i = 1; i <= 5; i++) { await t.press(`#list .row:nth-child(${i}) .check`); await wait(650); }
+    for (let i = 1; i <= 5; i++) { await t.press("#list .row:not(.done) .check"); await wait(650); }
     await wait(1200);
     assert.ok(await t.page.locator("#review").isVisible(), "review card");
     assert.ok(/streak/i.test(await t.page.textContent("#review")));
@@ -392,7 +417,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": remove from this device hides the list here only; Lists → Removed restores it", async () => {
     const t = await fresh(opts);
     const { listId, lookupId } = await t.s();
-    await t.page.waitForFunction(() => window.__tf().status === "synced");
+    await t.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
     await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]");
     assert.equal((await t.page.textContent("#l-archive")).trim(), "Remove from this device");
     await t.page.click("#l-archive"); await wait(600);
@@ -438,7 +463,9 @@ for (const [label, opts, touch] of VIEWPORTS) {
 
   await test(label + ": no page errors, CSP violations or third-party requests across a full session", async () => {
     const t = await fresh(opts);
-    await t.press("#v-all"); await t.press("#v-today"); await t.press("#theme"); await t.page.waitForSelector("#p-theme[open]"); await t.page.click(".swatch:nth-child(4)"); await t.page.keyboard.press("Escape");
+    await t.press("#v-all"); await t.press("#v-today");
+    if (touch) { await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="theme"]'); } else await t.press("#theme");
+    await t.page.waitForSelector("#p-theme[open]"); await t.page.click(".swatch:nth-child(4)"); await t.page.keyboard.press("Escape");
     await t.press("#more"); await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await t.page.click("#share-tab-view"); await wait(300); await t.page.keyboard.press("Escape");
     await wait(300);
     assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0, t.csp.join("; ")); assert.equal(t.thirdParty.length, 0, t.thirdParty.join("; "));

@@ -720,7 +720,7 @@ body.page{overflow:auto;height:auto;min-height:100%}
 /* one-thing mode: the top undone line, enormous; the rest wait their turn */
 body.one #list{justify-content:center}
 body.one #list .row:not(.one-now){display:none}
-body.one #list .row.one-now{font-size:clamp(2rem,min(9vw,14vh),8rem);padding:.3em .3em}
+body.one #list .row.one-now{font-size:clamp(2.2rem,min(13vw,18vh),8rem);padding:.3em .3em}
 body.one #list .row.one-now .tools{display:none}
 body.one #addtoday{display:none}
 body.one #list .row.one-now .cap{display:none}

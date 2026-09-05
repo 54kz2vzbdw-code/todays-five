@@ -1,5 +1,7 @@
 # Today's Five
 
+> Other people use this. Before changing anything, read [COMPATIBILITY.md](COMPATIBILITY.md): the invariants (links, key derivation, document shape, server contract, local storage, service worker) and the release checklist every change must pass.
+
 A short list built to be left open on screen all day, on any device, behind a link that is also the key.
 
 Live: https://54kz2vzbdw-code.github.io/todays-five/

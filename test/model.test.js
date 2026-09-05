@@ -81,7 +81,8 @@ test("merge: commutative, associative, idempotent (fuzz)", () => {
 });
 
 test("merge: two offline devices converge with no loss and no duplicates", () => {
-  const base = seedDoc("L", 1000);
+  const base = seedDoc("L", 1000); // five lines: the three seed lines and two more, so the fourth exists to reorder
+  for (const t of ["Four", "Five"]) base.items["x" + t] = { id: "x" + t, sectionId: "", text: t, note: "", done: false, doneAt: 0, today: true, order: 9000 + t.length, todayOrder: 9000 + t.length, updatedAt: 1000 };
   const ids = Object.keys(base.items);
   const mac = normalize(base), phone = normalize(base);
   // Mac: checks item 0, edits item 1, deletes item 2
@@ -95,7 +96,7 @@ test("merge: two offline devices converge with no loss and no duplicates", () =>
   const m1 = merge(mac, phone), m2 = merge(phone, mac);
   assert.equal(canon(m1), canon(m2));
   const live = todayItems(m1);
-  assert.equal(live.length, 5, "5 live items: 4 originals minus 1 deleted plus 1 new");
+  assert.equal(live.length, 5, "5 live items: 5 originals minus 1 deleted plus 1 new");
   assert.equal(m1.items[ids[0]].done, true, "mac's later check wins over phone's earlier text edit");
   assert.equal(m1.items[ids[1]].text, "edited on mac");
   assert.equal(m1.items[ids[2]].deleted, true);
@@ -181,9 +182,16 @@ test("migrateV1 keeps text, done state, and done order; everything is Today", ()
   assert.equal(Object.keys(d.items).length, 3);
 });
 
-test("seedDoc: five today lines", () => {
+test("seedDoc: three today lines that work as the welcome's live list, 32 characters or fewer, the payoff last", () => {
   const d = seedDoc("L");
-  assert.equal(todayItems(d).length, 5);
+  assert.equal(todayItems(d).length, 3);
+  assert.deepEqual(SEED_LINES, ["Tap or click to cross this off", "Add a line of your own", "Cross off all three and see"]);
+  for (const l of SEED_LINES) assert.ok(l.length <= 32, l);
+  assert.match(SEED_LINES[2], /all three/, "the payoff names the count");
+  // kept as a real list: the same lines and marks under a real id, nothing else changes
+  const played = seedDoc(""); const ids = todayItems(played).map(i => i.id); played.items[ids[0]].done = true; played.items[ids[0]].doneAt = 5;
+  const kept = normalize(played, "NewList0000000000000000");
+  assert.equal(kept.id, "NewList0000000000000000"); assert.equal(todayItems(kept).length, 3); assert.equal(kept.items[ids[0]].done, true); assert.equal(kept.items[ids[0]].text, SEED_LINES[0]);
 });
 
 test("streak counts consecutive days back from today or yesterday", () => {
@@ -239,12 +247,12 @@ test("reorderPlan: new rows and removed rows, and random permutations always lan
   }
 });
 
-test("seed: five Today lines that teach the basics without naming keys", () => {
-  assert.equal(SEED_LINES.length, 5);
+test("seed: three Today lines that teach the basics without naming keys (1.3: they are the welcome's live list)", () => {
+  assert.equal(SEED_LINES.length, 3);
   assert.ok(SEED_LINES[0].includes("Tap or click"));
-  assert.ok(SEED_LINES.some(l => /Everything/.test(l)), "sends you to Everything");
-  assert.ok(SEED_LINES.some(l => /link/.test(l)), "says to save the link");
-  assert.ok(SEED_LINES.every(l => l.length <= 32), "32 characters or fewer: all five fit without scrolling on a phone and a laptop"); assert.match(SEED_LINES[4], /all five/, "the payoff line is last");
+  assert.ok(/your own/.test(SEED_LINES[1]), "asks for a line of your own");
+  assert.ok(/all three/.test(SEED_LINES[2]), "ends on the payoff");
+  assert.ok(!SEED_LINES.some(l => /\b[A-Z]\b/.test(l)), "no keys named");
 });
 
 console.log(`\n${passed} model tests passed`);

@@ -330,3 +330,55 @@ Calls made where the 1.2 brief left things open. The design is in PLAN.md, "Toda
 - **The suites' contexts emulate a dark system** unless a test says otherwise, and the screenshot tool does the same, so a fresh device in the suite starts on Dark as it always did and the after set is comparable with the before set; the 1.2 tests emulate both schemes where the switch is the point. The schedule is tested with Playwright's clock (`page.clock.install` and `fastForward`), the system switch with `emulateMedia`.
 - **Node, Playwright and Chrome are the ones 1.1 used** (the Codex runtime cache's Node 24 with Playwright 1.62, the installed Chrome 152); Lighthouse 12 was copied from the previous session's scratchpad rather than downloaded. The earlier sessions' dev server was still listening on 8790 (serving the 1.0 clone), so this round's working copy ran on 8791 and an untouched clone of `main` on 8792 as the 1.1 baseline for the browser suite and Lighthouse.
 - **Before/after screenshots** are `shots/1.2/{before,after}` at both viewports, the before set taken from the untouched code before the first change; the after set adds the flip (mid-crossfade and landed), Appearance and the picker with a partner on offer.
+
+---
+
+# 1.3 decisions
+
+Calls made where the 1.3 brief left things open. The design is in PLAN.md, "Today's Five 1.3 — plan"; the rules every change must keep are in COMPATIBILITY.md.
+
+## The card a texted link shows
+
+- **The tags are static HTML and nothing else.** Previewers fetch the page and read the head; they run no script, so the tags sit in `index.html` and `about.html` as plain metas with absolute URLs (`og:url`, `og:image`, the canonical link). The description is one sentence in Price's voice, and the image alt names what the card shows. `og:type`, the image's width and height and an alt were added beside the five the brief named: they cost nothing and stop some previewers guessing.
+- **The card is the Today screen, staged.** `tools/og.html` is a small standalone page that borrows the app's stylesheet for the fonts and paints the Dark tokens by hand: a rail, four lines in the row type with one crossed off, the title and one line of copy at the foot. `tools/og.mjs` renders it at 1200×630 with the installed Chrome and quantises it with sharp (34 KB, against a 150 KB ceiling). The lines on it are made up on purpose (a bank call, a walk) so nobody reads the seed lines as the app's idea of a day. It is not in `sw.js`'s shell list.
+- **A list link previews as the app, not the list.** Fragments never reach a server, so a `#/l/…` link shows the same card as the bare URL; that is right, since the card must never hint at a list's contents.
+
+## The first minute
+
+- **The welcome is the Today renderer with a local document.** `showWelcome` sets `doc` to `seedDoc("")` (no id, no secret), flags `demo`, shows `#welcome` (the title and one sentence) above `#today` and `#demo-foot` (Keep, Skip, Paste, the About link) below it, ordered by CSS. Every tap goes through `toggle`, every add through `newItem`; `afterChange` skips storage while `demo` is on, so nothing is written anywhere and nothing reaches the server. Everything else the renderer does (the strike, the knock, the burst, the finale's volley) comes for free, which is what "reuse the Today renderer" was for.
+- **Keep is Skip with a reason.** Both hand the same local document to the ordinary create path (`normalize` under a fresh id, `createList`, `switchTo`), so a person who played and then tapped Skip keeps what they did; the seed lines are the three the welcome shows, so a list started with Skip is the untouched demo. Keep appears once the person has made the list theirs — a line of their own (any live line whose text is not a seed line), or all three crossed off — and stays; Skip and Paste are always there as quiet links.
+- **Three seed lines, not five.** The welcome has a title and a sentence above the list and three links below it, and all of it must fit a phone without scrolling; three lines teach a tap, a line of your own and the finale, which is what the demo is for. Everything, notes, the star and the rest are still taught by the hints on the real list.
+- **The demo is Today, whole, and nothing else.** `A`, `O`, `/` and `-` do nothing on the welcome; the hints, the install hint and the minute tick's rollover stay off; the line menu works (it is part of a line) and whatever it does travels with Keep.
+- **The paste form waits behind its link**, as the old welcome's did behind its button, so the welcome reads as a list first.
+
+## Save your link
+
+- **Saved means copied or confirmed.** `linkSaved` turns true on Copy and on I've saved it, and on nothing else; closing the sheet any other way leaves ⋯ carrying a Save your link row with a dot and the Share sheet repeating the key line with a chip. The row is a temporary tenth row: the brief's nine-row ceiling is about what lives in ⋯ for good, and this one leaves the moment the link is saved.
+- **Grandfathering keys on the what's-new toast.** A device sees the 1.3 toast exactly once, on its first open after the update, and that is the moment every list it holds with `linkSaved: false` is marked saved. The obvious alternative — any returning device — was wrong: the reload iOS Safari does right after a fresh device's first list is made makes that device look returning, and the smoke test caught the new list being grandfathered on the spot.
+- **The device decides the lead.** Safari on a phone (touch, not standalone) leads with the two Home Screen steps, worded for iOS and for other phones' browser menus, then Copy, no QR and no link field; the installed app says the icon holds the link with Copy as a backup; a desktop leads with Bookmark this page and the platform's shortcut, shows the link the bookmark holds, then Copy, then the QR behind an "Open it on your phone" expander. The native Share… button left the sheet: the brief listed what each variant holds, and one fewer choice is the point.
+- **New keys shows the save sheet, not the Share sheet.** The new Private link is a new key that wants saving like a first one, so the rotated list is registered unsaved and marked `migrated`, and the sheet opens as "Your link changed" with a line about the old link being dead everywhere. On iOS Safari the reload happens first and the sheet follows it, so the `reopenShare` hop is gone.
+- **The word encrypted stays off the welcome and the save sheet**; How it works and About keep it.
+
+## Tell a friend, and the names
+
+- **The note is about the app and carries the app's own address**, `A.BASE` (the origin and path the app runs at, never a fragment), handed to the system share sheet as `text` plus `url` so messaging apps compose the link properly; without a share sheet the note and the URL land on the clipboard on two lines. It sits in its own block at the bottom of the Share sheet, under a rule, after the two link blocks.
+- **The View link is the sheet's default and the first Copy.** The Private link block is last, under a warning line in the danger colour, with its own Copy and New keys; its copy is the key sentence and the one-line redirect to the View link. The View link keeps its name, "view only" beside it, and its description names both uses in one breath, with the check-offs line where the sheet has room. The QR is drawn for the View link on the desktop only: the desktop is where a code is useful (the phone or a TV's browser can scan it), and the phone's sheet has Copy and Share… in less space.
+- **The pill names the link on the desktop and keeps the state alone on the phone** ("View link · view only" against "View only"), because the phone's rail has no room for the name beside count · dot · views · sun/moon · ⋯.
+- **The names went everywhere they were due**: the Share sheet, the save sheet, How it works (Private link, View link with a Second screen example and a Let someone watch example of the same length, New keys), About, Settings › Advanced, the refusal toast for an add on a View link, the ⋯ Share row. "This link no longer works" never named a link and stands. Nothing about a URL changed.
+
+## Shuffle
+
+- **A shuffle is a pinned id, not a reorder.** `renderToday` in one-thing mode prefers `shuffledId` when that line is still undone and falls back to the top undone line; a check-off, a shuffled line going away, leaving the mode or opening another list clears it. Nothing in the document moves.
+- **Never the same line twice in a row**: the pick is random among the undone lines other than the one on screen; with one undone line the row wobbles and nothing changes. The shown line slides out over 160 ms and the next slides in; under reduced motion both are instant. The theme's soft tick plays (the same `sound.tick` a theme change uses), the iOS haptic fires through the hidden switch, and Android vibrates for 10 ms.
+- **The triggers are `S`, the ↻ beside the count (rendered only inside one-thing mode, so Today gains no control), and a shake.** `S` obeys the single-key-shortcuts switch and does nothing outside the mode.
+- **The shake is a delta between two samples**: the magnitude of `acceleration` (gravity excluded, with `accelerationIncludingGravity` as the fallback) compared with the previous sample's, over 15 m/s²; a walk moves a few m/s² between samples and never trips it. One shuffle a second, nothing while a panel is open or on the welcome.
+- **The permission hint is its own bar**, shaped like the install hint, because a hint with a button is not a mark (1.1's marks never have buttons). It shows the first time one-thing mode opens on a phone that has `requestPermission` (iOS), asks once and remembers either answer in `dev.shake`; × counts as declined, and declined means ↻ only. Android has no permission to ask for, so the listener starts silently. A device that said yes starts listening again on the next open when one-thing mode is on.
+
+## The changelog
+
+- **The headline is about the first minute** ("A better first minute."), with three items: the welcome you can try, the links named for what they do with the save sheet fitting the device, and shuffle. The card a texted link shows is not something a person does in the app, so it is not an item; the full record is in `CHANGELOG.md`.
+
+## Process
+
+- **The Simulator was driven from the outside.** The native simulator tool refused (it wants `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`, which needs a password), so the booted iPhone 16 Pro was driven with `simctl` (open a URL, screenshot) and, for the taps and the Shake menu, the Simulator app's own window through screen control, as the earlier rounds did.
+- **The browser suite emulates the three devices** with init scripts (`navigator.platform` iPhone, `navigator.standalone`), stubs `navigator.share` and the clipboard to read what was handed over, and fires `DeviceMotionEvent`s by hand for the shake, with `requestPermission` stubbed to grant or deny.

@@ -50,7 +50,7 @@ await test("a created list is pushed as an envelope; the server never holds plai
   const txt = JSON.stringify(row.doc);
   assert.ok(!txt.includes(W) && !txt.includes(ref.R) && !txt.includes("Tap or click"), "no secret or plaintext on the wire");
   const back = await C.open(ref.key, row.doc);
-  assert.equal(Object.keys(back.items).length, 5);
+  assert.equal(Object.keys(back.items).length, 3);
   assert.ok(!("id" in back), "the list secret is stripped before sealing (a viewer can decrypt)");
   await until(() => s.status === "synced");
   assert.equal(s.status, "synced"); assert.equal(s.current().rev, 1);
@@ -66,7 +66,7 @@ await test("view ref pulls and decrypts, never pushes, and local edits do not ma
   const s = S.createSync({ transport: srv, deviceId: "v1", onRemote: d => { remote = d; } });
   s.open(r, M.normalize({}, e.R), { rev: 0, dirty: false, created: false });
   assert.ok(await until(() => remote !== null));
-  assert.equal(Object.keys(remote.items).length, 5);
+  assert.equal(Object.keys(remote.items).length, 3);
   assert.equal(remote.id, e.R, "the view's local doc is keyed by the view secret");
   const d2 = M.normalize(remote, e.R); d2.items[Object.keys(d2.items)[0]].done = true; s.update(d2);
   await tick(400);
@@ -231,7 +231,7 @@ await test("delete everywhere, then undo: the row is removed and re-created unde
   const row = srv.rows.get(e.lookupId);
   assert.equal(row.rev, 1); assert.equal(row.token, e.token);
   assert.equal(Object.keys(await C.open(e.key, row.doc)).length > 0, true);
-  assert.equal(Object.keys((await C.open(e.key, row.doc)).items).length, 5, "the same five lines");
+  assert.equal(Object.keys((await C.open(e.key, row.doc)).items).length, 3, "the same three lines");
   s2.close();
 });
 

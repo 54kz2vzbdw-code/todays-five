@@ -56,6 +56,11 @@ const RETURNING = meta.lists.length > 0 || !!dev.tourDone;
 // what's new: a device that has never held a list is on its first run and sees nothing; anyone else sees the toast once per version
 const whatsNewPending = M.whatsNewDue({ seenVersion: dev.seenVersion, hasLists: RETURNING }, VERSION);
 if (!dev.seenVersion && !whatsNewPending) dev.seenVersion = VERSION;
+// 1.3: the save-your-link sheet only counts as done once the link is copied or confirmed, and ⋯ nags until then.
+// A device from before is grandfathered on its first open of 1.3 (the what's-new pending is that moment, and only that
+// moment: the reload iOS Safari does right after a fresh device's first list is made must not look like an update):
+// whatever it did with the old sheet counts as saved.
+if (whatsNewPending && !dev.savedGrandfathered) { for (const l of meta.lists) if (l && l.linkSaved === false) l.linkSaved = true; dev.savedGrandfathered = true; }
 // just-in-time hints (1.1), once per device. A device that held a list before 1.1 went through the tour, or simply
 // knows the app, and must see exactly one new thing on update (the what's-new toast): its hints count as seen.
 if (!dev.hints || typeof dev.hints !== "object") dev.hints = (dev.tourDone || meta.lists.some(l => !l.fresh)) ? { today: true, drag: true, menu: true } : {};
@@ -128,6 +133,9 @@ let reloading = false;
 let toastAction = null, reviewDismissed = false, whatsNewShown = false, rz = 0, settling = false, killing = false;
 let dragEndedAt = -1e9; // no drag has ended yet
 let panelsP = null, panelCssReady = false;
+let demo = false;              // the welcome's live list (1.3): a local document, no id, no secret, nothing on the server
+let shuffledId = null;         // one-thing mode's shuffled line (1.3): shown instead of the top undone line until it is crossed off
+let lastAcc = null, lastShake = 0, motionOn = false; // shake to shuffle
 /** The panels' stylesheet is not render-blocking: it is asked for a beat after load, so it never competes with the
     first paint for the connection, and every panel waits for it. */
 const panelCss = new Promise(res => {
@@ -242,7 +250,7 @@ function hashRef() {
 function takeAddFromHash() {
   const h = M.parseHash(location.hash);
   if (!h || !h.add) return;
-  if (h.mode === "view") { pendingAdd = null; notice("A view link can only watch. Open the edit link to add a line."); }
+  if (h.mode === "view") { pendingAdd = null; notice("A View link only shows the list. Open the Private link to add a line."); }
   else pendingAdd = h.add;
   history.replaceState(null, "", BASE + SEARCH + frag(h));
 }
@@ -335,6 +343,7 @@ async function openList(r) {
   undoStack = []; hideToast();
   setSearch("", { silent: true });
   const gen = ++openGen;
+  demo = false; shuffledId = null; $("#demo-foot").hidden = true; $("#w-keep").hidden = true;
   listId = r.id; listMode = mode; ref = null;
   meta.current = r.id; meta.currentMode = mode;
   const entry = registerList(r.id, "", mode);
@@ -416,25 +425,50 @@ async function openList(r) {
   maybeWhatsNew();
 }
 
+/** The welcome (1.3) is a live list: the title and one sentence, then three lines rendered by the Today renderer from
+    a local document that has no id, no secret and no server row, then Keep / Skip / Paste. A tap strikes, knocks and
+    throws confetti as on any list; adding a line or crossing off all three offers Keep, which turns the document
+    into a real list, lines and check marks included. No rail, no footer, no tour, no hints, no toast. */
 function showWelcome(msg) {
   if (sync) { flushQuick().then(() => { if (sync) { sync.close(); sync = null; } }); }
-  listId = null; doc = null; ref = null; undoStack = []; hideToast();
+  if (editing) cancelEdit(true);
+  if (drag) abortDrag();
+  listId = null; ref = null; undoStack = []; hideToast();
   meta.current = null; meta.currentMode = null; saveDevice();
+  listMode = "edit"; demo = true; shuffledId = null;
+  doc = M.seedDoc("");
   document.documentElement.dataset.mode = "edit";
-  document.body.classList.add("welcome"); // no rail, no footer: the title, three sentences, two buttons, one link
-  $("#today").hidden = true; $("#all").hidden = true; $("#welcome").hidden = false;
+  document.body.classList.add("welcome");
+  $("#all").hidden = true; $("#welcome").hidden = false; $("#demo-foot").hidden = false; $("#w-keep").hidden = true; $("#w-paste-form").hidden = true;
   $("#w-err").textContent = msg || "";
   $("#dot").hidden = true; // no list yet: nothing to report
   $("#ro").hidden = true;
   paintWho(0);
-  $("#count").innerHTML = "<b>0</b>/0<span class=\"sr-only\"> done</span>";
   $("#hint").innerHTML = "";
   $("#list-h1").textContent = "Today's Five";
-  $("#addtoday").hidden = true;
   $("#review").hidden = true;
   setOneThing(false, { silent: true, keep: true });
+  rows.clear(); $("#list").innerHTML = "";
+  wasAll = false;
+  setView("today", { force: true });
   paintListName();
   maybeWhatsNew();
+}
+/** The welcome's list wants keeping once the person has made it theirs: a line of their own, or all three crossed off. */
+function demoNudge() {
+  if (!demo || !doc) return;
+  const items = M.liveItems(doc);
+  const own = items.some(i => !M.SEED_LINES.includes(i.text) && i.text.trim());
+  if ((own || allDoneToday()) && $("#w-keep").hidden) { $("#w-keep").hidden = false; }
+}
+/** Keep this list: the same document under a real id, through the ordinary create path (the save sheet follows). */
+function keepDemo() {
+  if (!demo || !doc) return;
+  if (editing) commitEdit();
+  const id = M.newId();
+  const d = M.normalize(doc, id); d.updatedAt = M.now();
+  demo = false;
+  createList(d, id);
 }
 
 /* ---------------- migration of a v2 (plaintext) list ---------------- */
@@ -560,6 +594,7 @@ function clearAll() { for (const el of Array.from($("#all").children)) if (el.id
 
 function setView(v, { force } = {}) {
   if (!doc) return;
+  if (demo && v !== "today") return; // the welcome's list is Today only
   if (editing) commitEdit();
   if (drag) abortDrag();
   hideMark();
@@ -569,7 +604,7 @@ function setView(v, { force } = {}) {
   $("#v-all").setAttribute("aria-selected", v === "all" ? "true" : "false");
   $("#today").hidden = v !== "today";
   $("#all").hidden = v !== "all";
-  $("#welcome").hidden = true;
+  $("#welcome").hidden = !demo; // the welcome's title and sentence sit above the live list
   render({ animate: false });
   if (v === "all") hintToday();
 }
@@ -611,7 +646,7 @@ function makeRow(it) {
   li.addEventListener("dblclick", e => { if (!HOVER.matches) return; e.preventDefault(); startEdit(it.id); });
   li.addEventListener("pointerdown", e => { onPress(li, e); longPressStart(li, e); swipeStart(li, e); });
   li.addEventListener("contextmenu", e => { if (e.pointerType === "touch" || !HOVER.matches) e.preventDefault(); });
-  li.addEventListener("animationend", () => { li.classList.remove("kick"); li.classList.remove("arrive"); });
+  li.addEventListener("animationend", () => { li.classList.remove("kick"); li.classList.remove("arrive"); li.classList.remove("shuffle-in"); li.classList.remove("wobble"); });
   return li;
 }
 /** ⋯ pressed with a mouse: a drag once the pointer moves, otherwise the click that follows opens the menu. */
@@ -672,8 +707,10 @@ function renderToday({ animate, quiet }) {
   list.style.setProperty("--unit", n > 8 ? (41 / n) + "vh" : "");
   const keep = new Set();
   const relayout = [];
-  const one = !!dev.oneThing && listMode === "edit";
-  const first = one ? items.find(i => !i.done) : null;
+  const one = !!dev.oneThing && listMode === "edit" && !demo;
+  const undone = one ? items.filter(i => !i.done) : [];
+  if (shuffledId && !undone.some(i => i.id === shuffledId)) shuffledId = null; // crossed off, or gone: back to the top
+  const first = one ? (undone.find(i => i.id === shuffledId) || undone[0] || null) : null;
   for (const it of items) {
     keep.add(it.id);
     let li = rows.get(it.id), fresh = false;
@@ -932,9 +969,10 @@ function paintWho(n) {
 function afterChange({ animate = true, delay = 0 } = {}) {
   doc.updatedAt = M.now();
   if (sync) sync.update(doc);
-  else { const l = loadLocal(listId); saveLocal(listId, { doc, rev: l ? l.rev : 0, dirty: true, created: l ? l.created : true, mode: listMode }); }
+  else if (!demo) { const l = loadLocal(listId); saveLocal(listId, { doc, rev: l ? l.rev : 0, dirty: true, created: l ? l.created : true, mode: listMode }); } // the welcome's list lives nowhere but here
   if (delay) setTimeout(() => render({ animate }), delay); else render({ animate });
   paintListName();
+  demoNudge();
 }
 /** A remote document arrived (`prev` is the one it replaces). Quiet by default: no sound, no confetti, no kick; rows
     animate into place. A view link celebrates what the editors did; an edit link only when the setting says so. */
@@ -1576,10 +1614,14 @@ function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger =
   });
 }
 
-/* the ⋯ menu: Share · Theme · Sound · Full screen · How it works · Lists · Settings · About · Delete (nine rows is the ceiling) */
+/* the ⋯ menu: Share · Theme · Sound · Full screen · How it works · Lists · Settings · About · Delete (nine rows is the ceiling);
+   1.3: a Save your link row stands above them, with a dot, only until this device's list has its link saved */
 $("#more").addEventListener("click", () => { paintMenu(); showPanel("p-menu", { anchor: $("#more") }); });
+/** The registry entry of the open list when its link has not been saved yet (a list this device made). */
+function unsavedEntry() { const e = listId && meta.lists.find(l => l.id === listId); return e && e.created && e.linkSaved === false && listMode === "edit" ? e : null; }
 function paintMenu() {
-  $("#menu-share-lb").textContent = listMode === "view" ? "Share the view link" : (sheetUi() ? "Share this list" : "Share & open on phone");
+  $("#menu-save").hidden = !doc || !unsavedEntry();
+  $("#menu-share-lb").textContent = listMode === "view" ? "Share the View link" : "Share this list";
   $('#p-menu [data-act="share"] .k').hidden = sheetUi();
   $("#menu-theme-k").textContent = theme ? theme.name : "";
   paintMute();
@@ -1592,7 +1634,8 @@ $("#p-menu").addEventListener("click", e => {
   const act = b.dataset.act;
   if (act === "sound") { toggleMute(); return; } // a toggle row: the menu stays, the state flips
   closePanel();
-  if (act === "share") panels().then(p => p.openShare());
+  if (act === "save") panels().then(p => p.showSaveLink());
+  else if (act === "share") panels().then(p => p.openShare());
   else if (act === "theme") panels().then(p => p.openSettings()); // 1.2: Appearance (Day theme · Night theme · Switch) is the theme's home
   else if (act === "full") toggleFullscreen();
   else if (act === "help") panels().then(p => p.openHelp());
@@ -1634,12 +1677,13 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") { if (dev.wake && !wakeLock) requestWake(); sound.foreground(); tickDay(); }
 });
 if (dev.wake) requestWake();
+if (dev.oneThing && dev.shake === "allowed") startMotion(); // a phone that said yes keeps listening from the next open
 
 /* rollover + date + the theme schedule, once a minute */
 function tickDay() {
   paintDate();
   tickTheme();
-  if (!doc || listMode !== "edit") return;
+  if (!doc || listMode !== "edit" || demo) return;
   const r = M.rollover(doc);
   if (r.doc !== doc) { if (drag) abortDrag(); doc = r.doc; afterChange({ animate: true }); wasAll = allDoneToday(); }
 }
@@ -1716,7 +1760,8 @@ function switchTo(r, { paste = false } = {}) {
   openList(r);
 }
 $("#listname").addEventListener("click", () => panels().then(p => p.openLists()));
-$("#w-new").addEventListener("click", () => { const id = M.newId(); createList(M.seedDoc(id), id); });
+$("#w-keep").addEventListener("click", keepDemo);
+$("#w-skip").addEventListener("click", keepDemo); // Skip is Keep without the play: the same three lines, as they stand
 $("#w-paste-show").addEventListener("click", () => { $("#w-paste-form").hidden = false; $("#w-paste").focus(); });
 $("#w-paste-form").addEventListener("submit", e => {
   e.preventDefault();
@@ -1729,11 +1774,64 @@ $("#w-paste-form").addEventListener("submit", e => {
 /** Only the top undone Today line, enormous. `O` or the count toggles it; the finale ends it. Remembered per device. */
 function setOneThing(on, { silent = false, keep = false } = {}) {
   if (!keep) { dev.oneThing = !!on; saveDevice(); }
-  document.body.classList.toggle("one", !!on && !!doc && listMode === "edit");
+  shuffledId = null;
+  document.body.classList.toggle("one", !!on && !!doc && listMode === "edit" && !demo);
   if (doc) { if (editing) commitEdit(); if (view !== "today" && on) setView("today"); else render({ animate: false }); }
   if (!silent) toast(on ? "One thing at a time. O or the count brings the list back." : "The whole list");
+  if (on && doc && !demo) shakeReady();
 }
-$("#count").addEventListener("click", () => { if (!doc || listMode !== "edit") return; setOneThing(!dev.oneThing); });
+$("#count").addEventListener("click", () => { if (!doc || listMode !== "edit" || demo) return; setOneThing(!dev.oneThing); });
+
+/* ---------------- shuffle (1.3): a different undone line in one-thing mode ----------------
+   Never the same line twice in a row, never a reorder: the shown line holds until it is crossed off or shuffled again,
+   and a check-off puts the top undone line back. Triggers: S, the ↻ beside the count, a shake of the phone. */
+function shuffle() {
+  if (!doc || listMode !== "edit" || !dev.oneThing || demo || openPanel || editing || drag) return;
+  const undone = todayList().filter(i => !i.done);
+  const cur = $("#list .row.one-now");
+  if (undone.length <= 1) { if (cur) { cur.classList.remove("wobble"); void cur.offsetWidth; cur.classList.add("wobble"); } return; } // one left: a small wobble, nothing changes
+  const curId = cur ? cur.dataset.id : null;
+  const pool = undone.filter(i => i.id !== curId);
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  const land = () => {
+    shuffledId = pick.id;
+    render({ animate: false });
+    const next = $("#list .row.one-now");
+    if (next && !RM.matches) { next.classList.remove("shuffle-in"); void next.offsetWidth; next.classList.add("shuffle-in"); }
+  };
+  if (cur && !RM.matches) { cur.classList.add("shuffle-out"); setTimeout(() => { cur.classList.remove("shuffle-out"); land(); }, 160); } else land();
+  sound.tick();
+  haptic();
+  try { if (navigator.vibrate) navigator.vibrate(10); } catch (e) { /* ignore */ }
+}
+$("#shuffle").addEventListener("click", shuffle);
+/** Shake to shuffle: DeviceMotion, a delta of more than 15 m/s² between two samples, one shuffle a second, nothing while a
+    panel is open. iOS asks for permission from a gesture: the first time one-thing mode opens on a phone, one hint with Allow,
+    asked once and remembered either way (declined means ↻ only). Android needs no permission and listens straight away. */
+function onMotion(e) {
+  const a = (e.acceleration && e.acceleration.x !== null && e.acceleration.x !== undefined) ? e.acceleration : e.accelerationIncludingGravity;
+  if (!a) return;
+  const mag = Math.hypot(a.x || 0, a.y || 0, a.z || 0);
+  if (lastAcc !== null && Math.abs(mag - lastAcc) > 15 && performance.now() - lastShake > 1000 && dev.oneThing && !openPanel && doc && listMode === "edit" && !demo) { lastShake = performance.now(); shuffle(); }
+  lastAcc = mag;
+}
+function startMotion() { if (motionOn || typeof DeviceMotionEvent === "undefined") return; motionOn = true; addEventListener("devicemotion", onMotion); }
+function shakeReady() {
+  if (!touchUi() || typeof DeviceMotionEvent === "undefined") return;
+  const asks = typeof DeviceMotionEvent.requestPermission === "function";
+  if (dev.shake === "allowed") { startMotion(); return; }
+  if (dev.shake === "declined") return;
+  if (!asks) { dev.shake = "allowed"; saveDevice(); startMotion(); return; } // Android: no permission to ask for
+  if (!openPanel) $("#shake-ask").hidden = false; // asked once, remembered either way
+}
+$("#shake-allow").addEventListener("click", async () => {
+  $("#shake-ask").hidden = true;
+  let r = "granted";
+  try { r = await DeviceMotionEvent.requestPermission(); } catch (e) { r = "denied"; }
+  dev.shake = r === "granted" ? "allowed" : "declined"; saveDevice();
+  if (dev.shake === "allowed") { startMotion(); toast("Shake the phone for a different line"); }
+});
+$("#shake-x").addEventListener("click", () => { $("#shake-ask").hidden = true; dev.shake = "declined"; saveDevice(); });
 function setSearch(q, { silent = false } = {}) {
   query = String(q || "").trim();
   const inp = $("#search"), btn = $("#search-btn");
@@ -1781,7 +1879,7 @@ function wireUi() {
   $("#daynight").addEventListener("click", flipSlot);
   $("#toast-undo").addEventListener("click", () => { const a = toastAction; hideToast(); if (a) a(); else undo(); });
   $("#install-x").addEventListener("click", () => { $("#install").hidden = true; document.body.classList.remove("install-on"); dev.installHint = true; saveDevice(); });
-  if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc && !openPanel) { $("#install").hidden = false; document.body.classList.add("install-on"); } }, 2500);
+  if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc && !demo && !openPanel) { $("#install").hidden = false; document.body.classList.add("install-on"); } }, 2500);
   document.addEventListener("pointerdown", () => sound.prime(), { once: true, capture: true });
   document.body.classList.toggle("one", !!dev.oneThing);
 }
@@ -1821,12 +1919,14 @@ document.addEventListener("keydown", e => {
   const k = e.key;
   if (k === "Escape") { hideToast(); if (query) setSearch(""); return; }
   if (dev.keysOff) return; // single-character shortcuts can be switched off (Settings → Behavior)
+  if (demo && ["a", "A", "o", "O", "/", "-", "s", "S"].includes(k)) return; // the welcome's list is Today, whole, and nothing else
   if (k >= "1" && k <= "9") {
     if (!edit) return;
     const pos = parseInt(k, 10) - 1;
     const ids = visibleRowIds();
     if (pos < ids.length) { e.preventDefault(); toggle(ids[pos], 0, 0, false); }
   }
+  else if (k === "s" || k === "S") { if (!edit || !dev.oneThing) return; e.preventDefault(); shuffle(); }
   else if (k === "m" || k === "M") { e.preventDefault(); toggleMute(); }
   else if (k === "t" || k === "T") { e.preventDefault(); if (e.shiftKey) panels().then(p => p.openSettings()); else flipSlot(); } // T flips Day and Night; Shift+T opens Appearance
   else if ((k === "f" || k === "F") && document.fullscreenEnabled) { e.preventDefault(); toggleFullscreen(); }
@@ -1847,7 +1947,7 @@ function sectionOfFocused() {
    One line beside the real control, once per device, in place of the tour: the star the first time Everything
    opens, drag the first time a line is held (or its ⋯ hovered), the menu the first time a line is edited. Gone on
    the next tap or key, or when the control it points at goes away. Nothing appears unasked on Today.            */
-function hintDue(key) { return canEdit() && !openPanel && !(dev.hints && dev.hints[key]); }
+function hintDue(key) { return canEdit() && !demo && !openPanel && !(dev.hints && dev.hints[key]); } // nothing appears unasked on the welcome
 function showMark(key, target, text) {
   if (!hintDue(key) || !target || !target.isConnected) return false;
   dev.hints = { ...(dev.hints || {}), [key]: true }; saveDevice(); // once, read to the end or not
@@ -1893,6 +1993,7 @@ function hintToday() {
 const api = {
   M, C, T, VERSION, BUILD, VERSION_LABEL, config, $, $$, IOS, STANDALONE, BASE, SEARCH, TRANSPORT_KIND, HOVER, NARROW, RM, DARK_MQ, touchUi, sheetUi, canEdit,
   meta, dev, rows, sound, fx,
+  get demo() { return demo; }, unsavedEntry, shuffle,
   get doc() { return doc; }, set doc(v) { doc = v; },
   get listId() { return listId; }, get listMode() { return listMode; }, get ref() { return ref; }, get sync() { return sync; }, get transport() { return transport; },
   get theme() { return theme; }, get view() { return view; }, get syncStatus() { return syncStatus; }, get editing() { return editing; }, get openPanel() { return openPanel; },
@@ -1909,7 +2010,7 @@ const api = {
 };
 
 /* test hook (read-only) */
-window.__tf = () => ({ stats: { ...stats }, view, listId, mode: listMode, lookupId: ref ? ref.lookupId : null, R: ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf });
+window.__tf = () => ({ stats: { ...stats }, view, listId, mode: listMode, lookupId: ref ? ref.lookupId : null, R: ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, demo, shuffled: shuffledId, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry() });
 // test-only controls, on the local transport: simulate what iOS does to the audio context
 if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneToday(); } }, presence: n => paintWho(n) };
 

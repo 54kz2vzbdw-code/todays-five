@@ -1,6 +1,6 @@
 // Service worker: offline shell + assets, no third-party hosts. Same-origin HTML/JS/CSS are network-first so a
 // deploy lands on the next load; icons, fonts and the vendored realtime client are cache-first. Bump VERSION on deploy.
-const VERSION = "tf-v1.2"; // = "tf-v" + version.js (the marketing version; a build with the same version reuses the cache, the shell is network-first anyway)
+const VERSION = "tf-v1.3"; // = "tf-v" + version.js (the marketing version; a build with the same version reuses the cache, the shell is network-first anyway)
 const SHELL = [
   "./", "./index.html", "./about.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js",
   "./sound.js", "./packs.js", "./fx.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json",

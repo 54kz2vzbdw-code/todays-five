@@ -140,7 +140,7 @@ function wireTheme() {
   $("#c-use").addEventListener("click", () => { offer = null; A.setSlotTheme(pickSlot, T.themeCode(customTheme())); renderSwatches(); A.toast(`${custom.name.trim() || "Custom"} for ${cap(pickSlot)}`); });
   $("#c-save").addEventListener("click", async () => {
     if (!A.doc) { A.toast("Open a list first to save a theme"); return; }
-    if (!A.canEdit()) { A.toast("A view link can't save themes to the list"); return; }
+    if (!A.canEdit()) { A.toast("A View link can't save themes to the list"); return; }
     if (!(await ensureName())) return;
     const rec = saveCustom();
     A.afterChange({ animate: false });
@@ -152,7 +152,7 @@ function wireTheme() {
   // (a `partner` field on both records), and offered for the other slot the way a curated partner is
   $("#c-partner").addEventListener("click", async () => {
     if (!A.doc) { A.toast("Open a list first to save a theme"); return; }
-    if (!A.canEdit()) { A.toast("A view link can't save themes to the list"); return; }
+    if (!A.canEdit()) { A.toast("A View link can't save themes to the list"); return; }
     if (!(await ensureName())) return;
     const rec = saveCustom();
     const saved = savedThemes();
@@ -184,43 +184,46 @@ function wireTheme() {
   addEventListener("tf:theme", () => { if ($("#p-theme").open) renderSwatches(); if ($("#p-settings").open) paintSettings(); });
 }
 
-/* ---------------- share sheet ---------------- */
-let shareKind = "edit";
+/* ---------------- share sheet (1.3) ----------------
+   The View link first and by default (the first Copy grabs it), the Private link last under a warning line, New keys
+   beside it, and Tell a friend apart from both: a note about the app and the bare app URL, never a list link. While the
+   list's link is not saved yet, the sheet repeats the key line with a Save your link chip. */
+const APP_NOTE = "Today's Five is the short list I keep open on screen all day—big type, a knock and confetti when you cross one off. It's free and there's no account: open the link and start.";
+/** The note Tell a friend hands over: two sentences about the app, then the app's own address. */
+export function friendNote() { return { text: APP_NOTE, url: A.BASE }; }
 export async function openShare() {
   if (!A.doc || !A.ref) return;
   if (!A.transport) { A.toast("Sync isn't set up, so a link would open an empty list somewhere else"); return; }
-  shareKind = A.listMode === "view" ? "view" : "edit";
-  $("#share-tab-edit").hidden = A.listMode === "view";
-  $("#share-rotate").hidden = A.listMode === "view";
+  const view = A.listMode === "view";
+  $("#share-private").hidden = view;
+  $("#share-unsaved").hidden = view || !A.unsavedEntry();
   $("#share-native").hidden = !navigator.share;
-  await paintShare();
+  $("#qr").hidden = A.sheetUi(); // the code has room on the desktop; the phone has Copy and Share…
+  $("#share-link").value = A.viewLink();
+  if (!view) $("#share-link-private").value = A.editLink();
   A.showPanel("p-share");
-}
-async function paintShare() {
-  const link = shareKind === "edit" ? A.editLink() : A.viewLink();
-  $("#share-tab-edit").setAttribute("aria-selected", shareKind === "edit" ? "true" : "false");
-  $("#share-tab-view").setAttribute("aria-selected", shareKind === "view" ? "true" : "false");
-  const phone = A.sheetUi();
-  $("#share-msg").textContent = shareKind === "edit"
-    ? (phone ? "For your other devices, and for anyone who should be able to edit. Let them point a camera at the code, or send the link." : "For your other devices, and for anyone who should be able to edit. Point the phone's camera at it, or send yourself the link.")
-    : "For anyone who should see the list but not touch it. They get live updates too.";
-  $("#share-link").value = link;
-  $("#share-rotate").textContent = "Rotate links";
-  await A.drawQr($("#qr-c"), link);
+  if (!A.sheetUi()) A.drawQr($("#qr-c"), A.viewLink()).catch(() => {});
 }
 function wireShare() {
-  $("#share-tabs").addEventListener("click", e => { const b = e.target.closest("[data-kind]"); if (!b) return; shareKind = b.dataset.kind; paintShare(); });
-  $("#share-copy").addEventListener("click", () => A.copyText($("#share-link").value, "Link copied"));
+  $("#share-copy").addEventListener("click", () => A.copyText($("#share-link").value, "View link copied"));
   $("#share-native").addEventListener("click", () => A.nativeShare($("#share-link").value));
+  $("#share-copy-private").addEventListener("click", () => A.copyText($("#share-link-private").value, "Private link copied—it's the key"));
+  $("#share-save").addEventListener("click", () => { A.closePanel(); showSaveLink(); });
+  $("#share-friend-go").addEventListener("click", async () => {
+    const n = friendNote();
+    if (navigator.share) { try { await navigator.share({ text: n.text, url: n.url }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+    A.copyText(n.text + "\n" + n.url, "Note copied—paste it into a message");
+  });
   $("#share-rotate").addEventListener("click", async () => {
     A.closePanel();
     if (!A.canEdit()) return;
-    if (A.syncStatus !== "synced") { A.toast("Rotate needs a live connection—try again once synced"); return; }
-    const ok = await A.ask({ title: "Rotate links?", msg: "A new edit link and a new view link replace the current ones. Every old link dies everywhere at once—your other devices and anyone you gave a view link included. Open the new link there.", confirm: "Rotate", danger: true });
+    if (A.syncStatus !== "synced") { A.toast("New keys need a live connection—try again once synced"); return; }
+    const ok = await A.ask({ title: "New keys?", msg: "A new View link and a new Private link replace the current ones. The old links stop working everywhere—your other devices and anyone watching included. Open the new link there.", confirm: "New keys", danger: true });
     if (!ok) return;
     await rotateLink();
   });
 }
+/** New keys: the document re-sealed under a fresh secret, the old row killed; the save sheet then says the link changed. */
 async function rotateLink() {
   const oldId = A.listId, oldRef = A.ref;
   const newId = M.newId();
@@ -229,48 +232,55 @@ async function rotateLink() {
   copy.updatedAt = M.now();
   A.saveLocal(newId, { doc: copy, rev: 0, dirty: true, created: true, mode: "edit" });
   const old = meta().lists.find(l => l.id === oldId);
-  const e = A.registerList(newId, old ? old.name : "", "edit"); e.created = true; e.linkSaved = true; // the share sheet that follows shows the link
+  const e = A.registerList(newId, old ? old.name : "", "edit"); e.created = true; e.linkSaved = false; e.migrated = true; // the new key wants saving like a new list's
   meta().lists = meta().lists.filter(l => l.id !== oldId);
   meta().dead = Array.from(new Set([...(meta().dead || []), oldId]));
   meta().redirect = { ...(meta().redirect || {}), [oldId]: newId };
+  if (A.IOS && !A.STANDALONE) {
+    // Safari memoised the manifest at load; reload so an Add to Home Screen now carries the new link (openList shows the save sheet)
+    A.saveDevice();
+    location.replace(A.BASE + A.SEARCH + "#/l/" + newId); location.reload();
+    return;
+  }
   await A.openList({ id: newId, mode: "edit" });
   // let the new list land, then kill the old one; if that fails, remember to retry
   if (A.sync) await A.sync.flush();
   A.removeLocal(oldId);
   const dead = await A.killRemote({ lookupId: oldRef.lookupId, token: oldRef.token });
-  if (A.IOS && !A.STANDALONE) {
-    // Safari memoised the manifest at load; reload so an Add to Home Screen now carries the new link
-    sessionStorage.setItem("tf/reopenShare", "1");
-    location.replace(A.BASE + A.SEARCH + "#/l/" + newId); location.reload();
-    return;
-  }
-  A.toast(dead ? "New links ready—the old ones are dead" : "New links ready—old ones not revoked yet, will retry");
-  openShare();
+  A.toast(dead ? "New keys. The old links are dead everywhere." : "New keys. The old links aren't revoked yet; that retries on its own.");
 }
 
-/* ---------------- save-your-link sheet ---------------- */
+/* ---------------- save-your-link sheet (1.3: rebuilt by device) ----------------
+   One sentence, then the lead the device calls for: Safari on a phone leads with Add to Home Screen (the two steps —
+   Safari can't do it for us; the icon carries the link), then Copy, no QR; the installed app says the icon holds the
+   link, with Copy as a backup; a desktop leads with Bookmark this page (⌘D / Ctrl+D), then Copy, then an expander
+   with the QR for the phone. Copy and I've saved it count as saved; closing any other way leaves ⋯ carrying a
+   Save your link row until one of them happens. */
 export function showSaveLink({ migrated = false } = {}) {
   const link = A.editLink(); if (!link) return;
+  const entry = meta().lists.find(l => l.id === A.listId);
+  migrated = migrated || !!(entry && entry.migrated);
+  const standalone = A.STANDALONE, phone = A.touchUi() && !standalone, desktop = !phone && !standalone;
   $("#save-title").textContent = migrated ? "Your link changed" : "Save your link";
-  $("#save-msg").textContent = migrated
-    ? "Your list is now encrypted on your device and lives behind this new link. The old link is dead. Save this one—it's the only way back, and the only key that can read the list."
-    : "This link is the only way back to your list—and the only key that can read it. Nobody can send it to you again, not even the person running this site.";
-  $("#save-hint-phone").hidden = !migrated;
-  $("#save-hint-home").hidden = migrated;
-  $("#save-native").hidden = !navigator.share;
+  $("#save-migrated").hidden = !migrated;
+  $("#save-lead-home").hidden = !phone; $("#save-lead-icon").hidden = !standalone; $("#save-lead-bm").hidden = !desktop;
+  $("#save-lead-home-how").textContent = A.IOS ? "Tap Share, then Add to Home Screen. The icon carries the link, so it opens straight to this list." : "Open the browser's menu, then Add to Home screen. The icon carries the link, so it opens straight to this list.";
+  $("#save-bm-key").textContent = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘D" : "Ctrl+D";
+  $("#save-link").hidden = !desktop; // the phone has Copy; the desktop shows what the bookmark holds
   $("#save-link").value = link;
-  A.drawQr($("#save-qr-c"), link).catch(() => {});
+  $("#save-phone").hidden = !desktop; $("#save-phone").open = false;
+  if (desktop) A.drawQr($("#save-qr-c"), link).catch(() => {});
   A.showPanel("p-save");
   $("#save-body").focus({ preventScroll: true }); // reading starts at the title and the message, not at the link field
 }
+function markSaved() {
+  const e = meta().lists.find(l => l.id === A.listId);
+  if (e) { e.linkSaved = true; e.migrated = false; A.saveDevice(); }
+}
 function wireSave() {
-  $("#save-copy").addEventListener("click", () => A.copyText($("#save-link").value, "Link copied"));
-  $("#save-native").addEventListener("click", () => A.nativeShare($("#save-link").value));
-  $("#save-done").addEventListener("click", () => A.closePanel());
-  $("#p-save").addEventListener("close", () => {
-    const e = meta().lists.find(l => l.id === A.listId);
-    if (e) { e.linkSaved = true; e.migrated = false; A.saveDevice(); }
-  });
+  $("#save-copy").addEventListener("click", async () => { await A.copyText($("#save-link").value, "Link copied"); markSaved(); A.closePanel(); });
+  $("#save-done").addEventListener("click", () => { markSaved(); A.closePanel(); });
+  $("#p-save").addEventListener("close", () => { const e = meta().lists.find(l => l.id === A.listId); if (e && e.migrated) { e.migrated = false; A.saveDevice(); } }); // "Your link changed" shows once either way
 }
 
 /* ---------------- lists ---------------- */
@@ -392,7 +402,7 @@ function paintSettings() {
   $("#set-removed-k").textContent = removed ? String(removed) : "";
   $("#streak-k").textContent = A.doc ? (s => s ? s + " day" + (s > 1 ? "s" : "") : "")(M.streak(A.doc)) : "";
   const W = A.ref && A.ref.mode === "edit" ? A.ref.W : null;
-  $("#set-addurl").value = W ? M.addUrl(A.BASE, W) : "Open an edit link to get its URL";
+  $("#set-addurl").value = W ? M.addUrl(A.BASE, W) : "Open a Private link to get its URL";
   $("#set-addurl-copy").disabled = !W;
   set("who", !d.whoOff);
   $("#set-version").textContent = `Today's Five ${A.VERSION_LABEL}. What's new is on the About page.`;
@@ -716,13 +726,17 @@ export function openHelp(section) {
     <p><b>Not today</b> (${touch ? "swipe left, or the line's menu" : "press - with a line focused, or the line's menu"}) takes a line off Today until tomorrow's rollover puts it back. Everything shows a small “tomorrow” tag on it meanwhile.</p>
     <h3 id="h-one">One thing at a time</h3>
     <p>${touch ? "Tap the count in the top bar" : "Press O, or click the count in the top bar"}: only the top undone line, as big as the screen allows. Cross it off and the next one slides in. The finale ends it; ${touch ? "the count" : "O"} brings the whole list back. It's remembered on this device.</p>
+    <p><b>Shuffle</b>: ${touch ? "shake the phone, or tap ↻ beside the count" : "press S, or click ↻ beside the count"}, and a different undone line takes the screen—never the same one twice in a row, and the list itself doesn't move. It stays until you cross it off or shuffle again; after a check-off the top line is back.${touch ? " The first time, the phone asks once whether shaking may count; say no and ↻ still works." : ""}</p>
     <h3 id="h-lists">Lists, sections, templates</h3>
     <p>Sections live in Everything; the ⋯ in a section's header can rename it, put every line on Today or take them off, save the section as a <b>template</b> (its lines, no done state), or insert a template. Templates are kept in the list itself, so they sync, and Settings → Lists manages them. A line's menu can <b>move it to another list</b> on this device. Past eight lines, Search shows up at the top of Everything${touch ? "" : "; / opens it any time"}.</p>
     <p><b>Remove from this device</b> (Lists) only hides a list here; the server and your other devices keep it, and Lists → Removed brings it back. <b>Delete this list everywhere</b> (bottom of ⋯) removes it from the server and from here, with ten seconds to undo. Deleted lines sit in <b>Recently deleted</b> at the bottom of Everything for 30 days, with Restore.</p>
     <h3 id="h-links">Links</h3>
-    <p>Your link is the key. The edit link lets anyone change the list and make new links; the view link lets someone watch, with live updates, sound and confetti when you cross a line off. Rotate (in Share) replaces both. Lose the link, lose the list: nobody can recover it, and Settings → Advanced → Export &amp; import is the only backup there is.</p>
+    <p>Two links, named for what they do. The <b>Private link</b> is your list's only key: anyone holding it can open the list, and there is no spare. Lose it, lose the list—nobody can recover it, and Settings → Advanced → Export &amp; import is the only backup there is. The <b>View link</b> shows the list and can't change it; anything that should show the list but not change it gets that one.</p>
+    <p><b>Second screen:</b> open the View link on the work computer or a TV, keep the Private link on your phone, and cross things off from the phone—each check-off lands on the big screen with the sound and the confetti.</p>
+    <p><b>Let someone watch:</b> hand them the View link and they see the list as it stands, live, without being able to touch it—the same check-offs, the same sound and confetti when you finish.</p>
+    <p><b>New keys</b> (in Share) replaces both links at once; the old links stop working everywhere, your other devices included, so open the new one there.</p>
     <h3 id="h-add">Add from anywhere</h3>
-    <p>Open this URL with text on the end and the line lands on Today${W ? "" : " (open an edit link to see yours)"}. Several lines: put a newline between them. Optional <code>&amp;section=Name</code> files it under a section.</p>
+    <p>Open this URL with text on the end and the line lands on Today${W ? "" : " (open a Private link to see yours)"}. Several lines: put a newline between them. Optional <code>&amp;section=Name</code> files it under a section.</p>
     <input class="link" type="text" readonly value="${esc(add)}" aria-label="Add-from-anywhere URL" spellcheck="false">
     <p><b>An iOS Shortcut:</b> Shortcuts → + → add <i>Ask for Input</i> (Text) → <i>URL Encode</i> the input → <i>Open URLs</i> with the address above followed by the encoded text. Name it, add it to the Home Screen or Siri, and every run adds a line.</p>
     <p><b>A Mac bookmarklet:</b> drag this to the bookmarks bar, or make a bookmark whose address is the code below. Click it, type the line, done.</p>
@@ -741,9 +755,9 @@ export function openHelp(section) {
 /* ---------------- the reference (?): every key on the desktop, every gesture on touch ---------------- */
 export function openKeys() {
   const touch = A.touchUi(), esc = A.escapeHtml;
-  const keys = [["1 – 9", "Cross off a line by position"], ["N", "New line"], ["E", "Edit the focused line"], ["O", "One thing at a time"], ["-", "Not today (the focused line)"], ["/", "Search Everything"], ["A", "Today ↔ Everything"], ["⌥ ↑ / ↓", "Move the focused line"], ["⌘ Z", "Undo"], ["T", "Day ↔ Night"], ["⇧ T", "Appearance: the Day and Night themes, and the switch"], ["M", "Mute"], ["F", "Full screen"], ["Enter", "While editing: save, and start a new line below"], ["Tab", "While editing: over to the note"], ["Esc", "While editing: cancel · close a panel · clear the search"], ["⌫", "On an empty line: remove it"], ["?", "This sheet"]];
-  const mouse = [["Click a line", "Cross it off, or bring it back"], ["Hover a line, then ⋯", "Click for the menu: edit (the Repeat chip is in the editor), repeat, not today, move, delete. Drag it to move the line"], ["Star, in Everything", "Put the line on Today, or take it off"], ["The count", "One thing at a time"], ["The sun or moon", "Day ↔ Night"]];
-  const gestures = [["Tap a line", "Cross it off, or bring it back"], ["Hold a line", "It lifts: drag to move it, or let go for its menu—edit, repeat, not today, move, delete"], ["Swipe right", "The line's menu"], ["Swipe left", "Not today: the line leaves Today until tomorrow's rollover (Settings → Behavior turns it off)"], ["Star, in Everything", "Put the line on Today, or take it off"], ["Tap the count", "One thing at a time"], ["Tap the sun or moon", "Day ↔ Night"], ["Swipe down, or tap outside", "Close a sheet like this one"]];
+  const keys = [["1 – 9", "Cross off a line by position"], ["N", "New line"], ["E", "Edit the focused line"], ["O", "One thing at a time"], ["S", "Shuffle: a different line, in one-thing mode"], ["-", "Not today (the focused line)"], ["/", "Search Everything"], ["A", "Today ↔ Everything"], ["⌥ ↑ / ↓", "Move the focused line"], ["⌘ Z", "Undo"], ["T", "Day ↔ Night"], ["⇧ T", "Appearance: the Day and Night themes, and the switch"], ["M", "Mute"], ["F", "Full screen"], ["Enter", "While editing: save, and start a new line below"], ["Tab", "While editing: over to the note"], ["Esc", "While editing: cancel · close a panel · clear the search"], ["⌫", "On an empty line: remove it"], ["?", "This sheet"]];
+  const mouse = [["Click a line", "Cross it off, or bring it back"], ["Hover a line, then ⋯", "Click for the menu: edit (the Repeat chip is in the editor), repeat, not today, move, delete. Drag it to move the line"], ["Star, in Everything", "Put the line on Today, or take it off"], ["The count", "One thing at a time"], ["↻ beside the count", "Shuffle: a different line (one-thing mode)"], ["The sun or moon", "Day ↔ Night"]];
+  const gestures = [["Tap a line", "Cross it off, or bring it back"], ["Hold a line", "It lifts: drag to move it, or let go for its menu—edit, repeat, not today, move, delete"], ["Swipe right", "The line's menu"], ["Swipe left", "Not today: the line leaves Today until tomorrow's rollover (Settings → Behavior turns it off)"], ["Star, in Everything", "Put the line on Today, or take it off"], ["Tap the count", "One thing at a time"], ["Shake, or tap ↻ beside the count", "Shuffle: a different line (one-thing mode; the phone asks once whether shaking may count)"], ["Tap the sun or moon", "Day ↔ Night"], ["Swipe down, or tap outside", "Close a sheet like this one"]];
   const g = list => `<div class="gestures">${list.map(x => `<div class="g"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join("")}</div>`;
   $("#p-keys-h").textContent = touch ? "Gestures" : "Keys";
   $("#keys-body").innerHTML = touch ? g(gestures) : `<div class="keys">${keys.map(k => `<kbd>${esc(k[0])}</kbd><span>${esc(k[1])}</span>`).join("")}</div><h3>Mouse</h3>${g(mouse)}`;

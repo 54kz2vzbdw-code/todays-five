@@ -5,6 +5,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Today's Five — how it works &amp; privacy</title>
   <meta name="description" content="What Today's Five stores, who can see it, and what it never collects.">
+  <link rel="canonical" href="https://54kz2vzbdw-code.github.io/todays-five/about.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Today's Five — how it works &amp; privacy">
+  <meta property="og:description" content="What leaves your device, who can see it, and what never gets collected—plain answers, no fine print.">
+  <meta property="og:url" content="https://54kz2vzbdw-code.github.io/todays-five/about.html">
+  <meta property="og:image" content="https://54kz2vzbdw-code.github.io/todays-five/icons/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Today's Five: a short list in big type, one line crossed off">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-QTscGs0BUxGAh12afKI4KnPv42l7EyMlfWQNvnha/ww='; style-src 'self' 'sha256-yNknL13COQN52cpZ0PepUU2IyZOt8ZfrghaJG5Kz+t4='; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
   <meta name="theme-color" content="#1A1D21">
@@ -57,18 +67,18 @@
 <main class="prose">
   <p class="crumb"><a href="./">← Back to the list</a></p>
   <h1>Today's Five</h1>
-  <p class="version" id="version">Version 1.2</p>
+  <p class="version" id="version">Version 1.3</p>
   <p class="lede">A short list you keep open on screen all day. Here's exactly what leaves your device, who can see it, and what never gets collected.</p>
 
   <h2>How it works</h2>
   <p>Start a list and your browser makes a random secret and puts it in the link, after the <code>#</code>. Everything else is derived from that secret on your device: the key that encrypts the list, the id the server files it under, and the token that proves you're allowed to change it. Browsers never send the part of a link after <code>#</code> to a server, and this app never sends it anywhere else.</p>
-  <p>Before anything gets saved or synced, the whole list is encrypted on your device with AES-256-GCM. Your other devices with the same link derive the same key and decrypt it. The edit link can produce a view link; a view link can't produce the edit link.</p>
+  <p>Before anything gets saved or synced, the whole list is encrypted on your device with AES-256-GCM. Your other devices with the same link derive the same key and decrypt it. The Private link can produce the View link; the View link can't produce the Private link.</p>
 
   <h2>What's stored on the server</h2>
   <ul>
     <li><strong>The encrypted list</strong>: one sealed blob per list. Lines, notes, sections, repeat rules, templates, history, and saved themes are all inside it.</li>
     <li><strong>A revision number</strong> and two timestamps (last change, and last opened, to the day), so your devices can tell what changed and idle lists can be cleared out.</li>
-    <li><strong>A hash of the write token</strong>, so the server can turn away changes from a view link.</li>
+    <li><strong>A hash of the write token</strong>, so the server can turn away changes from a View link.</li>
     <li><strong>A salted hash of your network address</strong>, kept for at most 24 hours, and only when a new list is created. It's there to stop one address from creating lists without limit. The address itself isn't stored.</li>
   </ul>
 
@@ -89,7 +99,7 @@
   </ul>
 
   <h2>Sharing</h2>
-  <p>Anyone with the <strong>edit link</strong> can change anything, including making new links. Anyone with the <strong>view link</strong> can read everything until you rotate. Treat the edit link like a password.</p>
+  <p>Two links, named for what they do. The <strong>Private link</strong> is your list's only key: anyone holding it can open the list, change anything, and make new keys, and there is no spare. The <strong>View link</strong> shows the list and can't change it—put it on a second screen and cross things off from your phone, or hand it to someone who should watch; it keeps working until you make new keys. Treat the Private link like a password.</p>
 
   <h2>Limits</h2>
   <p>This is a small free service. Each list is capped at 96 KB encrypted (a year of daily history fits many times over), the service holds a few thousand lists in total, and a single network address can only create a handful of lists per hour. Hit a limit and the app says so and keeps working on your device.</p>

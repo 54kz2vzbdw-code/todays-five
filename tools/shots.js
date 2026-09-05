@@ -36,7 +36,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
 
   await page.goto(BASE + "?transport=local");
   await step("welcome", async () => { await page.waitForSelector("#welcome:not([hidden])"); await wait(200); await shot("welcome"); });
-  await step("save-link", async () => { await page.click("#w-new"); await page.waitForSelector("#p-save[open]"); await wait(400); await shot("save-link"); await page.click("#save-done"); await wait(700); });
+  await step("welcome-played", async () => { if (!(await page.$("#w-keep"))) return; await press("#list .row:first-child .check"); await wait(900); await shot("welcome-played"); }); // 1.3: the welcome is a live list; a tap strikes
+  await step("save-link", async () => { if (await page.$("#w-keep")) { await press("#w-skip"); } else await page.click("#w-new"); await page.waitForSelector("#p-save[open]"); await wait(400); await shot("save-link"); if (await page.$("#save-phone:not([hidden])")) { await page.click("#save-phone summary"); await wait(400); await shot("save-link-phone"); } await page.click("#save-done"); await wait(700); });
   await step("tour", async () => { const t = await page.$("#tour:not([hidden])"); if (!t) return; await wait(300); await shot("tour"); await page.click("#tour-skip"); await wait(300); });
   await step("today", async () => { await page.waitForSelector("#list .row"); await page.mouse.move(2, 2); await wait(400); await shot("today"); });
   if (!touch) await step("today-hover", async () => { await page.hover("#list .row:nth-child(2) .tx"); await wait(400); await shot("today-hover"); await page.mouse.move(2, 2); await wait(200); });
@@ -82,7 +83,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
     if (await page.$("#sw-night")) { await page.click('#sw-night .swatch[data-code="T1:curated:dusk"]'); await wait(400); await shot("theme-partner"); }
     await page.$eval("#p-theme h3", el => el.scrollIntoView({ block: "start" })); await wait(300); await shot("theme-builder"); await esc();
   });
-  await step("share", async () => { const chip = await page.$("#share"); if (chip && await chip.isVisible()) await press("#share"); else await openMore("share"); await page.waitForSelector("#p-share[open]"); await wait(500); await shot("share"); await esc(); });
+  await step("share", async () => { const chip = await page.$("#share"); if (chip && await chip.isVisible()) await press("#share"); else await openMore("share"); await page.waitForSelector("#p-share[open]"); await wait(500); await shot("share"); if (await page.$("#share-friend")) { await page.$eval("#p-share .body", e => { e.scrollTop = e.scrollHeight; }); await wait(300); await shot("share-bottom"); } await esc(); });
+  await step("one-thing", async () => { if (!(await page.$("#shuffle"))) return; if (touch) await page.tap("#count"); else await page.keyboard.press("o"); await wait(500); await shot("one-thing"); if (touch) await page.tap("#count"); else await page.keyboard.press("o"); await wait(300); }); // 1.3: ↻ beside the count
   await step("help", async () => { await openMore("help"); await page.waitForSelector("#p-help[open]"); await wait(400); await shot("help"); await esc(); });
   await step("keys", async () => { if (touch) { await openMore("help"); await page.waitForSelector("#p-help[open]"); const b = await page.$("#help-keys"); if (!b) { await esc(); return; } await b.tap(); } else await page.keyboard.press("?"); await page.waitForSelector("#p-keys[open]"); await wait(400); await shot("keys"); await esc(); });
   await step("today-again", async () => { await press("#v-today"); await page.waitForSelector("#today:not([hidden])"); await page.mouse.move(2, 2); await wait(300); });

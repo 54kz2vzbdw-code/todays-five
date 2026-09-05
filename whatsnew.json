@@ -1,31 +1,76 @@
 {
-  "build": 54,
+  "build": 60,
   "versions": [
+    {
+      "version": "1.3",
+      "headline": "A better first minute.",
+      "items": [
+        {
+          "tag": "New",
+          "text": "The welcome is a list you can try before you keep it."
+        },
+        {
+          "tag": "Improved",
+          "text": "Links say what they do, and saving yours fits your device."
+        },
+        {
+          "tag": "New",
+          "text": "Shake, press S, or tap ↻ to shuffle in one-thing mode."
+        }
+      ]
+    },
     {
       "version": "1.2",
       "headline": "Day and night, your way.",
       "items": [
-        { "tag": "New", "text": "Pick a Day theme and a Night theme; the sun and moon flip them." },
-        { "tag": "New", "text": "Every theme has a partner one tap away. Your own can make theirs." },
-        { "tag": "Improved", "text": "Shorter update notes, like this one." }
+        {
+          "tag": "New",
+          "text": "Pick a Day theme and a Night theme; the sun and moon flip them."
+        },
+        {
+          "tag": "New",
+          "text": "Every theme has a partner one tap away. Your own can make theirs."
+        },
+        {
+          "tag": "Improved",
+          "text": "Shorter update notes, like this one."
+        }
       ]
     },
     {
       "version": "1.1",
       "headline": "It got quieter.",
       "items": [
-        { "tag": "Improved", "text": "A line shows its menu on hover or hold." },
-        { "tag": "Improved", "text": "Fewer controls up top, and they fade while you work." },
-        { "tag": "New", "text": "Your own theme can carry a sound." }
+        {
+          "tag": "Improved",
+          "text": "A line shows its menu on hover or hold."
+        },
+        {
+          "tag": "Improved",
+          "text": "Fewer controls up top, and they fade while you work."
+        },
+        {
+          "tag": "New",
+          "text": "Your own theme can carry a sound."
+        }
       ]
     },
     {
       "version": "1.0",
       "headline": "The first full release.",
       "items": [
-        { "tag": "New", "text": "Repeating lines, Not today, one-thing mode, search, templates, add from anywhere." },
-        { "tag": "New", "text": "One Settings sheet, and delete a list everywhere with ten seconds to undo." },
-        { "tag": "Fixed", "text": "Sound on the iPhone after a call." }
+        {
+          "tag": "New",
+          "text": "Repeating lines, Not today, one-thing mode, search, templates, add from anywhere."
+        },
+        {
+          "tag": "New",
+          "text": "One Settings sheet, and delete a list everywhere with ten seconds to undo."
+        },
+        {
+          "tag": "Fixed",
+          "text": "Sound on the iPhone after a call."
+        }
       ]
     }
   ]

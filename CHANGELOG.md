@@ -3,7 +3,21 @@
 The full history, for the record. What people see is `whatsnew.json` (1.0 and later, a headline and up to three
 items per version, rendered on the About page and in the what's-new toast); the pre-release entries below never
 render. No dates anywhere, by design: versions are the marketing version plus a build number (About shows
-`1.2 (build N)`), and what shipped as 4.0.0 is 1.0.
+`1.3 (build N)`), and what shipped as 4.0.0 is 1.0.
+
+## 1.3 — A better first minute.
+
+- **New** — The welcome is a list you can try before you keep it.
+- **Improved** — Links say what they do, and saving yours fits your device.
+- **New** — Shake, press S, or tap ↻ to shuffle in one-thing mode.
+
+For the record: a texted link now shows a card (Open Graph and Twitter tags, `icons/og.png`); the welcome became a
+live, local list with Keep this list, Skip and Paste; the save-your-link sheet leads with Add to Home Screen on a
+phone in Safari, says the icon holds the link in the installed app, and leads with Bookmark on a desktop, and ⋯
+carries a Save your link row until the link is copied or confirmed (devices from before are grandfathered); the
+Share sheet puts the View link first and by default, the Private link (the edit link's new name) last under a
+warning, New keys (Rotate's new name) beside it, and Tell a friend at the bottom with a note about the app and the
+bare app URL; shuffle in one-thing mode by a shake, S, or ↻ beside the count. URL formats are unchanged.
 
 ## 1.2 — Day and night, your way.
 

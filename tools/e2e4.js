@@ -32,11 +32,12 @@ const assert = { ok(v, m) { if (!v) throw new Error(m || "expected truthy"); }, 
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
 const VIEWPORTS = [["desktop 1440×900", { viewport: { width: 1440, height: 900 } }, false], ["phone 390×844", { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }, true]];
-async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: shared = null, scheme = "dark", clock = null, reducedMotion = "no-preference" } = {}) {
+async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: shared = null, scheme = "dark", clock = null, reducedMotion = "no-preference", init = "" } = {}) {
   // a second "device" on the local transport is a second tab of the same context: the local server lives in localStorage.
   // The system is dark unless a test says otherwise (1.2 starts a fresh device With the system); `clock` installs a fake one.
   const ctx = shared || await browser.newContext({ ...opts, colorScheme: scheme, reducedMotion });
   open.add(ctx);
+  if (init && !shared) await ctx.addInitScript(init);
   const page = await ctx.newPage(); page.setDefaultTimeout(6000);
   if (clock) await page.clock.install({ time: clock });
   const errors = [], csp = [], thirdParty = [], consoleErrors = [];
@@ -46,7 +47,7 @@ async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: 
   await page.goto(url);
   if (list) {
     await page.waitForSelector("#welcome:not([hidden])");
-    await page.click("#w-new"); await page.waitForSelector("#p-save[open]"); await page.click("#save-done"); await wait(500);
+    await page.click("#w-skip"); await page.waitForSelector("#p-save[open]"); await page.click("#save-done"); await wait(500);
     await page.waitForSelector("#list .row");
     if (!opts.hasTouch) { await page.mouse.move(2, 2); await wait(400); } // past the tools' fade, so "at rest" means at rest
   }
@@ -83,9 +84,9 @@ const seedLines = JSON.parse(fs.readFileSync(new URL("../model.js", import.meta.
 for (const [label, opts, touch] of VIEWPORTS) {
   console.log("\n==", label);
 
-  await test(label + ": a new list — the save sheet, then five seed lines of 32 characters or fewer all on screen, no tour, no mark, nothing else", async () => {
+  await test(label + ": a new list — the save sheet, then the three seed lines of 32 characters or fewer all on screen, no tour, no mark, nothing else", async () => {
     const t = await fresh(opts);
-    assert.equal(await t.page.locator("#list .row").count(), 5);
+    assert.equal(await t.page.locator("#list .row").count(), 3);
     assert.equal(await t.page.locator("#tour").count(), 0, "the tour is gone from the page");
     await wait(1500); // anything that wanted to appear after the save sheet has had its chance
     assert.ok(await t.page.locator("#mark").isHidden(), "no coach mark on Today after the save-link sheet");
@@ -95,8 +96,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(JSON.stringify(texts), JSON.stringify(seedLines));
     for (const l of texts) assert.ok(l.length <= 32, l + " is over 32 characters");
     const fits = await t.page.evaluate(() => { const l = document.getElementById("list"); const last = l.lastElementChild.getBoundingClientRect(); return { noScroll: l.scrollHeight <= l.clientHeight + 1, lastBottom: last.bottom, vh: innerHeight, addBottom: document.getElementById("addtoday").getBoundingClientRect().bottom }; });
-    assert.ok(fits.noScroll && fits.lastBottom <= fits.vh && fits.addBottom <= fits.vh, "all five fit without scrolling: " + JSON.stringify(fits));
-    assert.ok(/all five/.test(texts[4]), "the payoff line is last and visible");
+    assert.ok(fits.noScroll && fits.lastBottom <= fits.vh && fits.addBottom <= fits.vh, "all three fit without scrolling: " + JSON.stringify(fits));
+    assert.ok(/all three/.test(texts[2]), "the payoff line is last and visible");
     const st = await t.s(); assert.equal(st.seenVersion, VERSION, "first run marks the version seen silently");
     assert.equal(t.errors.length, 0, "page errors: " + t.errors); assert.equal(t.csp.length, 0, "csp: " + t.csp); assert.equal(t.thirdParty.length, 0, "third party: " + t.thirdParty);
     await t.close();
@@ -107,10 +108,11 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.waitForSelector("#welcome:not([hidden])");
     assert.equal(await t.page.$eval(".rail", e => getComputedStyle(e).display), "none", "rail hidden on welcome");
     assert.equal(await t.page.$eval("#foot", e => getComputedStyle(e).display), "none", "footer hidden on welcome");
-    const parts = await t.page.$$eval("#welcome > *:not([hidden])", els => els.map(e => e.tagName.toLowerCase()));
-    assert.equal(parts.join(","), "h1,p,div,div,p", "title, sentences, buttons, (error slot), link: " + parts);
-    assert.equal(await t.page.$eval("#welcome-msg", e => e.textContent.split(/[.!?](\s|$)/).filter(s => s.trim()).length), 3, "three sentences");
-    await t.page.click("#w-new"); await t.page.waitForSelector("#p-save[open]"); await t.page.click("#save-done"); await wait(400);
+    const parts = await t.page.$eval("#welcome > *:not([hidden])", els => els.map(e => e.tagName.toLowerCase()));
+    assert.equal(parts.join(","), "h1,p", "the title and one sentence above the live list: " + parts);
+    const below = await t.page.$eval("#demo-foot > *:not([hidden])", els => els.map(e => e.tagName.toLowerCase() + (e.querySelector("#w-skip") ? "(skip, paste)" : "")));
+    assert.equal(below.join(","), "div,p(skip, paste),div,p", "Keep's slot, the quiet links, the error slot, the About link: " + below);
+    await t.page.click("#w-skip"); await t.page.waitForSelector("#p-save[open]"); await t.page.click("#save-done"); await wait(400);
     assert.equal(await t.page.$eval(".rail", e => getComputedStyle(e).display), "flex", "rail back with the list");
     await t.close();
   });
@@ -131,7 +133,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const t = await fresh(opts);
     await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await wait(300);
     const labels = await t.page.$$eval("#menu > *:not([hidden]) .lb", els => els.map(e => e.textContent.trim()));
-    assert.equal(labels.join("|"), (touch ? "Share this list" : "Share & open on phone") + "|Theme|Sound|Full screen|How it works|Lists|Settings|About & privacy|Delete this list everywhere");
+    assert.equal(labels.join("|"), "Share this list|Theme|Sound|Full screen|How it works|Lists|Settings|About & privacy|Delete this list everywhere");
     assert.ok(await t.page.$("#menu-delete.danger"));
     const d = await rect(t.page, "#p-menu"), more = await rect(t.page, "#more");
     const pop = await t.page.$eval("#p-menu", e => e.classList.contains("pop"));
@@ -679,7 +681,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": a 1.0 device (it called itself 4.0.0) opens 1.2 — the toast once, nothing else, nothing about version numbers, list intact, no hints later", async () => {
+  await test(label + ": a 1.0 device (it called itself 4.0.0) opens 1.3 — the toast once, nothing else, nothing about version numbers, list intact, no hints later", async () => {
     const t = await fresh(opts);
     const { listId } = await t.s();
     // turn this device into a 1.0 one: the version it remembers is 4.0.0, it went through the tour, it never heard of hints
@@ -687,7 +689,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
     assert.ok(await t.page.locator("#whatsnew").isVisible(), "what's-new toast");
     const msg = await t.page.textContent("#wn-msg");
-    assert.ok(new RegExp("New in " + VERSION.replace(".", "\\.")).test(msg), msg); assert.ok(!/4\.0\.0|renumber|1\.1\b/.test(msg), "nothing about version numbers: " + msg); assert.ok(/Day and night/i.test(msg), "the headline"); assert.equal((await t.page.textContent("#wn-more")).trim(), "What's new");
+    assert.ok(new RegExp("New in " + VERSION.replace(".", "\\.")).test(msg), msg); assert.ok(!/4\.0\.0|renumber|1\.1\b|1\.2\b/.test(msg), "nothing about version numbers: " + msg); assert.ok(/first minute/i.test(msg), "the headline"); assert.equal((await t.page.textContent("#wn-more")).trim(), "What's new");
     assert.equal(await t.page.locator("#tour").count(), 0, "no tour"); assert.equal(await t.page.locator("dialog[open]").count(), 0, "no sheet"); assert.ok(await t.page.locator("#mark").isHidden(), "no hint");
     assert.equal((await t.s()).stats.check + (await t.s()).stats.finish, 0, "no sound");
     assert.equal(await t.page.locator("#list .row").count(), 5); assert.equal((await t.s()).listId, listId);
@@ -699,13 +701,13 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": About shows the version as 1.2 (build N) and the changelog in its new shape, no dates", async () => {
+  await test(label + ": About shows the version as 1.3 (build N) and the changelog in its shape, no dates", async () => {
     const t = await fresh(opts, { url: BASE + "about.html", list: false });
     await t.page.waitForFunction(() => /build/.test(document.getElementById("version").textContent), null, { timeout: 5000, polling: 100 });
     assert.equal(await t.page.textContent("#version"), "Version " + VERSION_LABEL);
     const log = await t.page.$$eval("#log .v", els => els.map(e => e.textContent));
-    assert.equal(log.join(","), "1.2,1.1,1.0", "1.0 and later; the pre-releases never render");
-    assert.ok(/Day and night, your way\./.test(await t.page.textContent("#log > li:first-child div")), "a headline per version");
+    assert.equal(log.join(","), "1.3,1.2,1.1,1.0", "1.0 and later; the pre-releases never render");
+    assert.ok(/A better first minute\./.test(await t.page.textContent("#log > li:first-child div")), "a headline per version");
     const tags = await t.page.$$eval("#log .tag", els => els.map(e => e.textContent)); assert.ok(tags.length >= 6 && tags.every(x => ["New", "Improved", "Fixed"].includes(x)), "tagged items: " + tags);
     assert.ok(await t.page.$$eval("#log > li", els => els.every(li => li.querySelectorAll("ul li").length <= 3)), "three items at most");
     assert.equal(await t.page.$eval("#version", e => getComputedStyle(e).textTransform), "uppercase", "the version line is styled on About (its rules live in styles.css now)");
@@ -911,7 +913,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": a 1.1 device opens 1.2 — Follow system and the schedule migrate into the switch, the theme on screen does not change, and the toast is the only new thing", async () => {
+  await test(label + ": a 1.1 device opens 1.3 — Follow system and the schedule migrate into the switch, the theme on screen does not change, and the toast is the only new thing", async () => {
     // Follow system on, with both slots filled
     const t = await fresh(opts);
     const { listId } = await t.s();
@@ -919,7 +921,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
     let st = await t.s();
     assert.equal(st.theme, "midnight", "a dark system: Midnight, as Follow system showed"); assert.equal(st.switchMode, "system"); assert.equal(st.day, "T1:curated:harbor"); assert.equal(st.night, "T1:curated:midnight"); assert.equal(st.hold, null);
-    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.2: Day and night, your way\./.test(await t.page.textContent("#wn-msg")), "the headline only: " + await t.page.textContent("#wn-msg"));
+    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.3: A better first minute\./.test(await t.page.textContent("#wn-msg")), "the headline only: " + await t.page.textContent("#wn-msg"));
     assert.equal(await t.page.locator("dialog[open]").count(), 0, "no sheet"); assert.ok(await t.page.locator("#mark").isHidden(), "no hint"); assert.equal(st.stats.check + st.stats.finish + st.stats.tick, 0, "no sound");
     assert.equal(await t.page.locator("#list .row").count(), 5); assert.equal(st.listId, listId, "the list is intact");
     assert.ok(await t.page.locator("#daynight").isVisible(), "the sun/moon is there");
@@ -947,10 +949,286 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": a fresh device on a light system paints Light from the first frame and starts With the system", async () => {
     const t = await fresh(opts, { scheme: "light", list: false });
     assert.equal(await inkOf(t.page), INK.light, "the inline tokens follow prefers-color-scheme before any module ran");
-    await t.page.click("#w-new"); await t.page.waitForSelector("#p-save[open]"); await t.page.click("#save-done"); await wait(500);
+    await t.page.click("#w-skip"); await t.page.waitForSelector("#p-save[open]"); await t.page.click("#save-done"); await wait(500);
     const st = await t.s(); assert.equal(st.theme, "light"); assert.equal(st.switchMode, "system"); assert.equal(st.day, "T1:curated:light"); assert.equal(st.night, "T1:curated:dark");
     assert.equal(await t.page.$eval("#daynight", e => e.dataset.next), "night");
     await t.close();
+  });
+
+  /* ---------------- 1.3: the first minute, the link names, shuffle ---------------- */
+  const STUBS = `window.__shared = []; window.__clip = null; navigator.share = async d => { window.__shared.push(d); }; navigator.clipboard.writeText = async t => { window.__clip = t; };`;
+  const IPHONE = `Object.defineProperty(navigator, "platform", { get: () => "iPhone" });`;
+  const STANDALONE = IPHONE + ` Object.defineProperty(navigator, "standalone", { get: () => true });`;
+  const storedLists = page => page.evaluate(() => Object.keys(localStorage).filter(k => /^tf\/v3\/list\/|^tf\/v2\/localserver\//.test(k)));
+  /** a fresh device on the welcome (no list made), with the share and clipboard stubs in place */
+  const welcome = async (extra = "") => { const t = await fresh(opts, { list: false, init: STUBS + extra }); await t.page.waitForSelector("#welcome:not([hidden])"); await t.page.waitForSelector("#list .row"); await wait(300); return t; };
+
+  await test(label + ": the welcome is a live list — the title and one sentence, three lines that strike, knock and throw confetti before any list exists, nothing stored, no rail, footer, hint or toast", async () => {
+    const t = await welcome();
+    const parts = await t.page.$$eval("#welcome > *", els => els.map(e => e.tagName.toLowerCase())); assert.equal(parts.join(","), "h1,p", "the title and one sentence above the list");
+    assert.equal(await t.page.$eval("#welcome-msg", e => e.textContent.split(/[.!?](\s|$)/).filter(s => s.trim()).length), 1, "one sentence");
+    assert.ok(!/encrypt/i.test(await t.page.textContent("#welcome")) && !/encrypt/i.test(await t.page.textContent("#demo-foot")), "the word encrypted stays off the welcome");
+    assert.equal(await t.page.locator("#list .row").count(), 3); assert.equal(JSON.stringify(await t.page.$$eval("#list .row .tx", els => els.map(e => e.dataset.text))), JSON.stringify(seedLines));
+    assert.equal(await t.page.$eval(".rail", e => getComputedStyle(e).display), "none", "no rail"); assert.equal(await t.page.$eval("#foot", e => getComputedStyle(e).display), "none", "no footer");
+    const st0 = await t.s(); assert.ok(st0.demo, "a local document"); assert.equal(st0.listId, null, "no id, no secret"); assert.equal(st0.status, "off", "no sync");
+    assert.equal((await storedLists(t.page)).length, 0, "nothing stored, nothing on the server");
+    assert.ok(await t.page.$eval("#w-keep", e => e.hidden), "Keep waits for the person to make it theirs");
+    const fits = await t.page.evaluate(() => ({ h: document.documentElement.scrollHeight, vh: innerHeight, foot: document.getElementById("demo-foot").getBoundingClientRect().bottom }));
+    assert.ok(fits.h <= fits.vh + 1 && fits.foot <= fits.vh, "everything on screen without scrolling: " + JSON.stringify(fits));
+    await t.press("#list .row:first-child .check"); await wait(700);
+    const st = await t.s(); assert.equal(st.stats.check, 1, "the knock"); assert.equal(st.stats.burst, 1, "the confetti"); assert.equal(await t.page.locator("#list .row.done").count(), 1, "the strike");
+    assert.equal((await storedLists(t.page)).length, 0, "still nothing stored"); assert.ok(await t.page.$eval("#w-keep", e => e.hidden), "one tap is not yet a list of yours");
+    await t.press("#list .row:not(.done) .check"); await wait(600); await t.press("#list .row:not(.done) .check"); await wait(1400);
+    assert.equal((await t.s()).stats.finish, 1, "the finale on all three"); assert.ok(!(await t.page.$eval("#w-keep", e => e.hidden)), "all three crossed off: Keep this list is offered");
+    assert.ok(await t.page.locator("#mark").isHidden(), "no hint"); assert.ok(await t.page.locator("#whatsnew").isHidden(), "no toast"); assert.equal(await t.page.locator("dialog[open]").count(), 0, "no sheet");
+    assert.equal(await t.page.locator("#install:not([hidden])").count(), 0, "no install hint on the welcome");
+    if (!touch) { await t.page.keyboard.press("a"); await wait(200); assert.ok(await t.page.$eval("#all", e => e.hidden), "Everything is not a place the welcome goes"); await t.page.keyboard.press("o"); await wait(200); assert.ok(!(await t.page.evaluate(() => document.body.classList.contains("one"))), "nor one-thing mode"); }
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0); assert.equal(t.thirdParty.length, 0);
+    await t.close();
+  });
+
+  await test(label + ": a line of your own offers Keep; Keep carries the lines and the check marks into a real list, and the save sheet follows", async () => {
+    const t = await welcome();
+    await t.press("#list .row:first-child .check"); await wait(500);
+    await t.press("#addtoday"); await t.page.waitForSelector("#list .row.editing"); await t.page.keyboard.type("Buy milk"); await t.page.keyboard.press("Escape"); await wait(400);
+    assert.equal(await t.page.locator("#list .row").count(), 4); assert.ok(!(await t.page.$eval("#w-keep", e => e.hidden)), "a line of your own: Keep this list is offered");
+    assert.equal((await storedLists(t.page)).length, 0, "nothing on the server until Keep");
+    await t.press("#w-keep"); await t.page.waitForSelector("#p-save[open]", { timeout: 9000 }); await wait(400);
+    const st = await t.s(); assert.ok(!st.demo && st.listId, "a real list"); assert.equal(st.mode, "edit");
+    const texts = await t.page.$$eval("#list .row .tx", els => els.map(e => e.dataset.text)); assert.ok(texts.includes("Buy milk") && texts.includes(seedLines[0]), "the lines came along: " + texts);
+    assert.equal(await t.page.locator("#list .row.done").count(), 1, "and the check mark");
+    await t.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
+    assert.ok((await storedLists(t.page)).some(k => k.startsWith("tf/v2/localserver/")), "now it is on the server");
+    assert.ok(/only key/.test(await t.page.textContent("#save-msg")) && /no spare/.test(await t.page.textContent("#save-msg")), "the save sheet says the one thing");
+    assert.ok(!/encrypt/i.test(await t.page.textContent("#p-save")), "the word encrypted stays off the save sheet");
+    assert.equal((await t.s()).seenVersion, VERSION, "first run marks the version seen silently"); assert.equal(await t.page.locator("#tour").count(), 0);
+    assert.equal(t.errors.length, 0, t.errors.join("; "));
+    await t.close();
+  });
+
+  await test(label + ": Skip starts the list as it stands; Paste opens the form, refuses junk, and opens a real link", async () => {
+    const t = await welcome();
+    await t.press("#w-skip"); await t.page.waitForSelector("#p-save[open]", { timeout: 9000 }); await t.page.click("#save-done"); await wait(400);
+    assert.equal(await t.page.locator("#list .row").count(), 3, "the three lines, untouched"); assert.equal(await t.page.locator("#list .row.done").count(), 0);
+    const { R } = await t.s(); await t.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
+    // a second tab of the same device lands on the welcome without a current list: Paste the View link
+    await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.current = null; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
+    const p2 = await t.ctx.newPage(); p2.setDefaultTimeout(6000); await p2.goto(BASE + "?transport=local"); await p2.waitForSelector("#welcome:not([hidden])"); await p2.waitForSelector("#list .row");
+    assert.ok(await p2.$eval("#w-paste-form", e => e.hidden), "the form waits behind the link");
+    if (touch) await p2.tap("#w-paste-show"); else await p2.click("#w-paste-show");
+    assert.ok(!(await p2.$eval("#w-paste-form", e => e.hidden)));
+    await p2.fill("#w-paste", "not a link"); await p2.press("#w-paste", "Enter"); await wait(200);
+    assert.ok(/doesn't look like a list link/.test(await p2.textContent("#w-err")), "junk is refused out loud");
+    await p2.fill("#w-paste", BASE + "#/r/" + R); await p2.press("#w-paste", "Enter"); await p2.waitForSelector("#ro:not([hidden])", { timeout: 9000 });
+    assert.equal((await p2.evaluate(() => window.__tf())).mode, "view", "the View link opens the list view-only"); assert.equal(await p2.locator("#list .row").count(), 3);
+    await p2.close(); await t.close();
+  });
+
+  await test(label + ": the save sheet by device — " + (touch ? "Safari on a phone leads with Add to Home Screen and shows no QR; the installed app says the icon holds the link" : "a desktop leads with Bookmark this page, then Copy, then Open it on your phone with the QR"), async () => {
+    const check = async (init, expect) => {
+      const t = await welcome(init);
+      await t.press("#w-skip"); await t.page.waitForSelector("#p-save[open]", { timeout: 9000 }); await wait(300);
+      const leads = await t.page.$$eval("#p-save .save-lead:not([hidden]) b", els => els.map(e => e.textContent.trim()));
+      const r = { leads, qr: !(await t.page.$eval("#save-phone", e => e.hidden)), link: !(await t.page.$eval("#save-link", e => e.hidden)), how: await t.page.$eval("#save-lead-home", e => e.hidden ? "" : e.querySelector("span").textContent) };
+      assert.equal(leads.length, 1, "one lead: " + JSON.stringify(r)); assert.ok(expect.lead.test(leads[0]), JSON.stringify(r)); assert.equal(r.qr, expect.qr, "the QR expander: " + JSON.stringify(r)); assert.equal(r.link, expect.link, "the link field: " + JSON.stringify(r));
+      if (expect.how) assert.ok(expect.how.test(r.how), r.how);
+      const order = await t.page.$$eval("#p-save .body > *:not([hidden])", els => els.map(e => e.id || e.className)); assert.ok(order.indexOf(expect.first) < order.indexOf("row-actions"), "the lead comes before the buttons: " + order);
+      assert.equal(await t.page.locator("#p-save canvas:visible").count(), expect.qr ? 0 : 0, "no QR on screen until the expander opens"); // the desktop's QR waits behind the summary
+      return t;
+    };
+    if (touch) {
+      let t = await check(IPHONE, { lead: /Add it to your Home Screen/, qr: false, link: false, how: /Tap Share, then Add to Home Screen/, first: "save-lead-home" }); await t.close();
+      t = await check(STANDALONE, { lead: /Saved—this icon holds your link/, qr: false, link: false, first: "save-lead-icon" }); await t.close();
+      t = await check("", { lead: /Add it to your Home Screen/, qr: false, link: false, how: /browser's menu/, first: "save-lead-home" }); await t.close(); // another phone: the browser's own menu
+    } else {
+      const t = await check("", { lead: /Bookmark this page/, qr: true, link: true, first: "save-lead-bm" });
+      assert.ok(/⌘D|Ctrl\+D/.test(await t.page.textContent("#save-bm-key")));
+      await t.page.click("#save-phone summary"); await wait(300); assert.ok(await t.page.locator("#save-qr-c").isVisible(), "the QR behind Open it on your phone");
+      await t.close();
+    }
+  });
+
+  await test(label + ": saving counts on Copy or I've saved it; until then ⋯ carries Save your link with a dot and the Share sheet repeats the key line; a device from before is grandfathered", async () => {
+    const t = await welcome();
+    await t.press("#w-skip"); await t.page.waitForSelector("#p-save[open]", { timeout: 9000 }); await wait(200);
+    await t.page.keyboard.press("Escape"); await wait(300); // closed without saving
+    assert.ok((await t.s()).unsaved, "not saved yet");
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await wait(200);
+    let rows = await t.page.$$eval("#menu > *:not([hidden]) .lb", els => els.map(e => e.firstChild.textContent.trim()));
+    assert.equal(rows.length, 10); assert.equal(rows[0], "Save your link"); assert.equal(await t.page.$eval("#menu-save .dot-k", e => e.textContent.trim()), "●", "with a dot");
+    await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await wait(200);
+    assert.ok(await t.page.locator("#share-unsaved").isVisible(), "the Share sheet repeats the key line"); assert.ok(/only key/.test(await t.page.textContent("#share-unsaved")));
+    await t.page.click("#share-save"); await t.page.waitForSelector("#p-save[open]");
+    await t.page.click("#save-done"); await wait(300);
+    assert.equal(await t.page.locator("#p-save[open]").count(), 0, "I've saved it closes the sheet"); assert.ok(!(await t.s()).unsaved);
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); rows = await t.page.$$eval("#menu > *:not([hidden]) .lb", els => els.map(e => e.firstChild.textContent.trim())); assert.equal(rows.length, 9, "nine rows again: " + rows[0]);
+    await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); assert.ok(await t.page.locator("#share-unsaved").isHidden(), "the notice is gone"); await t.page.keyboard.press("Escape"); await wait(200);
+    await t.page.reload(); await t.page.waitForSelector("#list .row"); assert.ok(!(await t.s()).unsaved, "remembered");
+    // Copy counts too (a second list, made from Lists)
+    await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); await t.page.click("#l-new"); await t.page.waitForSelector("#ask[open]"); await t.page.fill("#ask-input", "Second"); await t.page.click("#ask-ok");
+    await t.page.waitForSelector("#p-save[open]", { timeout: 9000 }); await wait(200); await t.page.click("#save-copy"); await wait(300);
+    assert.equal(await t.page.locator("#p-save[open]").count(), 0, "Copy closes the sheet"); assert.ok(/#\/l\//.test(await t.page.evaluate(() => window.__clip)), "with the Private link on the clipboard"); assert.ok(!(await t.s()).unsaved);
+    // a 1.2 device that never confirmed its old sheet: grandfathered on update, no row, no dot
+    await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device.seenVersion = "1.2"; delete m.device.savedGrandfathered; m.lists.forEach(l => { l.linkSaved = false; }); localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
+    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
+    assert.ok(!(await t.s()).unsaved, "grandfathered"); assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast is the only new thing");
+    await t.press("#wn-x"); await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); assert.equal((await t.page.$$eval("#menu > *:not([hidden])", els => els.length)), 9); await t.page.keyboard.press("Escape");
+    assert.equal(t.errors.length, 0, t.errors.join("; "));
+    await t.close();
+  });
+
+  await test(label + ": the Share sheet — the View link first and by default, its two uses named, the Private link last under a warning in the danger colour, New keys, and Tell a friend apart with the note and the bare URL, never a list link", async () => {
+    const t = await fresh(opts, { init: STUBS });
+    const { listId, R } = await t.s();
+    await t.press("#more"); await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await wait(300);
+    const heads = await t.page.$$eval("#p-share .share-block:not([hidden]) h3", els => els.map(e => e.firstChild.textContent.trim()));
+    assert.equal(heads.join("|"), "View link|Private link|Tell a friend", "the order");
+    assert.equal(await t.page.$eval("#share-view h3 .sub-h", e => e.textContent), "view only");
+    const viewMsg = await t.page.textContent("#share-view .share-msg"); assert.ok(/can't change it/.test(viewMsg) && /second screen/.test(viewMsg) && /someone who should watch/.test(viewMsg), "both uses in one breath: " + viewMsg);
+    assert.ok(/sound and the confetti/.test(await t.page.textContent("#share-view-more")));
+    assert.ok(!/for your other devices|for anyone|who should be able to edit/i.test(await t.page.textContent("#p-share")), "what the link does, never who it is for");
+    assert.equal(await t.page.$eval("#share-link", e => e.value), BASE + "#/r/" + R, "the View link is the default");
+    await t.page.click("#share-copy"); await wait(150); assert.equal(await t.page.evaluate(() => window.__clip), BASE + "#/r/" + R, "the first Copy grabs the View link");
+    assert.equal(await t.page.$eval("#qr", e => e.hidden), touch, "the code where the sheet has room");
+    const warn = await t.page.$eval("#share-warn", e => ({ text: e.textContent, color: getComputedStyle(e).color, danger: getComputedStyle(document.documentElement).getPropertyValue("--danger").trim() }));
+    const hex = c => "#" + c.match(/\d+/g).slice(0, 3).map(v => (+v).toString(16).padStart(2, "0")).join("").toUpperCase();
+    assert.equal(hex(warn.color), warn.danger.toUpperCase(), "the warning line is in the danger colour: " + JSON.stringify(warn));
+    const priv = await t.page.textContent("#share-private .share-msg"); assert.ok(/only key/.test(priv) && /no spare/.test(priv) && /gets the View link instead/.test(priv), priv);
+    assert.equal(await t.page.$eval("#share-link-private", e => e.value), BASE + "#/l/" + listId);
+    assert.equal((await t.page.textContent("#share-rotate")).trim(), "New keys"); assert.ok(/old links stop working everywhere/.test(await t.page.textContent("#share-rotate-note")));
+    assert.ok(!/edit link|rotate/i.test(await t.page.textContent("#p-share")), "the old names are gone from the sheet");
+    const gap = await t.page.evaluate(() => document.getElementById("share-friend").getBoundingClientRect().top - document.getElementById("share-private").getBoundingClientRect().bottom); assert.ok(gap >= 0, "Tell a friend sits apart from the link blocks");
+    await t.page.click("#share-friend-go"); await wait(200);
+    const shared = await t.page.evaluate(() => window.__shared); assert.equal(shared.length, 1, "handed to the system share sheet");
+    assert.equal(shared[0].url, BASE, "the bare app URL"); assert.ok(!/#\/(l|r)\//.test(JSON.stringify(shared)), "never a list link");
+    const sentences = shared[0].text.split(/[.!?](\s|$)/).filter(s => s.trim()); assert.equal(sentences.length, 2, "two sentences: " + shared[0].text); assert.ok(/free/.test(shared[0].text) && /no account/.test(shared[0].text), "says it is free and has no account");
+    // without a system share sheet the note lands on the clipboard, URL on its own line
+    await t.page.evaluate(() => { delete navigator.share; navigator.share = undefined; }); await t.page.click("#share-friend-go"); await wait(200);
+    const clip = await t.page.evaluate(() => window.__clip); assert.ok(clip.endsWith("\n" + BASE) && !/#\/(l|r)\//.test(clip), "the clipboard fallback: " + clip);
+    await t.page.keyboard.press("Escape"); await wait(200);
+    // a View link holder sees the View block and Tell a friend only
+    const v = await fresh(opts, { url: BASE + "?transport=local#/r/" + R, list: false, ctx: t.ctx });
+    await v.page.waitForSelector("#ro:not([hidden])"); await v.page.evaluate(() => document.getElementById("more").click()); await v.page.waitForSelector("#p-menu[open]");
+    assert.equal((await v.page.textContent("#menu-share-lb")).trim(), "Share the View link");
+    await v.page.click('#p-menu [data-act="share"]'); await v.page.waitForSelector("#p-share[open]");
+    assert.equal((await v.page.$$eval("#p-share .share-block:not([hidden]) h3", els => els.map(e => e.firstChild.textContent.trim()))).join("|"), "View link|Tell a friend");
+    assert.equal((await v.page.$eval("#ro", e => e.textContent.replace(/\s+/g, " ").trim())), "View link · view only", "the pill names the link");
+    assert.equal(await v.page.$eval("#ro .ro-l", e => getComputedStyle(e).display), touch ? "none" : "inline", "the phone's rail keeps the state alone");
+    await v.close();
+    assert.equal(t.errors.length, 0, t.errors.join("; "));
+    await t.close();
+  });
+
+  await test(label + ": the names everywhere — How it works (Private link, View link, Second screen beside Let someone watch, New keys), Settings › Advanced on a View link, the refusal of an add on a View link", async () => {
+    const t = await fresh(opts);
+    const { R } = await t.s();
+    await t.press("#more"); await t.page.click('#p-menu [data-act="help"]'); await t.page.waitForSelector("#p-help[open]");
+    const body = await t.page.textContent("#help-body");
+    assert.ok(/Private link/.test(body) && /View link/.test(body) && /New keys/.test(body), "the names");
+    assert.ok(/Second screen:/.test(body) && /Let someone watch:/.test(body), "both examples");
+    const ex = await t.page.$$eval("#help-body p", els => els.filter(e => /^(Second screen|Let someone watch):/.test(e.textContent)).map(e => e.textContent.length));
+    assert.equal(ex.length, 2); assert.ok(Math.abs(ex[0] - ex[1]) < 90, "same weight, same length: " + ex);
+    assert.ok(!/edit link|view-only link|Rotate \(in Share\)/.test(body), "no old names: " + body.match(/edit link|Rotate \(in Share\)/));
+    assert.ok(/Shuffle/.test(body) && /↻/.test(body), "shuffle in How it works");
+    await t.page.keyboard.press("Escape"); await wait(200);
+    if (!touch) { await t.page.keyboard.press("?"); await t.page.waitForSelector("#p-keys[open]"); assert.ok(/Shuffle/.test(await t.page.textContent("#keys-body")), "S in the reference"); await t.page.keyboard.press("Escape"); await wait(200); }
+    await t.page.goto(BASE + "?transport=local#/r/" + R + "/add?text=Nope"); await wait(1500);
+    assert.ok(/View link only shows the list/.test(await t.page.textContent("#toast .msg")) && /Private link/.test(await t.page.textContent("#toast .msg")), "the refusal names the links: " + await t.page.textContent("#toast .msg"));
+    await t.page.evaluate(() => document.getElementById("more").click()); await t.page.waitForSelector("#p-menu[open]"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
+    assert.equal(await t.page.inputValue("#set-addurl"), "Open a Private link to get its URL");
+    await t.page.keyboard.press("Escape");
+    const about = await fresh(opts, { url: BASE + "about.html", list: false, ctx: t.ctx });
+    const main = await about.page.textContent("main"); assert.ok(/Private link/.test(main) && /View link/.test(main) && !/edit link/.test(main), "About uses the names");
+    await about.close(); await t.close();
+  });
+
+  await test(label + ": shuffle in one-thing mode — " + (touch ? "↻ beside the count" : "S, or ↻ beside the count") + ": a different undone line, never the same twice, no reorder, the last line wobbles, a check-off puts the top line back; nothing outside the mode", async () => {
+    const t = await fresh(opts);
+    const { listId } = await t.s();
+    await t.page.goto(BASE + "?transport=local#/l/" + listId + "/add?text=Four%0AFive%0ASix"); await wait(1200);
+    assert.equal(await t.page.$eval("#shuffle", e => getComputedStyle(e).display), "none", "↻ exists only inside one-thing mode");
+    if (!touch) { const o0 = await t.page.$$eval("#list .row", els => els.map(e => e.dataset.id).join(",")); await t.page.keyboard.press("s"); await wait(300); assert.equal(await t.page.$$eval("#list .row", els => els.map(e => e.dataset.id).join(",")), o0, "S outside the mode does nothing"); }
+    if (touch) await t.page.tap("#count"); else await t.page.keyboard.press("o"); await wait(400);
+    assert.ok(await t.page.evaluate(() => document.body.classList.contains("one"))); assert.equal(await t.page.$eval("#shuffle", e => getComputedStyle(e).display !== "none"), true, "↻ beside the count");
+    assert.ok(await t.page.evaluate(() => { const c = document.getElementById("count").getBoundingClientRect(), s = document.getElementById("shuffle").getBoundingClientRect(); return s.left >= c.right - 2 && Math.abs(s.top - c.top) < 20; }), "beside the count");
+    const orderOf = () => t.page.evaluate(() => Object.values(JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc.items).filter(i => !i.deleted).map(i => i.id + ":" + i.todayOrder).sort().join(","));
+    const o1 = await orderOf(); const top = (await t.s()).oneNow;
+    const seen = new Set(); let prev = top, tick0 = (await t.s()).stats.tick;
+    for (let i = 0; i < 10; i++) {
+      if (touch || i % 2) await t.page.tap("#shuffle").catch(() => t.page.click("#shuffle")); else await t.page.keyboard.press("s");
+      await wait(320);
+      const now = (await t.s()).oneNow; assert.ok(now && now !== prev, "never the same line twice in a row (" + i + ")"); seen.add(now); prev = now;
+    }
+    assert.ok(seen.size >= 3, "chosen at random among the undone lines: " + seen.size);
+    assert.equal((await t.s()).stats.tick, tick0 + 10, "the theme's soft tick each time");
+    assert.equal(await orderOf(), o1, "nothing was reordered");
+    assert.equal(await t.page.locator("#list .row.one-now").count(), 1, "one line shown");
+    const shown = (await t.s()).oneNow; await wait(1200); assert.equal((await t.s()).oneNow, shown, "the shuffled line holds");
+    await t.press("#list .row.one-now .check"); await wait(900);
+    const firstUndone = await t.page.evaluate(() => { const d = JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc; return Object.values(d.items).filter(i => !i.deleted && i.today && !i.done).sort((a, b) => a.todayOrder - b.todayOrder)[0].id; });
+    assert.equal((await t.s()).oneNow, firstUndone, "after a check-off the top undone line is back"); assert.equal((await t.s()).shuffled, null);
+    // a panel open: a shuffle is ignored
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); const before = (await t.s()).oneNow; if (!touch) await t.page.keyboard.press("s"); await wait(200); assert.equal((await t.s()).oneNow, before); await t.page.keyboard.press("Escape"); await wait(200);
+    // down to one undone line: a wobble, nothing changes
+    while ((await t.page.evaluate(() => Object.values(JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc.items).filter(i => !i.deleted && i.today && !i.done).length)) > 1) { await t.press("#list .row.one-now .check"); await wait(800); }
+    const last = (await t.s()).oneNow; if (touch) await t.page.tap("#shuffle"); else await t.page.keyboard.press("s"); await wait(120);
+    assert.ok(await t.page.$eval("#list .row.one-now", e => e.classList.contains("wobble")), "a small wobble"); assert.equal((await t.s()).oneNow, last, "nothing changes");
+    assert.equal(t.errors.length, 0, t.errors.join("; "));
+    await t.close();
+  });
+
+  if (touch) await test(label + ": shake to shuffle — the hint once, Allow, a shake shuffles, a walk does not, one shuffle a second; declined means ↻ only", async () => {
+    const t = await fresh(opts, { init: IPHONE + ` window.__perm = "granted"; DeviceMotionEvent.requestPermission = async () => window.__perm;` });
+    const { listId } = await t.s();
+    await t.page.goto(BASE + "?transport=local#/l/" + listId + "/add?text=Four%0AFive"); await wait(1200);
+    assert.ok(await t.page.$eval("#shake-ask", e => e.hidden), "nothing before one-thing mode");
+    await t.page.tap("#count"); await wait(400);
+    assert.ok(!(await t.page.$eval("#shake-ask", e => e.hidden)), "the first time one-thing mode opens on a phone: Shake to shuffle?"); assert.ok(/Shake to shuffle\?/.test(await t.page.textContent("#shake-ask")));
+    await t.page.tap("#shake-allow"); await wait(300);
+    let st = await t.s(); assert.equal(st.shake, "allowed"); assert.ok(st.motion, "listening");
+    const shake = (a, b) => t.page.evaluate(([a, b]) => { window.dispatchEvent(new DeviceMotionEvent("devicemotion", { acceleration: { x: a, y: 0, z: 0 } })); window.dispatchEvent(new DeviceMotionEvent("devicemotion", { acceleration: { x: b, y: 0, z: 0 } })); }, [a, b]);
+    let before = st.oneNow; await shake(0, 25); await wait(400); assert.notEqual((await t.s()).oneNow, before, "a shake (a delta over 15 m/s²) shuffles");
+    before = (await t.s()).oneNow; await shake(0, 25); await wait(300); assert.equal((await t.s()).oneNow, before, "one shuffle a second at most");
+    await wait(900); before = (await t.s()).oneNow; await shake(0, 6); await shake(6, 11); await wait(300); assert.equal((await t.s()).oneNow, before, "a walk (small deltas) does not");
+    await wait(300); await t.page.tap("#more"); await t.page.waitForSelector("#p-menu[open]"); before = (await t.s()).oneNow; await shake(0, 25); await wait(300); assert.equal((await t.s()).oneNow, before, "ignored while a panel is open"); await t.page.keyboard.press("Escape"); await wait(200);
+    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(400);
+    assert.ok(await t.page.$eval("#shake-ask", e => e.hidden), "asked once"); assert.ok((await t.s()).motion, "and still listening on the next open");
+    // declined: ↻ only
+    await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); delete m.device.shake; m.device.oneThing = false; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
+    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(300); await t.page.tap("#count"); await wait(400);
+    assert.ok(!(await t.page.$eval("#shake-ask", e => e.hidden))); await t.page.tap("#shake-x"); await wait(200);
+    st = await t.s(); assert.equal(st.shake, "declined");
+    before = st.oneNow; await wait(1100); await shake(0, 25); await wait(300); assert.equal((await t.s()).oneNow, before, "a shake does nothing once declined");
+    await t.page.tap("#shuffle"); await wait(300); assert.notEqual((await t.s()).oneNow, before, "↻ still works");
+    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(400); assert.ok(await t.page.$eval("#shake-ask", e => e.hidden), "never asked again");
+    assert.equal(t.errors.length, 0, t.errors.join("; "));
+    await t.close();
+  });
+
+  await test(label + ": Keep under the server's create limit still degrades politely — the list is kept here, the toast says so, no error", async () => {
+    const t = await welcome();
+    await t.page.evaluate(() => localStorage.setItem("tf/test/limit", "1"));
+    await t.press("#w-skip"); await t.page.waitForSelector("#p-save[open]", { timeout: 9000 }); await t.page.click("#save-done"); await wait(300);
+    await t.page.waitForFunction(() => window.__tf().status === "busy", null, { timeout: 8000, polling: 200 });
+    assert.equal(await t.page.locator("#list .row").count(), 3, "the list is here"); assert.ok(/busy/i.test(await t.page.textContent("#toast .msg")) && /safe here/.test(await t.page.textContent("#toast .msg")), await t.page.textContent("#toast .msg"));
+    assert.ok((await storedLists(t.page)).some(k => k.startsWith("tf/v3/list/")), "kept locally");
+    assert.equal(t.errors.length, 0, t.errors.join("; "));
+    await t.close();
+  });
+
+  await test(label + ": the card a texted link shows — the Open Graph and Twitter tags are in the static HTML of both pages, the image answers 200 at 1200×630 under 150 KB", async () => {
+    for (const file of ["", "about.html"]) {
+      const html = await (await fetch(BASE + file)).text();
+      const tag = (p, n = "property") => { const m = html.match(new RegExp("<meta " + n + "=\"" + p + "\" content=\"([^\"]*)\"")); return m ? m[1] : null; };
+      assert.equal(tag("og:title"), file ? "Today's Five — how it works &amp; privacy" : "Today's Five", file + " og:title");
+      assert.ok(tag("og:description") && tag("og:description").split(/[.!?](\s|$)/).filter(s => s.trim()).length === 1, file + " one sentence: " + tag("og:description"));
+      assert.ok(/^https:\/\/54kz2vzbdw-code\.github\.io\/todays-five\/icons\/og\.png$/.test(tag("og:image")), file + " an absolute image URL");
+      assert.ok(/^https:\/\/54kz2vzbdw-code\.github\.io\/todays-five\//.test(tag("og:url")), file + " og:url"); assert.equal(tag("twitter:card", "name"), "summary_large_image");
+      assert.ok(new RegExp("<link rel=\"canonical\" href=\"https://54kz2vzbdw-code\\.github\\.io/todays-five/" + file + "\">").test(html), file + " canonical");
+    }
+    const r = await fetch(BASE + "icons/og.png"); assert.equal(r.status, 200); const buf = Buffer.from(await r.arrayBuffer());
+    const png = PNG.sync.read(buf); assert.equal(png.width + "×" + png.height, "1200×630"); assert.ok(buf.length < 150 * 1024, "under 150 KB: " + buf.length);
+    const sw = await (await fetch(BASE + "sw.js")).text(); assert.ok(!/og\.png/.test(sw), "not part of the shell");
   });
 
   await test(label + ": no page errors, CSP violations or third-party requests across a full session", async () => {
@@ -959,7 +1237,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]');
     await t.page.waitForSelector("#p-theme[open]"); await t.page.click("#sw-night .swatch:nth-child(4)"); await wait(200); await t.page.click("#partner-use"); await t.page.keyboard.press("Escape"); await wait(200);
     await t.press("#daynight"); await wait(500); await t.press("#daynight"); await wait(500);
-    await t.press("#more"); await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await t.page.click("#share-tab-view"); await wait(300); await t.page.keyboard.press("Escape");
+    await t.press("#more"); await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await t.page.click("#share-copy"); await wait(300); await t.page.keyboard.press("Escape");
     if (!touch) { await t.press("#share"); await t.page.waitForSelector("#p-share[open]"); await t.page.keyboard.press("Escape"); await t.page.keyboard.press("?"); await t.page.waitForSelector("#p-keys[open]"); await t.page.keyboard.press("Escape"); await t.page.keyboard.press("f"); await wait(200); await t.page.keyboard.press("f"); }
     await wait(300);
     assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0, t.csp.join("; ")); assert.equal(t.thirdParty.length, 0, t.thirdParty.join("; "));

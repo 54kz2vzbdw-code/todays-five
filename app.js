@@ -68,7 +68,9 @@ if (!dev.hints || typeof dev.hints !== "object") dev.hints = (dev.tourDone || me
 function saveDevice() {
   // another tab may have changed the registry since this tab loaded: union lists, respect rotations, keep our device settings
   const stored = loadMeta();
-  const dead = new Set([...(stored.dead || []), ...(meta.dead || [])]);
+  const undead = new Set(meta.undead || []); // an id this tab brought back (the ten-second undo after Delete everywhere): the dead mark goes, in storage too
+  const dead = new Set([...(stored.dead || []), ...(meta.dead || [])].filter(id => !undead.has(id)));
+  delete meta.undead;
   const byId = new Map();
   for (const l of [...(stored.lists || []), ...(meta.lists || [])]) if (l && l.id && !dead.has(l.id)) byId.set(l.id, { ...(byId.get(l.id) || {}), ...l });
   meta.lists = Array.from(byId.values());
@@ -112,6 +114,7 @@ let wakeLock = null;
 let openPanel = null;
 // 1.4: panels are one stack (see showPanel): the frames below the open panel, the history entries pushed for them, and the flags the moves set
 const panelStack = []; let panelDepth = 0, panelSwitching = false, panelRestoring = false, historyGuard = 0, pendingPush = 0;
+let urlSync = false, unwindWaiters = [], backPending = false; // the unwind's own popstate: the hashchange that follows it is not a link, and whoever waits for it (a reload on iOS) may go on
 const openers = {}; // panel id → repaint-and-show, registered by panels.js (the ⋯ menu's is in this file)
 let markTarget = null, markKey = ""; // the just-in-time hint on screen, if any (declared up here: boot() reaches it)
 let menuHintFor = null;        // the line whose edit just ended by hand: the menu hint points at it once the editor is gone
@@ -355,6 +358,7 @@ async function flushOthers() {
 }
 addEventListener("hashchange", () => {
   if (reloading) return;
+  if (urlSync) { urlSync = false; fixUrl(); return; } // the stack's unwind brought an old entry's URL up, not a link
   takeExtrasFromHash();
   const h = hashRef(); if (!h) return;
   const r = resolveRef(h);
@@ -1630,7 +1634,11 @@ function showPanel(id, { anchor = null } = {}) {
   idleReset();
 }
 /** Back one level, as the person asked: through history when the level has an entry (its popstate does the work), else directly. */
-function goBack() { if (panelDepth > 0) history.back(); else popPanel(); }
+function goBack() {
+  if (backPending) return; // a Back is already travelling
+  if (panelDepth > 0) { backPending = true; history.back(); setTimeout(() => { backPending = false; }, 800); } // the level pops when the traversal lands; a dialog the browser closes on its own meanwhile must not unwind again
+  else popPanel();
+}
 /** The level below: the parent repainted by its opener and scrolled to where it was; at the root, everything closes. */
 function popPanel() {
   if (!openPanel && !panelStack.length) return;
@@ -1648,19 +1656,29 @@ function closeAll({ unwind = true } = {}) {
   const cur = openPanel; openPanel = null; panelStack.length = 0;
   if (cur && cur.open) { panelSwitching = true; cur.close(); panelSwitching = false; }
   if (backBtn.parentNode) backBtn.remove();
-  if (unwind && panelDepth > 0) { historyGuard++; history.go(-panelDepth); }
+  if (unwind && panelDepth > 0 && historyGuard === 0 && !backPending) { historyGuard++; history.go(-panelDepth); } // one traversal at a time: a second would leave the page
   panelDepth = 0;
 }
 function closePanel() { closeAll(); } // forget it now, not when the close event lands: what follows may need the panel gone
+/** The app's own place, written back over whatever URL a history traversal brought up. */
+function fixUrl() { history.replaceState(null, "", BASE + SEARCH + (listId && !demo ? frag({ id: listId, mode: listMode }) : "")); }
+/** Resolves once a pending history unwind has landed (at once when none is pending): a reload must not race it. */
+function awaitUnwind() { return historyGuard > 0 ? new Promise(r => { unwindWaiters.push(r); setTimeout(r, 400); }) : Promise.resolve(); }
 addEventListener("popstate", e => {
-  if (historyGuard > 0) { historyGuard--; if (pendingPush) { history.pushState({ tfPanel: pendingPush }, "", location.href); panelDepth = pendingPush; pendingPush = 0; } return; } // our own unwind landing; a panel opened meanwhile gets its entry now
+  if (historyGuard > 0) { // our own unwind landing: the entry below may carry a URL from before the stack opened
+    historyGuard--; urlSync = true; fixUrl(); setTimeout(() => { urlSync = false; }, 0);
+    if (pendingPush) { history.pushState({ tfPanel: pendingPush }, "", location.href); panelDepth = pendingPush; pendingPush = 0; } // a panel opened meanwhile gets its entry now
+    const w = unwindWaiters; unwindWaiters = []; w.forEach(r => r());
+    return;
+  }
+  backPending = false;
   if (!openPanel && !panelStack.length) { panelDepth = 0; return; } // nothing open: a leftover entry, nothing to do
   const target = e.state && e.state.tfPanel ? e.state.tfPanel : 0;
   while (panelDepth > target && (openPanel || panelStack.length)) { panelDepth--; popPanel(); }
   if (target === 0 && (openPanel || panelStack.length)) closeAll({ unwind: false });
 });
 $$("dialog.panel").forEach(d => {
-  d.addEventListener("close", () => { if (!panelSwitching && openPanel === d) closeAll(); idleReset(); }); // a close from anywhere else takes the stack with it
+  d.addEventListener("close", () => { if (!panelSwitching && !backPending && openPanel === d) closeAll(); idleReset(); }); // a close from anywhere else takes the stack with it (not one the browser forces while a Back is already on its way)
   d.addEventListener("cancel", e => { if (openPanel !== d) return; e.preventDefault(); goBack(); }); // Escape: back one level, closed at the root
   d.addEventListener("click", e => { if (e.target === d && !clickAfterDrag()) { if (openPanel === d) closeAll(); else d.close(); } }); // not the click a browser synthesises after the hold that opened it
   d.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => { if (openPanel === d) closeAll(); else d.close(); }));
@@ -1865,7 +1883,7 @@ function switchTo(r, { paste = false } = {}) {
   if (IOS && !STANDALONE) {
     reloading = true;
     const target = BASE + SEARCH + frag(r);
-    if (location.origin + location.pathname === BASE) { flushQuick().then(() => { location.replace(target); location.reload(); }); }
+    if (location.origin + location.pathname === BASE) { flushQuick().then(awaitUnwind).then(() => { location.replace(target); location.reload(); }); }
     else location.replace(target); // path changes (…/index.html): this is a real navigation, no reload needed
     return;
   }
@@ -2107,7 +2125,7 @@ function hintToday() {
 const api = {
   M, C, T, VERSION, BUILD, VERSION_LABEL, config, $, $$, IOS, STANDALONE, BASE, SEARCH, TRANSPORT_KIND, HOVER, NARROW, RM, DARK_MQ, touchUi, sheetUi, canEdit,
   meta, dev, rows, sound, fx,
-  get demo() { return demo; }, get askedPanel() { return askedPanel; }, unsavedEntry, shuffle, entryOf, isShared, paintOrigin,
+  get demo() { return demo; }, get askedPanel() { return askedPanel; }, unsavedEntry, shuffle, entryOf, isShared, paintOrigin, awaitUnwind,
   get doc() { return doc; }, set doc(v) { doc = v; },
   get listId() { return listId; }, get listMode() { return listMode; }, get ref() { return ref; }, get sync() { return sync; }, get transport() { return transport; },
   get theme() { return theme; }, get view() { return view; }, get syncStatus() { return syncStatus; }, get editing() { return editing; }, get openPanel() { return openPanel; },

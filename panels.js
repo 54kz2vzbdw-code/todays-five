@@ -274,7 +274,7 @@ async function rotateLink() {
   if (A.IOS && !A.STANDALONE) {
     // Safari memoised the manifest at load; reload so an Add to Home Screen now carries the new link (openList shows the save sheet)
     A.saveDevice();
-    location.replace(A.BASE + A.SEARCH + "#/l/" + newId); location.reload();
+    (A.awaitUnwind ? A.awaitUnwind() : Promise.resolve()).then(() => { location.replace(A.BASE + A.SEARCH + "#/l/" + newId); location.reload(); }); // after the closed sheet's history unwind lands
     return;
   }
   await A.openList({ id: newId, mode: "edit" });
@@ -784,12 +784,12 @@ export async function deleteEverywhere() {
   if (next) A.switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else A.showWelcome();
   A.toast(dead ? `Deleted “${name}” everywhere` : `Deleted “${name}” here; the server copy goes when you're back online`, { action: async () => {
     // the client still holds W and the document: re-create the row under the same link
-    meta().dead = (meta().dead || []).filter(x => x !== id);
+    meta().dead = (meta().dead || []).filter(x => x !== id); meta().undead = [...(meta().undead || []), id]; // the dead mark goes in storage too, or the merge on save would drop the entry again
     meta().pendingKill = (meta().pendingKill || []).filter(k => k.lookupId !== kill.lookupId);
     A.saveLocal(id, { doc: docCopy, rev: 0, dirty: true, created: true, mode: "edit" });
-    const e = A.registerList(id, entry.name || docCopy.name || "", "edit"); e.created = true; e.linkSaved = true; e.archived = false;
+    const e = A.registerList(id, entry.name || docCopy.name || "", "edit", entry.origin); e.created = true; e.linkSaved = true; e.archived = false;
     A.saveDevice();
-    A.switchTo({ id, mode: "edit" });
+    A.switchTo({ id, mode: "edit", origin: entry.origin === "shared" ? "shared" : "mine" });
     A.toast("Back, under the same link");
   } });
 }

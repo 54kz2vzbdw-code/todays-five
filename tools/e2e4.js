@@ -52,6 +52,10 @@ async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: 
     if (!opts.hasTouch) { await page.mouse.move(2, 2); await wait(400); } // past the tools' fade, so "at rest" means at rest
   }
   const s = () => page.evaluate(() => window.__tf());
+  /** Escape, and again while a panel is still open: 1.4's Escape goes back one level, and the checks below mean "close it all" */
+  const esc = async () => { await page.keyboard.press("Escape"); for (let i = 0; i < 4; i++) { await wait(150); if (!(await page.$("dialog.panel[open]"))) break; await page.keyboard.press("Escape"); } await wait(120); };
+  /** a reload that lets the history unwind of a closing stack land first (a same-document traversal right before a reload aborts it) */
+  const reload = async o => { await wait(180); await page.reload(o); };
   const press = async sel => {
     await page.bringToFront();
     // the one-time iOS install hint sits over the footer; a person would dismiss it, so does the suite
@@ -76,7 +80,7 @@ async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: 
   /** the row tools a person can see: rendered, opaque, not clipped away */
   const visibleTools = (scope = "") => page.$$eval(scope + " .row .tool", els => els.filter(e => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 2 && cs.opacity !== "0" && cs.visibility !== "hidden" && cs.display !== "none"; }).map(e => e.className.replace("tool ", "")));
   const front = () => page.bringToFront();
-  return { ctx, page, errors, csp, thirdParty, consoleErrors, s, press, hold, lineMenu, away, visibleTools, front, close: () => shared ? page.close() : ctx.close() };
+  return { ctx, page, errors, csp, thirdParty, consoleErrors, s, press, hold, lineMenu, away, visibleTools, front, esc, reload, close: () => shared ? page.close() : ctx.close() };
 }
 const rect = (page, sel) => page.$eval(sel, e => { const r = e.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; });
 const seedLines = JSON.parse(fs.readFileSync(new URL("../model.js", import.meta.url), "utf8").match(/SEED_LINES = (\[[\s\S]*?\]);/)[1].replace(/,\s*\]/, "]"));
@@ -147,7 +151,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.ok(await t.page.$("#p-menu[open]"), "the menu stays open for a toggle row"); assert.equal(await t.page.textContent("#menu-sound-k"), "Off");
     assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device.muted), true);
     await t.press('#p-menu [data-act="sound"]'); assert.equal(await t.page.textContent("#menu-sound-k"), "On");
-    await t.page.keyboard.press("Escape"); await wait(200);
+    await t.esc(); await wait(200);
     if (!touch) { await t.page.keyboard.press("m"); assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device.muted), true, "M still mutes"); await t.page.keyboard.press("m"); const s0 = (await t.s()).slot; await t.page.keyboard.press("t"); await wait(600); assert.notEqual((await t.s()).slot, s0, "T flips Day and Night"); assert.equal(await t.page.locator("#p-theme[open]").count(), 0, "and opens nothing"); await t.page.keyboard.press("t"); await wait(600); }
     await t.close();
   });
@@ -161,7 +165,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
       assert.equal((await t.visibleTools("#list")).join(","), "lmenu", "hover reveals exactly one control: ⋯");
       await t.away();
     }
-    await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])"); await wait(300); await t.page.keyboard.press("Escape"); await wait(200);
+    await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])"); await wait(300); await t.esc(); await wait(200);
     const atRest = await t.visibleTools("#all");
     assert.equal(atRest.join(","), "today,today,today", "Everything at rest: only the stars: " + atRest);
     const star = await t.page.$eval("#all .row:first-child .tool.today", e => { const cs = getComputedStyle(e); const p = e.querySelector("path"); return { pressed: e.getAttribute("aria-pressed"), fill: getComputedStyle(p).fill, color: cs.color, border: cs.borderTopColor, bg: cs.backgroundColor, w: e.getBoundingClientRect().width, text: e.textContent.trim() }; });
@@ -183,16 +187,16 @@ for (const [label, opts, touch] of VIEWPORTS) {
 
   await test(label + ": the line menu opens by " + (touch ? "a hold released in place and by a swipe right, Edit first; a hold that moves drags" : "⋯, Edit first; dragging ⋯ moves the line; the popover sits by the row"), async () => {
     const t = await fresh(opts);
-    await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])"); await wait(300); await t.page.keyboard.press("Escape"); await wait(200);
+    await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])"); await wait(300); await t.esc(); await wait(200);
     await t.lineMenu("#all .row:nth-child(2)");
     assert.equal((await t.page.textContent("#p-line .menu button:first-child .lb")).trim(), "Edit", "Edit at the top");
     if (!touch) { assert.ok(await t.page.$eval("#p-line", e => e.classList.contains("pop")), "popover"); const d = await rect(t.page, "#p-line"), g = await rect(t.page, "#all .row:nth-child(2) .tool.lmenu"); assert.ok(d.top >= g.bottom - 1 && Math.abs(d.right - g.right) < 8, "under ⋯: " + JSON.stringify({ d, g })); }
     else assert.ok(!(await t.page.$eval("#p-line", e => e.classList.contains("pop"))), "a sheet on the phone");
-    await t.page.keyboard.press("Escape"); await wait(300);
+    await t.esc(); await wait(300);
     const first = await t.page.$eval("#all .row:first-child .tx", e => e.dataset.text);
     if (touch) {
       // swipe right → the menu
-      await t.hold("#all .row:nth-child(3) .tx", 60, 120); await t.page.waitForSelector("#p-line[open]"); await t.page.keyboard.press("Escape"); await wait(300);
+      await t.hold("#all .row:nth-child(3) .tx", 60, 120); await t.page.waitForSelector("#p-line[open]"); await t.esc(); await wait(300);
       // a hold that moves: row 1 dragged below row 2
       const b1 = await rect(t.page, "#all .row:nth-child(1) .tx"), b2 = await rect(t.page, "#all .row:nth-child(2)");
       const cdp = await t.ctx.newCDPSession(t.page); const x = b1.left + 40, y0 = b1.top + b1.height / 2;
@@ -214,7 +218,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     if (!touch) await t.page.hover('#all .sec:not([data-id=""]) .sec-h');
     await t.press('#all .sec:not([data-id=""]) .sec-more'); await t.page.waitForSelector("#p-sec[open]");
     assert.equal(await t.page.$eval("#p-sec", e => e.classList.contains("pop")), !touch, "section menu: popover on the desktop, sheet on the phone");
-    await t.page.keyboard.press("Escape");
+    await t.esc();
     assert.equal(t.errors.length, 0, t.errors.join("; "));
     await t.close();
   });
@@ -231,23 +235,23 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#v-today"); await t.press("#v-all"); await wait(400); assert.equal((await t.s()).mark, "", "never again");
     if (touch) {
       const during = await t.hold("#all .row:nth-child(2) .tx"); assert.equal(during.mark, "drag", "the drag hint while the line is held"); assert.ok(during.dragging);
-      await t.page.waitForSelector("#p-line[open]"); assert.equal((await t.s()).mark, "", "gone on release"); await t.page.keyboard.press("Escape"); await wait(300);
-      assert.equal((await t.hold("#all .row:nth-child(3) .tx")).mark, "", "a second hold shows nothing"); await t.page.keyboard.press("Escape"); await wait(300);
+      await t.page.waitForSelector("#p-line[open]"); assert.equal((await t.s()).mark, "", "gone on release"); await t.esc(); await wait(300);
+      assert.equal((await t.hold("#all .row:nth-child(3) .tx")).mark, "", "a second hold shows nothing"); await t.esc(); await wait(300);
       await t.hold("#all .row:nth-child(2) .tx"); await t.press('#p-line [data-lact="edit"]');
     } else {
       await t.page.hover("#all .row:nth-child(2) .tx"); await wait(120); await t.page.hover("#all .row:nth-child(2) .tool.lmenu"); await wait(300);
       assert.equal((await t.s()).mark, "drag", "the drag hint on the first ⋯ hover"); assert.ok(/Drag/.test(await t.page.textContent("#mark-text")));
-      await t.page.keyboard.press("Escape"); await wait(200); assert.equal((await t.s()).mark, "", "a key dismisses it");
+      await t.esc(); await wait(200); assert.equal((await t.s()).mark, "", "a key dismisses it");
       await t.away(); await t.page.hover("#all .row:nth-child(3) .tx"); await wait(120); await t.page.hover("#all .row:nth-child(3) .tool.lmenu"); await wait(300); assert.equal((await t.s()).mark, "", "never again"); await t.away();
       await t.page.focus("#all .row:nth-child(2) .check"); await t.page.keyboard.press("e");
     }
     await t.page.waitForSelector("#all .row.editing"); await t.page.keyboard.type(" now"); await t.page.keyboard.press("Enter"); await wait(300); // Enter saves and opens the next line
-    await t.page.keyboard.press("Escape"); await wait(500);
+    await t.esc(); await wait(500);
     assert.equal((await t.s()).mark, "menu", "the menu hint once the first edit is done and no editor is open");
     assert.ok(new RegExp(touch ? "Hold" : "⋯").test(await t.page.textContent("#mark-text")));
-    await t.page.keyboard.press("Escape"); await wait(200);
+    await t.esc(); await wait(200);
     assert.equal(JSON.stringify((await t.s()).hints), JSON.stringify({ today: true, drag: true, menu: true }));
-    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(300);
+    await t.reload(); await t.page.waitForSelector("#list .row"); await wait(300);
     assert.equal(JSON.stringify((await t.s()).hints), JSON.stringify({ today: true, drag: true, menu: true }), "remembered on the device");
     await t.press("#v-all"); await wait(400); assert.equal((await t.s()).mark, "", "nothing after a reload either");
     assert.equal(t.errors.length, 0, t.errors.join("; "));
@@ -262,10 +266,10 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(await t.page.$eval("#hint", e => e.textContent.replace(/\s+/g, " ").trim()), "1–3 check off · N new · E edit · ? help");
     await t.press("#v-all"); await wait(200);
     assert.equal(await t.page.$eval("#hint", e => e.textContent.replace(/\s+/g, " ").trim()), "A today · N new · / search · ? help");
-    await t.page.keyboard.press("Escape"); await t.page.keyboard.press("?"); await t.page.waitForSelector("#p-keys[open]");
+    await t.esc(); await t.page.keyboard.press("?"); await t.page.waitForSelector("#p-keys[open]");
     assert.ok(/Undo/.test(await t.page.textContent("#keys-body")) && /Hover a line/.test(await t.page.textContent("#keys-body")), "? is the reference: every key and the mouse"); assert.ok(/Day ↔ Night/.test(await t.page.textContent("#keys-body")) && /Appearance/.test(await t.page.textContent("#keys-body")), "T and ⇧T in the reference");
     await t.page.click("#keys-help"); await t.page.waitForSelector("#p-help[open]"); assert.ok(/no tour/i.test(await t.page.textContent("#help-body")));
-    await t.page.keyboard.press("Escape");
+    await t.esc();
     await t.close();
   });
 
@@ -279,12 +283,12 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.mouse.move(600, 400); await wait(400);
     assert.ok(!(await t.s()).idle, "a move brings them back"); assert.equal(await op(".seg"), 1);
     await t.page.keyboard.press("Shift"); await t.away(); await wait(2000); await t.page.keyboard.press("Shift"); await wait(3000); assert.ok(!(await t.s()).idle, "a key resets the clock");
-    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await wait(4600); assert.ok(!(await t.s()).idle, "no fade while a panel is open"); await t.page.keyboard.press("Escape");
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await wait(4600); assert.ok(!(await t.s()).idle, "no fade while a panel is open"); await t.esc();
     for (let i = 0; i < 3; i++) { await t.press("#list .row:not(.done) .check"); await wait(450); } await wait(1200); await t.away(); await wait(4600);
     assert.ok(!(await t.s()).idle, "no fade during the finale"); assert.ok(await t.page.locator("#finale.on").isVisible());
     await t.press("#again"); await wait(300);
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
-    assert.equal(await t.page.getAttribute('[data-set="fade"]', "aria-pressed"), "true", "on by default"); await t.page.click('[data-set="fade"]'); await t.page.keyboard.press("Escape"); await t.away(); await wait(4600);
+    assert.equal(await t.page.getAttribute('[data-set="fade"]', "aria-pressed"), "true", "on by default"); await t.page.click('[data-set="fade"]'); await t.esc(); await t.away(); await wait(4600);
     assert.ok(!(await t.s()).idle, "off by the setting");
     assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device.idleFadeOff), true);
     await t.close();
@@ -316,9 +320,9 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.click('[data-set="export"]'); await t.page.waitForSelector("#p-export[open]");
     assert.equal(await t.page.locator("#set-export-json:not([disabled]), #set-export-md:not([disabled]), #set-import-file").count(), 3, "export and import inside the sub-sheet");
     assert.ok(/only backup/.test(await t.page.textContent("#p-export")));
-    await t.page.keyboard.press("Escape");
+    await t.esc();
     // the settings survive a reload
-    await t.page.reload(); await t.page.waitForSelector("#list .row");
+    await t.reload(); await t.page.waitForSelector("#list .row");
     const dev = await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device);
     assert.equal(dev.review, true); assert.equal(dev.celebrateRemote, true); assert.equal(dev.whoOff, true); assert.equal(dev.switch.mode, "system");
     assert.equal(t.errors.length, 0, t.errors.join("; "));
@@ -327,7 +331,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
 
   await test(label + ": repeat rule from the line menu, the glyph, and the rollover reset", async () => {
     const t = await fresh(opts);
-    await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])"); await wait(300); await t.page.keyboard.press("Escape");
+    await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])"); await wait(300); await t.esc();
     await t.lineMenu("#all .row:first-child");
     await t.page.click('#p-line [data-lact="repeat"]'); await t.page.waitForSelector("#p-repeat[open]");
     await t.page.click('#repeat-kinds [data-kind="daily"]'); await t.page.click("#repeat-done"); await wait(300);
@@ -382,7 +386,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const second = await t.page.getAttribute("#list .row.one-now", "data-id");
     assert.ok(second && second !== first, "the next one is up");
     assert.ok(/more after this|Last one/.test(await t.page.textContent(".one-more")));
-    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(300);
+    await t.reload(); await t.page.waitForSelector("#list .row"); await wait(300);
     assert.ok(await t.page.evaluate(() => document.body.classList.contains("one")), "remembered per device");
     for (let i = 0; i < 2; i++) { await t.press("#list .row.one-now .check"); await wait(700); }
     await wait(900);
@@ -395,10 +399,10 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": search — no lone icon; a Search button past eight lines, / always works, Escape clears", async () => {
     const t = await fresh(opts);
     const { listId } = await t.s();
-    await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])"); await wait(300); await t.page.keyboard.press("Escape");
+    await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])"); await wait(300); await t.esc();
     assert.ok(await t.page.$eval("#all-head", e => e.hidden), "three lines: no search affordance at all");
     assert.equal(await t.page.locator("#all-head svg").count(), 0, "no lone icon");
-    if (!touch) { await t.page.keyboard.press("/"); await t.page.waitForSelector("#search:not([hidden])"); assert.ok(!(await t.page.$eval("#all-head", e => e.hidden)), "/ opens the field even under eight lines"); await t.page.keyboard.press("Escape"); await wait(200); assert.ok(await t.page.$eval("#all-head", e => e.hidden), "and it goes away again"); }
+    if (!touch) { await t.page.keyboard.press("/"); await t.page.waitForSelector("#search:not([hidden])"); assert.ok(!(await t.page.$eval("#all-head", e => e.hidden)), "/ opens the field even under eight lines"); await t.esc(); await wait(200); assert.ok(await t.page.$eval("#all-head", e => e.hidden), "and it goes away again"); }
     await t.page.goto(BASE + "?transport=local#/l/" + listId + "/add?text=Four%0AFive%0ASix%0ASeven%0AEight%0ANine"); await wait(1200);
     await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])"); await wait(300);
     assert.equal(await t.page.locator("#all .row").count(), 9);
@@ -410,7 +414,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(await t.page.$$eval("#all .row", rows => rows.filter(r => getComputedStyle(r).display !== "none").length), 1);
     await t.page.fill("#search", "zzz-nothing"); await wait(200);
     assert.ok(await t.page.locator(".nohits").isVisible());
-    await t.page.keyboard.press("Escape"); await wait(200);
+    await t.esc(); await wait(200);
     assert.equal(await t.page.$$eval("#all .row", rows => rows.filter(r => getComputedStyle(r).display !== "none").length), 9);
     assert.ok(!(await t.page.$eval("#all-head", e => e.hidden)), "the button stays while there are nine lines");
     await t.close();
@@ -418,7 +422,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
 
   await test(label + ": recently deleted at the bottom of Everything (delete from the line menu), with Restore", async () => {
     const t = await fresh(opts);
-    await t.press("#v-all"); await wait(300); await t.page.keyboard.press("Escape");
+    await t.press("#v-all"); await wait(300); await t.esc();
     const text = await t.page.$eval("#all .row:nth-child(2) .tx", e => e.dataset.text);
     await t.lineMenu("#all .row:nth-child(2)"); await t.page.click('#p-line [data-lact="delete"]'); await wait(500);
     assert.ok(/Recently deleted \(1\)/.test(await t.page.textContent("#deleted summary")));
@@ -432,7 +436,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
 
   await test(label + ": section menu — templates (save, insert), put all on Today / take all off", async () => {
     const t = await fresh(opts);
-    await t.page.click("#v-all"); await wait(300); await t.page.keyboard.press("Escape"); await t.page.click("#addsec"); await t.page.fill("#ask-input", "Work"); await t.page.click("#ask-ok"); await wait(300);
+    await t.page.click("#v-all"); await wait(300); await t.esc(); await t.page.click("#addsec"); await t.page.fill("#ask-input", "Work"); await t.page.click("#ask-ok"); await wait(300);
     await t.press("#all .sec .sec-more"); await t.page.waitForSelector("#p-sec[open]");
     await t.page.click('#p-sec [data-sact="template"]'); await t.page.waitForSelector("#ask[open]"); await t.page.fill("#ask-input", "Five"); await t.page.click("#ask-ok"); await wait(300);
     await t.press("#all .sec .sec-more"); await t.page.click('#p-sec [data-sact="today-off"]'); await wait(400);
@@ -455,7 +459,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.waitForSelector("#p-save[open]"); await t.page.click("#save-done"); await wait(400);
     const second = await t.s(); assert.ok(second.listId !== first.listId);
     // back to the first, move its first line to Second
-    await t.press("#listname"); await t.page.waitForSelector("#p-lists[open]"); await t.page.click("#lists-menu button:not(:has(.cur))"); await wait(600);
+    await t.press("#listname"); await t.page.waitForSelector("#p-lists[open]"); await t.page.click("#lists-menu .row > button:first-child:not(:has(.cur))"); await wait(600);
     assert.equal((await t.s()).listId, first.listId);
     const text = await t.page.$eval("#list .row:first-child .tx", e => e.dataset.text);
     await t.lineMenu("#list .row:first-child"); await t.page.click('#p-line [data-lact="move"]'); await t.page.waitForSelector("#p-pick[open]");
@@ -492,7 +496,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const texts = await t.page.$$eval("#list .row .tx", els => els.map(e => e.dataset.text));
     assert.ok(texts.includes("Call Bob") && texts.includes("Buy milk"), JSON.stringify(texts));
     assert.ok(!/add/.test(await t.page.evaluate(() => location.hash)), "hash cleaned");
-    await t.page.reload(); await wait(800);
+    await t.reload(); await wait(800);
     assert.equal(await t.page.locator("#list .row").count(), 5, "a reload adds nothing");
     await t.page.goto(BASE + "?transport=local#/r/" + R + "/add?text=Nope"); await wait(1500);
     assert.ok(/view link/i.test(await t.page.textContent("#toast .msg")), "refused out loud");
@@ -525,7 +529,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await editor.press("#list .row:first-child .check"); await wait(1500);
     assert.equal((await other.s()).stats.check, q0.check, "edit link is quiet by default");
     await other.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device.celebrateRemote = true; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
-    await other.front(); await other.page.reload(); await other.page.waitForSelector("#list .row"); await other.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
+    await other.front(); await other.reload(); await other.page.waitForSelector("#list .row"); await other.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
     await other.page.evaluate(() => document.dispatchEvent(new PointerEvent("pointerdown")));
     const q1 = (await other.s()).stats;
     await editor.press("#list .row:not(.done) .check"); await wait(1500);
@@ -551,7 +555,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await wait(600); assert.ok(await a.page.locator("#who").isHidden(), "dots fade out");
     // off: neither shows nor broadcasts
     await a.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device.whoOff = true; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
-    await a.front(); await a.page.reload(); await a.page.waitForSelector("#list .row"); await a.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
+    await a.front(); await a.reload(); await a.page.waitForSelector("#list .row"); await a.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
     const c = await fresh(opts, { url: BASE + "?transport=local#/l/" + listId, list: false, ctx: a.ctx });
     await c.page.waitForSelector("#list .row"); await wait(2500);
     assert.equal((await c.s()).who, 0, "the opted-out tab is invisible");
@@ -570,7 +574,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
       assert.ok(ok, pack + ": context running");
     }
     assert.ok(/Dark picks Knock; this device plays Pop/.test(await t.page.textContent("#set-pack-sub")), "says which one wins (Dark is on: a dark system, Night = Dark): " + await t.page.textContent("#set-pack-sub"));
-    await t.page.keyboard.press("Escape"); await wait(200);
+    await t.esc(); await wait(200);
     const played = await t.page.evaluate(async () => { const S = await import("./sound.js"); const P = await import("./packs.js"); const snd = S.createSound({ muted: false, volume: 1, kit: () => ({ engine: "knock" }), loadPacks: () => Promise.resolve(P) }); snd.prime(); await new Promise(r => setTimeout(r, 50)); const out = {}; for (const e of P.PACK_ORDER) { out[e] = [snd.preview(e), snd.uncheck(), snd.finish()]; } return { out, st: snd.state() }; });
     for (const e of Object.keys(played.out)) assert.ok(played.out[e][0] && played.out[e][1] && played.out[e][2], e + " scheduled: " + JSON.stringify(played.out[e]));
     assert.equal(played.st.state, "running");
@@ -596,7 +600,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.fill("#c-import", "T1:d:FF3D9A:fraunces:Old pink"); await t.page.click("#c-import-go"); await wait(200);
     assert.equal(await t.page.$eval("#c-pack", s => s.value), "", "a T1 code imports with the hue rule");
     assert.equal(await t.page.inputValue("#c-hex"), "#FF3D9A");
-    await t.page.keyboard.press("Escape"); await wait(200);
+    await t.esc(); await wait(200);
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
     assert.equal(await t.page.$eval("#set-pack option", o => o.textContent), "Theme's pick (Marble)");
     assert.ok(/Marbles picks Marble, and that's what plays/.test(await t.page.textContent("#set-pack-sub")));
@@ -657,7 +661,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": day review shows under the finale when on, dismisses on a tap, never fires a sound", async () => {
     const t = await fresh(opts);
     await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device.review = true; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
-    await t.page.reload(); await t.page.waitForSelector("#list .row");
+    await t.reload(); await t.page.waitForSelector("#list .row");
     for (let i = 1; i <= 3; i++) { await t.press("#list .row:not(.done) .check"); await wait(650); }
     await wait(1200);
     assert.ok(await t.page.locator("#review").isVisible(), "review card");
@@ -689,14 +693,14 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const { listId } = await t.s();
     // turn this device into a 1.0 one: the version it remembers is 4.0.0, it went through the tour, it never heard of hints
     await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device.seenVersion = "4.0.0"; m.device.tourDone = true; delete m.device.hints; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
-    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
+    await t.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
     assert.ok(await t.page.locator("#whatsnew").isVisible(), "what's-new toast");
     const msg = await t.page.textContent("#wn-msg");
     assert.ok(new RegExp("New in " + VERSION.replace(".", "\\.")).test(msg), msg); assert.ok(!/4\.0\.0|renumber|1\.1\b|1\.2\b|1\.3\b/.test(msg), "nothing about version numbers: " + msg); assert.ok(/shared/i.test(msg), "the headline is about shared lists"); assert.equal((await t.page.textContent("#wn-more")).trim(), "What's new");
     assert.equal(await t.page.locator("#tour").count(), 0, "no tour"); assert.equal(await t.page.locator("dialog[open]").count(), 0, "no sheet"); assert.ok(await t.page.locator("#mark").isHidden(), "no hint");
     assert.equal((await t.s()).stats.check + (await t.s()).stats.finish, 0, "no sound");
     assert.equal(await t.page.locator("#list .row").count(), 3); assert.equal((await t.s()).listId, listId);
-    await t.page.click("#wn-x"); await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
+    await t.page.click("#wn-x"); await t.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
     assert.ok(await t.page.locator("#whatsnew").isHidden(), "shown once");
     assert.equal((await t.s()).seenVersion, VERSION);
     await t.press("#v-all"); await wait(400); assert.equal((await t.s()).mark, "", "a device that knew the app gets no hints either");
@@ -734,7 +738,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#help-keys"); await t.page.waitForSelector("#p-keys[open]");
     assert.equal((await t.page.textContent("#p-keys-h")).trim(), touch ? "Gestures" : "Keys");
     assert.ok(new RegExp(touch ? "Swipe right" : "⌘ Z").test(await t.page.textContent("#keys-body")));
-    await t.page.keyboard.press("Escape");
+    await t.esc();
     await t.close();
   });
 
@@ -763,7 +767,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     // flip back with the control itself, then check the fonts swapped at the midpoint (Light and Dark share Lato; use Paper for Day)
     await t.press("#daynight"); await wait(700); assert.equal(await inkOf(t.page), INK.dark);
     await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device.day = "T1:curated:paper"; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
-    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(300);
+    await t.reload(); await t.page.waitForSelector("#list .row"); await wait(300);
     await t.press("#daynight"); await wait(90);
     assert.ok(/Lato/.test(await t.page.$eval("#list .row", e => getComputedStyle(e).fontFamily)), "before the midpoint: the outgoing fonts");
     await wait(600);
@@ -783,7 +787,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal((await t.s()).theme, "dark", "the system went dark: Night"); assert.equal(await inkOf(t.page), INK.dark);
     await t.press("#daynight"); await wait(700);
     let st = await t.s(); assert.equal(st.theme, "light", "flipped to Day by hand"); assert.equal(st.hold, "night", "held against a dark system");
-    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(300);
+    await t.reload(); await t.page.waitForSelector("#list .row"); await wait(300);
     st = await t.s(); assert.equal(st.theme, "light", "the hold survives a reload"); assert.equal(st.hold, "night");
     await t.page.emulateMedia({ colorScheme: "light" }); await wait(700);
     st = await t.s(); assert.equal(st.hold, null, "the system changed its mind: the hold is spent"); assert.equal(st.theme, "light");
@@ -792,13 +796,13 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
     assert.ok(/Follows the device/.test(await t.page.textContent("#set-switch-sub")), await t.page.textContent("#set-switch-sub"));
     assert.equal(await t.page.textContent("#set-night-k"), "Dark · on"); assert.equal(await t.page.textContent("#set-day-k"), "Light");
-    await t.page.keyboard.press("Escape");
+    await t.esc();
     await t.press("#daynight"); await wait(700);
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
     assert.ok(/Day by hand for now/.test(await t.page.textContent("#set-switch-sub")), "the row says a flip is holding: " + await t.page.textContent("#set-switch-sub"));
     await t.page.selectOption("#set-switch", "hand"); await wait(200);
     st = await t.s(); assert.equal(st.switchMode, "hand"); assert.equal(st.theme, "light", "By hand keeps what is on"); assert.equal(st.hold, null);
-    await t.page.keyboard.press("Escape"); await t.page.emulateMedia({ colorScheme: "light" }); await wait(500); await t.page.emulateMedia({ colorScheme: "dark" }); await wait(500);
+    await t.esc(); await t.page.emulateMedia({ colorScheme: "light" }); await wait(500); await t.page.emulateMedia({ colorScheme: "dark" }); await wait(500);
     assert.equal((await t.s()).theme, "light", "by hand, the system is ignored");
     assert.equal(t.errors.length, 0, t.errors.join("; "));
     await t.close();
@@ -811,7 +815,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     let st = await t.s(); assert.equal(st.switchMode, "schedule"); assert.equal(st.theme, "light", "15:00 is day: Light");
     await t.page.fill("#sch-night-at", "16:30"); await t.page.dispatchEvent("#sch-night-at", "change"); await wait(200);
     assert.ok(/Day from 07:00, night from 16:30/.test(await t.page.textContent("#set-switch-sub")), await t.page.textContent("#set-switch-sub"));
-    await t.page.keyboard.press("Escape"); await wait(200);
+    await t.esc(); await wait(200);
     await t.page.clock.fastForward("01:31:00"); await wait(800); // 16:31: the minute tick applies Night
     st = await t.s(); assert.equal(st.theme, "dark", "16:31 is night: Dark"); assert.equal(await inkOf(t.page), INK.dark);
     await t.press("#daynight"); await wait(700);
@@ -854,7 +858,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.ok(await t.page.locator("#partner-offer").isVisible()); assert.equal((await t.page.textContent("#partner-use")).trim(), "Use Forest for Night");
     await t.press("#partner-use"); await wait(300);
     await t.press('#sw-day .swatch[data-code="T1:curated:harbor"]'); await wait(300); assert.ok(await t.page.locator("#partner-offer").isHidden(), "Forest is already in Night: nothing to offer");
-    await t.page.keyboard.press("Escape"); await wait(300);
+    await t.esc(); await wait(300);
     assert.equal(await inkOf(t.page), INK.forest, "closing the picker leaves the slot's theme on");
     await t.press("#daynight"); await wait(700); assert.equal(await inkOf(t.page), INK.harbor, "Day = Harbor");
     // the sound and the confetti follow the slot's theme like the active theme before
@@ -892,7 +896,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     // Make its partner again on the same theme finds the existing link instead of saving a third theme
     await t.press("#c-partner"); await wait(500);
     assert.equal(await t.page.evaluate(() => Object.values(JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc.themes).filter(x => !x.deleted).length), 2);
-    await t.page.keyboard.press("Escape"); await wait(200);
+    await t.esc(); await wait(200);
     // a saved theme chosen from Yours offers its partner like a curated one
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.click('[data-set="day"]'); await t.page.waitForSelector("#p-theme[open]");
     await t.press('#sw-yours .swatch[data-code="T2:d:3366FF:grotesk:marble:Blue"]'); await wait(300);
@@ -907,12 +911,12 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.keyboard.press("t"); await wait(600); assert.notEqual((await t.s()).slot, s0, "T flips");
     await t.page.keyboard.press("Shift+T"); await t.page.waitForSelector("#p-settings[open]");
     assert.equal(await t.page.$eval("#p-settings h3", e => e.textContent), "Appearance"); assert.equal((await t.s()).slot, s0 === "day" ? "night" : "day", "Shift+T does not flip");
-    await t.page.$eval("#p-settings .body", e => { e.scrollTop = e.scrollHeight; }); await t.page.keyboard.press("Escape"); await wait(200); // leave Settings scrolled to the bottom
+    await t.page.$eval("#p-settings .body", e => { e.scrollTop = e.scrollHeight; }); await t.esc(); await wait(200); // leave Settings scrolled to the bottom
     await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await wait(150);
     assert.equal(await t.page.locator("#p-theme[open]").count(), 0, "the ⋯ row goes to Appearance, not straight to the picker");
     assert.equal(await t.page.$eval("#p-settings .body", e => e.scrollTop), 0, "and Appearance is what shows: the sheet opens at its top, wherever it was left");
     assert.equal(await t.page.textContent("#menu-theme-k"), "Light", "the ⋯ row still names the theme that is on");
-    await t.page.keyboard.press("Escape");
+    await t.esc();
     await t.close();
   });
 
@@ -921,7 +925,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const t = await fresh(opts);
     const { listId } = await t.s();
     await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); const d = m.device; delete d.day; delete d.night; delete d.switch; delete d.slot; delete d.holdAuto; d.seenVersion = "1.1"; d.tourDone = true; d.hints = { today: true, drag: true, menu: true }; d.follow = true; d.darkSlot = "T1:curated:midnight"; d.lightSlot = "T1:curated:harbor"; d.theme = "T1:curated:midnight"; d.schedule = { on: false, dayAt: "07:00", nightAt: "19:00", day: "T1:curated:light", night: "T1:curated:dark" }; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); localStorage.setItem("tf/v2/themecss", "x"); });
-    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
+    await t.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
     let st = await t.s();
     assert.equal(st.theme, "midnight", "a dark system: Midnight, as Follow system showed"); assert.equal(st.switchMode, "system"); assert.equal(st.day, "T1:curated:harbor"); assert.equal(st.night, "T1:curated:midnight"); assert.equal(st.hold, null);
     assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.4: Yours, and shared with you\./.test(await t.page.textContent("#wn-msg")), "the headline only: " + await t.page.textContent("#wn-msg"));
@@ -933,16 +937,16 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.emulateMedia({ colorScheme: "light" }); await wait(700); assert.equal((await t.s()).theme, "harbor", "and the system still drives it");
     // the schedule on, with its themes and times
     await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); const d = m.device; delete d.day; delete d.night; delete d.switch; delete d.slot; delete d.holdAuto; d.follow = false; d.schedule = { on: true, dayAt: "08:15", nightAt: "17:45", day: "T1:curated:paper", night: "T1:curated:forest" }; d.theme = "T1:curated:paper"; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
-    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(400);
+    await t.reload(); await t.page.waitForSelector("#list .row"); await wait(400);
     st = await t.s(); assert.equal(st.switchMode, "schedule"); assert.equal(st.day, "T1:curated:paper"); assert.equal(st.night, "T1:curated:forest");
     const hour = new Date().getHours() + new Date().getMinutes() / 60; const expect = hour >= 8.25 && hour < 17.75 ? "paper" : "forest";
     assert.equal(st.theme, expect, "the clock decides as before");
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
     assert.equal(await t.page.$eval("#set-switch", e => e.value), "schedule"); assert.equal(await t.page.$eval("#sch-day-at", e => e.value) + "/" + await t.page.$eval("#sch-night-at", e => e.value), "08:15/17:45", "the times carried over");
-    await t.page.keyboard.press("Escape");
+    await t.esc();
     // neither on: by hand, the theme in the slot matching its base, its partner in the other
     await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); const d = m.device; delete d.day; delete d.night; delete d.switch; delete d.slot; delete d.holdAuto; d.follow = false; d.schedule.on = false; d.theme = "T1:curated:pink"; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
-    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(400);
+    await t.reload(); await t.page.waitForSelector("#list .row"); await wait(400);
     st = await t.s(); assert.equal(st.switchMode, "hand"); assert.equal(st.theme, "pink"); assert.equal(st.night, "T1:curated:pink"); assert.equal(st.day, "T1:curated:blush", "Pink's partner fills Day"); assert.equal(st.slot, "night");
     assert.ok(await t.page.locator("#whatsnew").isHidden(), "the toast showed once");
     assert.equal(t.errors.length, 0, t.errors.join("; "));
@@ -993,7 +997,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": a line of your own offers Keep; Keep carries the lines and the check marks into a real list, and the save sheet follows", async () => {
     const t = await welcome();
     await t.press("#list .row:first-child .check"); await wait(500);
-    await t.press("#addtoday"); await t.page.waitForSelector("#list .row.editing"); await t.page.keyboard.type("Buy milk"); await t.page.keyboard.press("Enter"); await wait(150); await t.page.keyboard.press("Escape"); await wait(400);
+    await t.press("#addtoday"); await t.page.waitForSelector("#list .row.editing"); await t.page.keyboard.type("Buy milk"); await t.page.keyboard.press("Enter"); await wait(150); await t.esc(); await wait(400);
     assert.equal(await t.page.locator("#list .row").count(), 4); assert.ok(!(await t.page.$eval("#w-keep", e => e.hidden)), "a line of your own: Keep this list is offered");
     assert.equal((await storedLists(t.page)).length, 0, "nothing on the server until Keep");
     await t.press("#w-keep"); await t.page.waitForSelector("#p-save[open]", { timeout: 9000 }); await wait(400);
@@ -1032,7 +1036,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
       const t = await welcome(init);
       await t.press("#w-skip"); await t.page.waitForSelector("#p-save[open]", { timeout: 9000 }); await wait(300);
       const leads = await t.page.$$eval("#p-save .save-lead:not([hidden]) b", els => els.map(e => e.textContent.trim()));
-      const r = { leads, qr: !(await t.page.$eval("#save-phone", e => e.hidden)), link: !(await t.page.$eval("#save-link", e => e.hidden)), how: await t.page.$eval("#save-lead-home", e => e.hidden ? "" : e.querySelector("span").textContent) };
+      const r = { leads, qr: !(await t.page.$eval("#save-phone", e => e.hidden)), link: !(await t.page.$eval("#save-link", e => e.hidden)), how: await t.page.$eval("#save-lead-home", e => e.hidden ? "" : Array.from(e.querySelectorAll("ol, span")).filter(x => !x.hidden).map(x => x.textContent.replace(/\s+/g, " ").trim()).join(" ")) };
       assert.equal(leads.length, 1, "one lead: " + JSON.stringify(r)); assert.ok(expect.lead.test(leads[0]), JSON.stringify(r)); assert.equal(r.qr, expect.qr, "the QR expander: " + JSON.stringify(r)); assert.equal(r.link, expect.link, "the link field: " + JSON.stringify(r));
       if (expect.how) assert.ok(expect.how.test(r.how), r.how);
       const order = await t.page.$$eval("#p-save .body > *:not([hidden])", els => els.map(e => e.id || e.className)); assert.ok(order.indexOf(expect.first) < order.indexOf("row-actions"), "the lead comes before the buttons: " + order);
@@ -1040,7 +1044,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
       return t;
     };
     if (touch) {
-      let t = await check(IPHONE, { lead: /Add it to your Home Screen/, qr: false, link: false, how: /Tap Share, then Add to Home Screen/, first: "save-lead-home" }); await t.close();
+      let t = await check(IPHONE, { lead: /Add it to your Home Screen/, qr: false, link: false, how: /Tap Share .*square with the arrow.*tap .*first.*Scroll down\..*Add to Home Screen/, first: "save-lead-home" }); await t.close();
       t = await check(STANDALONE, { lead: /Saved—this icon holds your link/, qr: false, link: false, first: "save-lead-icon" }); await t.close();
       t = await check(`Object.defineProperty(navigator, "platform", { get: () => "Linux armv8l" }); Object.defineProperty(navigator, "userAgent", { get: () => "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0 Mobile Safari/537.36" });`, { lead: /Add it to your Home Screen/, qr: false, link: false, how: /browser's menu/, first: "save-lead-home" }); await t.close(); // another phone: the browser's own menu
     } else {
@@ -1054,7 +1058,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": saving counts on Copy or I've saved it; until then ⋯ carries Save your link with a dot and the Share sheet repeats the key line; a device from before is grandfathered", async () => {
     const t = await welcome();
     await t.press("#w-skip"); await t.page.waitForSelector("#p-save[open]", { timeout: 9000 }); await wait(200);
-    await t.page.keyboard.press("Escape"); await wait(300); // closed without saving
+    await t.esc(); await wait(300); // closed without saving
     assert.ok((await t.s()).unsaved, "not saved yet");
     await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await wait(200);
     let rows = await t.page.$$eval("#menu > *:not([hidden]) .lb", els => els.map(e => e.firstChild.textContent.trim()));
@@ -1065,17 +1069,17 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.click("#save-done"); await wait(300);
     assert.equal(await t.page.locator("#p-save[open]").count(), 0, "I've saved it closes the sheet"); assert.ok(!(await t.s()).unsaved);
     await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); rows = await t.page.$$eval("#menu > *:not([hidden]) .lb", els => els.map(e => e.firstChild.textContent.trim())); assert.equal(rows.length, 9, "nine rows again: " + rows[0]);
-    await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); assert.ok(await t.page.locator("#share-unsaved").isHidden(), "the notice is gone"); await t.page.keyboard.press("Escape"); await wait(200);
-    await t.page.reload(); await t.page.waitForSelector("#list .row"); assert.ok(!(await t.s()).unsaved, "remembered");
+    await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); assert.ok(await t.page.locator("#share-unsaved").isHidden(), "the notice is gone"); await t.esc(); await wait(200);
+    await t.reload(); await t.page.waitForSelector("#list .row"); assert.ok(!(await t.s()).unsaved, "remembered");
     // Copy counts too (a second list, made from Lists)
     await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); await t.page.click("#l-new"); await t.page.waitForSelector("#ask[open]"); await t.page.fill("#ask-input", "Second"); await t.page.click("#ask-ok");
     await t.page.waitForSelector("#p-save[open]", { timeout: 9000 }); await wait(200); await t.page.click("#save-copy"); await wait(300);
     assert.equal(await t.page.locator("#p-save[open]").count(), 0, "Copy closes the sheet"); assert.ok(/#\/l\//.test(await t.page.evaluate(() => window.__clip)), "with the Private link on the clipboard"); assert.ok(!(await t.s()).unsaved);
     // a 1.2 device that never confirmed its old sheet: grandfathered on update, no row, no dot
     await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device.seenVersion = "1.2"; delete m.device.savedGrandfathered; m.lists.forEach(l => { l.linkSaved = false; }); localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
-    await t.page.reload(); await t.page.waitForFunction(() => window.__tf && window.__tf().listId, null, { polling: 100 }); await wait(1800); // the second list is empty: no rows to wait for
+    await t.reload(); await t.page.waitForFunction(() => window.__tf && window.__tf().listId, null, { polling: 100 }); await wait(1800); // the second list is empty: no rows to wait for
     assert.ok(!(await t.s()).unsaved, "grandfathered"); assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast is the only new thing");
-    await t.press("#wn-x"); await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); assert.equal((await t.page.$$eval("#menu > *:not([hidden])", els => els.length)), 9); await t.page.keyboard.press("Escape");
+    await t.press("#wn-x"); await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); assert.equal((await t.page.$$eval("#menu > *:not([hidden])", els => els.length)), 9); await t.esc();
     assert.equal(t.errors.length, 0, t.errors.join("; "));
     await t.close();
   });
@@ -1091,13 +1095,13 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(ex.length, 2); assert.ok(Math.abs(ex[0] - ex[1]) < 90, "same weight, same length: " + ex);
     assert.ok(!/edit link|view-only link|Rotate \(in Share\)/.test(body), "no old names: " + body.match(/edit link|Rotate \(in Share\)/));
     assert.ok(/Shuffle/.test(body) && /↻/.test(body), "shuffle in How it works");
-    await t.page.keyboard.press("Escape"); await wait(200);
-    if (!touch) { await t.page.keyboard.press("?"); await t.page.waitForSelector("#p-keys[open]"); assert.ok(/Shuffle/.test(await t.page.textContent("#keys-body")), "S in the reference"); await t.page.keyboard.press("Escape"); await wait(200); }
+    await t.esc(); await wait(200);
+    if (!touch) { await t.page.keyboard.press("?"); await t.page.waitForSelector("#p-keys[open]"); assert.ok(/Shuffle/.test(await t.page.textContent("#keys-body")), "S in the reference"); await t.esc(); await wait(200); }
     await t.page.goto(BASE + "?transport=local#/r/" + R + "/add?text=Nope"); await wait(1500);
     assert.ok(/View link only shows the list/.test(await t.page.textContent("#toast .msg")) && /Private link/.test(await t.page.textContent("#toast .msg")), "the refusal names the links: " + await t.page.textContent("#toast .msg"));
     await t.page.evaluate(() => document.getElementById("more").click()); await t.page.waitForSelector("#p-menu[open]"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
     assert.equal(await t.page.inputValue("#set-addurl"), "Open a Private link to get its URL");
-    await t.page.keyboard.press("Escape");
+    await t.esc();
     const about = await fresh(opts, { url: BASE + "about.html", list: false, ctx: t.ctx });
     const main = await about.page.textContent("main"); assert.ok(/Private link/.test(main) && /View link/.test(main) && !/edit link/.test(main), "About uses the names");
     await about.close(); await t.close();
@@ -1129,7 +1133,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const firstUndone = await t.page.evaluate(() => { const d = JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc; return Object.values(d.items).filter(i => !i.deleted && i.today && !i.done).sort((a, b) => a.todayOrder - b.todayOrder)[0].id; });
     assert.equal((await t.s()).oneNow, firstUndone, "after a check-off the top undone line is back"); assert.equal((await t.s()).shuffled, null);
     // a panel open: a shuffle is ignored
-    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); const before = (await t.s()).oneNow; if (!touch) await t.page.keyboard.press("s"); await wait(200); assert.equal((await t.s()).oneNow, before); await t.page.keyboard.press("Escape"); await wait(200);
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); const before = (await t.s()).oneNow; if (!touch) await t.page.keyboard.press("s"); await wait(200); assert.equal((await t.s()).oneNow, before); await t.esc(); await wait(200);
     // down to one undone line: a wobble, nothing changes
     while ((await t.page.evaluate(() => Object.values(JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc.items).filter(i => !i.deleted && i.today && !i.done).length)) > 1) { await t.press("#list .row.one-now .check"); await wait(800); }
     const last = (await t.s()).oneNow; if (touch) await t.page.tap("#shuffle"); else await t.page.keyboard.press("s"); await wait(120);
@@ -1155,17 +1159,17 @@ for (const [label, opts, touch] of VIEWPORTS) {
     let before = st.oneNow; await shake(0, 25); await wait(400); assert.notEqual((await t.s()).oneNow, before, "a shake (a delta over 15 m/s²) shuffles");
     before = (await t.s()).oneNow; await shake(0, 25); await wait(300); assert.equal((await t.s()).oneNow, before, "one shuffle a second at most");
     await shake(25, 25); await wait(1100); before = (await t.s()).oneNow; await shake(28, 24); await shake(29, 26); await wait(300); assert.equal((await t.s()).oneNow, before, "a walk (small deltas) does not");
-    await wait(300); await t.page.tap("#more"); await t.page.waitForSelector("#p-menu[open]"); before = (await t.s()).oneNow; await shake(0, 25); await wait(300); assert.equal((await t.s()).oneNow, before, "ignored while a panel is open"); await t.page.keyboard.press("Escape"); await wait(200);
-    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(400);
+    await wait(300); await t.page.tap("#more"); await t.page.waitForSelector("#p-menu[open]"); before = (await t.s()).oneNow; await shake(0, 25); await wait(300); assert.equal((await t.s()).oneNow, before, "ignored while a panel is open"); await t.esc(); await wait(200);
+    await t.reload(); await t.page.waitForSelector("#list .row"); await wait(400);
     assert.ok(await t.page.$eval("#shake-ask", e => e.hidden), "asked once"); assert.ok((await t.s()).motion, "and still listening on the next open");
     // declined: ↻ only
     await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); delete m.device.shake; m.device.oneThing = false; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
-    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(300); await t.page.tap("#count"); await wait(400);
+    await t.reload(); await t.page.waitForSelector("#list .row"); await wait(300); await t.page.tap("#count"); await wait(400);
     assert.ok(!(await t.page.$eval("#shake-ask", e => e.hidden))); await t.page.tap("#shake-x"); await wait(200);
     st = await t.s(); assert.equal(st.shake, "declined");
     before = st.oneNow; await wait(1100); await shake(0, 25); await wait(300); assert.equal((await t.s()).oneNow, before, "a shake does nothing once declined");
     await t.page.tap("#shuffle"); await wait(300); assert.notEqual((await t.s()).oneNow, before, "↻ still works");
-    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(400); assert.ok(await t.page.$eval("#shake-ask", e => e.hidden), "never asked again");
+    await t.reload(); await t.page.waitForSelector("#list .row"); await wait(400); assert.ok(await t.page.$eval("#shake-ask", e => e.hidden), "never asked again");
     assert.equal(t.errors.length, 0, t.errors.join("; "));
     await t.close();
   });
@@ -1219,7 +1223,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.keyboard.press("Escape"); await wait(250); assert.ok(await whoseOpen(t.page), "not cancelable: the answer is what the list is filed as");
     await t.press('#whose [data-whose="shared"]'); await onList(t.page, a.id); await wait(600);
     let st = await t.s(); assert.equal(st.origin, "shared"); assert.ok(!(await t.page.$eval("#shared", e => e.hidden)), "the Shared pill"); assert.equal((await t.page.$eval("#shared", e => e.textContent)).trim(), "Shared");
-    await t.page.reload(); await onList(t.page, a.id); await wait(500); assert.ok(!(await whoseOpen(t.page)), "asked once");
+    await t.reload(); await onList(t.page, a.id); await wait(500); assert.ok(!(await whoseOpen(t.page)), "asked once");
     // a hinted link: no question, the hint decides and leaves the address bar
     const b = await makeList(t, "Work"); await forget(t.page, b.id);
     await t.page.goto(BASE + "?transport=local#/l/" + b.id + "/mine"); await onList(t.page, b.id); await wait(600);
@@ -1371,7 +1375,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const t = await fresh(opts);
     await makeList(t, "Work");
     await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); for (const l of m.lists) { delete l.origin; delete l.nickname; } m.device.seenVersion = "1.3"; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
-    await t.page.reload(); await t.page.waitForFunction(() => window.__tf && window.__tf().listId); await wait(1800);
+    await t.reload(); await t.page.waitForFunction(() => window.__tf && window.__tf().listId); await wait(1800);
     assert.ok(!(await whoseOpen(t.page)), "no question"); assert.equal((await t.s()).origin, "mine");
     assert.deepEqual(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).lists.map(l => l.origin)), ["mine", "mine"], "every existing list is mine");
     assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.4: Yours, and shared with you\./.test(await t.page.textContent("#wn-msg")), await t.page.textContent("#wn-msg"));
@@ -1428,12 +1432,12 @@ for (const [label, opts, touch] of VIEWPORTS) {
 
   await test(label + ": no page errors, CSP violations or third-party requests across a full session", async () => {
     const t = await fresh(opts);
-    await t.press("#v-all"); await t.page.keyboard.press("Escape"); await t.press("#v-today");
+    await t.press("#v-all"); await t.esc(); await t.press("#v-today");
     await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]');
-    await t.page.waitForSelector("#p-theme[open]"); await t.page.click("#sw-night .swatch:nth-child(4)"); await wait(200); await t.page.click("#partner-use"); await t.page.keyboard.press("Escape"); await wait(200);
+    await t.page.waitForSelector("#p-theme[open]"); await t.page.click("#sw-night .swatch:nth-child(4)"); await wait(200); await t.page.click("#partner-use"); await t.esc(); await wait(200);
     await t.press("#daynight"); await wait(500); await t.press("#daynight"); await wait(500);
-    await t.press("#more"); await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await t.page.click("#share-copy"); await wait(300); await t.page.keyboard.press("Escape");
-    if (!touch) { await t.press("#share"); await t.page.waitForSelector("#p-share[open]"); await t.page.keyboard.press("Escape"); await t.page.keyboard.press("?"); await t.page.waitForSelector("#p-keys[open]"); await t.page.keyboard.press("Escape"); await t.page.keyboard.press("f"); await wait(200); await t.page.keyboard.press("f"); }
+    await t.press("#more"); await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await t.page.click("#share-copy"); await wait(300); await t.esc();
+    if (!touch) { await t.press("#share"); await t.page.waitForSelector("#p-share[open]"); await t.esc(); await t.page.keyboard.press("?"); await t.page.waitForSelector("#p-keys[open]"); await t.esc(); await t.page.keyboard.press("f"); await wait(200); await t.page.keyboard.press("f"); }
     await wait(300);
     assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0, t.csp.join("; ")); assert.equal(t.thirdParty.length, 0, t.thirdParty.join("; "));
     await t.close();

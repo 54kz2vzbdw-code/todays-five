@@ -377,4 +377,16 @@ test("1.9: a list carries its home zone — today and a line's day are computed 
   assert.equal(inZone("Asia/Tokyo", () => M.streak(z, M.todayFor(z, later))), 1);
 });
 
+test("1.9: moveToSection files a line at the end of another section, keeps its Today place, refreshes its rule's snapshot, and is a no-op for the section it is in", () => {
+  let d = M.emptyDoc("L"); d.sections.s = { id: "s", name: "Errands", order: 1000, collapsed: false, updatedAt: 1 };
+  d.items.a = item("a", { text: "Stamps", todayOrder: 2000 }); d.items.b = item("b", { sectionId: "s", order: 5000 }); d = M.setRule(d, "a", { kind: "daily" }, 10, "2026-09-01");
+  const m = M.moveToSection(d, "a", "s", 500);
+  assert.equal(m.items.a.sectionId, "s"); assert.ok(m.items.a.order > 5000, "at the end of Errands"); assert.equal(m.items.a.todayOrder, 2000, "Today's order untouched"); assert.equal(m.items.a.updatedAt, 500);
+  assert.equal(m.rules.a.sectionId, "s", "the rule's snapshot follows"); assert.equal(m.items.b, d.items.b, "nothing else moves");
+  assert.equal(M.moveToSection(m, "a", "s", 600), m, "already there: unchanged");
+  assert.equal(M.moveToSection(m, "a", "nope", 600).items.a.sectionId, "", "an unknown section means Unsorted");
+  assert.equal(M.moveToSection(d, "zz", "s"), d, "no such line");
+  assert.deepEqual(M.itemsInSection(m, "s").map(i => i.id), ["b", "a"]);
+});
+
 console.log(`\n${passed} feature tests passed`);

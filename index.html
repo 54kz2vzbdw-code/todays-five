@@ -435,9 +435,14 @@
   <div class="menu" id="list-detail-menu">
     <button type="button" data-lact="open"><span class="lb">Open</span></button>
     <button type="button" data-lact="rename"><span class="lb" id="list-detail-rename">Rename</span></button>
-    <button type="button" class="row-toggle" data-lact="origin" id="list-detail-origin" aria-pressed="false"><span class="lb" id="list-detail-origin-lb">Mine<span class="sub" id="list-detail-origin-sub"></span></span><span class="sw" aria-hidden="true"></span></button>
     <button type="button" data-lact="history" id="list-detail-history"><span class="lb">History<span class="sub">Finished lines, by day</span></span><span class="k state" id="list-detail-history-k"></span></button>
     <button type="button" data-lact="remove"><span class="lb">Remove from this device</span></button>
+  </div>
+  <!-- 1.9: the question a link asked, mirrored, so a wrong answer is put right by picking the other one (proposal 10) -->
+  <h3 id="list-detail-whose-h" hidden>Whose list is this?</h3>
+  <div class="menu" id="list-detail-whose" role="radiogroup" aria-labelledby="list-detail-whose-h" hidden>
+    <button type="button" role="radio" data-whose="mine" aria-checked="false"><span class="lb">Mine, from another device<span class="sub">Under My lists, with New keys and Delete this list everywhere</span></span></button>
+    <button type="button" role="radio" data-whose="shared" aria-checked="false"><span class="lb">Someone else's<span class="sub">Under Shared with me, with a nickname of its own; no New keys, no Delete everywhere</span></span></button>
   </div>
 </div></dialog>
 <dialog class="panel sheet" id="p-history" aria-labelledby="p-history-h"><div class="body">
@@ -483,7 +488,7 @@
     <button type="button" data-lact="today"><span class="lb" id="line-today-lb">Put on Today</span></button>
     <button type="button" data-lact="repeat"><span class="lb">Repeat<span class="sub" id="line-repeat-sub">Never</span></span></button>
     <button type="button" data-lact="nottoday"><span class="lb">Not today<span class="sub">Back on Today tomorrow</span></span><span class="k key" aria-hidden="true">-</span></button>
-    <button type="button" data-lact="move"><span class="lb">Move to another list…</span></button>
+    <button type="button" data-lact="move"><span class="lb">Move to…<span class="sub">A section of this list, or another list here</span></span></button>
     <button type="button" data-lact="delete" class="danger"><span class="lb">Delete</span></button>
   </div>
 </div></dialog>

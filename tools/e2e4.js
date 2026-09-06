@@ -722,6 +722,33 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  await test(label + ": 1.9: Move to… files a line under another section of this list — the sections first, then the other lists — and Undo brings it home", async () => {
+    const t = await fresh(opts);
+    await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])"); await wait(300); if (await t.page.$("#mark:not([hidden])")) { await t.esc(); }
+    await t.page.click("#addsec"); await t.page.waitForSelector("#ask[open]"); await t.page.fill("#ask-input", "Errands"); await t.page.click("#ask-ok"); await wait(400);
+    const text = await t.page.$eval("#all .row:first-child .tx", e => e.dataset.text);
+    await t.lineMenu("#all .row:first-child"); assert.equal(await t.page.$eval('#p-line [data-lact="move"] .lb', e => e.firstChild.textContent.trim()), "Move to…", "the row is Move to…");
+    await t.page.click('#p-line [data-lact="move"]'); await t.page.waitForSelector("#p-pick[open]"); await wait(200);
+    const rows = await t.page.$$eval("#pick-menu > *", els => els.map(e => (e.classList.contains("group-h") ? "#" : "") + (e.querySelector(".lb") || e).firstChild.textContent.trim()));
+    assert.deepEqual(rows, ["#This list", "Errands"], "this list's other sections, and no other list yet: " + rows.join("|"));
+    await t.page.click("#pick-menu button"); await wait(600);
+    assert.equal(await t.page.$eval('#all .sec[data-id]:not([data-id=""]) .row:last-child .tx', e => e.dataset.text), text, "the line is at the end of Errands");
+    assert.ok(/Moved to Errands/.test(await t.page.textContent("#toast .msg")));
+    await t.page.click("#toast-undo"); await wait(500);
+    assert.equal(await t.page.$eval('#all .sec[data-id=""] .row:first-child .tx', e => e.dataset.text), text, "Undo brings it back to Unsorted");
+    // with another list on the device the picker has both groups; a line already in Errands is offered Unsorted, not Errands
+    await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); await t.page.click("#l-new"); await t.page.waitForSelector("#ask[open]"); await t.page.fill("#ask-input", "Second"); await t.page.click("#ask-ok"); await wait(600);
+    await t.page.waitForSelector("#p-save[open]"); await t.page.click("#save-done"); await wait(400);
+    await t.press("#listname"); await t.page.waitForSelector("#p-lists[open]"); await t.page.click("#lists-menu .row > button:first-child:not(:has(.cur))"); await wait(600);
+    await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])"); await wait(300);
+    await t.lineMenu("#all .row:first-child"); await t.page.click('#p-line [data-lact="move"]'); await t.page.waitForSelector("#p-pick[open]"); await wait(200);
+    await t.page.click("#pick-menu button"); await wait(500); // into Errands
+    await t.lineMenu('#all .sec[data-id]:not([data-id=""]) .row:last-child'); await t.page.click('#p-line [data-lact="move"]'); await t.page.waitForSelector("#p-pick[open]"); await wait(200);
+    const both = await t.page.$$eval("#pick-menu > *", els => els.map(e => (e.classList.contains("group-h") ? "#" : "") + (e.querySelector(".lb") || e).firstChild.textContent.trim()));
+    assert.deepEqual(both, ["#This list", "Unsorted", "#Other lists on this device", "Second"], both.join("|"));
+    await t.esc(); assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
+  });
+
   await test(label + ": delete this list everywhere, then undo within ten seconds", async () => {
     const t = await fresh(opts);
     const { listId, lookupId } = await t.s();
@@ -1764,11 +1791,14 @@ for (const [label, opts, touch] of VIEWPORTS) {
     // It's mine after all
     await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); await t.page.click("#lists-menu .row:last-child .more"); await t.page.waitForSelector("#p-list[open]"); await wait(300);
     assert.equal((await t.page.textContent("#p-list-h")).trim(), "Sarah's groceries"); assert.ok(/Shared with me/.test(await t.page.textContent("#list-detail-sub")) && /Groceries/.test(await t.page.textContent("#list-detail-sub")));
-    assert.equal(await t.page.$eval("#list-detail-origin", e => e.getAttribute("aria-pressed")), "false"); assert.equal(await t.page.$eval("#list-detail-origin-lb", e => e.firstChild.textContent.trim()), "Mine", "the switch is labelled Mine (1.7)"); assert.ok(/Off: filed under Shared with me/.test(await t.page.textContent("#list-detail-origin-sub")), "its meaning in the sub-line");
+    // 1.9: the question a link asked, mirrored — two answers under "Whose list is this?", the current one marked (proposal 10)
+    assert.equal((await t.page.textContent("#list-detail-whose-h")).trim(), "Whose list is this?"); assert.ok(!(await t.page.$eval("#list-detail-whose", e => e.hidden)));
+    const answers = async () => t.page.$$eval("#list-detail-whose [data-whose]", els => els.map(e => e.dataset.whose + ":" + e.getAttribute("aria-checked")).join(" "));
+    assert.equal(await answers(), "mine:false shared:true", "Someone else's is marked"); assert.equal(await t.page.$eval("#list-detail-whose", e => e.getAttribute("role")), "radiogroup");
     assert.equal((await t.page.textContent("#list-detail-rename")).trim(), "Nickname");
-    await t.page.click("#list-detail-origin"); await wait(400);
+    await t.page.click('#list-detail-whose [data-whose="mine"]'); await wait(400);
     let st = await t.s(); assert.equal(st.origin, "mine"); assert.equal(st.nickname, null, "a list of one's own goes by its name"); assert.equal((await t.page.textContent("#listname")).trim(), "Groceries");
-    assert.equal(await t.page.$eval("#list-detail-origin", e => e.getAttribute("aria-pressed")), "true"); assert.ok(await t.page.$eval("#shared", e => e.hidden), "the pill is gone");
+    assert.equal(await answers(), "mine:true shared:false"); assert.ok(await t.page.$eval("#shared", e => e.hidden), "the pill is gone");
     assert.equal((await t.page.textContent("#list-detail-rename")).trim(), "Rename");
     await t.page.keyboard.press("Escape"); await wait(250); assert.equal((await t.s()).panels.join(","), "p-lists", "Escape from the detail lands on Lists");
     assert.equal(await t.page.locator("#lists-menu .group-h").count(), 0, "no groups once nothing is shared");
@@ -1777,10 +1807,10 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); assert.ok(!(await t.page.$eval("#share-keys", e => e.hidden)), "New keys is back"); await t.page.keyboard.press("Escape"); await wait(250);
     // a list made on this device has no switch; one from a link can go the other way
     await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); await t.page.click("#lists-menu .row:first-child .more"); await t.page.waitForSelector("#p-list[open]"); await wait(200);
-    assert.ok(await t.page.$eval("#list-detail-origin", e => e.hidden), "a list made on this device is mine, no switch"); assert.equal((await t.page.textContent("#list-detail-sub")).trim(), "Made on this device");
+    assert.ok(await t.page.$eval("#list-detail-whose", e => e.hidden), "a list made on this device is mine, not asked"); assert.equal((await t.page.textContent("#list-detail-sub")).trim(), "Made on this device");
     await t.page.click("#p-list h2 .back"); await wait(300); await t.page.click("#lists-menu .row:last-child .more"); await t.page.waitForSelector("#p-list[open]"); await wait(200);
-    assert.ok(!(await t.page.$eval("#list-detail-origin", e => e.hidden))); assert.equal((await t.page.textContent("#list-detail-sub")).trim(), "Mine, from another device");
-    await t.page.click("#list-detail-origin"); await wait(300); assert.equal((await t.s()).origin, "shared", "and back to shared"); assert.ok(!(await t.page.$eval("#shared", e => e.hidden)));
+    assert.ok(!(await t.page.$eval("#list-detail-whose", e => e.hidden))); assert.equal((await t.page.textContent("#list-detail-sub")).trim(), "Mine, from another device");
+    await t.page.click('#list-detail-whose [data-whose="shared"]'); await wait(300); assert.equal((await t.s()).origin, "shared", "and back to shared"); assert.ok(!(await t.page.$eval("#shared", e => e.hidden)));
     await t.page.keyboard.press("Escape"); await t.page.keyboard.press("Escape"); await wait(250);
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });

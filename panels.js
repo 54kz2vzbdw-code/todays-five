@@ -427,9 +427,10 @@ export function openListDetail(id) {
   $("#list-detail-sub").textContent = shared ? (nick && docName && docName !== nick ? `Shared with me · its own name is “${docName}”` : "Shared with me") : (l.created ? "Made on this device" : "Mine, from another device");
   $("#list-detail-rename").textContent = shared ? "Nickname" : "Rename";
   $('#list-detail-menu [data-lact="rename"]').hidden = shared ? false : !(id === A.listId && A.listMode === "edit"); // a rename edits the document, so the list must be open
-  const o = $("#list-detail-origin"); o.hidden = !!l.created && !shared; // a list made on this device is mine, no switch
-  o.setAttribute("aria-pressed", shared ? "false" : "true");
-  $("#list-detail-origin-sub").textContent = shared ? "Off: filed under Shared with me. On: under My lists, with New keys and Delete this list everywhere." : "On: under My lists. Off: under Shared with me, without New keys or Delete this list everywhere.";
+  // 1.9: the question a link asked, with the current answer marked; a list made on this device is mine and is not asked (proposal 10)
+  const asks = !(!!l.created && !shared);
+  $("#list-detail-whose-h").hidden = !asks; $("#list-detail-whose").hidden = !asks;
+  $$("#list-detail-whose [data-whose]").forEach(b => b.setAttribute("aria-checked", b.dataset.whose === (shared ? "shared" : "mine") ? "true" : "false"));
   $('#list-detail-menu [data-lact="open"]').hidden = id === A.listId;
   // 1.9: History lives here, where a list's own things are (proposal 5); the streak is its state
   const local = id === A.listId && A.doc ? { doc: A.doc } : A.loadLocal(id);
@@ -444,14 +445,19 @@ function wireListDetail() {
     const act = b.dataset.lact;
     if (act === "open") { A.closePanel(); A.switchTo({ id: l.id, mode: l.mode === "view" ? "view" : "edit" }); }
     else if (act === "rename") { A.closePanel(); if (l.origin === "shared") nicknameList(l.id); else renameOpenList(); }
-    else if (act === "origin") {
-      l.origin = l.origin === "shared" ? "mine" : "shared";
-      if (l.origin === "mine") l.nickname = ""; // a list of one's own goes by its name (empty, not deleted: the registry merge on save keeps stored fields)
-      A.saveDevice(); A.paintListName(); A.paintOrigin(); openListDetail(l.id);
-      A.toast(l.origin === "shared" ? "Filed under Shared with me" : "Filed under My lists");
-    }
     else if (act === "remove") { A.closePanel(); archiveList(l.id); }
     else if (act === "history") { const local = l.id === A.listId && A.doc ? { doc: A.doc } : A.loadLocal(l.id); if (local) openHistory(local.doc, $("#p-list-h").textContent); }
+  });
+  // 1.9: the two answers to "Whose list is this?", the way the question asked them (proposal 10)
+  $("#list-detail-whose").addEventListener("click", e => {
+    const b = e.target.closest("[data-whose]"); if (!b || !detailId) return;
+    const l = A.entryOf(detailId); if (!l) return;
+    const origin = b.dataset.whose === "shared" ? "shared" : "mine";
+    if ((l.origin === "shared" ? "shared" : "mine") === origin) return;
+    l.origin = origin;
+    if (origin === "mine") l.nickname = ""; // a list of one's own goes by its name (empty, not deleted: the registry merge on save keeps stored fields)
+    A.saveDevice(); A.paintListName(); A.paintOrigin(); openListDetail(l.id);
+    A.toast(origin === "shared" ? "Filed under Shared with me" : "Filed under My lists");
   });
 }
 /** Rename the open list: the name inside the document, which syncs. */
@@ -740,6 +746,7 @@ function openPick({ title, msg = "", rows = [], actions = [] }) {
   $("#pick-msg").textContent = msg; $("#pick-msg").hidden = !msg;
   const menu = $("#pick-menu"); menu.innerHTML = "";
   for (const r of rows) {
+    if (r.head) { const h = document.createElement("div"); h.className = "group-h"; h.textContent = r.head; menu.appendChild(h); continue; } // 1.9: a group heading, as Lists draws them
     const b = document.createElement("button"); b.type = "button";
     b.innerHTML = `<span class="lb">${A.escapeHtml(r.label)}${r.sub ? `<span class="sub">${A.escapeHtml(r.sub)}</span>` : ""}</span>`;
     if (r.run) b.addEventListener("click", () => { A.closePanel(); r.run(); }); else b.disabled = true;
@@ -760,7 +767,8 @@ export function openLineMenu(id) {
   { const lb = $("#line-today-lb"); lb.textContent = it.today ? "Take off Today" : "Put on Today"; const sub = document.createElement("span"); sub.className = "sub"; sub.textContent = it.today ? "It stays in Everything" : "It stays in Everything too"; lb.appendChild(sub); } // 1.7: read beside Not today, the row needed a sub-line
   $("#line-repeat-sub").textContent = A.ruleLabel(M.ruleOf(A.doc, id));
   $('#p-line [data-lact="nottoday"]').hidden = !it.today || it.done;
-  $('#p-line [data-lact="move"]').hidden = !meta().lists.some(l => l.id !== A.listId && l.mode !== "view" && !l.archived);
+  // 1.9: Move to… covers this list's sections as well as the other lists here (proposal 6)
+  $('#p-line [data-lact="move"]').hidden = !(M.liveSections(A.doc).length || meta().lists.some(l => l.id !== A.listId && l.mode !== "view" && !l.archived));
   const li = A.rows.get(id);
   A.showPanel("p-line", { anchor: li ? li.querySelector(".tool.lmenu") : null });
 }
@@ -817,14 +825,26 @@ function wireRepeat() {
   });
 }
 
-/* ---------------- move to another list ---------------- */
+/* ---------------- move to a section, or to another list ---------------- */
+/** 1.9: one picker, two groups — this list's sections first (the filing that used to take a long drag), then the other lists on this device (proposal 6). */
 function openMove(id) {
   const it = A.doc.items[id]; if (!it || it.deleted) return;
+  const here = it.sectionId && A.doc.sections[it.sectionId] && !A.doc.sections[it.sectionId].deleted ? it.sectionId : "";
+  const secs = M.sectionsOrdered(A.doc);
+  const sections = (secs.length ? [{ id: "", name: "Unsorted" }, ...secs] : []).filter(s => s.id !== here);
   const targets = meta().lists.filter(l => l.id !== A.listId && l.mode !== "view" && !l.archived);
-  openPick({
-    title: "Move to…", msg: `“${it.text.length > 40 ? it.text.slice(0, 40) + "…" : it.text}” leaves this list and lands in the other one's Unsorted.`,
-    rows: targets.map(l => { const loc = A.loadLocal(l.id); return { label: (loc && loc.doc.name) || l.name || "Untitled list", sub: loc ? "" : "Not on this device yet—open it once first", run: loc ? () => moveTo(id, l.id) : null }; })
-  });
+  const short = it.text.length > 40 ? it.text.slice(0, 40) + "…" : it.text;
+  const rows = [];
+  if (sections.length) { rows.push({ head: "This list" }); for (const s of sections) rows.push({ label: s.name, run: () => moveToSection(id, s.id) }); }
+  if (targets.length) { rows.push({ head: "Other lists on this device" }); for (const l of targets) { const loc = A.loadLocal(l.id); rows.push({ label: (loc && loc.doc.name) || l.name || "Untitled list", sub: loc ? "It lands in that list's Unsorted" : "Not on this device yet—open it once first", run: loc ? () => moveTo(id, l.id) : null }); } }
+  openPick({ title: "Move to…", msg: `“${short}” goes where you pick.`, rows });
+}
+function moveToSection(id, sectionId) {
+  const it = A.doc.items[id]; if (!it || it.deleted || !A.canEdit()) return;
+  A.pushUndo("Moved", [id]);
+  A.doc = M.moveToSection(A.doc, id, sectionId);
+  A.sound.tick(); A.afterChange({ animate: true });
+  A.toast(`Moved to ${sectionId ? M.sectionName(A.doc, sectionId) : "Unsorted"}`, { undo: true });
 }
 function moveTo(id, target) {
   const it = A.doc.items[id]; if (!it || it.deleted || !A.canEdit()) return;

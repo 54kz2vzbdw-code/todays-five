@@ -735,6 +735,17 @@ export function setSectionToday(doc, sectionId, on, ts = now()) {
   return changed ? { ...doc, items, updatedAt: Math.max(doc.updatedAt, ts) } : doc;
 }
 
+/* ---------------- move to another section (1.9) ---------------- */
+
+/** File a line under another section of the same list, at its end ("" is Unsorted). Its Today place and state are untouched. */
+export function moveToSection(doc, id, sectionId = "", ts = now()) {
+  const it = doc.items[id]; if (!it || it.deleted) return doc;
+  const sec = sectionId && doc.sections[sectionId] && !doc.sections[sectionId].deleted ? sectionId : "";
+  if ((it.sectionId || "") === sec) return doc;
+  const items = { ...doc.items, [id]: { ...it, sectionId: sec, order: lastOrder(itemsInSection(doc, sec), i => i.order), updatedAt: ts } };
+  return refreshRuleSnapshot({ ...doc, items, updatedAt: Math.max(doc.updatedAt, ts) }, id, ts);
+}
+
 /* ---------------- move to another list ---------------- */
 
 /** Copy a line (with its rule and return) into `dst` under a new id, and tombstone it in `src` without text

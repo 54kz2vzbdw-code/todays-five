@@ -314,7 +314,7 @@ const revivalCases = [];
 for (const ids of [["a", "b"], ["b", "a"], ["10", "2"], ["2", "10"], ["a", "10"]]) {
   const T0 = new Date("2026-09-01T15:00:00").getTime();
   const d = M.emptyDoc("Revival", "");
-  d.updatedAt = T0;
+  d.nameAt = 0; d.updatedAt = T0;      // emptyDoc stamps the clock, and a fixture must not carry one
   d.history["2026-09-01"] = ids.map((id, k) => ({ id, text: "Line " + id, doneAt: T0 + k, section: "" }));
   for (const [k, id] of ids.entries()) {
     d.items[id] = { id, deleted: true, updatedAt: T0 + k + 1 };            // a bare v3 tombstone, +1

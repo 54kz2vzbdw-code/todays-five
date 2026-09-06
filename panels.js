@@ -3,7 +3,7 @@
 // repeat picker, templates, move-to-list, delete everywhere with its undo, export/import, the ? reference, and How it
 // works. Loaded by app.js on first use; `A` is its api.
 let A = null, $ = null, $$ = null, M = null, T = null, C = null;
-const PANELS_BUILD = 98; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
+const PANELS_BUILD = 99; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
 export const RELOADING = "Today's Five updated: reloading";
 /** The shell, as sw.js lists it (minus the icons): refreshed past the HTTP cache before the one reload the guard below may do. */
 const SHELL_FILES = ["./", "./index.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js", "./sound.js", "./packs.js", "./packs-secret.js", "./secretfx.js", "./secretfx.css", "./fx.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json", "./manifest.webmanifest", "./vendor/realtime.js"];

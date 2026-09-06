@@ -1210,4 +1210,10 @@ things still to do cost 4.7%. The animation runs on struck rows only now, which 
 
 ## Live checks (1.8)
 
-__LIVE18__
+Build 98 went live on the third poll (`version.js` 1.8 build 98, the worker `tf-v1.8-b98`, the modules asked for with `?v=98`). About reads **Version 1.8 (build 98)** with the changelog 1.8 → 1.0 (there is no 1.6 in it), its newest entry the wink and one line, and nothing anywhere on the page names either kit or the group.
+
+**A fresh device** (desktop Chrome, no storage): the welcome, Skip, the save sheet, three seed lines, synced at rev 1. Nothing of the pair fetched. Then the key into Import a code: the group appears with both swatches, Superpink for Night and Birthday offered and taken for Day, and only then do `secretfx.js?v=98`, `secretfx.css?v=98`, `packs-secret.js?v=98` and `fredoka-500-700.woff2` come over the wire (Baloo 2 with them, since the picker paints Birthday's name in it). Superpink on screen with its twenty-six twinkles, its finale line under a bloom, the flip to Birthday, its cake and its line. No page errors, no CSP violations. The list was deleted everywhere afterwards.
+
+**A device that last saw 1.7** (a phone-sized profile that made a list, crossed one line off, and remembers 1.7): a fresh navigation to the URL — not a refresh — brought 1.8 with the list intact, three rows with the one still struck, synced, and the what's-new toast the only new thing: "New in 1.8: A little something for someone in particular." No sheet, no question, no hint, nothing of the pair fetched and nothing of it on screen; on the next open the toast stayed hidden. Deleted everywhere afterwards. (The list *id* could not be compared across the two opens: since 1.7 the test hook reports "held" rather than the id off the local transport. The rows, the struck line and the synced status are the comparison.)
+
+This record commit stamps build 99 and changes nothing else.

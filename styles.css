@@ -453,6 +453,7 @@ dialog.panel #toast{z-index:60} /* 1.7: a toast raised while a sheet is open mov
   .dot{min-height:44px;min-width:32px;justify-content:center}
   .sec-h .chip{min-width:44px}
   #count,#shuffle{min-height:44px;min-width:44px} /* 1.7: the count is a control, at the touch floor like the chips */
+  #count,#shuffle{background:var(--ink-2);border:1px solid var(--hair-hi);padding:.45em .8em} /* 1.9: on a phone the count looks like the tappable thing it is (proposal 11) */
   .row .tool{opacity:1}
 }
 
@@ -706,9 +707,10 @@ body.one #list .row.one-now.wobble{animation:wobble .36s ease}
 #shake-ask .x{width:36px;height:36px;border-radius:999px;border:0;background:transparent;color:var(--dim);font-size:18px;cursor:pointer}
 @media (hover:none){ #shake-ask .x{width:44px;height:44px} #shake-ask .chip{min-height:44px} }
 /* the hints stack instead of overlapping: install hint at the bottom, the shake hint above it, the toast above both */
-body.shake-on #toast,body.shake-on #whatsnew{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+/* 1.9: the shake hint names itself and wraps to two lines on a phone, so the toast sits above its measured height (--shake-h, set by app.js) */
+body.shake-on #toast,body.shake-on #whatsnew{bottom:calc(24px + var(--shake-h,72px) + env(safe-area-inset-bottom,0px))}
 body.install-on #shake-ask{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
-body.install-on.shake-on #toast,body.install-on.shake-on #whatsnew{bottom:calc(178px + env(safe-area-inset-bottom,0px))}
+body.install-on.shake-on #toast,body.install-on.shake-on #whatsnew{bottom:calc(106px + var(--shake-h,72px) + env(safe-area-inset-bottom,0px))}
 
 /* 1.4: the Shared pill sits beside the view-only pill when both apply */
 #shared{margin-left:.35rem}

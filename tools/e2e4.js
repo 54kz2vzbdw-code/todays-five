@@ -1661,13 +1661,16 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  if (touch) await test(label + ": shake to shuffle — the hint once, Allow, a shake shuffles, a walk does not, one shuffle a second; declined means ↻ only", async () => {
+  if (touch) await test(label + ": shake to shuffle — the hint on the second visit to the mode, named for what it does, once; Allow, a shake shuffles, a walk does not, one shuffle a second; declined means ↻ only", async () => {
     const t = await fresh(opts, { init: IPHONE + ` window.__perm = "granted"; DeviceMotionEvent.requestPermission = async () => window.__perm;` });
     const { listId } = await t.s();
     await t.page.goto(BASE + "?transport=local#/l/" + listId + "/add?text=Four%0AFive"); await wait(1200);
     assert.ok(await t.page.$eval("#shake-ask", e => e.hidden), "nothing before one-thing mode");
     await t.page.tap("#count"); await wait(400);
-    assert.ok(!(await t.page.$eval("#shake-ask", e => e.hidden)), "the first time one-thing mode opens on a phone: Shake to shuffle?"); assert.ok(/Shake to shuffle\?/.test(await t.page.textContent("#shake-ask")));
+    assert.ok(await t.page.$eval("#shake-ask", e => e.hidden), "1.9: the first visit to the mode, often an accident, asks nothing (proposal 12)");
+    assert.ok(await t.page.$eval("#count", e => { const cs = getComputedStyle(e); return parseFloat(cs.borderTopWidth) >= 1 && cs.backgroundColor !== "rgba(0, 0, 0, 0)"; }), "1.9: on a phone the count looks like a control (proposal 11)");
+    await t.page.tap("#count"); await wait(300); await t.page.tap("#count"); await wait(400); // off and on again: the second visit
+    assert.ok(!(await t.page.$eval("#shake-ask", e => e.hidden)), "the second time one-thing mode opens on a phone, the hint"); assert.equal((await t.page.textContent("#shake-ask span")).trim(), "Shake the phone for a different line?", "named for what it does");
     await wait(1400); // the install hint arrives at 2.5 s: the two hints stack, the toast sits above both
     const stack = await t.page.evaluate(() => { const r = s => { const el = document.querySelector(s); const b = el.getBoundingClientRect(); return { top: Math.round(b.top), bottom: Math.round(b.bottom), on: !el.hidden && getComputedStyle(el).opacity !== "0" }; }; return { install: r("#install"), ask: r("#shake-ask"), toast: r("#toast") }; });
     assert.ok(stack.install.on && stack.ask.on, "both hints up: " + JSON.stringify(stack)); assert.ok(stack.ask.bottom <= stack.install.top + 1, "the shake hint sits above the install hint: " + JSON.stringify(stack));

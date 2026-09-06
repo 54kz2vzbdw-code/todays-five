@@ -2026,7 +2026,7 @@ $("#w-paste-form").addEventListener("submit", e => {
 /* ---------------- one-thing mode, search ---------------- */
 /** Only the top undone Today line, enormous. `O` or the count toggles it; the finale ends it. Remembered per device. */
 function setOneThing(on, { silent = false, keep = false } = {}) {
-  if (!keep) { dev.oneThing = !!on; saveDevice(); }
+  if (!keep) { dev.oneThing = !!on; if (on && !silent) dev.oneOpens = (dev.oneOpens || 0) + 1; saveDevice(); } // 1.9: how many times the mode was opened on purpose (the shake hint waits for the second)
   shuffledId = null;
   document.body.classList.toggle("one", !!on && !!doc && listMode === "edit" && !demo);
   if (doc) { if (editing) commitEdit(); if (view !== "today" && on) setView("today"); else render({ animate: false }); }
@@ -2070,13 +2070,14 @@ function onMotion(e) {
 }
 function startMotion() { if (motionOn || typeof DeviceMotionEvent === "undefined") return; motionOn = true; addEventListener("devicemotion", onMotion); }
 /** the shake hint: a body class lifts the toast (and the install hint's neighbour) above it */
-function shakeAsk(on) { $("#shake-ask").hidden = !on; document.body.classList.toggle("shake-on", !!on); }
+function shakeAsk(on) { $("#shake-ask").hidden = !on; document.body.classList.toggle("shake-on", !!on); if (on) document.body.style.setProperty("--shake-h", $("#shake-ask").offsetHeight + "px"); } // 1.9: the toast stacks above the hint's real height
 function shakeReady() {
   if (!touchUi() || typeof DeviceMotionEvent === "undefined") return;
   const asks = IOS && typeof DeviceMotionEvent.requestPermission === "function"; // iOS asks; Chrome exposes the call too but needs no permission
   if (dev.shake === "allowed") { startMotion(); return; }
   if (dev.shake === "declined") return;
   if (!asks) { dev.shake = "allowed"; saveDevice(); startMotion(); return; } // Android: no permission to ask for
+  if ((dev.oneOpens || 0) < 2) return; // 1.9: not on the first visit, which is often an accident (the count is a tap away); the second time, the person came back for the mode
   if (!openPanel) shakeAsk(true); // asked once, remembered either way
 }
 $("#shake-allow").addEventListener("click", async () => {

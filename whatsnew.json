@@ -1,6 +1,20 @@
 {
-  "build": 119,
+  "build": 133,
   "versions": [
+    {
+      "version": "1.10",
+      "headline": "Now there's an iPhone app.",
+      "items": [
+        {
+          "tag": "New",
+          "text": "The same list on the iPhone, with a check-off you can feel."
+        },
+        {
+          "tag": "New",
+          "text": "Crossing off, taking one back and finishing the day each feel different."
+        }
+      ]
+    },
     {
       "version": "1.9",
       "headline": "Easier all over.",

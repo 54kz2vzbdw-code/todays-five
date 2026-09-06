@@ -5,6 +5,13 @@ items per version, rendered on the About page and in the what's-new toast); the 
 render. No dates anywhere, by design: versions are the marketing version plus a build number (About shows
 `1.4 (build N)`), and what shipped as 4.0.0 is 1.0.
 
+## 1.10 — Now there's an iPhone app.
+
+- **New** — The same list on the iPhone, with a check-off you can feel.
+- **New** — Crossing off, taking one back and finishing the day each feel different.
+
+The web's part of this is invisible in a browser. The page now says when four things happen — a check-off, taking one back, the last line of the day, and a shuffle — as `CustomEvent`s on `window` carrying no detail, from the same places the sound already plays. The iPhone shell (`apple/TodaysFive`, a `WKWebView` on this site rather than a copy of it) listens for them and plays real haptics: medium for a check-off, light for taking one back and for a shuffle, a success notification for the finale. Two existing constants read a new `SHELL`, which is a token the app puts in its user agent rather than a flag it injects, so this page's Content Security Policy never comes into it: `HAPTIC` stands down inside the app (the hidden `switch` is one tick, and without this a check-off would buzz twice), and `STANDALONE` is true there (no Add-to-Home-Screen hint inside the app, the save sheet leads with the link, and switching lists no longer reloads the page). Nothing renders differently in a browser, no file joins the precache, and a 1.9 device sees exactly one new thing: the toast.
+
 ## 1.9 — Easier all over.
 
 - **Improved** — A check-off settles in half the time; a list keeps one day everywhere.

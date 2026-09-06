@@ -14,6 +14,47 @@ Twelve lenses, one pass, no features. Eleven agents looked (accessibility had tw
 4. **The gesture in half the time.** A check-off takes 1.04 s to come to rest with 170 ms of dead air in the middle; rows cross through each other during the sink; the knock is over before the ink is a third of the way across. Three numbers and one class. Low-to-medium effort, every tap.
 5. **Settings and Lists, consolidated.** Settings' "Lists" group is three redirects, Lists offers Rename and Remove twice a row apart, and a line can be moved to another list but not to another section from its menu. Low effort, fewer taps every day.
 
+## After 1.9
+
+What the round did with each proposal, one line each; the evidence named in each proposal was re-taken by `tools/audit/after.mjs` as the same file with `-after` in its name, and the bug's by `tools/leak.mjs` (`audit/leak-after.json`). Nothing rolled to the next round; #32 was not approved (the server is untouched).
+
+1. Shipped — Skip starts an empty list; Keep is offered once a line is the person's own, and the label says which. `skip-keeps-demo-after.png`
+2. Shipped — × and Not yet close the save sheet, unsaved, focus back on the list. `save-sheet-no-exit-after.png`
+3. Shipped — `zone` on the document (COMPATIBILITY.md §3), stamped by the maker; rollover, returns, streaks and the export count the home day; the six-hour guard stays for a document without one; merge fixtures for the Swift core. `timezone-rollover-after.txt`
+4. Shipped, on Price's yes at the checkpoint — the re-render at 320/160 ms, a 300 ms FLIP on the page's ground, the finale under the chord. `tap-to-rest-after.png`, `shots/1.9/motion-{before,after}.gif`
+5. Shipped — Settings' Lists group is gone: removed lists sit in Lists, a list's history in its detail, Templates only for a list with no sections; Lists' bottom row is New list alone. `settings-lists-group-after.png`
+6. Shipped — Move to… lists this list's sections first, then the other lists; the row's sub-line says so. `move-to-sections-after.png`
+7. Shipped — the builder is a sheet behind Make your own › under the swatches. `builder-behind-a-row-after.png`
+8. Shipped — Appearance / This device / This list. `settings-groups-after.png`
+9. Shipped — view first, then Open on my other device · the same list, with full control, then Let someone edit, then Replace both links. `share-first-block-after.png`
+10. Shipped — Whose list is this? is a radiogroup in the list's detail. `origin-toggle-after.png`
+11. Shipped — the count and shuffle carry a hairline and a fill on touch. `count-control-after.png`
+12. Shipped — the shake hint waits for the second visit and asks "Shake the phone for a different line?". `shake-ask-after.png`
+13. Shipped — "Another device changed “…” after you did", once, with an Undo that writes the words back. `conflict-silent-after.png`
+14. Shipped — own-build `?v=` modules are cache-first; COMPATIBILITY.md §6 updated in the same commit. `lazy-cache-first-after.json`
+15. Shipped — one copy of each file: navigations under the index key, modules under their path. `sw-duplicates-after.json`
+16. Shipped — the boot script busts a frame. (evidence: the boot script's first lines; the CSP hash follows it)
+17. Shipped — bidi controls stripped on import, in the editor, on add-from-anywhere and in names. `bidi-after.txt`
+18. Shipped — an import over the envelope cap is refused with its size. `import-size-after.txt`
+19. Shipped — ⋯ › Theme opens the picker. `theme-row-after.png`
+20. Shipped — Replace both links, with its note. `new-keys-heading-after.png`
+21. Shipped — no id fragment on a Lists row. `id-fragment-after.png`
+22. Shipped — `181/200` inside the last twenty characters. `caps-counter-after.png`
+23. Shipped — the ⋯, line and section menus share one anatomy. `popover-anatomy-after*.png`
+24. Shipped — h2 at 13 px in `--muted`, a step above its h3s. `h2-h3-after.png`
+25. Shipped — one hover treatment, the fill: a menu row, the ×, a swatch's own fill lifted. `hover-treatments-after*.png`
+26. Shipped — the idle fade rests at 0.2. `idle-fade-after.png`
+27. Shipped — the rail wraps by its own width (a container query): at 200 % text the list chip, the tools and the tabs each read whole. `text-200-after.png`
+28. Shipped — the Undo chip says ⌘Z / Ctrl+Z and carries `aria-keyshortcuts`; focus stays where delete put it. `undo-tab-order-after.txt`
+29. Shipped — `--done-2` for a lifted line and inside a panel; Pink's accent text #FF3D9A → #FF58A2, 4.51:1 on ink-3, nothing else in Pink touched. `done-on-ink3-after.json`
+30. Shipped — a Today line prints once, ★ in place. `markdown-twice-after.txt`
+31. Shipped — two columns of 44 px rows in phone landscape. `landscape-menu-after.png`
+32. Not approved — the server is untouched; the note stands for the next migration.
+
+**The bug, closed.** Not a leak: the audit's baseline was taken before panels.js had ever loaded, so the first Settings (the module and its wiring, once: 58 listeners, ~200 nodes) and the first Everything (its scaffolding and the just-in-time hint, once) were counted as growth over thirty cycles. A three-snapshot heap diff (`tools/leak.mjs`: a warm-up, N cycles, N more; the snapshots diffed by object id, retainers walked) shows zero detached DOM nodes and zero growth in nodes and listeners between the second and third snapshots, on 1.8 and 1.9 alike; the browser suite now measures Settings ×20 and the view switch ×30 after a double forced GC with a ceiling of 10 nodes and 4 listeners. `audit/leak-after.json`.
+
+**The appendix's fixes, still holding**: each row's evidence was re-taken too (`audit/<name>-after.*`).
+
 ## Proposals, ranked
 
 Impact first, effort second; the first paragraph of each is the case, the evidence is the file named. "Waits" means it changes design and is Price's call.

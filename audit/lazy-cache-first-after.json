@@ -1,0 +1,54 @@
+{
+  "build": "99",
+  "caches": [
+    "tf-v1.8-b99"
+  ],
+  "entries": {
+    "tf-v1.8-b99": [
+      "/about.html",
+      "/panels.css",
+      "/packs.js",
+      "/packs-secret.js",
+      "/secretfx.js",
+      "/secretfx.css",
+      "/qr.js",
+      "/panels.js",
+      "/exporter.js",
+      "/whatsnew.json",
+      "/manifest.webmanifest",
+      "/vendor/realtime.js",
+      "/icons/icon-192.png",
+      "/icons/icon-512.png",
+      "/icons/icon-512-maskable.png",
+      "/icons/apple-touch-icon.png",
+      "/index.html",
+      "/app.js",
+      "/model.js",
+      "/styles.css",
+      "/sync.js",
+      "/crypto.js",
+      "/theme.js",
+      "/sound.js",
+      "/config.js",
+      "/version.js",
+      "/fx.js",
+      "/fonts/pt-sans-700.woff2",
+      "/fonts/lato-900.woff2",
+      "/fonts/pt-sans-400.woff2"
+    ]
+  },
+  "panelsRequest": [
+    {
+      "name": "/panels.js?v=99",
+      "transferSize": 0,
+      "deliveryType": "cache-storage",
+      "duration": 1
+    }
+  ],
+  "verdict": {
+    "ownBuildCache": "tf-v1.8-b99",
+    "panelsStoredOnce": true,
+    "indexStoredOnce": true,
+    "panelsServedFromWorker": true
+  }
+}

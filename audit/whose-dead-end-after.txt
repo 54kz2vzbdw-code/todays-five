@@ -1,0 +1,1 @@
+a list link on a second device asks whose it is: true · still asking after a click outside: true

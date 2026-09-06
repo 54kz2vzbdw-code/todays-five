@@ -1,0 +1,6 @@
+- dialog "Tap or click to cross this off":
+  - button "Edit"
+  - button "Take off Today It stays in Everything"
+  - button "Repeat Never"
+  - button "Not today Back on Today tomorrow"
+  - button "Delete"

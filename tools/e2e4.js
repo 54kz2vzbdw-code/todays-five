@@ -390,7 +390,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
 
   await test(label + ": the rail is date · count with the sync dot · Today/Everything · Share · ⋯ (count · dot · views · ⋯ on the phone), no pills", async () => {
     const t = await fresh(opts);
-    const items = await t.page.$$eval(".rail-l > *, .rail-r > *", els => els.filter(e => !e.hidden && getComputedStyle(e).display !== "none").map(e => e.id || e.className));
+    const items = await t.page.$$eval(".rail-l > *, .rail-r > :not(.tools), .rail-r .tools > *", els => els.filter(e => !e.hidden && getComputedStyle(e).display !== "none").map(e => e.id || e.className));
     assert.equal(items.join(" "), touch ? "status seg daynight more" : "date status seg daynight share more", items.join(" "));
     const dn = await t.page.$eval("#daynight", e => ({ next: e.dataset.next, title: e.title, w: e.getBoundingClientRect().width, h: e.getBoundingClientRect().height }));
     assert.equal(dn.next, "day", "a dark system: Night is on, so the tap goes to Day: " + JSON.stringify(dn)); assert.equal(dn.title, "Day · T"); assert.ok(dn.w >= 30 && dn.h >= 32, "a real target: " + JSON.stringify(dn)); if (touch) assert.ok(dn.w >= 44 && dn.h >= 44, "44 px on touch");
@@ -662,7 +662,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.away(); await wait(4400);
     assert.ok((await t.s()).idle, "idle after 4 s"); await wait(1600);
     const op = sel => t.page.$eval(sel, e => +getComputedStyle(e).opacity);
-    assert.ok((await op(".seg")) < 0.05 && (await op("#share")) < 0.05 && (await op("#foot")) < 0.05 && (await op("#daynight")) < 0.05, "the views, the sun/moon, Share and the footer faded");
+    const at = async sel => Math.abs((await op(sel)) - 0.2) < 0.05; // 1.9: to 0.2, not 0 (proposal 26); the tools fade as one unit
+    assert.ok((await at(".seg")) && (await at("#foot")) && (await at(".rail-r .tools")), "the views, the tools and the footer faded to 0.2: " + [await op(".seg"), await op("#foot"), await op(".rail-r .tools")].join(" "));
     assert.equal(await op("#date"), 1); assert.equal(await op(".status"), 1, "the date and the count stay");
     await t.page.mouse.move(600, 400); await wait(400);
     assert.ok(!(await t.s()).idle, "a move brings them back"); assert.equal(await op(".seg"), 1);
@@ -836,8 +837,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press('#all .sec[data-id="' + await t.page.$eval('#all .sec:not([data-id=""])', e => e.dataset.id) + '"] .sec-more'); await t.page.click('#p-sec [data-sact="insert"]'); await t.page.waitForSelector("#p-pick[open]");
     await t.page.click("#pick-menu button"); await wait(400);
     assert.equal(await t.page.locator("#all .row").count(), 6, "three template lines inserted into Work");
-    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.click('[data-set="templates"]'); await t.page.waitForSelector("#p-pick[open]");
-    assert.ok(/Five/.test(await t.page.textContent("#pick-menu")));
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await wait(200);
+    assert.ok(await t.page.$eval('[data-set="templates"]', e => e.hidden), "1.9: with sections, templates are a section's business (its ⋯ inserts them), not a Settings row (proposal 5)");
     await t.close();
   });
 

@@ -5,6 +5,14 @@ items per version, rendered on the About page and in the what's-new toast); the 
 render. No dates anywhere, by design: versions are the marketing version plus a build number (About shows
 `1.4 (build N)`), and what shipped as 4.0.0 is 1.0.
 
+## 1.9 — Easier all over.
+
+- **Improved** — A check-off settles in half the time; a list keeps one day everywhere.
+- **Improved** — Settings is three short groups; Share leads with the link you came for.
+- **New** — Sketch and Arcade; every pack on a theme; a sound for Day and Night.
+
+The 1.7 audit's thirty-one proposals, in its rank order, and its open bug (a measurement, not a leak): a home day (`zone`) on the document, the check-off choreographed, Settings and Lists consolidated, Move to… with sections, the builder behind a row, the Share order, Whose list is this? in a list's detail, a word for the losing side of a simultaneous edit, bidi stripped, imports capped, own-build modules cache-first and one copy of each file in the worker's cache, one popover anatomy, a title a step above its headings, one hover treatment, the idle fade at 0.2, a rail that wraps before it truncates, an Undo that names its key, `--done-2`, a Markdown export that lists a Today line once, a two-column ⋯ menu in phone landscape. Five kits changed their sound pack (Harbor, Sunset, Ember, Cocoa, Blush) and a device keeps its old one through the update.
+
 ## 1.8 — A little something for someone in particular.
 
 - **New** — If you know, you know.

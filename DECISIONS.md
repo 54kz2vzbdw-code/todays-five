@@ -607,3 +607,42 @@ Calls made where the 1.9 brief — the 1.7 audit's proposals 1–31 and its open
 - **One row, a sheet behind it.** The Sound section keeps its rows; the Sound pack row's sub-line reads both slots and opens a sheet with a picker for each. The old inline select would have needed a second row.
 - **The sub-line names which one wins, per slot**: "Light picks Knock, and that's what plays by day" / "…; this device plays Kalimba by day" / "Cocoa picks Kalimba since 1.9; this device keeps Knock at night, as before". A theme you made reads the same way with the builder's Sound choice as its pick.
 - **`dev.soundPack` stays.** The migration writes `dev.soundPacks` (both slots) and `dev.soundPins` once and leaves the 1.8 key in place, the way 1.2 left the slot keys, so a rollback reads what it wrote.
+
+## Settings, Lists and the panels (proposals 5–10, 18–21)
+
+- **Three groups, one row each way.** Settings is Appearance / This device / This list; the Lists group's three redirects went (removed lists sit in Lists itself, a list's history in its detail), Templates shows only for a list with no sections (a section's ⋯ carries them otherwise), and Lists' bottom buttons went with the id fragments — the chevron says there is more.
+- **Move to… is one picker with two groups**: this list's sections first, then the other lists on the device, the row's sub-line saying so. The line menu shows the row only when there is somewhere to move to.
+- **The builder is a sheet behind the picker's last row** (Make your own ›), not a card inside it; Back returns to the picker with the partner offer intact (`keepOffer`).
+- **Share's order is what a person came for**: Show it somewhere (view only) · Open on my other device — the same list, with full control · Let someone edit · Replace both links. The qualifier sits in the heading, so the private link cannot be grabbed by a newcomer looking for something to share.
+- **Whose list is this? is a radiogroup in the list's detail**, the same question the arrival asked, answerable later.
+- **⋯ › Theme opens the picker**, the one place the Theme row led that was not a redirect.
+
+## Feel and the small copy (proposals 11–13, 16, 17, 22)
+
+- **The count and shuffle read as controls on touch** (a hairline, a fill), because a tap is the only way to find out otherwise.
+- **The shake hint waits for the second visit** to one-thing mode: the first is often an accident, and a permission prompt on an accident is a cost.
+- **The losing side of a simultaneous edit gets a word.** A pull that replaces words this device wrote in the last minute toasts once — "Another device changed “…” after you did" — with an Undo that writes them back as a new edit, so they win. Nothing else about merge changed.
+- **Bidi controls are stripped everywhere text comes in** (import, the editor, add-from-anywhere, names), never stored.
+- **An import over the envelope cap is refused with its size**, before anything is written; the cap is the server's.
+- **A counter inside the last twenty characters** (`181/200`), not before: the cap is invisible until it is near.
+
+## The worker (proposals 14, 15)
+
+- **Own-build modules are cache-first.** A `?v=<this build>` request is immutable by construction, so the worker serves it from this build's cache and goes to the network only when it is missing; the shell stays network-first (COMPATIBILITY.md §6, updated in the same commit).
+- **One copy of each file**: navigations store under the index key, modules under their path, so a device that opens ten links holds one shell.
+
+## The design language (proposals 23–31)
+
+- **One popover anatomy** — an icon, the label with a sub-line where it helps, the state or key slot, the destructive row in red — on the ⋯, line and section menus alike.
+- **A panel's title is a step above its headings** (13 px at .14em in `--muted`; the h3s stay 11 px in `--dim`).
+- **One hover treatment: the fill.** A menu row fills, the × fills the same way, a swatch lifts its own fill a shade (it paints its own colours, so a tint of its text colour at 9 % rather than `--ink-3`); the toasts' × fill too.
+- **The idle fade rests at 0.2**, the audit's number, so a slow mouse user can still see what is there to click.
+- **The rail wraps by its own width, not the viewport's.** Page margins grow with the text, so 200 % text on a 390 px phone leaves a 332 px rail; a container query (a wrapper `div`, `container-type:inline-size`) puts the list chip on its own line, the count and the tools on the next, and the tabs below them, whole, under 341 px. At 341 px and up nothing moves; a browser without container queries keeps 1.8's rail. The three tools became one unit so they wrap together.
+- **The Undo chip names its key** (⌘Z or Ctrl+Z where there is a keyboard, `aria-keyshortcuts` everywhere) instead of moving focus to it: the promise that delete moves focus to a neighbour stands. An action toast's chip names none — the key does not run it.
+- **`--done-2` joins `--dim-2` and `--muted-2`**: the done grey nudged to 4.5:1 on `--ink-3`, used by a dragged line and inside a panel. **Pink's accent text moved from #FF3D9A to #FF58A2** (4.51:1 on ink-3, the engine's own lighter step); nothing else in Pink changed, per the 1.0 decision.
+- **The Markdown export prints a Today line once**, marked ★ under its section; the separate Today block is gone.
+- **The ⋯ menu is two columns in phone landscape** (under 421 px of height on a touch device), 44 px rows, one glance again.
+
+## The open bug
+
+- **It was not a leak.** The audit's baseline was taken before panels.js had ever loaded: the first Settings loads the module and wires its dialogs once (58 listeners, ~200 nodes — the pack options, the theme swatches, the lists rows), the first Everything builds its scaffolding and the just-in-time hint once; thirty more cycles add nothing. `tools/leak.mjs` takes three snapshots (after a warm-up, after N cycles, after N more), diffs them by object id and walks retainers: zero detached DOM nodes, zero growth in nodes and listeners between the second and third, on 1.8 and 1.9 alike. The measurement joined the browser suite with a ceiling (10 nodes, 4 listeners over 20 Settings cycles and 30 view switches, after a double forced GC).

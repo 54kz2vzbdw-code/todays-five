@@ -1,0 +1,2 @@
+ENVELOPE_CAP = 98304 bytes
+900 lines of 125 chars: envelopeBytes = [object Promise] → over the cap: false

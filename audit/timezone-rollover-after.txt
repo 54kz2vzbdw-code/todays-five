@@ -1,0 +1,3 @@
+zone: Pacific/Auckland · todayFor(doc) at 12:30 UTC = 2026-09-06 · dayOf(doneAt) = 2026-09-05
+rollover an hour after home midnight (device clock irrelevant): line reset = true (done → undone, still on Today = undefined)
+no zone, finished two hours ago, a new local day: guard holds = true

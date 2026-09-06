@@ -1,0 +1,1 @@
+a still cursor after the sink: rows painted as hovered = [true,false,false] (no-hover class on the row that slid under it: false)

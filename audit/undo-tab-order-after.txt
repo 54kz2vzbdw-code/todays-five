@@ -1,0 +1,2 @@
+Undo chip: hidden=false · aria-keyshortcuts=Meta+Z · printed hint="⌘Z" (display inline)
+after Cmd+Z with focus on the last row: done rows = 0 · focus on check

@@ -2,6 +2,24 @@
   "build": 99,
   "versions": [
     {
+      "version": "1.9",
+      "headline": "Easier all over.",
+      "items": [
+        {
+          "tag": "Improved",
+          "text": "A check-off settles in half the time; a list keeps one day everywhere."
+        },
+        {
+          "tag": "Improved",
+          "text": "Settings is three short groups; Share leads with the link you came for."
+        },
+        {
+          "tag": "New",
+          "text": "Sketch and Arcade; every pack on a theme; a sound for Day and Night."
+        }
+      ]
+    },
+    {
       "version": "1.8",
       "headline": "A little something for someone in particular.",
       "items": [

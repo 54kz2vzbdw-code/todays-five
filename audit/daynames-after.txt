@@ -1,0 +1,1 @@
+longtime (repeats, chosen days) opened: rows 7 · count 2/7 done · errors [] · listname visible true · status synced

@@ -1282,3 +1282,37 @@ The single per-device override became one per slot without a new row: Settings �
 | <img src="shots/1.9/settings-sound-row-phone.png" width="260" alt="Settings: the Sound pack row reads both slots"> | <img src="shots/1.9/sound-sheet-phone.png" width="260" alt="the Sound pack sheet: Day and Night pickers"> | <img src="shots/1.9/sound-sheet-picked-phone.png" width="260" alt="Night set to Kalimba: the sub-line says this device plays it at night"> |
 
 **Nobody hears a change on update.** A device's single override (`dev.soundPack`) lands in both slots. A device with no override whose Day or Night theme is one of the five kits whose pack changed gets the old pack pinned in that slot (`PACK_BEFORE_19`), and the sheet says so: "Cocoa picks Kalimba since 1.9; this device keeps Knock at night, as before". The pin lifts when that slot gets a different theme (the new theme plays its own pack) or when the person picks anything in the sheet. The migration runs once, on the first open of 1.9; the old key stays for a rollback. The browser suite checks all three devices — fresh, one override, two pinned kits — at both viewports.
+
+## Before and after
+
+Every surface at 1440×900 and 390×844 is in `shots/1.9/before` (1.8, build 99) and `shots/1.9/after`, taken by `tools/shots.js`. The ones the round changed:
+
+| surface | before (1.8) | after (1.9) |
+|---|---|---|
+| the welcome (Skip starts an empty list) | <img src="shots/1.9/before/desktop-welcome.png" width="300" alt="1.8's welcome: Skip keeps the three lines"> | <img src="shots/1.9/after/desktop-welcome.png" width="300" alt="1.9's welcome: Skip — start with an empty list"> |
+| the save sheet (a way out) | <img src="shots/1.9/before/desktop-save-link.png" width="300" alt="1.8's save sheet: I've saved it alone"> | <img src="shots/1.9/after/desktop-save-link.png" width="300" alt="1.9's save sheet: ×, Not yet, I've saved it"> |
+| Settings, desktop (three groups) | <img src="shots/1.9/before/desktop-settings.png" width="300" alt="1.8's Settings"> | <img src="shots/1.9/after/desktop-settings.png" width="300" alt="1.9's Settings: Appearance, This device, This list"> |
+| Settings, phone | <img src="shots/1.9/before/phone-settings.png" width="200" alt="1.8's Settings on the phone"> | <img src="shots/1.9/after/phone-settings.png" width="200" alt="1.9's Settings on the phone"> |
+| Settings › Sound (one row, both slots) | <img src="shots/1.9/before/desktop-settings-sound.png" width="300" alt="1.8: an inline select"> | <img src="shots/1.9/after/desktop-settings-sound.png" width="300" alt="1.9: the row reads Day and Night"> |
+| Lists (no id fragments, no bottom buttons) | <img src="shots/1.9/before/desktop-lists-grouped.png" width="300" alt="1.8's Lists"> | <img src="shots/1.9/after/desktop-lists-grouped.png" width="300" alt="1.9's Lists"> |
+| a list's detail (History, Whose list is this?) | <img src="shots/1.9/before/desktop-list-detail.png" width="300" alt="1.8's list detail"> | <img src="shots/1.9/after/desktop-list-detail.png" width="300" alt="1.9's list detail with History and the whose radiogroup"> |
+| Share (view first, then the same list with full control) | <img src="shots/1.9/before/desktop-share.png" width="300" alt="1.8's Share"> | <img src="shots/1.9/after/desktop-share.png" width="300" alt="1.9's Share"> |
+| the line menu (icons, one anatomy) | <img src="shots/1.9/before/desktop-line-menu.png" width="300" alt="1.8's line menu"> | <img src="shots/1.9/after/desktop-line-menu.png" width="300" alt="1.9's line menu with icons and Move to…"> |
+| the section menu | <img src="shots/1.9/before/desktop-section-menu.png" width="300" alt="1.8's section menu"> | <img src="shots/1.9/after/desktop-section-menu.png" width="300" alt="1.9's section menu with icons and sub-lines"> |
+| the theme picker (the builder behind a row, Sketch and Arcade) | <img src="shots/1.9/before/desktop-theme.png" width="300" alt="1.8's picker with the builder inside"> | <img src="shots/1.9/after/desktop-theme.png" width="300" alt="1.9's picker: Make your own › under the swatches"> |
+| the ⋯ menu, phone | <img src="shots/1.9/before/phone-menu.png" width="200" alt="1.8's ⋯ menu"> | <img src="shots/1.9/after/phone-menu.png" width="200" alt="1.9's ⋯ menu"> |
+| idle (0.2, not 0) | <img src="shots/1.9/before/desktop-idle.png" width="300" alt="1.8 idle: the controls gone"> | <img src="shots/1.9/after/desktop-idle.png" width="300" alt="1.9 idle: the controls at 0.2"> |
+
+The audit's own evidence, re-taken: every `audit/<name>.png|txt|json` has a `-after` twin from `tools/audit/after.mjs`, and `audit/leak-after.json` closes the bug.
+
+## Lighthouse
+
+The 1.8 clone on 8792 and the working copy on 8791, two rounds each in sequence (`tools` are the same as 1.4's; run.sh in the session scratch):
+
+| | 1.8 (a) | 1.9 (a) | 1.8 (b) | 1.9 (b) |
+|---|---|---|---|---|
+| desktop perf / FCP / LCP | 100 / 365 / 447 | 100 / 365 / 449 | 100 / 364 / 445 | 100 / 418 / 458 |
+| mobile cold perf / FCP / LCP | 99 / 1511 / 1820 | 99 / 1587 / 1982 | 99 / 1510 / 1817 | 98 / 1786 / 2011 |
+| mobile warm perf / FCP / LCP | 98 / 1707 / 2007 | 99 / 1585 / 1969 | 99 / 1510 / 1818 | 99 / 1588 / 1985 |
+
+Scores are the same; the mobile milliseconds sit 60–170 ms behind 1.8 in the quiet round, which is the size of the first paint's growth: index.html +1.2 KB, styles.css +1.0 KB, app.js +3.0 KB, model.js +2.4 KB, theme.js +1.1 KB gzipped (the two kits, the zone, the choreography, the sheet), about 9 KB on a 104 KB critical path, 45 ms at Lighthouse's simulated 1.6 Mbps. The 1.7 audit recorded a 1.92 s mobile LCP median against 1.1's 1.98 s; 1.9 is inside that band.

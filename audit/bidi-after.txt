@@ -1,0 +1,3 @@
+imported line: "Pay gnik the bill"
+imported name: "List"
+stripBidi("Pay ‮gnik‬ the bill") = "Pay gnik the bill"

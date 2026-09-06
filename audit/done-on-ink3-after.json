@@ -1,0 +1,162 @@
+{
+  "note": "a dragged line and a panel read done text in --done-2 (styles.css .row.dragging, panels.css dialog.panel); Pink's accent text is #FF58A2 since 1.9",
+  "failures": 0,
+  "rows": [
+    {
+      "theme": "dark",
+      "done2/ink3": 4.6,
+      "done/ink3 (raw, unused while lifted now)": 3.378,
+      "accentText/ink3": 4.597,
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "done2/ink3": 4.651,
+      "done/ink3 (raw, unused while lifted now)": 3.611,
+      "accentText/ink3": 4.556,
+      "pass": true
+    },
+    {
+      "theme": "pink",
+      "done2/ink3": 4.592,
+      "done/ink3 (raw, unused while lifted now)": 4.25,
+      "accentText/ink3": 4.507,
+      "pass": true
+    },
+    {
+      "theme": "midnight",
+      "done2/ink3": 5.084,
+      "done/ink3 (raw, unused while lifted now)": 5.084,
+      "accentText/ink3": 7.612,
+      "pass": true
+    },
+    {
+      "theme": "forest",
+      "done2/ink3": 4.931,
+      "done/ink3 (raw, unused while lifted now)": 4.931,
+      "accentText/ink3": 7.984,
+      "pass": true
+    },
+    {
+      "theme": "paper",
+      "done2/ink3": 4.548,
+      "done/ink3 (raw, unused while lifted now)": 4.152,
+      "accentText/ink3": 5.489,
+      "pass": true
+    },
+    {
+      "theme": "terminal",
+      "done2/ink3": 5.978,
+      "done/ink3 (raw, unused while lifted now)": 5.978,
+      "accentText/ink3": 11.906,
+      "pass": true
+    },
+    {
+      "theme": "sunset",
+      "done2/ink3": 5.208,
+      "done/ink3 (raw, unused while lifted now)": 5.208,
+      "accentText/ink3": 5.491,
+      "pass": true
+    },
+    {
+      "theme": "dusk",
+      "done2/ink3": 5.538,
+      "done/ink3 (raw, unused while lifted now)": 5.538,
+      "accentText/ink3": 7.259,
+      "pass": true
+    },
+    {
+      "theme": "harbor",
+      "done2/ink3": 4.617,
+      "done/ink3 (raw, unused while lifted now)": 3.875,
+      "accentText/ink3": 4.595,
+      "pass": true
+    },
+    {
+      "theme": "ember",
+      "done2/ink3": 5.495,
+      "done/ink3 (raw, unused while lifted now)": 5.495,
+      "accentText/ink3": 5.581,
+      "pass": true
+    },
+    {
+      "theme": "cocoa",
+      "done2/ink3": 4.616,
+      "done/ink3 (raw, unused while lifted now)": 4.453,
+      "accentText/ink3": 5.897,
+      "pass": true
+    },
+    {
+      "theme": "blush",
+      "done2/ink3": 5.012,
+      "done/ink3 (raw, unused while lifted now)": 5.012,
+      "accentText/ink3": 5.108,
+      "pass": true
+    },
+    {
+      "theme": "teletype",
+      "done2/ink3": 4.786,
+      "done/ink3 (raw, unused while lifted now)": 4.786,
+      "accentText/ink3": 4.724,
+      "pass": true
+    },
+    {
+      "theme": "sketch",
+      "done2/ink3": 4.575,
+      "done/ink3 (raw, unused while lifted now)": 3.713,
+      "accentText/ink3": 5.39,
+      "pass": true
+    },
+    {
+      "theme": "arcade",
+      "done2/ink3": 4.584,
+      "done/ink3 (raw, unused while lifted now)": 4.584,
+      "accentText/ink3": 6.327,
+      "pass": true
+    },
+    {
+      "theme": "superpink",
+      "done2/ink3": 5.577,
+      "done/ink3 (raw, unused while lifted now)": 5.577,
+      "accentText/ink3": 4.856,
+      "pass": true
+    },
+    {
+      "theme": "birthday",
+      "done2/ink3": 5.377,
+      "done/ink3 (raw, unused while lifted now)": 5.377,
+      "accentText/ink3": 5.161,
+      "pass": true
+    },
+    {
+      "theme": "custom #3366FF",
+      "done2/ink3": 4.512,
+      "accentText/ink3": 4.666,
+      "pass": true
+    },
+    {
+      "theme": "custom #FF3D9A",
+      "done2/ink3": 4.507,
+      "accentText/ink3": 4.618,
+      "pass": true
+    },
+    {
+      "theme": "custom #1E9A4F",
+      "done2/ink3": 4.628,
+      "accentText/ink3": 4.554,
+      "pass": true
+    },
+    {
+      "theme": "custom #D9A066",
+      "done2/ink3": 4.654,
+      "accentText/ink3": 5.665,
+      "pass": true
+    },
+    {
+      "theme": "custom #8A2BFF",
+      "done2/ink3": 4.522,
+      "accentText/ink3": 4.581,
+      "pass": true
+    }
+  ]
+}

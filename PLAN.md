@@ -995,8 +995,14 @@ Only the Sound section changes on screen; the rest of the after set matches the 
 
 ## Verification results (1.5)
 
-__RESULTS__
+- Node suites: model 25, theme 24, crypto 9, sync 13, sound 9 (one new: the twelve, every step of the new six, pitch and decay reaching them), features 21 (the version lists and the newest headline now 1.5), compat 7.
+- The browser suite on the local transport: 111 passed, 0 failed at 1440×900 and 390×844 (`tools/e2e4.js`), with zero page errors and CSP violations; the two sound tests cover twelve packs (every pack plays check, uncheck and finale through a running context; the builder lists twelve and a code carries the pick), and five tests that pin the version (the toast's headline, About's changelog order, the worker's cache name) were pointed at 1.5.
+- The real-backend suite: 6 passed (envelopes, the refused put, the 29-byte poll, presence, delete and undo, add from a URL); nothing on the server changed.
+- Lighthouse 12 on the same machine, minutes apart, the 1.4 code (a clone of `main` at build 72) against this branch: desktop 100/100/100 both; mobile cold 99/100/100 both (FCP 1702 → 1700 ms, LCP 1852 → 1850 ms); mobile warm 100/100/100 both (FCP 1164 → 1155 ms, LCP 1187 → 1170 ms). The packs load on the first gesture, so the first paint carries none of the 144 new lines.
+- Simulator, Safari on iOS 26.5 and 18.1 through WebDriver (`sim-sound.mjs` in the session's scratch): Settings → Sound lists Theme's pick and the twelve; picking Cork saves `soundPack: "cork"` and the sub-line reads "Light picks Knock; this device plays Cork"; a check-off after that goes through the sound machine. On 18.1 the context runs and plays; on 26.5 WebDriver's clicks are not gestures for audio (the context stays suspended, the machine asks, then makes a fresh one per tap), on the 1.4 code exactly the same (replayed against the clone), so a limit of the harness, not a change.
+- Offline renders (`tools/sounds.js`): no pack clips, the check-offs peak between 0.07 and 0.45 like the old six, and the finales between 0.11 and 0.39 (the table above).
+- Screenshots: 70 before (from the untouched 1.4 code) and 70 after; only the Sound section differs.
 
 ## Live checks (1.5)
 
-__LIVE__
+Recorded in the record commit that follows the deploy.

@@ -178,6 +178,39 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join(" | ")); await t.close();
   });
 
+  await test(label + ": 1.7: one design language — the danger confirm, accent focus rings on selects, ranges, the About row and the Dark | Light control, uppercase chips in panels and the finale, the control widths in the builder, touch targets", async () => {
+    const t = await fresh(opts);
+    const accent = await t.page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()), danger = await t.page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--danger").trim());
+    const hex = c => { const m = c.match(/\d+/g); return m ? "#" + m.slice(0, 3).map(n => (+n).toString(16).padStart(2, "0")).join("").toUpperCase() : c; };
+    // the confirm of an irreversible act
+    await t.press("#more"); await t.page.click('#p-menu [data-act="delete"]'); await t.page.waitForSelector("#ask[open]"); await wait(200);
+    assert.equal(hex(await t.page.$eval("#ask-ok", e => getComputedStyle(e).color)), danger.toUpperCase(), "the OK of Delete everywhere is red"); assert.ok(await t.page.$eval("#ask-ok", e => !e.classList.contains("accent")), "and not accent too");
+    await t.esc(); await wait(200);
+    // focus rings in Settings
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await wait(200);
+    for (const sel of ["#set-switch", "#set-pack", "#volume", "#menu-about"].filter(Boolean)) {
+      const el = await t.page.$(sel); if (!el) continue;
+      await t.page.evaluate(s => document.querySelector(s).focus({ focusVisible: true }), sel);
+      const ring = await t.page.$eval(sel, e => e.matches(":focus-visible") ? getComputedStyle(e).outlineColor : "not focus-visible");
+      if (ring !== "not focus-visible") assert.equal(hex(ring), accent.toUpperCase(), sel + " ring is the accent, not the browser's: " + ring);
+    }
+    if (opts.hasTouch) { for (const sel of ["#set-switch", "#set-pack", "#volume"]) assert.ok((await t.page.$eval(sel, e => e.getBoundingClientRect().height)) >= 44, sel + " is 44 px on touch"); }
+    assert.equal(await t.page.$eval("#set-addurl-copy", e => getComputedStyle(e).textTransform), "uppercase", "a chip outside a row of actions carries the chip type");
+    await t.esc(); await wait(200);
+    // the builder: the Dark | Light control and Import keep their own width
+    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]"); await wait(200);
+    const seg = await t.page.$eval("#p-theme .seg2", e => e.getBoundingClientRect().width), body = await t.page.$eval("#p-theme .body", e => e.getBoundingClientRect().width);
+    assert.ok(seg < body * 0.6, "the segmented control is not a bar across the panel: " + Math.round(seg) + " of " + Math.round(body));
+    assert.equal(await t.page.$eval("#c-import-go", e => getComputedStyle(e).textTransform), "uppercase");
+    await t.esc(); await wait(200);
+    if (opts.hasTouch) assert.ok((await t.page.$eval("#count", e => e.getBoundingClientRect().height)) >= 44, "the count is a 44 px control on touch");
+    if (!opts.hasTouch) { if (opts.hasTouch === false) { await t.page.keyboard.press("a"); await wait(300); assert.ok((await t.page.$eval("#all .sec-more", e => e.getBoundingClientRect().height)) >= 32, "the section ⋯ at the chip floor"); } }
+    // the finale's chip
+    for (let i = 0; i < 3; i++) { await t.press("#list .row:not(.done) .check"); await wait(500); } await wait(1200);
+    assert.equal(await t.page.$eval("#again", e => getComputedStyle(e).textTransform), "uppercase", "the finale's chip is a chip");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
+  });
+
   await test(label + ": 1.7: under reduced motion the finale's glow never flares", async () => {
     const t = await fresh(opts, { reducedMotion: "reduce" });
     await t.page.evaluate(() => { window.__flared = false; new MutationObserver(() => { if (document.getElementById("glow").classList.contains("flare")) window.__flared = true; }).observe(document.getElementById("glow"), { attributes: true, attributeFilter: ["class"] }); });

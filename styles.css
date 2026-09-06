@@ -228,7 +228,7 @@ button{font:inherit;color:inherit}
   transition:color .16s ease,border-color .16s ease,opacity .16s ease,background-color .16s ease;
   line-height:1;
 }
-.tool svg{width:1.05em;height:1.05em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tool svg{width:1.05em;height:1.05em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tool:hover{color:var(--text);border-color:var(--hair-hi);background:var(--ink-3)}
 .tool:focus-visible{outline:2px solid var(--accent);outline-offset:2px;opacity:1}
 /* the Today toggle (Everything): a small star, hollow when off, filled when on; no pill, and no orange until hover or press */
@@ -301,7 +301,7 @@ button{font:inherit;color:inherit}
 .sec.collapsed .caret{transform:rotate(-90deg)}
 .sec-h .sec-count{color:var(--muted);letter-spacing:.09em;font-variant-numeric:tabular-nums}
 .sec-h .spacer{flex:1 1 auto}
-.sec-h .chip{padding:.35em .7em;min-height:28px}
+.sec-h .chip{padding:.35em .7em;min-height:32px} /* 1.7: the chip floor, like the rail's ⋯ */
 .sec.collapsed .seclist,.sec.collapsed .add{display:none}
 .sec.over .sec-h{color:var(--accent-text);border-bottom-color:var(--accent)}
 .seclist{list-style:none;display:flex;flex-direction:column;min-height:.5rem}
@@ -355,6 +355,7 @@ html[data-mode="view"] #hint{visibility:hidden}
 #hint.off{opacity:0;pointer-events:none}
 /* the finale is not laid out until it is on: an invisible row in the row font pulled Lato 900 (and, through its chip, Lato 400) in at first paint */
 #finale{display:none;align-items:center;gap:1.1rem;flex-wrap:wrap;justify-content:center}
+#finale .chip{font-family:var(--font-ui);font-weight:700;font-size:clamp(10px,1.05vw,12px);letter-spacing:.15em;text-transform:uppercase} /* 1.7: the rail's chip style, not body text */
 #finale.on{display:flex;animation:finale-in .5s ease}
 @keyframes finale-in{from{opacity:0}to{opacity:1}}
 #finale span{
@@ -441,6 +442,7 @@ dialog.panel #toast{z-index:60} /* 1.7: a toast raised while a sheet is open mov
   .tool.today{border-color:transparent;background:transparent}
   .dot{min-height:44px;min-width:32px;justify-content:center}
   .sec-h .chip{min-width:44px}
+  #count,#shuffle{min-height:44px;min-width:44px} /* 1.7: the count is a control, at the touch floor like the chips */
   .row .tool{opacity:1}
 }
 
@@ -485,7 +487,8 @@ body.page{overflow:auto;height:auto;min-height:100%}
 .prose code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;background:var(--ink-2);border:1px solid var(--hair);border-radius:6px;padding:.05em .35em}
 .prose a{color:var(--accent-text)}
 .prose .crumb{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
-.prose .crumb a{color:var(--dim);text-decoration:none}
+.prose .crumb a{color:var(--accent-text);text-decoration:none}
+.prose .crumb .chev{font-size:1.7em;line-height:.8;font-weight:400;position:relative;top:-.06em;margin-right:.15em} /* 1.7: the same way back as every panel's */
 .prose .crumb a:hover{color:var(--text)}
 .prose .fine{margin-top:2rem}
 /* the version line and the changelog (1.2): a headline per version, then up to three tagged items (About loads this sheet only) */
@@ -636,7 +639,7 @@ body.install-on #toast,body.install-on #whatsnew{bottom:calc(96px + env(safe-are
 .rail-r .status{display:inline-flex;align-items:center;gap:.4rem;min-width:0}
 /* the sun/moon (1.2): between the views and Share, showing where a tap goes (the moon by day, the sun by night); it fades with the rail */
 #daynight{display:inline-grid;place-items:center;padding:.45em .6em}
-#daynight svg{width:15px;height:15px;display:block;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#daynight svg{width:15px;height:15px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 #daynight[data-next="night"] .sun,#daynight[data-next="day"] .moon{display:none}
 /* while the palette crossfades, the tokens move every frame: the rows' and chips' own colour transitions would trail them
    (pale text on a pale ground for a beat), so they are off until the fade lands; the glow keeps its inline dip */

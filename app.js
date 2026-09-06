@@ -1779,7 +1779,7 @@ function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger =
     const field = $("#ask-field"), input = $("#ask-input");
     field.hidden = !label; input.value = value; input.setAttribute("aria-label", label || title);
     $("#ask-ok").textContent = confirm;
-    $("#ask-ok").classList.toggle("danger", danger);
+    $("#ask-ok").classList.toggle("danger", danger); $("#ask-ok").classList.toggle("accent", !danger); // 1.7: never both
     let done = false;
     const finish = v => { if (done) return; done = true; resolve(v); };
     const form = $("#ask-form");

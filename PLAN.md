@@ -931,3 +931,72 @@ Run before the deploy: the seven Node suites (25, 24, 9, 13, 8, 21, 7); the brow
 Price asked for the codes back on the phone (1.4 left it Copy, and Share… for the View link) and sent the preview card with its title over the last line. Each Copy in the Share sheet now has a QR code button to its right: on a phone in all three link blocks, on a desktop in Let someone edit only, since the first two show their codes inline as in 1.3. The button toggles the code above the link and draws it from the link in the box at that moment; the private link marked as shared gets a code only when someone asks for it. The card: the app’s stylesheet, borrowed for the fonts, brought its `.lines`, `.row` and `.box` rules along, which painted the lines from the card’s corner over the rail, and the title sat over the fourth line by design. The card’s classes carry an `og-` prefix now, it shows three lines, and the title and tagline share a band under a divider at the bottom (`icons/og.png`, still 1200×630). The after shots were retaken with the button in place (same files, same table).
 
 Run before the deploy: the seven Node suites (7, 9, 21, 25, 8, 13, 24) and the browser suite’s ten tests that touch Share, at both viewports, with the Share test extended: the buttons in each block, hidden on a desktop where the code is inline, shown on a phone, the private one everywhere; a tap draws the code and presses the button, another hides it. Live, build 71 at 20:58 (Pages served it on the fifth poll): `icons/og.png` comes back at 28 KB with the three lines and the title band clear of them; in a phone-sized Chrome on the live site the sheet shows Copy link and QR code in the first two blocks, Share… on the View link, and Copy private link and QR code under the warning, and a tap on the first button draws its code (205 px) and presses the button, a second tap hides it; on a desktop the first two codes are inline and only Let someone edit carries the button, which draws its code; on the iOS 26.5 simulator’s Safari the live sheet shows the same buttons and both codes drew on a tap. The record commit stamps build 72 and changes nothing else.
+
+
+# Today's Five 1.5 — plan
+
+Six more sound packs. The brief was one line ("more sounds in the sound pack—surprise me"); the calls are in DECISIONS.md under "1.5 decisions". Nothing on the server changes; links, keys and the document shape are untouched; the twelve curated themes keep their sounds.
+
+## What changed, by surface
+
+| surface | 1.4 | 1.5 |
+|---|---|---|
+| Settings → Sound pack | Theme's pick and six packs | Theme's pick and twelve: Knock, Bell, Blip, Typewriter, Marble, Pop, Kalimba, Pencil, Whistle, Bongo, Cork, Arcade; a pick still previews |
+| The theme builder's Sound | Auto and six | Auto and twelve; the code carries the pick (`T2:…:cork:…`), and a 1.4 device given it falls back to the hue rule |
+| A check-off | the theme's pack | the same, or the device's pick: the kalimba climbs a pentatonic scale, the pencil draws the mark, the whistle slides up, the bongos alternate hands, the cork pops, the arcade drops a coin |
+| The finale | the theme's pack | the kalimba rolls to a chord, the pencil tears the page off the pad, the whistle whistles a tune, the bongos play a fill, the cork pops, fizzes, pours and clinks, the arcade plays the level-clear jingle |
+| How it works | "Every theme picks a sound pack" | "one of the twelve sound packs" |
+| What's new | 1.4's entry | 1.5: "Six more sounds." with two lines |
+
+## Structure of the change
+
+- `packs.js`: `noiseShape` (a noise stroke with attack, hold, release and a filter glide) and six engines (`kalimba`, `pencil`, `whistlePack`, `bongo`, `cork`, `arcade`), each with `check(env, step)`, `uncheck(env)` and `finish(env)` reading `P("pitch")` and `P("decay")` (the pencil `P("noise")` too) like the old six; `PACKS`, `PACK_NAMES` and `PACK_ORDER` carry twelve. 143 → 287 lines, still loaded on the first gesture with `?v=<build>`.
+- `theme.js`: `PACK_IDS` and `PACK_NAMES` mirror the twelve; `packOf` unchanged (an unknown name is "", the hue rule).
+- `panels.js`: the Settings list of twelve; the How it works sentence.
+- `sound.js`, `app.js`, `index.html`, `sw.js`: untouched but the version stamps. No new files in the shell.
+- `tools/sounds.js` (new): renders every pack offline to WAV and an envelope picture, prints peak and RMS per sound, joins chosen packs into one file for listening. `tools/shots.js`: a Sound-section shot with a new pack picked.
+- Tests: the sound suite's fake context grew a filter `Q`, frequency ramps and `stop()`; a test for the twelve (order, names, every step of the new ones, pitch and decay reaching them); the theme suite's list; the features suite's version lists and the newest headline; the browser suite's two sound tests cover twelve.
+
+## Before and after
+
+Only the Sound section changes on screen; the rest of the after set matches the before set (70 shots each, `shots/1.5/before` from the untouched 1.4 code, `shots/1.5/after` from this branch).
+
+| surface | desktop before | desktop after | phone before | phone after |
+|---|---|---|---|---|
+| settings-sound | <img src="shots/1.5/before/desktop-settings-sound.png" width="300" alt="Settings, the Sound section, desktop, before"> | <img src="shots/1.5/after/desktop-settings-sound.png" width="300" alt="Settings, the Sound section with Kalimba picked, desktop, after"> | <img src="shots/1.5/before/phone-settings-sound.png" width="300" alt="Settings, the Sound section, phone, before"> | <img src="shots/1.5/after/phone-settings-sound.png" width="300" alt="Settings, the Sound section with Kalimba picked, phone, after"> |
+
+## The sounds, measured
+
+`node tools/sounds.js shots/1.5/sounds` renders each pack over 4.6 s (check-offs at 0, 0.45 and 0.9 s, an uncheck at 1.5 s, the finale at 2.1 s) and draws its loudness (RMS in 4 ms windows). Peak and RMS per sound, after tuning; the old six for the scale:
+
+| pack | check peak / RMS | uncheck peak / RMS | finale peak / RMS | finale length |
+|---|---|---|---|---|
+| knock | 0.387 / 0.042 | 0.128 / 0.011 | 0.343 / 0.044 | 0.75 s |
+| bell | 0.374 / 0.065 | 0.111 / 0.010 | 0.327 / 0.045 | 1.35 s |
+| blip | 0.118 / 0.014 | 0.076 / 0.008 | 0.114 / 0.017 | 0.46 s |
+| typewriter | 0.445 / 0.023 | 0.159 / 0.008 | 0.309 / 0.021 | 0.69 s |
+| marble | 0.365 / 0.029 | 0.141 / 0.009 | 0.365 / 0.035 | 1.17 s |
+| pop | 0.281 / 0.023 | 0.156 / 0.011 | 0.342 / 0.030 | 0.80 s |
+| kalimba | 0.312 / 0.066 | 0.104 / 0.017 | 0.370 / 0.045 | 1.59 s |
+| pencil | 0.301 / 0.048 | 0.133 / 0.017 | 0.389 / 0.040 | 1.06 s |
+| whistle | 0.171 / 0.062 | 0.141 / 0.047 | 0.163 / 0.059 | 1.28 s |
+| bongo | 0.387 / 0.045 | 0.156 / 0.009 | 0.370 / 0.027 | 1.01 s |
+| cork | 0.390 / 0.037 | 0.163 / 0.011 | 0.346 / 0.038 | 1.92 s |
+| arcade | 0.074 / 0.026 | 0.070 / 0.030 | 0.119 / 0.021 | 1.23 s |
+
+| pack | the loudness over 4.6 s |
+|---|---|
+| kalimba | <img src="shots/1.5/sounds/kalimba.png" width="700" alt="kalimba: three tines climbing, a damped one, a roll to a chord"> |
+| pencil | <img src="shots/1.5/sounds/pencil.png" width="700" alt="pencil: two strokes per mark, three rubs of the eraser, the page torn off"> |
+| whistle | <img src="shots/1.5/sounds/whistle.png" width="700" alt="whistle: held notes, the tune with a long last note"> |
+| bongo | <img src="shots/1.5/sounds/bongo.png" width="700" alt="bongo: hits, a fill quickening, both hands"> |
+| cork | <img src="shots/1.5/sounds/cork.png" width="700" alt="cork: pops, then the pop, the fizz, five glugs, the clink"> |
+| arcade | <img src="shots/1.5/sounds/arcade.png" width="700" alt="arcade: the coin, the hurt blip, the run and the chord"> |
+
+## Verification results (1.5)
+
+__RESULTS__
+
+## Live checks (1.5)
+
+__LIVE__

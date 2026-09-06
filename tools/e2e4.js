@@ -688,7 +688,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": a 1.0 device (it called itself 4.0.0) opens 1.4 — the toast once, nothing else, nothing about version numbers, list intact, no hints later", async () => {
+  await test(label + ": a 1.0 device (it called itself 4.0.0) opens 1.5 — the toast once, nothing else, nothing about version numbers, list intact, no hints later", async () => {
     const t = await fresh(opts);
     const { listId } = await t.s();
     // turn this device into a 1.0 one: the version it remembers is 4.0.0, it went through the tour, it never heard of hints
@@ -696,7 +696,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
     assert.ok(await t.page.locator("#whatsnew").isVisible(), "what's-new toast");
     const msg = await t.page.textContent("#wn-msg");
-    assert.ok(new RegExp("New in " + VERSION.replace(".", "\\.")).test(msg), msg); assert.ok(!/4\.0\.0|renumber|1\.1\b|1\.2\b|1\.3\b/.test(msg), "nothing about version numbers: " + msg); assert.ok(/shared/i.test(msg), "the headline is about shared lists"); assert.equal((await t.page.textContent("#wn-more")).trim(), "What's new");
+    assert.ok(new RegExp("New in " + VERSION.replace(".", "\\.")).test(msg), msg); assert.ok(!/4\.0\.0|renumber|1\.1\b|1\.2\b|1\.3\b/.test(msg), "nothing about version numbers: " + msg); assert.ok(/sound/i.test(msg), "the headline is about the sounds (1.5)"); assert.equal((await t.page.textContent("#wn-more")).trim(), "What's new");
     assert.equal(await t.page.locator("#tour").count(), 0, "no tour"); assert.equal(await t.page.locator("dialog[open]").count(), 0, "no sheet"); assert.ok(await t.page.locator("#mark").isHidden(), "no hint");
     assert.equal((await t.s()).stats.check + (await t.s()).stats.finish, 0, "no sound");
     assert.equal(await t.page.locator("#list .row").count(), 3); assert.equal((await t.s()).listId, listId);
@@ -708,13 +708,13 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": About shows the version as 1.4 (build N) and the changelog in its shape, no dates", async () => {
+  await test(label + ": About shows the version as 1.5 (build N) and the changelog in its shape, no dates", async () => {
     const t = await fresh(opts, { url: BASE + "about.html", list: false });
     await t.page.waitForFunction(() => /build/.test(document.getElementById("version").textContent), null, { timeout: 5000, polling: 100 });
     assert.equal(await t.page.textContent("#version"), "Version " + VERSION_LABEL);
     const log = await t.page.$$eval("#log .v", els => els.map(e => e.textContent));
-    assert.equal(log.join(","), "1.4,1.3,1.2,1.1,1.0", "1.0 and later; the pre-releases never render");
-    assert.ok(/Yours, and shared with you\./.test(await t.page.textContent("#log > li:first-child div")), "a headline per version");
+    assert.equal(log.join(","), "1.5,1.4,1.3,1.2,1.1,1.0", "1.0 and later; the pre-releases never render");
+    assert.ok(/Six more sounds\./.test(await t.page.textContent("#log > li:first-child div")), "a headline per version"); assert.ok(/Yours, and shared with you\./.test(await t.page.textContent("#log > li:nth-child(2) div")), "and the one before it");
     const tags = await t.page.$$eval("#log .tag", els => els.map(e => e.textContent)); assert.ok(tags.length >= 6 && tags.every(x => ["New", "Improved", "Fixed"].includes(x)), "tagged items: " + tags);
     assert.ok(await t.page.$$eval("#log > li", els => els.every(li => li.querySelectorAll("ul li").length <= 3)), "three items at most");
     assert.equal(await t.page.$eval("#version", e => getComputedStyle(e).textTransform), "uppercase", "the version line is styled on About (its rules live in styles.css now)");
@@ -920,7 +920,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": a 1.1 device opens 1.4 — Follow system and the schedule migrate into the switch, the theme on screen does not change, and the toast is the only new thing", async () => {
+  await test(label + ": a 1.1 device opens 1.5 — Follow system and the schedule migrate into the switch, the theme on screen does not change, and the toast is the only new thing", async () => {
     // Follow system on, with both slots filled
     const t = await fresh(opts);
     const { listId } = await t.s();
@@ -928,7 +928,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
     let st = await t.s();
     assert.equal(st.theme, "midnight", "a dark system: Midnight, as Follow system showed"); assert.equal(st.switchMode, "system"); assert.equal(st.day, "T1:curated:harbor"); assert.equal(st.night, "T1:curated:midnight"); assert.equal(st.hold, null);
-    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.4: Yours, and shared with you\./.test(await t.page.textContent("#wn-msg")), "the headline only: " + await t.page.textContent("#wn-msg"));
+    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.5: Six more sounds\./.test(await t.page.textContent("#wn-msg")), "the headline only: " + await t.page.textContent("#wn-msg"));
     assert.equal(await t.page.locator("dialog[open]").count(), 0, "no sheet"); assert.ok(await t.page.locator("#mark").isHidden(), "no hint"); assert.equal(st.stats.check + st.stats.finish + st.stats.tick, 0, "no sound");
     assert.equal(await t.page.locator("#list .row").count(), 3); assert.equal(st.listId, listId, "the list is intact");
     assert.ok(await t.page.locator("#daynight").isVisible(), "the sun/moon is there");
@@ -1375,14 +1375,14 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 
-  await test(label + ": a 1.3 device opens 1.4 — every list it holds is mine with no question and no groups, and the toast is the only new thing", async () => {
+  await test(label + ": a 1.3 device opens 1.5 — every list it holds is mine with no question and no groups, and the toast is the only new thing", async () => {
     const t = await fresh(opts);
     await makeList(t, "Work");
     await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); for (const l of m.lists) { delete l.origin; delete l.nickname; } m.device.seenVersion = "1.3"; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
     await t.reload(); await t.page.waitForFunction(() => window.__tf && window.__tf().listId); await wait(1800);
     assert.ok(!(await whoseOpen(t.page)), "no question"); assert.equal((await t.s()).origin, "mine");
     assert.deepEqual(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).lists.map(l => l.origin)), ["mine", "mine"], "every existing list is mine");
-    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.4: Yours, and shared with you\./.test(await t.page.textContent("#wn-msg")), await t.page.textContent("#wn-msg"));
+    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.5: Six more sounds\./.test(await t.page.textContent("#wn-msg")), await t.page.textContent("#wn-msg"));
     assert.ok(await t.page.$eval("#shared", e => e.hidden)); assert.equal(await t.page.locator("dialog[open]").count(), 0, "nothing else");
     await t.page.click("#wn-x"); await wait(200); await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); assert.equal(await t.page.locator("#lists-menu .group-h").count(), 0, "no groups until something is shared");
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
@@ -1413,7 +1413,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const t = await fresh(opts, { url: BASE + "?transport=local&sw=1" });
     await t.page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 20000 });
     const build = await t.page.evaluate(() => document.documentElement.getAttribute("data-build"));
-    const keys = await t.page.evaluate(() => caches.keys()); assert.ok(keys.includes("tf-v1.4-b" + build), "this build's cache: " + keys.join(","));
+    const keys = await t.page.evaluate(() => caches.keys()); assert.ok(keys.includes("tf-v1.5-b" + build), "this build's cache: " + keys.join(","));
     await t.page.evaluate(async () => { const c = await caches.open("tf-v1.3-b62"); await c.put(new Request("./panels.js"), new Response("// build 62's panels", { headers: { "Content-Type": "text/javascript" } })); });
     assert.equal((await t.page.evaluate(async () => (await fetch("panels.js?v=62")).text())).trim(), "// build 62's panels", "a page from build 62 gets build 62's module");
     assert.ok(/PANELS_BUILD = /.test(await t.page.evaluate(async b => (await fetch("panels.js?v=" + b)).text(), build)), "this build's module comes fresh");

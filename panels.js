@@ -415,7 +415,7 @@ async function nicknameList(id) {
   const e = A.entryOf(id); if (!e) return;
   const nick = await A.ask({ title: "Nickname", label: "What this list is called here", value: e.nickname || listDocName(e) || "" });
   if (nick === null) return;
-  const v = nick.trim().slice(0, 60);
+  const v = M.stripBidi(nick).trim().slice(0, 60); // 1.9: no bidi overrides in a name either
   e.nickname = v; // empty means none
   A.saveDevice(); A.paintListName();
 }
@@ -475,7 +475,7 @@ async function renameOpenList() {
   if (!A.canEdit()) return;
   const name = await A.ask({ title: "Rename list", label: "Name", value: A.doc.name || "" });
   if (name === null) return;
-  A.doc.name = name.trim().slice(0, 60); A.doc.nameAt = M.now();
+  A.doc.name = M.stripBidi(name).trim().slice(0, 60); A.doc.nameAt = M.now();
   const e = meta().lists.find(l => l.id === A.listId); if (e) e.name = A.doc.name;
   A.saveDevice();
   A.afterChange({ animate: false });
@@ -486,7 +486,7 @@ function wireLists() {
     const name = await A.ask({ title: "New list", label: "Name", value: "" });
     if (name === null) return;
     const id = M.newId();
-    A.createList(M.emptyDoc(id, (name || "").trim().slice(0, 60)), id);
+    A.createList(M.emptyDoc(id, M.stripBidi(name || "").trim().slice(0, 60)), id);
   });
   wireListDetail();
   $("#l-paste-go").addEventListener("click", () => { const r = A.parseLink($("#l-paste").value); if (!r) { A.toast("That doesn't look like a list link"); return; } A.closePanel(); A.switchTo(r, { paste: true }); });
@@ -606,18 +606,23 @@ function wireSettings() {
     } catch (err) { importedDoc = null; $("#set-import-name").textContent = err.message || "That file couldn't be read."; }
     paintExport();
   });
-  $("#set-import-new").addEventListener("click", () => {
+  // 1.9: an import is sealed and measured against the server's cap before it lands; over it, every push would be refused (proposal 18)
+  const kb = n => Math.round(n / 1024);
+  const tooBig = async (doc, what) => { const bytes = await A.envelopeBytes(doc); if (bytes <= A.ENVELOPE_CAP) return false; A.toast(what.replace("%", kb(bytes)) + ` The limit is ${kb(A.ENVELOPE_CAP)} KB.`, { ms: 7000 }); return true; };
+  $("#set-import-new").addEventListener("click", async () => {
     if (!importedDoc) return;
     const id = M.newId();
     const doc = M.normalize(importedDoc, id); doc.updatedAt = M.now();
+    if (await tooBig(doc, "That file is too big to sync as a list on its own—% KB sealed.")) return;
     importedDoc = null; A.closePanel();
     A.createList(doc, id);
   });
-  $("#set-import-merge").addEventListener("click", () => {
+  $("#set-import-merge").addEventListener("click", async () => {
     if (!importedDoc || !A.canEdit()) return;
     const merged = M.normalize(M.merge(A.doc, importedDoc), A.listId);
     const renamed = merged.name !== A.doc.name; // 1.7: a merge folds lines in; the open list keeps its own name
     if (renamed) { merged.name = A.doc.name; merged.nameAt = Math.max(merged.nameAt || 0, importedDoc.nameAt || 0) + 1; }
+    if (await tooBig(merged, "Merged, this list would be too big to sync—% KB sealed. Import it into a new list instead.")) return;
     const before = Object.values(A.doc.items).filter(i => !i.deleted).length;
     A.doc = merged; A.afterChange({ animate: true });
     const after = Object.values(merged.items).filter(i => !i.deleted).length;
@@ -683,7 +688,8 @@ async function sectionAction(act) {
   if (act === "rename") {
     const name = await A.ask({ title: "Rename section", label: "Name", value: s.name });
     const live = A.doc && A.doc.sections[s.id]; if (!live || live.deleted) return; // a remote change may have replaced the doc meanwhile
-    if (name && name.trim() && name.trim() !== live.name) { live.name = name.trim().slice(0, 60); live.updatedAt = M.now(); A.afterChange({ animate: false }); }
+    const clean = M.stripBidi(name || "").trim();
+    if (clean && clean !== live.name) { live.name = clean.slice(0, 60); live.updatedAt = M.now(); A.afterChange({ animate: false }); }
   } else if (act === "up" || act === "down") {
     const secs = M.sectionsOrdered(A.doc);
     const i = secs.findIndex(x => x.id === s.id);
@@ -710,7 +716,7 @@ async function sectionAction(act) {
   } else if (act === "template") {
     const name = await A.ask({ title: "Save as template", label: "Name", value: id === "" ? "" : s.name });
     if (!name || !name.trim()) return;
-    A.doc = M.templateFromSection(A.doc, id, name.trim());
+    A.doc = M.templateFromSection(A.doc, id, M.stripBidi(name).trim());
     A.afterChange({ animate: false });
     A.toast(`Saved template “${name.trim()}”. Insert it from any section's menu.`);
   } else if (act === "insert") {

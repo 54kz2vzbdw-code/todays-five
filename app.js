@@ -5,7 +5,7 @@
 // use: Today's first paint pays for none of it. panels.js gets one object, `api`, with live getters for the
 // state here and the actions it needs.
 import * as M from "./model.js";
-import { loadLocal, saveLocal, removeLocal, loadLegacyLocal, removeLegacyLocal, loadMeta, saveMeta, makeTransport, createSync, fetchLegacy, deleteLegacy, forWire } from "./sync.js";
+import { loadLocal, saveLocal, removeLocal, loadLegacyLocal, removeLegacyLocal, loadMeta, saveMeta, makeTransport, createSync, fetchLegacy, deleteLegacy, forWire, envelopeBytes, ENVELOPE_CAP } from "./sync.js";
 import * as C from "./crypto.js";
 import * as T from "./theme.js";
 import { createSound } from "./sound.js";
@@ -677,7 +677,7 @@ function applyPendingAdd() {
   if (fresh && syncStatus !== "gone" && syncStatus !== "off") return; // a link this device never had: wait for the pull
   pendingAdd = null;
   if (syncStatus === "gone") { toast("This link no longer works, so nothing was added"); return; }
-  a.text = (Array.isArray(a.text) ? a.text : [a.text]).map(s => String(s).trim()).filter(Boolean); // 1.7: spaces are nothing
+  a.text = (Array.isArray(a.text) ? a.text : [a.text]).map(s => M.stripBidi(String(s)).trim()).filter(Boolean); // 1.7: spaces are nothing; 1.9: no bidi overrides
   if (!a.text.length) { setView("today"); newItem({ today: true }); return; }
   const secs = M.sectionsOrdered(doc);
   const sec = a.section ? secs.find(s => s.name.toLowerCase() === a.section.toLowerCase()) : null;
@@ -1470,8 +1470,8 @@ function hintMenu() {
 }
 function commitEdit() {
   const e = editing; if (!e) return;
-  const text = e.ta.value.trim().replace(/\s+/g, " ");
-  const note = e.note.value.trim();
+  const text = M.stripBidi(e.ta.value).trim().replace(/\s+/g, " "); // 1.9: no bidi overrides (proposal 17)
+  const note = M.stripBidi(e.note.value).trim();
   const it = doc.items[e.id];
   endEditDom();
   if (!it || it.deleted) return;
@@ -1514,7 +1514,7 @@ async function addSection() {
   if (!name) return;
   const id = M.shortId();
   const secs = M.sectionsOrdered(doc);
-  doc.sections[id] = { id, name: name.trim().slice(0, 60), order: M.lastOrder(secs, s => s.order), collapsed: false, updatedAt: M.now() };
+  doc.sections[id] = { id, name: M.stripBidi(name).trim().slice(0, 60), order: M.lastOrder(secs, s => s.order), collapsed: false, updatedAt: M.now() };
   afterChange({ animate: false });
 }
 function toggleCollapse(id) {
@@ -2282,7 +2282,8 @@ const api = {
   slotCode: slot => dev[slot] || T.SLOT_DEFAULT[slot], setWake, toggleMute, toggleFullscreen, setOneThing, setSearch, ruleLabel, idleReset,
   editLink, viewLink, copyText, nativeShare, escapeHtml, drawQr, frag,
   resubscribePresence: () => { if (sync) sync.resubscribe(); paintWho(dev.whoOff ? 0 : whoCount); },
-  loadLocal, saveLocal, removeLocal
+  loadLocal, saveLocal, removeLocal,
+  ENVELOPE_CAP, envelopeBytes: d => (ref && ref.key ? envelopeBytes(ref.key, d) : Promise.resolve(0)) // 1.9: an import measured against the server's cap before it lands (proposal 18)
 };
 
 /* test hook (read-only) */

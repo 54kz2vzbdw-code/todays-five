@@ -413,4 +413,20 @@ test("1.9: the losing side of a simultaneous edit — lostEdits names the line t
   assert.deepEqual(M.lostEdits(mine, merged, {}, t0 + 5000), []);
 });
 
+test("1.9: bidi overrides are stripped where text enters — the editor's commit (app.js), add from anywhere, names, and an import, everywhere a person reads — and never on read", () => {
+  assert.equal(M.stripBidi("safe‮gnp.exe‬ tail"), "safegnp.exe tail"); assert.equal(M.stripBidi("a⁦b⁧c⁨d⁩e‪f‫g‬h‭i"), "abcdefghi");
+  assert.equal(M.stripBidi("plain"), "plain"); assert.equal(M.stripBidi(""), ""); assert.equal(M.stripBidi(undefined), undefined); assert.equal(M.stripBidi("‘quotes’ – dashes … stay"), "‘quotes’ – dashes … stay");
+  let d = M.emptyDoc("L", "Work‮"); d.sections.s = { id: "s", name: "Er‮rands", order: 1, collapsed: false, updatedAt: 1 };
+  d.items.a = item("a", { text: "safe‮gnp.exe‬ tail", note: "n⁦o", sectionId: "s" }); d.items.t = M.tombstone(item("t", { text: "gone‮" }), 9);
+  d = M.setRule(d, "a", { kind: "daily" }, 10, "2026-09-01"); d = M.templateFromSection(d, "s", "Morn‮ing", "tp", 11);
+  d.history["2026-08-30"] = [{ id: "h", text: "old‮", doneAt: 4, section: "Er‮rands" }]; d.themes.th = { id: "th", name: "Mi‮ne", code: "T1:curated:pink", updatedAt: 1 };
+  const back = M.importJSON(M.exportJSON(d), "X");
+  assert.equal(back.items.a.text, "safegnp.exe tail"); assert.equal(back.items.a.note, "no"); assert.equal(back.items.t.text, "gone", "a remembered tombstone too");
+  assert.equal(back.sections.s.name, "Errands"); assert.equal(back.name, "Work"); assert.equal(back.rules.a.text, "safegnp.exe tail"); assert.equal(back.templates.tp.name, "Morning"); assert.equal(back.templates.tp.lines[0].text, "safegnp.exe tail");
+  assert.equal(back.history["2026-08-30"][0].text, "old"); assert.equal(back.history["2026-08-30"][0].section, "Errands"); assert.equal(back.themes.th.name, "Mine");
+  assert.equal(M.normalize(d, "L").items.a.text, "safe‮gnp.exe‬ tail", "normalize does not rewrite what a document already holds");
+  assert.equal(M.exportJSON(M.importJSON(M.exportJSON(back), "X"), { at: 1 }), M.exportJSON(back, { at: 1 }), "stripping is idempotent across round trips");
+  assert.deepEqual(M.parseHash("#/l/AbCdEfGhIjKlMnOpQrStUv/add?text=" + encodeURIComponent("x‮y")).add.text, ["x‮y"], "the parser leaves it to the app, which strips on add");
+});
+
 console.log(`\n${passed} feature tests passed`);

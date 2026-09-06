@@ -17,7 +17,7 @@
   <meta property="og:image:alt" content="Today's Five: a short list in big type, one line crossed off">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-zkz7m7ZkRTzmIS2mLcWojpK0SbqcWhN0iLqFLCFlZjA='; style-src 'self' 'sha256-oE1HVK8YytWGTI+f5YZEZpzJkHu5EBNa0YFHsWkjQgQ='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://xyfjxdbwhysbaltcwvcx.supabase.co wss://xyfjxdbwhysbaltcwvcx.supabase.co; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-t4fWp0Y6FJ1dqzfULHrK8BQ8EmxhaMK+LgCngPNzRgI='; style-src 'self' 'sha256-oE1HVK8YytWGTI+f5YZEZpzJkHu5EBNa0YFHsWkjQgQ='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://xyfjxdbwhysbaltcwvcx.supabase.co wss://xyfjxdbwhysbaltcwvcx.supabase.co; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
   <meta name="theme-color" content="#1A1D21">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -49,6 +49,8 @@
      3. (1.3) no list and no link: the welcome is coming, so the rail and the footer never paint — a first paint with
         the rail, then the welcome without it, moved everything up and counted as a layout shift. */
   (function () {
+    // 1.9: a meta CSP cannot say frame-ancestors and Pages sends no headers, so a page another site has framed leaves the frame (or hides, if the frame forbids leaving)
+    if (window.top !== window.self) { try { window.top.location.href = location.href; } catch (e) { document.documentElement.style.display = "none"; } return; }
     var meta = {}, css = null;
     try {
       css = localStorage.getItem("tf/v2/themecss");

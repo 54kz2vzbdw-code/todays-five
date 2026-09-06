@@ -218,6 +218,13 @@ export const POLL_MS = 60000;
 /** Strip the list secret before sealing: a view-link holder can decrypt the doc and must never learn W. */
 export function forWire(doc) { const d = { ...doc }; delete d.id; return d; }
 
+/** The server refuses an envelope over 96 KB (PLAN.md, v3). 1.9: an import is measured against it before it lands, sealed the way a push seals it. */
+export const ENVELOPE_CAP = 96 * 1024;
+export async function envelopeBytes(key, doc) {
+  const env = await C.seal(key, forWire(doc));
+  return JSON.stringify(env).length + 2 * Object.keys(env).length; // the server measures the row's JSON text, which spaces its keys
+}
+
 export const HOLD_MS = { busy: 5 * 60000, full: 10 * 60000 };
 
 export function createSync({ transport, deviceId, onStatus, onRemote, onGone, onLive, holdMs = HOLD_MS, presence = null }) {

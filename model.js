@@ -767,6 +767,25 @@ export function moveItem(src, dst, id, ts = now(), idFn = shortId, sectionId = "
   return { src: srcOut, dst: out, newId };
 }
 
+/* ---------------- bidi overrides (1.9) ----------------
+   U+202A–U+202E and U+2066–U+2069 reverse or reorder how a line reads without showing, and on a shared list a reader
+   trusts what they see. They are stripped where text enters — the editor's commit, add from anywhere, names, an import —
+   never on read, so a document already holding them is not rewritten on every open.                                  */
+const BIDI = /[\u202A-\u202E\u2066-\u2069]/g;
+export function stripBidi(s) { return typeof s === "string" ? s.replace(BIDI, "") : s; }
+/** Every string a document carries that a person reads: line text and notes, section, list and template names, History. */
+export function stripBidiDeep(doc) {
+  const d = normalize(doc, doc && doc.id);
+  d.name = stripBidi(d.name);
+  for (const it of Object.values(d.items)) { if (it.text !== undefined) it.text = stripBidi(it.text); if (it.note !== undefined) it.note = stripBidi(it.note); }
+  for (const s of Object.values(d.sections)) if (s.name !== undefined) s.name = stripBidi(s.name);
+  for (const r of Object.values(d.rules)) { if (r.text !== undefined) r.text = stripBidi(r.text); if (r.note !== undefined) r.note = stripBidi(r.note); }
+  for (const t of Object.values(d.templates)) { if (t.name !== undefined) t.name = stripBidi(t.name); for (const l of t.lines || []) { l.text = stripBidi(l.text); l.note = stripBidi(l.note); } }
+  for (const th of Object.values(d.themes)) if (th.name !== undefined) th.name = stripBidi(th.name);
+  for (const day of Object.keys(d.history)) for (const e of d.history[day]) { e.text = stripBidi(e.text); e.section = stripBidi(e.section); }
+  return d;
+}
+
 /* ---------------- export / import ---------------- */
 
 export const EXPORT_FORMAT = 1;
@@ -783,7 +802,7 @@ export function importJSON(text, id = "") {
   try { v = JSON.parse(String(text)); } catch (e) { throw new Error("That file isn't JSON."); }
   const inner = v && typeof v === "object" && v.app === "todays-five" && v.doc && typeof v.doc === "object" ? v.doc : (v && typeof v === "object" && v.items && typeof v.items === "object" ? v : null);
   if (!inner) throw new Error("That file isn't a Today's Five export.");
-  return normalize(inner, id);
+  return stripBidiDeep(normalize(inner, id)); // 1.9: a file is a way in for a bidi override too
 }
 export function exportMarkdown(doc, { today = todayFor(doc) } = {}) {
   const lines = [];

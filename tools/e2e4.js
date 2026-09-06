@@ -2015,6 +2015,15 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.keyboard.press("Escape"); await wait(200); await t.close();
   });
 
+  await test(label + ": 1.9: a page another site has framed leaves the frame (the boot script's framebust, hashed in the CSP)", async () => {
+    const t = await fresh(opts, { list: false, url: BASE + "tools/og.html" }); // any same-origin page to host a frame; the app's boot script does the rest
+    await t.page.evaluate(base => { document.body.innerHTML = ""; const f = document.createElement("iframe"); f.src = base + "?transport=local"; f.width = 600; f.height = 400; document.body.appendChild(f); }, BASE);
+    await t.page.waitForFunction(base => location.href.startsWith(base) && !/og\.html/.test(location.href), BASE, { timeout: 9000 });
+    assert.ok(!/og\.html/.test(t.page.url()), "the top navigated to the app: " + t.page.url());
+    await t.page.waitForSelector("#welcome:not([hidden])"); assert.equal(t.csp.length, 0, "the boot script's hash is right: " + t.csp.join("; "));
+    await t.close();
+  });
+
   await test(label + ": no page errors, CSP violations or third-party requests across a full session", async () => {
     const t = await fresh(opts);
     await t.press("#v-all"); await t.esc(); await t.press("#v-today");

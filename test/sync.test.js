@@ -245,4 +245,15 @@ await test("a device that never created the list cannot re-create a deleted row 
   s.close();
 });
 
+await test("1.9: an import is measured against the server's cap before it lands — sealed the way a push seals it (proposal 18)", async () => {
+  const W = M.newId(); const e = await C.fromWrite(W);
+  const small = M.seedDoc(W);
+  const bytes = await S.envelopeBytes(e.key, small);
+  assert.ok(bytes > 200 && bytes < S.ENVELOPE_CAP, "the seed list seals well under the cap: " + bytes);
+  const huge = M.emptyDoc(W); for (let i = 0; i < 4000; i++) huge.items["i" + i] = item("i" + i, { text: "line " + i + " " + Math.random().toString(36).slice(2) + " " + Math.random().toString(36).slice(2), note: "note " + Math.random().toString(36).slice(2) });
+  const big = await S.envelopeBytes(e.key, huge);
+  assert.ok(big > S.ENVELOPE_CAP, "four thousand lines seal over the cap: " + big); assert.equal(S.ENVELOPE_CAP, 96 * 1024, "the server's 96 KB");
+  const env = await C.seal(e.key, S.forWire(huge)); assert.ok(big >= JSON.stringify(env).length, "measured as at least the JSON text");
+});
+
 console.log(`${passed} sync tests passed (with v4)`);

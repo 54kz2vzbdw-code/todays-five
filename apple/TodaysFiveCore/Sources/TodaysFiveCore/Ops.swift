@@ -16,6 +16,9 @@ public extension Model {
         if let rule {
             var r = JSONObject()
             r.set("id", id)
+            // model.js takes rule.kind as it is given — it is not checked against RULE_KINDS until
+            // normalize() reads it back. A caller with no kind writes `kind: undefined` there and ""
+            // here; every caller has one, and normalize turns both into "daily".
             r["kind"] = rule["kind"] ?? .string("")
             r["text"] = .string(it.str("text"))
             r["note"] = .string(it.str("note"))

@@ -204,7 +204,8 @@ public actor SyncEngine {
                     if dirty { continue }               // edited while the put was in flight
                     break
                 }
-                if result.document == nil && result.rev == 0 || result.rev < rev {
+                // gone: the row was never there to take a base from, or it went backwards
+                if (result.document == nil && result.rev == 0) || result.rev < rev {
                     markGone()
                     return
                 }

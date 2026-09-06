@@ -180,3 +180,106 @@ their canonical JSON so the ordinary failure is diagnosed where it is read.
 `user.email` was unset in this checkout while every commit in the history is authored
 `Price Brannen <pricebrannen@gmail.com>`, so `git cherry-pick` and `git rebase` refused to run. Set
 locally in this repository only (`git config user.email`), to the address the history already uses.
+
+---
+
+# Phase 2 — the iPhone shell
+
+## The page already had a haptic, and it had to stand down
+
+`app.js` has fired an iOS haptic on check-off since before this phase, through a hidden
+`<input type="checkbox" switch>` — toggling it inside a tap makes iOS play the switch tick. It is
+also called on shuffle, and `dev.haptics` is a kill switch with no UI behind it.
+
+Good news and a trap. Good, because the web already feels right on one moment. A trap, because in the
+app a check-off would fire the tick **and** the native generator: two buzzes. And the trick cannot do
+the job on its own — one tick, no distinct un-check, no finale, no control of intensity.
+
+So 1.10's `HAPTIC` gains `&& !SHELL`. The native haptics **replace** it inside the app rather than
+stacking on it, and `tf:shuffle` exists at all because turning the trick off would otherwise have
+taken away a tick the page has today.
+
+**How to apply:** before adding a native version of something, check whether the web already has a
+poor version of it. Two implementations firing at once is worse than either alone.
+
+## A user-agent token, not an injected flag
+
+The page needs to know it is in the shell. The obvious way — inject `window.__tfShell = true` — runs
+into two walls at once: the site's CSP is `script-src 'self' 'sha256-…'` with no `unsafe-inline`, and
+a script injected into a *client* content world (which is not subject to that CSP) has separate JS
+globals, so the page would never see the flag.
+
+`WKWebViewConfiguration.applicationNameForUserAgent` sidesteps both. The token is in
+`navigator.userAgent` before the first byte of script runs, no injection, no CSP, no world. The page
+reads `/ TodaysFive\//.test(navigator.userAgent)` once.
+
+## The bridge is in a client content world, and that was measured
+
+DOM events cross content worlds because the DOM is shared; JS globals do not. That is the whole
+reason the flag above is a user-agent token and the *listener* is a user script in
+`WKContentWorld.defaultClient`. Neither half of that was safe to assume, so `-TFSelfTest` dispatches
+the four events in the **page** world and counts what the client world heard:
+
+```
+bridge=ready heard=4/4  registryReadableFromClientWorld=string
+shellToken=true serviceWorker=true standaloneSeenByPage=false
+```
+
+That one run settled the CSP question, the cross-world question, whether `localStorage` is reachable
+from a client world, whether app-bound domains really does buy the service worker, and §3a.
+
+## The async `evaluateJavaScript` throws on a null result
+
+Found by the self-test, not by reading. `webView.evaluateJavaScript(_:in:contentWorld:)` in its
+`async` form returns a non-optional `Any` and **throws** when the script evaluates to `null` — which
+is exactly what `localStorage.getItem("tf/v2/meta")` returns on a device that has never held a list.
+The catch swallowed it and returned, so a fresh install never reconciled its vault at all: the one
+case the vault exists for.
+
+The script now always answers a string, and `""` is the absent case.
+
+**How to apply:** a `catch` that logs and returns is a place a bug can live quietly. When the failure
+mode and the empty result mean different things, make the script incapable of the ambiguous answer.
+
+## The vault keys on the registry existing, not on it holding anything
+
+Corrected at checkpoint 1, and the correction was right. Restore fires only when `tf/v2/meta` is
+missing or unreadable; removals reconcile whenever it parses, `lists: []` included.
+
+Keying on `lists` being non-empty instead is a bug with teeth: removing the **only** list leaves
+`lists: []`, restore would fire on the next launch, and the list a person had just removed would come
+back. Existence of the key means the page's store is intact and speaking for itself; its contents are
+the answer.
+
+A link the app has vaulted but the page has never registered is exempt from removal until it has been
+seen in a registry once — a link tapped from Notes is vaulted before the page finishes opening it,
+and must not be dropped in that window.
+
+## The events go on `window`
+
+`app.js` already dispatches `tf:theme` and `tf:settings` on `window`. A second convention in the same
+file would be a trap for whoever comes next, so the four new ones join them. Settled at checkpoint 1.
+
+## `STANDALONE` learns about the shell
+
+Without it the app is treated as Safari on iPhone, and three things follow that a person would
+notice: an *"Add this to your Home Screen"* hint **inside the app**, a save sheet leading with Home
+Screen steps, and a full page reload on every list switch. One term on an existing constant removes a
+branch rather than adding one. Settled at checkpoint 1.
+
+## No XcodeGen, so the project file is written by hand
+
+`brew` is not installed, so XcodeGen is not available. The `.xcodeproj` is hand-written and committed,
+and there is no `project.yml` to be the source of truth instead. It is a small project — one target,
+five sources, one local package — and `xcodebuild -list` says immediately when it is malformed.
+
+## The launch screen is a colour, not the mark
+
+A mark on the launch screen would flash and vanish; a flat `#1A1D21` that matches the page's own first
+paint is invisible, which is what a launch screen should be.
+
+## `.ambient`, and the silent switch is not fought
+
+The page already carries a one-time hint that the ring/silent switch mutes its sounds. `.playback`
+would play over the switch and make that hint a lie. `.mixWithOthers` because a check-off should not
+stop someone's music.

@@ -136,15 +136,18 @@ Run all of it, in this order, for every change that reaches `main`:
 1. Work on a branch; push after each logical commit.
 2. Node suites pass: `node test/model.test.js`, `test/theme.test.js`, `test/crypto.test.js`
    (the pinned vectors), `test/sync.test.js`, `test/sound.test.js`, `test/features.test.js`.
-   If the change touched `crypto.js`, `model.js`, `sync.js`, the shared fixtures or the migrations,
-   the Swift core's suite passes too: `cd apple/TodaysFiveCore && swift test` (§8).
+   The Swift core's suite passes too: `cd apple/TodaysFiveCore && swift test` (§8). It is quick, and
+   it is the only thing that says the second implementation still agrees.
 3. The compatibility test passes: `node test/compat.test.js` (a v4 document through the frozen v3
    model, both directions).
 4. The browser suite passes at 1440×900 and 390×844 on the local transport
    (`node tools/e2e4.js`), with zero page errors, zero CSP violations and zero third-party requests.
 5. The real-backend suite passes against the live Supabase project (`node tools/realsync4.js`):
    envelopes on the wire, view links refused, unchanged polls still tens of bytes, presence,
-   delete and undo, add-from-URL.
+   delete and undo, add-from-URL. When the change touched anything in §1–§4, the interop run goes
+   with it (`node apple/tools/interop.mjs`): the Swift core and the web against each other on the
+   deployed site. Both spend from the create limit — twelve an hour per address, and the interop run
+   uses three of them — so run them once, in this order, and not in a loop.
 6. Lighthouse desktop and mobile ≥ 95, installability errors empty; the mobile cold and warm
    numbers are not worse than the previous release's.
 7. Bump the version in `version.js`, `sw.js` and `whatsnew.json` together (`test/features.test.js`
@@ -157,19 +160,26 @@ Run all of it, in this order, for every change that reaches `main`:
 8. Merge to `main`, wait for Pages (about a minute; poll `sw.js` for the new cache name), then check
    the live URL on a fresh device (welcome → new list → encrypted row) and on a device that still
    holds a previous version's list (open the URL fresh, not a refresh: it opens, the list is intact,
-   the what's-new toast is the only new thing it sees). Mind the server's create limit (12 per hour
+   the what's-new toast is the only new thing it sees). If the change touched the check-off, finale
+   or shuffle paths, the registry's shape or the precache list, open the iPhone shell on a simulator
+   against the deployed site as well (§8) — the browser suite proves the events fire, only the app
+   proves they still arrive. Mind the server's create limit (12 per hour
    per address): a day of suites can spend it, and a fresh device then reports "busy" until it clears.
 
-## 8. Second client: the Swift core
+## 8. Other clients
 
-`apple/TodaysFiveCore` is a second implementation of everything above — links, keys, the envelope,
-the document, merge, rollover, the three RPCs — for the Apple apps. The contract is no longer a
-description of one codebase; it is the agreement between two, and that is what these rules now
-protect.
+The web app is no longer the only thing that reads this contract. `apple/` holds two more, and the
+rules above are now the agreement between all three rather than a description of one codebase.
 
-- **Any change to the document shape, the keys, the links or the RPCs updates both clients and both
-  test suites in the same change.** A change that lands on the web alone is a change that will split
-  a person's list between their phone and their laptop, silently, on the next merge.
+**Any change to the document shape, the keys, the links, the RPCs or the `tf:*` event names updates
+every client and every suite in the same change.** A change that lands on the web alone is a change
+that will split a person's list between their phone and their laptop, silently, on the next merge.
+
+### The Swift core — `apple/TodaysFiveCore`
+
+A second implementation of §1–§4: links, keys, the envelope, the document, merge, rollover, the three
+RPCs, a local store and a sync loop, for the Apple apps.
+
 - **The shared fixtures are the single source of truth.** `test/fixtures/vectors.json` (the pinned
   derivation values, real envelopes, the canonical-JSON cases, the link grammar, the dates and the
   zone) and `test/fixtures/merge/*.json` (golden merge, normalize and rollover cases) are read by
@@ -187,6 +197,41 @@ protect.
   `"10"`, and a string cut in the middle of a surrogate pair.
 - `apple/tools/interop.mjs` runs the two against each other on the deployed site and the real
   backend. It creates three lists and deletes all three; mind the create limit in §7 step 8.
-- The Swift core adds nothing to the deployed site. `apple/` is not precached, not served as part of
-  the app, and not loaded by any page. A change under `apple/` alone needs no version bump — the
-  what's-new toast keys on the version string changing, and there is nothing here for a user to see.
+
+### The iPhone shell — `apple/TodaysFive`
+
+A `WKWebView` on **the live site**, not a copy of it, plus the three things a browser cannot do:
+haptics, a Keychain link vault, and links that open in the app. It is an old client the moment it
+stops loading the current page, which is why it never bundles one.
+
+- **The `tf:*` events are the contract.** The page dispatches four `CustomEvent`s on `window`, from
+  the same places the sound plays: **`tf:check`, `tf:uncheck`, `tf:finale`, `tf:shuffle`**. They
+  carry **no `detail`** — a haptic needs the moment, never the list. Renaming one, or dropping a
+  dispatch, silently takes a feeling away from the app; `tools/e2e4.js` asserts all four at both
+  viewports so it cannot happen quietly.
+- The shell announces itself with a **user-agent token** (`TodaysFive/…`), not an injected flag, so
+  the page's CSP never comes into it. `SHELL` in `app.js` reads it, and exactly two things turn on
+  it: `HAPTIC` stands down (the shell has real generators; without this a check-off buzzes twice) and
+  `STANDALONE` is true (no Add-to-Home-Screen hint inside the app, the save sheet leads with the
+  link, and a list switch does not reload the page).
+- The shell reads `tf/v2/meta` to keep its vault in step. **The registry's shape is therefore load-
+  bearing outside the browser too**: an entry's `id`, `mode`, `origin`, `nickname` and `name` are
+  what the vault stores. §5's rule — the keys never change, unknown entries are kept — now protects
+  the app as well as an old browser.
+- The vault keys on whether `tf/v2/meta` **exists**, never on whether it holds any lists: an empty
+  `lists` array is the page speaking (so the app drops what the page dropped), a missing key is the
+  page's store gone (so the app offers its own copy back). Getting that backwards resurrects the list
+  a person just removed.
+- `WKAppBoundDomains` is what lets the service worker run inside the web view at all, so §6's whole
+  story — a deploy landing on the next open, a page keeping its own build — holds in the app exactly
+  as it does in Safari. A change to the precache list or the cache naming reaches the app too.
+- **Nothing about the app may leak a link**: no URL in any log, no analytics, no crash reporting, no
+  `NSUserActivity`, and Keychain items that are not synchronizable. iCloud Keychain would put list
+  secrets on Apple's servers and change what `about.html` promises.
+
+### What that adds to the checklist
+
+§7 step 2 already asks for `swift test` when the shared parts move. Beyond that, a change to
+`app.js`'s check-off, finale or shuffle paths, to the registry's shape, or to the precache list
+should be run past the app on a simulator before it ships — the browser suite proves the events fire,
+but only the app proves they still arrive.

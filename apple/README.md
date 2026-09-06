@@ -11,10 +11,12 @@ language mode.
 
 ```
 apple/
-  PLAN-apple.md        the design, and the results of the round
-  DECISIONS-apple.md   the calls made, and why
-  TodaysFiveCore/      the package
-  tools/interop.mjs    the live interop run, against the deployed site and the real backend
+  PLAN-apple.md         Phase 1: the core — the design, and the results
+  PLAN-apple-phase2.md  Phase 2: the iPhone shell — the design, and the results
+  DECISIONS-apple.md    the calls made, and why
+  TodaysFiveCore/       the Swift package
+  TodaysFive/           the iOS app
+  tools/interop.mjs     the live interop run, against the deployed site and the real backend
 ```
 
 ## Running the tests
@@ -129,3 +131,101 @@ a list that can be named and cleaned up rather than an orphan nobody can.
 | `Store.swift`, `SyncEngine.swift` | one file per list, and pull / merge / push |
 
 Read `PLAN-apple.md` before changing any of it, and `DECISIONS-apple.md` for why the JS layer exists.
+
+---
+
+# The iPhone app
+
+`apple/TodaysFive` is a `WKWebView` on **the live site** — never a copy — plus the three things a
+browser cannot do for itself: **haptics**, a **Keychain link vault**, and **links that open in the
+app**. No settings screen, no menu, no chrome: the rail, Today, ⋯ and Settings gain nothing.
+
+## Building and running it
+
+`brew` is not installed on this machine, so there is no XcodeGen and no `project.yml` — the
+`.xcodeproj` is the source of truth and is committed. Open it, or:
+
+```bash
+cd apple/TodaysFive
+xcodebuild -scheme TodaysFive -destination 'generic/platform=iOS Simulator' build
+```
+
+To put it on a simulator and watch what it says:
+
+```bash
+SIM=$(xcrun simctl list devices available | grep -m1 'iPhone 17 Pro (' | grep -o '[0-9A-F-]\{36\}')
+xcodebuild -scheme TodaysFive -destination "id=$SIM" -derivedDataPath /tmp/tf-app build
+xcrun simctl install "$SIM" /tmp/tf-app/Build/Products/Debug-iphonesimulator/TodaysFive.app
+xcrun simctl launch --console-pty "$SIM" com.pricebrannen.todaysfive
+```
+
+**On your iPhone** you need an Apple ID in Xcode → Settings → Accounts (a free one is enough for a
+device install; §5's universal links need the paid program). Set `DEVELOPMENT_TEAM` in the target's
+build settings, plug the phone in, trust it, and Run.
+
+### Debug launch arguments
+
+Each is `#if DEBUG` only and takes no argument.
+
+| | |
+| --- | --- |
+| `-TFSelfTest` | dispatches the four events in the page world and reports whether the bridge heard them, plus the service worker, the shell token and what the page thinks `standalone` is |
+| `-TFWipeWebStore` | clears `WKWebsiteDataStore` before the first load — the wiped-store half of the vault check |
+| `-TFWipeVault` | empties the Keychain items, for a clean run |
+
+```bash
+xcrun simctl launch --console-pty "$SIM" com.pricebrannen.todaysfive -TFSelfTest
+```
+
+## The icon
+
+The site's own mark, redrawn as vector at 1024 — opaque and full-bleed, because iOS rounds the
+corners itself and refuses transparency. Nothing in `icons/` is touched.
+
+```bash
+node apple/TodaysFive/tools/make-icon.mjs --check
+```
+
+`--check` renders the same geometry at 180 and diffs it against `icons/apple-touch-icon.png`, and
+fails if more than 2 % of pixels differ — so the app's icon cannot quietly drift from the site's.
+
+## What crosses the bridge
+
+Four `CustomEvent`s the page dispatches on `window`, and nothing else:
+
+| event | what the app does |
+| --- | --- |
+| `tf:check` | `UIImpactFeedbackGenerator(.medium)` |
+| `tf:uncheck` | `UIImpactFeedbackGenerator(.light)` |
+| `tf:finale` | `UINotificationFeedbackGenerator(.success)` |
+| `tf:shuffle` | `UIImpactFeedbackGenerator(.light)` |
+
+They carry no `detail`. The names are contract — `COMPATIBILITY.md` §8, and `tools/e2e4.js` asserts
+all four at both viewports.
+
+The app announces itself with a user-agent token rather than an injected flag, so the site's CSP
+never comes into it. In `app.js`, `SHELL` reads it and exactly two things turn on it: `HAPTIC` stands
+down, and `STANDALONE` is true.
+
+Everything else the app needs from the page it **reads** rather than being told: `tf/v2/meta` through
+`evaluateJavaScript`. No second message channel, no web change, no new contract.
+
+## The vault
+
+One Keychain item per link, `kSecAttrAccessibleAfterFirstUnlock`, **not synchronizable** — iCloud
+Keychain would put list secrets on Apple's servers and change what `about.html` promises.
+
+The rules are pure and live in the core (`VaultReconciler`), where `swift test` covers them:
+
+- `tf/v2/meta` **missing or unreadable** → the store was wiped. Nothing is removed, and the most
+  recently seen link is offered back.
+- `tf/v2/meta` **parses**, `lists: []` included → the page is speaking for itself. Every entry is
+  written and every vaulted link it does not name is dropped.
+
+Keying on `lists` being non-empty instead would resurrect the list you just removed.
+
+## Privacy
+
+No URL, fragment or secret is ever printed — the one `print` in the app is `#if DEBUG` and every call
+site passes a fixed string with counts. No analytics, no crash reporting, no `NSUserActivity`, and no
+network request of the app's own beyond the web view's.

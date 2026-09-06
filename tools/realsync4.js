@@ -4,6 +4,8 @@
 // clients; delete everywhere and the ten-second undo (re-creation under the same link); add-from-URL end to end
 // through the engine; and the doc-size measurement for a realistic list.
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const store = new Map();
 globalThis.localStorage = { getItem: k => store.has(k) ? store.get(k) : null, setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) };
@@ -16,11 +18,31 @@ const M = await import("../model.js");
 const C = await import("../crypto.js");
 const config = (await import("../config.js")).default;
 
-let passed = 0;
-async function test(name, fn) { await fn(); passed++; console.log("ok -", name); }
+let passed = 0, failed = 0;
+const failures = [];
+// A failing assertion used to throw out of the file, which skipped the cleanup at the bottom and left
+// every list this run had created on the server — unnamed, so nobody could delete them afterwards.
+// Failures are collected instead, exactly as tools/e2e4.js does, and the cleanup always runs.
+async function test(name, fn) {
+  try { await fn(); passed++; console.log("ok -", name); }
+  catch (e) {
+    failed++;
+    const line = (e.message || String(e)).split("\n")[0];
+    failures.push(name + ": " + line);
+    console.log("FAIL -", name, "\n     ", line);
+  }
+}
 const tick = (ms = 50) => new Promise(r => setTimeout(r, ms));
 const until = async (fn, ms = 15000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (fn()) return true; await tick(50); } return fn(); };
 const made = []; // lookupIds + tokens to clean up
+// A row exists the moment it is pushed, which is before any assertion about it can run, so every id
+// is written down the instant it is made: a crashed run leaves lists that can be named, not orphans.
+const LEDGER = fileURLToPath(new URL("./.realsync-created.txt", import.meta.url));
+function keep(e) {
+  made.push(e);
+  try { fs.appendFileSync(LEDGER, `${new Date().toISOString()} ${e.W}\n`); } catch (x) { /* the console still has it */ }
+  return e;
+}
 
 const transport = await S.makeTransport("supabase", config);
 assert.ok(transport, "transport");
@@ -52,7 +74,7 @@ function realisticDoc(W) {
 
 let sizes = {};
 await test("a created list lands as an envelope; the raw row never holds plaintext or the secret", async () => {
-  const W = M.newId(); const e = await C.fromWrite(W); made.push(e);
+  const W = M.newId(); const e = await C.fromWrite(W); keep(e);
   const s = S.createSync({ transport, deviceId: "d1" });
   s.open(e, M.seedDoc(W), { rev: 0, dirty: true, created: true });
   assert.ok(await until(() => s.status === "synced" && s.current().rev >= 1), "pushed: " + s.status);
@@ -64,7 +86,7 @@ await test("a created list lands as an envelope; the raw row never holds plainte
 });
 
 await test("a view link's put is refused with 403; the unchanged poll is a few dozen bytes", async () => {
-  const W = M.newId(); const e = await C.fromWrite(W); made.push(e);
+  const W = M.newId(); const e = await C.fromWrite(W); keep(e);
   const s = S.createSync({ transport, deviceId: "d1" });
   s.open(e, M.seedDoc(W), { rev: 0, dirty: true, created: true });
   await until(() => s.status === "synced" && s.current().rev >= 1);
@@ -81,7 +103,7 @@ await test("a view link's put is refused with 403; the unchanged poll is a few d
 });
 
 await test("presence: two clients on one list see each other, and the count drops when one leaves", async () => {
-  const W = M.newId(); const e = await C.fromWrite(W); made.push(e);
+  const W = M.newId(); const e = await C.fromWrite(W); keep(e);
   const countsA = [], countsB = [];
   const a = S.createSync({ transport, deviceId: "a", presence: { key: "sessA" + M.shortId(), enabled: () => true, onCount: n => countsA.push(n) } });
   a.open(e, M.seedDoc(W), { rev: 0, dirty: true, created: true });
@@ -103,7 +125,7 @@ await test("presence: two clients on one list see each other, and the count drop
 });
 
 await test("delete everywhere, then undo within ten seconds: the row is gone, then back under the same link", async () => {
-  const W = M.newId(); const e = await C.fromWrite(W); made.push(e);
+  const W = M.newId(); const e = await C.fromWrite(W); keep(e);
   const s = S.createSync({ transport, deviceId: "d1" });
   s.open(e, M.seedDoc(W), { rev: 0, dirty: true, created: true });
   await until(() => s.status === "synced" && s.current().rev >= 1);
@@ -125,7 +147,7 @@ await test("delete everywhere, then undo within ten seconds: the row is gone, th
 });
 
 await test("add from a URL, end to end: parse → open → add to Today → push → a second device sees the line", async () => {
-  const W = M.newId(); const e = await C.fromWrite(W); made.push(e);
+  const W = M.newId(); const e = await C.fromWrite(W); keep(e);
   const s = S.createSync({ transport, deviceId: "d1" });
   s.open(e, M.emptyDoc(W), { rev: 0, dirty: true, created: true });
   await until(() => s.status === "synced" && s.current().rev >= 1);
@@ -145,7 +167,7 @@ await test("add from a URL, end to end: parse → open → add to Today → push
 });
 
 await test("doc size: a realistic list on the live backend stays well under 20 KB encrypted", async () => {
-  const W = M.newId(); const e = await C.fromWrite(W); made.push(e);
+  const W = M.newId(); const e = await C.fromWrite(W); keep(e);
   const doc = realisticDoc(W);
   const s = S.createSync({ transport, deviceId: "d1" });
   s.open(e, doc, { rev: 0, dirty: true, created: true });
@@ -158,6 +180,10 @@ await test("doc size: a realistic list on the live backend stays well under 20 K
   assert.ok(sizes.realisticEnvelopeBytes < 20000, "envelope " + sizes.realisticEnvelopeBytes);
 });
 
-for (const e of made) { try { await transport.del(e.lookupId, e.token); } catch (x) { /* already gone */ } }
-console.log(`\n${passed} real-backend tests passed`);
+let cleaned = 0;
+for (const e of made) { try { if (await transport.del(e.lookupId, e.token)) cleaned++; } catch (x) { /* already gone */ } }
+console.log(`\ncleaned up ${cleaned} of ${made.length} list(s)`);
+console.log(`${passed} real-backend tests passed, ${failed} failed`);
+if (failed) for (const f of failures) console.log("  - " + f);
 console.log("measurements:", JSON.stringify(sizes));
+if (failed) process.exit(1);

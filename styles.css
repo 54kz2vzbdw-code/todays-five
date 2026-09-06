@@ -126,6 +126,7 @@ button{font:inherit;color:inherit}
 .view{display:flex;flex-direction:column;min-height:0;max-height:100%}
 
 /* ---------------- today ---------------- */
+#list:focus{outline:none} /* 1.7: the save sheet hands focus to the list itself; the next Tab is the first line */
 #list{
   list-style:none;display:flex;flex-direction:column;
   max-height:100%;overflow-y:auto;overscroll-behavior:contain;

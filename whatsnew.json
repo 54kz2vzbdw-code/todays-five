@@ -1,6 +1,24 @@
 {
-  "build": 76,
+  "build": 87,
   "versions": [
+    {
+      "version": "1.7",
+      "headline": "Sharper all over.",
+      "items": [
+        {
+          "tag": "Improved",
+          "text": "Every screen reads right the first time."
+        },
+        {
+          "tag": "Fixed",
+          "text": "A list with a chosen-days repeat opens whole again."
+        },
+        {
+          "tag": "Fixed",
+          "text": "A hold opens the menu, the first check-off sounds, dead links carry over."
+        }
+      ]
+    },
     {
       "version": "1.5",
       "headline": "Six more sounds.",

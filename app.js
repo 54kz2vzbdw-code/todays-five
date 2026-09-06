@@ -692,7 +692,7 @@ function makeRow(it) {
   if (view === "all") {
     const today = document.createElement("button"); today.type = "button"; today.className = "tool today";
     today.innerHTML = ICONS.star; today.setAttribute("aria-pressed", "false"); today.setAttribute("aria-label", "Today");
-    today.addEventListener("click", e => { e.stopPropagation(); if (document.activeElement === today) pendingFocus = { id: it.id, sel: ".tool.today" }; toggleToday(it.id); });
+    today.addEventListener("click", e => { e.stopPropagation(); if (e.detail === 0 && document.activeElement === today) pendingFocus = { id: it.id, sel: ".tool.today" }; toggleToday(it.id); }); // keyboard only (detail 0)
     tools.appendChild(today);
   }
   const grip = document.createElement("button"); grip.type = "button"; grip.className = "tool lmenu"; grip.innerHTML = ICONS.menu;

@@ -42,15 +42,20 @@ export async function launch({ headless = true } = {}) {
   return chromium.launch({ channel: "chrome", headless, args: ["--autoplay-policy=no-user-gesture-required"] });
 }
 
-/** The seeding script: writes the fixture into localStorage with every time shifted to now and the history bucketed by local day. */
-export function seedScript() {
+/** The seeding script: writes the fixture into localStorage with every time shifted to now (or to `now`, the fake clock's time, since
+    the order of init scripts is not defined), the day strings shifted by the same number of local days, and the history bucketed by local day. */
+export function seedScript({ now = null } = {}) {
   return `(() => {
     if (localStorage.getItem("tf/v2/meta")) return; // seeded already (a reload)
     const F = ${JSON.stringify(FIXTURE)};
-    const delta = Date.now() - F.generatedAt;
+    const NOW = ${now === null ? "Date.now()" : String(Math.round(+now))};
+    const delta = NOW - F.generatedAt;
     const shift = v => (typeof v === "number" && v > 1e12) ? v + delta : v;
     const localDate = ts => { const d = new Date(ts); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
-    const walk = o => { if (Array.isArray(o)) return o.map(walk); if (o && typeof o === "object") { const r = {}; for (const [k, v] of Object.entries(o)) r[k] = (/At$/.test(k) || k === "savedAt") ? shift(v) : walk(v); return r; } return o; };
+    const dayOf = ts => { const d = new Date(ts); return Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5); };
+    const dayDelta = dayOf(NOW) - dayOf(F.generatedAt);
+    const shiftDay = s => new Date(Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) + dayDelta * 864e5).toISOString().slice(0, 10);
+    const walk = o => { if (Array.isArray(o)) return o.map(walk); if (o && typeof o === "object") { const r = {}; for (const [k, v] of Object.entries(o)) r[k] = (/At$/.test(k) || k === "savedAt") ? shift(v) : walk(v); return r; } return (typeof o === "string" && /^\\d{4}-\\d{2}-\\d{2}$/.test(o)) ? shiftDay(o) : o; };
     const meta = walk(F.meta);
     for (const l of meta.lists) if (l.addedAt) l.addedAt = shift(l.addedAt);
     localStorage.setItem("tf/v2/meta", JSON.stringify(meta));
@@ -77,7 +82,7 @@ export function seedScript() {
 export async function openApp(browser, { env = "desktop", fixture = "fresh", scheme = "dark", reducedMotion = "no-preference", timezone, clock = null, offline = false, slow3g = false, hash = "", ctx: shared = null, url, server = null } = {}) {
   const opts = { ...(ENVS[env] || ENVS.desktop), colorScheme: scheme, reducedMotion, ...(timezone ? { timezoneId: timezone } : {}) };
   const ctx = shared || await browser.newContext(opts);
-  if (!shared && fixture === "longtime") await ctx.addInitScript(seedScript());
+  if (!shared && fixture === "longtime") await ctx.addInitScript(seedScript({ now: clock ? +new Date(clock) : null }));
   // a stranger arriving by a link: a new profile that holds no list, whose local "server" has the rows another profile made
   // (openApp(browser, { fixture: "none", hash: await a.link(), server: await a.exportServer() }); use a.viewLink() for a view link)
   if (!shared && server) await ctx.addInitScript(rows => { for (const [k, v] of Object.entries(rows)) if (!localStorage.getItem(k)) localStorage.setItem(k, v); }, server);

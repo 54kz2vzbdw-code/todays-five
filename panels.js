@@ -3,7 +3,7 @@
 // repeat picker, templates, move-to-list, delete everywhere with its undo, export/import, the ? reference, and How it
 // works. Loaded by app.js on first use; `A` is its api.
 let A = null, $ = null, $$ = null, M = null, T = null, C = null;
-const PANELS_BUILD = 76; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
+const PANELS_BUILD = 87; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
 export const RELOADING = "Today's Five updated: reloading";
 /** The shell, as sw.js lists it (minus the icons): refreshed past the HTTP cache before the one reload the guard below may do. */
 const SHELL_FILES = ["./", "./index.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js", "./sound.js", "./packs.js", "./fx.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json", "./manifest.webmanifest", "./vendor/realtime.js"];
@@ -339,7 +339,7 @@ function markSaved() {
 }
 function wireSave() {
   $("#save-copy").addEventListener("click", async () => { await A.copyText($("#save-link").value, "Link copied"); markSaved(); A.closePanel(); });
-  $("#save-done").addEventListener("click", () => { markSaved(); A.closePanel(); setTimeout(() => { if (document.activeElement === document.body) { const f = document.querySelector("#list .row .check") || document.getElementById("addtoday"); if (f) f.focus({ preventScroll: true }); } }, 80); }); // 1.7: the sheet opened by itself, so focus goes to the list
+  $("#save-done").addEventListener("click", () => { markSaved(); A.closePanel(); setTimeout(() => { if (document.activeElement === document.body) document.getElementById("list").focus({ preventScroll: true }); }, 80); }); // 1.7: the sheet opened by itself, so focus goes to the list (the list, not a line: a focused line shows its ⋯)
   $("#p-save").addEventListener("close", () => { const e = meta().lists.find(l => l.id === A.listId); if (e && e.migrated) { e.migrated = false; A.saveDevice(); } }); // "Your link changed" shows once either way
 }
 

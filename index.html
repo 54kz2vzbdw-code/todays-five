@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-base="dark" data-build="76">
+<html lang="en" data-base="dark" data-build="87">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -143,7 +143,7 @@
   <main id="main">
     <h1 class="sr-only" id="list-h1">Today's Five</h1>
     <div id="today" class="view" role="tabpanel" aria-labelledby="v-today">
-      <ol id="list" role="list" aria-label="Today's list" aria-describedby="ro"></ol>
+      <ol id="list" role="list" aria-label="Today's list" aria-describedby="ro" tabindex="-1"></ol>
       <p class="empty" id="today-empty" hidden>Nothing on Today yet. Add a line, or bring one over from Everything.</p>
       <button id="addtoday" class="add" type="button" title="New line (N)">+ New line</button>
     </div>
@@ -157,7 +157,7 @@
          exists nowhere else), and below it Keep, Skip and Paste -->
     <div id="welcome" class="view" hidden>
       <h1>Today's Five</h1>
-      <p id="welcome-msg">A short list you keep open on screen all day. Try it below—nothing is saved until you keep it.</p>
+      <p id="welcome-msg">A short list you keep open on screen all day—try it below (nothing is saved until you keep it).</p>
     </div>
     <div id="demo-foot" class="view" hidden>
       <div class="actions"><button class="big" id="w-keep" type="button" hidden>Keep this list</button></div>

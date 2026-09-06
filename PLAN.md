@@ -1049,3 +1049,22 @@ Ships on the 1.7 branch, verified per COMPATIBILITY.md §7: bugs the orchestrato
 ## Found before the agents started
 
 Loading the fixture showed a defect on its first run: a list with a chosen-days repeat opened half done. `DAY_NAMES` was declared five hundred lines below the boot call and the first render reaches it (`ruleLabel`, on every row with a rule), so the open threw after the first rows — the rest of Today missing, the count 0/0, the sync engine never started, "Sync off" in the rail — on every cold open of a device whose current list has a weekly repeat on chosen days. Fixed (moved above the boot block), with a features test that pins the short list of module-level bindings allowed below `boot()` and a browser test that boots the long-time fixture at both viewports and asserts no page error, every Today line, the count and a running engine.
+
+## What the lenses found
+
+Twelve reports, 143 findings before deduplication: 3 blockers (all the same boot bug, seen through five lenses), 41 bugs, 52 papercuts, 47 proposals. Every fix in AUDIT.md's appendix was reproduced on the working copy first (the scripts are in the session's scratch; the harness makes them short), and the fixes landed in seven commits on the branch, each with tests: the boot bug (a static guard and the fixture at boot), thirty-one copy changes, the whose question and the first sound and the flare and the hover and the empty Today and the line menu and the tooltips, the sync and data four, the hold and the add-from-anywhere and the paste error and the sheet and the swatch and the toast, the consistency ten, the accessibility fourteen, the worker and the hook and the share and copy fallbacks and the kits' floors.
+
+## Verification results (1.7)
+
+Checklist §7 of COMPATIBILITY.md, on the working copy served locally (the audit itself ran on a frozen clone of main at build 76, on its own port):
+
+- **Node suites** (`node test/*.test.js`): compat 7, crypto 9, features 23 (a boot-allowlist guard and About's fallback version added), model 27 (moveItem's section and purgeTombstones' fixed point added), sound 10 (the replay and the preload added), sync 13, theme 25 (the curated kits' elevated floors added) — 114 of 114.
+- **Browser suite** (`tools/e2e4.js`, 1440×900 mouse and 390×844 touch, the installed Chrome): 131 of 131 (12 minutes, 00:21–00:33 on 2026-09-06). The first full run failed six: four tests pinned the pre-1.7 state (the welcome's one sentence, the Lists switch's old label, and the save sheet's focus landing on a line, whose ⋯ it then showed at rest) and one crossed midnight (the fixture's day strings did not move with its times); each is a decision in DECISIONS.md, and the second run is the number above.
+- **Real backend** (`tools/e2e-realsync.js`): 6 of 6, once, at 23:42 on 2026-09-05 (the platform lens's run an hour earlier came back "busy": the 1.5 round's live checks had spent the hour's creates).
+- **Lighthouse** (mobile, simulated throttling, cold = first visit, warm = the worker's cache): 1.5 cold 99 (LCP 1852 ms) → 1.7 cold 99 (LCP 1857 ms; an earlier run of the same code read 1830 ms); warm 100 → 100 (LCP 1186 → 1176 ms); desktop 100 → 100. Not worse. app.js stays under the simulated TCP window (44,0xx B gzipped against 1.5's 42,252): the first draft's commentary cost an extra round trip (98, LCP +270 ms) and was trimmed to pointers, with the dead-link carry moved into the lazy panels module.
+- **Simulators** (safaridriver, iOS 26.5 and 18.1): the platform lens's pass over the sheets, the hold and the Share sheet; nothing was verified on a physical device (see AUDIT.md, "What no agent could verify").
+- **First paint**: the boot script's hash re-computed (`tools/csp-hash.js`); no new fetch before the largest paint (the panels module now loads 300 ms after the first gesture, the sound engines at idle).
+
+## Live checks (1.7)
+
+Run after the merge, against the live URL, with a device that made its list on 1.5 while the site still ran it and a fresh device; the record commit (build +1) writes them here.

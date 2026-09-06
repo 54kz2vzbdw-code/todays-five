@@ -5,6 +5,14 @@ items per version, rendered on the About page and in the what's-new toast); the 
 render. No dates anywhere, by design: versions are the marketing version plus a build number (About shows
 `1.4 (build N)`), and what shipped as 4.0.0 is 1.0.
 
+## 1.7 — Sharper all over.
+
+- **Improved** — Every screen reads right the first time.
+- **Fixed** — A list with a chosen-days repeat opens whole again.
+- **Fixed** — A hold opens the menu, the first check-off sounds, dead links carry over.
+
+For the record: the full pass — twelve lenses over the app as it stood at build 76, in every environment the brief listed, with no feature added. What shipped is what was a defect and not a taste call: a list with a chosen-days repeat opened half done (a constant declared below the boot call); a tap outside "Whose list is this?" closed it with no list; the first check-off on a cold page made no sound; a hold released in place wrote a phantom move for a first or last row and any row after a reorder, and a remote change mid-hold cost the menu; Undo after a move landed in Unsorted; a merge-import renamed the list; unsynced edits on a dead link were carried only on a paste; the Private link sat in Cache Storage as the key of the cached navigation; Share… swallowed every failure; a toast raised under a sheet was inert; the finale's glow flared under reduced motion; an empty Today said nothing; the confirm of an irreversible act was orange; six control kinds showed the browser's focus ring; a saved theme's × sat on its name and inside its button; the theme picker was a card on the phone; the curated kits' accent text and danger were under the floor on the elevated surface; a line's name ran its text, caption and note together; the star lost keyboard focus; the finale, the count and a keyboard move were silent; and some thirty strings said the wrong thing or named the plumbing. Everything that changes design waits in AUDIT.md, ranked, with the evidence and the agents' raw reports under audit/. The audit fixture and harness (tools/fixture.js, tools/audit/harness.mjs) stay for the next round. Nothing on the wire changes.
+
 ## 1.5 — Six more sounds.
 
 - **New** — Six new sound packs: kalimba, pencil, whistle, bongos, cork and arcade.

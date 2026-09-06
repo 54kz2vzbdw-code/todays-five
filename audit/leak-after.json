@@ -1,0 +1,414 @@
+{
+  "method": "a three-snapshot diff in the audit's own protocol, plus a third snapshot: no warm-up, a double forced GC and Performance.getMetrics at A, N cycles, B, N more, C; HeapProfiler snapshots at each, diffed by object id (what is new in B and in C, detached DOM nodes, retainer paths). Chrome 152 via Playwright, desktop 1440×900, fixture longtime, panels closed with Escape. Script: tools/leak.mjs",
+  "runs": {
+    "settings": {
+      "scenario": "settings",
+      "base": "http://127.0.0.1:8791/",
+      "env": "desktop",
+      "fixture": "longtime",
+      "warmup": 0,
+      "cyclesPerStep": 30,
+      "close": "esc",
+      "metrics": {
+        "A": {
+          "nodes": 1769,
+          "listeners": 384,
+          "heapKB": 2692
+        },
+        "B": {
+          "nodes": 1966,
+          "listeners": 442,
+          "heapKB": 3092
+        },
+        "C": {
+          "nodes": 1966,
+          "listeners": 442,
+          "heapKB": 3111
+        }
+      },
+      "perCycle": {
+        "AtoB": {
+          "nodes": 6.566666666666666,
+          "listeners": 1.9333333333333333
+        },
+        "BtoC": {
+          "nodes": 0,
+          "listeners": 0
+        }
+      },
+      "detachedNewInC": 0,
+      "growingAlike": [
+        {
+          "kind": "number int",
+          "AtoB": 4478,
+          "BtoC": 4478
+        },
+        {
+          "kind": "native blink::ComputedStyle",
+          "AtoB": 660,
+          "BtoC": 236
+        },
+        {
+          "kind": "number smi number",
+          "AtoB": 120,
+          "BtoC": 121
+        },
+        {
+          "kind": "native blink::InterpolableColor",
+          "AtoB": 90,
+          "BtoC": 90
+        },
+        {
+          "kind": "string 0",
+          "AtoB": 87,
+          "BtoC": 87
+        },
+        {
+          "kind": "native blink::HitTestData",
+          "AtoB": 77,
+          "BtoC": 77
+        },
+        {
+          "kind": "native blink::StyleBaseData",
+          "AtoB": 94,
+          "BtoC": 64
+        },
+        {
+          "kind": "native InteractionContentfulPaint",
+          "AtoB": 59,
+          "BtoC": 60
+        },
+        {
+          "kind": "native LargestContentfulPaint",
+          "AtoB": 59,
+          "BtoC": 60
+        },
+        {
+          "kind": "native system / WeakArrayList",
+          "AtoB": 92,
+          "BtoC": 59
+        },
+        {
+          "kind": "native blink::InterpolableList",
+          "AtoB": 45,
+          "BtoC": 45
+        },
+        {
+          "kind": "native blink::HeapVectorBacking<cppgc::internal::BasicMember<blink::InterpolableValue, cppgc::internal::StrongMemberTag, cppgc::internal::DijkstraWriteBarrierPolicy>>",
+          "AtoB": 45,
+          "BtoC": 45
+        },
+        {
+          "kind": "native blink::TypedInterpolationValue",
+          "AtoB": 28,
+          "BtoC": 28
+        },
+        {
+          "kind": "code system / TrustedByteArray",
+          "AtoB": 377,
+          "BtoC": 27
+        },
+        {
+          "kind": "code system / WeakFixedArray",
+          "AtoB": 65,
+          "BtoC": 23
+        },
+        {
+          "kind": "string NaN",
+          "AtoB": 22,
+          "BtoC": 22
+        },
+        {
+          "kind": "native blink::LayoutResult",
+          "AtoB": 20,
+          "BtoC": 20
+        },
+        {
+          "kind": "native blink::PhysicalBoxFragment",
+          "AtoB": 20,
+          "BtoC": 20
+        },
+        {
+          "kind": "native blink::HeapVectorBacking<blink::PhysicalFragmentLink>",
+          "AtoB": 20,
+          "BtoC": 20
+        },
+        {
+          "kind": "native blink::HeapVectorBacking<blink::GeometryMapperClipCache::ClipCacheEntry>",
+          "AtoB": 19,
+          "BtoC": 19
+        },
+        {
+          "kind": "native blink::InterpolableNumber",
+          "AtoB": 18,
+          "BtoC": 18
+        },
+        {
+          "kind": "native blink::PhysicalFragmentRareData",
+          "AtoB": 16,
+          "BtoC": 16
+        },
+        {
+          "kind": "native blink::GeometryMapperTransformCache::PlaneRootTransform",
+          "AtoB": 15,
+          "BtoC": 15
+        }
+      ],
+      "domNewInB": {
+        "object HTMLOptionElement": 32,
+        "object HTMLElement": 14,
+        "object Text": 2,
+        "object HTMLLinkElement": 1,
+        "object HTMLSelectElement": 1
+      },
+      "domNewInC": {}
+    },
+    "view": {
+      "scenario": "view",
+      "base": "http://127.0.0.1:8791/",
+      "env": "desktop",
+      "fixture": "longtime",
+      "warmup": 0,
+      "cyclesPerStep": 50,
+      "close": "esc",
+      "metrics": {
+        "A": {
+          "nodes": 1769,
+          "listeners": 384,
+          "heapKB": 2691
+        },
+        "B": {
+          "nodes": 1905,
+          "listeners": 453,
+          "heapKB": 3227
+        },
+        "C": {
+          "nodes": 1905,
+          "listeners": 453,
+          "heapKB": 3277
+        }
+      },
+      "perCycle": {
+        "AtoB": {
+          "nodes": 2.72,
+          "listeners": 1.38
+        },
+        "BtoC": {
+          "nodes": 0,
+          "listeners": 0
+        }
+      },
+      "detachedNewInC": 0,
+      "growingAlike": [
+        {
+          "kind": "number int",
+          "AtoB": 4457,
+          "BtoC": 4457
+        },
+        {
+          "kind": "native blink::ComputedStyle",
+          "AtoB": 348,
+          "BtoC": 209
+        },
+        {
+          "kind": "native blink::FragmentDataList",
+          "AtoB": 157,
+          "BtoC": 157
+        },
+        {
+          "kind": "number smi number",
+          "AtoB": 121,
+          "BtoC": 121
+        },
+        {
+          "kind": "native blink::SVGLength",
+          "AtoB": 119,
+          "BtoC": 119
+        },
+        {
+          "kind": "native SVGAnimatedLength",
+          "AtoB": 119,
+          "BtoC": 119
+        },
+        {
+          "kind": "native blink::LayoutResult",
+          "AtoB": 126,
+          "BtoC": 116
+        },
+        {
+          "kind": "native blink::PhysicalBoxFragment",
+          "AtoB": 126,
+          "BtoC": 116
+        },
+        {
+          "kind": "native blink::HitTestData",
+          "AtoB": 100,
+          "BtoC": 97
+        },
+        {
+          "kind": "native DOMRectReadOnly",
+          "AtoB": 200,
+          "BtoC": 96
+        },
+        {
+          "kind": "native system / WeakArrayList",
+          "AtoB": 171,
+          "BtoC": 89
+        },
+        {
+          "kind": "native blink::HeapVectorBacking<blink::PhysicalFragmentLink>",
+          "AtoB": 94,
+          "BtoC": 88
+        },
+        {
+          "kind": "string 0",
+          "AtoB": 87,
+          "BtoC": 87
+        },
+        {
+          "kind": "native blink::UniqueElementData",
+          "AtoB": 137,
+          "BtoC": 83
+        },
+        {
+          "kind": "closure ",
+          "AtoB": 139,
+          "BtoC": 78
+        },
+        {
+          "kind": "native EventListener",
+          "AtoB": 136,
+          "BtoC": 77
+        },
+        {
+          "kind": "native V8EventListener",
+          "AtoB": 135,
+          "BtoC": 77
+        },
+        {
+          "kind": "native blink::RegisteredEventListener",
+          "AtoB": 136,
+          "BtoC": 77
+        },
+        {
+          "kind": "native blink::BasicHeapVector<blink::internal::HeapCollectionType::kGCed, cppgc::internal::BasicMember<blink::RegisteredEventListener, cppgc::internal::StrongMemberTag, cppgc::internal::DijkstraWriteBarrierPolicy>, 1>",
+          "AtoB": 128,
+          "BtoC": 77
+        },
+        {
+          "kind": "native blink::PhysicalFragmentRareData",
+          "AtoB": 75,
+          "BtoC": 72
+        },
+        {
+          "kind": "native blink::TransformPaintPropertyNode",
+          "AtoB": 64,
+          "BtoC": 64
+        },
+        {
+          "kind": "native blink::GeometryMapperTransformCache",
+          "AtoB": 64,
+          "BtoC": 64
+        },
+        {
+          "kind": "native blink::InlineItem",
+          "AtoB": 61,
+          "BtoC": 61
+        },
+        {
+          "kind": "native blink::FragmentData::RareData",
+          "AtoB": 62,
+          "BtoC": 60
+        },
+        {
+          "kind": "native blink::PaintLayer",
+          "AtoB": 60,
+          "BtoC": 60
+        },
+        {
+          "kind": "native blink::MeasureCache",
+          "AtoB": 59,
+          "BtoC": 59
+        },
+        {
+          "kind": "native InteractionContentfulPaint",
+          "AtoB": 99,
+          "BtoC": 51
+        },
+        {
+          "kind": "native LargestContentfulPaint",
+          "AtoB": 100,
+          "BtoC": 51
+        },
+        {
+          "kind": "native LayoutShiftAttribution",
+          "AtoB": 100,
+          "BtoC": 48
+        },
+        {
+          "kind": "native LayoutShift",
+          "AtoB": 100,
+          "BtoC": 48
+        },
+        {
+          "kind": "native blink::ObjectPaintProperties",
+          "AtoB": 46,
+          "BtoC": 46
+        },
+        {
+          "kind": "native blink::StyleBaseData",
+          "AtoB": 58,
+          "BtoC": 45
+        },
+        {
+          "kind": "native blink::LayoutBlockFlow",
+          "AtoB": 45,
+          "BtoC": 45
+        },
+        {
+          "kind": "native blink::SVGTransformList",
+          "AtoB": 42,
+          "BtoC": 42
+        },
+        {
+          "kind": "native blink::BoxOverflowModel",
+          "AtoB": 42,
+          "BtoC": 42
+        },
+        {
+          "kind": "native SVGAnimatedTransformList",
+          "AtoB": 42,
+          "BtoC": 42
+        },
+        {
+          "kind": "native blink::ShareableElementData",
+          "AtoB": 35,
+          "BtoC": 35
+        },
+        {
+          "kind": "native blink::CachedMatchedProperties",
+          "AtoB": 102,
+          "BtoC": 34
+        },
+        {
+          "kind": "native blink::ComputedStyleBase::StyleSVGData",
+          "AtoB": 44,
+          "BtoC": 33
+        },
+        {
+          "kind": "native blink::GridSizingTrackCollection",
+          "AtoB": 34,
+          "BtoC": 32
+        }
+      ],
+      "domNewInB": {
+        "object HTMLOptionElement": 19,
+        "object Text": 3,
+        "object HTMLElement": 2,
+        "object HTMLLinkElement": 1,
+        "object HTMLSelectElement": 1
+      },
+      "domNewInC": {}
+    }
+  }
+}

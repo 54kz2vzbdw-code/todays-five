@@ -546,6 +546,22 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 
+  await test(label + ": 1.9: no leak — Settings open/close ×20 and Today↔Everything ×30 keep nodes and listeners flat after a forced GC (ceiling 10 nodes, 4 listeners)", async () => {
+    const t = await fresh(opts);
+    const cdp = await t.page.context().newCDPSession(t.page);
+    await cdp.send("HeapProfiler.enable"); await cdp.send("Performance.enable");
+    const measure = async () => { await cdp.send("HeapProfiler.collectGarbage"); await wait(80); await cdp.send("HeapProfiler.collectGarbage"); const { metrics } = await cdp.send("Performance.getMetrics"); const m = Object.fromEntries(metrics.map(x => [x.name, x.value])); return { nodes: m.Nodes, listeners: m.JSEventListeners }; };
+    const settings = async () => { await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await wait(120); await t.esc(); };
+    const view = async () => { await t.press("#v-all"); await wait(140); await t.press("#v-today"); await wait(140); };
+    for (const [name, cycle, n] of [["Settings", settings, 20], ["Today↔Everything", view, 30]]) {
+      await cycle(); await cycle(); // the first open loads panels.js and wires it once; the first visit builds Everything's scaffolding — one-time, not growth (the audit's baseline was taken before either)
+      const a = await measure(); for (let i = 0; i < n; i++) await cycle(); const b = await measure();
+      assert.ok(b.nodes - a.nodes <= 10 && b.listeners - a.listeners <= 4, name + " ×" + n + " grew: " + JSON.stringify({ before: a, after: b }));
+    }
+    await cdp.detach();
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
+  });
+
   await test(label + ": the three just-in-time hints each appear once and never again (the star, drag, the menu)", async () => {
     const t = await fresh(opts);
     assert.equal(JSON.stringify((await t.s()).hints), "{}", "a fresh device has seen none");

@@ -1307,12 +1307,13 @@ The audit's own evidence, re-taken: every `audit/<name>.png|txt|json` has a `-af
 
 ## Lighthouse
 
-The 1.8 clone on 8792 and the working copy on 8791, two rounds each in sequence (`tools` are the same as 1.4's; run.sh in the session scratch):
+The 1.8 clone on 8792 and the working copy on 8791, two rounds each in sequence on a quiet machine after the browser suite had finished (the same run.sh as 1.4's, in the session scratch):
 
-| | 1.8 (a) | 1.9 (a) | 1.8 (b) | 1.9 (b) |
+| | 1.8 (c) | 1.9 (c) | 1.8 (d) | 1.9 (d) |
 |---|---|---|---|---|
-| desktop perf / FCP / LCP | 100 / 365 / 447 | 100 / 365 / 449 | 100 / 364 / 445 | 100 / 418 / 458 |
-| mobile cold perf / FCP / LCP | 99 / 1511 / 1820 | 99 / 1587 / 1982 | 99 / 1510 / 1817 | 98 / 1786 / 2011 |
-| mobile warm perf / FCP / LCP | 98 / 1707 / 2007 | 99 / 1585 / 1969 | 99 / 1510 / 1818 | 99 / 1588 / 1985 |
+| desktop perf / FCP / LCP | 100 / 365 / 447 | 100 / 414 / 454 | 100 / 364 / 446 | 100 / 415 / 455 |
+| mobile cold perf / FCP / LCP | 99 / 1699 / 1849 | 98 / 1775 / 2000 | 99 / 1699 / 1849 | 99 / 1585 / 1967 |
+| mobile warm perf / FCP / LCP | 99 / 1511 / 1820 | 98 / 1777 / 2002 | 99 / 1701 / 1851 | 98 / 1776 / 2001 |
 
-Scores are the same; the mobile milliseconds sit 60–170 ms behind 1.8 in the quiet round, which is the size of the first paint's growth: index.html +1.2 KB, styles.css +1.0 KB, app.js +3.0 KB, model.js +2.4 KB, theme.js +1.1 KB gzipped (the two kits, the zone, the choreography, the sheet), about 9 KB on a 104 KB critical path, 45 ms at Lighthouse's simulated 1.6 Mbps. The 1.7 audit recorded a 1.92 s mobile LCP median against 1.1's 1.98 s; 1.9 is inside that band.
+Scores are the same (the mobile 98 shows up in 1.8's runs too, in an earlier pair). The request graph is identical — eighteen requests in the same order — and the unthrottled first paint is the same 40 ms on both; what moved is bytes: the first paint carries 9.3 KB more gzipped (index.html +1.2, styles.css +1.0, app.js +3.0, model.js +2.4, theme.js +1.1: the two kits, the zone, the choreography, the sheet, and about half of it comments), 168.5 → 177.8 KB, and Lighthouse's simulated network puts that at +50 ms on the desktop and 60–150 ms on mobile, inside the 190 ms the same build varies between two of its own runs (1.9's cold 1585 beats 1.8's 1699). Recorded in DECISIONS.md as the one thing this round could not hold to the byte.
+

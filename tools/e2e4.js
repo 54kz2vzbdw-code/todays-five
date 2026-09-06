@@ -420,6 +420,57 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  await test(label + ": 1.10: the four moments the iPhone shell listens for fire, once each, and nothing about them shows on the web", async () => {
+    const t = await fresh(opts);
+    // The shell hears these through a WKUserScript in a client content world; here the page listens
+    // to itself, which is the same contract (COMPATIBILITY.md §8) seen from the other side.
+    await t.page.evaluate(() => {
+      window.__moments = [];
+      for (const n of ["tf:check", "tf:uncheck", "tf:finale", "tf:shuffle"]) {
+        addEventListener(n, e => window.__moments.push([n, e.detail === null]));
+      }
+    });
+    const seen = () => t.page.evaluate(() => window.__moments.map(m => m[0]));
+
+    // a done line sinks, so the row is held by its id rather than by its position
+    const firstId = await t.page.$eval("#list .row", e => e.dataset.id);
+    await t.press(`#list .row[data-id="${firstId}"] .tx`); await wait(450);
+    assert.deepEqual(await seen(), ["tf:check"], "a check-off says so");
+    await t.press(`#list .row[data-id="${firstId}"] .tx`); await wait(450);
+    assert.deepEqual(await seen(), ["tf:check", "tf:uncheck"], "and taking it back says so");
+
+    // shuffle: the page ticks for it today through the hidden switch, and the shell must not lose it
+    if (touch) await t.page.tap("#count"); else await t.page.keyboard.press("o");
+    await wait(400);
+    const beforeShuffle = (await seen()).length;
+    if (touch) await t.page.tap("#shuffle"); else await t.page.keyboard.press("s");
+    await wait(500);
+    const afterShuffle = await seen();
+    assert.equal(afterShuffle.length, beforeShuffle + 1, "shuffle says so once: " + afterShuffle.join(" "));
+    assert.equal(afterShuffle[afterShuffle.length - 1], "tf:shuffle");
+    if (touch) await t.page.tap("#count"); else await t.page.keyboard.press("o");
+    await wait(400);
+
+    // the last line of the day: one finale, not one per line
+    for (let i = 0; i < 5; i++) {
+      if (!(await t.page.locator("#list .row:not(.done)").count())) break;
+      await t.press("#list .row:not(.done) .tx");
+      await wait(450);
+    }
+    await wait(700);
+    const afterAll = await seen();
+    assert.equal(afterAll.filter(n => n === "tf:finale").length, 1, "one finale for the last line: " + afterAll.join(" "));
+    assert.equal(await t.page.locator("#list .row:not(.done)").count(), 0, "every line is done");
+
+    // nothing that identifies a list rides along, and the web itself has not moved
+    assert.ok(await t.page.evaluate(() => window.__moments.every(m => m[1])), "no detail on any of them (a CustomEvent with none carries null)");
+    assert.equal(await t.page.evaluate(() => / TodaysFive\//.test(navigator.userAgent)), false, "a browser is not the shell");
+    assert.equal(await t.page.evaluate(() => matchMedia("(display-mode: standalone)").matches), false, "and is not standalone");
+    assert.equal(await t.page.locator("#haptic").count(), 1, "the hidden switch is still there for Safari");
+    assert.equal(t.errors.length, 0, "page errors: " + t.errors);
+    await t.close();
+  });
+
   await test(label + ": quiet rows — " + (touch ? "nothing on a row at rest but the checkbox, the words and (in Everything) a small star" : "nothing at rest, hover reveals exactly one control, the star stays"), async () => {
     const t = await fresh(opts);
     assert.equal((await t.visibleTools("#list")).length, 0, "Today at rest: no per-row buttons");

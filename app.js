@@ -23,7 +23,12 @@ const DARK_MQ = matchMedia("(prefers-color-scheme: dark)");
 const IOS = /iP(hone|ad|od)/.test(navigator.platform) || (navigator.userAgent.includes("Mac") && navigator.maxTouchPoints > 0);
 const MAC_KEYS = /Mac|iPhone|iPad/.test(navigator.platform); // 1.9: which modifier the Undo chip names (proposal 28)
 const UNDO_HINT = MAC_KEYS ? "⌘Z" : "Ctrl+Z", UNDO_KEYS = MAC_KEYS ? "Meta+Z" : "Control+Z";
-const STANDALONE = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+// 1.10: the iPhone shell says so in its user agent (WKWebViewConfiguration.applicationNameForUserAgent).
+// A token rather than an injected flag, so this page's CSP never comes into it. Dormant in a browser.
+const SHELL = / TodaysFive\//.test(navigator.userAgent);
+// The shell is a standalone view of the list, not a tab: no Add-to-Home-Screen hint inside the app,
+// the save sheet leads with the link, and switching lists does not reload the page.
+const STANDALONE = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true || SHELL;
 const V1_KEY = "todays-five/v1";
 const BASE = location.origin + location.pathname.replace(/[^/]*$/, "");
 const SEARCH = location.search;
@@ -171,7 +176,9 @@ function panels() {
   });
   return panelsP;
 }
-const HAPTIC = IOS && (() => { const h = document.getElementById("haptic"); return !!h && "switch" in h; })();
+// The hidden switch is this page's only way to fire a haptic, and it is one tick. The shell has the
+// real generators and a distinct feel per moment, so inside it this stands down rather than doubling up.
+const HAPTIC = IOS && !SHELL && (() => { const h = document.getElementById("haptic"); return !!h && "switch" in h; })();
 
 /* ---------------- sound & fx ---------------- */
 const stats = { check: 0, uncheck: 0, finish: 0, burst: 0, volley: 0, tick: 0 }; // read by the test hook
@@ -1174,13 +1181,13 @@ function celebrateRemote(prev, before, nowAll) {
   for (const it of todayList()) { const p = prev.items && prev.items[it.id]; if (it.done && (!p || p.deleted || !p.done)) doneNow.push(it); }
   if (!doneNow.length) return;
   const t = performance.now();
-  if (t - lastRemoteCelebrate > 250) { lastRemoteCelebrate = t; sound.check(Math.max(0, doneCountToday() - 1)); }
+  if (t - lastRemoteCelebrate > 250) { lastRemoteCelebrate = t; sound.check(Math.max(0, doneCountToday() - 1)); moment("tf:check"); }
   if (view === "today" && !RM.matches) for (const it of doneNow) {
     const li = rows.get(it.id); if (!li) continue;
     const r = li.querySelector(".tx").getBoundingClientRect();
     fx.burst(Math.min(r.right, innerWidth - 40), r.top + r.height * 0.5, 30, 11, 1.8);
   }
-  if (nowAll && !before) setTimeout(() => { sound.finish(); finaleFx(); if (!RM.matches) { const g = $("#glow"); g.classList.add("flare"); setTimeout(() => g.classList.remove("flare"), 900); } }, 500);
+  if (nowAll && !before) setTimeout(() => { sound.finish(); moment("tf:finale"); finaleFx(); if (!RM.matches) { const g = $("#glow"); g.classList.add("flare"); setTimeout(() => g.classList.remove("flare"), 900); } }, 500);
 }
 
 function toggle(id, px, py, fromPointer) {
@@ -1194,6 +1201,7 @@ function toggle(id, px, py, fromPointer) {
   if (li) { li.classList.toggle("done", it.done); li.querySelector(".check").setAttribute("aria-checked", it.done ? "true" : "false"); }
   if (it.done) {
     const played = sound.check(Math.max(0, (view === "today" ? doneCountToday() : M.itemsInSection(doc, it.sectionId).filter(i => i.done).length) - 1));
+    moment("tf:check");
     haptic();
     if (played && IOS && !dev.muted && !dev.silentHint) { dev.silentHint = true; saveDevice(); setTimeout(() => toast("Hearing nothing? The ring/silent switch mutes the app's sounds too."), 900); }
     if (li && !RM.matches) {
@@ -1212,6 +1220,7 @@ function toggle(id, px, py, fromPointer) {
     { const tl = todayList(), d = tl.filter(i => i.done).length; announce(`${d} of ${tl.length} done${d && d === tl.length ? ". That's the list." : ""}`); }
   } else {
     sound.uncheck();
+    moment("tf:uncheck");
   }
   // 1.9: the sink starts as the last of the ink lands (320 after a check-off, 160 after an uncheck; it was 520 and 200, with dead air between the strike and the move)
   afterChange({ animate: true, delay: it.done ? 320 : 160 });
@@ -1223,13 +1232,17 @@ function toggle(id, px, py, fromPointer) {
       if (gen !== openGen || !doc || !allDoneToday() || view !== "today") { paint(); return; } // taken back, or another list opened, in the meantime: no chord for a finale that is not there
       if (dev.oneThing) setOneThing(false, { silent: true }); // the finale shows the whole list
       paint(); // the card starts its fade now, under the chord
-      sound.finish(); finaleFx();
+      sound.finish(); moment("tf:finale"); finaleFx();
       if (!RM.matches) { const g = $("#glow"); g.classList.add("flare"); setTimeout(() => g.classList.remove("flare"), 900); }
     }, 300); }
     wasAll = now;
   }
   paint();
 }
+/** 1.10: the four moments the iPhone shell turns into haptics (COMPATIBILITY.md §8). Dormant on the
+    web — nothing listens. No detail is carried: a haptic needs the moment, never the list. */
+function moment(name) { dispatchEvent(new CustomEvent(name)); }
+
 /** iOS haptics through a hidden native switch: toggling it inside the tap is what fires the tick. No-op elsewhere. */
 function haptic() {
   if (!HAPTIC || dev.haptics === false) return;
@@ -1390,6 +1403,7 @@ function undo() {
   for (const [id, rec] of u.returns || []) { if (rec) doc.returns[id] = { ...rec, updatedAt: ts }; else if (doc.returns[id] && !doc.returns[id].deleted) doc.returns[id] = { id, deleted: true, updatedAt: ts }; }
   for (const [id, rec] of u.sections) doc.sections[id] = rec ? { ...rec, updatedAt: ts } : { id, deleted: true, updatedAt: ts };
   sound.uncheck();
+  moment("tf:uncheck");
   afterChange();
   wasAll = allDoneToday();
   toast("Undone");
@@ -2100,6 +2114,7 @@ function shuffle() {
   };
   if (cur && !RM.matches) { cur.classList.add("shuffle-out"); setTimeout(() => { cur.classList.remove("shuffle-out"); land(); }, 160); } else land();
   sound.tick();
+  moment("tf:shuffle");
   haptic();
   try { if (navigator.vibrate) navigator.vibrate(10); } catch (e) { /* ignore */ }
 }
@@ -2200,6 +2215,7 @@ function startAgain() {
   for (const id of ids) { const it = doc.items[id]; it.done = false; it.doneAt = 0; it.updatedAt = M.now(); }
   wasAll = false;
   sound.uncheck();
+  moment("tf:uncheck");
   afterChange();
   const first = todayList()[0]; if (first) focusRow(first.id);
 }

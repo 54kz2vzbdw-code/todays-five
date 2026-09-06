@@ -389,4 +389,28 @@ test("1.9: moveToSection files a line at the end of another section, keeps its T
   assert.deepEqual(M.itemsInSection(m, "s").map(i => i.id), ["b", "a"]);
 });
 
+test("1.9: the losing side of a simultaneous edit — lostEdits names the line this device rewrote in the last minute that a pull replaced, once; the undo writes the words back as a newer edit that wins from then on", () => {
+  const t0 = 1_700_000_000_000;
+  const base = M.emptyDoc("L"); base.items.a = item("a", { text: "call the bank", updatedAt: t0 }); base.items.b = item("b", { text: "walk", updatedAt: t0 });
+  // this device edits a at t0+1000 and remembers it; the other device edited the same line at t0+2000 (later, so it wins the merge)
+  const mine = M.normalize(base, "L"); mine.items.a = { ...mine.items.a, text: "call the credit union", updatedAt: t0 + 1000 };
+  const recent = new Map([["a", { text: "call the credit union", note: "", at: t0 + 1000 }]]);
+  const theirs = M.normalize(base, "L"); theirs.items.a = { ...theirs.items.a, text: "call the bank at nine", updatedAt: t0 + 2000 };
+  const merged = M.merge(mine, theirs);
+  assert.equal(merged.items.a.text, "call the bank at nine", "last writer wins, as it should");
+  const lost = M.lostEdits(mine, merged, recent, t0 + 5000);
+  assert.deepEqual(lost, [{ id: "a", text: "call the credit union", note: "", theirs: { text: "call the bank at nine", note: "" } }], "the loss is named");
+  // the undo: this device's words back as a fresh edit, which now wins against the other device's record
+  const undone = M.normalize(merged, "L"); undone.items.a = { ...undone.items.a, text: lost[0].text, note: lost[0].note, updatedAt: t0 + 6000 };
+  assert.equal(M.merge(undone, theirs).items.a.text, "call the credit union"); assert.equal(M.merge(theirs, undone).items.a.text, "call the credit union");
+  // nothing to say when this device's edit won, when it is older than a minute, when the line was deleted, or when the pull changed nothing
+  assert.deepEqual(M.lostEdits(mine, M.merge(mine, base), recent, t0 + 5000), [], "our edit stood");
+  assert.deepEqual(M.lostEdits(mine, merged, recent, t0 + 1000 + M.LOST_EDIT_MS + 1), [], "a minute later it is old news");
+  const gone = M.normalize(base, "L"); gone.items.a = { id: "a", deleted: true, updatedAt: t0 + 2000 };
+  assert.deepEqual(M.lostEdits(mine, M.merge(mine, gone), recent, t0 + 5000), [], "a delete is not a rewrite");
+  assert.deepEqual(M.lostEdits(mine, mine, recent, t0 + 5000), []);
+  assert.deepEqual(M.lostEdits(mine, merged, { a: { text: "something else", note: "", at: t0 + 1000 } }, t0 + 5000), [], "only words this device actually left on the line count");
+  assert.deepEqual(M.lostEdits(mine, merged, {}, t0 + 5000), []);
+});
+
 console.log(`\n${passed} feature tests passed`);

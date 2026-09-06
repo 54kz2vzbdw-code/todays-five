@@ -843,6 +843,25 @@ export function normalizeRegistry(meta) {
 /** The personalised add URL for an edit link (text left for the caller to append). */
 export function addUrl(base, W) { return base + "#/l/" + W + "/add?text="; }
 
+/* ---------------- the losing side of a simultaneous edit (1.9) ----------------
+   Last writer wins and the merge is right, but the person whose words lost watched their line change with no word.
+   `recent` is what this device wrote lately: id → { text, note, at }. An edit lost when the line this device left with
+   those words now reads differently after a pull, within the window. The caller toasts once with an Undo that writes
+   this device's words back as a new edit (a fresh timestamp: it wins from then on).                                 */
+export const LOST_EDIT_MS = 60000;
+export function lostEdits(prev, next, recent, nowTs = now(), windowMs = LOST_EDIT_MS) {
+  const out = [];
+  for (const [id, mine] of recent instanceof Map ? recent : Object.entries(recent || {})) {
+    if (!mine || nowTs - (mine.at || 0) > windowMs) continue;
+    const was = prev && prev.items && prev.items[id], is = next && next.items && next.items[id];
+    if (!was || was.deleted || !is || is.deleted) continue;
+    if (was.text !== mine.text || (was.note || "") !== (mine.note || "")) continue;   // this device's words were not on the line any more
+    if (is.text === mine.text && (is.note || "") === (mine.note || "")) continue;     // and are still there
+    out.push({ id, text: mine.text, note: mine.note || "", theirs: { text: is.text, note: is.note || "" } });
+  }
+  return out;
+}
+
 /* ---------------- what's new ---------------- */
 
 /** Show the what's-new toast once per version, and never on a device that has never held a list. */

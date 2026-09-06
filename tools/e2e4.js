@@ -819,6 +819,26 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await viewer.close(); await other.close(); await editor.close();
   });
 
+  await test(label + ": 1.9: the losing side of a simultaneous edit gets a word — a pull that replaces a line this device just rewrote toasts once, and Undo puts the words back so they win", async () => {
+    const t = await fresh(opts); const { listId } = await t.s();
+    await t.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
+    const b = await fresh(opts, { url: BASE + "?transport=local#/l/" + listId, list: false, ctx: t.ctx }); await b.page.waitForSelector("#list .row"); await wait(800);
+    const edit = async (p, text) => { await p.focus("#list .row:first-child .check"); await p.keyboard.press("e"); await p.waitForSelector("#list .row.editing textarea"); await p.keyboard.press("Meta+a"); await p.keyboard.press("Control+a"); await p.keyboard.type(text); await p.keyboard.press("Escape"); await wait(100); };
+    // Escape cancels: commit with Enter instead, then close the new line it opens
+    const commit = async (p, text) => { await p.focus("#list .row:first-child .check"); await p.keyboard.press("e"); await p.waitForSelector("#list .row.editing textarea"); await p.$eval("#list .row.editing textarea", (ta, v) => { ta.value = v; ta.dispatchEvent(new Event("input", { bubbles: true })); }, text); await p.keyboard.press("Enter"); await wait(150); await p.keyboard.press("Escape"); await wait(400); };
+    await commit(t.page, "call the credit union"); await wait(900); // pushed, and the other tab pulled it
+    assert.equal(await b.page.$eval("#list .row:first-child .tx", e => e.dataset.text), "call the credit union");
+    await commit(b.page, "call the bank at nine"); await wait(1200); // the other device's later edit wins the merge
+    assert.equal(await t.page.$eval("#list .row:first-child .tx", e => e.dataset.text), "call the bank at nine", "last writer wins on this device too");
+    assert.ok(/Another device changed “call the credit union” after you did/.test(await t.page.textContent("#toast .msg")), "the loss gets a word: " + await t.page.textContent("#toast .msg"));
+    assert.ok(!(await t.page.$eval("#toast-undo", e => e.hidden)), "with an Undo");
+    await t.page.click("#toast-undo"); await wait(1200);
+    assert.equal(await t.page.$eval("#list .row:first-child .tx", e => e.dataset.text), "call the credit union", "the words are back here");
+    assert.equal(await b.page.$eval("#list .row:first-child .tx", e => e.dataset.text), "call the credit union", "and they win over there");
+    assert.ok(/Another device changed “call the bank at nine” after you did/.test(await b.page.textContent("#toast .msg")), "and the other device, whose own fresh words just lost to the undo, gets the same word");
+    assert.equal(t.errors.length + b.errors.length, 0, t.errors.concat(b.errors).join("; ")); await b.close(); await t.close();
+  });
+
   await test(label + ": presence dots between two tabs, capped at five, beside the sync dot, off when the device says so", async () => {
     const a = await fresh(opts);
     const { listId } = await a.s();

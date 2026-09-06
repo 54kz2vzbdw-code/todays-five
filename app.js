@@ -123,6 +123,7 @@ let markTarget = null, markKey = ""; // the just-in-time hint on screen, if any 
 let menuHintFor = null;        // the line whose edit just ended by hand: the menu hint points at it once the editor is gone
 let idleTimer = 0, idleOn = false, finaleOn = false; // the idle fade (desktop)
 let finaleHold = false;        // 1.9: the finale card waits for the chord (300 ms after the last check-off); paint() reads it
+const recentEdits = new Map(); // 1.9: id → { text, note, at }, what this device wrote in the last minute, so a pull that replaces it gets a word (proposal 13)
 let query = "";                // Everything's search
 let pendingAdd = null, pendingOrigin = null; // { text: [...], section } from an add-from-anywhere link, applied once the doc is ready
 let whoCount = 0;
@@ -513,7 +514,7 @@ async function openList(r) {
     presence: { key: PRESENCE_KEY, enabled: () => !dev.whoOff, onCount: n => { if (gen === openGen) paintWho(n); } },
     onStatus: s => { if (gen === openGen) paintStatus(s); },
     onLive: v => { if (gen === openGen) { syncLive = v; paintStatus(syncStatus); } },
-    onRemote: remote => { if (gen !== openGen) return; const prev = doc; doc = remote; applyRemote(prev); applyCarry(); applyPendingAdd(); },
+    onRemote: remote => { if (gen !== openGen) return; const prev = doc; doc = remote; applyRemote(prev); noteLostEdits(prev); applyCarry(); applyPendingAdd(); },
     onGone: () => { /* the dot says it; the Lists panel offers the paste box */ }
   });
   syncLive = false;
@@ -1129,6 +1130,24 @@ function applyRemote(prev) {
   if (editing && !doc.items[editing.id]) cancelEdit(true);
   if (prev && (listMode === "view" || dev.celebrateRemote)) celebrateRemote(prev, before, nowAll);
 }
+/** 1.9: a pull replaced the words this device wrote in the last minute — say so once, with an Undo that writes them back as a new edit (proposal 13). */
+function noteLostEdits(prev) {
+  const t = Date.now();
+  for (const [id, m] of recentEdits) if (t - m.at > M.LOST_EDIT_MS || !doc.items[id] || doc.items[id].deleted) recentEdits.delete(id);
+  const lost = M.lostEdits(prev, doc, recentEdits, t);
+  if (!lost.length) return;
+  for (const l of lost) recentEdits.delete(l.id); // one word per loss
+  const first = lost[0], short = first.text.length > 32 ? first.text.slice(0, 32) + "…" : first.text;
+  toast(lost.length === 1 ? `Another device changed “${short}” after you did` : `Another device changed “${short}” and ${lost.length - 1} more after you did`, { action: () => {
+    if (!canEdit()) return;
+    const ids = lost.filter(l => doc.items[l.id] && !doc.items[l.id].deleted).map(l => l.id);
+    if (!ids.length) return;
+    pushUndo("Edited", ids);
+    for (const l of lost) { const it = doc.items[l.id]; if (!it || it.deleted) continue; it.text = l.text; it.note = l.note; it.updatedAt = M.now(); doc = M.refreshRuleSnapshot(doc, l.id); }
+    afterChange({ animate: false });
+    toast(ids.length === 1 ? "Your words are back" : "Your words are back on " + ids.length + " lines");
+  } });
+}
 function celebrateRemote(prev, before, nowAll) {
   const doneNow = [];
   for (const it of todayList()) { const p = prev.items && prev.items[it.id]; if (it.done && (!p || p.deleted || !p.done)) doneNow.push(it); }
@@ -1460,6 +1479,7 @@ function commitEdit() {
   if (text !== it.text || note !== (it.note || "")) {
     if (!e.isNew) pushUndo("Edited", [e.id]);
     it.text = text; it.note = note; it.updatedAt = M.now();
+    recentEdits.set(e.id, { text, note, at: Date.now() }); // 1.9: remembered for a minute, in case a pull replaces it
     doc = M.refreshRuleSnapshot(doc, e.id);
     afterChange({ animate: false });
   } else {

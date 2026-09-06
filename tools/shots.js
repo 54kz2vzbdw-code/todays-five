@@ -109,6 +109,33 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await openMore("lists"); await page.waitForSelector("#p-lists[open]"); await wait(400); await shot("lists-grouped");
     await page.click("#lists-menu .row:last-child .more"); await page.waitForSelector("#p-list[open]"); await wait(400); await shot("list-detail"); await esc();
   });
+  // 1.6: the Secret pair, on a version that has it (SECRET=0 leaves it out). The group, both themes, both finales
+  // mid-flight; the run ends here because the device keeps the key and the themes it chose.
+  if (process.env.SECRET !== "0") await step("secret", async () => {
+    if (!(await page.$("#sw-secret"))) return;
+    await openMore("theme"); await page.waitForSelector("#p-settings[open]"); await page.click('[data-set="night"]'); await page.waitForSelector("#p-theme[open]");
+    await page.fill("#c-import", "SuperPink"); await press("#c-import-go"); await wait(900);
+    await page.$eval("#sw-secret-h", el => el.scrollIntoView({ block: "center" })); await wait(300);
+    await shot("theme-secret");
+    await press('#sw-secret .swatch[data-code="T1:curated:superpink"]'); await wait(500);
+    await press("#partner-use"); await wait(500);
+    await esc(); await wait(900); await page.mouse.move(2, 2); await wait(500);
+    await shot("superpink");
+    const refill = async () => {
+      const id = await page.evaluate(() => window.__tf().listId);
+      for (const box of await page.$$("#list .row.done .check")) { await box.click(); await wait(220); }
+      if (!(await page.$("#list .row:not(.done) .check"))) { await page.goto(BASE + "?transport=local#/l/" + id + "/add?text=Walk%20the%20dog%0ACall%20the%20engineer%20back"); await wait(1400); }
+      await page.mouse.move(2, 2); await wait(300);
+    };
+    await refill();
+    for (let i = 0; i < 6; i++) { if (!(await page.$("#list .row:not(.done) .check"))) break; await press("#list .row:not(.done) .check"); await wait(600); }
+    await wait(1100); await shot("finale-superpink");                              // mid-bloom
+    await refill();
+    await press("#daynight"); await wait(1000); await page.mouse.move(2, 2); await wait(400);
+    await shot("birthday");
+    for (let i = 0; i < 6; i++) { if (!(await page.$("#list .row:not(.done) .check"))) break; await press("#list .row:not(.done) .check"); await wait(600); }
+    await wait(2600); await shot("finale-birthday");                               // the candles lit, before they go out
+  });
   await step("about", async () => { await page.goto(BASE + "about.html"); await wait(600); await shot("about"); });
   await ctx.close();
 }

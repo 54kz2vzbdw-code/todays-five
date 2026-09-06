@@ -1,6 +1,6 @@
 // tools/sounds.js — renders every sound pack's check (three steps), uncheck and finale through an OfflineAudioContext
 // in Chrome and writes one WAV per pack, with a table of peak and loudness per sound so the packs sit at the same
-// level. Run: node tools/serve.js 8791 . &  then  node tools/sounds.js shots/1.5/sounds [pack,pack,…]
+// level. Run: node tools/serve.js 8791 . &  then  node tools/sounds.js shots/1.6/sounds [pack,pack,…]
 // The second argument joins those packs, in that order, into joined.wav with a pause between them (for listening).
 import { createRequire } from "node:module";
 import fs from "node:fs";
@@ -17,7 +17,8 @@ const RATE = 44100, SECONDS = 4.6, EVENTS = { check0: 0, check1: 0.45, check2: 0
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const page = await browser.newPage();
 await page.goto(BASE + "?transport=local");
-const packs = await page.evaluate(async () => (await import("./packs.js")).PACK_ORDER);
+// the twelve, then the two the Secret pair carries (1.6): they are levelled against the same table
+const packs = await page.evaluate(async () => [...(await import("./packs.js")).PACK_ORDER, ...(await import("./packs-secret.js")).ORDER]);
 const wav = (pcm) => { // 16-bit mono
   const h = Buffer.alloc(44); h.write("RIFF", 0); h.writeUInt32LE(36 + pcm.length, 4); h.write("WAVE", 8); h.write("fmt ", 12); h.writeUInt32LE(16, 16); h.writeUInt16LE(1, 20); h.writeUInt16LE(1, 22);
   h.writeUInt32LE(RATE, 24); h.writeUInt32LE(RATE * 2, 28); h.writeUInt16LE(2, 32); h.writeUInt16LE(16, 34); h.write("data", 36); h.writeUInt32LE(pcm.length, 40); return Buffer.concat([h, pcm]);
@@ -25,7 +26,8 @@ const wav = (pcm) => { // 16-bit mono
 const rows = [], pcmOf = {};
 for (const id of packs) {
   const r = await page.evaluate(async ({ id, RATE, SECONDS, EVENTS }) => {
-    const { PACKS } = await import("./packs.js");
+    const P = await import("./packs.js");
+    const PACKS = { ...P.PACKS, ...(await import("./packs-secret.js")).create(P.HELPERS) };
     const c = new OfflineAudioContext(1, Math.ceil(RATE * SECONDS), RATE);
     const master = c.createGain(); master.gain.value = 1; master.connect(c.destination);
     const kit = { engine: id, pitch: 1, decay: 1 };

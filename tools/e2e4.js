@@ -688,7 +688,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": a 1.0 device (it called itself 4.0.0) opens 1.5 — the toast once, nothing else, nothing about version numbers, list intact, no hints later", async () => {
+  await test(label + ": a 1.0 device (it called itself 4.0.0) opens 1.6 — the toast once, nothing else, nothing about version numbers, list intact, no hints later", async () => {
     const t = await fresh(opts);
     const { listId } = await t.s();
     // turn this device into a 1.0 one: the version it remembers is 4.0.0, it went through the tour, it never heard of hints
@@ -696,7 +696,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
     assert.ok(await t.page.locator("#whatsnew").isVisible(), "what's-new toast");
     const msg = await t.page.textContent("#wn-msg");
-    assert.ok(new RegExp("New in " + VERSION.replace(".", "\\.")).test(msg), msg); assert.ok(!/4\.0\.0|renumber|1\.1\b|1\.2\b|1\.3\b/.test(msg), "nothing about version numbers: " + msg); assert.ok(/sound/i.test(msg), "the headline is about the sounds (1.5)"); assert.equal((await t.page.textContent("#wn-more")).trim(), "What's new");
+    assert.ok(new RegExp("New in " + VERSION.replace(".", "\\.")).test(msg), msg); assert.ok(!/4\.0\.0|renumber|1\.1\b|1\.2\b|1\.3\b/.test(msg), "nothing about version numbers: " + msg); assert.ok(/A little something for someone in particular\./.test(msg), "the headline is 1.6's wink: " + msg); assert.equal((await t.page.textContent("#wn-more")).trim(), "What's new");
     assert.equal(await t.page.locator("#tour").count(), 0, "no tour"); assert.equal(await t.page.locator("dialog[open]").count(), 0, "no sheet"); assert.ok(await t.page.locator("#mark").isHidden(), "no hint");
     assert.equal((await t.s()).stats.check + (await t.s()).stats.finish, 0, "no sound");
     assert.equal(await t.page.locator("#list .row").count(), 3); assert.equal((await t.s()).listId, listId);
@@ -708,13 +708,13 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": About shows the version as 1.5 (build N) and the changelog in its shape, no dates", async () => {
+  await test(label + ": About shows the version as 1.6 (build N) and the changelog in its shape, no dates", async () => {
     const t = await fresh(opts, { url: BASE + "about.html", list: false });
     await t.page.waitForFunction(() => /build/.test(document.getElementById("version").textContent), null, { timeout: 5000, polling: 100 });
     assert.equal(await t.page.textContent("#version"), "Version " + VERSION_LABEL);
     const log = await t.page.$$eval("#log .v", els => els.map(e => e.textContent));
-    assert.equal(log.join(","), "1.5,1.4,1.3,1.2,1.1,1.0", "1.0 and later; the pre-releases never render");
-    assert.ok(/Six more sounds\./.test(await t.page.textContent("#log > li:first-child div")), "a headline per version"); assert.ok(/Yours, and shared with you\./.test(await t.page.textContent("#log > li:nth-child(2) div")), "and the one before it");
+    assert.equal(log.join(","), "1.6,1.5,1.4,1.3,1.2,1.1,1.0", "1.0 and later; the pre-releases never render");
+    assert.ok(/A little something for someone in particular\./.test(await t.page.textContent("#log > li:first-child div")), "a headline per version"); assert.ok(/Six more sounds\./.test(await t.page.textContent("#log > li:nth-child(2) div")), "and the one before it");
     const tags = await t.page.$$eval("#log .tag", els => els.map(e => e.textContent)); assert.ok(tags.length >= 6 && tags.every(x => ["New", "Improved", "Fixed"].includes(x)), "tagged items: " + tags);
     assert.ok(await t.page.$$eval("#log > li", els => els.every(li => li.querySelectorAll("ul li").length <= 3)), "three items at most");
     assert.equal(await t.page.$eval("#version", e => getComputedStyle(e).textTransform), "uppercase", "the version line is styled on About (its rules live in styles.css now)");
@@ -905,6 +905,166 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  /* ---------------- 1.6: the Secret pair ---------------- */
+  const openPicker = async (t, slot = "night") => { await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click(`[data-set="${slot}"]`); await t.page.waitForSelector("#p-theme[open]"); };
+  const KEY = "SuperPink"; // what the picker's Import a code takes as a key rather than a code
+
+  await test(label + ": the Secret group shows up only after the key, and Forget puts it away and the slots back", async () => {
+    const t = await fresh(opts);
+    await openPicker(t);
+    assert.deepEqual(await t.page.$$eval("#p-theme h3:not([hidden])", els => els.map(e => e.textContent)), ["Made for day", "Made for night", "Your own"], "three groups before the key");
+    assert.ok(await t.page.locator("#sw-secret").isHidden() && await t.page.locator("#sw-secret-actions").isHidden(), "no group, no way to forget it");
+    assert.equal((await t.s()).secret, false);
+    // an ordinary bad code still behaves like one
+    await t.page.fill("#c-import", "not-a-code"); await t.press("#c-import-go"); await wait(250);
+    assert.equal(await t.page.textContent("#toast .msg"), "That code doesn't parse");
+    // the key: trimmed, any case
+    await t.page.fill("#c-import", "  " + KEY.toUpperCase() + "  "); await t.press("#c-import-go"); await wait(700);
+    assert.equal((await t.s()).secret, true, "unlocked"); assert.equal(await t.page.inputValue("#c-import"), "", "the field is cleared");
+    assert.equal(await t.page.textContent("#toast .msg"), "Found it—two themes, under Secret.");
+    assert.deepEqual(await t.page.$$eval("#p-theme h3:not([hidden])", els => els.map(e => e.textContent)), ["Made for day", "Made for night", "Secret", "Your own"], "the group sits with the others");
+    assert.deepEqual(await t.page.$$eval("#sw-secret .swatch .nm", els => els.map(e => e.textContent)), ["Superpink", "Birthday"]);
+    assert.deepEqual(await t.page.$$eval("#sw-secret .swatch .sm", els => els.map(e => e.textContent)), ["Night · pairs with Birthday", "Day · pairs with Superpink"], "tagged as partners of each other");
+    assert.ok((await t.s()).stats.burst > 0, "a sparkle went up");
+    // it persists, and Settings → Sound gains the pair's own two
+    await t.esc(); await t.reload(); await t.page.waitForSelector("#list .row"); await wait(600);
+    assert.equal((await t.s()).secret, true, "the key persists in the device's settings");
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
+    assert.deepEqual((await t.page.$$eval("#set-pack option", els => els.map(e => e.textContent))).slice(-2), ["Sparkle", "Party"], "Settings → Sound offers them once unlocked");
+    await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]");
+    await t.press('#sw-secret .swatch[data-code="T1:curated:superpink"]'); await wait(500);
+    await t.press("#partner-use"); await wait(400);
+    let st = await t.s(); assert.equal(st.night, "T1:curated:superpink"); assert.equal(st.day, "T1:curated:birthday");
+    // Forget: the group goes, and any slot holding one of them goes back to its default
+    await t.press("#sw-forget"); await wait(900);
+    st = await t.s();
+    assert.equal(st.secret, false, "forgotten"); assert.equal(st.day, "T1:curated:light"); assert.equal(st.night, "T1:curated:dark");
+    assert.equal(st.field, false, "the field went with it");
+    assert.ok(await t.page.locator("#sw-secret").isHidden(), "and the group");
+    assert.equal(await t.page.textContent("#toast .msg"), "Forgotten on this device. The word still works.");
+    assert.equal(await inkOf(t.page), INK.dark, "Night is Dark again");
+    assert.equal(await t.page.textContent("#finale span"), "That's the list.", "and the finale line is the ordinary one");
+    // and the word brings it back
+    await t.page.fill("#c-import", KEY.toLowerCase()); await t.press("#c-import-go"); await wait(500);
+    assert.equal((await t.s()).secret, true);
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0, "csp: " + t.csp.join("; "));
+    await t.close();
+  });
+
+  await test(label + ": both Secret themes in both slots, the flip between them, their own fonts, and a finale each", async () => {
+    const t = await fresh(opts);
+    await openPicker(t, "night");
+    await t.page.fill("#c-import", KEY); await t.press("#c-import-go"); await wait(600);
+    await t.press('#sw-secret .swatch[data-code="T1:curated:superpink"]'); await wait(400);
+    assert.equal((await t.page.textContent("#partner-use")).trim(), "Use Birthday for Day", "each names the other");
+    await t.press("#partner-use"); await wait(400);
+    await t.esc(); await wait(700);
+    let st = await t.s(); assert.equal(st.theme, "superpink"); assert.equal(st.field, true, "Superpink brings its field");
+    const face = () => t.page.evaluate(() => getComputedStyle(document.querySelector("#list .row .tx")).fontFamily);
+    assert.ok(/Fredoka/.test(await face()), "Superpink is set in Fredoka");
+    assert.equal(await t.page.$eval('meta[name="theme-color"]', e => e.content.toUpperCase()), "#3F0026", "the theme-color meta follows it like any kit");
+    // the flip
+    await t.press("#daynight"); await wait(900);
+    st = await t.s(); assert.equal(st.theme, "birthday"); assert.equal(st.field, false, "the field goes with Superpink");
+    assert.ok(/Baloo/.test(await face()), "Birthday is set in Baloo 2");
+    // Birthday's finale: its own line, and the cake on the confetti canvas
+    for (const box of await t.page.$$("#list .row:not(.done) .check")) { await box.click(); await wait(320); }
+    await wait(1500);
+    assert.equal(await t.page.textContent("#finale span"), "Make a wish. The list can wait.");
+    st = await t.s(); assert.ok(st.stats.finish >= 1 && st.stats.volley >= 1, "the finale fired: " + JSON.stringify(st.stats));
+    assert.equal(await t.page.$eval("#finale span", e => getComputedStyle(e).fontStyle), "normal");
+    // and now the other one, in the other slot
+    for (const box of await t.page.$$("#list .row.done .check")) { await box.click(); await wait(240); }
+    await t.press("#daynight"); await wait(900);
+    assert.equal((await t.s()).theme, "superpink");
+    const before = (await t.s()).stats.volley;
+    for (const box of await t.page.$$("#list .row:not(.done) .check")) { await box.click(); await wait(320); }
+    await wait(1500);
+    assert.equal(await t.page.textContent("#finale span"), "Everything crossed off but you.");
+    assert.equal(await t.page.$eval("#finale span", e => getComputedStyle(e).fontStyle), "italic", "Superpink's finale is set in italic, as Pink's is");
+    assert.ok((await t.s()).stats.volley > before, "its own bloom went up");
+    // either one goes in either slot: Birthday for Night too
+    await openPicker(t, "night");
+    await t.press('#sw-secret .swatch[data-code="T1:curated:birthday"]'); await wait(500);
+    await t.esc(); await wait(700);
+    assert.equal((await t.s()).night, "T1:curated:birthday", "a light theme in the Night slot, like any other");
+    assert.equal(await inkOf(t.page), "#FFF3F8");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0, "csp: " + t.csp.join("; ")); assert.equal(t.thirdParty.length, 0, "third party: " + t.thirdParty);
+    await t.close();
+  });
+
+  await test(label + ": the sparkle field is behind the words, costs no frames at rest, pauses with the tab and stands still under reduced motion", async () => {
+    const t = await fresh(opts, { init: "window.__raf = 0; (function(){ var r = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = function (cb) { window.__raf++; return r(cb); }; })();" });
+    await openPicker(t);
+    await t.page.fill("#c-import", KEY); await t.press("#c-import-go"); await wait(600);
+    await t.press('#sw-secret .swatch[data-code="T1:curated:superpink"]'); await wait(400);
+    await t.esc(); await wait(900);
+    assert.equal(await t.page.$$eval("#field i", els => els.length), 26, "twenty-six twinkles, two elements each");
+    const z = await t.page.evaluate(() => ({ field: +getComputedStyle(document.getElementById("field")).zIndex, glow: +getComputedStyle(document.getElementById("glow")).zIndex, shell: +getComputedStyle(document.getElementById("shell")).zIndex, ev: getComputedStyle(document.getElementById("field")).pointerEvents }));
+    assert.ok(z.field > z.glow && z.field < z.shell && z.ev === "none", "above the glow, behind the words, and not in the way: " + JSON.stringify(z));
+    // only the compositor's properties are animated, so a list left on screen costs the main thread nothing
+    const props = await t.page.evaluate(() => { const i = document.querySelector("#field i"), b = i.firstElementChild; return [getComputedStyle(i).animationName, getComputedStyle(b).animationName]; });
+    assert.deepEqual(props, ["tf-drift", "tf-twinkle"], "the two are running: " + props);
+    const raf0 = await t.page.evaluate(() => window.__raf);
+    await wait(3000);
+    const raf1 = await t.page.evaluate(() => window.__raf);
+    assert.ok(raf1 - raf0 <= 4, "no frame loop while the field is up: " + (raf1 - raf0) + " requestAnimationFrame calls in three seconds");
+    // a hidden tab stops it
+    await t.page.evaluate(() => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" }); document.dispatchEvent(new Event("visibilitychange")); });
+    await wait(200);
+    assert.equal(await t.page.$eval("#field i", e => getComputedStyle(e).animationPlayState), "paused", "paused with the tab");
+    await t.page.evaluate(() => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" }); document.dispatchEvent(new Event("visibilitychange")); });
+    await wait(200);
+    assert.equal(await t.page.$eval("#field i", e => getComputedStyle(e).animationPlayState), "running", "and back");
+    await t.close();
+    // reduced motion: the twinkles are there and still, and the finale throws nothing
+    const r = await fresh(opts, { reducedMotion: "reduce" });
+    await openPicker(r);
+    await r.page.fill("#c-import", KEY); await r.press("#c-import-go"); await wait(600);
+    await r.press('#sw-secret .swatch[data-code="T1:curated:superpink"]'); await wait(400);
+    await r.esc(); await wait(700);
+    assert.equal(await r.page.$$eval("#field i", els => els.length), 26, "the field is there");
+    assert.equal(await r.page.$eval("#field i", e => getComputedStyle(e).animationName), "none", "and standing still");
+    assert.equal(await r.page.$eval("#field i > b", e => getComputedStyle(e).animationName), "none");
+    for (const box of await r.page.$$("#list .row:not(.done) .check")) { await box.click(); await wait(300); }
+    await wait(1400);
+    assert.equal(await r.page.textContent("#finale span"), "Everything crossed off but you.", "the line still lands");
+    const painted = await r.page.evaluate(() => { const c = document.getElementById("fx"); const g = c.getContext("2d"); const d = g.getImageData(0, 0, c.width, c.height).data; for (let i = 3; i < d.length; i += 4000) if (d[i] > 0) return true; return false; });
+    assert.equal(painted, false, "no bloom under reduced motion, like every other effect");
+    assert.equal(r.errors.length, 0, r.errors.join("; "));
+    await r.close();
+  });
+
+  await test(label + ": a device that never gives the key asks for nothing of the Secret pair and is never told about it", async () => {
+    const t = await fresh(opts);
+    // a whole session: the picker, Settings, How it works
+    await openPicker(t); await t.esc(); await wait(200);
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
+    assert.equal((await t.page.$$eval("#set-pack option", els => els.map(e => e.textContent))).length, 13, "Theme's pick and the twelve");
+    await t.esc(); await wait(200);
+    await t.press("#more"); await t.page.click('#p-menu [data-act="help"]'); await t.page.waitForSelector("#p-help[open]"); await wait(300);
+    const help = await t.page.textContent("#p-help");
+    assert.ok(!/Superpink|Birthday|Secret/i.test(help), "How it works says nothing about it");
+    assert.ok(/twelve sound packs/.test(help), "and still counts twelve packs");
+    await t.esc(); await wait(300);
+    const asked = await t.page.evaluate(() => performance.getEntriesByType("resource").map(r => r.name).filter(n => /secretfx|packs-secret|fredoka|baloo/.test(n)));
+    assert.deepEqual(asked, [], "nothing of the pair is fetched: " + asked);
+    assert.equal(t.thirdParty.length, 0, "third party: " + t.thirdParty);
+    assert.equal(t.errors.length, 0, t.errors.join("; "));
+    await t.close();
+    // and the About page's changelog carries the wink and nothing else
+    const a = await fresh(opts, { url: BASE + "about.html", list: false });
+    await a.page.waitForFunction(() => /build/.test(document.getElementById("version").textContent), null, { timeout: 5000, polling: 100 });
+    const log = await a.page.$$eval("#log .v", els => els.map(e => e.textContent));
+    assert.equal(log.join(","), "1.6,1.5,1.4,1.3,1.2,1.1,1.0");
+    assert.ok(/A little something for someone in particular\.$/.test((await a.page.textContent("#log > li:first-child div")).trim()), "the headline is the wink");
+    const first = await a.page.$$eval("#log > li:first-child ul li", els => els.map(e => e.textContent.replace(/^(New|Improved|Fixed)/, "").trim()));
+    assert.deepEqual(first, ["If you know, you know."], "one line and a wink");
+    const body = await a.page.textContent("body");
+    assert.ok(!/Superpink|Birthday/i.test(body) && !/secret (theme|group|pair)|forget the secret/i.test(body), "and nothing else about it on About (the crypto page's own \"secret\" is the one in a link)");
+    await a.close();
+  });
+
   if (!touch) await test(label + ": T flips, Shift+T opens Appearance; ⋯ → Theme opens Appearance too", async () => {
     const t = await fresh(opts);
     const s0 = (await t.s()).slot;
@@ -920,7 +1080,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": a 1.1 device opens 1.5 — Follow system and the schedule migrate into the switch, the theme on screen does not change, and the toast is the only new thing", async () => {
+  await test(label + ": a 1.1 device opens 1.6 — Follow system and the schedule migrate into the switch, the theme on screen does not change, and the toast is the only new thing", async () => {
     // Follow system on, with both slots filled
     const t = await fresh(opts);
     const { listId } = await t.s();
@@ -928,7 +1088,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
     let st = await t.s();
     assert.equal(st.theme, "midnight", "a dark system: Midnight, as Follow system showed"); assert.equal(st.switchMode, "system"); assert.equal(st.day, "T1:curated:harbor"); assert.equal(st.night, "T1:curated:midnight"); assert.equal(st.hold, null);
-    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.5: Six more sounds\./.test(await t.page.textContent("#wn-msg")), "the headline only: " + await t.page.textContent("#wn-msg"));
+    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.6: A little something for someone in particular\./.test(await t.page.textContent("#wn-msg")), "the headline only: " + await t.page.textContent("#wn-msg"));
     assert.equal(await t.page.locator("dialog[open]").count(), 0, "no sheet"); assert.ok(await t.page.locator("#mark").isHidden(), "no hint"); assert.equal(st.stats.check + st.stats.finish + st.stats.tick, 0, "no sound");
     assert.equal(await t.page.locator("#list .row").count(), 3); assert.equal(st.listId, listId, "the list is intact");
     assert.ok(await t.page.locator("#daynight").isVisible(), "the sun/moon is there");
@@ -1375,14 +1535,14 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 
-  await test(label + ": a 1.3 device opens 1.5 — every list it holds is mine with no question and no groups, and the toast is the only new thing", async () => {
+  await test(label + ": a 1.3 device opens 1.6 — every list it holds is mine with no question and no groups, and the toast is the only new thing", async () => {
     const t = await fresh(opts);
     await makeList(t, "Work");
     await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); for (const l of m.lists) { delete l.origin; delete l.nickname; } m.device.seenVersion = "1.3"; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
     await t.reload(); await t.page.waitForFunction(() => window.__tf && window.__tf().listId); await wait(1800);
     assert.ok(!(await whoseOpen(t.page)), "no question"); assert.equal((await t.s()).origin, "mine");
     assert.deepEqual(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).lists.map(l => l.origin)), ["mine", "mine"], "every existing list is mine");
-    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.5: Six more sounds\./.test(await t.page.textContent("#wn-msg")), await t.page.textContent("#wn-msg"));
+    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.6: A little something for someone in particular\./.test(await t.page.textContent("#wn-msg")), await t.page.textContent("#wn-msg"));
     assert.ok(await t.page.$eval("#shared", e => e.hidden)); assert.equal(await t.page.locator("dialog[open]").count(), 0, "nothing else");
     await t.page.click("#wn-x"); await wait(200); await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); assert.equal(await t.page.locator("#lists-menu .group-h").count(), 0, "no groups until something is shared");
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
@@ -1413,7 +1573,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const t = await fresh(opts, { url: BASE + "?transport=local&sw=1" });
     await t.page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 20000 });
     const build = await t.page.evaluate(() => document.documentElement.getAttribute("data-build"));
-    const keys = await t.page.evaluate(() => caches.keys()); assert.ok(keys.includes("tf-v1.5-b" + build), "this build's cache: " + keys.join(","));
+    const keys = await t.page.evaluate(() => caches.keys()); assert.ok(keys.includes("tf-v1.6-b" + build), "this build's cache: " + keys.join(","));
     await t.page.evaluate(async () => { const c = await caches.open("tf-v1.3-b62"); await c.put(new Request("./panels.js"), new Response("// build 62's panels", { headers: { "Content-Type": "text/javascript" } })); });
     assert.equal((await t.page.evaluate(async () => (await fetch("panels.js?v=62")).text())).trim(), "// build 62's panels", "a page from build 62 gets build 62's module");
     assert.ok(/PANELS_BUILD = /.test(await t.page.evaluate(async b => (await fetch("panels.js?v=" + b)).text(), build)), "this build's module comes fresh");

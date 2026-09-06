@@ -64,14 +64,15 @@ export function create({ tone, noiseBurst }) {
     },
     finish(env) {
       const { c, P } = env; const t0 = c.currentTime, p = P("pitch", 1), dec = P("decay", 1);
-      // "Happy birthday to you": 5 5 6 5 8 7, dotted-eighth · sixteenth · quarter · quarter · quarter · half,
-      // at a quarter of 0.3 s so the whole phrase is under two seconds — no longer than the bell's shimmer.
-      const Q = 0.3, G = 783.99, A = 880, B = 987.77, C6 = 1046.5;
-      const phrase = [[G, 0.75], [G, 0.25], [A, 1], [G, 1], [C6, 1], [B, 2]];
+      // "Happy birthday to you": 5 5 6 5 8 7, dotted-eighth · sixteenth · quarter · quarter · quarter, and a last
+      // note held. A quarter is 0.235 s and the last note is shortened to a dotted half, so the whole thing runs
+      // about 1.27 s — a flourish, and no longer than the bell's shimmer (1.35 s, tools/sounds.js).
+      const Q = 0.235, G = 783.99, A = 880, B = 987.77, C6 = 1046.5;
+      const phrase = [[G, 0.75], [G, 0.25], [A, 1], [G, 1], [C6, 1], [B, 1.5]];
       let t = t0;
-      for (const [f, beats] of phrase) { const len = beats * Q; horn(env, t, f * p, 1, Math.min(len * 0.95, len - 0.02) * dec); t += len; }
-      // the sprinkles falling through it
-      for (let i = 0; i < 14; i++) blow(env, t0 + 0.08 + i * 0.115 + (i % 3) * 0.012, (300 + ((i * 97) % 420)) * p, 0.36, 0.07);
+      for (const [f, beats] of phrase) { const len = beats * Q; horn(env, t, f * p, 1, Math.min(len * 0.92, len - 0.015) * dec); t += len; }
+      // the sprinkles falling through it, done before the last note is
+      for (let i = 0; i < 10; i++) blow(env, t0 + 0.08 + i * 0.105 + (i % 3) * 0.011, (300 + ((i * 97) % 420)) * p, 0.36, 0.07);
     }
   };
 

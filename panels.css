@@ -91,7 +91,11 @@ input[type="color"]{width:44px;height:44px;border:1px solid var(--hair);border-r
 .swatch .nm{font-weight:700;font-size:15px;letter-spacing:-.01em}
 .swatch .bar{height:4px;border-radius:999px;width:60%}
 .swatch .sm{font-size:10px;letter-spacing:.12em;text-transform:uppercase;opacity:.8}
-.swatch .del{position:absolute;top:.35rem;right:.35rem;width:28px;height:28px;border-radius:999px;border:0;background:rgba(0,0,0,.25);color:inherit;cursor:pointer;font-size:14px;line-height:1}
+.swatch-wrap{position:relative;display:flex;min-width:0}
+.swatch-wrap>.swatch{flex:1 1 auto;min-width:0}
+.swatch-wrap .swatch .nm,.swatch-wrap .swatch .sm{padding-right:2rem} /* 1.7: the × no longer sits on the name */
+.swatch-wrap .del{position:absolute;top:.35rem;right:.35rem;width:28px;height:28px;border-radius:999px;border:0;background:rgba(0,0,0,.25);color:inherit;cursor:pointer;font-size:14px;line-height:1}
+.swatch-wrap .del:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .seg2{display:inline-flex;border:1px solid var(--hair);border-radius:999px;overflow:hidden}
 .seg2 button{font:inherit;font-weight:600;color:var(--dim);background:transparent;border:0;padding:.5em 1em;cursor:pointer;min-height:40px}
 .seg2 button+button{border-left:1px solid var(--hair)}
@@ -210,7 +214,8 @@ dialog.panel h3.first{margin-top:.2rem}
 }
 
 @media (hover:none){
-  .swatch .del{width:44px;height:44px}
+  .swatch-wrap .del{width:44px;height:44px}
+  .swatch-wrap .swatch .nm,.swatch-wrap .swatch .sm{padding-right:2.6rem}
   dialog.panel .x{width:44px;height:44px}
   .row-actions .chip,.seg2 button{min-height:44px}
 }

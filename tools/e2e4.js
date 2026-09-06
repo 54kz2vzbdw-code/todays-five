@@ -132,6 +132,52 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join(" | ")); await t.close();
   });
 
+  await test(label + ": 1.7: a hold released in place opens the line's menu — on a first, a middle and a last row after a reorder, and through a remote change landing mid-hold", async () => {
+    if (!opts.hasTouch) return;
+    const t = await fresh(opts); const id = (await t.s()).listId;
+    // uneven orders, as any reorder leaves them: the stored order is no longer the neighbours' midpoint
+    await t.page.evaluate(() => { const s = window.__tf(); const raw = JSON.parse(localStorage.getItem("tf/v3/list/" + s.listId)); const items = Object.values(raw.doc.items).sort((a, b) => a.todayOrder - b.todayOrder); items[0].todayOrder = 700; items[1].todayOrder = 1500; items[2].todayOrder = 1700; for (const it of items) raw.doc.items[it.id].todayOrder = it.todayOrder; localStorage.setItem("tf/v3/list/" + s.listId, JSON.stringify(raw)); });
+    await t.reload(); await t.page.waitForSelector("#list .row"); await wait(500);
+    for (const row of [1, 2, 3]) {
+      const before = await t.page.$$eval("#list .row", els => els.map(e => e.dataset.id).join(","));
+      await t.page.evaluate(() => { document.querySelector("#toast .msg").textContent = ""; });
+      await t.hold(`#list .row:nth-child(${row}) .tx`); await wait(300);
+      assert.ok(await t.page.$eval("#p-line", d => d.open), "row " + row + ": the menu"); await t.esc(); await wait(250);
+      assert.equal(await t.page.$$eval("#list .row", els => els.map(e => e.dataset.id).join(",")), before, "row " + row + ": nothing moved");
+      assert.ok(!/Moved/.test(await t.page.textContent("#toast .msg")), "row " + row + ": no phantom move");
+    }
+    // a remote change lands while a finger holds a line: the hold survives and the release opens the menu
+    const b = await fresh(opts, { ctx: t.ctx, url: BASE + "?transport=local#/l/" + id, list: false }); await b.page.waitForSelector("#list .row"); await wait(400);
+    await t.front(); const el = await t.page.$("#list .row:nth-child(2) .tx"); const bx = await el.boundingBox(); const cdp = await t.ctx.newCDPSession(t.page);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: bx.x + 40, y: bx.y + bx.height / 2 }] }); await wait(650);
+    await b.front(); await b.press("#list .row:nth-child(3) .check"); await wait(900); await t.front(); await wait(200);
+    assert.ok((await t.s()).dragging, "the hold rides the remote render");
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await cdp.detach(); await wait(400);
+    assert.ok(await t.page.$eval("#p-line", d => d.open), "the menu opens on release");
+    await t.esc(); await wait(200); assert.equal(await t.page.locator("#list .row.done").count(), 1, "and the remote check-off is on screen");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); await b.close(); await t.close();
+  });
+
+  await test(label + ": 1.7: add-from-anywhere with only spaces adds no line; the welcome's paste error clears on the next try; a saved theme's × is beside the swatch, clear of the name, and deleting can be undone", async () => {
+    const t = await fresh(opts); const id = (await t.s()).listId;
+    await t.page.goto(BASE + "?transport=local#/l/" + id + "/add?text=%20%20%20"); await wait(900);
+    assert.equal(await t.page.locator("#list .row:not(.editing)").count(), 3, "no blank line added"); assert.ok(!/Added/.test(await t.page.textContent("#toast .msg")), "no Added toast");
+    await t.page.keyboard.press("Escape"); await wait(200);
+    // a theme of one's own, then its ×
+    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]");
+    if (opts.hasTouch) assert.ok(await t.page.$eval("#p-theme", d => d.classList.contains("sheet") && !!d.querySelector(".grip")), "a sheet on touch, like every other panel");
+    await t.page.fill("#c-hex", "#2F7F6F"); await t.page.dispatchEvent("#c-hex", "input"); await t.page.fill("#c-name", "Slate green, day"); await t.page.dispatchEvent("#c-name", "input"); await t.page.click("#c-save"); await wait(500);
+    assert.equal(await t.page.locator("#sw-yours .swatch").count(), 1, "saved"); assert.equal(await t.page.locator("#sw-yours .swatch button").count(), 0, "no button inside the swatch"); assert.equal(await t.page.locator("#sw-yours .swatch-wrap > .del").count(), 1, "the × beside it");
+    const nm = await t.page.$eval("#sw-yours .swatch .nm", e => { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect(); }), del = await t.page.$eval("#sw-yours .del", e => e.getBoundingClientRect());
+    assert.ok(nm.right <= del.left + 1, "the name stops before the ×: " + JSON.stringify({ nameRight: nm.right, delLeft: del.left }));
+    await t.page.click("#sw-yours .del"); await wait(300);
+    assert.equal(await t.page.locator("#sw-yours .swatch").count(), 0, "deleted"); assert.ok(/Deleted/.test(await t.page.textContent("#toast .msg")), "with a toast"); assert.ok(await t.page.locator("#toast-undo").isVisible(), "and Undo");
+    await t.page.click("#toast-undo"); await wait(400);
+    assert.equal(await t.page.locator("#sw-yours .swatch").count(), 1, "back after Undo");
+    await t.esc(); await wait(200);
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join(" | ")); await t.close();
+  });
+
   await test(label + ": 1.7: under reduced motion the finale's glow never flares", async () => {
     const t = await fresh(opts, { reducedMotion: "reduce" });
     await t.page.evaluate(() => { window.__flared = false; new MutationObserver(() => { if (document.getElementById("glow").classList.contains("flare")) window.__flared = true; }).observe(document.getElementById("glow"), { attributes: true, attributeFilter: ["class"] }); });
@@ -709,7 +755,36 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.ok(/1 lines/.test(await t.page.textContent("#set-import-name")));
     await t.page.click("#set-import-merge"); await wait(500);
     assert.equal(await t.page.locator("#list .row").count(), 4);
+    // 1.7: a merge-import keeps the open list's name
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="export"]'); await t.page.waitForSelector("#p-export[open]");
+    const named = { name: "y.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ app: "todays-five", format: 1, doc: { v: 3, name: "Holiday packing", nameAt: 9e12, items: { imp2: { id: "imp2", sectionId: "", text: "Sunscreen", note: "", done: false, doneAt: 0, today: true, order: 2048, todayOrder: 2048, updatedAt: 9e12 } }, sections: {}, themes: {}, rules: {}, returns: {}, templates: {}, history: {}, updatedAt: 9e12 } })) };
+    await t.page.setInputFiles("#set-import-file", named); await wait(400); await t.page.click("#set-import-merge"); await wait(600);
+    assert.equal(await t.page.locator("#list .row").count(), 5);
+    assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc.name), "", "the list keeps its own name");
+    assert.ok(/keeps its name/.test(await t.page.textContent("#toast")), "and says so: " + await t.page.textContent("#toast"));
     await t.close();
+  });
+
+  await test(label + ": 1.7: unsynced edits on a link that died are carried to its successor on this device without a paste", async () => {
+    const t = await fresh(opts);
+    const X = (await t.s()).listId;
+    // the successor: a copy of X with the same line ids (a rotation elsewhere makes exactly this), held on this device
+    const exp = await t.page.evaluate(async () => { const M = await import("./model.js"); const d = JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc; return M.exportJSON(d, { at: 1 }); });
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="export"]'); await t.page.waitForSelector("#p-export[open]");
+    await t.page.setInputFiles("#set-import-file", { name: "copy.json", mimeType: "application/json", buffer: Buffer.from(exp) }); await wait(400);
+    await t.page.click("#set-import-new"); await t.page.waitForFunction(x => window.__tf().listId && window.__tf().listId !== x, X, { timeout: 9000 }); await wait(800);
+    const Y = (await t.s()).listId; await t.page.waitForFunction(() => window.__tf().status === "synced", null, { timeout: 9000 });
+    // back on X: its server row dies (New keys on another device), and a line typed here cannot be pushed
+    await t.page.goto(BASE + "?transport=local#/l/" + X); await t.page.waitForFunction(x => window.__tf().listId === x && window.__tf().status === "synced", X, { timeout: 9000 }); await wait(300);
+    await t.page.evaluate(() => { const s = window.__tf(); localStorage.removeItem("tf/v2/localserver/" + s.lookupId); });
+    await t.press("#addtoday"); await t.page.keyboard.type("Typed after the keys changed"); await t.page.keyboard.press("Enter"); await t.page.keyboard.press("Escape"); await wait(300);
+    await t.page.waitForFunction(() => window.__tf().status === "gone", null, { timeout: 12000 }); await wait(900);
+    assert.ok(/Carried your unsynced edits/.test(await t.page.textContent("#toast")), "the carry toast: " + await t.page.textContent("#toast"));
+    const yDoc = await t.page.evaluate(y => JSON.parse(localStorage.getItem("tf/v3/list/" + y)), Y);
+    assert.ok(Object.values(yDoc.doc.items).some(i => i.text === "Typed after the keys changed" && !i.deleted), "the line is in the successor's copy (pushed at once, or waiting)");
+    await t.page.goto(BASE + "?transport=local#/l/" + Y); await t.page.waitForFunction(y => window.__tf().listId === y && window.__tf().status === "synced", Y, { timeout: 9000 }); await wait(400);
+    assert.ok(await t.page.$$eval("#list .row", els => els.some(e => /Typed after the keys changed/.test(e.textContent))), "and on screen in the successor");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 
   await test(label + ": day review shows under the finale when on, dismisses on a tap, never fires a sound", async () => {

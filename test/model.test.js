@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import * as M from "../model.js";
 import {
-  newId, isListId, emptyDoc, normalize, merge, canon, docEquals, purgeTombstones,
+  newId, isListId, emptyDoc, normalize, merge, canon, docEquals, purgeTombstones, moveItem,
   rollover, localDate, todayItems, itemsInSection, sectionsOrdered, orderBetween,
   migrateV1, seedDoc, streak, diff, TOMBSTONE_TTL, reorderPlan, applyPlan, SEED_LINES
 } from "../model.js";
@@ -106,6 +106,26 @@ test("merge: two offline devices converge with no loss and no duplicates", () =>
   // server round trip: merging the merged doc with either side again is a no-op
   assert.equal(canon(merge(m1, mac)), canon(m1));
   assert.equal(canon(merge(m1, phone)), canon(m1));
+});
+
+test("1.7: moveItem can land in a section of the target, and the undo of a move sends the line home", () => {
+  const a = emptyDoc("A"), b = emptyDoc("B");
+  a.sections.s1 = { id: "s1", name: "Errands", order: 1, updatedAt: 1 };
+  a.items.x = { id: "x", sectionId: "s1", text: "Post the form", note: "", done: false, doneAt: 0, today: true, order: 1, todayOrder: 1, updatedAt: 1 };
+  const moved = moveItem(a, b, "x", 5, () => "n1");
+  assert.equal(moved.dst.items.n1.sectionId, "", "a move lands in the target's Unsorted");
+  const back = moveItem(moved.dst, moved.src, "n1", 6, () => "n2", "s1");
+  assert.equal(back.dst.items.n2.sectionId, "s1", "the undo returns it to Errands");
+  assert.equal(moveItem(moved.dst, moved.src, "n1", 7, () => "n3", "nope").dst.items.n3.sectionId, "", "an unknown section means Unsorted");
+});
+
+test("1.7: purgeTombstones is a fixed point — a rule orphaned by this pass goes in this pass", () => {
+  const d = emptyDoc("L");
+  d.items.a = { id: "a", deleted: true, updatedAt: 1e12 };
+  d.rules.a = { id: "a", kind: "daily", text: "Water", note: "", sectionId: "", updatedAt: 1e12 };
+  const once = purgeTombstones(d, 1e12 + TOMBSTONE_TTL + 1, TOMBSTONE_TTL);
+  assert.equal(once.items.a, undefined); assert.equal(once.rules.a, undefined, "the rule went with its line");
+  assert.equal(purgeTombstones(once, 1e12 + TOMBSTONE_TTL + 1, TOMBSTONE_TTL), once, "a second pass changes nothing");
 });
 
 test("purgeTombstones: old ones go, fresh ones stay", () => {

@@ -619,6 +619,7 @@ function applyPendingAdd() {
   if (fresh && syncStatus !== "gone" && syncStatus !== "off") return; // a link this device never had: wait for the pull
   pendingAdd = null;
   if (syncStatus === "gone") { toast("This link no longer works, so nothing was added"); return; }
+  a.text = (Array.isArray(a.text) ? a.text : [a.text]).map(s => String(s).trim()).filter(Boolean); // 1.7: blank or whitespace lines are nothing; nothing at all opens a new line to type
   if (!a.text.length) { setView("today"); newItem({ today: true }); return; }
   const secs = M.sectionsOrdered(doc);
   const sec = a.section ? secs.find(s => s.name.toLowerCase() === a.section.toLowerCase()) : null;
@@ -1015,7 +1016,25 @@ function paintStatus(s) {
     toast(s === "busy" ? "The server's busy. Your list is safe here—it'll sync again in a few minutes." : s === "full" ? "The service is full right now. Your list is safe on this device." : "This list is too large to sync. Clear out some old lines or history.");
   }
   if (s === "synced") lastLimitToast = "";
-  if (s === "gone") applyPendingAdd();
+  if (s === "gone") { applyPendingAdd(); carryToKin(); }
+}
+/** 1.7: a link that died (New keys elsewhere) with unsynced edits on this device, whose successor this device already holds
+    (the new link arrived by a tap, not a paste): the edits are merged into the successor's copy and pushed with it. Kin means
+    sharing a line id, which only a rotation or a migration produces. */
+function carryToKin() {
+  if (!doc || !listId || listMode !== "edit") return;
+  const mine = loadLocal(listId); if (!mine || !mine.dirty) return;
+  for (const other of meta.lists) {
+    if (other.id === listId || other.mode !== "edit") continue;
+    const kin = loadLocal(other.id); if (!kin || !kin.doc) continue;
+    if (!Object.keys(mine.doc.items).some(id => kin.doc.items[id])) continue;
+    const merged = M.normalize(M.merge(kin.doc, mine.doc), other.id);
+    if (M.canon(merged) !== M.canon(kin.doc)) saveLocal(other.id, { ...kin, doc: merged, dirty: true });
+    saveLocal(listId, { ...mine, dirty: false }); // carried: nothing is stranded here any more
+    toast("Carried your unsynced edits over to the new link");
+    flushOthers();
+    return;
+  }
 }
 $("#dot").addEventListener("click", () => { toast($("#dot").getAttribute("title") || ""); });
 /** Who's here: one dot per other device (five, then "+n"), fading in and out. */
@@ -1046,7 +1065,7 @@ function afterChange({ animate = true, delay = 0 } = {}) {
 /** A remote document arrived (`prev` is the one it replaces). Quiet by default: no sound, no confetti, no kick; rows
     animate into place. A view link celebrates what the editors did; an edit link only when the setting says so. */
 function applyRemote(prev) {
-  if (drag) abortDrag(); // the row under the finger may be gone or moved; a stuck drag would swallow every tap
+  if (drag && (drag.moved || !drag.li.isConnected)) abortDrag(); // the row under the finger may be gone or moved; a stuck drag would swallow every tap. 1.7: a hold that has not moved rides the render (its row is kept), so a remote change mid-hold no longer costs the menu
   const before = wasAll;
   const nowAll = allDoneToday();
   render({ animate: true, quiet: true });
@@ -1281,11 +1300,17 @@ function toast(msg, { undo: withUndo = false, action = null, ms = 0 } = {}) {
   t.querySelector(".msg").textContent = msg;
   toastAction = action;
   $("#toast-undo").hidden = !(action || (withUndo && canEdit()));
+  // 1.7: under a modal sheet the toast used to land behind the backdrop, inert and blurred (the modal makes the rest of the page inert,
+  // the top layer included); while a panel is open the toast lives inside it, and moves back out when it hides
+  const modal = document.querySelector("dialog.panel[open] .body"); if (modal && t.parentNode !== modal) modal.appendChild(t); else if (!modal && t.parentNode !== document.body) document.body.appendChild(t);
   t.classList.add("on");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(hideToast, ms || (action ? 10000 : withUndo ? 4500 : 2600));
 }
-function hideToast() { $("#toast").classList.remove("on"); $("#toast-undo").hidden = true; toastAction = null; }
+function hideToast() {
+  const t = $("#toast"); t.classList.remove("on"); $("#toast-undo").hidden = true; toastAction = null;
+  if (t.parentNode !== document.body) setTimeout(() => { if (!t.classList.contains("on") && t.parentNode !== document.body) document.body.appendChild(t); }, 300); // back out after the fade
+}
 
 /* ---------------- inline editing ---------------- */
 function startEdit(id, { isNew = false } = {}) {
@@ -1497,7 +1522,9 @@ function beginDrag(li, e, fromLongPress) {
   press = null;
   if (swipe) { swipe.li.style.transform = ""; swipe.li.style.opacity = ""; swipe = null; }
   const rect = li.getBoundingClientRect();
-  drag = { id, li, offY: e.clientY - rect.top, startTop: rect.top, pointerId: e.pointerId, overSec: null, lastY: e.clientY, raf: 0, fromHold: !!fromLongPress, startY: e.clientY, moved: false };
+  const live = Array.from(li.parentNode.children).filter(r => r.classList.contains("row") && !r.classList.contains("done")); const at = live.indexOf(li);
+  const startPrev = at > 0 ? live[at - 1].dataset.id : "", startNext = at >= 0 && at < live.length - 1 ? live[at + 1].dataset.id : "";
+  drag = { id, li, offY: e.clientY - rect.top, startTop: rect.top, pointerId: e.pointerId, overSec: null, lastY: e.clientY, raf: 0, fromHold: !!fromLongPress, startY: e.clientY, moved: false, startPrev, startNext, startSec: view === "today" ? "" : (li.closest(".sec") || {}).dataset ? li.closest(".sec").dataset.id : "" }; // 1.7: the neighbours say whether it moved
   li.classList.add("dragging"); document.body.classList.add("is-dragging");
   try { li.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ }
   document.addEventListener("touchmove", preventTouch, { passive: false });
@@ -1571,7 +1598,7 @@ function domMove(li, list, ref) {
 }
 function endDrag(move, up, cancelled, aborted) {
   if (!drag) return;
-  const { id, li, fromHold, moved } = drag;
+  const { id, li, fromHold, moved } = drag; const drag0 = drag;
   li.removeEventListener("pointermove", move); li.removeEventListener("pointerup", up); li.removeEventListener("pointercancel", cancelled);
   document.removeEventListener("touchmove", preventTouch);
   try { li.releasePointerCapture(drag.pointerId); } catch (x) { /* ignore */ }
@@ -1581,6 +1608,9 @@ function endDrag(move, up, cancelled, aborted) {
   drag = null;
   dragEndedAt = performance.now();
   if (aborted) { render({ animate: false }); return; }
+  // 1.7: a finger that never travelled moved nothing, whatever happened around the row meanwhile (a remote check-off can change its
+  // neighbours mid-hold): nothing to commit, and a hold released in place gets its menu
+  if (!moved) { render({ animate: false }); if (fromHold) openLineMenu(id); return; }
   // derive the new position from the DOM
   const it = doc.items[id]; if (!it || it.deleted) return;
   const list = li.parentNode;
@@ -1593,7 +1623,9 @@ function endDrag(move, up, cancelled, aborted) {
   let o = M.orderBetween(prev ? prev[key] : undefined, next ? next[key] : undefined);
   const secId = view === "today" ? it.sectionId : list.closest(".sec").dataset.id;
   if (o === null) { renumber(view === "today" ? null : secId, key); o = M.orderBetween(prev ? prev[key] : undefined, next ? next[key] : undefined) || M.lastOrder(sib.map(r => doc.items[r.dataset.id]), i => i[key]); }
-  const changed = it[key] !== o || (view === "all" && it.sectionId !== secId);
+  // 1.7: moved means the neighbours changed (or the section), not that the stored order differs from the neighbours' midpoint — which
+  // it always does for a first or last row and for any row after a reorder, so a hold released in place used to write a phantom move
+  const changed = (prevEl ? prevEl.dataset.id : "") !== drag0.startPrev || (nextEl ? nextEl.dataset.id : "") !== drag0.startNext || (view === "all" && secId !== drag0.startSec);
   if (!changed) { render({ animate: false }); if (fromHold && !moved) openLineMenu(id); return; } // a hold released in place: the menu
   pushUndo("Moved", [id]);
   it[key] = o;
@@ -1891,7 +1923,7 @@ function parseLink(s) {
 }
 function switchTo(r, { paste = false } = {}) {
   if (r.id === listId && r.mode === listMode) return;
-  if (paste && listId && syncStatus === "gone" && r.mode === "edit") {
+  if (listId && syncStatus === "gone" && r.mode === "edit") { // 1.7: a tap on the new link counts as much as a paste
     // the old link died (rotated or migrated elsewhere): remember where it went, and carry unsynced edits if the docs are kin
     meta.redirect = { ...(meta.redirect || {}), [listId]: r.id };
     meta.carry = { from: listId, to: r.id };
@@ -1915,6 +1947,7 @@ $("#w-skip").addEventListener("click", keepDemo); // Skip is Keep without the pl
 $("#w-paste-show").addEventListener("click", () => { $("#w-paste-form").hidden = false; $("#w-paste").focus(); });
 $("#w-paste-form").addEventListener("submit", e => {
   e.preventDefault();
+  $("#w-err").textContent = ""; // 1.7: a stale error under a link that is opening said the opposite of what happened
   const r = parseLink($("#w-paste").value);
   if (!r) { $("#w-err").textContent = "That doesn't look like a list link. Paste the whole address, including the part after the #."; return; }
   switchTo(r, { paste: true });

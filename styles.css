@@ -371,6 +371,7 @@ html[data-mode="view"] #hint{visibility:hidden}
   transition:opacity .25s ease,transform .25s ease;max-width:min(92vw,40rem);
 }
 #toast.on{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+dialog.panel #toast{z-index:60} /* 1.7: a toast raised while a sheet is open moves inside the sheet, above its backdrop, readable and pressable; it moves back out when it hides */
 #toast .msg{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #toast .chip{color:var(--accent-text);border-color:var(--accent);min-height:36px}
 

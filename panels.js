@@ -86,9 +86,16 @@ function renderSwatches() {
     b.dataset.code = code;
     b.addEventListener("click", () => choose(code, name, partner ? { code: rec ? partner.code : T.themeCode(partner), name: pName } : null, b));
     if (rec && A.canEdit()) {
+      // 1.7: beside the swatch, not inside it (a button in a button spoke as one, and the × sat on the name); deleting can be undone
+      const wrap = document.createElement("div"); wrap.className = "swatch-wrap"; wrap.appendChild(b);
       const del = document.createElement("button"); del.type = "button"; del.className = "del"; del.textContent = "×"; del.setAttribute("aria-label", "Delete " + rec.name);
-      del.addEventListener("click", e => { e.stopPropagation(); A.doc.themes[rec.id] = { id: rec.id, deleted: true, updatedAt: M.now() }; A.afterChange({ animate: false }); if (offer && offer.code === rec.code) offer = null; renderSwatches(); });
-      b.appendChild(del);
+      del.addEventListener("click", e => {
+        e.stopPropagation(); const was = { ...rec };
+        A.doc.themes[rec.id] = { id: rec.id, deleted: true, updatedAt: M.now() }; A.afterChange({ animate: false }); if (offer && offer.code === rec.code) offer = null; renderSwatches();
+        A.toast(`Deleted “${was.name}”`, { action: () => { A.doc.themes[was.id] = { ...was, updatedAt: M.now() }; A.afterChange({ animate: false }); if ($("#p-theme").open) renderSwatches(); } });
+      });
+      wrap.appendChild(del);
+      return wrap;
     }
     return b;
   };
@@ -557,11 +564,13 @@ function wireSettings() {
   $("#set-import-merge").addEventListener("click", () => {
     if (!importedDoc || !A.canEdit()) return;
     const merged = M.normalize(M.merge(A.doc, importedDoc), A.listId);
+    const renamed = merged.name !== A.doc.name; // 1.7: a merge folds lines in; the open list keeps its own name
+    if (renamed) { merged.name = A.doc.name; merged.nameAt = Math.max(merged.nameAt || 0, importedDoc.nameAt || 0) + 1; }
     const before = Object.values(A.doc.items).filter(i => !i.deleted).length;
     A.doc = merged; A.afterChange({ animate: true });
     const after = Object.values(merged.items).filter(i => !i.deleted).length;
     importedDoc = null; A.closePanel();
-    A.toast(`Merged: ${after - before} new line${after - before === 1 ? "" : "s"}`);
+    A.toast(`Merged: ${after - before} new line${after - before === 1 ? "" : "s"}${renamed ? ". The list keeps its name." : ""}`);
   });
   addEventListener("tf:settings", () => { if ($("#p-settings").open) paintSettings(); });
 }
@@ -764,6 +773,7 @@ function openMove(id) {
 }
 function moveTo(id, target) {
   const it = A.doc.items[id]; if (!it || it.deleted || !A.canEdit()) return;
+  const home = it.sectionId || ""; // 1.7: the undo sends the line back to the section it left
   const loc = A.loadLocal(target); if (!loc || loc.mode === "view") { A.toast("That list isn't on this device"); return; }
   const r = M.moveItem(A.doc, loc.doc, id);
   if (!r) return;
@@ -773,7 +783,7 @@ function moveTo(id, target) {
   const name = (loc.doc.name) || (meta().lists.find(l => l.id === target) || {}).name || "the other list";
   A.toast(`Moved to ${name}`, { action: () => {
     const back = A.loadLocal(target); if (!back) return;
-    const rr = M.moveItem(back.doc, A.doc, r.newId);
+    const rr = M.moveItem(back.doc, A.doc, r.newId, M.now(), undefined, home);
     if (!rr) return;
     A.saveLocal(target, { ...back, doc: rr.src, dirty: true });
     A.doc = rr.dst; A.afterChange({ animate: true }); A.flushOthers();

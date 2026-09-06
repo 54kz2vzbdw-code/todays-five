@@ -243,7 +243,7 @@ const RAW = [
      opposite one. `field` names a background layer secretfx.js draws, `finale` the bloom or the cake it plays, and
      `finaleText` the line under the last struck row. Nothing here reaches the document or the server.            */
   kit("superpink", "Superpink", "dark", "fredoka", {
-    ink: "#320019", ink2: "#450022", ink3: "#5C002E",
+    ink: "#3F0026", ink2: "#510032", ink3: "#5F0C3E",
     text: "#FFEEF6", muted: "#FFA5D2", dim: "#EE8AB9", done: "#EE8AB9",
     accent: "#FF2E9A", accentHi: "#FFC2E2", accentDeep: "#B5116F", accentText: "#FF66B4", danger: "#FF8A76",
     glow: "radial-gradient(125% 95% at 50% 40%, rgba(255,46,154,.30), rgba(255,194,226,.13) 44%, rgba(255,46,154,0) 76%)",

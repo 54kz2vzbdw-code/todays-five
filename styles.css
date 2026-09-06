@@ -46,6 +46,20 @@ button{font:inherit;color:inherit}
 #glow{position:fixed;inset:0;pointer-events:none;z-index:0;background:var(--glow);opacity:.62;transition:opacity .85s ease}
 #glow.flare{opacity:1;transition:opacity .22s ease}
 #fx{position:fixed;inset:0;pointer-events:none;z-index:60}
+/* a kit that carries a background layer (theme.js, `field`) fills #field from secretfx.js: twenty-six twinkles, two
+   elements each, animating only opacity, scale and a translate — the compositor's work, not the main thread's, so a
+   list left on screen all day still costs nothing. The rules live here rather than in the module because a <style>
+   element built at runtime is inline style the CSP refuses; the module owns the elements, and #field stays hidden
+   (and so costs nothing) until one arrives. */
+#field{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden;contain:layout paint style}
+#field i{position:absolute;left:0;top:0;display:block;will-change:transform;animation:tf-drift var(--dd) linear var(--del) infinite alternate}
+#field i>b{display:block;width:var(--s);height:var(--s);border-radius:50%;background:var(--c);opacity:.1;will-change:transform,opacity;animation:tf-twinkle var(--td) ease-in-out var(--del) infinite alternate}
+@keyframes tf-drift{from{transform:translate3d(var(--x),var(--y),0)}to{transform:translate3d(calc(var(--x) + var(--mx)),calc(var(--y) + var(--my)),0)}}
+@keyframes tf-twinkle{from{opacity:.08;transform:scale(.55)}to{opacity:var(--o);transform:scale(1)}}
+#field.still i,#field.still i>b{animation:none}                      /* prefers-reduced-motion: the field is there, and still */
+#field.still i{transform:translate3d(var(--x),var(--y),0)}
+#field.still i>b{opacity:calc(var(--o) * .7)}
+#field.off i,#field.off i>b{animation-play-state:paused}             /* a hidden tab */
 
 /* ---------------- shell ---------------- */
 #shell{

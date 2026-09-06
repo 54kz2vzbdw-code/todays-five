@@ -4,31 +4,17 @@
 // for it. Nothing here touches the document, the registry or the server.
 //
 // The field is CSS, not a frame loop: twenty-six two-element twinkles animating opacity, scale and a translate, all
-// of which the compositor owns, so a list left on screen all day costs no main thread. Its rules go in through the
-// CSSOM — the inline stylesheet's text is hashed by the CSP and a <style> with text of its own would be refused,
-// while insertRule is not subject to style-src (the same trick theme.js uses for the token rule).
+// of which the compositor owns, so a list left on screen all day costs no main thread. Its rules (#field, in
+// styles.css) ship with the stylesheet rather than being built here: a <style> element made at runtime is inline
+// style, which this app's CSP refuses. Nothing renders until this module fills #field, and #field is hidden until
+// then, so a device that never unlocked pays for nine rules it never matches.
 
-const FIELD_CSS = [
-  "#field{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden;contain:strict}",
-  "#field i{position:absolute;left:0;top:0;display:block;will-change:transform;animation:tf-drift var(--dd) linear var(--del) infinite alternate}",
-  "#field i>b{display:block;width:var(--s);height:var(--s);border-radius:50%;background:var(--c);opacity:.1;will-change:transform,opacity;animation:tf-twinkle var(--td) ease-in-out var(--del) infinite alternate}",
-  "@keyframes tf-drift{from{transform:translate3d(var(--x),var(--y),0)}to{transform:translate3d(calc(var(--x) + var(--mx)),calc(var(--y) + var(--my)),0)}}",
-  "@keyframes tf-twinkle{from{opacity:.08;transform:scale(.55)}to{opacity:var(--o);transform:scale(1)}}",
-  "#field.still i,#field.still i>b{animation:none}",
-  "#field.still i{transform:translate3d(var(--x),var(--y),0)}",
-  "#field.still i>b{opacity:calc(var(--o) * .7)}",
-  "#field.off i,#field.off i>b{animation-play-state:paused}"
-];
 const N = 26;
 
 /** A twinkling background layer inside `host`. `palette` is the kit's confetti list; `reduced` a getter.
     Returns { stop } — it removes the twinkles and its listeners and leaves the host empty. */
 export function createField(host, { palette = ["#FFFFFF"], reduced = () => false } = {}) {
   if (!host) return { stop() {} };
-  const style = document.createElement("style");
-  host.appendChild(style);
-  const sheet = style.sheet;
-  if (sheet) { try { FIELD_CSS.forEach((r, i) => sheet.insertRule(r, i)); } catch (e) { /* nothing twinkles; the theme is otherwise whole */ } }
   const rnd = (a, b) => a + Math.random() * (b - a);
   const frag = document.createDocumentFragment();
   for (let i = 0; i < N; i++) {
@@ -121,8 +107,10 @@ function drawFlame(g, x, y, s, flicker, life) {
   g.restore(); g.globalAlpha = 1;
 }
 function cake(fx, { w, h }) {
-  const S = Math.min(w * 0.34, h * 0.42);                          // the cake's width; everything else is a fraction of it
-  const cx = w * 0.5, base = h * 0.62 + S * 0.28;
+  // the cake's width; everything else is a fraction of it. It sits low and centred, in the gap between the last
+  // line and the footer on both shapes of screen, so it never lands on top of the words.
+  const S = Math.min(w * 0.5, h * 0.32);
+  const cx = w * 0.5, base = h * 0.86;
   const H = S * 0.46, halfW = S * 0.5;
   const CANDLES = 5, OUT_AT = 1.45, CUT_AT = 2.5, END = 5.2;
   const flick = (i, t) => Math.sin(t * (7 + i * 1.7) + i) * Math.sin(t * 3.1 + i * 2);
@@ -148,7 +136,7 @@ function cake(fx, { w, h }) {
     if (cut < 0.05) {                                              // the frosted top, while it is still one cake
       g.fillStyle = CAKE.frostTop; g.beginPath(); g.ellipse(0, -H, halfW, S * 0.075, 0, 0, Math.PI * 2); g.fill();
       g.fillStyle = CAKE.drip;
-      for (let i = 0; i < 7; i++) { const x = -halfW + (halfW * 2) * (i + 0.5) / 7; const d = S * (0.045 + 0.05 * Math.abs(Math.sin(i * 2.3))); roundRect(g, x - S * 0.035, -H, S * 0.07, d, S * 0.035); g.fill(); }
+      for (let i = 0; i < 9; i++) { const x = -halfW + (halfW * 2) * (i + 0.5) / 9; const d = S * (0.06 + 0.075 * Math.abs(Math.sin(i * 2.3))); roundRect(g, x - S * 0.026, -H - S * 0.01, S * 0.052, d, S * 0.026); g.fill(); }
     }
     // the candles: lit, then out one after another, each leaving a puff that climbs and spreads
     for (let i = 0; i < CANDLES; i++) {

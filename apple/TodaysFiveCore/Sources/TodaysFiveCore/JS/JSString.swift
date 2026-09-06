@@ -67,6 +67,24 @@ public struct JSString: Sendable, Hashable {
     public mutating func append(_ other: JSString) { units.append(contentsOf: other.units) }
     public func appending(_ other: JSString) -> JSString { JSString(units: units + other.units) }
 
+    /// `s.replace(/x/g, y)` for a literal needle.
+    public func replacing(_ needle: JSString, with replacement: JSString) -> JSString {
+        guard !needle.isEmpty else { return self }
+        var out: [UInt16] = []
+        var i = 0
+        while i < units.count {
+            if i + needle.units.count <= units.count,
+               Array(units[i..<(i + needle.units.count)]) == needle.units {
+                out.append(contentsOf: replacement.units)
+                i += needle.units.count
+            } else {
+                out.append(units[i])
+                i += 1
+            }
+        }
+        return JSString(units: out)
+    }
+
     /// The whole string lowercased the way `String.prototype.toLowerCase()` does for the characters
     /// a list name can hold; used only for ordering templates by name.
     public var lowercased: JSString { JSString(string.lowercased()) }

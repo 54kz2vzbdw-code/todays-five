@@ -16,6 +16,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import * as C from "../../crypto.js";
 import config from "../../config.js";
 
@@ -23,13 +24,28 @@ const require = createRequire((process.env.NODE_PATH || (process.env.HOME + "/.c
 const { chromium } = require("playwright");
 
 const SITE = process.env.SITE || "https://54kz2vzbdw-code.github.io/todays-five/";
-const TFIVE = path.resolve(new URL("../TodaysFiveCore/.build/debug/tfive", import.meta.url).pathname);
+// fileURLToPath, not URL.pathname: this repo lives under "Today's Five", and a pathname
+// percent-encodes the space into a path no exec will find.
+const TFIVE = fileURLToPath(new URL("../TodaysFiveCore/.build/debug/tfive", import.meta.url));
 const HOME = fs.mkdtempSync(path.join(os.tmpdir(), "tfive-interop-"));
+if (!fs.existsSync(TFIVE)) {
+  console.error("no tfive at " + TFIVE + " — run `swift build` in apple/TodaysFiveCore first");
+  process.exit(2);
+}
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
 let passed = 0, failed = 0;
 const results = [];
 const made = [];                                   // { label, W } — deleted at the end
+// A row exists on the server the moment the page pushes it, which is before any assertion about it can
+// run. So the id is written here the instant it is known: a crashed run leaves a list to clean up, not
+// an orphan nobody can name.
+const LEDGER = fileURLToPath(new URL("./.interop-created.txt", import.meta.url));
+function record(label, W) {
+  made.push({ label, W });
+  try { fs.appendFileSync(LEDGER, `${new Date().toISOString()} ${label} ${W}\n`); } catch (e) { /* the console still has it */ }
+  console.log("   created", label + ":", W);
+}
 
 function step(name, note = "") {
   passed++;
@@ -78,6 +94,11 @@ async function device(browser, url = SITE) {
   page.on("pageerror", e => errors.push(e.message));
   await page.goto(url);
   const state = () => page.evaluate(() => window.__tf());
+  // 1.9 masks the open list's secret in the test hook (it answers "held" on a real transport), so the
+  // id is read where the device itself keeps it — the registry in localStorage, COMPATIBILITY.md §5.
+  const listId = () => page.evaluate(() => {
+    try { return (JSON.parse(localStorage.getItem("tf/v2/meta") || "{}") || {}).current || null; } catch (e) { return null; }
+  });
   const wake = () => page.evaluate(() => window.dispatchEvent(new Event("focus")));
   const until = async (fn, ms = 20000, label = "condition") => {
     const t0 = Date.now();
@@ -86,6 +107,16 @@ async function device(browser, url = SITE) {
       await wait(300);
     }
     throw new Error("timed out waiting for " + label);
+  };
+  /** 1.4: a link this device does not hold asks once whose list it is, and the dialog is not
+      cancelable, so nothing else happens until it is answered. */
+  const answerWhose = async (whose = "mine") => {
+    try {
+      await page.waitForSelector("#whose[open]", { timeout: 8000 });
+      await page.click(`#whose [data-whose="${whose}"]`);
+      await wait(400);
+      return true;
+    } catch (e) { return false; }
   };
   const rows = () => page.$$eval("#list .row", els => els.map(e => ({
     text: e.querySelector(".tx")?.dataset.text || "", done: e.classList.contains("done")
@@ -99,18 +130,25 @@ async function device(browser, url = SITE) {
     await page.keyboard.press("Escape");
     await wait(300);
   };
-  return { ctx, page, errors, state, wake, until, rows, addLine, close: () => ctx.close() };
+  return { ctx, page, errors, state, listId, wake, until, rows, addLine, answerWhose, close: () => ctx.close() };
 }
 
-/** Through the welcome and the save sheet: a brand-new list on the live backend. */
-async function createOnTheWeb(d) {
+/** Through the welcome and the save sheet: a brand-new list on the live backend.
+    1.9's Skip starts an empty list (Keep, which brings the welcome's three lines with it, appears only
+    once the welcome has been touched), so the first line is added afterwards and is a known one. */
+async function createOnTheWeb(d, label, firstLine) {
   await d.page.waitForSelector("#welcome:not([hidden])");
-  await d.page.click("#w-skip");
+  await d.page.click("#w-skip");                       // the row is pushed from here on
+  let id = null;
+  for (let i = 0; i < 80 && !id; i++) { id = await d.listId(); if (!id) await wait(200); }
+  assert.ok(id && /^[0-9A-Za-z]{22}$/.test(id), "the registry names the new list: " + id);
+  record(label, id);
   await d.page.waitForSelector("#p-save[open]");
   await d.page.click("#save-done");
-  await d.page.waitForSelector("#list .row");
-  await d.until(async () => (await d.state()).status === "synced", 30000, "the new list to sync");
-  return (await d.state()).listId;
+  await d.page.waitForSelector("#addtoday", { state: "visible" });
+  await d.addLine(firstLine);
+  await d.until(async () => (await d.state()).status === "synced", 40000, "the new list to sync");
+  return id;
 }
 
 const browser = await chromium.launch({ channel: "chrome", headless: true });
@@ -123,13 +161,12 @@ try {
   // ---------------------------------------------------------------- 1. the web makes a list (create 1)
 
   const web = await device(browser);
-  W_A = await createOnTheWeb(web);
-  made.push({ label: "A (web)", W: W_A });
+  W_A = await createOnTheWeb(web, "A (web)", "Made on the web");
   const refA = await C.fromWrite(W_A);
-  console.log("   created list A on the web:", W_A, "→ row", refA.lookupId);
   const stA = await web.state();
+  assert.ok(stA.zone, "1.9: a list made on the web carries its home zone");
   step("the web created a list on the real backend",
-       `status ${stA.status}, rev ${stA.cur.rev}, row ${refA.lookupId}`);
+       `status ${stA.status}, rev ${stA.cur.rev}, row ${refA.lookupId}, zone ${stA.zone}`);
 
   // the row on the wire is an envelope and holds no plaintext
   try {
@@ -146,10 +183,9 @@ try {
 
   try {
     const out = tfive("show", W_A);
-    for (const line of ["Tap or click to cross this off", "Add a line of your own", "Cross off all three and see"]) {
-      assert.ok(out.includes(line), "tfive show is missing: " + line);
-    }
+    assert.ok(out.includes("Made on the web"), "tfive show is missing the web's line:\n" + out);
     assert.ok(/synced/.test(out), "tfive show says synced");
+    assert.ok(out.includes(stA.zone), "tfive reads the list's home zone: " + stA.zone);
     step("tfive read the web's list", out.split("\n").slice(0, 7).join("\n"));
   } catch (e) { bad("tfive read the web's list", e); }
 
@@ -157,9 +193,9 @@ try {
 
   try {
     const out = tfive("check", W_A, "1");
-    assert.ok(out.includes("Crossed off: Tap or click to cross this off"), out);
+    assert.ok(out.includes("Crossed off: Made on the web"), out);
     await web.wake();
-    await web.until(async () => (await web.rows()).some(r => r.done && r.text === "Tap or click to cross this off"),
+    await web.until(async () => (await web.rows()).some(r => r.done && r.text === "Made on the web"),
                     30000, "the web to show the check");
     const st = await web.state();
     step("tfive crossed a line off and the web shows it",
@@ -205,8 +241,7 @@ try {
     const m = out.match(/Private\s+\S*#\/l\/([0-9A-Za-z]{22})/);
     assert.ok(m, "tfive new printed a private link:\n" + out);
     W_B = m[1];
-    made.push({ label: "B (tfive)", W: W_B });
-    console.log("   created list B from tfive:", W_B);
+    record("B (tfive)", W_B);
     const refB = await C.fromWrite(W_B);
 
     const raw = await rpc("get_list_v3", { p_id: refB.lookupId, p_rev: null });
@@ -219,14 +254,17 @@ try {
     assert.ok(!("id" in opened), "the secret was stripped before sealing");
 
     const second = await device(browser, SITE + "#/l/" + W_B);
-    await second.page.waitForSelector("#list .row", { timeout: 30000 });
-    await second.until(async () => (await second.state()).status === "synced", 30000, "the web to open the Mac's list");
+    const asked = await second.answerWhose("mine");
+    await second.page.waitForSelector("#list .row", { timeout: 40000 });
+    await second.until(async () => (await second.state()).status === "synced", 40000, "the web to open the Mac's list");
     const texts = (await second.rows()).map(r => r.text);
     assert.ok(texts.includes("Tap or click to cross this off"), "the web shows the Mac's lines: " + texts.join(" | "));
     const st = await second.state();
-    assert.equal(st.listId, W_B);
+    assert.equal(await second.listId(), W_B, "the web filed it under the Mac's link");
+    assert.ok(st.zone, "the web reads the home zone the Mac stamped: " + st.zone);
+    assert.ok(!("id" in opened), "and the envelope still carries no secret");
     step("tfive made a list and the web opened it",
-         `crypto.js opened the Swift envelope (${raw.bytes} bytes, z=${row.doc.z}); the web is at rev ${st.cur.rev}`);
+         `crypto.js opened the Swift envelope (${raw.bytes} bytes, z=${row.doc.z}); the web is at rev ${st.cur.rev}, zone ${st.zone}${asked ? "; it asked whose list it was, once" : ""}`);
     await second.close();
   } catch (e) { bad("tfive made a list and the web opened it", e); }
 
@@ -234,11 +272,12 @@ try {
 
   try {
     const refB = await C.fromWrite(W_B);
-    const viewOut = tfive("show", refB.R);
+    const viewLink = SITE + "#/r/" + refB.R;      // a *bare* secret is an edit link, here as on the web
+    const viewOut = tfive("show", viewLink);
     assert.ok(viewOut.includes("view only"), "tfive says the link is view only:\n" + viewOut);
     assert.ok(viewOut.includes("Tap or click to cross this off"), "and it can read the list");
 
-    const refused = tfiveMayFail("add", refB.R, "a view link must not write this");
+    const refused = tfiveMayFail("add", viewLink, "a view link must not write this");
     assert.ok(!refused.ok, "tfive refused to add through a view link");
     assert.ok(/View link only shows the list/.test(refused.out), refused.out);
 
@@ -273,12 +312,11 @@ try {
     await web.page.waitForSelector("#ask[open]");
     await web.page.click("#ask-ok");
     await web.until(async () => {
-      const st = await web.state();
-      return st.listId && st.listId !== W_A && st.status === "synced";
+      const id = await web.listId();
+      return id && id !== W_A && (await web.state()).status === "synced";
     }, 40000, "the web to rotate to new keys");
-    W_A2 = (await web.state()).listId;
-    made.push({ label: "A2 (rotated)", W: W_A2 });
-    console.log("   rotated list A to new keys:", W_A2);
+    W_A2 = await web.listId();
+    record("A2 (rotated on the web)", W_A2);
 
     const out = tfive("show", W_A);
     assert.ok(/gone/.test(out), "the Swift side reports gone:\n" + out);

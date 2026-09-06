@@ -136,6 +136,8 @@ Run all of it, in this order, for every change that reaches `main`:
 1. Work on a branch; push after each logical commit.
 2. Node suites pass: `node test/model.test.js`, `test/theme.test.js`, `test/crypto.test.js`
    (the pinned vectors), `test/sync.test.js`, `test/sound.test.js`, `test/features.test.js`.
+   If the change touched `crypto.js`, `model.js`, `sync.js`, the shared fixtures or the migrations,
+   the Swift core's suite passes too: `cd apple/TodaysFiveCore && swift test` (§8).
 3. The compatibility test passes: `node test/compat.test.js` (a v4 document through the frozen v3
    model, both directions).
 4. The browser suite passes at 1440×900 and 390×844 on the local transport
@@ -157,3 +159,34 @@ Run all of it, in this order, for every change that reaches `main`:
    holds a previous version's list (open the URL fresh, not a refresh: it opens, the list is intact,
    the what's-new toast is the only new thing it sees). Mind the server's create limit (12 per hour
    per address): a day of suites can spend it, and a fresh device then reports "busy" until it clears.
+
+## 8. Second client: the Swift core
+
+`apple/TodaysFiveCore` is a second implementation of everything above — links, keys, the envelope,
+the document, merge, rollover, the three RPCs — for the Apple apps. The contract is no longer a
+description of one codebase; it is the agreement between two, and that is what these rules now
+protect.
+
+- **Any change to the document shape, the keys, the links or the RPCs updates both clients and both
+  test suites in the same change.** A change that lands on the web alone is a change that will split
+  a person's list between their phone and their laptop, silently, on the next merge.
+- **The shared fixtures are the single source of truth.** `test/fixtures/vectors.json` (the pinned
+  derivation values, real envelopes, the canonical-JSON cases, the link grammar, the dates and the
+  zone) and `test/fixtures/merge/*.json` (golden merge, normalize and rollover cases) are read by
+  both suites: `test/crypto.test.js` and `test/compat.test.js` on one side, `swift test` on the
+  other. Neither implementation can drift without a suite going red on both. Regenerate with
+  `test/tools/gen-vectors.mjs` and `tools/merge-fixtures.js`; the first refuses to write if
+  `crypto.js` no longer reproduces the pinned values, which §2 says it never will.
+- A rollover fixture records the **device zone it was written in**. It changes nothing for a list
+  with a home zone — that is what one is for — but a list without one rolls on the device's own
+  clock, so an expectation written in Chicago is not the one Kiritimati produces. A replay that can
+  compute in a named zone uses it; one that cannot skips a case written in another and says so.
+- Beyond the fixtures, `test/tools/gen-merge-cases.mjs` runs a few thousand random operation
+  sequences through `model.js` and writes the answers down for the Swift suite to replay. It is the
+  net under the fixtures: it is what caught canonical JSON differing on an item id of `"2"` against
+  `"10"`, and a string cut in the middle of a surrogate pair.
+- `apple/tools/interop.mjs` runs the two against each other on the deployed site and the real
+  backend. It creates three lists and deletes all three; mind the create limit in §7 step 8.
+- The Swift core adds nothing to the deployed site. `apple/` is not precached, not served as part of
+  the app, and not loaded by any page. A change under `apple/` alone needs no version bump — the
+  what's-new toast keys on the version string changing, and there is nothing here for a user to see.

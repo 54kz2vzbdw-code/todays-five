@@ -272,4 +272,94 @@ the service worker does not precache and the site does not load.
 
 ## Results
 
-_(filled in at the end of the round)_
+### What the round found
+
+The branch was cut from a checkout forty-three commits behind `main`: the repo was at 1.5 (build 76)
+and the deployed site runs **1.9 (build 119)**. Caught by the first Playwright run, whose selectors
+did not match the live page. The port was rebased onto 1.9 and re-done against it. `crypto.js`,
+`config.js` and `supabase/` had not moved a byte in four releases — §2 and §4 held exactly as they
+promise — so the keys, the envelope and the RPCs needed nothing. `model.js` had: the home zone, the
+six-hour roll guard, `moveToSection`, `moveItem`'s target section, bidi stripping on the way in, a
+Markdown export that lists a Today line once, `lostEdits`, and 1.7's purge fix. All ported.
+
+Three real divergences were caught by machine, not by reading:
+
+1. **`exportJSON` is `JSON.stringify(JSON.parse(canon(body)), null, 2)`, and the parse in the middle
+   is not decoration.** `canon()` sorts keys as strings; re-parsing hands them back in `Object.keys`
+   order, which puts array-index-like keys first *numerically*. So an item id of `"2"` comes out
+   before one of `"10"` — the opposite of the sort. Writing sorted keys straight out was wrong.
+2. **Swift `String` cannot hold what the document can.** `normalize()` truncates a note at 300 UTF-16
+   code units, which can cut an emoji in half, and JavaScript keeps the lone surrogate. Swift's
+   `String` turns it into U+FFFD, and its `==` calls a precomposed and a decomposed accent equal
+   where JavaScript does not. `exportMarkdown` and several comparison paths went through it. Every
+   compared, sorted or written-back value now stays in UTF-16.
+3. **`stripBidiDeep` gave a template tombstone an empty `lines` key.** The JavaScript iterates
+   `t.lines || []` and mutates in place, so it never creates the key; the Swift rewrote it
+   unconditionally. A one-key difference, and enough to lose a tie-break.
+
+And one gap in the web's own fixtures. `test/fixtures/merge/rollover-guard.json` pins answers for a
+list with **no** home zone, which by design rolls on the device's own clock — so the expectations
+depend on the machine, and `node test/compat.test.js` failed under `TZ=Pacific/Kiritimati`. Every
+rollover case now records the device zone it was written in: the Swift replay computes in that zone,
+which it can; the Node replay skips a case written in another and says so. No expected value moved —
+the regenerated files differ only by the new key — and `compat.test.js` now passes in Chicago, UTC,
+Tokyo, Niue and Kiritimati.
+
+### The suites
+
+| | |
+| --- | --- |
+| `swift test` | **72 tests in 6 suites**, ~8 s on the Mac host |
+| the pinned derivation vectors | 3, byte for byte, from `test/fixtures/vectors.json` |
+| envelopes | the web's `deflate-raw` and uncompressed envelopes open in Swift; sealing the same bytes under the same iv reproduces the web's uncompressed ciphertext **exactly**; three Swift-sealed envelopes open in `crypto.js` (`node test/tools/check-swift-envelopes.mjs`) |
+| the contract's golden cases | `test/fixtures/merge/*.json`, 6 files, **26 cases**, replayed byte for byte |
+| differential | **1,200 random document pairs** and **900 operation sequences — 3,930 operations —** replayed step for step against `model.js`'s answers, plus 5 revival collisions that turn on `Object.keys` hoisting `"2"` before `"10"` |
+| canonical JSON | 54 cases the web's `canon()` wrote |
+| links, dates, the zone | 23 link cases, 126 `addDays`, 144 `isDue`, 12 `isZone`, 35 `localDateIn`, 20 `todayFor`/`dayOf` |
+| rollover and sync | the cases from `test/model.test.js`, `test/features.test.js` and `test/sync.test.js`, ported one to one |
+| Node suites | model 27, theme 30, crypto 10, sync 14, sound 11, features 28, compat 9 — all green |
+| destinations | `generic/platform=iOS Simulator`, `generic/platform=watchOS Simulator`, `platform=macOS` — all build |
+
+### The live interop run
+
+Against `https://54kz2vzbdw-code.github.io/todays-five/` and the real Supabase project. **Ten checks,
+ten passed, three lists created and all three deleted.**
+
+```
+ok  - the web created a list on the real backend
+        status synced, rev 2, row RfAF2wbXOkbnqQWkIi1YRAhHqnjD7WHX, zone America/Chicago
+ok  - the row on the wire is an envelope and carries no secret or plaintext
+        437 bytes, z=deflate-raw
+ok  - tfive read the web's list
+ok  - tfive crossed a line off and the web shows it            the web is at rev 3, synced
+ok  - both sides edited while apart and converged with no loss  rev 3 → 5; both lines on both sides
+ok  - tfive made a list and the web opened it
+        crypto.js opened the Swift envelope (533 bytes, z=deflate-raw); the web is at rev 1,
+        zone America/Chicago; it asked whose list it was, once
+ok  - a view link can read and cannot write
+        tfive refused it locally; put_list_v3 with a forged token answered 403
+ok  - the unchanged short-circuit still costs bytes, not the document   full 533, unchanged 29
+ok  - New keys on the web, and the Swift side reports gone
+        the old row answers null and tfive says gone
+ok  - the rotated link opens on the Swift side with the list intact
+```
+
+The web learns of a change made by `tfive` on its next poll, or at once when the tab is fronted:
+this phase has no realtime, so the Swift side rings no doorbell. The run dispatches the focus event a
+person's tab switch would.
+
+### The deployed site did not move
+
+Every file the service worker precaches, plus `sw.js`, `version.js`, `whatsnew.json`, `index.html`
+and the manifest — **28 files, 0 moved** against `main`. `version.js` stays 1.9 build 119, so no
+what's-new toast fires for a change nobody can see. Outside `apple/`, the branch touches only
+`test/` and `tools/merge-fixtures.js`, none of which the site loads. The browser suite
+(`node tools/e2e4.js`) passes on the local transport with zero page errors, zero CSP violations and
+zero third-party requests.
+
+### What Phase 2 will find here
+
+The `Transport` protocol has one implementation for the server and one in memory; realtime is a
+second protocol a transport may also conform to, so adding it touches the transport and no caller.
+`SyncEngine` is an actor with no timer of its own — the caller drives, which is what a shell, a
+background refresh, a widget and a complication all want, and what let the CLI drive it here.

@@ -1,0 +1,355 @@
+{
+  "name": "rollover-zone",
+  "op": "rollover",
+  "note": "with a home zone every device passes the same today (computed in that zone) and files a line under the day it was finished there: nothing moves while it is still the 5th at home, and after home midnight both devices write the identical tombstone and History entry",
+  "cases": [
+    {
+      "doc": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": true,
+            "doneAt": 1788615000000,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "crossed off at breakfast",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1788615000000
+          },
+          "b": {
+            "done": false,
+            "doneAt": 0,
+            "id": "b",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "still to do",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "expect": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": true,
+            "doneAt": 1788615000000,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "crossed off at breakfast",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1788615000000
+          },
+          "b": {
+            "done": false,
+            "doneAt": 0,
+            "id": "b",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "still to do",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "name": "still the 5th at home (Tokyo's clock says the 6th)",
+      "today": "2026-09-05",
+      "ts": 1788622200000
+    },
+    {
+      "doc": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": true,
+            "doneAt": 1788615000000,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "crossed off at breakfast",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1788615000000
+          },
+          "b": {
+            "done": false,
+            "doneAt": 0,
+            "id": "b",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "still to do",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "expect": {
+        "history": {
+          "2026-09-05": [
+            {
+              "doneAt": 1788615000000,
+              "id": "a",
+              "section": "",
+              "text": "crossed off at breakfast"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "a": {
+            "deleted": true,
+            "id": "a",
+            "updatedAt": 1788615000001
+          },
+          "b": {
+            "done": false,
+            "doneAt": 0,
+            "id": "b",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "still to do",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 1788674400000,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "name": "after Chicago's midnight",
+      "today": "2026-09-06",
+      "ts": 1788674400000
+    },
+    {
+      "doc": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": true,
+            "doneAt": 1788615000000,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "crossed off at breakfast",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1788615000000
+          },
+          "b": {
+            "done": false,
+            "doneAt": 0,
+            "id": "b",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "still to do",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "expect": {
+        "history": {
+          "2026-09-05": [
+            {
+              "doneAt": 1788615000000,
+              "id": "a",
+              "section": "",
+              "text": "crossed off at breakfast"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "a": {
+            "deleted": true,
+            "id": "a",
+            "updatedAt": 1788615000001
+          },
+          "b": {
+            "done": false,
+            "doneAt": 0,
+            "id": "b",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "still to do",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 1788678000000,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "name": "the same call from the other device",
+      "today": "2026-09-06",
+      "ts": 1788678000000
+    },
+    {
+      "doc": {
+        "history": {
+          "2026-09-05": [
+            {
+              "doneAt": 1788615000000,
+              "id": "a",
+              "section": "",
+              "text": "crossed off at breakfast"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "a": {
+            "deleted": true,
+            "id": "a",
+            "updatedAt": 1788615000001
+          },
+          "b": {
+            "done": false,
+            "doneAt": 0,
+            "id": "b",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "still to do",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 1788674400000,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "expect": {
+        "history": {
+          "2026-09-05": [
+            {
+              "doneAt": 1788615000000,
+              "id": "a",
+              "section": "",
+              "text": "crossed off at breakfast"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "a": {
+            "deleted": true,
+            "id": "a",
+            "updatedAt": 1788615000001
+          },
+          "b": {
+            "done": false,
+            "doneAt": 0,
+            "id": "b",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "still to do",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 1788674400000,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "name": "rolled twice changes nothing",
+      "today": "2026-09-06",
+      "ts": 1788674460000
+    }
+  ]
+}

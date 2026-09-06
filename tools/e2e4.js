@@ -109,6 +109,44 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  await test(label + ": 1.9: a list carries its home zone — the maker's zone at creation, stamped on a list from before by its maker on the next open, left alone by a device that only holds the link, and used for rollover whatever the device's own clock says", async () => {
+    // a new list made in Tokyo carries Asia/Tokyo, in the document
+    const t = await fresh({ ...opts, timezoneId: "Asia/Tokyo" });
+    assert.equal((await t.s()).zone, "Asia/Tokyo", "the home zone is the maker's zone");
+    assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc.zone), "Asia/Tokyo", "and it is in the document");
+    await t.close();
+    // a list from before 1.9 (the long-time fixture carries none) gets one from the device that made it, on its next open, and keeps it
+    const SAT = new Date("2026-09-12T14:00:00");
+    const f = await fresh({ ...opts, timezoneId: "America/Chicago" }, { list: false, init: seedScript({ now: +SAT }), clock: SAT });
+    await f.page.waitForSelector("#list .row"); await f.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
+    assert.equal((await f.s()).zone, "America/Chicago", "stamped by its maker");
+    await f.reload(); await f.page.waitForSelector("#list .row"); await wait(400);
+    assert.equal((await f.s()).zone, "America/Chicago", "and kept"); assert.equal(f.errors.length, 0, f.errors.join("; "));
+    await f.close();
+    // a device that only holds the link (the same fixture, its entries not made here) writes no zone of its own: the six-hour guard covers it until the maker opens the list
+    const strip = ";(() => { const m = JSON.parse(localStorage.getItem('tf/v2/meta')); for (const l of m.lists) delete l.created; localStorage.setItem('tf/v2/meta', JSON.stringify(m)); })();";
+    const o = await fresh({ ...opts, timezoneId: "America/Chicago" }, { list: false, init: seedScript({ now: +SAT }) + strip, clock: SAT });
+    await o.page.waitForSelector("#list .row"); await wait(1500);
+    assert.equal((await o.s()).zone, null, "a link-only device leaves the document without a zone");
+    await o.close();
+    // rollover reads the home zone: Tokyo, half past midnight on Sunday the 13th, while it is still Saturday morning at home in Chicago
+    const NOW = Date.UTC(2026, 8, 12, 15, 30); // 10:30 Saturday in Chicago, 00:30 Sunday in Tokyo
+    const home = ";(() => { for (const k of Object.keys(localStorage)) if (k.startsWith('tf/v3/list/')) { const r = JSON.parse(localStorage.getItem(k)); r.doc.zone = 'America/Chicago'; localStorage.setItem(k, JSON.stringify(r)); } })();";
+    const k = await fresh({ ...opts, timezoneId: "Asia/Tokyo" }, { list: false, init: seedScript({ now: NOW }) + home, clock: NOW });
+    await k.page.waitForSelector("#list .row"); await wait(600);
+    assert.equal((await k.s()).zone, "America/Chicago"); assert.equal(await k.page.evaluate(() => new Date().getTimezoneOffset()), -540, "the device is in Tokyo");
+    const doneBefore = await k.page.locator("#list .row.done").count(); assert.ok(doneBefore >= 1, "lines finished this morning at home: " + doneBefore);
+    await k.page.evaluate(() => window.__tfTest.rollover()); await wait(300);
+    assert.equal(await k.page.locator("#list .row.done").count(), doneBefore, "still Saturday at home: nothing rolls, though Tokyo's clock says Sunday");
+    await k.page.clock.setSystemTime(Date.UTC(2026, 8, 13, 6, 0)); // 01:00 Sunday in Chicago
+    await k.page.evaluate(() => window.__tfTest.rollover()); await wait(400);
+    assert.equal(await k.page.locator("#list .row.done").count(), 0, "after home midnight they go to History");
+    const days = await k.page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc.history));
+    assert.ok(days.includes("2026-09-12"), "under the day they were finished at home: " + days.slice(-3));
+    assert.equal(k.errors.length, 0, k.errors.join("; "));
+    await k.close();
+  });
+
   await test(label + ": 1.7: the first check-off on a cold page plays once the engines land; the panels warm on the first gesture; an empty Today says so; the star row explains itself; tooltips in Everything", async () => {
     const t = await fresh(opts);
     await t.ctx.addInitScript(() => { window.__nodes = 0; for (const m of ["createOscillator", "createBufferSource"]) { const o = AudioContext.prototype[m]; AudioContext.prototype[m] = function () { window.__nodes++; return o.apply(this, arguments); }; } });

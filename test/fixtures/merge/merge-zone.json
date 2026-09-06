@@ -1,0 +1,501 @@
+{
+  "name": "merge-zone",
+  "op": "merge",
+  "note": "the home zone is an additive top-level key: one side's value is kept; two different values merge by the larger string, the rule every client applies to a key it does not know, so 1.8 and 1.9 agree",
+  "cases": [
+    {
+      "a": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "b": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3
+      },
+      "expect": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "name": "one side has it (a, b)"
+    },
+    {
+      "a": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3
+      },
+      "b": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "expect": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "name": "one side has it (b, a)"
+    },
+    {
+      "a": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "b": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "Asia/Tokyo"
+      },
+      "expect": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "Asia/Tokyo"
+      },
+      "name": "two different zones (a, b)"
+    },
+    {
+      "a": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "Asia/Tokyo"
+      },
+      "b": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "expect": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "Asia/Tokyo"
+      },
+      "name": "two different zones (b, a)"
+    },
+    {
+      "a": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "b": {
+        "history": {},
+        "id": "L",
+        "items": {},
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "expect": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "name": "the same zone (a, b)"
+    },
+    {
+      "a": {
+        "history": {},
+        "id": "L",
+        "items": {},
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "b": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "expect": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "America/Chicago"
+      },
+      "name": "the same zone (b, a)"
+    }
+  ]
+}

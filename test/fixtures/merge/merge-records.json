@@ -1,0 +1,1176 @@
+{
+  "name": "merge-records",
+  "op": "merge",
+  "note": "last writer wins per record; on a tie a tombstone, then the record that carries more, then the lexically larger; history unions per day by id; the name by nameAt; unknown fields, records and collections pass through; the result is the same whichever side merges",
+  "cases": [
+    {
+      "a": {
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 100,
+              "id": "h1",
+              "section": "",
+              "text": "one"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "l": {
+            "done": false,
+            "doneAt": 0,
+            "id": "l",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "abc",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 3
+          },
+          "r": {
+            "done": false,
+            "doneAt": 0,
+            "extra": [
+              1,
+              2
+            ],
+            "id": "r",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-r",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1
+          },
+          "t": {
+            "done": false,
+            "doneAt": 0,
+            "id": "t",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-t",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 10
+          },
+          "x": {
+            "done": false,
+            "doneAt": 0,
+            "id": "x",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "old",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 10
+          }
+        },
+        "name": "Work",
+        "nameAt": 5,
+        "returns": {},
+        "rules": {
+          "x": {
+            "id": "x",
+            "kind": "daily",
+            "note": "",
+            "sectionId": "",
+            "text": "old",
+            "updatedAt": 2
+          }
+        },
+        "sections": {
+          "s": {
+            "collapsed": false,
+            "colour": "red",
+            "id": "s",
+            "name": "Home",
+            "order": 1000,
+            "updatedAt": 5
+          }
+        },
+        "someFutureCollection": {
+          "k": {
+            "id": "k",
+            "updatedAt": 9
+          }
+        },
+        "templates": {},
+        "themes": {
+          "t1": {
+            "code": "T2:d:FF3D9A:fraunces:bell:Mine",
+            "id": "t1",
+            "name": "Mine",
+            "partner": "t2",
+            "updatedAt": 1
+          }
+        },
+        "updatedAt": 0,
+        "v": 3
+      },
+      "b": {
+        "flag": true,
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 50,
+              "id": "h2",
+              "section": "",
+              "text": "two"
+            },
+            {
+              "doneAt": 100,
+              "id": "h1",
+              "section": "",
+              "text": "one"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "l": {
+            "done": false,
+            "doneAt": 0,
+            "id": "l",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "abd",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 3
+          },
+          "r": {
+            "done": false,
+            "doneAt": 0,
+            "id": "r",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-r",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1
+          },
+          "t": {
+            "deleted": true,
+            "id": "t",
+            "updatedAt": 10
+          },
+          "x": {
+            "done": false,
+            "doneAt": 0,
+            "id": "x",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "new",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 20
+          }
+        },
+        "name": "Home",
+        "nameAt": 7,
+        "returns": {
+          "x": {
+            "id": "x",
+            "on": "2026-09-02",
+            "updatedAt": 2
+          }
+        },
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {
+          "t1": {
+            "code": "T2:d:FF3D9A:fraunces:bell:Mine",
+            "id": "t1",
+            "name": "Mine",
+            "updatedAt": 1
+          }
+        },
+        "updatedAt": 0,
+        "v": 3
+      },
+      "expect": {
+        "flag": true,
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 50,
+              "id": "h2",
+              "section": "",
+              "text": "two"
+            },
+            {
+              "doneAt": 100,
+              "id": "h1",
+              "section": "",
+              "text": "one"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "l": {
+            "done": false,
+            "doneAt": 0,
+            "id": "l",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "abd",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 3
+          },
+          "r": {
+            "done": false,
+            "doneAt": 0,
+            "extra": [
+              1,
+              2
+            ],
+            "id": "r",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-r",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1
+          },
+          "t": {
+            "deleted": true,
+            "id": "t",
+            "updatedAt": 10
+          },
+          "x": {
+            "done": false,
+            "doneAt": 0,
+            "id": "x",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "new",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 20
+          }
+        },
+        "name": "Home",
+        "nameAt": 7,
+        "returns": {
+          "x": {
+            "id": "x",
+            "on": "2026-09-02",
+            "updatedAt": 2
+          }
+        },
+        "rules": {
+          "x": {
+            "id": "x",
+            "kind": "daily",
+            "note": "",
+            "sectionId": "",
+            "text": "old",
+            "updatedAt": 2
+          }
+        },
+        "sections": {
+          "s": {
+            "collapsed": false,
+            "colour": "red",
+            "id": "s",
+            "name": "Home",
+            "order": 1000,
+            "updatedAt": 5
+          }
+        },
+        "someFutureCollection": {
+          "k": {
+            "id": "k",
+            "updatedAt": 9
+          }
+        },
+        "templates": {},
+        "themes": {
+          "t1": {
+            "code": "T2:d:FF3D9A:fraunces:bell:Mine",
+            "id": "t1",
+            "name": "Mine",
+            "partner": "t2",
+            "updatedAt": 1
+          }
+        },
+        "updatedAt": 0,
+        "v": 3
+      },
+      "name": "records (a, b)"
+    },
+    {
+      "a": {
+        "flag": true,
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 50,
+              "id": "h2",
+              "section": "",
+              "text": "two"
+            },
+            {
+              "doneAt": 100,
+              "id": "h1",
+              "section": "",
+              "text": "one"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "l": {
+            "done": false,
+            "doneAt": 0,
+            "id": "l",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "abd",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 3
+          },
+          "r": {
+            "done": false,
+            "doneAt": 0,
+            "id": "r",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-r",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1
+          },
+          "t": {
+            "deleted": true,
+            "id": "t",
+            "updatedAt": 10
+          },
+          "x": {
+            "done": false,
+            "doneAt": 0,
+            "id": "x",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "new",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 20
+          }
+        },
+        "name": "Home",
+        "nameAt": 7,
+        "returns": {
+          "x": {
+            "id": "x",
+            "on": "2026-09-02",
+            "updatedAt": 2
+          }
+        },
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {
+          "t1": {
+            "code": "T2:d:FF3D9A:fraunces:bell:Mine",
+            "id": "t1",
+            "name": "Mine",
+            "updatedAt": 1
+          }
+        },
+        "updatedAt": 0,
+        "v": 3
+      },
+      "b": {
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 100,
+              "id": "h1",
+              "section": "",
+              "text": "one"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "l": {
+            "done": false,
+            "doneAt": 0,
+            "id": "l",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "abc",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 3
+          },
+          "r": {
+            "done": false,
+            "doneAt": 0,
+            "extra": [
+              1,
+              2
+            ],
+            "id": "r",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-r",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1
+          },
+          "t": {
+            "done": false,
+            "doneAt": 0,
+            "id": "t",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-t",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 10
+          },
+          "x": {
+            "done": false,
+            "doneAt": 0,
+            "id": "x",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "old",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 10
+          }
+        },
+        "name": "Work",
+        "nameAt": 5,
+        "returns": {},
+        "rules": {
+          "x": {
+            "id": "x",
+            "kind": "daily",
+            "note": "",
+            "sectionId": "",
+            "text": "old",
+            "updatedAt": 2
+          }
+        },
+        "sections": {
+          "s": {
+            "collapsed": false,
+            "colour": "red",
+            "id": "s",
+            "name": "Home",
+            "order": 1000,
+            "updatedAt": 5
+          }
+        },
+        "someFutureCollection": {
+          "k": {
+            "id": "k",
+            "updatedAt": 9
+          }
+        },
+        "templates": {},
+        "themes": {
+          "t1": {
+            "code": "T2:d:FF3D9A:fraunces:bell:Mine",
+            "id": "t1",
+            "name": "Mine",
+            "partner": "t2",
+            "updatedAt": 1
+          }
+        },
+        "updatedAt": 0,
+        "v": 3
+      },
+      "expect": {
+        "flag": true,
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 50,
+              "id": "h2",
+              "section": "",
+              "text": "two"
+            },
+            {
+              "doneAt": 100,
+              "id": "h1",
+              "section": "",
+              "text": "one"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "l": {
+            "done": false,
+            "doneAt": 0,
+            "id": "l",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "abd",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 3
+          },
+          "r": {
+            "done": false,
+            "doneAt": 0,
+            "extra": [
+              1,
+              2
+            ],
+            "id": "r",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-r",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1
+          },
+          "t": {
+            "deleted": true,
+            "id": "t",
+            "updatedAt": 10
+          },
+          "x": {
+            "done": false,
+            "doneAt": 0,
+            "id": "x",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "new",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 20
+          }
+        },
+        "name": "Home",
+        "nameAt": 7,
+        "returns": {
+          "x": {
+            "id": "x",
+            "on": "2026-09-02",
+            "updatedAt": 2
+          }
+        },
+        "rules": {
+          "x": {
+            "id": "x",
+            "kind": "daily",
+            "note": "",
+            "sectionId": "",
+            "text": "old",
+            "updatedAt": 2
+          }
+        },
+        "sections": {
+          "s": {
+            "collapsed": false,
+            "colour": "red",
+            "id": "s",
+            "name": "Home",
+            "order": 1000,
+            "updatedAt": 5
+          }
+        },
+        "someFutureCollection": {
+          "k": {
+            "id": "k",
+            "updatedAt": 9
+          }
+        },
+        "templates": {},
+        "themes": {
+          "t1": {
+            "code": "T2:d:FF3D9A:fraunces:bell:Mine",
+            "id": "t1",
+            "name": "Mine",
+            "partner": "t2",
+            "updatedAt": 1
+          }
+        },
+        "updatedAt": 0,
+        "v": 3
+      },
+      "name": "records (b, a)"
+    },
+    {
+      "a": {
+        "flag": true,
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 50,
+              "id": "h2",
+              "section": "",
+              "text": "two"
+            },
+            {
+              "doneAt": 100,
+              "id": "h1",
+              "section": "",
+              "text": "one"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "l": {
+            "done": false,
+            "doneAt": 0,
+            "id": "l",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "abd",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 3
+          },
+          "r": {
+            "done": false,
+            "doneAt": 0,
+            "extra": [
+              1,
+              2
+            ],
+            "id": "r",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-r",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1
+          },
+          "t": {
+            "deleted": true,
+            "id": "t",
+            "updatedAt": 10
+          },
+          "x": {
+            "done": false,
+            "doneAt": 0,
+            "id": "x",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "new",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 20
+          }
+        },
+        "name": "Home",
+        "nameAt": 7,
+        "returns": {
+          "x": {
+            "id": "x",
+            "on": "2026-09-02",
+            "updatedAt": 2
+          }
+        },
+        "rules": {
+          "x": {
+            "id": "x",
+            "kind": "daily",
+            "note": "",
+            "sectionId": "",
+            "text": "old",
+            "updatedAt": 2
+          }
+        },
+        "sections": {
+          "s": {
+            "collapsed": false,
+            "colour": "red",
+            "id": "s",
+            "name": "Home",
+            "order": 1000,
+            "updatedAt": 5
+          }
+        },
+        "someFutureCollection": {
+          "k": {
+            "id": "k",
+            "updatedAt": 9
+          }
+        },
+        "templates": {},
+        "themes": {
+          "t1": {
+            "code": "T2:d:FF3D9A:fraunces:bell:Mine",
+            "id": "t1",
+            "name": "Mine",
+            "partner": "t2",
+            "updatedAt": 1
+          }
+        },
+        "updatedAt": 0,
+        "v": 3
+      },
+      "b": {
+        "flag": true,
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 50,
+              "id": "h2",
+              "section": "",
+              "text": "two"
+            },
+            {
+              "doneAt": 100,
+              "id": "h1",
+              "section": "",
+              "text": "one"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "l": {
+            "done": false,
+            "doneAt": 0,
+            "id": "l",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "abd",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 3
+          },
+          "r": {
+            "done": false,
+            "doneAt": 0,
+            "id": "r",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-r",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1
+          },
+          "t": {
+            "deleted": true,
+            "id": "t",
+            "updatedAt": 10
+          },
+          "x": {
+            "done": false,
+            "doneAt": 0,
+            "id": "x",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "new",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 20
+          }
+        },
+        "name": "Home",
+        "nameAt": 7,
+        "returns": {
+          "x": {
+            "id": "x",
+            "on": "2026-09-02",
+            "updatedAt": 2
+          }
+        },
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {
+          "t1": {
+            "code": "T2:d:FF3D9A:fraunces:bell:Mine",
+            "id": "t1",
+            "name": "Mine",
+            "updatedAt": 1
+          }
+        },
+        "updatedAt": 0,
+        "v": 3
+      },
+      "expect": {
+        "flag": true,
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 50,
+              "id": "h2",
+              "section": "",
+              "text": "two"
+            },
+            {
+              "doneAt": 100,
+              "id": "h1",
+              "section": "",
+              "text": "one"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "l": {
+            "done": false,
+            "doneAt": 0,
+            "id": "l",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "abd",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 3
+          },
+          "r": {
+            "done": false,
+            "doneAt": 0,
+            "extra": [
+              1,
+              2
+            ],
+            "id": "r",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-r",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1
+          },
+          "t": {
+            "deleted": true,
+            "id": "t",
+            "updatedAt": 10
+          },
+          "x": {
+            "done": false,
+            "doneAt": 0,
+            "id": "x",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "new",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 20
+          }
+        },
+        "name": "Home",
+        "nameAt": 7,
+        "returns": {
+          "x": {
+            "id": "x",
+            "on": "2026-09-02",
+            "updatedAt": 2
+          }
+        },
+        "rules": {
+          "x": {
+            "id": "x",
+            "kind": "daily",
+            "note": "",
+            "sectionId": "",
+            "text": "old",
+            "updatedAt": 2
+          }
+        },
+        "sections": {
+          "s": {
+            "collapsed": false,
+            "colour": "red",
+            "id": "s",
+            "name": "Home",
+            "order": 1000,
+            "updatedAt": 5
+          }
+        },
+        "someFutureCollection": {
+          "k": {
+            "id": "k",
+            "updatedAt": 9
+          }
+        },
+        "templates": {},
+        "themes": {
+          "t1": {
+            "code": "T2:d:FF3D9A:fraunces:bell:Mine",
+            "id": "t1",
+            "name": "Mine",
+            "partner": "t2",
+            "updatedAt": 1
+          }
+        },
+        "updatedAt": 0,
+        "v": 3
+      },
+      "name": "idempotent"
+    },
+    {
+      "a": {
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 100,
+              "id": "h1",
+              "section": "",
+              "text": "one"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "l": {
+            "done": false,
+            "doneAt": 0,
+            "id": "l",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "abc",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 3
+          },
+          "r": {
+            "done": false,
+            "doneAt": 0,
+            "extra": [
+              1,
+              2
+            ],
+            "id": "r",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-r",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1
+          },
+          "t": {
+            "done": false,
+            "doneAt": 0,
+            "id": "t",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-t",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 10
+          },
+          "x": {
+            "done": false,
+            "doneAt": 0,
+            "id": "x",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "old",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 10
+          }
+        },
+        "name": "Work",
+        "nameAt": 5,
+        "returns": {},
+        "rules": {
+          "x": {
+            "id": "x",
+            "kind": "daily",
+            "note": "",
+            "sectionId": "",
+            "text": "old",
+            "updatedAt": 2
+          }
+        },
+        "sections": {
+          "s": {
+            "collapsed": false,
+            "colour": "red",
+            "id": "s",
+            "name": "Home",
+            "order": 1000,
+            "updatedAt": 5
+          }
+        },
+        "someFutureCollection": {
+          "k": {
+            "id": "k",
+            "updatedAt": 9
+          }
+        },
+        "templates": {},
+        "themes": {
+          "t1": {
+            "code": "T2:d:FF3D9A:fraunces:bell:Mine",
+            "id": "t1",
+            "name": "Mine",
+            "partner": "t2",
+            "updatedAt": 1
+          }
+        },
+        "updatedAt": 0,
+        "v": 3
+      },
+      "b": {
+        "history": {},
+        "id": "L",
+        "items": {},
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3
+      },
+      "expect": {
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 100,
+              "id": "h1",
+              "section": "",
+              "text": "one"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "l": {
+            "done": false,
+            "doneAt": 0,
+            "id": "l",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "abc",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 3
+          },
+          "r": {
+            "done": false,
+            "doneAt": 0,
+            "extra": [
+              1,
+              2
+            ],
+            "id": "r",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-r",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1
+          },
+          "t": {
+            "done": false,
+            "doneAt": 0,
+            "id": "t",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-t",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 10
+          },
+          "x": {
+            "done": false,
+            "doneAt": 0,
+            "id": "x",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "old",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 10
+          }
+        },
+        "name": "Work",
+        "nameAt": 5,
+        "returns": {},
+        "rules": {
+          "x": {
+            "id": "x",
+            "kind": "daily",
+            "note": "",
+            "sectionId": "",
+            "text": "old",
+            "updatedAt": 2
+          }
+        },
+        "sections": {
+          "s": {
+            "collapsed": false,
+            "colour": "red",
+            "id": "s",
+            "name": "Home",
+            "order": 1000,
+            "updatedAt": 5
+          }
+        },
+        "someFutureCollection": {
+          "k": {
+            "id": "k",
+            "updatedAt": 9
+          }
+        },
+        "templates": {},
+        "themes": {
+          "t1": {
+            "code": "T2:d:FF3D9A:fraunces:bell:Mine",
+            "id": "t1",
+            "name": "Mine",
+            "partner": "t2",
+            "updatedAt": 1
+          }
+        },
+        "updatedAt": 0,
+        "v": 3
+      },
+      "name": "empty right"
+    }
+  ]
+}

@@ -54,6 +54,45 @@ export function localDate(ts = Date.now()) {
   return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (day < 10 ? "0" : "") + day;
 }
 
+/* ---- the home zone (1.9) ----
+   A shared list used to roll over at the earliest midnight among its devices: a phone in Tokyo filed a Chicago
+   laptop's breakfast check-off under yesterday at half past ten in the morning. So a list carries its home time
+   zone — `zone`, an IANA name, an additive top-level key (COMPATIBILITY.md §3) written when the list is made —
+   and every device computes "today" and a line's day in that zone. Old clients pass the key through untouched,
+   and two values merge by the larger string, which is the rule every client applies to a key it does not know.
+   A document without one (made before 1.9) keeps rolling in each device's own zone, behind a guard: a line crossed
+   off under six hours ago is never rolled, so a device hours ahead cannot file what was just finished.           */
+export const ROLL_GUARD_MS = 6 * 3600 * 1000;
+const zoneOk = new Map(), zoneFmt = new Map();
+/** Is this a time zone the platform can compute in? Cached; junk is never thrown on. */
+export function isZone(z) {
+  if (typeof z !== "string" || !/^[A-Za-z][A-Za-z0-9_+\-\/]{0,63}$/.test(z)) return false;
+  if (zoneOk.has(z)) return zoneOk.get(z);
+  let ok = false;
+  try { new Intl.DateTimeFormat("en-US", { timeZone: z }); ok = true; } catch (e) { ok = false; }
+  zoneOk.set(z, ok);
+  return ok;
+}
+/** This device's zone, as the platform reports it ("" when it cannot say). */
+export function deviceZone() {
+  try { const z = Intl.DateTimeFormat().resolvedOptions().timeZone; return isZone(z) ? z : ""; } catch (e) { return ""; }
+}
+/** The calendar date of `ts` in `zone`, YYYY-MM-DD. */
+export function localDateIn(ts, zone) {
+  let f = zoneFmt.get(zone);
+  if (!f) { f = new Intl.DateTimeFormat("en-US", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }); zoneFmt.set(zone, f); }
+  const p = {}; for (const x of f.formatToParts(new Date(ts))) p[x.type] = x.value;
+  return p.year + "-" + p.month + "-" + p.day;
+}
+/** The list's home zone when it has a usable one, else "". */
+export function zoneOf(doc) { return doc && isZone(doc.zone) ? doc.zone : ""; }
+/** "Today" for this list: in its home zone, or on this device's clock for a list without one. */
+export function todayFor(doc, ts = Date.now()) { const z = zoneOf(doc); return z ? localDateIn(ts, z) : localDate(ts); }
+/** The day a moment falls on for this list, the same way. */
+export function dayOf(doc, ts) { const z = zoneOf(doc); return z ? localDateIn(ts, z) : localDate(ts); }
+/** Give a list its home zone at creation; a list that has one keeps it. */
+export function withZone(doc, zone = deviceZone()) { if (doc && !doc.zone && isZone(zone)) doc.zone = zone; return doc; }
+
 /* ---------------- shape ---------------- */
 
 export function emptyDoc(id, name = "") {
@@ -63,7 +102,7 @@ export function emptyDoc(id, name = "") {
 
 /** The collections a document carries, in the order they are merged. Unknown top-level keys pass through untouched. */
 export const COLLECTIONS = ["sections", "items", "themes", "rules", "returns", "templates"];
-const DOC_KEYS = new Set(["v", "id", "name", "nameAt", "updatedAt", "history", ...COLLECTIONS]);
+const DOC_KEYS = new Set(["v", "id", "name", "nameAt", "updatedAt", "history", "zone", ...COLLECTIONS]);
 const ITEM_KEYS = new Set(["id", "sectionId", "text", "note", "done", "doneAt", "today", "order", "todayOrder", "updatedAt", "deleted"]);
 const SECTION_KEYS = new Set(["id", "name", "order", "collapsed", "updatedAt", "deleted"]);
 const THEME_KEYS = new Set(["id", "name", "code", "updatedAt", "deleted"]);
@@ -89,6 +128,7 @@ export function normalize(doc, id) {
   out.rules = mapOf(d.rules, normRule);
   out.returns = mapOf(d.returns, normReturn);
   out.templates = mapOf(d.templates, normTemplate);
+  if (typeof d.zone === "string" && d.zone) out.zone = d.zone; // 1.9: the home zone, kept as written (used only when the platform knows it)
   passThrough(out, d, DOC_KEYS);
   out.history = {};
   if (d.history && typeof d.history === "object") {
@@ -271,6 +311,8 @@ export function merge(a, b) {
     templates: mergeMap(a.templates, b.templates),
     updatedAt: Math.max(a.updatedAt, b.updatedAt)
   };
+  // 1.9: the home zone merges by the larger string — the very rule a client that has never heard of it applies below, so 1.8 and 1.9 agree
+  if (a.zone !== undefined || b.zone !== undefined) out.zone = a.zone === undefined ? b.zone : b.zone === undefined ? a.zone : (canon(a.zone) >= canon(b.zone) ? a.zone : b.zone);
   // keys neither side of this code knows: keep the larger canonical value so both sides agree (a future version merges them properly)
   for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
     if (DOC_KEYS.has(k)) continue;
@@ -388,7 +430,7 @@ export function isDue(rule, day) {
 }
 
 /** Set (or clear, with null) the recurrence rule of a line. The rule keeps a snapshot of the line for revival. */
-export function setRule(doc, id, rule, ts = now(), today = localDate()) {
+export function setRule(doc, id, rule, ts = now(), today = todayFor(doc, ts)) {
   const it = doc.items[id]; if (!it || it.deleted) return doc;
   const rules = { ...(doc.rules || {}) };
   if (!rule) {
@@ -415,7 +457,7 @@ export function refreshRuleSnapshot(doc, id, ts = now()) {
 /* ---------------- not today ---------------- */
 
 /** Take a line off Today until `on` (tomorrow by default). Visible to old clients as an ordinary "off Today". */
-export function notToday(doc, id, today = localDate(), ts = now()) {
+export function notToday(doc, id, today = todayFor(doc), ts = now()) {
   const it = doc.items[id]; if (!it || it.deleted) return doc;
   const items = { ...doc.items, [id]: { ...it, today: false, updatedAt: ts } };
   const returns = { ...(doc.returns || {}), [id]: { id, on: addDays(today, 1), updatedAt: ts } };
@@ -448,7 +490,9 @@ function latestHistoryFor(history, id) {
   return best;
 }
 
-export function rollover(doc, today = localDate(), ts = now()) {
+export function rollover(doc, today, ts = now()) {
+  if (today == null) today = todayFor(doc, ts); // 1.9: in the list's home zone when it has one, else on this device's clock
+  const zoned = !!zoneOf(doc);
   const moved = [];
   const items = { ...doc.items };
   const history = { ...doc.history };
@@ -461,11 +505,12 @@ export function rollover(doc, today = localDate(), ts = now()) {
     rules[rule.id] = { ...rule, placed: today, updatedAt: (rule.updatedAt || 0) + 1 };
     changed = true;
   };
-  // 1. finished on an earlier date
+  // 1. finished on an earlier date (in the home zone when the list has one; without one, never a line finished under six hours ago)
   for (const it of Object.values(doc.items)) {
     if (it.deleted || !it.done || !it.doneAt) continue;
-    const day = localDate(it.doneAt);
+    const day = dayOf(doc, it.doneAt);
     if (day >= today) continue;
+    if (!zoned && ts - it.doneAt < ROLL_GUARD_MS) continue;
     const entry = { id: it.id, text: it.text, doneAt: it.doneAt, section: sectionName(doc, it.sectionId) };
     const list = (history[day] || []).filter(e => e.id !== it.id).concat([entry]);
     list.sort((a, b) => a.doneAt - b.doneAt || cmp(a.id, b.id));
@@ -528,9 +573,9 @@ export function historyDays(doc) {
 }
 
 /** Consecutive days (ending today or yesterday) with at least one finished item. */
-export function streak(doc, today = localDate()) {
+export function streak(doc, today = todayFor(doc)) {
   const days = new Set(historyDays(doc));
-  for (const it of liveItems(doc)) if (it.done && it.doneAt) days.add(localDate(it.doneAt));
+  for (const it of liveItems(doc)) if (it.done && it.doneAt) days.add(dayOf(doc, it.doneAt));
   let d = new Date(today + "T12:00:00");
   let count = 0;
   if (!days.has(localDate(d.getTime()))) d.setDate(d.getDate() - 1);
@@ -729,7 +774,7 @@ export function importJSON(text, id = "") {
   if (!inner) throw new Error("That file isn't a Today's Five export.");
   return normalize(inner, id);
 }
-export function exportMarkdown(doc, { today = localDate() } = {}) {
+export function exportMarkdown(doc, { today = todayFor(doc) } = {}) {
   const lines = [];
   lines.push("# " + (doc.name || "Today's Five"));
   lines.push("");
@@ -797,7 +842,7 @@ export function whatsNewDue({ seenVersion, hasLists }, version) {
 
 /* ---------------- day review ---------------- */
 
-export function dayReview(doc, today = localDate()) {
+export function dayReview(doc, today = todayFor(doc)) {
   const t = todayItems(doc);
   const wd = weekdayOf(today);
   const monday = addDays(today, wd === 0 ? -6 : 1 - wd);

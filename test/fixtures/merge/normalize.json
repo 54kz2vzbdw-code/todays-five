@@ -1,0 +1,196 @@
+{
+  "name": "normalize",
+  "op": "normalize",
+  "note": "junk in, a well-formed document out: unknown fields and collections kept, the zone kept as written whether or not the platform knows it, a bare tombstone bare, a v2-stamped document accepted",
+  "cases": [
+    {
+      "doc": {
+        "history": {
+          "2026-01-01": [
+            {
+              "doneAt": 1,
+              "id": "x"
+            },
+            {
+              "id": "x"
+            },
+            7
+          ],
+          "junk": []
+        },
+        "items": [
+          {
+            "done": "yes",
+            "id": "a",
+            "text": 5
+          },
+          null,
+          {
+            "deleted": true,
+            "id": "b",
+            "updatedAt": 3
+          }
+        ]
+      },
+      "expect": {
+        "history": {
+          "2026-01-01": [
+            {
+              "doneAt": 1,
+              "id": "x",
+              "section": "",
+              "text": ""
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "a": {
+            "done": true,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 0,
+            "sectionId": "",
+            "text": "",
+            "today": false,
+            "todayOrder": 0,
+            "updatedAt": 0
+          },
+          "b": {
+            "deleted": true,
+            "id": "b",
+            "updatedAt": 3
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3
+      },
+      "id": "L",
+      "name": "junk"
+    },
+    {
+      "doc": {
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "future": {
+              "flag": true
+            },
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "mystery": {
+          "k": {
+            "id": "k",
+            "updatedAt": 9
+          }
+        },
+        "v": 2,
+        "zone": "Mars/Olympus"
+      },
+      "expect": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "future": {
+              "flag": true
+            },
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "mystery": {
+          "k": {
+            "id": "k",
+            "updatedAt": 9
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "Mars/Olympus"
+      },
+      "id": "L",
+      "name": "zone kept as written"
+    },
+    {
+      "doc": {
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "zone": ""
+      },
+      "expect": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3
+      },
+      "id": "L",
+      "name": "no zone means none"
+    }
+  ]
+}

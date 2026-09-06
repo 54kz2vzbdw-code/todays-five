@@ -3,6 +3,7 @@
 // it can see, its own edits must survive, and a v4 client merging the result back must recover every v4-only
 // field. Rollover on both sides must converge on the v4 outcome for recurring lines.
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import * as V3 from "./fixtures/model-v3.js";
 import * as M from "../model.js";
 
@@ -133,6 +134,37 @@ test("v4 docs read by v4 keep v:3, and a v2-stamped doc from an old client is ac
   const d = M.normalize({ ...v4doc(), v: 2 }, "L");
   assert.equal(d.v, 3); assert.equal(Object.keys(d.rules).length, 2);
   assert.equal(M.normalize(v4doc(), "L").v, 3);
+});
+
+test("1.9: the home zone is additive — the frozen v3 model strips it, the next merge brings it back, and the old client's own rollover still runs", () => {
+  const d = v4doc(); d.zone = "America/Chicago";
+  const d3 = V3.normalize(d, "L");
+  assert.ok(!("zone" in d3), "the old client does not know it");
+  const pushed = V3.merge(d3, d3);
+  for (const [x, y] of [[d, pushed], [pushed, d]]) { const m = M.merge(x, y); assert.equal(m.zone, "America/Chicago", "recovered by the next merge"); assert.equal(M.canon(M.merge(m, pushed)), M.canon(m), "stable once merged"); }
+  assert.equal(M.normalize(d, "L").zone, "America/Chicago");
+  assert.doesNotThrow(() => V3.rollover(d3, "2026-09-02", T0 + 86400000));
+  assert.doesNotThrow(() => V3.merge(d3, M.normalize(d, "L")));
+});
+
+test("1.9: the merge fixtures in test/fixtures/merge replay byte for byte (the Swift core runs the same files)", () => {
+  const dir = new URL("./fixtures/merge/", import.meta.url);
+  const files = fs.readdirSync(dir).filter(f => f.endsWith(".json")).sort();
+  assert.ok(files.length >= 4, "the fixtures exist: " + files.join(", "));
+  let cases = 0;
+  for (const f of files) {
+    const fx = JSON.parse(fs.readFileSync(new URL(f, dir), "utf8"));
+    for (const c of fx.cases) {
+      let out;
+      if (fx.op === "merge") out = M.merge(c.a, c.b);
+      else if (fx.op === "rollover") out = M.rollover(M.normalize(c.doc, c.doc.id), c.today, c.ts).doc;
+      else if (fx.op === "normalize") out = M.normalize(c.doc, c.id);
+      else throw new Error("unknown op " + fx.op);
+      assert.equal(M.canon(out), M.canon(c.expect), f + ": " + c.name);
+      cases++;
+    }
+  }
+  assert.ok(cases >= 12, cases + " cases");
 });
 
 console.log(`\n${passed} compatibility tests passed`);

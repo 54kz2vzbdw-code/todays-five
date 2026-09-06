@@ -42,6 +42,16 @@ invariants, and the checklist to run before anything reaches `main`. Read this b
   collection keyed by the record id (v4: `rules`, `returns`), because an old client rewrites the
   whole record with a newer timestamp. Data that only has to survive an old client *passing the
   document through* may live on the record (v4: `text`, `note`, `sectionId` on tombstones).
+- The document's one top-level addition since v4 is `zone` (1.9): the list's home time zone, an IANA
+  name written when the list is made (or by the device that made it, on its first 1.9 open of a list
+  from before). Every device computes "today" and the day a line was finished on in that zone, so a
+  shared list rolls over once, at home midnight, not at the earliest midnight among its devices. An
+  old client passes the key through; two values merge by the larger string, which is exactly the rule
+  every client applies to a top-level key it does not know, so 1.8 and 1.9 agree. The value is kept as
+  written even when the platform cannot compute in it, and used only when it can. A document with no
+  zone still rolls on each device's own clock, behind a guard: a line finished under six hours ago is
+  never rolled. The merge fixtures in `test/fixtures/merge/` (written by `tools/merge-fixtures.js`,
+  replayed by `test/compat.test.js`) pin all of this for any other implementation of the document.
 - Rollover and every other pure function of the document stay deterministic and idempotent: two
   devices running them on the same input produce identical records, stamped relative to the record
   they replace (`updatedAt + 1`, `+ 2`), never with the current time, so a stale device cannot erase

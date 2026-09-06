@@ -73,23 +73,23 @@ test("rollover: a done daily line goes to History and resets undone on Today (+2
 test("rollover: a weekly line done on its day leaves Today until its next day, then comes back once; taking it off Today sticks", () => {
   const mon = at("2026-09-07T10:00:00"); // Monday
   let d = M.emptyDoc("L"); d.items.a = item("a", { done: true, doneAt: mon, updatedAt: mon }); d = M.setRule(d, "a", { kind: "weekly", days: [1, 4] }, 100, "2026-09-07");
-  const tue = M.rollover(d, "2026-09-08", 1).doc;
+  const tue = M.rollover(d, "2026-09-08", at("2026-09-08T09:00:00")).doc; // 1.9: the third argument is the clock (the six-hour guard reads it), so it is a real morning
   assert.equal(tue.items.a.done, false); assert.equal(tue.items.a.today, false, "not due on Tuesday: off Today, in Everything");
-  assert.equal(M.rollover(tue, "2026-09-09", 2).doc, tue, "Wednesday: nothing");
-  const thu = M.rollover(tue, "2026-09-10", 3).doc;
+  assert.equal(M.rollover(tue, "2026-09-09", at("2026-09-09T09:00:00")).doc, tue, "Wednesday: nothing");
+  const thu = M.rollover(tue, "2026-09-10", at("2026-09-10T09:00:00")).doc;
   assert.equal(thu.items.a.today, true, "Thursday: back on Today"); assert.equal(thu.items.a.updatedAt, tue.items.a.updatedAt + 1); assert.equal(thu.rules.a.placed, "2026-09-10");
-  assert.equal(M.rollover(thu, "2026-09-10", 4).doc, thu, "same day again: nothing");
+  assert.equal(M.rollover(thu, "2026-09-10", at("2026-09-10T09:01:00")).doc, thu, "same day again: nothing");
   // the user takes it off Today that day: the minute tick must not put it back
   const off = M.normalize(thu); off.items.a = { ...off.items.a, today: false, updatedAt: at("2026-09-10T11:00:00") };
-  assert.equal(M.rollover(off, "2026-09-10", 5).doc, off);
-  assert.equal(M.rollover(off, "2026-09-11", 6).doc, off, "Friday: not due");
-  assert.equal(M.rollover(off, "2026-09-14", 7).doc.items.a.today, true, "next Monday: back");
+  assert.equal(M.rollover(off, "2026-09-10", at("2026-09-10T11:01:00")).doc, off);
+  assert.equal(M.rollover(off, "2026-09-11", at("2026-09-11T09:00:00")).doc, off, "Friday: not due");
+  assert.equal(M.rollover(off, "2026-09-14", at("2026-09-14T09:00:00")).doc.items.a.today, true, "next Monday: back");
 });
 
 test("rollover: an unfinished recurring line just stays; a plain done line still tombstones (+1) as in v3", () => {
   const y = at("2026-09-01T15:00:00");
   let d = M.emptyDoc("L"); d.items.a = item("a", { done: false }); d.items.b = item("b", { done: true, doneAt: y, updatedAt: y }); d = M.setRule(d, "a", { kind: "daily" }, 1, "2026-09-01");
-  const r = M.rollover(d, "2026-09-02", 5).doc;
+  const r = M.rollover(d, "2026-09-02", at("2026-09-02T09:00:00")).doc;
   assert.equal(r.items.a, d.items.a); assert.deepEqual(r.items.b, { id: "b", deleted: true, updatedAt: y + 1 });
   assert.equal(M.recentlyDeleted(r).length, 0, "rollover tombstones never show as deleted");
 });
@@ -336,6 +336,45 @@ test("1.7: nothing boot() can reach is declared below the boot call — the modu
   const late = src.slice(bootAt + 1).map(l => (l.match(/^(?:const|let) ([A-Za-z_$][\w$]*)/) || [])[1]).filter(Boolean);
   assert.deepEqual(late, ["downPointers", "preventTouch", "backBtn", "IDLE_MS", "api"], "a new module-level binding below boot() must be one no render, open or paint reaches at boot (DAY_NAMES was, 1.7): declare it above the boot block, or add it here after checking");
   assert.ok(src.slice(0, bootAt).some(l => l.startsWith("const DAY_NAMES = ")), "DAY_NAMES is above boot");
+});
+
+/* ---------------- 1.9: the home zone ---------------- */
+test("1.9: a list carries its home zone — today and a line's day are computed in it, so two devices in different zones roll the same records; without one the six-hour guard holds a fresh line", () => {
+  const prev = process.env.TZ;
+  const inZone = (tz, fn) => { process.env.TZ = tz; try { return fn(); } finally { if (prev === undefined) delete process.env.TZ; else process.env.TZ = prev; } };
+  // Chicago crosses a line off at breakfast (08:30 Chicago, 13:30 UTC, on the 5th); two hours later Tokyo is already 00:30 on the 6th
+  const doneAt = Date.UTC(2026, 8, 5, 13, 30), later = Date.UTC(2026, 8, 5, 15, 30), nextDay = Date.UTC(2026, 8, 6, 6, 0); // 01:00 in Chicago on the 6th
+  const mk = zone => { const d = M.emptyDoc("L"); if (zone) d.zone = zone; d.items.a = item("a", { text: "crossed off at breakfast", done: true, doneAt, updatedAt: doneAt }); d.items.b = item("b", { text: "still to do" }); return M.normalize(d, "L"); };
+  assert.equal(inZone("Asia/Tokyo", () => M.localDate(later)), "2026-09-06", "Tokyo's own clock says the 6th"); assert.equal(inZone("America/Chicago", () => M.localDate(later)), "2026-09-05", "Chicago's says the 5th");
+  // with a home zone both devices compute today and the line's day at home, whatever their own clocks say
+  const z = mk("America/Chicago");
+  assert.equal(M.zoneOf(z), "America/Chicago"); assert.equal(M.todayFor(z, later), "2026-09-05"); assert.equal(M.dayOf(z, doneAt), "2026-09-05"); assert.equal(M.todayFor(z, nextDay), "2026-09-06");
+  const tokyo = inZone("Asia/Tokyo", () => M.rollover(z, undefined, later)), chicago = inZone("America/Chicago", () => M.rollover(z, undefined, later));
+  assert.equal(tokyo.moved.length, 0, "Tokyo leaves the line: it is still the 5th at home"); assert.equal(chicago.moved.length, 0); assert.equal(tokyo.doc, z, "nothing changed on either"); assert.equal(chicago.doc, z);
+  const t2 = inZone("Asia/Tokyo", () => M.rollover(z, undefined, nextDay)), c2 = inZone("America/Chicago", () => M.rollover(z, undefined, nextDay));
+  assert.equal(t2.moved.length, 1, "after Chicago's midnight it goes to History"); assert.equal(records(t2.doc), records(c2.doc), "identical records from two zones");
+  assert.deepEqual(Object.keys(t2.doc.history), ["2026-09-05"]); assert.equal(t2.doc.items.a.deleted, true); assert.equal(t2.doc.items.a.updatedAt, doneAt + 1);
+  assert.equal(records(M.merge(t2.doc, c2.doc)), records(t2.doc), "and the merge changes nothing"); assert.equal(records(M.rollover(t2.doc, undefined, nextDay + 60000).doc), records(t2.doc), "idempotent");
+  // the key is additive: it survives normalize, merge and an export; a document without one has none; two different zones merge the way every client merges a key it does not know (the larger string), so 1.8 agrees
+  assert.equal(M.normalize(z, "L").zone, "America/Chicago"); assert.equal(M.merge(z, mk("")).zone, "America/Chicago"); assert.equal(M.merge(mk(""), z).zone, "America/Chicago"); assert.equal("zone" in M.normalize(mk(""), "L"), false);
+  assert.equal(M.merge(mk("Asia/Tokyo"), mk("America/Chicago")).zone, "Asia/Tokyo"); assert.equal(M.merge(mk("America/Chicago"), mk("Asia/Tokyo")).zone, "Asia/Tokyo");
+  assert.equal(M.normalize({ zone: "Mars/Olympus" }, "L").zone, "Mars/Olympus", "a zone this platform does not know is kept as written"); assert.equal(M.zoneOf({ zone: "Mars/Olympus" }), "", "and not used");
+  assert.equal(M.isZone("UTC"), true); assert.equal(M.isZone("Etc/GMT+9"), true); assert.equal(M.isZone("../x"), false); assert.equal(M.isZone(""), false); assert.equal(M.isZone(null), false);
+  assert.equal(M.withZone(mk(""), "Asia/Tokyo").zone, "Asia/Tokyo"); assert.equal(M.withZone(z, "Asia/Tokyo").zone, "America/Chicago", "a list keeps the zone it has"); assert.equal("zone" in M.withZone(mk(""), "Mars/Olympus"), false, "junk is never written");
+  assert.ok(M.deviceZone() === "" || M.isZone(M.deviceZone()));
+  assert.ok(M.exportJSON(z).includes('"zone": "America/Chicago"'), "the zone travels in an export"); assert.equal(M.importJSON(M.exportJSON(z), "X").zone, "America/Chicago");
+  // without a home zone Tokyo's own clock would file the line under yesterday: the guard refuses a line finished under six hours ago
+  const u = mk("");
+  const tu = inZone("Asia/Tokyo", () => M.rollover(u, undefined, later));
+  assert.equal(tu.moved.length, 0, "the guard: two hours old, not rolled"); assert.equal(tu.doc, u);
+  const tu2 = inZone("Asia/Tokyo", () => M.rollover(u, undefined, doneAt + M.ROLL_GUARD_MS + 60000));
+  assert.equal(tu2.moved.length, 1, "past six hours Tokyo rolls it on its own clock, as 1.8 did"); assert.deepEqual(Object.keys(tu2.doc.history), ["2026-09-05"]);
+  assert.equal(inZone("America/Chicago", () => M.rollover(u, undefined, later)).moved.length, 0, "Chicago: still today");
+  assert.equal(inZone("Asia/Tokyo", () => M.rollover(u, "2026-09-06", later)).moved.length, 0, "an explicit today does not get past the guard either");
+  // not today, a rule's placement and the streak read the home zone too
+  assert.equal(M.notToday(z, "b", M.todayFor(z, later), later).returns.b.on, "2026-09-06", "tomorrow at home");
+  assert.equal(M.setRule(z, "b", { kind: "daily" }, later).rules.b.placed, "2026-09-05");
+  assert.equal(inZone("Asia/Tokyo", () => M.streak(z, M.todayFor(z, later))), 1);
 });
 
 console.log(`\n${passed} feature tests passed`);

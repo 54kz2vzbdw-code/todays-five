@@ -1,0 +1,258 @@
+{
+  "name": "rollover-guard",
+  "op": "rollover",
+  "note": "without a home zone a device rolls on its own clock, behind the guard: a line finished under six hours ago is never rolled, whatever today the device passes; past six hours it is, as 1.8 did",
+  "cases": [
+    {
+      "doc": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": true,
+            "doneAt": 1788615000000,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "crossed off at breakfast",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1788615000000
+          },
+          "b": {
+            "done": false,
+            "doneAt": 0,
+            "id": "b",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "still to do",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3
+      },
+      "expect": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": true,
+            "doneAt": 1788615000000,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "crossed off at breakfast",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1788615000000
+          },
+          "b": {
+            "done": false,
+            "doneAt": 0,
+            "id": "b",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "still to do",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3
+      },
+      "name": "two hours old, Tokyo already on the 6th: held",
+      "today": "2026-09-06",
+      "ts": 1788622200000
+    },
+    {
+      "doc": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": true,
+            "doneAt": 1788615000000,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "crossed off at breakfast",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1788615000000
+          },
+          "b": {
+            "done": false,
+            "doneAt": 0,
+            "id": "b",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "still to do",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3
+      },
+      "expect": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": true,
+            "doneAt": 1788615000000,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "crossed off at breakfast",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1788615000000
+          },
+          "b": {
+            "done": false,
+            "doneAt": 0,
+            "id": "b",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "still to do",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3
+      },
+      "name": "still the 5th here: nothing",
+      "today": "2026-09-05",
+      "ts": 1788622200000
+    },
+    {
+      "doc": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": true,
+            "doneAt": 1788615000000,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "crossed off at breakfast",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1788615000000
+          },
+          "b": {
+            "done": false,
+            "doneAt": 0,
+            "id": "b",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "still to do",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3
+      },
+      "expect": {
+        "history": {
+          "2026-09-05": [
+            {
+              "doneAt": 1788615000000,
+              "id": "a",
+              "section": "",
+              "text": "crossed off at breakfast"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "a": {
+            "deleted": true,
+            "id": "a",
+            "updatedAt": 1788615000001
+          },
+          "b": {
+            "done": false,
+            "doneAt": 0,
+            "id": "b",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "still to do",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 1788636660000,
+        "v": 3
+      },
+      "name": "past six hours: rolled",
+      "today": "2026-09-06",
+      "ts": 1788636660000
+    }
+  ]
+}

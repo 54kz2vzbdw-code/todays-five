@@ -1,0 +1,552 @@
+{
+  "name": "rollover-records",
+  "op": "rollover",
+  "note": "a finished daily line goes to History and resets undone on Today at +2; a finished weekly line resets off Today until its day; a plain finished line tombstones at +1; a return whose day has come puts its line back at +1 and retires; a live rule whose line a v3 rollover tombstoned (one or two ms above its History entry) is revived",
+  "cases": [
+    {
+      "doc": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": true,
+            "doneAt": 1788292800000,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "Stretch",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1788292800000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {
+          "a": {
+            "id": "a",
+            "kind": "daily",
+            "note": "",
+            "sectionId": "",
+            "text": "Stretch",
+            "updatedAt": 100
+          }
+        },
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "UTC"
+      },
+      "expect": {
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 1788292800000,
+              "id": "a",
+              "section": "",
+              "text": "Stretch"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "Stretch",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1788292800002
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {
+          "a": {
+            "id": "a",
+            "kind": "daily",
+            "note": "",
+            "placed": "2026-09-02",
+            "sectionId": "",
+            "text": "Stretch",
+            "updatedAt": 101
+          }
+        },
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 1788379200000,
+        "v": 3,
+        "zone": "UTC"
+      },
+      "name": "daily reset",
+      "today": "2026-09-02",
+      "ts": 1788379200000
+    },
+    {
+      "doc": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": true,
+            "doneAt": 1788292800000,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1788292800000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {
+          "a": {
+            "days": [
+              1,
+              4
+            ],
+            "id": "a",
+            "kind": "weekly",
+            "note": "",
+            "placed": "2026-09-01",
+            "sectionId": "",
+            "text": "t-a",
+            "updatedAt": 100
+          }
+        },
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "UTC"
+      },
+      "expect": {
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 1788292800000,
+              "id": "a",
+              "section": "",
+              "text": "t-a"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": false,
+            "todayOrder": 1000,
+            "updatedAt": 1788292800002
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {
+          "a": {
+            "days": [
+              1,
+              4
+            ],
+            "id": "a",
+            "kind": "weekly",
+            "note": "",
+            "placed": "2026-09-01",
+            "sectionId": "",
+            "text": "t-a",
+            "updatedAt": 100
+          }
+        },
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 1788379200000,
+        "v": 3,
+        "zone": "UTC"
+      },
+      "name": "weekly, not due on Wednesday",
+      "today": "2026-09-02",
+      "ts": 1788379200000
+    },
+    {
+      "doc": {
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 1788292800000,
+              "id": "a",
+              "section": "",
+              "text": "t-a"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": false,
+            "todayOrder": 1000,
+            "updatedAt": 1788292800002
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {
+          "a": {
+            "days": [
+              1,
+              4
+            ],
+            "id": "a",
+            "kind": "weekly",
+            "note": "",
+            "placed": "2026-09-01",
+            "sectionId": "",
+            "text": "t-a",
+            "updatedAt": 100
+          }
+        },
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 1788379200000,
+        "v": 3,
+        "zone": "UTC"
+      },
+      "expect": {
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 1788292800000,
+              "id": "a",
+              "section": "",
+              "text": "t-a"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1788292800003
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {
+          "a": {
+            "days": [
+              1,
+              4
+            ],
+            "id": "a",
+            "kind": "weekly",
+            "note": "",
+            "placed": "2026-09-03",
+            "sectionId": "",
+            "text": "t-a",
+            "updatedAt": 101
+          }
+        },
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 1788465600000,
+        "v": 3,
+        "zone": "UTC"
+      },
+      "name": "weekly, due on Thursday",
+      "today": "2026-09-03",
+      "ts": 1788465600000
+    },
+    {
+      "doc": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": true,
+            "doneAt": 1788292800000,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1788292800000
+          },
+          "b": {
+            "done": false,
+            "doneAt": 0,
+            "id": "b",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-b",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "UTC"
+      },
+      "expect": {
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 1788292800000,
+              "id": "a",
+              "section": "",
+              "text": "t-a"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "a": {
+            "deleted": true,
+            "id": "a",
+            "updatedAt": 1788292800001
+          },
+          "b": {
+            "done": false,
+            "doneAt": 0,
+            "id": "b",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-b",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1000
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 1788379200000,
+        "v": 3,
+        "zone": "UTC"
+      },
+      "name": "plain tombstone",
+      "today": "2026-09-02",
+      "ts": 1788379200000
+    },
+    {
+      "doc": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": false,
+            "todayOrder": 3000,
+            "updatedAt": 500
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {
+          "a": {
+            "id": "a",
+            "on": "2026-09-02",
+            "updatedAt": 500
+          }
+        },
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "UTC"
+      },
+      "expect": {
+        "history": {},
+        "id": "L",
+        "items": {
+          "a": {
+            "done": false,
+            "doneAt": 0,
+            "id": "a",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "t-a",
+            "today": true,
+            "todayOrder": 3000,
+            "updatedAt": 501
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {
+          "a": {
+            "deleted": true,
+            "id": "a",
+            "updatedAt": 501
+          }
+        },
+        "rules": {},
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 1788379200000,
+        "v": 3,
+        "zone": "UTC"
+      },
+      "name": "a return comes due",
+      "today": "2026-09-02",
+      "ts": 1788379200000
+    },
+    {
+      "doc": {
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 1788292800000,
+              "id": "c",
+              "section": "",
+              "text": "Call Bob"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "c": {
+            "deleted": true,
+            "id": "c",
+            "updatedAt": 1788292800001
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {
+          "c": {
+            "id": "c",
+            "kind": "daily",
+            "note": "",
+            "sectionId": "",
+            "text": "Call Bob",
+            "updatedAt": 100
+          }
+        },
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 0,
+        "v": 3,
+        "zone": "UTC"
+      },
+      "expect": {
+        "history": {
+          "2026-09-01": [
+            {
+              "doneAt": 1788292800000,
+              "id": "c",
+              "section": "",
+              "text": "Call Bob"
+            }
+          ]
+        },
+        "id": "L",
+        "items": {
+          "c": {
+            "done": false,
+            "doneAt": 0,
+            "id": "c",
+            "note": "",
+            "order": 1000,
+            "sectionId": "",
+            "text": "Call Bob",
+            "today": true,
+            "todayOrder": 1000,
+            "updatedAt": 1788292800002
+          }
+        },
+        "name": "",
+        "nameAt": 0,
+        "returns": {},
+        "rules": {
+          "c": {
+            "id": "c",
+            "kind": "daily",
+            "note": "",
+            "placed": "2026-09-02",
+            "sectionId": "",
+            "text": "Call Bob",
+            "updatedAt": 101
+          }
+        },
+        "sections": {},
+        "templates": {},
+        "themes": {},
+        "updatedAt": 1788379200000,
+        "v": 3,
+        "zone": "UTC"
+      },
+      "name": "revival after a v3 rollover",
+      "today": "2026-09-02",
+      "ts": 1788379200000
+    }
+  ]
+}

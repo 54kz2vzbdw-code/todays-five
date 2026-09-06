@@ -1002,13 +1002,28 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(await t.page.$$eval("#field i", els => els.length), 26, "twenty-six twinkles, two elements each");
     const z = await t.page.evaluate(() => ({ field: +getComputedStyle(document.getElementById("field")).zIndex, glow: +getComputedStyle(document.getElementById("glow")).zIndex, shell: +getComputedStyle(document.getElementById("shell")).zIndex, ev: getComputedStyle(document.getElementById("field")).pointerEvents }));
     assert.ok(z.field > z.glow && z.field < z.shell && z.ev === "none", "above the glow, behind the words, and not in the way: " + JSON.stringify(z));
-    // only the compositor's properties are animated, so a list left on screen costs the main thread nothing
+    // only the compositor's properties are animated, and every animated value is a literal — a keyframe that reads a
+    // custom property is resolved on the main thread every frame, which is what the frame count below would catch
     const props = await t.page.evaluate(() => { const i = document.querySelector("#field i"), b = i.firstElementChild; return [getComputedStyle(i).animationName, getComputedStyle(b).animationName]; });
-    assert.deepEqual(props, ["tf-drift", "tf-twinkle"], "the two are running: " + props);
+    assert.ok(/^tf-d\d$/.test(props[0]) && props[1] === "tf-twinkle", "the two are running: " + props);
+    const drifts = await t.page.$$eval("#field i", els => Array.from(new Set(els.map(e => getComputedStyle(e).animationName))).sort());
+    assert.ok(drifts.length >= 4 && drifts.every(n => /^tf-d\d$/.test(n)), "no two twinkles move alike: " + drifts);
+    const frames = await t.page.evaluate(async () => {
+      const css = await (await fetch("styles.css")).text();
+      return [...css.matchAll(/@keyframes (tf-[a-z0-9]+)\{([^}]*\}[^}]*)\}/g)].filter(m => /var\(/.test(m[2])).map(m => m[1]);
+    });
+    assert.deepEqual(frames, [], "a keyframe that reads a custom property cannot be composited: " + frames);
     const raf0 = await t.page.evaluate(() => window.__raf);
     await wait(3000);
     const raf1 = await t.page.evaluate(() => window.__raf);
     assert.ok(raf1 - raf0 <= 4, "no frame loop while the field is up: " + (raf1 - raf0) + " requestAnimationFrame calls in three seconds");
+    // a strike that moves costs a style recalc and a repaint every frame, so it runs on struck rows only: an
+    // overlay at scaleX(0) is invisible and cost exactly the same (Pink, Blush and Sunset get this too)
+    const idleAnim = await t.page.$$eval("#list .row .ink", els => els.map(e => getComputedStyle(e).animationName));
+    assert.deepEqual(idleAnim, idleAnim.map(() => "none"), "nothing shimmers while nothing is struck: " + idleAnim);
+    await t.press("#list .row:first-child .check"); await wait(700);
+    assert.equal(await t.page.$eval("#list .row.done .ink", e => getComputedStyle(e).animationName), "shimmer", "the row that is struck shimmers");
+    await t.press("#list .row:first-child .check"); await wait(600);
     // a hidden tab stops it
     await t.page.evaluate(() => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" }); document.dispatchEvent(new Event("visibilitychange")); });
     await wait(200);

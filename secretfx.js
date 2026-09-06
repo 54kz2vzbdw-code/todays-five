@@ -3,40 +3,39 @@
 // Loaded by app.js only when one of those kits is the theme that is on, so a device that never unlocked never asks
 // for it. Nothing here touches the document, the registry or the server.
 //
-// The field is CSS, not a frame loop: twenty-six two-element twinkles animating opacity, scale and a translate, all
-// of which the compositor owns, so a list left on screen all day costs no main thread. Its rules (#field, in
-// styles.css) ship with the stylesheet rather than being built here: a <style> element made at runtime is inline
-// style, which this app's CSP refuses. Nothing renders until this module fills #field, and #field is hidden until
-// then, so a device that never unlocked pays for nine rules it never matches.
+// The field is CSS, not a frame loop: twenty-six two-element twinkles animating opacity, scale and a translate, and
+// nothing else, so the compositor owns them and a list left on screen all day costs the main thread nothing (there
+// is a trap in that — see the note above #field in styles.css). Its rules ship with the stylesheet rather than
+// being built here: a <style> element made at runtime is inline style, which this app's CSP refuses.
 
-const N = 26;
+const N = 26, DRIFTS = 6;
 
 /** A twinkling background layer inside `host`. `palette` is the kit's confetti list; `reduced` a getter.
-    Returns { stop } — it removes the twinkles and its listeners and leaves the host empty. */
+    Every per-twinkle value is written straight onto the element: nothing an animation reads comes from a custom
+    property, because a keyframe that has to resolve one is recalculated on the main thread every frame.
+    Returns { stop } — it removes the twinkles and its listeners and leaves the host empty and hidden. */
 export function createField(host, { palette = ["#FFFFFF"], reduced = () => false } = {}) {
   if (!host) return { stop() {} };
   const rnd = (a, b) => a + Math.random() * (b - a);
   const frag = document.createDocumentFragment();
   for (let i = 0; i < N; i++) {
     const el = document.createElement("i"), dot = document.createElement("b");
-    const s = rnd(1.4, 3.4);
-    el.style.setProperty("--x", rnd(0, 100).toFixed(2) + "vw");
-    el.style.setProperty("--y", rnd(0, 100).toFixed(2) + "vh");
-    el.style.setProperty("--mx", rnd(-7, 7).toFixed(2) + "vw");   // where it drifts to, and back, over a minute or two
-    el.style.setProperty("--my", rnd(-5, 5).toFixed(2) + "vh");
-    el.style.setProperty("--dd", rnd(48, 96).toFixed(1) + "s");
-    el.style.setProperty("--td", rnd(2.4, 6.4).toFixed(2) + "s");
-    el.style.setProperty("--del", (-rnd(0, 8)).toFixed(2) + "s");  // negative: the field is already under way on the first frame
-    el.style.setProperty("--s", s.toFixed(2) + "px");
-    el.style.setProperty("--o", rnd(0.45, 0.9).toFixed(2));
-    el.style.setProperty("--c", palette[(Math.random() * palette.length) | 0]);
+    const s = rnd(1.4, 3.4).toFixed(2) + "px";
+    el.style.left = rnd(0, 100).toFixed(2) + "vw";
+    el.style.top = rnd(0, 100).toFixed(2) + "vh";
+    el.style.opacity = rnd(0.45, 0.9).toFixed(2);                                   // this twinkle's brightest
+    // a drift path, a minute or two to cross it, and a negative delay so the field is already under way on the first frame
+    el.style.animation = `tf-d${(Math.random() * DRIFTS) | 0} ${rnd(48, 96).toFixed(1)}s linear ${(-rnd(0, 40)).toFixed(2)}s infinite alternate`;
+    dot.style.width = s; dot.style.height = s;
+    dot.style.background = palette[(Math.random() * palette.length) | 0];
+    dot.style.animation = `tf-twinkle ${rnd(2.4, 6.4).toFixed(2)}s ease-in-out ${(-rnd(0, 8)).toFixed(2)}s infinite alternate`;
     el.appendChild(dot); frag.appendChild(el);
   }
   host.appendChild(frag);
   host.hidden = false;
 
   const paintStill = () => host.classList.toggle("still", !!reduced());
-  // hidden tab: the compositor stops on its own, but say so, so nothing is left ticking anywhere
+  // a hidden tab: the compositor stops on its own, but say so, so nothing is left ticking anywhere
   const paintVisible = () => host.classList.toggle("off", document.visibilityState === "hidden");
   paintStill(); paintVisible();
   const mq = matchMedia("(prefers-reduced-motion: reduce)");

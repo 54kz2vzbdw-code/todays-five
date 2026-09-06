@@ -81,7 +81,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await step("theme", async () => {
     const chip = await page.$("#theme:not([hidden])");
     if (chip && await chip.isVisible()) await press("#theme");
-    else if (await page.$('#p-menu [data-act="theme"]')) { await openMore("theme"); if (await page.$('[data-set="night"]')) { await page.waitForSelector("#p-settings[open]"); await wait(300); await shot("appearance"); await page.click('[data-set="night"]'); } }
+    else if (await page.$('#p-menu [data-act="settings"]')) { await openMore("settings"); if (await page.$('[data-set="night"]')) { await page.waitForSelector("#p-settings[open]"); await wait(300); await shot("appearance"); await page.click('[data-set="night"]'); } }
     else { await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('[data-set="theme"]'); }
     await page.waitForSelector("#p-theme[open]"); await wait(400); await shot("theme");
     if (await page.$("#sw-night")) { await page.click('#sw-night .swatch[data-code="T1:curated:dusk"]'); await wait(400); await shot("theme-partner"); }
@@ -114,7 +114,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   // mid-flight; the run ends here because the device keeps the key and the themes it chose.
   if (process.env.SECRET !== "0") await step("secret", async () => {
     if (!(await page.$("#sw-secret"))) return;
-    await openMore("theme"); await page.waitForSelector("#p-settings[open]"); await page.click('[data-set="night"]'); await page.waitForSelector("#p-theme[open]");
+    await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('[data-set="night"]'); await page.waitForSelector("#p-theme[open]");
     if (await page.$("#sw-build")) { await page.click("#sw-build"); await page.waitForSelector("#p-builder[open]"); await wait(300); } // 1.9
     await page.fill("#c-import", "SuperPink"); await press("#c-import-go"); await wait(1200);
     await page.$eval("#sw-secret-h", el => el.scrollIntoView({ block: "center" })); await wait(300);

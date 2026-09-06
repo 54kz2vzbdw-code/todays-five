@@ -394,7 +394,7 @@ export function openLists({ removed = false } = {}) {
     const name = nick || docName || "Untitled list";
     const tags = [l.mode === "view" ? "View only" : ""].filter(Boolean).map(t => `<span class="sub">${t}</span>`).join(" ");
     const own = nick && docName && docName !== nick ? `<span class="sub name">${A.escapeHtml(docName)}</span>` : ""; // a nickname shows with the list's own name under it
-    b.innerHTML = `<span class="lb ${l.id === A.listId ? "cur" : ""}">${A.escapeHtml(name)} ${tags}${own}</span><span class="id"${arch ? "" : " aria-hidden=\"true\""}>${arch ? "Restore" : l.id.slice(0, 6) + "…"}</span>`;
+    b.innerHTML = `<span class="lb ${l.id === A.listId ? "cur" : ""}">${A.escapeHtml(name)} ${tags}${own}</span>${arch ? '<span class="id">Restore</span>' : ""}`; // 1.9: no id fragment on a row — six characters that mean nothing to a person (proposal 21); the › says there is more
     b.addEventListener("click", () => { A.closePanel(); if (arch) { l.archived = false; A.saveDevice(); A.toast("Back on this device"); } A.switchTo({ id: l.id, mode: l.mode === "view" ? "view" : "edit" }); });
     row.appendChild(b);
     if (!arch) { const d = document.createElement("button"); d.type = "button"; d.className = "more"; d.setAttribute("aria-label", "Details: " + name); d.textContent = "›"; d.addEventListener("click", () => openListDetail(l.id)); row.appendChild(d); }

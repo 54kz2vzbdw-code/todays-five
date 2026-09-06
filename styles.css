@@ -537,6 +537,7 @@ body.page{overflow:auto;height:auto;min-height:100%}
 .erow{flex:1 1 100%;margin-left:calc(.66em + .46em);display:flex;gap:.4rem;align-items:center;margin-top:.2em}
 .erow .chip{font-family:var(--font-ui);font-weight:700;font-size:clamp(10px,.3em,12px);letter-spacing:.12em;text-transform:uppercase;min-height:32px}
 .erow .chip.on{color:var(--accent-text);border-color:var(--accent)}
+.cap-count{margin-left:auto;font-family:var(--font-ui);font-weight:700;font-size:clamp(10px,.3em,12px);letter-spacing:.08em;color:var(--dim);font-variant-numeric:tabular-nums} /* 1.9: the last twenty characters before a cap */
 
 /* everything's header: search */
 .all-head{display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;min-height:36px;font-family:var(--font-ui);font-weight:700;font-size:clamp(9.5px,1.05vw,12px);letter-spacing:.15em;text-transform:uppercase}

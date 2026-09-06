@@ -1416,10 +1416,13 @@ function startEdit(id, { isNew = false } = {}) {
   rep.addEventListener("pointerdown", e => e.preventDefault()); // keep the textarea's focus until we decide
   rep.addEventListener("click", () => { const cur = editing; if (!cur) return; if (!ta.value.trim()) { toast("Write the line first, then set how it repeats"); ta.focus(); return; } commitEdit(); openRepeat(cur.id); });
   erow.appendChild(rep);
+  // 1.9: a counter for the last twenty characters before a cap (200 on a line, 300 on a note), so the field stopping never reads as the app freezing (proposal 22)
+  const count = document.createElement("span"); count.className = "cap-count"; count.setAttribute("aria-live", "polite"); count.hidden = true; erow.appendChild(count);
+  const capCount = () => { const f = document.activeElement === note ? note : ta; const left = f.maxLength - f.value.length; count.hidden = left > 20; if (!count.hidden) count.textContent = `${f.value.length}/${f.maxLength}`; };
   tx.hidden = true;
   tx.after(ta); ta.after(note); note.after(erow);
   const grow = () => { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; };
-  ta.addEventListener("input", grow);
+  ta.addEventListener("input", () => { grow(); capCount(); }); note.addEventListener("input", capCount); ta.addEventListener("focus", capCount); note.addEventListener("focus", capCount);
   ta.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); const cur = editing; const had = ta.value.trim(); cur.byUser = true; commitEdit(); if (had) newItem({ afterId: cur.id, sectionId: doc.items[cur.id] ? doc.items[cur.id].sectionId : "" }); }
     else if (e.key === "Escape") { e.preventDefault(); editing.byUser = true; cancelEdit(); }
@@ -1901,7 +1904,7 @@ $("#p-menu").addEventListener("click", e => {
   if (act === "full" || act === "delete") closePanel(); else closeForSwitch(); // a panel or the About page follows: the menu's entry carries over, no traversal in between
   if (act === "save") panels().then(p => p.showSaveLink());
   else if (act === "share") panels().then(p => p.openShare());
-  else if (act === "theme") panels().then(p => p.openSettings()); // 1.2: Appearance (Day theme · Night theme · Switch) is the theme's home
+  else if (act === "theme") panels().then(p => p.openTheme()); // 1.9: the picker for the slot that is on — the row names the theme, so it opens the theme (proposal 19); Appearance keeps both slots
   else if (act === "full") toggleFullscreen();
   else if (act === "help") panels().then(p => p.openHelp());
   else if (act === "lists") panels().then(p => p.openLists());

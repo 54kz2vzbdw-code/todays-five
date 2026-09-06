@@ -205,7 +205,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(await t.page.locator("#list .row:not(.editing)").count(), 3, "no blank line added"); assert.ok(!/Added/.test(await t.page.textContent("#toast .msg")), "no Added toast");
     await t.page.keyboard.press("Escape"); await wait(200);
     // a theme of one's own, then its ×
-    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]");
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]");
     if (opts.hasTouch) assert.ok(await t.page.$eval("#p-theme", d => d.classList.contains("sheet") && !!d.querySelector(".grip")), "a sheet on touch, like every other panel");
     await t.page.click("#sw-build"); await t.page.waitForSelector("#p-builder[open]"); await wait(150); // 1.9: the builder behind one row
     await t.page.fill("#c-hex", "#2F7F6F"); await t.page.dispatchEvent("#c-hex", "input"); await t.page.fill("#c-name", "Slate green, day"); await t.page.dispatchEvent("#c-name", "input"); await t.page.click("#c-save"); await wait(500);
@@ -241,7 +241,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(await t.page.$eval("#set-addurl-copy", e => getComputedStyle(e).textTransform), "uppercase", "a chip outside a row of actions carries the chip type");
     await t.esc(); await wait(200);
     // the builder: the Dark | Light control and Import keep their own width
-    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]"); await wait(200);
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]"); await wait(200);
     await t.page.click("#sw-build"); await t.page.waitForSelector("#p-builder[open]"); await wait(150); // 1.9
     const seg = await t.page.$eval("#p-builder .seg2", e => e.getBoundingClientRect().width), body = await t.page.$eval("#p-builder .body", e => e.getBoundingClientRect().width);
     assert.ok(seg < body * 0.6, "the segmented control is not a bar across the panel: " + Math.round(seg) + " of " + Math.round(body));
@@ -317,7 +317,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     }
     // Copy code without a clipboard
     await t.page.evaluate(() => { navigator.clipboard.writeText = async () => { throw new Error("no"); }; });
-    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]"); await wait(200);
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]"); await wait(200);
     await t.page.click("#sw-build"); await t.page.waitForSelector("#p-builder[open]"); await wait(150); // 1.9
     await t.page.click("#c-export"); await wait(300);
     assert.ok(/^T2:/.test(await t.page.inputValue("#c-import")), "the code lands in the field"); assert.ok(/Select the code/.test(await t.page.textContent("#toast .msg")), "and the toast says so");
@@ -889,7 +889,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": the theme builder carries a sound pack — Auto names the hue rule's pick, a saved theme's code is T2:, a T1: code imports", async () => {
     const t = await fresh(opts);
     await t.press("#list .row:first-child .check"); await wait(400); // a gesture, so a preview has a context to play through
-    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]");
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]");
     assert.equal((await t.page.textContent("#p-theme-h")).trim(), "Night theme");
     await t.page.click("#sw-build"); await t.page.waitForSelector("#p-builder[open]"); await wait(150); // 1.9: the builder behind one row
     assert.equal((await t.page.textContent("#p-builder-h")).trim(), "Make your own"); assert.equal((await t.page.textContent("#c-use")).trim(), "Use for Night");
@@ -1169,8 +1169,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
 
   await test(label + ": the picker fills one slot — Made for day / Made for night / Yours, every theme for either slot, the lean and partner tags, and the one-tap partner", async () => {
     const t = await fresh(opts);
-    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]");
-    assert.equal(await t.page.$eval("#p-settings h3", e => e.textContent), "Appearance", "⋯ → Theme opens Appearance");
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
+    assert.equal(await t.page.$eval("#p-settings h3", e => e.textContent), "Appearance", "Settings opens at Appearance");
     await t.page.click('[data-set="day"]'); await t.page.waitForSelector("#p-theme[open]");
     assert.equal((await t.page.textContent("#p-theme-h")).trim(), "Day theme");
     const heads = await t.page.$$eval("#p-theme h3:not([hidden])", els => els.map(e => e.textContent));
@@ -1211,7 +1211,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": the builder — Use for the slot, Save to this list puts a theme under Yours, Make its partner saves a linked second theme and offers it", async () => {
     const t = await fresh(opts);
     await t.press("#list .row:first-child .check"); await wait(400);
-    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]");
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]");
     await t.page.click("#sw-build"); await t.page.waitForSelector("#p-builder[open]"); await wait(150); // 1.9
     await t.page.fill("#c-hex", "#3366FF"); await t.page.dispatchEvent("#c-hex", "input"); await wait(150);
     await t.page.selectOption("#c-pair", "grotesk"); await t.page.selectOption("#c-pack", "marble"); await wait(150);
@@ -1245,7 +1245,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   });
 
   /* ---------------- 1.6: the Secret pair ---------------- */
-  const openPicker = async (t, slot = "night") => { await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click(`[data-set="${slot}"]`); await t.page.waitForSelector("#p-theme[open]"); };
+  const openPicker = async (t, slot = "night") => { await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click(`[data-set="${slot}"]`); await t.page.waitForSelector("#p-theme[open]"); };
   const KEY = "SuperPink"; // what the picker's Import a code takes as a key rather than a code
 
   await test(label + ": the Secret group shows up only after the key, and Forget puts it away and the slots back", async () => {
@@ -1431,17 +1431,21 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await a.close();
   });
 
-  if (!touch) await test(label + ": T flips, Shift+T opens Appearance; ⋯ → Theme opens Appearance too", async () => {
+  if (!touch) await test(label + ": T flips, Shift+T opens Appearance; ⋯ → Theme opens the picker for the slot that is on (1.9)", async () => {
     const t = await fresh(opts);
     const s0 = (await t.s()).slot;
     await t.page.keyboard.press("t"); await wait(600); assert.notEqual((await t.s()).slot, s0, "T flips");
     await t.page.keyboard.press("Shift+T"); await t.page.waitForSelector("#p-settings[open]");
     assert.equal(await t.page.$eval("#p-settings h3", e => e.textContent), "Appearance"); assert.equal((await t.s()).slot, s0 === "day" ? "night" : "day", "Shift+T does not flip");
     await t.page.$eval("#p-settings .body", e => { e.scrollTop = e.scrollHeight; }); await t.esc(); await wait(200); // leave Settings scrolled to the bottom
-    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await wait(150);
-    assert.equal(await t.page.locator("#p-theme[open]").count(), 0, "the ⋯ row goes to Appearance, not straight to the picker");
-    assert.equal(await t.page.$eval("#p-settings .body", e => e.scrollTop), 0, "and Appearance is what shows: the sheet opens at its top, wherever it was left");
-    assert.equal(await t.page.textContent("#menu-theme-k"), "Light", "the ⋯ row still names the theme that is on");
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await wait(150);
+    assert.equal(await t.page.$eval("#p-settings .body", e => e.scrollTop), 0, "Settings opens at its top, wherever it was left");
+    assert.equal(await t.page.textContent("#menu-theme-k"), "Light", "the ⋯ row names the theme that is on");
+    await t.esc(); await wait(200);
+    // 1.9 (proposal 19): the row that names the theme opens the picker for the slot that is on; Appearance keeps both slots
+    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-theme[open]"); await wait(150);
+    assert.equal(await t.page.locator("#p-settings[open]").count(), 0, "straight to the picker"); assert.equal((await t.page.textContent("#p-theme-h")).trim(), "Day theme", "for the slot that is on");
+    assert.equal(await t.page.$eval('#p-theme .swatch[aria-pressed="true"] .nm', e => e.textContent), "Light", "with the theme that is on marked");
     await t.esc();
     await t.close();
   });
@@ -2024,10 +2028,26 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  await test(label + ": 1.9: a counter appears for the last twenty characters before a cap; Lists rows carry no id fragment", async () => {
+    const t = await fresh(opts);
+    await t.page.focus("#list .row:first-child .check"); await t.page.keyboard.press("e"); await t.page.waitForSelector("#list .row.editing textarea");
+    const set = async (sel, v) => t.page.$eval(sel, (el, v) => { el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); }, v);
+    await set("#list .row.editing textarea", "x".repeat(150)); assert.ok(await t.page.$eval(".cap-count", e => e.hidden), "nothing at 150 of 200");
+    await set("#list .row.editing textarea", "x".repeat(181)); assert.ok(!(await t.page.$eval(".cap-count", e => e.hidden)), "the counter shows inside the last twenty"); assert.equal(await t.page.textContent(".cap-count"), "181/200");
+    await set("#list .row.editing textarea", "x".repeat(200)); assert.equal(await t.page.textContent(".cap-count"), "200/200", "and says the cap when it is reached");
+    await t.page.focus("#list .row.editing .note-in"); await wait(50); assert.ok(await t.page.$eval(".cap-count", e => e.hidden), "the note's own count: nothing yet");
+    await set("#list .row.editing .note-in", "n".repeat(290)); assert.equal(await t.page.textContent(".cap-count"), "290/300", "the note counts to 300");
+    await t.page.keyboard.press("Escape"); await wait(300);
+    await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); await wait(200);
+    assert.equal(await t.page.locator("#lists-menu .id").count(), 0, "no six characters of the id on a row (proposal 21)");
+    assert.equal(await t.page.locator("#lists-menu .row .more").count(), 1, "the › says there is more");
+    await t.esc(); assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
+  });
+
   await test(label + ": no page errors, CSP violations or third-party requests across a full session", async () => {
     const t = await fresh(opts);
     await t.press("#v-all"); await t.esc(); await t.press("#v-today");
-    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]');
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]');
     await t.page.waitForSelector("#p-theme[open]"); await t.page.click("#sw-night .swatch:nth-child(4)"); await wait(200); await t.page.click("#partner-use"); await t.esc(); await wait(200);
     await t.press("#daynight"); await wait(500); await t.press("#daynight"); await wait(500);
     await t.press("#more"); await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await t.page.click("#share-copy"); await wait(300); await t.esc();

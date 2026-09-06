@@ -89,7 +89,9 @@ export const PAIRS = {
   mono:      { name: "JetBrains Mono + Plex Mono",  task: ["JetBrains Mono", "wght@500;800", `"JetBrains Mono","SF Mono",Menlo,Consolas,monospace`], ui: ["IBM Plex Mono", "wght@400;600", `"IBM Plex Mono","SF Mono",Menlo,Consolas,monospace`], w: 800, ls: "-.03em", lh: 1.2 },
   cormorant: { name: "Cormorant + Josefin",         task: ["Cormorant Garamond", "wght@600;700", `"Cormorant Garamond","Iowan Old Style",Georgia,serif`], ui: ["Josefin Sans", "wght@400;700", `"Josefin Sans","Helvetica Neue",Helvetica,Arial,sans-serif`], w: 700, ls: "0", lh: 1.06 },
   archivo:   { name: "Archivo",                     task: ["Archivo", "wght@500;800", `"Archivo","Helvetica Neue",Helvetica,Arial,sans-serif`], ui: ["Archivo", "wght@500;800", `"Archivo","Helvetica Neue",Helvetica,Arial,sans-serif`], w: 800, ls: "-.025em", lh: 1.08 },
-  lora:      { name: "Lora + Karla",                task: ["Lora", "wght@500;700", `"Lora","Iowan Old Style",Georgia,serif`], ui: ["Karla", "wght@400;700", `"Karla","Helvetica Neue",Helvetica,Arial,sans-serif`], w: 700, ls: "-.01em", lh: 1.14 }
+  lora:      { name: "Lora + Karla",                task: ["Lora", "wght@500;700", `"Lora","Iowan Old Style",Georgia,serif`], ui: ["Karla", "wght@400;700", `"Karla","Helvetica Neue",Helvetica,Arial,sans-serif`], w: 700, ls: "-.01em", lh: 1.14 },
+  fredoka:   { name: "Fredoka + Quicksand",         task: ["Fredoka", "wght@500..700", `"Fredoka","Avenir Next Rounded","Helvetica Neue",Helvetica,Arial,sans-serif`], ui: ["Quicksand", "wght@500;700", `"Quicksand","Helvetica Neue",Helvetica,Arial,sans-serif`], w: 600, ls: "-.005em", lh: 1.16 },
+  baloo:     { name: "Baloo 2 + Quicksand",         task: ["Baloo 2", "wght@500..800", `"Baloo 2","Avenir Next Rounded","Helvetica Neue",Helvetica,Arial,sans-serif`], ui: ["Quicksand", "wght@500;700", `"Quicksand","Helvetica Neue",Helvetica,Arial,sans-serif`], w: 700, ls: "0", lh: 1.18 }
 };
 /** The six pairs offered for custom themes. */
 export const CUSTOM_PAIRS = ["lato", "fraunces", "grotesk", "playfair", "manrope", "dmserif"];
@@ -233,10 +235,44 @@ const RAW = [
     text: "#14261B", muted: "#3E5A47", dim: "#4B6753", done: "#4B6753",
     accent: "#1E9A4F", accentHi: "#4CC77A", accentDeep: "#137039", accentText: "#14703A", danger: "#B8402A",
     glow: V1_GLOW("#1E9A4F", .06, 30, 60), strikeShadow: "none"
-  }, { engine: "blip", pitch: 0.9, decay: 0.8, noise: 0.6 }, ["#1E9A4F", "#4CC77A", "#14261B", "#FFFFFF", "#DCE4D5"], { lean: "day", partner: "terminal" })
+  }, { engine: "blip", pitch: 0.9, decay: 0.8, noise: 0.6 }, ["#1E9A4F", "#4CC77A", "#14261B", "#FFFFFF", "#DCE4D5"], { lean: "day", partner: "terminal" }),
+
+  /* 1.6: the Secret pair. Two complete kits like any other — palette through the same derivation, the same contrast
+     floors, their own fonts, sounds, confetti and finale — that the picker only offers on a device that has been
+     given the key (isSecretKey below). They are partners of each other, so one in a slot offers the other for the
+     opposite one. `field` names a background layer secretfx.js draws, `finale` the bloom or the cake it plays, and
+     `finaleText` the line under the last struck row. Nothing here reaches the document or the server.            */
+  kit("superpink", "Superpink", "dark", "fredoka", {
+    ink: "#320019", ink2: "#450022", ink3: "#5C002E",
+    text: "#FFEEF6", muted: "#FFA5D2", dim: "#EE8AB9", done: "#EE8AB9",
+    accent: "#FF2E9A", accentHi: "#FFC2E2", accentDeep: "#B5116F", accentText: "#FF66B4", danger: "#FF8A76",
+    glow: "radial-gradient(125% 95% at 50% 40%, rgba(255,46,154,.30), rgba(255,194,226,.13) 44%, rgba(255,46,154,0) 76%)",
+    strikeShadow: "0 0 14px rgba(255,46,154,.65)",
+    boxDoneBg: "linear-gradient(135deg,#FF2E9A,#FFD36E)",
+    barBg: "linear-gradient(90deg,#B5116F,#FF2E9A 42%,#FFD36E 74%,#FFC2E2)",
+    strikeBg: "linear-gradient(90deg,#FF2E9A,#FFD36E 38%,#FFFFFF 62%,#FF2E9A)", strikeSize: "300% 100%", strikeAnim: "shimmer 3.1s linear infinite",
+    finaleStyle: "italic"
+  }, { engine: "sparkle" }, ["#FF2E9A", "#FF7FC4", "#FFC2E2", "#FFFFFF", "#FFD36E", "#B5116F"],
+    { shapes: [1, 2, 3], lean: "night", partner: "birthday", secret: true, field: "sparkle", finale: "bloom", finaleText: "Everything crossed off but you." }),
+
+  kit("birthday", "Birthday", "light", "baloo", {
+    ink: "#FFF3F8", ink2: "#FDE9F2", ink3: "#F7DBE9",
+    text: "#3A1030", muted: "#7A3A63", dim: "#84446C", done: "#84446C",
+    accent: "#D62E86", accentHi: "#F2B33A", accentDeep: "#96125A", accentText: "#AE1A69", danger: "#C0392B",
+    glow: "radial-gradient(120% 92% at 50% 36%, rgba(214,46,134,.10), rgba(122,205,180,.07) 44%, rgba(214,46,134,0) 74%)",
+    strikeShadow: "none",
+    boxDoneBg: "linear-gradient(135deg,#D62E86,#F2B33A)",
+    barBg: "linear-gradient(90deg,#96125A,#D62E86 34%,#F2B33A 62%,#5FC9AC)",
+    strikeBg: "repeating-linear-gradient(115deg,#D62E86 0 9px,#FFF3F8 9px 18px)", strikeSize: "auto", strikeAnim: "candy 1.15s linear infinite",
+    finaleStyle: "normal"
+  }, { engine: "party" }, ["#FF7FC4", "#5FC9AC", "#F7D774", "#B79BE8", "#7FC8F0", "#FF8A6B"],
+    { shapes: [4], lean: "day", partner: "superpink", secret: true, finale: "cake", finaleText: "Make a wish. The list can wait." })
 ];
 
 const ORIGINAL = new Set(["dark", "light", "pink"]);
+/** The progress bar every kit gets unless it names its own: the accent's own three tones, so it crossfades with them
+    (styles.css repeats it as the fallback the first frame paints with, before theme.js has run). */
+const BAR_BG = "linear-gradient(90deg,var(--accent-deep),var(--accent) 55%,var(--accent-hi))";
 
 /** Fill in derivable tokens and enforce contrast on every curated theme except the three originals. */
 function finalize(t) {
@@ -251,6 +287,7 @@ function finalize(t) {
     c.accentText = fix(c.accentText, 4.5); c.accent = fix(c.accent, 3); c.danger = fix(c.danger, 4.5);
   }
   if (!c.boxDoneBg) c.boxDoneBg = c.accent;
+  if (!c.barBg) c.barBg = BAR_BG;
   if (!c.strikeBg) c.strikeBg = c.accent;
   if (!c.strikeSize) c.strikeSize = "auto";
   if (!c.strikeAnim) c.strikeAnim = "none";
@@ -279,6 +316,27 @@ export const CURATED_DAY = ["light", "paper", "harbor", "blush", "teletype", "su
 export const CURATED_NIGHT = CURATED_DAY.map(t => curated(t.partner));
 /** A curated theme's designed partner (the other side of its pair), or null for a theme that has none. */
 export function partnerOf(t) { return t && t.kind === "curated" && t.partner ? curated(t.partner) || null : null; }
+
+/* ---------------- the Secret group (1.6) ----------------
+   Two kits the picker shows only on a device that has been given the key, and a key that is not a theme code:
+   parseCode() has never heard of it. The word is not written down here — a casual reader of this file should not
+   trip over it — so the check is two 32-bit FNV-1a passes with different offset bases over the trimmed, lower-cased
+   input: 64 bits, which nothing anyone could plausibly type collides with. The unlock lives in meta.device
+   (COMPATIBILITY.md §5) and never enters the document, so a shared list gives nothing away.                    */
+export const SECRET = ["superpink", "birthday"].map(curated);
+export const SECRET_IDS = SECRET.map(t => t.id);
+/** True for a curated kit that only shows once the key has been given. */
+export function isSecretTheme(t) { return !!(t && t.secret); }
+/** True for a theme code that names one of them (used to clear a slot when the secret is forgotten). */
+export function isSecretCode(code) { const t = parseCode(code); return isSecretTheme(t); }
+const fnv = (s, off) => { let x = off >>> 0; for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 16777619) >>> 0; } return x; };
+/** Is this what someone typed into Import a code the key rather than a code? Case-insensitive, trimmed. */
+export function isSecretKey(s) {
+  if (typeof s !== "string") return false;
+  const w = s.trim().toLowerCase();
+  if (w.length < 4 || w.length > 40) return false;
+  return fnv(w, 2166136261) === 4031226008 && fnv(w, 606290984) === 1477794211;
+}
 
 /* ---------------- custom derivation ---------------- */
 
@@ -341,7 +399,7 @@ export function derive({ accent, base = "dark", pair, name = "", id, pack }) {
   c.hair = rgba(c.text, dark ? .10 : .16);
   c.hairHi = rgba(c.text, dark ? .30 : .42);
   c.hairSolid = hairSolidFor(c.ink, c.text);
-  c.boxDoneBg = c.accent; c.strikeBg = c.accent; c.strikeSize = "auto"; c.strikeAnim = "none"; c.finaleStyle = "normal";
+  c.boxDoneBg = c.accent; c.barBg = BAR_BG; c.strikeBg = c.accent; c.strikeSize = "auto"; c.strikeAnim = "none"; c.finaleStyle = "normal";
   const p = pair && pairOf(pair) ? pair : pickPair(base, accent);
   const w = warmth(h);
   const pk = packOf(pack);
@@ -532,7 +590,7 @@ export function cssText(t) {
   return `:root{--ink:${c.ink};--ink-2:${c.ink2};--ink-3:${c.ink3};--text:${c.text};--muted:${c.muted};--dim:${c.dim};--done:${c.done};--muted-2:${c.muted2};--dim-2:${c.dim2};` +
     `--accent:${c.accent};--accent-hi:${c.accentHi};--accent-deep:${c.accentDeep};--accent-text:${c.accentText};--danger:${c.danger};` +
     `--hair:${c.hair};--hair-hi:${c.hairHi};--hair-solid:${c.hairSolid};--glow:${c.glow};--strike-shadow:${c.strikeShadow};` +
-    `--box-done-bg:${c.boxDoneBg};--strike-bg:${c.strikeBg};--strike-size:${c.strikeSize};--strike-anim:${c.strikeAnim};--finale-style:${c.finaleStyle};` +
+    `--box-done-bg:${c.boxDoneBg};--bar-bg:${c.barBg};--strike-bg:${c.strikeBg};--strike-size:${c.strikeSize};--strike-anim:${c.strikeAnim};--finale-style:${c.finaleStyle};` +
     `--font-task:${p.task[2]};--font-ui:${p.ui[2]};--task-w:${p.w};--task-ls:${p.ls};--task-lh:${p.lh};color-scheme:${t.base}}`;
 }
 

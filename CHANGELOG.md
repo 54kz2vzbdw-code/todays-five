@@ -5,6 +5,10 @@ items per version, rendered on the About page and in the what's-new toast); the 
 render. No dates anywhere, by design: versions are the marketing version plus a build number (About shows
 `1.4 (build N)`), and what shipped as 4.0.0 is 1.0.
 
+## 1.6 — A little something for someone in particular.
+
+- **New** — If you know, you know.
+
 ## 1.5 — Six more sounds.
 
 - **New** — Six new sound packs: kalimba, pencil, whistle, bongos, cork and arcade.

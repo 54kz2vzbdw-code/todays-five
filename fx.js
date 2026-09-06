@@ -1,9 +1,13 @@
 // fx.js — v1's canvas confetti: ribbons, and hearts/stars for kits that ask for them.
+// A kit's `shapes` is either a count (1 ribbons only, 2 ribbons and hearts, 3 ribbons, hearts and stars — v1's
+// meaning, unchanged) or, since 1.6, the list of shapes to draw from: 0 ribbon, 1 heart, 2 star, 3 sparkle,
+// 4 sprinkle. `scene()` hands the same canvas and the same frame loop to a drawing that is not particles (1.6's
+// cake), so a finale that needs one does not need a second canvas or a second loop.
 
 export function createFx(canvas, opts) {
   const get = k => (typeof opts[k] === "function" ? opts[k]() : opts[k]);
   const g2 = canvas.getContext("2d");
-  let parts = [], raf = 0;
+  let parts = [], scenes = [], raf = 0;
 
   function sizeCanvas() {
     const d = Math.min(window.devicePixelRatio || 1, 2);
@@ -33,9 +37,33 @@ export function createFx(canvas, opts) {
     c.closePath(); c.fill();
   }
 
-  function burst(x, y, n, power, spread) {
+  function sparkleShape(c, s) {                                    // a four-point twinkle: two crossed tapered spikes
+    const a = s * 1.15, b = s * 0.20;
+    c.beginPath();
+    c.moveTo(0, -a); c.quadraticCurveTo(b * 0.5, -b * 0.5, a, 0);
+    c.quadraticCurveTo(b * 0.5, b * 0.5, 0, a);
+    c.quadraticCurveTo(-b * 0.5, b * 0.5, -a, 0);
+    c.quadraticCurveTo(-b * 0.5, -b * 0.5, 0, -a);
+    c.closePath(); c.fill();
+  }
+  function sprinkle(c, w, h) {                                     // a short rounded bar: one hundred-and-thousand
+    const r = w / 2;
+    c.beginPath();
+    if (c.roundRect) c.roundRect(-w / 2, -h / 2, w, h, r);
+    else { c.moveTo(-w / 2, -h / 2 + r); c.arcTo(-w / 2, -h / 2, w / 2, -h / 2, r); c.arcTo(w / 2, -h / 2, w / 2, h / 2, r); c.arcTo(w / 2, h / 2, -w / 2, h / 2, r); c.arcTo(-w / 2, h / 2, -w / 2, -h / 2, r); c.closePath(); }
+    c.fill();
+  }
+  /** The shape index for one particle: a count keeps v1's meaning, a list is drawn from directly. */
+  function shapeOf(sh) {
+    if (Array.isArray(sh)) return sh.length ? sh[(Math.random() * sh.length) | 0] : 0;
+    return sh === 2 ? (Math.random() < 0.5 ? 0 : 1) : (Math.random() * (sh || 1)) | 0;
+  }
+
+  /** `over` (1.6) borrows another kit's palette and shapes for one burst, for a moment that is not about the
+      theme that is on — the sparkle the Secret group answers with. */
+  function burst(x, y, n, power, spread, over) {
     if (get("reduced")) return;
-    const pal = get("palette") || ["#D26128"], sh = get("shapes") || 1;
+    const pal = (over && over.palette) || get("palette") || ["#D26128"], sh = (over && over.shapes) || get("shapes") || 1;
     for (let k = 0; k < n; k++) {
       const a = -Math.PI / 2 + (Math.random() - 0.5) * (spread || 2.0);
       const sp = power * (0.55 + Math.random() * 0.8);
@@ -49,13 +77,20 @@ export function createFx(canvas, opts) {
         c: pal[(Math.random() * pal.length) | 0],
         life: 1, dec: 0.0075 + Math.random() * 0.008,
         rib: Math.random() < 0.45,
-        sh: sh === 2 ? (Math.random() < 0.5 ? 0 : 1) : (Math.random() * sh) | 0
+        sh: shapeOf(sh)
       });
     }
     if (!raf) raf = requestAnimationFrame(tick);
   }
-  function tick() {
+  function tick(now) {
     g2.clearRect(0, 0, innerWidth, innerHeight);
+    for (let i = scenes.length - 1; i >= 0; i--) {
+      const s = scenes[i];
+      if (s.t0 === undefined) s.t0 = now || 0;
+      let alive = false;
+      try { alive = s.draw(g2, ((now || 0) - s.t0) / 1000, innerWidth, innerHeight) !== false; } catch (e) { alive = false; }
+      if (!alive) scenes.splice(i, 1);
+    }
     for (let i = parts.length - 1; i >= 0; i--) {
       const p = parts[i];
       p.vy += 0.30; p.vx *= 0.992; p.vy *= 0.992;
@@ -66,14 +101,23 @@ export function createFx(canvas, opts) {
       g2.fillStyle = p.c;
       if (p.sh === 1) heart(g2, p.s);
       else if (p.sh === 2) star(g2, p.s);
+      else if (p.sh === 3) sparkleShape(g2, p.s);
+      else if (p.sh === 4) sprinkle(g2, p.w * 1.15, p.h * 0.62);
       else {
         const hh = p.rib ? p.h * Math.abs(Math.cos(p.r * 1.7)) : p.h;
         g2.fillRect(-p.w / 2, -hh / 2, p.w, hh);
       }
       g2.restore();
     }
-    if (parts.length) raf = requestAnimationFrame(tick);
+    if (parts.length || scenes.length) raf = requestAnimationFrame(tick);
     else { raf = 0; g2.clearRect(0, 0, innerWidth, innerHeight); }
+  }
+  /** Draw something that is not confetti on the same canvas, in the same frame loop: `draw(ctx, seconds, w, h)`
+      returns false when it is finished. Suppressed under reduced motion, like every other effect here. */
+  function scene(draw) {
+    if (get("reduced")) return;
+    scenes.push({ draw });
+    if (!raf) raf = requestAnimationFrame(tick);
   }
   function volley() {
     if (get("reduced")) return;
@@ -81,5 +125,5 @@ export function createFx(canvas, opts) {
     for (let i = 0; i < 7; i++) setTimeout(() => burst(w * (0.08 + 0.14 * i), h * 0.97, 26, 19, 1.15), i * 65);
     setTimeout(() => burst(w * 0.5, h * 0.6, 40, 14, 2.6), 210);
   }
-  return { burst, volley };
+  return { burst, volley, scene };
 }

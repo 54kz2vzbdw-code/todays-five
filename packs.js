@@ -1,4 +1,4 @@
-// packs.js — the sound engines, loaded lazily by sound.js on the first gesture. Each pack has check, uncheck and
+// packs.js — the twelve sound engines, loaded lazily by sound.js on the first gesture. Each pack has check, uncheck and
 // finish, and reads the theme's parameters through P(name, default): pitch, decay, noise, filter, bright, tone.
 // Six voices since 1.1 (knock, bell, blip, typewriter, marble, pop) and six more in 1.5 (kalimba, pencil, whistle, bongo,
 // cork, arcade); the lists at the bottom are mirrored in theme.js (codes) and panels.js (Settings).
@@ -284,3 +284,6 @@ const arcade = {
 export const PACKS = { knock, bell, blip, typewriter, marble, pop: popPack, kalimba, pencil, whistle: whistlePack, bongo, cork, arcade };
 export const PACK_NAMES = { knock: "Knock", bell: "Bell", blip: "Blip", typewriter: "Typewriter", marble: "Marble", pop: "Pop", kalimba: "Kalimba", pencil: "Pencil", whistle: "Whistle", bongo: "Bongo", cork: "Cork", arcade: "Arcade" };
 export const PACK_ORDER = ["knock", "bell", "blip", "typewriter", "marble", "pop", "kalimba", "pencil", "whistle", "bongo", "cork", "arcade"];
+/** The two builders every engine here is made of, so a pack that loads later (packs-secret.js, 1.6) is built the
+    same way without importing this module a second time under a different URL. */
+export const HELPERS = { tone, noiseBurst };

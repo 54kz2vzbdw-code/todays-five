@@ -25,6 +25,8 @@
 @font-face{font-family:"Archivo";font-style:normal;font-weight:500 800;font-display:swap;src:url(fonts/archivo-500-800.woff2) format("woff2");unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
 @font-face{font-family:"Lora";font-style:normal;font-weight:500 700;font-display:swap;src:url(fonts/lora-500-700.woff2) format("woff2");unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
 @font-face{font-family:"Karla";font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/karla-400-700.woff2) format("woff2");unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:"Fredoka";font-style:normal;font-weight:500 700;font-display:swap;src:url(fonts/fredoka-500-700.woff2) format("woff2");unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:"Baloo 2";font-style:normal;font-weight:500 800;font-display:swap;src:url(fonts/baloo-2-500-800.woff2) format("woff2");unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
 
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -204,6 +206,7 @@ button{font:inherit;color:inherit}
 .row.done .ink{transform:scaleX(1)}
 .row.nofx .ink,.row.nofx .ghost{transition:none}
 @keyframes shimmer{to{background-position:-300% 0}}
+@keyframes candy{to{background-position:-40px 0}}
 
 /* motion that lands with the sound */
 @keyframes kick{0%{transform:scale(1)}38%{transform:scale(1.018)}100%{transform:scale(1)}}
@@ -375,7 +378,7 @@ html[data-mode="view"] #hint{visibility:hidden}
 /* the track is transparent (an empty 3 px of --ink-3 read as a hairline under the iPhone's home indicator);
    only the fill draws, and it sits above the safe-area inset */
 #bar{position:fixed;left:0;right:0;bottom:env(safe-area-inset-bottom,0px);height:3px;background:transparent;z-index:40;pointer-events:none}
-#fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent-deep),var(--accent) 55%,var(--accent-hi));transition:width .5s cubic-bezier(.22,1,.36,1),box-shadow .4s ease}
+#fill{height:100%;width:0%;background:var(--bar-bg,linear-gradient(90deg,var(--accent-deep),var(--accent) 55%,var(--accent-hi)));transition:width .5s cubic-bezier(.22,1,.36,1),box-shadow .4s ease} /* the fallback is the token's own default (theme.js): it paints the first frame, before theme.js has run */
 #fill.full{box-shadow:0 0 24px 2px var(--accent)}
 
 /* ---------------- welcome ---------------- */

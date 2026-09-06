@@ -6,7 +6,7 @@ let A = null, $ = null, $$ = null, M = null, T = null, C = null;
 const PANELS_BUILD = 76; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
 export const RELOADING = "Today's Five updated: reloading";
 /** The shell, as sw.js lists it (minus the icons): refreshed past the HTTP cache before the one reload the guard below may do. */
-const SHELL_FILES = ["./", "./index.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js", "./sound.js", "./packs.js", "./fx.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json", "./manifest.webmanifest", "./vendor/realtime.js"];
+const SHELL_FILES = ["./", "./index.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js", "./sound.js", "./packs.js", "./packs-secret.js", "./secretfx.js", "./fx.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json", "./manifest.webmanifest", "./vendor/realtime.js"];
 
 export function init(api) {
   if (A) return;
@@ -97,6 +97,10 @@ function renderSwatches() {
   fill("#sw-night", T.CURATED_NIGHT.map(t => mk(t)));
   fill("#sw-yours", saved.map(s => mk(s.theme, s)));
   $("#sw-yours-h").hidden = !saved.length; $("#sw-yours").hidden = !saved.length;
+  // the Secret group (1.6): only on a device that has been given the key, and then like any other group
+  const secret = !!dev().secret;
+  fill("#sw-secret", secret ? T.SECRET.map(t => mk(t)) : []);
+  $("#sw-secret-h").hidden = !secret; $("#sw-secret").hidden = !secret; $("#sw-secret-actions").hidden = !secret;
   paintOffer();
 }
 /** A swatch was chosen for the slot; the partner (if the other slot does not hold it already) goes on offer beside it. */
@@ -109,6 +113,19 @@ function choose(code, name, partner, swatch) {
   if (group) group.after($("#partner-offer")); // the chip sits under the group the choice came from
   if (offer) { try { $("#partner-offer").scrollIntoView({ block: "nearest" }); } catch (e) { /* ignore */ } } // and on screen, on a phone too
   A.toast(`${name} for ${cap(pickSlot)}`);
+}
+/* The key was given to Import a code (1.6). The group appears, a sparkle goes up in the Secret pair's own colours
+   whatever theme is on, and the chime is that pair's own — waited for, since its engine is in a module of its own
+   and this is the first time the device has ever asked for it. Nothing else changes until a theme is chosen. */
+function unlock() {
+  const fresh = A.unlockSecret();
+  renderSwatches();
+  try { $("#sw-secret-h").scrollIntoView({ block: "nearest" }); } catch (e) { /* ignore */ }
+  const box = $("#sw-secret-h").getBoundingClientRect();
+  A.fx.burst(box.left + box.width * 0.5, box.top + box.height * 0.5, 46, 13, 2.8, { palette: T.SECRET[0].confetti, shapes: [1, 2, 3] });
+  // the chime is the pair's own, so the first time a device asks it has to wait for the module to arrive
+  if (!dev().muted && !A.sound.preview("sparkle")) A.sound.ready("sparkle").then(() => A.sound.preview("sparkle"));
+  A.toast(fresh ? "Found it—two themes, under Secret." : "Already yours—they're under Secret.");
 }
 function paintOffer() {
   const box = $("#partner-offer");
@@ -206,10 +223,18 @@ function wireTheme() {
   $("#c-surprise").addEventListener("click", () => { const t = T.surprise(); custom = { accent: t.accent, base: t.base, pair: t.pair, name: "", pack: "" }; paintCustom(); previewCustom(); });
   $("#c-export").addEventListener("click", async () => { try { await navigator.clipboard.writeText(T.themeCode(customTheme())); A.toast("Theme code copied"); } catch (e) { A.toast(T.themeCode(customTheme())); } });
   $("#c-import-go").addEventListener("click", () => {
-    const t = T.parseCode($("#c-import").value);
+    const raw = $("#c-import").value;
+    if (T.isSecretKey(raw)) { $("#c-import").value = ""; unlock(); return; } // a key, not a code (1.6)
+    const t = T.parseCode(raw);
     if (!t) { A.toast("That code doesn't parse"); return; }
+    if (T.isSecretTheme(t) && !dev().secret) { unlock(); return; }           // the code names one of them: the same secret, spelled out
     if (t.kind === "custom") { custom = { accent: t.accent, base: t.base, pair: t.pair, name: t.name, pack: t.pack || "" }; paintCustom(); previewCustom(); }
     else choose(T.themeCode(t), t.name, T.partnerOf(t) ? { code: T.themeCode(T.partnerOf(t)), name: T.partnerOf(t).name } : null, null);
+  });
+  $("#sw-forget").addEventListener("click", () => {
+    A.forgetSecret();
+    renderSwatches();
+    A.toast("Forgotten on this device. The word still works.");
   });
   $("#p-theme").addEventListener("close", () => { if (!keepPreview) A.applyThemeCode(A.currentThemeCode()); });
   addEventListener("tf:theme", () => { if ($("#p-theme").open) renderSwatches(); if ($("#p-settings").open) paintSettings(); });
@@ -463,6 +488,9 @@ export function openHistory() {
 
 /* ---------------- settings ---------------- */
 const PACKS = [["", "Theme's pick"], ["knock", "Knock"], ["bell", "Bell"], ["blip", "Blip"], ["typewriter", "Typewriter"], ["marble", "Marble"], ["pop", "Pop"], ["kalimba", "Kalimba"], ["pencil", "Pencil"], ["whistle", "Whistle"], ["bongo", "Bongo"], ["cork", "Cork"], ["arcade", "Arcade"]]; // 1.5: twelve, mirrored in packs.js and theme.js
+const SECRET_PACKS = [["sparkle", "Sparkle"], ["party", "Party"]]; // 1.6: the Secret pair's own two, listed here only once the key has been given
+/** The device-wide override's list: the twelve, plus the Secret pair's two on a device that has unlocked them. */
+function packList() { return dev().secret ? PACKS.concat(SECRET_PACKS) : PACKS; }
 let importedDoc = null;
 export function openSettings() { paintSettings(); A.showPanel("p-settings"); }
 /** Appearance (1.2): Day theme · Night theme · Switch. The rows name what fills each slot and which one is on; the
@@ -487,12 +515,13 @@ function paintSettings() {
   const d = dev(), set = (name, on) => { const b = $(`#p-settings [data-set="${name}"]`); if (b) b.setAttribute("aria-pressed", on ? "true" : "false"); };
   paintAppearance(d);
   set("sound", !d.muted);
-  const pk = $("#set-pack"); if (!pk.options.length || pk.options.length !== PACKS.length) { pk.innerHTML = ""; PACKS.forEach(([v, n]) => { const o = document.createElement("option"); o.value = v; o.textContent = n; pk.appendChild(o); }); }
+  const packs = packList();
+  const pk = $("#set-pack"); if (!pk.options.length || pk.options.length !== packs.length) { pk.innerHTML = ""; packs.forEach(([v, n]) => { const o = document.createElement("option"); o.value = v; o.textContent = n; pk.appendChild(o); }); }
   // "Theme's pick" names the theme's pack, and the sub-line says which one wins on this device
-  const themePack = A.theme ? (PACKS.find(p => p[0] === (A.theme.sound && A.theme.sound.engine))?.[1] || "Knock") : "";
+  const themePack = A.theme ? (packs.find(p => p[0] === (A.theme.sound && A.theme.sound.engine))?.[1] || "Knock") : "";
   pk.options[0].textContent = themePack ? `Theme's pick (${themePack})` : "Theme's pick";
   pk.value = d.soundPack || "";
-  const override = PACKS.find(p => p[0] === d.soundPack)?.[1];
+  const override = packs.find(p => p[0] === d.soundPack)?.[1];
   $("#set-pack-sub").textContent = !A.theme ? "Each theme picks its own" : override ? `${A.theme.name} picks ${themePack}; this device plays ${override}` : `${A.theme.name} picks ${themePack}, and that's what plays`;
   $("#volume").value = Math.round(d.volume * 100);
   set("celebrate", !!d.celebrateRemote);

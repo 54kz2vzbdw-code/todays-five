@@ -25,6 +25,8 @@ downloaded the first time a theme renders text in it and the service worker keep
 | Archivo | archivo-500-800 (variable) | SIL Open Font License 1.1 |
 | Lora | lora-500-700 (variable) | SIL Open Font License 1.1 |
 | Karla | karla-400-700 (variable) | SIL Open Font License 1.1 |
+| Fredoka | fredoka-500-700 (variable) | SIL Open Font License 1.1 |
+| Baloo 2 | baloo-2-500-800 (variable) | SIL Open Font License 1.1 |
 
 All families are distributed by Google Fonts under the SIL Open Font License 1.1 (https://openfontlicense.org),
 which permits bundling and redistribution with software as long as the fonts themselves are not sold on their own.

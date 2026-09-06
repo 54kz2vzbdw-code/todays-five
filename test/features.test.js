@@ -220,14 +220,14 @@ test("what's new fires on a changed version string, never on its order: a 1.3 de
   const wn = JSON.parse(fs.readFileSync(new URL("../whatsnew.json", import.meta.url), "utf8"));
   const toast = wn.versions[0].headline;
   assert.doesNotMatch(toast, /4\.0\.0|renumber|1\.0\b|1\.1\b|1\.2\b|1\.3\b/, "the headline says nothing about version numbers");
-  assert.match(toast, /sound/i, "the headline is about the sounds (1.5)");
-  assert.match(wn.versions.find(v => v.version === "1.4").headline, /shared/i, "1.4: shared lists");
+  assert.match(toast, /^A little something for someone in particular\.$/, "1.6: the wink, and nothing else");
+  assert.match(wn.versions.find(v => v.version === "1.5").headline, /sound/i, "1.5: the sounds");
 });
 
 test("the changelog (1.2): 1.0 and later only, a one-sentence headline of 12 words or fewer, up to three tagged items of 14 words or fewer, nothing about the plumbing", () => {
   const wn = JSON.parse(fs.readFileSync(new URL("../whatsnew.json", import.meta.url), "utf8"));
   const words = s => s.trim().split(/\s+/).length;
-  assert.deepEqual(wn.versions.map(v => v.version), ["1.5", "1.4", "1.3", "1.2", "1.1", "1.0"], "the 0.x entries are in CHANGELOG.md, never rendered");
+  assert.deepEqual(wn.versions.map(v => v.version), ["1.6", "1.5", "1.4", "1.3", "1.2", "1.1", "1.0"], "the 0.x entries are in CHANGELOG.md, never rendered");
   const never = /\bfonts?\b|\bCDN\b|service worker|\btests?\b|Lighthouse|renumber|migrat|\bmerge/i;
   for (const v of wn.versions) {
     assert.match(v.headline, /^[^.!?]+[.!?]$/, v.version + ": a headline that is one sentence: " + v.headline);
@@ -242,7 +242,7 @@ test("the changelog (1.2): 1.0 and later only, a one-sentence headline of 12 wor
     assert.doesNotMatch(v.headline, never, v.version + ": plumbing in the headline");
   }
   const md = fs.readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
-  for (const v of ["1.5", "1.4", "1.3", "1.2", "1.1", "1.0", "0.3", "0.2", "0.1"]) assert.ok(new RegExp("^## " + v.replace(".", "\\."), "m").test(md), "CHANGELOG.md holds " + v);
+  for (const v of ["1.6", "1.5", "1.4", "1.3", "1.2", "1.1", "1.0", "0.3", "0.2", "0.1"]) assert.ok(new RegExp("^## " + v.replace(".", "\\."), "m").test(md), "CHANGELOG.md holds " + v);
   assert.ok(!/\b20\d\d-\d\d-\d\d\b/.test(md), "no dates in CHANGELOG.md either");
 });
 
@@ -280,10 +280,36 @@ test("the version is one number in three places, the build in four, and there ar
   const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8"), panels = fs.readFileSync(new URL("../panels.js", import.meta.url), "utf8");
   assert.ok(html.includes(`<html lang="en" data-base="dark" data-build="${BUILD}">`), "index.html says which build its markup is");
   assert.ok(panels.includes(`const PANELS_BUILD = ${BUILD};`), "panels.js says which build's markup it wires (a page open across a deploy reloads on the mismatch)");
-  assert.deepEqual(wn.versions.map(v => v.version), ["1.5", "1.4", "1.3", "1.2", "1.1", "1.0"], "the public history: 1.0 and later (4.0.0 became 1.0; the pre-releases live in CHANGELOG.md)");
+  assert.deepEqual(wn.versions.map(v => v.version), ["1.6", "1.5", "1.4", "1.3", "1.2", "1.1", "1.0"], "the public history: 1.0 and later (4.0.0 became 1.0; the pre-releases live in CHANGELOG.md)");
   for (const v of wn.versions) { assert.match(v.version, /^\d+\.\d+(\.\d+)?$/); assert.ok(!("date" in v), v.version + ": no date field"); assert.ok(typeof v.headline === "string" && v.items.length >= 1 && v.items.length <= 3, v.version + ": a headline and one to three items"); }
   assert.ok(!/\b20\d\d-\d\d-\d\d\b/.test(fs.readFileSync(new URL("../about.html", import.meta.url), "utf8")), "no dates on the About page");
-  for (const f of ["packs.js", "panels.js", "panels.css", "exporter.js", "version.js", "whatsnew.json"]) assert.ok(sw.includes(`"./${f}"`), "precached: " + f);
+  for (const f of ["packs.js", "packs-secret.js", "secretfx.js", "panels.js", "panels.css", "exporter.js", "version.js", "whatsnew.json"]) assert.ok(sw.includes(`"./${f}"`), "precached: " + f);
+  for (const f of ["packs-secret.js", "secretfx.js"]) assert.ok(panels.includes(`"./${f}"`), "and refreshed before the guard's one reload: " + f);
+});
+
+test("1.6: the Secret pair is nowhere anyone reading the app can find it — not About, not How it works, not the changelog beyond the wink", () => {
+  const read = f => fs.readFileSync(new URL("../" + f, import.meta.url), "utf8");
+  const NAMES = /superpink|birthday/i;
+  // what a reader of the app sees: the About page and the changelog it renders, the README, and the long-form help
+  for (const f of ["about.html", "whatsnew.json", "CHANGELOG.md", "README.md"]) {
+    assert.doesNotMatch(read(f), NAMES, f + " names one of them");
+    assert.doesNotMatch(read(f), /forget the secret|secret (theme|group|pair)|unlock/i, f + " mentions the group"); // "secret" alone is what About calls the thing in a link
+  }
+  const panels = read("panels.js");
+  const helpAt = panels.indexOf("How it works");
+  assert.ok(helpAt > 0);
+  assert.doesNotMatch(panels.slice(helpAt), NAMES, "the How it works copy names one of them");
+  assert.ok(/one of the twelve sound packs/.test(panels), "How it works still says twelve: the Secret pair's two are not on offer");
+  // the wink, and only the wink
+  const wn = JSON.parse(read("whatsnew.json"));
+  assert.equal(wn.versions[0].version, "1.6"); assert.equal(wn.versions[0].items.length, 1, "one line");
+  const md = read("CHANGELOG.md");
+  const entry = md.slice(md.indexOf("## 1.6"), md.indexOf("## 1.5"));
+  assert.equal(entry.trim().split("\n").filter(l => l.trim()).length, 2, "a heading and one item, no For the record: " + entry);
+  // the markup gives the group a home and a way out of it, and names neither theme: the swatches are built at render time
+  const html = read("index.html");
+  assert.ok(html.includes('id="sw-secret"') && html.includes('id="sw-forget"'), "the group has a home in the markup");
+  assert.doesNotMatch(html, NAMES, "and the markup names neither theme");
 });
 
 test("no class or id the common content-blocker lists hide everywhere (build 69: .share-block hid the whole Share sheet on a phone with a blocker)", () => {

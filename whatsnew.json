@@ -2,6 +2,16 @@
   "build": 76,
   "versions": [
     {
+      "version": "1.6",
+      "headline": "A little something for someone in particular.",
+      "items": [
+        {
+          "tag": "New",
+          "text": "If you know, you know."
+        }
+      ]
+    },
+    {
       "version": "1.5",
       "headline": "Six more sounds.",
       "items": [

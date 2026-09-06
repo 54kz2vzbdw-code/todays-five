@@ -4,12 +4,12 @@
 // QR maker, the exporter, the realtime client) asks for its own build with `?v=<build>`, answered from that build's
 // cache — so a page open across a deploy keeps loading its own code. The previous build's cache stays for exactly
 // that; older ones are reaped. Bump VERSION and BUILD with version.js on deploy (test/features.test.js checks).
-const VERSION = "tf-v1.5"; // = "tf-v" + version.js's marketing version
+const VERSION = "tf-v1.6"; // = "tf-v" + version.js's marketing version
 const BUILD = 76;          // = version.js's BUILD
 const CACHE = VERSION + "-b" + BUILD;
 const SHELL = [
   "./", "./index.html", "./about.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js",
-  "./sound.js", "./packs.js", "./fx.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json",
+  "./sound.js", "./packs.js", "./packs-secret.js", "./secretfx.js", "./fx.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json",
   "./manifest.webmanifest", "./vendor/realtime.js",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-512-maskable.png", "./icons/apple-touch-icon.png"
 ];

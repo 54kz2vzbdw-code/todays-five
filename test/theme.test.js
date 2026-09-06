@@ -4,7 +4,8 @@ import {
   CURATED, CUSTOM_PAIRS, PAIRS, derive, surprise, report, themeCode, parseCode, pairFamilies,
   hexToOklch, oklch, contrast, cssText, normalizeHex, pickPair, PACK_IDS, hueSound,
   CURATED_DAY, CURATED_NIGHT, curated, partnerOf, makePartner, SLOT_DEFAULT, scheduledSlot, autoSlot, activeSlot, slotCode,
-  flipSlot, settleHold, setSwitchMode, migrateSlots, mixHex, cssTextBetween
+  flipSlot, settleHold, setSwitchMode, migrateSlots, mixHex, cssTextBetween,
+  SECRET, SECRET_IDS, isSecretTheme, isSecretCode, isSecretKey
 } from "../theme.js";
 import fs from "node:fs";
 
@@ -37,15 +38,15 @@ test("out-of-gamut oklch is mapped by dropping chroma, never NaN", () => {
   assert.equal(oklch(0.5, 0, 0).length, 7);
 });
 
-test("14 curated themes, each a complete kit", () => {
-  assert.equal(CURATED.length, 14);
+test("16 curated themes, each a complete kit (the fourteen on offer and the Secret pair)", () => {
+  assert.equal(CURATED.length, 16);
   const ids = new Set(CURATED.map(t => t.id));
-  assert.equal(ids.size, 14);
+  assert.equal(ids.size, 16);
   for (const t of CURATED) {
     assert.ok(PAIRS[t.pair], t.id + " pair");
-    assert.ok(["knock", "bell", "blip", "typewriter", "marble", "pop"].includes(t.sound.engine), t.id + " sound");
+    assert.ok(["knock", "bell", "blip", "typewriter", "marble", "pop", "sparkle", "party"].includes(t.sound.engine), t.id + " sound");
     assert.ok(t.confetti.length >= 4, t.id + " confetti");
-    for (const k of ["ink", "ink2", "ink3", "text", "muted", "dim", "done", "muted2", "dim2", "accent", "accentHi", "accentDeep", "accentText", "danger", "hair", "hairHi", "hairSolid", "glow", "strikeShadow", "boxDoneBg", "strikeBg", "strikeAnim", "finaleStyle"]) assert.ok(t.colors[k], `${t.id} missing ${k}`);
+    for (const k of ["ink", "ink2", "ink3", "text", "muted", "dim", "done", "muted2", "dim2", "accent", "accentHi", "accentDeep", "accentText", "danger", "hair", "hairHi", "hairSolid", "glow", "strikeShadow", "boxDoneBg", "barBg", "strikeBg", "strikeAnim", "finaleStyle"]) assert.ok(t.colors[k], `${t.id} missing ${k}`);
   }
 });
 
@@ -160,7 +161,7 @@ test("pair auto-pick varies with base and warmth", () => {
 
 test("cssText contains every token once and a color-scheme", () => {
   const css = cssText(CURATED[0]);
-  for (const v of ["--ink:", "--text:", "--accent:", "--dim-2:", "--muted-2:", "--font-task:", "--task-w:", "--strike-anim:", "color-scheme:dark"]) assert.ok(css.includes(v), v);
+  for (const v of ["--ink:", "--text:", "--accent:", "--dim-2:", "--muted-2:", "--font-task:", "--task-w:", "--bar-bg:", "--strike-anim:", "color-scheme:dark"]) assert.ok(css.includes(v), v);
   assert.equal((css.match(/--ink:/g) || []).length, 1);
 });
 
@@ -176,7 +177,8 @@ test("every curated theme leans day or night and names a partner that names it b
   }
   const pairs = CURATED_DAY.map((d, i) => d.id + "↔" + CURATED_NIGHT[i].id);
   assert.deepEqual(pairs, ["light↔dark", "paper↔midnight", "harbor↔forest", "blush↔pink", "teletype↔terminal", "sunset↔dusk", "cocoa↔ember"]);
-  assert.equal(CURATED_DAY.length + CURATED_NIGHT.length, CURATED.length, "every kit is in exactly one group");
+  assert.equal(CURATED_DAY.length + CURATED_NIGHT.length + SECRET.length, CURATED.length, "every kit is in exactly one group");
+  assert.ok(CURATED_DAY.every(t => !t.secret) && CURATED_NIGHT.every(t => !t.secret), "the Secret pair is in neither of the two open groups");
   assert.ok(CURATED_DAY.every(t => t.lean === "day") && CURATED_NIGHT.every(t => t.lean === "night"));
   assert.equal(partnerOf(derive({ accent: "#3366FF" })), null, "a theme you make has no curated partner");
 });
@@ -204,6 +206,64 @@ test("the partner of a theme you make: same accent and pack, flipped base, a cho
   check(p, "partner light"); check(back, "partner dark");
   for (const t of CURATED) assert.equal(themeCode(t), "T1:curated:" + t.id, "curated codes unchanged by 1.2");
   assert.equal(themeCode(parseCode("T2:d:3366FF:grotesk:marble:Marbles")), "T2:d:3366FF:grotesk:marble:Marbles", "T2 codes unchanged by 1.2");
+});
+
+/* ---------------- 1.6: the Secret pair ---------------- */
+
+test("the Secret pair reaches the curated bar: two complete kits, partners of each other, in neither open group", () => {
+  const [sp, bd] = SECRET;
+  assert.deepEqual(SECRET_IDS, ["superpink", "birthday"]);
+  check(sp, "superpink"); check(bd, "birthday");                       // the same floors as every other kit
+  assert.equal(sp.base, "dark"); assert.equal(bd.base, "light");
+  assert.equal(sp.partner, "birthday"); assert.equal(bd.partner, "superpink");
+  assert.equal(partnerOf(sp).id, "birthday"); assert.equal(partnerOf(bd).id, "superpink");
+  assert.notEqual(sp.lean, bd.lean, "one leans day, the other night, so the sun and moon flip between them");
+  for (const t of SECRET) {
+    assert.ok(isSecretTheme(t), t.id + " is marked secret");
+    assert.equal(themeCode(t), "T1:curated:" + t.id, "a curated code like any other, so a slot holding one reloads");
+    assert.equal(parseCode(themeCode(t)).id, t.id);
+    assert.ok(isSecretCode(themeCode(t)));
+    assert.ok(PAIRS[t.pair] && !CUSTOM_PAIRS.includes(t.pair), t.id + ": its own pair, and not one the builder offers");
+    assert.ok(Array.isArray(t.shapes) && t.shapes.length, t.id + " draws its own shapes");
+    assert.ok(t.finaleText && /[.!?]$/.test(t.finaleText), t.id + " carries its own finale line");
+    assert.ok(t.confetti.length >= 5, t.id + " confetti");
+    assert.ok(!CURATED_DAY.includes(t) && !CURATED_NIGHT.includes(t), t.id + " is not in the open groups");
+  }
+  assert.equal(sp.sound.engine, "sparkle"); assert.equal(bd.sound.engine, "party");
+  assert.ok(!PACK_IDS.includes("sparkle") && !PACK_IDS.includes("party"), "their engines are not offered to a theme you make, so a T2 code means the same thing on every device");
+  assert.equal(sp.field, "sparkle"); assert.equal(bd.field, undefined, "only Superpink carries a background layer");
+  assert.equal(sp.finale, "bloom"); assert.equal(bd.finale, "cake");
+  // pink to the maximum the derivation allows: a deeper, more saturated ink than Pink's, and text that still reads
+  const ink = hexToOklch(sp.colors.ink), pink = hexToOklch(curated("pink").colors.ink);
+  assert.ok(ink.C > pink.C, "a more saturated ink than Pink's: " + ink.C.toFixed(3) + " vs " + pink.C.toFixed(3));
+  assert.ok(ink.L < 0.25 && ink.h > 330, "deep, and tinted toward the accent");
+  assert.ok(report(sp).text >= 7 && report(bd).text >= 7);
+  assert.ok(/gradient/.test(sp.colors.barBg) && /gradient/.test(bd.colors.barBg), "each names its own progress bar");
+  assert.ok(/gradient/.test(sp.colors.strikeBg) && sp.colors.strikeAnim !== "none", "Superpink's strike shimmers");
+  assert.ok(/repeating-linear-gradient/.test(bd.colors.strikeBg), "Birthday's strike is a candy stripe");
+});
+
+test("every other kit keeps the default progress bar, and it is the fallback styles.css paints the first frame with", () => {
+  for (const t of CURATED) if (!isSecretTheme(t)) assert.equal(t.colors.barBg, "linear-gradient(90deg,var(--accent-deep),var(--accent) 55%,var(--accent-hi))", t.id);
+  assert.equal(derive({ accent: "#3366FF" }).colors.barBg, curated("dark").colors.barBg, "a theme you make too");
+  const css = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
+  assert.ok(css.includes("var(--bar-bg,linear-gradient(90deg,var(--accent-deep),var(--accent) 55%,var(--accent-hi)))"), "styles.css repeats it as the fallback");
+});
+
+test("the key is a key, not a theme code: trimmed, case-insensitive, and parseCode has never heard of it", () => {
+  assert.equal(isSecretKey("superpink"), true);
+  assert.equal(isSecretKey("SUPERPINK"), true);
+  assert.equal(isSecretKey("  SuperPink\n"), true);
+  assert.equal(isSecretKey("super pink"), false, "the space is not it");
+  assert.equal(isSecretKey("superpin"), false); assert.equal(isSecretKey("superpinks"), false);
+  assert.equal(isSecretKey(""), false); assert.equal(isSecretKey(null), false); assert.equal(isSecretKey(42), false);
+  assert.equal(parseCode("superpink"), null, "typed on its own it is not a theme code");
+  assert.equal(parseCode("T1:curated:superpink").id, "superpink", "the theme's own code still parses, so a slot survives a reload");
+  for (const t of CURATED) assert.equal(isSecretKey(themeCode(t)), false, t.id + ": no code is ever mistaken for the key");
+  assert.equal(isSecretCode("T1:curated:pink"), false); assert.equal(isSecretCode("nonsense"), false);
+  // nothing else a person might plausibly type collides with it
+  const words = ["pink", "superpink!", "super-pink", "SuperPink1", "birthday", "secret", "sparkle", "party", "todays-five", "open sesame", "T2:d:FF3D9A:fraunces:bell:Superpink"];
+  for (const w of words) assert.equal(isSecretKey(w), false, w);
 });
 
 const at = s => new Date(s);

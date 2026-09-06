@@ -2,8 +2,9 @@
 // A fake AudioContext models what iOS does: a fresh context starts suspended, the app goes to the background
 // (suspended, resume works), a call or Siri interrupts it (resume never lands), and closed contexts.
 import assert from "node:assert/strict";
-import { createSound } from "../sound.js";
-import { PACKS, PACK_ORDER, PACK_NAMES } from "../packs.js";
+import { createSound, SECRET_ENGINES } from "../sound.js";
+import { PACKS, PACK_ORDER, PACK_NAMES, HELPERS } from "../packs.js";
+import * as SECRET from "../packs-secret.js";
 
 let passed = 0;
 async function test(name, fn) { await fn(); passed++; console.log("ok -", name); }
@@ -24,8 +25,9 @@ const last = () => FakeAC.all[FakeAC.all.length - 1];
 
 function make(over = {}) {
   FakeAC.all = [];
-  const o = { muted: () => false, volume: () => 1, kit: () => ({ engine: "knock" }), pack: () => "", haptics: false, AudioContext: FakeAC, loadPacks: () => Promise.resolve({ PACKS }), ...over };
-  return createSound(o);
+  let secretLoads = 0;
+  const o = { muted: () => false, volume: () => 1, kit: () => ({ engine: "knock" }), pack: () => "", haptics: false, AudioContext: FakeAC, loadPacks: () => Promise.resolve({ PACKS, HELPERS }), loadSecret: () => { secretLoads++; return Promise.resolve(SECRET); }, ...over };
+  const s = createSound(o); s.secretLoads = () => secretLoads; return s;
 }
 
 await test("muted: no context is ever created", async () => {
@@ -101,6 +103,38 @@ await test("1.5: twelve packs, the six new ones after the six of 1.1, every one 
   // a theme's pitch and decay still reach them
   const s = make({ kit: () => ({ engine: "knock", pitch: 0.7, decay: 1.6 }), pack: () => "cork" }); s.prime(); await tick();
   assert.equal(s.check(0), true); assert.equal(s.finish(), true);
+});
+
+await test("1.6: the Secret pair's two engines live in a module of their own, fetched only when one is asked for", async () => {
+  assert.deepEqual([...SECRET_ENGINES].sort(), ["party", "sparkle"]);
+  assert.deepEqual(SECRET.ORDER, ["sparkle", "party"]);
+  for (const id of SECRET.ORDER) assert.equal(typeof SECRET.NAMES[id], "string", id + " has a name");
+  assert.ok(!PACK_ORDER.includes("sparkle") && !PACK_ORDER.includes("party"), "and never in the twelve");
+  // a device on any other kit never asks for it
+  const plain = make(); plain.prime(); await tick();
+  plain.check(0); plain.uncheck(); plain.finish();
+  assert.equal(plain.secretLoads(), 0, "no kit that carries one is on: the module is never fetched");
+  assert.equal(plain.state().extra, false);
+  // the first sound on a Secret kit starts the fetch; from then on it plays
+  const s = make({ kit: () => ({ engine: "sparkle" }) });
+  s.prime(); await tick();
+  assert.equal(s.secretLoads(), 1, "prime() warms the engine the kit that is on carries");
+  assert.equal(s.state().extra, true);
+  for (let step = 0; step < 12; step++) assert.equal(s.check(step), true, "sparkle step " + step);
+  assert.equal(s.uncheck(), true); assert.equal(s.finish(), true);
+  assert.equal(s.preview("party"), true, "the other one plays through the same module");
+  assert.equal(s.secretLoads(), 1, "fetched once");
+  // warm() on its own, without a context (app.js calls it when the kit goes on)
+  const w = make(); assert.equal(w.secretLoads(), 0); w.warm("party"); await tick();
+  assert.equal(w.secretLoads(), 1); assert.equal(w.warm("knock"), undefined); assert.equal(w.secretLoads(), 1, "the twelve need no warming");
+  await w.ready("sparkle"); assert.equal(w.state().extra, true);
+  // the device override reaches them too, and a theme's pitch and decay still land
+  const o = make({ kit: () => ({ engine: "bell", pitch: 0.8, decay: 1.3 }), pack: () => "party" });
+  o.prime(); await tick(); assert.equal(o.check(2), true); assert.equal(o.finish(), true);
+  // built from packs.js's own two builders, handed over rather than imported
+  const built = SECRET.create(HELPERS);
+  assert.deepEqual(Object.keys(built).sort(), ["party", "sparkle"]);
+  for (const p of Object.values(built)) for (const fn of ["check", "uncheck", "finish"]) assert.equal(typeof p[fn], "function");
 });
 
 await test("an unknown engine name falls back to the knock", async () => {

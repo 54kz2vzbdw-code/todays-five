@@ -237,13 +237,17 @@ public extension Model {
     /// without text: a moved line is not a deleted one.
     static func moveItem(_ src: Doc, _ dst: Doc, _ id: String,
                          at ts: Double = CalendarDates.now(),
-                         idFn: () -> String = Model.shortId) -> (src: Doc, dst: Doc, newId: String)? {
+                         idFn: () -> String = Model.shortId,
+                         sectionId: String = "") -> (src: Doc, dst: Doc, newId: String)? {
         guard let it = src.items[id]?.objectValue, !it.truthy("deleted") else { return nil }
         let newId = idFn()
+        // 1.7: a section of the target — the undo of a move sends the line home
+        let live = dst.sections[sectionId]?.objectValue
+        let sec = (!sectionId.isEmpty && live != nil && !(live!.truthy("deleted"))) ? JSString(sectionId) : JSString("")
         var copy = it
         copy.set("id", newId)
-        copy.set("sectionId", "")
-        copy.set("order", lastOrder(dst.itemsInSection("")) { $0.order })
+        copy["sectionId"] = .string(sec)
+        copy.set("order", lastOrder(dst.itemsInSection(sec)) { $0.order })
         copy.set("todayOrder", lastOrder(dst.todayItems) { $0.todayOrder })
         copy.set("updatedAt", ts)
         var out = dst
@@ -254,7 +258,7 @@ public extension Model {
         if let rule {
             var r = rule
             r.set("id", newId)
-            r.set("sectionId", "")
+            r["sectionId"] = .string(sec)
             r.set("updatedAt", ts)
             out.rules[newId] = .object(r)
         }
@@ -282,6 +286,80 @@ public extension Model {
             srcOut.returns[id] = .object(t)
         }
         return (srcOut, out, newId)
+    }
+
+    /// File a line under another section of the same list, at its end ("" is Unsorted). Its Today
+    /// place and its state are untouched. (1.9)
+    static func moveToSection(_ doc: Doc, _ id: String, _ sectionId: String = "",
+                              at ts: Double = CalendarDates.now()) -> Doc {
+        guard let it = doc.items[id]?.objectValue, !it.truthy("deleted") else { return doc }
+        let live = doc.sections[sectionId]?.objectValue
+        let sec = (!sectionId.isEmpty && live != nil && !(live!.truthy("deleted"))) ? JSString(sectionId) : JSString("")
+        if it.str("sectionId") == sec { return doc }
+        var item = it
+        item["sectionId"] = .string(sec)
+        item.set("order", lastOrder(doc.itemsInSection(sec)) { $0.order })
+        item.set("updatedAt", ts)
+        var out = doc
+        out.items[id] = .object(item)
+        out.updatedAt = Swift.max(doc.updatedAt, ts)
+        return refreshRuleSnapshot(out, id, at: ts)
+    }
+
+    // ---------------------------------------------------------------- bidi overrides (1.9)
+
+    /// U+202A–U+202E and U+2066–U+2069 reverse or reorder how a line reads without showing, and on a
+    /// shared list a reader trusts what they see. They are stripped where text enters — an edit, add
+    /// from anywhere, a name, an import — never on read, so a document already holding them is not
+    /// rewritten on every open.
+    static func stripBidi(_ s: JSString) -> JSString {
+        JSString(units: s.units.filter { !($0 >= 0x202A && $0 <= 0x202E) && !($0 >= 0x2066 && $0 <= 0x2069) })
+    }
+
+    /// Every string a document carries that a person reads.
+    static func stripBidiDeep(_ doc: Doc) -> Doc {
+        var d = normalize(.object(doc.json), doc.id)
+        d.json["name"] = .string(stripBidi(d.name))
+        func scrub(_ collection: JSONObject, _ keys: [String]) -> JSONObject {
+            var out = collection
+            for id in collection.keys {
+                guard var r = collection[id]?.objectValue else { continue }
+                for k in keys where r[k] != nil {
+                    if let v = r[k]?.jsString { r[k] = .string(stripBidi(v)) }
+                }
+                out[id] = .object(r)
+            }
+            return out
+        }
+        d.items = scrub(d.items, ["text", "note"])
+        d.sections = scrub(d.sections, ["name"])
+        d.rules = scrub(d.rules, ["text", "note"])
+        d.themes = scrub(d.themes, ["name"])
+        var templates = scrub(d.templates, ["name"])
+        for id in templates.keys {
+            // `for (const l of t.lines || [])` mutates the lines in place and never assigns the key,
+            // so a template tombstone — which has none — must not gain an empty one here
+            guard var t = templates[id]?.objectValue, t["lines"]?.arrayValue != nil else { continue }
+            t["lines"] = .array(t.arr("lines").map { v in
+                guard var l = v.objectValue else { return v }
+                l["text"] = .string(stripBidi(l.str("text")))
+                l["note"] = .string(stripBidi(l.str("note")))
+                return .object(l)
+            })
+            templates[id] = .object(t)
+        }
+        d.templates = templates
+        var history = d.history
+        for day in history.keys {
+            history[day] = .array(history.arr(day.string).map { v in
+                guard var e = v.objectValue else { return v }
+                e["text"] = .string(stripBidi(e.str("text")))
+                e["section"] = .string(stripBidi(e.str("section")))
+                return .object(e)
+            })
+        }
+        d.history = history
+        return d
     }
 
     // ---------------------------------------------------------------- export / import
@@ -325,7 +403,7 @@ public extension Model {
             }
         }
         guard let inner else { throw ImportError(message: "That file isn't a Today's Five export.") }
-        return normalize(.object(inner), id)
+        return stripBidiDeep(normalize(.object(inner), id))   // 1.9: a file is a way in for a bidi override too
     }
 
     /// The Markdown export. Built over UTF-16, not Swift String: a note can carry half a surrogate
@@ -345,11 +423,7 @@ public extension Model {
             }
             return s
         }
-        let t = doc.todayItems
-        if !t.isEmpty {
-            lines.append(contentsOf: [JSString(""), JSString("## Today"), JSString("")])
-            for i in t { lines.append(line(i)) }
-        }
+        // 1.9: a Today line is marked in place (★) and printed once, under its section — no Today block
         var secs: [(id: JSString, name: JSString)] = [(JSString(""), JSString("Unsorted"))]
         secs.append(contentsOf: doc.sectionsOrdered.map { ($0.idJS, $0.nameJS) })
         for s in secs {
@@ -376,6 +450,45 @@ public extension Model {
             out.append(l)
         }
         out.append(JSString("\n"))
+        return out
+    }
+
+    // ---------------------------------------------------------------- the losing side of an edit (1.9)
+
+    /// What this device wrote lately, for `lostEdits`.
+    struct RecentEdit: Sendable, Equatable {
+        public var text: JSString
+        public var note: JSString
+        public var at: Double
+        public init(text: JSString, note: JSString, at: Double) { self.text = text; self.note = note; self.at = at }
+    }
+
+    struct LostEdit: Sendable, Equatable {
+        public var id: String
+        public var text: JSString
+        public var note: JSString
+        public var theirsText: JSString
+        public var theirsNote: JSString
+    }
+
+    static let lostEditMs: Double = 60_000
+
+    /// Last writer wins and the merge is right, but the person whose words lost watched their line
+    /// change with no word. An edit is lost when the line this device left with those words now reads
+    /// differently after a pull, within the window. `recent` keeps its order, so the answer does too.
+    static func lostEdits(_ prev: Doc, _ next: Doc, _ recent: [(id: String, edit: RecentEdit)],
+                          at nowTs: Double = CalendarDates.now(),
+                          windowMs: Double = Model.lostEditMs) -> [LostEdit] {
+        var out: [LostEdit] = []
+        for (id, mine) in recent {
+            if nowTs - mine.at > windowMs { continue }
+            guard let was = prev.items[id]?.objectValue, !was.truthy("deleted"),
+                  let now = next.items[id]?.objectValue, !now.truthy("deleted") else { continue }
+            if was.str("text") != mine.text || was.str("note") != mine.note { continue }   // not this device's words any more
+            if now.str("text") == mine.text && now.str("note") == mine.note { continue }   // and still there
+            out.append(LostEdit(id: id, text: mine.text, note: mine.note,
+                                theirsText: now.str("text"), theirsNote: now.str("note")))
+        }
         return out
     }
 

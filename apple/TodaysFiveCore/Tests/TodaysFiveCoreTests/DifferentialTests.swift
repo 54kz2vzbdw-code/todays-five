@@ -135,6 +135,11 @@ struct DifferentialTests {
             #expect(doc.historyDays == ids("historyDays"), "sequence \(i): historyDays")
             #expect(doc.liveTemplates.map(\.id) == ids("templates"), "sequence \(i): liveTemplates")
             #expect(doc.streak(today, dates: Self.dates) == Int(q.num("streak")), "sequence \(i): streak")
+            let moment = 1_788_615_000_000.0
+            #expect(Self.dates.todayFor(doc, moment) == q.str("todayFor").string, "sequence \(i): todayFor")
+            #expect(Self.dates.dayOf(doc, moment) == q.str("dayOf").string, "sequence \(i): dayOf")
+            #expect(CalendarDates.zoneOf(doc) == q.str("zoneOf").string, "sequence \(i): zoneOf")
+            #expect(Model.stripBidiDeep(doc).canon == q.str("stripBidi"), "sequence \(i): stripBidiDeep")
             Self.check(JSString(Model.exportJSON(doc, at: 123)), q["exportJSON"], "sequence \(i): exportJSON")
             Self.check(Model.exportMarkdown(doc, today: today), q["exportMarkdown"], "sequence \(i): exportMarkdown")
         }
@@ -196,7 +201,8 @@ struct DifferentialTests {
         case "setSectionToday":
             doc = Model.setSectionToday(doc, o.str("sectionId").string, o.truthy("on"), at: ts)
         case "moveItem":
-            if let r = Model.moveItem(doc, dst, id, at: ts, idFn: { o.str("newId").string }) {
+            if let r = Model.moveItem(doc, dst, id, at: ts, idFn: { o.str("newId").string },
+                                      sectionId: o.str("sectionId").string) {
                 return (r.src, r.dst)
             }
         case "editText":
@@ -250,6 +256,13 @@ struct DifferentialTests {
             doc.items[id] = .object(r)
         case "mergeWith":
             doc = Model.merge(.object(doc.json), o["doc"])
+        case "moveToSection":
+            doc = Model.moveToSection(doc, id, o.str("sectionId").string, at: ts)
+        case "roundTrip":
+            doc = (try? Model.importJSON(Model.exportJSON(doc, at: o.num("at")), id: doc.id)) ?? doc
+        case "setZone":
+            doc.json["zone"] = o["zone"]
+            doc.updatedAt = max(doc.updatedAt, ts)
         default:
             break
         }

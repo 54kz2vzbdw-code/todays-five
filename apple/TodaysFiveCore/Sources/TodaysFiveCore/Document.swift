@@ -16,12 +16,14 @@ public enum Model {
     public static let noteMax = 300
     public static let tombstoneTTL: Double = 30 * 24 * 3600 * 1000
     public static let historyDays = 365
+    /// 1.9: without a home zone, a line finished under six hours ago is never rolled.
+    public static let rollGuardMs: Double = 6 * 3600 * 1000
     public static let orderStep: Double = 1000
 
     /// The collections a document carries, in the order they are merged.
     public static let collections = ["sections", "items", "themes", "rules", "returns", "templates"]
 
-    static let docKeys: Set<JSString> = Set(["v", "id", "name", "nameAt", "updatedAt", "history"].map { JSString($0) }
+    static let docKeys: Set<JSString> = Set(["v", "id", "name", "nameAt", "updatedAt", "history", "zone"].map { JSString($0) }
         + collections.map { JSString($0) })
     static let itemKeys: Set<JSString> = Set(["id", "sectionId", "text", "note", "done", "doneAt", "today", "order", "todayOrder", "updatedAt", "deleted"].map { JSString($0) })
     static let sectionKeys: Set<JSString> = Set(["id", "name", "order", "collapsed", "updatedAt", "deleted"].map { JSString($0) })
@@ -175,6 +177,8 @@ public extension Model {
         out.json["rules"] = .object(mapOf(d["rules"], normRule))
         out.json["returns"] = .object(mapOf(d["returns"], normReturn))
         out.json["templates"] = .object(mapOf(d["templates"], normTemplate))
+        // 1.9: the home zone, kept exactly as written — used only when the platform knows it
+        if let zone = d["zone"]?.jsString, !zone.isEmpty { out.json["zone"] = .string(zone) }
         out.json.passThrough(from: d, known: docKeys)
 
         var history = JSONObject()

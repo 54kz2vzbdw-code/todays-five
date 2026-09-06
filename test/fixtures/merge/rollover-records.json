@@ -4,6 +4,7 @@
   "note": "a finished daily line goes to History and resets undone on Today at +2; a finished weekly line resets off Today until its day; a plain finished line tombstones at +1; a return whose day has come puts its line back at +1 and retires; a live rule whose line a v3 rollover tombstoned (one or two ms above its History entry) is revived",
   "cases": [
     {
+      "deviceZone": "America/Chicago",
       "doc": {
         "history": {},
         "id": "L",
@@ -93,6 +94,7 @@
       "ts": 1788379200000
     },
     {
+      "deviceZone": "America/Chicago",
       "doc": {
         "history": {},
         "id": "L",
@@ -191,6 +193,7 @@
       "ts": 1788379200000
     },
     {
+      "deviceZone": "America/Chicago",
       "doc": {
         "history": {
           "2026-09-01": [
@@ -298,6 +301,7 @@
       "ts": 1788465600000
     },
     {
+      "deviceZone": "America/Chicago",
       "doc": {
         "history": {},
         "id": "L",
@@ -385,6 +389,7 @@
       "ts": 1788379200000
     },
     {
+      "deviceZone": "America/Chicago",
       "doc": {
         "history": {},
         "id": "L",
@@ -458,6 +463,7 @@
       "ts": 1788379200000
     },
     {
+      "deviceZone": "America/Chicago",
       "doc": {
         "history": {
           "2026-09-01": [

@@ -233,6 +233,7 @@ struct ModelTests {
         #expect(r3.history.count == 2)
     }
 
+    /// 1.9: the third argument is the clock — the six-hour guard reads it — so every one is a real morning.
     @Test("rollover: a weekly line leaves Today until its next day, then comes back once")
     func rolloverWeekly() throws {
         let mon = Self.at("2026-09-07T10:00:00")                       // a Monday
@@ -241,27 +242,27 @@ struct ModelTests {
         var rule = JSONObject(); rule.set("kind", "weekly"); rule["days"] = .array([.number(1), .number(4)])
         d = Model.setRule(d, "a", rule, at: 100, today: "2026-09-07")
 
-        let tue = Model.rollover(d, today: "2026-09-08", at: 1, dates: Self.dates).doc
+        let tue = Model.rollover(d, today: "2026-09-08", at: Self.at("2026-09-08T09:00:00"), dates: Self.dates).doc
         #expect(tue.items["a"]?.objectValue?.truthy("done") == false)
         #expect(tue.items["a"]?.objectValue?.truthy("today") == false, "not due on Tuesday")
-        #expect(Model.rollover(tue, today: "2026-09-09", at: 2, dates: Self.dates).changed == false, "Wednesday: nothing")
+        #expect(Model.rollover(tue, today: "2026-09-09", at: Self.at("2026-09-09T09:00:00"), dates: Self.dates).changed == false, "Wednesday: nothing")
 
-        let thuResult = Model.rollover(tue, today: "2026-09-10", at: 3, dates: Self.dates)
+        let thuResult = Model.rollover(tue, today: "2026-09-10", at: Self.at("2026-09-10T09:00:00"), dates: Self.dates)
         let thu = thuResult.doc
         #expect(thu.items["a"]?.objectValue?.truthy("today") == true, "Thursday: back on Today")
         #expect(thu.items["a"]?.objectValue?.num("updatedAt")
                 == (tue.items["a"]?.objectValue?.num("updatedAt") ?? 0) + 1)
         #expect(thu.rules["a"]?.objectValue?.str("placed") == "2026-09-10")
-        #expect(Model.rollover(thu, today: "2026-09-10", at: 4, dates: Self.dates).changed == false, "same day again")
+        #expect(Model.rollover(thu, today: "2026-09-10", at: Self.at("2026-09-10T09:01:00"), dates: Self.dates).changed == false, "same day again")
 
         // the user takes it off Today that day: the minute tick must not put it back
         var off = Model.normalize(.object(thu.json))
         var a = try #require(off.items["a"]?.objectValue)
         a.set("today", false); a.set("updatedAt", Self.at("2026-09-10T11:00:00"))
         off.items["a"] = .object(a)
-        #expect(Model.rollover(off, today: "2026-09-10", at: 5, dates: Self.dates).changed == false)
-        #expect(Model.rollover(off, today: "2026-09-11", at: 6, dates: Self.dates).changed == false, "Friday: not due")
-        #expect(Model.rollover(off, today: "2026-09-14", at: 7, dates: Self.dates).doc.items["a"]?.objectValue?.truthy("today") == true,
+        #expect(Model.rollover(off, today: "2026-09-10", at: Self.at("2026-09-10T11:01:00"), dates: Self.dates).changed == false)
+        #expect(Model.rollover(off, today: "2026-09-11", at: Self.at("2026-09-11T09:00:00"), dates: Self.dates).changed == false, "Friday: not due")
+        #expect(Model.rollover(off, today: "2026-09-14", at: Self.at("2026-09-14T09:00:00"), dates: Self.dates).doc.items["a"]?.objectValue?.truthy("today") == true,
                 "next Monday: back")
     }
 
@@ -273,7 +274,7 @@ struct ModelTests {
         d.items["b"] = .object(Self.item("b", [("done", .bool(true)), ("doneAt", .number(y)), ("updatedAt", .number(y))]))
         var rule = JSONObject(); rule.set("kind", "daily")
         d = Model.setRule(d, "a", rule, at: 1, today: "2026-09-01")
-        let r = Model.rollover(d, today: "2026-09-02", at: 5, dates: Self.dates).doc
+        let r = Model.rollover(d, today: "2026-09-02", at: Self.at("2026-09-02T09:00:00"), dates: Self.dates).doc
         #expect(r.items["a"] == d.items["a"])
         let b = try #require(r.items["b"]?.objectValue)
         #expect(JSONWriter.canon(.object(b)) == #"{"deleted":true,"id":"b","updatedAt":\#(JSNumber.toString(y + 1))}"#)

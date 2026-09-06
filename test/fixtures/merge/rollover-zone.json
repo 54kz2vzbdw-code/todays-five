@@ -4,6 +4,7 @@
   "note": "with a home zone every device passes the same today (computed in that zone) and files a line under the day it was finished there: nothing moves while it is still the 5th at home, and after home midnight both devices write the identical tombstone and History entry",
   "cases": [
     {
+      "deviceZone": "America/Chicago",
       "doc": {
         "history": {},
         "id": "L",
@@ -89,6 +90,7 @@
       "ts": 1788622200000
     },
     {
+      "deviceZone": "America/Chicago",
       "doc": {
         "history": {},
         "id": "L",
@@ -176,6 +178,7 @@
       "ts": 1788674400000
     },
     {
+      "deviceZone": "America/Chicago",
       "doc": {
         "history": {},
         "id": "L",
@@ -263,6 +266,7 @@
       "ts": 1788678000000
     },
     {
+      "deviceZone": "America/Chicago",
       "doc": {
         "history": {
           "2026-09-05": [

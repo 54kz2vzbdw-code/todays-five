@@ -164,7 +164,7 @@ public extension Doc {
     func streak(_ today: String, dates: CalendarDates = CalendarDates()) -> Int {
         var days = Set(historyDays)
         for it in liveItems where it.done && it.doneAt != 0 {
-            days.insert(dates.localDate(it.doneAt))
+            days.insert(dates.dayOf(self, it.doneAt))     // 1.9: in the list's home zone when it has one
         }
         var day = today
         var count = 0

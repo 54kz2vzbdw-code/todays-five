@@ -114,6 +114,66 @@ struct JSSemanticsTests {
         #expect(JSONValue.object(JSONObject()).isTruthy == true)
     }
 
+    @Test("dates, the home zone and bidi stripping match the web, case for case")
+    func datesAndZonesMatchTheWeb() throws {
+        let v = Fixtures.vectors
+        let tz = try #require(TimeZone(identifier: v.str("timezone").string))
+        let dates = CalendarDates(timeZone: tz)
+        let d = try #require(v["dates"]?.objectValue)
+
+        for c in d.arr("addDays") {
+            let o = try #require(c.objectValue)
+            #expect(dates.addDays(o.str("day").string, Int(o.num("n"))) == o.str("out").string,
+                    "addDays(\(o.str("day").string), \(Int(o.num("n"))))")
+        }
+        for c in d.arr("weekdays") {
+            let o = try #require(c.objectValue)
+            #expect(dates.weekdayOf(o.str("day").string) == Int(o.num("weekday")), "weekdayOf \(o.str("day").string)")
+        }
+        for c in d.arr("due") {
+            let o = try #require(c.objectValue)
+            #expect(dates.isDue(o["rule"]?.objectValue, o.str("day").string) == o.truthy("due"),
+                    "isDue \(JSONWriter.stringify(o["rule"] ?? .null)) on \(o.str("day").string)")
+        }
+        for c in d.arr("localDates") {
+            let o = try #require(c.objectValue)
+            #expect(dates.localDate(o.num("ts")) == o.str("out").string, "localDate \(o.num("ts"))")
+        }
+        for c in v.arr("zones") {
+            let o = try #require(c.objectValue)
+            #expect(CalendarDates.isZone(o.str("zone").string) == o.truthy("ok"), "isZone \(o.str("zone").string)")
+        }
+        for c in v.arr("zoneDays") {
+            let o = try #require(c.objectValue)
+            #expect(CalendarDates.localDateIn(o.num("ts"), o.str("zone").string) == o.str("out").string,
+                    "localDateIn \(o.str("zone").string) \(o.num("ts"))")
+        }
+        for c in v.arr("zoneDocs") {
+            let o = try #require(c.objectValue)
+            var doc = Doc.empty(id: "L", at: 0)
+            let zone = o.str("zone")
+            if !zone.isEmpty { doc.json["zone"] = .string(zone) }
+            let normalized = Model.normalize(.object(doc.json), "L")
+            #expect(CalendarDates.zoneOf(normalized) == o.str("zoneOf").string, "zoneOf \(zone.string)")
+            #expect(dates.todayFor(normalized, o.num("ts")) == o.str("todayFor").string, "todayFor \(zone.string)")
+            #expect(dates.dayOf(normalized, o.num("ts")) == o.str("dayOf").string, "dayOf \(zone.string)")
+        }
+        #expect(Model.rollGuardMs == v.num("rollGuardMs"))
+        for c in v.arr("bidi") {
+            let o = try #require(c.objectValue)
+            #expect(Model.stripBidi(o.str("in")) == o.str("out"), "stripBidi")
+        }
+        let limits = try #require(v["limits"]?.objectValue)
+        #expect(Double(Model.textMax) == limits.num("TEXT_MAX"))
+        #expect(Double(Model.noteMax) == limits.num("NOTE_MAX"))
+        #expect(Double(Model.templateNameMax) == limits.num("TEMPLATE_NAME_MAX"))
+        #expect(Double(Model.templateLinesMax) == limits.num("TEMPLATE_LINES_MAX"))
+        #expect(Model.tombstoneTTL == limits.num("TOMBSTONE_TTL"))
+        #expect(Double(Model.historyDays) == limits.num("HISTORY_DAYS"))
+        #expect(Double(Model.docVersion) == v.num("docVersion"))
+        #expect(Model.seedLines == v.arr("seedLines").map { $0.jsString?.string ?? "" })
+    }
+
     @Test("trim, whitespace collapsing and line splitting are JavaScript's")
     func jsTextRules() {
         #expect(JSText.trim(JSString("\u{00A0} hi \u{FEFF}")).string == "hi")

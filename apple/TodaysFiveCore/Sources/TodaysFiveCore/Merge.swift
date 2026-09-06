@@ -98,6 +98,14 @@ public extension Model {
         o["returns"] = .object(mergeMap(a.returns, b.returns))
         o["templates"] = .object(mergeMap(a.templates, b.templates))
         o.set("updatedAt", Swift.max(a.updatedAt, b.updatedAt))
+        // 1.9: the home zone merges by the larger string — the very rule a client that has never heard
+        // of it applies below, so 1.8 and 1.9 agree on the answer
+        let za = a.json["zone"], zb = b.json["zone"]
+        if za != nil || zb != nil {
+            if za == nil { o["zone"] = zb }
+            else if zb == nil { o["zone"] = za }
+            else { o["zone"] = canon(za!) >= canon(zb!) ? za : zb }
+        }
 
         // keys neither side of this code knows: keep the larger canonical value so both sides agree
         var seen = Set<JSString>()
@@ -129,7 +137,6 @@ public extension Model {
             if day >= cutoff { hist[day] = doc.history[day] } else { changed = true }
         }
         out.json["history"] = .object(hist)
-        let items = doc.items
         for key in collections {
             let m = doc.json.obj(key)
             var kept = JSONObject()
@@ -139,7 +146,8 @@ public extension Model {
                     let stamp = r["updatedAt"]?.isTruthy == true ? r.num("updatedAt") : 0
                     if nowTs - stamp > ttl { changed = true; continue }
                 } else if key == "rules" || key == "returns" {
-                    if items[id] == nil { changed = true; continue }
+                    // 1.7: against the items kept in *this* pass, so a second pass is a no-op
+                    if out.items[id] == nil { changed = true; continue }
                 }
                 kept[id] = .object(r)
             }

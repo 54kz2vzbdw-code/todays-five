@@ -103,6 +103,19 @@ public enum Crypto {
         return data
     }
 
+    /// The server refuses an envelope over 96 KB (private.limits in 002_v3.sql). 1.9 measures an
+    /// import against it before it lands, sealed the way a push seals it.
+    public static let envelopeCap = 96 * 1024
+
+    /// `envelopeBytes(key, doc)` — the row's size as the server measures it: jsonb spaces its keys,
+    /// so the text is two characters longer per key than JSON.stringify writes.
+    public static func envelopeBytes(key: SymmetricKey, document: JSONObject) throws -> Int {
+        var wire = document
+        wire.remove("id")
+        let env = try seal(key: key, document: wire).json
+        return JSONWriter.stringify(.object(env)).utf16.count + 2 * env.count
+    }
+
     /// The document an envelope carries.
     public static func openDocument(key: SymmetricKey, envelope: Envelope) throws -> JSONObject {
         let data = try open(key: key, envelope: envelope)

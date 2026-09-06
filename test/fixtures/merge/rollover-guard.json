@@ -4,6 +4,7 @@
   "note": "without a home zone a device rolls on its own clock, behind the guard: a line finished under six hours ago is never rolled, whatever today the device passes; past six hours it is, as 1.8 did",
   "cases": [
     {
+      "deviceZone": "America/Chicago",
       "doc": {
         "history": {},
         "id": "L",
@@ -87,6 +88,7 @@
       "ts": 1788622200000
     },
     {
+      "deviceZone": "America/Chicago",
       "doc": {
         "history": {},
         "id": "L",
@@ -170,6 +172,7 @@
       "ts": 1788622200000
     },
     {
+      "deviceZone": "America/Chicago",
       "doc": {
         "history": {},
         "id": "L",

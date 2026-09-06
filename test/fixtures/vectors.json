@@ -223,15 +223,15 @@
     {
       "name": "seeded",
       "W": "zzzzzzzzzzzzzzzzzzzzzz",
-      "plaintext": "{\"v\":3,\"name\":\"\",\"nameAt\":1788719202497,\"sections\":{},\"items\":{\"KBmPipNZRw\":{\"id\":\"KBmPipNZRw\",\"sectionId\":\"\",\"text\":\"Tap or click to cross this off\",\"note\":\"\",\"done\":false,\"doneAt\":0,\"today\":true,\"order\":1000,\"todayOrder\":1000,\"updatedAt\":1725000000000},\"0VEe9rF0d6\":{\"id\":\"0VEe9rF0d6\",\"sectionId\":\"\",\"text\":\"Add a line of your own\",\"note\":\"\",\"done\":false,\"doneAt\":0,\"today\":true,\"order\":2000,\"todayOrder\":2000,\"updatedAt\":1725000000000},\"t67PMx3dFJ\":{\"id\":\"t67PMx3dFJ\",\"sectionId\":\"\",\"text\":\"Cross off all three and see\",\"note\":\"\",\"done\":false,\"doneAt\":0,\"today\":true,\"order\":3000,\"todayOrder\":3000,\"updatedAt\":1725000000000}},\"history\":{},\"themes\":{},\"rules\":{},\"returns\":{},\"templates\":{},\"updatedAt\":1788719202497}",
+      "plaintext": "{\"v\":3,\"name\":\"\",\"nameAt\":1788721885627,\"sections\":{},\"items\":{\"E5lIsCrIwJ\":{\"id\":\"E5lIsCrIwJ\",\"sectionId\":\"\",\"text\":\"Tap or click to cross this off\",\"note\":\"\",\"done\":false,\"doneAt\":0,\"today\":true,\"order\":1000,\"todayOrder\":1000,\"updatedAt\":1725000000000},\"jFuEwlit96\":{\"id\":\"jFuEwlit96\",\"sectionId\":\"\",\"text\":\"Add a line of your own\",\"note\":\"\",\"done\":false,\"doneAt\":0,\"today\":true,\"order\":2000,\"todayOrder\":2000,\"updatedAt\":1725000000000},\"UH85k36wCS\":{\"id\":\"UH85k36wCS\",\"sectionId\":\"\",\"text\":\"Cross off all three and see\",\"note\":\"\",\"done\":false,\"doneAt\":0,\"today\":true,\"order\":3000,\"todayOrder\":3000,\"updatedAt\":1725000000000}},\"history\":{},\"themes\":{},\"rules\":{},\"returns\":{},\"templates\":{},\"updatedAt\":1788721885627}",
       "doc": {
         "v": 3,
         "name": "",
-        "nameAt": 1788719202497,
+        "nameAt": 1788721885627,
         "sections": {},
         "items": {
-          "KBmPipNZRw": {
-            "id": "KBmPipNZRw",
+          "E5lIsCrIwJ": {
+            "id": "E5lIsCrIwJ",
             "sectionId": "",
             "text": "Tap or click to cross this off",
             "note": "",
@@ -242,8 +242,8 @@
             "todayOrder": 1000,
             "updatedAt": 1725000000000
           },
-          "0VEe9rF0d6": {
-            "id": "0VEe9rF0d6",
+          "jFuEwlit96": {
+            "id": "jFuEwlit96",
             "sectionId": "",
             "text": "Add a line of your own",
             "note": "",
@@ -254,8 +254,8 @@
             "todayOrder": 2000,
             "updatedAt": 1725000000000
           },
-          "t67PMx3dFJ": {
-            "id": "t67PMx3dFJ",
+          "UH85k36wCS": {
+            "id": "UH85k36wCS",
             "sectionId": "",
             "text": "Cross off all three and see",
             "note": "",
@@ -272,20 +272,20 @@
         "rules": {},
         "returns": {},
         "templates": {},
-        "updatedAt": 1788719202497
+        "updatedAt": 1788721885627
       },
       "raw": {
         "v": 3,
         "alg": "A256GCM",
         "iv": "cn2Ik56ptL/K1eDr",
-        "ct": "2i+e25eJ+ejTo3u3XkfKy/Xl/0O1E9r6CjjSk3sDuesrI4gVFgBVLLOsCUToyKSLe1UZp9rp//3KUExuRBl5h5X3CLKrEXZ6yY/tGp+bc3r0WmdjH47j8ysRxJmwVNv2dYAE7jiHegrBE2KFK8l0Z6bS6M04AQTFwXKcJ9o8u1WKR1d+/QfViie5jKNZXU4k8l6V9CWkNJZp/e0yEW6qCJk8npP8do+NZpTM8HPwOHWHvtq4kFvtK1T8ZeVwpTtsZwJ4/oV+2SM9e0EhxNLnKX/UBD223kr748PsFaPOySKaUoyb7Qss1WkfH6JDAF2Nxa5CyLdoS1SWjwV3S3MfR7JOL1MBzwimPOXpUIFP7rUOc8DNTAgF+Wm5tBIiDZiaKiuDzyJwJFUyORSStAxFx0ePFNPUqqR5tKluJ19evI/1eFuc5hX+poGrewWDtT+CX+A55TDRbQ9ZpLH6wBo6G4Dzw4KambwFIKwdKtkB14Jf0Vg7qtG8apWH1m0fouvtpV/50cCUOsNkzbQmZW5FDuBQNjGl8N95tJEP7ObtrX2We57Yt4XUUPtHZAnhu5fjnNY+c2ElVhOtnMGHGuBv7kojAf4/6jq80Fj679SYp9yTVJEGBK2adMJlvTnzei5E+glzuKlgW+bDuBbFsLNRcfukrNHkbdSn0L0SWUY5qUUCx3PL84YaBwzV9LA1SehvYDJtQ3pmq4CwCb23TFrYkMIRTB9+VYFg8BOOKVtrTLwqRNeSmE/bWWEnRucTilRaTR4/RmU6fzD8i/s2GP1ty+gzgtcSFxomUjuIRONccSCStqPs86jtiiL3c/SEyJ5unwycHVipch1tvGPWyRCJSplrcCvUdMOFfHXVBVpPk4TXNDtaOtLeh4C5HBEGWBxMpSXJlXA4eoyaAMG92McDXaFbGDyuDolJeWzAn784N9Bev6VBEtN1nba2wJyVtA6q3Bklv5vcOLNrYl46WOhl"
+        "ct": "2i+e25eJ+ejTo3u3XkfKy/Xl/0O1E9r6CjjSk3sDuegjKYASFAtVLLOsCUToyKSLe1UZp9rp//3KUExuRBl5h5uACauxIkpp7LLtGp+bc3r0WmdtaI/66Rgt17yNVNv2dYAE7jiHegrBE2KFK8l0Z6bS6M04AQTFwXKcJ9o8u1WKR1d+/QfViie5jKNZXU4k8l6V9CWkNJZp/e0yEW6qCJk8npP8do+NZpTM8HPwOHWHvtq4kFvtK1T8ZeVwpTtsZwJ4/oV+2SM9e0EhxNLnKX/UBD223kr748PsFaPOySKaUoyb7Qss1WkfH6JDAF2Nxa5CyLdoS1SWjwV3S3MfR+heH3NP0SfiYeXpUIFP7rUOc8CXXDglt3eW8E8iDZiaKiuDzyJwJFUyORSStAxFx0ePFNPUqqR5tKluJ19evI/1eFuc5hX+poGrewWDtT+CX+A55TDRbQ9ZpLH6wBo6G4Dzw4KambwFIKwdKtkB14Jf0Vg7qtG8apWH1m0fouvtpV/50cCUOsNkzbQmZW5FDuBQNjGl8N95tJEP7ObtrX2We57Yt4XUUPtHZAnhu5fjnNY+c2ElVhOM4s7iPKtq/U86Af4/6jq80Fj6zqqXwvrYUYIDHa2adMJlvTnzei5E+glzuKlgW+bDuBbFsLNRcfukrNHkbdSn0L0SWUY5qUUCx3PL84YaBwzV9LA1SehvYDJtQ3pmq4CwCb23TFrYkMIRTB9+VYFg8BOOKVtrTLwqRNeSmE/bWWEnRucTilRaTR4/RmU6fzD8i/s2GP1ty+gzgtcSFxomUjuIRONccSCStqPs86jtiiL3c/SEyJ5unwycHVipch1tvGPWyRCJSplrcCvUdMOFfHXVBVpPk4TXNDtaOtLeh4C5HBEGWBxMpSXJlXA4eoyaAMG92McDXaFbGDyuDolJeWzAn784N9Bev6VBEtN2lby+x56etA7VTA727za32PuF2GM0PW/i"
       },
       "zipped": {
         "v": 3,
         "alg": "A256GCM",
         "z": "deflate-raw",
         "iv": "5vH8BxIdKDM+SVRf",
-        "ct": "EfPz1ovUd1qiuoNzlu8G4XqIsmlG9Talc4fl1WabstEHriIheN25WynaFdhXZdOsOvYdrssyTItMmXgArcJ43m9C+Ed8RdrX/WW37DZI8FKZNZmosiFZ0Lvsl3Wd842O3KRJKjw2vheUf0JX1Srufc08rry8/PJiEE84F+Q5hYqX5nSycEdqsVCoyg9hsUU1pbKm1afNIPIYuflUD0zElww24BjJi6I9reYO7yWtHj1ct0vrbG3VDXFPCuO/ONjLX8nWaeSEuRe29qiIvQA2wutFrpzWFZupolzTP2/fOV3qlapL70zDelXbwSQU6oFj0HtFo8mQ/XMV95olrxh8L3M8ByhBin9rlTuOZOk3CcoGDWEIsJH02EZTU1/0ZTznv9GfMIIh6Pm41Kb1QTbA9gA="
+        "ct": "EfNz94uka1kCNVt4ycMf42T7jL9jM6CbSWgntsZYDIMaubgpshxWDZJpSA5VDeYHSe+/Rnq995bFWziutpZOan930DaraW1enXSK7S6P4kxU3xvn/bHc7Cw0rj6jOZlgXpjNpr4Xl2QCJ3GaMh56S/WW3kIcmZI+lfr8JIo/SW0eZtGNt6rUoa29WO5l3nYurLfl0EDQr9iXtVBVJLOr/bePLYcTIujobiGZ0F6xmIibzYVHeYVAbcol5AO3T9dC+GhFbt5K+JzWzIad4N6ypeQcHUkQy/uh5oaXoU+yYbqusg4prdLQ8tGWKbMlDtEqFWld9HFFSa3DrE/iGug8cHYkMUnk1joTOIuW4sgffMS9kVvMmJqkBzo/fNKJC5NI6F8eKbZ2+nBHPwVsQDxF"
       }
     }
   ],
@@ -2810,6 +2810,396 @@
       }
     ]
   },
+  "zones": [
+    {
+      "zone": "America/Chicago",
+      "ok": true
+    },
+    {
+      "zone": "Asia/Tokyo",
+      "ok": true
+    },
+    {
+      "zone": "UTC",
+      "ok": true
+    },
+    {
+      "zone": "Europe/London",
+      "ok": true
+    },
+    {
+      "zone": "Pacific/Kiritimati",
+      "ok": true
+    },
+    {
+      "zone": "Australia/Eucla",
+      "ok": true
+    },
+    {
+      "zone": "Mars/Olympus",
+      "ok": false
+    },
+    {
+      "zone": "",
+      "ok": false
+    },
+    {
+      "zone": "not a zone",
+      "ok": false
+    },
+    {
+      "zone": "America/Chicago; DROP",
+      "ok": false
+    },
+    {
+      "zone": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "ok": false
+    },
+    {
+      "zone": "Etc/GMT+5",
+      "ok": true
+    }
+  ],
+  "zoneDays": [
+    {
+      "zone": "America/Chicago",
+      "ts": 1788615000000,
+      "out": "2026-09-05"
+    },
+    {
+      "zone": "America/Chicago",
+      "ts": 1788622200000,
+      "out": "2026-09-05"
+    },
+    {
+      "zone": "America/Chicago",
+      "ts": 1788674400000,
+      "out": "2026-09-06"
+    },
+    {
+      "zone": "America/Chicago",
+      "ts": 1767227400000,
+      "out": "2025-12-31"
+    },
+    {
+      "zone": "America/Chicago",
+      "ts": 1783208700000,
+      "out": "2026-07-04"
+    },
+    {
+      "zone": "Asia/Tokyo",
+      "ts": 1788615000000,
+      "out": "2026-09-05"
+    },
+    {
+      "zone": "Asia/Tokyo",
+      "ts": 1788622200000,
+      "out": "2026-09-06"
+    },
+    {
+      "zone": "Asia/Tokyo",
+      "ts": 1788674400000,
+      "out": "2026-09-06"
+    },
+    {
+      "zone": "Asia/Tokyo",
+      "ts": 1767227400000,
+      "out": "2026-01-01"
+    },
+    {
+      "zone": "Asia/Tokyo",
+      "ts": 1783208700000,
+      "out": "2026-07-05"
+    },
+    {
+      "zone": "UTC",
+      "ts": 1788615000000,
+      "out": "2026-09-05"
+    },
+    {
+      "zone": "UTC",
+      "ts": 1788622200000,
+      "out": "2026-09-05"
+    },
+    {
+      "zone": "UTC",
+      "ts": 1788674400000,
+      "out": "2026-09-06"
+    },
+    {
+      "zone": "UTC",
+      "ts": 1767227400000,
+      "out": "2026-01-01"
+    },
+    {
+      "zone": "UTC",
+      "ts": 1783208700000,
+      "out": "2026-07-04"
+    },
+    {
+      "zone": "Europe/London",
+      "ts": 1788615000000,
+      "out": "2026-09-05"
+    },
+    {
+      "zone": "Europe/London",
+      "ts": 1788622200000,
+      "out": "2026-09-05"
+    },
+    {
+      "zone": "Europe/London",
+      "ts": 1788674400000,
+      "out": "2026-09-06"
+    },
+    {
+      "zone": "Europe/London",
+      "ts": 1767227400000,
+      "out": "2026-01-01"
+    },
+    {
+      "zone": "Europe/London",
+      "ts": 1783208700000,
+      "out": "2026-07-05"
+    },
+    {
+      "zone": "Pacific/Kiritimati",
+      "ts": 1788615000000,
+      "out": "2026-09-06"
+    },
+    {
+      "zone": "Pacific/Kiritimati",
+      "ts": 1788622200000,
+      "out": "2026-09-06"
+    },
+    {
+      "zone": "Pacific/Kiritimati",
+      "ts": 1788674400000,
+      "out": "2026-09-06"
+    },
+    {
+      "zone": "Pacific/Kiritimati",
+      "ts": 1767227400000,
+      "out": "2026-01-01"
+    },
+    {
+      "zone": "Pacific/Kiritimati",
+      "ts": 1783208700000,
+      "out": "2026-07-05"
+    },
+    {
+      "zone": "Australia/Eucla",
+      "ts": 1788615000000,
+      "out": "2026-09-05"
+    },
+    {
+      "zone": "Australia/Eucla",
+      "ts": 1788622200000,
+      "out": "2026-09-06"
+    },
+    {
+      "zone": "Australia/Eucla",
+      "ts": 1788674400000,
+      "out": "2026-09-06"
+    },
+    {
+      "zone": "Australia/Eucla",
+      "ts": 1767227400000,
+      "out": "2026-01-01"
+    },
+    {
+      "zone": "Australia/Eucla",
+      "ts": 1783208700000,
+      "out": "2026-07-05"
+    },
+    {
+      "zone": "Etc/GMT+5",
+      "ts": 1788615000000,
+      "out": "2026-09-05"
+    },
+    {
+      "zone": "Etc/GMT+5",
+      "ts": 1788622200000,
+      "out": "2026-09-05"
+    },
+    {
+      "zone": "Etc/GMT+5",
+      "ts": 1788674400000,
+      "out": "2026-09-06"
+    },
+    {
+      "zone": "Etc/GMT+5",
+      "ts": 1767227400000,
+      "out": "2025-12-31"
+    },
+    {
+      "zone": "Etc/GMT+5",
+      "ts": 1783208700000,
+      "out": "2026-07-04"
+    }
+  ],
+  "zoneDocs": [
+    {
+      "zone": "America/Chicago",
+      "ts": 1788615000000,
+      "zoneOf": "America/Chicago",
+      "todayFor": "2026-09-05",
+      "dayOf": "2026-09-05",
+      "kept": "America/Chicago"
+    },
+    {
+      "zone": "America/Chicago",
+      "ts": 1788622200000,
+      "zoneOf": "America/Chicago",
+      "todayFor": "2026-09-05",
+      "dayOf": "2026-09-05",
+      "kept": "America/Chicago"
+    },
+    {
+      "zone": "America/Chicago",
+      "ts": 1788674400000,
+      "zoneOf": "America/Chicago",
+      "todayFor": "2026-09-06",
+      "dayOf": "2026-09-06",
+      "kept": "America/Chicago"
+    },
+    {
+      "zone": "America/Chicago",
+      "ts": 1767227400000,
+      "zoneOf": "America/Chicago",
+      "todayFor": "2025-12-31",
+      "dayOf": "2025-12-31",
+      "kept": "America/Chicago"
+    },
+    {
+      "zone": "America/Chicago",
+      "ts": 1783208700000,
+      "zoneOf": "America/Chicago",
+      "todayFor": "2026-07-04",
+      "dayOf": "2026-07-04",
+      "kept": "America/Chicago"
+    },
+    {
+      "zone": "Asia/Tokyo",
+      "ts": 1788615000000,
+      "zoneOf": "Asia/Tokyo",
+      "todayFor": "2026-09-05",
+      "dayOf": "2026-09-05",
+      "kept": "Asia/Tokyo"
+    },
+    {
+      "zone": "Asia/Tokyo",
+      "ts": 1788622200000,
+      "zoneOf": "Asia/Tokyo",
+      "todayFor": "2026-09-06",
+      "dayOf": "2026-09-06",
+      "kept": "Asia/Tokyo"
+    },
+    {
+      "zone": "Asia/Tokyo",
+      "ts": 1788674400000,
+      "zoneOf": "Asia/Tokyo",
+      "todayFor": "2026-09-06",
+      "dayOf": "2026-09-06",
+      "kept": "Asia/Tokyo"
+    },
+    {
+      "zone": "Asia/Tokyo",
+      "ts": 1767227400000,
+      "zoneOf": "Asia/Tokyo",
+      "todayFor": "2026-01-01",
+      "dayOf": "2026-01-01",
+      "kept": "Asia/Tokyo"
+    },
+    {
+      "zone": "Asia/Tokyo",
+      "ts": 1783208700000,
+      "zoneOf": "Asia/Tokyo",
+      "todayFor": "2026-07-05",
+      "dayOf": "2026-07-05",
+      "kept": "Asia/Tokyo"
+    },
+    {
+      "zone": "Mars/Olympus",
+      "ts": 1788615000000,
+      "zoneOf": "",
+      "todayFor": "2026-09-05",
+      "dayOf": "2026-09-05",
+      "kept": "Mars/Olympus"
+    },
+    {
+      "zone": "Mars/Olympus",
+      "ts": 1788622200000,
+      "zoneOf": "",
+      "todayFor": "2026-09-05",
+      "dayOf": "2026-09-05",
+      "kept": "Mars/Olympus"
+    },
+    {
+      "zone": "Mars/Olympus",
+      "ts": 1788674400000,
+      "zoneOf": "",
+      "todayFor": "2026-09-06",
+      "dayOf": "2026-09-06",
+      "kept": "Mars/Olympus"
+    },
+    {
+      "zone": "Mars/Olympus",
+      "ts": 1767227400000,
+      "zoneOf": "",
+      "todayFor": "2025-12-31",
+      "dayOf": "2025-12-31",
+      "kept": "Mars/Olympus"
+    },
+    {
+      "zone": "Mars/Olympus",
+      "ts": 1783208700000,
+      "zoneOf": "",
+      "todayFor": "2026-07-04",
+      "dayOf": "2026-07-04",
+      "kept": "Mars/Olympus"
+    },
+    {
+      "zone": "",
+      "ts": 1788615000000,
+      "zoneOf": "",
+      "todayFor": "2026-09-05",
+      "dayOf": "2026-09-05",
+      "kept": null
+    },
+    {
+      "zone": "",
+      "ts": 1788622200000,
+      "zoneOf": "",
+      "todayFor": "2026-09-05",
+      "dayOf": "2026-09-05",
+      "kept": null
+    },
+    {
+      "zone": "",
+      "ts": 1788674400000,
+      "zoneOf": "",
+      "todayFor": "2026-09-06",
+      "dayOf": "2026-09-06",
+      "kept": null
+    },
+    {
+      "zone": "",
+      "ts": 1767227400000,
+      "zoneOf": "",
+      "todayFor": "2025-12-31",
+      "dayOf": "2025-12-31",
+      "kept": null
+    },
+    {
+      "zone": "",
+      "ts": 1783208700000,
+      "zoneOf": "",
+      "todayFor": "2026-07-04",
+      "dayOf": "2026-07-04",
+      "kept": null
+    }
+  ],
+  "rollGuardMs": 21600000,
   "docVersion": 3,
   "limits": {
     "TEXT_MAX": 200,
@@ -2823,5 +3213,23 @@
     "Tap or click to cross this off",
     "Add a line of your own",
     "Cross off all three and see"
+  ],
+  "bidi": [
+    {
+      "in": "Pay ‮alice‬ 100",
+      "out": "Pay alice 100"
+    },
+    {
+      "in": "⁦x⁩",
+      "out": "x"
+    },
+    {
+      "in": "plain",
+      "out": "plain"
+    },
+    {
+      "in": "‪‫‬‭‮⁦⁧⁨⁩",
+      "out": ""
+    }
   ]
 }

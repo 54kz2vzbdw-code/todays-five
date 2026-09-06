@@ -2,7 +2,8 @@
 // relative to the record it replaces (+1, +2), never with the clock, so two devices produce identical
 // records and a device waking from days of sleep cannot beat a real edit made elsewhere.
 // COMPATIBILITY.md §3. Ported from model.js. The four steps:
-//   1. finished on an earlier date → History; a recurring line resets (+2, beating a v3 rollover's
+//   1. finished on an earlier date (in the home zone when the list has one; without one, never a line
+//      finished under six hours ago) → History; a recurring line resets (+2, beating a v3 rollover's
 //      tombstone at +1), any other line is tombstoned (+1) as in v3;
 //   2. an undone recurring line that is off Today and due today goes on Today (once per day: the rule
 //      remembers the date it last placed its line, so taking it off Today sticks);
@@ -23,8 +24,11 @@ public extension Model {
         public let changed: Bool
     }
 
-    static func rollover(_ doc: Doc, today: String, at ts: Double = CalendarDates.now(),
+    static func rollover(_ doc: Doc, today explicitToday: String? = nil, at ts: Double = CalendarDates.now(),
                          dates: CalendarDates = CalendarDates()) -> RolloverResult {
+        // 1.9: in the list's home zone when it has one, else on this device's clock
+        let today = explicitToday ?? dates.todayFor(doc, ts)
+        let zoned = !CalendarDates.zoneOf(doc).isEmpty
         var moved: [JSONObject] = []
         var items = doc.items
         var history = doc.history
@@ -57,8 +61,11 @@ public extension Model {
             guard let it = value.objectValue else { continue }
             if it.truthy("deleted") || !it.truthy("done") || !(it["doneAt"]?.isTruthy ?? false) { continue }
             let id = it.str("id")
-            let day = JSString(dates.localDate(it.num("doneAt")))
+            let day = JSString(dates.dayOf(doc, it.num("doneAt")))
             if day >= todayKey { continue }
+            // without a home zone, never file what was just finished: a device hours ahead would
+            // otherwise put this morning's check-off under yesterday
+            if !zoned && ts - it.num("doneAt") < rollGuardMs { continue }
 
             var entry = JSONObject()
             entry["id"] = .string(id)

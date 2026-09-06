@@ -181,7 +181,9 @@ struct TFive {
         let W = Model.newId()
         let keys = try Keys.fromWrite(W)
         let store = try store()
-        var doc = Doc.seed(id: W)
+        // 1.9: a list is stamped with its home zone when it is made, so every device rolls it over
+        // once, at home midnight, rather than at the earliest midnight among them
+        var doc = CalendarDates.withZone(Doc.seed(id: W))
         if !name.isEmpty {
             doc.json.set("name", name)
             doc.json.set("nameAt", CalendarDates.now())
@@ -209,7 +211,8 @@ struct TFive {
     static func rollover(_ target: (id: String, mode: LinkMode, origin: String?)) async throws {
         let (keys, engine, _) = try await openList(target)
         await engine.sync()
-        let result = Model.rollover(await engine.document(), today: dates.localDateNow(), dates: dates)
+        let doc = await engine.document()
+        let result = Model.rollover(doc, today: dates.todayFor(doc), at: CalendarDates.now(), dates: dates)
         if result.changed {
             await engine.update(result.doc)
             await engine.sync()
@@ -268,7 +271,9 @@ struct TFive {
         var out: [String] = []
         let name = doc.name.isEmpty ? "Today's Five" : doc.name.string
         let state = snapshot.map { "\($0.status.rawValue) · rev \($0.rev)\($0.dirty ? " · unsent" : "")" } ?? "local"
-        out.append(name + "   — " + state + (keys.mode == .view ? " · view only" : ""))
+        let zone = CalendarDates.zoneOf(doc)
+        out.append(name + "   — " + state + (keys.mode == .view ? " · view only" : "")
+                   + (zone.isEmpty ? "" : " · \(zone)"))
         out.append("")
 
         let today = doc.todayItems
@@ -296,7 +301,7 @@ struct TFive {
             out.append(contentsOf: everything)
         }
 
-        let review = doc.dayReview(dates.localDateNow(), dates: dates)
+        let review = doc.dayReview(dates.todayFor(doc), dates: dates)
         out.append("")
         var footer = "\(review.streak) day streak · \(review.finishedThisWeek) of 7 this week"
         if !doc.historyDays.isEmpty { footer += " · \(doc.historyDays.count) history days" }

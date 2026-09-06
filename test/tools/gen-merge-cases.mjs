@@ -50,6 +50,7 @@ const SHORT_TEXTS = [
 // half an emoji — but one item in six being four hundred characters makes the fixture unclonable, so
 // they turn up about one time in fifteen instead.
 const LONG_TEXTS = ["x".repeat(199) + EMOJI, "y".repeat(201), "z".repeat(400)];
+const BIDI = "Pay \u202Ealice\u202C 100";        // 1.9: stripped where text enters, never on read
 const text = () => chance(0.07) ? pick(LONG_TEXTS) : pick(SHORT_TEXTS);
 const note = () => chance(0.05) ? "w".repeat(299) + EMOJI : pick(["", "n", "a note", "note\nwith\nnewlines", "note " + LONE]);
 const IDS = ["a", "b", "c", "d", "e", "0", "10", "2", "zz", "Ab"];
@@ -58,6 +59,9 @@ const STAMPS = [0, 1, 2, 1000, 1000, 1000, 2000, 5000, 1725000000000, 1725000000
 const ORDERS = [0, 1, 1000, 1000.5, 1250.25, -500, 1e20, 1e21, 1e-7, 0.1, 3000];
 const DAYS = ["2026-08-30", "2026-08-31", "2026-09-01", "2026-09-02", "2026-09-07", "2026-09-14", "2026-02-28", "2026-12-31"];
 const KINDS = ["daily", "weekdays", "weekly", "monthly"];
+// 1.9: the home zone. "" and a zone the platform cannot compute in both mean "roll on the device's
+// clock, behind the guard"; the fixture pins the device zone so the answer is the same everywhere.
+const ZONES = ["America/Chicago", "Asia/Tokyo", "UTC", "Europe/London", "Pacific/Kiritimati", "Mars/Olympus", ""];
 
 function futureField() {
   return pick([
@@ -129,6 +133,7 @@ function randomDoc(id = "L") {
   if (chance(0.15)) d.history["not-a-day"] = [{ id: "x", text: "x", doneAt: 1, section: "" }];
   if (chance(0.2)) d.someFutureCollection = { x: { id: "x", updatedAt: pick(STAMPS) } };
   if (chance(0.15)) d.futureFlag = pick([true, false, 1, "yes", null]);
+  if (chance(0.45)) d.zone = pick(ZONES);
   if (chance(0.1)) d.items = Object.values(d.items);          // the array shape normalize also accepts
   return d;
 }
@@ -156,13 +161,13 @@ for (let i = 0; i < MERGE_CASES; i++) {
 const OPS = ["rollover", "purge", "setRule", "clearRule", "refreshRuleSnapshot", "notToday", "backToday",
   "tombstoneItem", "restoreItem", "templateFromSection", "insertTemplate", "deleteTemplate",
   "setSectionToday", "moveItem", "editText", "check", "uncheck", "setToday", "deleteSection",
-  "addItem", "mergeWith"];
+  "addItem", "mergeWith", "moveToSection", "roundTrip", "setZone"];
 
 function randomOp(n) {
   const op = pick(OPS);
   const ts = pick([1, 500, 3000, 1725000000000, 1725000086400000]) + n;
   switch (op) {
-    case "rollover": return { op, today: pick(DAYS), ts };
+    case "rollover": return { op, today: pick(DAYS), ts: chance(0.4) ? pick([1788615000000 + 3600000, 1788615000000 + M.ROLL_GUARD_MS + 1]) : ts };
     case "purge": return { op, now: pick([1725000000000, 1735000000000, 1e12]), ttl: M.TOMBSTONE_TTL };
     case "setRule": {
       const kind = pick(KINDS);
@@ -181,7 +186,7 @@ function randomOp(n) {
     case "insertTemplate": return { op, tplId: pick(["tp1", "tp2", "tpl3"]), sectionId: pick(SECTIONS), today: chance(0.5), ts, idPrefix: "ins" + n + "_" };
     case "deleteTemplate": return { op, id: pick(["tp1", "tp2"]), ts };
     case "setSectionToday": return { op, sectionId: pick(SECTIONS), on: chance(0.5), ts };
-    case "moveItem": return { op, id: pick(IDS), ts, newId: "mv" + n };
+    case "moveItem": return { op, id: pick(IDS), ts, newId: "mv" + n, sectionId: pick(SECTIONS) };
     case "editText": return { op, id: pick(IDS), text: text(), ts };
     case "check": return { op, id: pick(IDS), doneAt: pick([new Date("2026-09-01T15:00:00").getTime(), new Date("2026-09-02T09:00:00").getTime(), 1725000000000]), ts };
     case "uncheck": return { op, id: pick(IDS), ts };
@@ -189,6 +194,9 @@ function randomOp(n) {
     case "deleteSection": return { op, id: pick(["s1", "s2"]), ts };
     case "addItem": return { op, id: "new" + n, text: text(), sectionId: pick(SECTIONS), today: chance(0.5), order: pick(ORDERS), ts };
     case "mergeWith": return { op, doc: randomDoc() };
+    case "moveToSection": return { op, id: pick(IDS), sectionId: pick(SECTIONS), ts };
+    case "roundTrip": return { op, at: ts };                       // exportJSON → importJSON: strips bidi
+    case "setZone": return { op, zone: pick(ZONES), ts };
     default: return { op: "rollover", today: pick(DAYS), ts };
   }
 }
@@ -218,7 +226,7 @@ function apply(state, o) {
     case "deleteTemplate": doc = M.deleteTemplate(doc, o.id, o.ts); break;
     case "setSectionToday": doc = M.setSectionToday(doc, o.sectionId, o.on, o.ts); break;
     case "moveItem": {
-      const r = M.moveItem(doc, dst, o.id, o.ts, () => o.newId);
+      const r = M.moveItem(doc, dst, o.id, o.ts, () => o.newId, o.sectionId);
       if (r) { doc = r.src; dst = r.dst; }
       break;
     }
@@ -249,6 +257,9 @@ function apply(state, o) {
       doc = { ...doc, items: { ...doc.items, [o.id]: { id: o.id, sectionId: o.sectionId, text: o.text, note: "", done: false, doneAt: 0, today: o.today, order: o.order, todayOrder: o.order, updatedAt: o.ts } } };
       break;
     case "mergeWith": doc = M.merge(doc, o.doc); break;
+    case "moveToSection": doc = M.moveToSection(doc, o.id, o.sectionId, o.ts); break;
+    case "roundTrip": doc = M.importJSON(M.exportJSON(doc, { at: o.at }), doc.id); break;
+    case "setZone": doc = { ...doc, zone: o.zone, updatedAt: Math.max(doc.updatedAt, o.ts) }; break;
   }
   return { doc, dst };
 }
@@ -263,6 +274,10 @@ function queries(doc, today) {
     historyDays: M.historyDays(doc),
     templates: M.liveTemplates(doc).map(t => t.id),
     streak: M.streak(doc, today),
+    todayFor: M.todayFor(doc, 1788615000000),
+    dayOf: M.dayOf(doc, 1788615000000),
+    zoneOf: M.zoneOf(doc),
+    stripBidi: M.canon(M.stripBidiDeep(doc)),
     exportJSON: M.exportJSON(doc, { at: 123 }),
     exportMarkdown: M.exportMarkdown(doc, { today })
   };

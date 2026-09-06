@@ -20,7 +20,13 @@ function file(name, op, note, cases) {
   files.push(name + " (" + cases.length + ")");
 }
 const both = (name, a, b) => [{ name: name + " (a, b)", a, b, expect: M.merge(a, b) }, { name: name + " (b, a)", a: b, b: a, expect: M.merge(b, a) }];
-const roll = (name, doc, today, ts) => ({ name, doc, today, ts, expect: M.rollover(M.normalize(doc, doc.id), today, ts).doc });
+// Every rollover case records the device zone it was written in. It changes nothing for a list with a
+// home zone — that is the point of one — but a list without one rolls on the device's own clock, so
+// `dayOf` is the machine's, and an expectation written in Chicago is not the one Kiritimati produces.
+// A replay that can compute in a named zone (the Swift core) uses it; one that cannot (this file, run
+// under Node) skips a case that was not written in its own zone and says so.
+const DEVICE_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const roll = (name, doc, today, ts) => ({ name, doc, today, ts, deviceZone: DEVICE_ZONE, expect: M.rollover(M.normalize(doc, doc.id), today, ts).doc });
 
 /* ---- merge: records ---- */
 {

@@ -1,13 +1,31 @@
 {
-  "build": 82,
+  "build": 88,
   "versions": [
     {
-      "version": "1.6",
+      "version": "1.8",
       "headline": "A little something for someone in particular.",
       "items": [
         {
           "tag": "New",
           "text": "If you know, you know."
+        }
+      ]
+    },
+    {
+      "version": "1.7",
+      "headline": "Sharper all over.",
+      "items": [
+        {
+          "tag": "Improved",
+          "text": "Every screen reads right the first time."
+        },
+        {
+          "tag": "Fixed",
+          "text": "A list with a chosen-days repeat opens whole again."
+        },
+        {
+          "tag": "Fixed",
+          "text": "A hold opens the menu, the first check-off sounds, dead links carry over."
         }
       ]
     },

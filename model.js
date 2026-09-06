@@ -297,7 +297,7 @@ export function purgeTombstones(doc, nowTs = now(), ttl = TOMBSTONE_TTL) {
       const r = m[id];
       if (r.deleted && nowTs - (r.updatedAt || 0) > ttl) { changed = true; continue; }
       // a rule or return whose line is long gone (its tombstone already purged) is an orphan
-      if ((key === "rules" || key === "returns") && !r.deleted && !(doc.items && doc.items[id])) { changed = true; continue; }
+      if ((key === "rules" || key === "returns") && !r.deleted && !(out.items && out.items[id])) { changed = true; continue; } // 1.7: against the items kept in this pass, so a second pass is a no-op
       kept[id] = r;
     }
     out[key] = kept;
@@ -694,13 +694,14 @@ export function setSectionToday(doc, sectionId, on, ts = now()) {
 
 /** Copy a line (with its rule and return) into `dst` under a new id, and tombstone it in `src` without text
     (a moved line is not a deleted one). Both docs are returned; the caller saves each under its own key. */
-export function moveItem(src, dst, id, ts = now(), idFn = shortId) {
+export function moveItem(src, dst, id, ts = now(), idFn = shortId, sectionId = "") {
   const it = src.items[id]; if (!it || it.deleted) return null;
   const newId = idFn();
-  const dstItems = { ...dst.items, [newId]: { ...it, id: newId, sectionId: "", order: lastOrder(itemsInSection(dst, ""), i => i.order), todayOrder: lastOrder(todayItems(dst), i => i.todayOrder), updatedAt: ts } };
+  const sec = sectionId && dst.sections[sectionId] && !dst.sections[sectionId].deleted ? sectionId : ""; // 1.7: a section of the target (the undo of a move sends the line home)
+  const dstItems = { ...dst.items, [newId]: { ...it, id: newId, sectionId: sec, order: lastOrder(itemsInSection(dst, sec), i => i.order), todayOrder: lastOrder(todayItems(dst), i => i.todayOrder), updatedAt: ts } };
   const out = { ...dst, items: dstItems, updatedAt: Math.max(dst.updatedAt, ts) };
   const rule = ruleOf(src, id);
-  if (rule) out.rules = { ...(dst.rules || {}), [newId]: { ...rule, id: newId, sectionId: "", updatedAt: ts } };
+  if (rule) out.rules = { ...(dst.rules || {}), [newId]: { ...rule, id: newId, sectionId: sec, updatedAt: ts } };
   const ret = returnOf(src, id);
   if (ret) out.returns = { ...(dst.returns || {}), [newId]: { ...ret, id: newId, updatedAt: ts } };
   const srcItems = { ...src.items, [id]: { id, deleted: true, updatedAt: ts } };

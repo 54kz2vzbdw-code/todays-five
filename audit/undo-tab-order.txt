@@ -1,0 +1,51 @@
+
+===== TAB ORDER (16 stops, Today view) =====
+["BUTTON#.tool lmenu \"Line menu\" role=null outline=2px rgb(210, 97, 40) shadow=none","BUTTON#addtoday.add \"+ NEW LINE\" role=null outline=2px rgb(210, 97, 40) shadow=none","BODY#. \"SATURDAY · SEPTEMBER 5 WORK 3/7 DONE SYN\" role=null outline=3px rgb(245, 241, 234) shadow=none","BUTTON#listname.chip plain \"WORK\" role=null outline=2px rgb(210, 97, 40) shadow=none","BUTTON#count.count \"3/7 DONE\" role=null outline=2px rgb(210, 97, 40) shadow=none","BUTTON#dot.dot \"Sync status\" role=null outline=2px rgb(210, 97, 40) shadow=none","BUTTON#v-today. \"TODAY\" role=tab outline=2px rgb(210, 97, 40) shadow=none","BUTTON#v-all. \"EVERYTHING\" role=tab outline=2px rgb(210, 97, 40) shadow=none","BUTTON#daynight.chip icon \"Switch to day\" role=null outline=2px rgb(210, 97, 40) shadow=none","BUTTON#share.chip \"SHARE\" role=null outline=2px rgb(210, 97, 40) shadow=none","BUTTON#more.chip icon \"More\" role=null outline=2px rgb(210, 97, 40) shadow=none","BUTTON#.check \"Reply to Dana about the closing date Bef\" role=checkbox outline=2px rgb(210, 97, 40) shadow=none","BUTTON#.tool lmenu \"Line menu\" role=null outline=2px rgb(210, 97, 40) shadow=none","BUTTON#.check \"Journal↻WRITING\" role=checkbox outline=2px rgb(210, 97, 40) shadow=none","BUTTON#.tool lmenu \"Line menu\" role=null outline=2px rgb(210, 97, 40) shadow=none","BUTTON#.check \"Groceries\" role=checkbox outline=2px rgb(210, 97, 40) shadow=none"]
+
+===== after N — focus =====
+{"tag":"TEXTAREA","id":"","cls":"einput","text":"","label":"Edit line","role":null,"checked":null,"dlg":null,"outline":"2px rgb(210, 97, 40)","box":"none","rect":[57,515,1243,54]}
+
+===== after Tab in editor — focus =====
+{"tag":"INPUT","id":"","cls":"einput note-in","text":"","label":"Note","role":null,"checked":null,"dlg":null,"outline":"2px rgb(210, 97, 40)","box":"none","rect":[83,593,1217,30]}
+
+===== announcements during add =====
+[{"ms":181,"sel":"count","text":"3/8 DONE","hidden":false},{"ms":181,"sel":"review","text":"","hidden":true}]
+
+===== after Enter — focus =====
+{"tag":"BUTTON","id":"","cls":"check","text":"Audit line one a note by keyboard","label":null,"role":"checkbox","checked":"false","dlg":null,"outline":"2px rgb(210, 97, 40)","box":"none","rect":[66,454,1234,75]}
+
+===== announcements after Enter =====
+[{"ms":1011,"sel":"review","text":"","hidden":true}]
+
+===== state =====
+{"rows":["Reply to Dana about the closing date Bef","Journal↻WRITING","Groceries","Pay the water bill↻MONEY","Audit line one a note by keyboard","Call the bank before noonCALLS Their num","Water the plants↻HOUSE","Send the draft to SamWRITING Take the re"],"count":"3/8|DONE"}
+
+===== typing 'tent nest' in a new-line editor =====
+{"value":"tent nest","view":"today","panel":null}
+
+===== after Alt+ArrowDown =====
+{"focus":{"tag":"BUTTON","id":"","cls":"check","text":"Reply to Dana about the closing date Before 5, they close ea","label":null,"role":"checkbox","checked":"false","dlg":null,"outline":"2px rgb(210, 97, 40)","box":"none","rect":[66,184,1234,75]},"ann":[{"ms":1615,"sel":"toast","text":"DONE","hidden":false},{"ms":1923,"sel":"count","text":"3/9 DONE","hidden":false},{"ms":1923,"sel":"review","text":"","hidden":true},{"ms":2490,"sel":"count","text":"3/8 DONE","hidden":false},{"ms":2490,"sel":"review","text":"","hidden":true}],"order":["0686R4hL5f","BdWISsJTfG","eZuPvxYwt0","DM9KIdqnu3","PUu6dVojIv","0Zn2fTs60a","n2NR6mznv8","bi67WCF9QS"],"was":["BdWISsJTfG","0686R4hL5f","eZuPvxYwt0","DM9KIdqnu3","PUu6dVojIv","0Zn2fTs60a","n2NR6mznv8","bi67WCF9QS"]}
+
+===== after Space on a checkbox =====
+{"focus":{"tag":"BUTTON","id":"","cls":"check","text":"Reply to Dana about the closing date Before 5, they close ea","label":null,"role":"checkbox","checked":"true","dlg":null,"outline":"2px rgb(210, 97, 40)","box":"none","rect":[66,742,1234,75]},"ann":[{"ms":3404,"sel":"toast","text":"DONE UNDO","hidden":false},{"ms":3404,"sel":"count","text":"4/8 DONE","hidden":false},{"ms":3404,"sel":"review","text":"","hidden":true}]}
+
+===== after Ctrl+Z =====
+{"focus":{"tag":"BUTTON","id":"","cls":"check","text":"Reply to Dana about the closing date Before 5, they close ea","label":null,"role":"checkbox","checked":"false","dlg":null,"outline":"2px rgb(210, 97, 40)","box":"none","rect":[66,184,1234,75]},"ann":[{"ms":4311,"sel":"count","text":"3/8 DONE","hidden":false},{"ms":4311,"sel":"review","text":"","hidden":true},{"ms":4311,"sel":"toast","text":"UNDONE","hidden":false}]}
+
+===== focus after Tab from a checkbox =====
+{"tag":"BUTTON","id":"","cls":"tool lmenu","text":"","label":"Line menu","role":null,"checked":null,"dlg":null,"outline":"2px rgb(210, 97, 40)","box":"none","rect":[1321,104,51,51]}
+
+===== line menu opened by keyboard =====
+{"focus":{"tag":"BUTTON","id":"","cls":"","text":"Edit E","label":null,"role":null,"checked":null,"dlg":"p-line","outline":"2px rgb(210, 97, 40)","box":"none","rect":[1108,169,256,38]},"open":["p-line"]}
+
+===== after Delete =====
+{"focus":{"tag":"BUTTON","id":"","cls":"check","text":"Reply to Dana about the closing date Before 5, they close ea","label":null,"role":"checkbox","checked":"false","dlg":null,"outline":"3px rgb(245, 241, 234)","box":"none","rect":[68,104,1226,81]},"ann":[{"ms":5691,"sel":"count","text":"3/7 DONE","hidden":false},{"ms":5691,"sel":"review","text":"","hidden":true},{"ms":5691,"sel":"toast","text":"DELETED “JOURNAL” UNDO","hidden":false}],"open":[]}
+
+===== Tab #1 after delete =====
+{"tag":"BUTTON","id":"","cls":"tool lmenu","text":"","label":"Line menu","role":null,"checked":null,"dlg":null,"outline":"2px rgb(210, 97, 40)","box":"none","rect":[1317,106,53,53]}
+
+===== Tab #2 after delete =====
+{"tag":"BUTTON","id":"","cls":"check","text":"Groceries","label":null,"role":"checkbox","checked":"false","dlg":null,"outline":"2px rgb(210, 97, 40)","box":"none","rect":[68,217,1226,58]}
+
+===== after Ctrl+Z restore =====
+{"ann":[{"ms":6978,"sel":"count","text":"3/8 DONE","hidden":false},{"ms":6978,"sel":"review","text":"","hidden":true},{"ms":6978,"sel":"toast","text":"UNDONE","hidden":false}],"focus":{"tag":"BUTTON","id":"","cls":"check","text":"Groceries","label":null,"role":"checkbox","checked":"false","dlg":null,"outline":"2px rgb(210, 97, 40)","box":"none","rect":[66,289,1234,52]}}

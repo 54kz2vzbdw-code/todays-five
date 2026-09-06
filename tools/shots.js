@@ -10,6 +10,7 @@ const require = createRequire(NM + "/");
 const { chromium } = require("playwright");
 let sharp = null; try { sharp = require("sharp"); } catch (e) { /* plain PNGs then */ }
 const BASE = process.env.BASE || "http://127.0.0.1:8790/";
+if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//.test(BASE)) throw new Error("shots.js only runs against a local server: a shot of Share against the live site would put a working Private link and its QR into the repo"); // 1.7
 const OUT = path.resolve(process.argv[2] || "shots/1.1/after");
 fs.mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch({ channel: "chrome", headless: true, args: ["--autoplay-policy=no-user-gesture-required"] });

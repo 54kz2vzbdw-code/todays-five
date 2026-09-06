@@ -1,0 +1,18 @@
+
+===== Today with nothing on it (desktop/fresh, line menu → Not today) =====
+  rows on Today: 0
+  screen: Today's Five ⏎ + NEW LINE
+  finale showing? false
+  !! elementHandle.click: Timeout 8000ms exceeded.
+
+===== Removed lines, empty (desktop/fresh) =====
+  Lists panel controls: ["×","New list","Rename this list","Remove from this device","Open"]
+  panel now: p-settings | text: SETTINGS ⏎ × ⏎ APPEARANCE ⏎ Day theme ⏎ What's on by day. Any theme, light or dark. ⏎ LIGHT ⏎ Night theme ⏎ What's on after dark. Any theme, light or dark. ⏎ DARK · ON ⏎ Switch ⏎ Follows the device's light or dark setting. A tap on the sun or moon (or T) holds until it next changes. ⏎ By hand ⏎ With the system ⏎ On a schedule ⏎ SOUND ⏎ Sound ⏎ The knock, the bell, the finale ⏎ Sound pack ⏎ Dark pi
+
+===== glow flare under prefers-reduced-motion (measured cleanly) =====
+  {"restDuration":"0s","whileFlare":"0.22s opacity=0.62","settledOpacity":"1","durationWhenFlareRemoved":"0s","opacityOneFrameAfterRemoval":"0.62"}
+
+===== cold first check-off on the PHONE (packs not loaded) =====
+  audio nodes made by the FIRST check-off: 0 | sound state: {"state":"running","pending":false,"made":1,"packs":true}
+  audio nodes made by the SECOND check-off: 2
+  stats: {"check":2,"uncheck":0,"finish":0,"burst":2,"volley":0,"tick":0}

@@ -284,7 +284,10 @@ function finalize(t) {
     const dir = t.base === "dark" ? 1 : -1;
     const fix = (hex, target) => { const o = hexToOklch(hex); return ensure(o.L, o.C, o.h, c.ink, target, dir); };
     c.text = fix(c.text, 7); c.muted = fix(c.muted, 4.5); c.dim = fix(c.dim, 4.5); c.done = fix(c.done, 4.5);
-    c.accentText = fix(c.accentText, 4.5); c.accent = fix(c.accent, 3); c.danger = fix(c.danger, 4.5);
+    // 1.7: against --ink-3, the elevated surface these three sit on (a hovered star, a panel's danger row, the Share warning),
+    // as derive() already does for a theme you make; Harbor's accent text and danger and Teletype's focus ring were under the floor there
+    const fix3 = (hex, target) => { const o = hexToOklch(hex); return ensure(o.L, o.C, o.h, c.ink3 || c.ink, target, dir); };
+    c.accentText = fix3(c.accentText, 4.5); c.accent = fix3(c.accent, 3); c.danger = fix3(c.danger, 4.5);
   }
   if (!c.boxDoneBg) c.boxDoneBg = c.accent;
   if (!c.barBg) c.barBg = BAR_BG;

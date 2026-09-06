@@ -18,6 +18,7 @@ dialog.panel h2{
   display:flex;align-items:center;justify-content:flex-start;gap:.5rem;margin-bottom:.8rem;min-height:32px;
 }
 dialog.panel h2 .x{margin-left:auto}
+#p-repeat-h{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 dialog.panel{touch-action:pan-y} /* 1.4: a horizontal touch stays with the page (the edge swipe back); vertical pans scroll as before */
 /* 1.4: the way back — one button the stack moves into whichever panel sits on a parent */
 dialog.panel h2 .back{font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--accent-text);background:transparent;border:0;padding:.2em .5em .2em .1em;margin:0 .1rem 0 -.1rem;cursor:pointer;display:inline-flex;align-items:center;gap:.15em;min-height:32px;border-radius:8px}
@@ -25,6 +26,7 @@ dialog.panel h2 .back .chev{font-size:1.7em;line-height:.8;font-weight:400;posit
 dialog.panel h2 .back:hover{background:var(--ink-3)}
 dialog.panel h2 .back:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 dialog.panel h3{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:1.1rem 0 .5rem}
+#p-settings h3{padding-left:.8em} /* 1.7: on the axis of the rows below it */
 dialog.panel p{color:var(--muted);margin:.4rem 0}
 dialog.panel .x{
   width:36px;height:36px;border-radius:999px;border:1px solid transparent;background:transparent;color:var(--dim);cursor:pointer;
@@ -34,6 +36,7 @@ dialog.panel .x:hover{color:var(--text);border-color:var(--hair-hi)}
 dialog.panel .grip{display:none}
 dialog.panel a.item{text-decoration:none}
 dialog.panel .x:focus-visible,dialog.panel .chip:focus-visible,dialog.panel .menu button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+dialog.panel :is(a.item,select,input[type="range"],.seg2 button,.swatch-wrap .del,summary):focus-visible,dialog.panel .chip.file:focus-within{outline:2px solid var(--accent);outline-offset:2px} /* 1.7: the six kinds that showed the browser's ring, and the file chip that showed none */
 .menu{display:flex;flex-direction:column;gap:2px}
 .menu button,.menu label.item,.menu a.item{
   display:flex;align-items:center;justify-content:space-between;gap:1rem;width:100%;text-align:left;
@@ -47,6 +50,7 @@ dialog.panel .x:focus-visible,dialog.panel .chip:focus-visible,dialog.panel .men
 .menu label.item input[type="range"]{flex:1 1 auto;width:auto;min-width:0;max-width:11rem;min-height:32px}
 .menu button[aria-pressed="true"] .k{color:var(--accent-text)}
 .menu button.danger{color:var(--danger)}
+.chip.danger{color:var(--danger);border-color:var(--danger)} /* 1.7: the confirm of Delete everywhere, Delete section, Delete template and New keys */
 .menu .sub{color:var(--muted);font-size:12px;display:block;font-weight:400}
 .row-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.6rem}
 .hints{list-style:none;margin:.8rem 0 .2rem;display:flex;flex-direction:column;gap:.45rem}
@@ -60,7 +64,7 @@ dialog.panel .x:focus-visible,dialog.panel .chip:focus-visible,dialog.panel .men
 .gestures .g{display:flex;flex-direction:column;gap:.1rem;padding:.55rem .7rem;border:1px solid var(--hair);border-radius:12px}
 .gestures .g b{color:var(--text);font-size:14px}
 .gestures .g span{color:var(--muted);font-size:13px}
-.row-actions .chip{font-family:var(--font-ui);font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;min-height:40px}
+.row-actions .chip,dialog.panel .chip{font-family:var(--font-ui);font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;min-height:40px} /* 1.7: every chip in a panel, not only the ones in a row of actions */
 .field{display:flex;flex-direction:column;gap:.35rem;margin:.6rem 0}
 .field label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
 .field input[type="text"],.field input[type="url"],.field select,.field textarea{
@@ -69,6 +73,7 @@ dialog.panel .x:focus-visible,dialog.panel .chip:focus-visible,dialog.panel .men
 .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--accent);outline-offset:2px;border-color:var(--accent)}
 .inline{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
 .inline>*{flex:1 1 auto}
+.inline>.chip,.inline>.seg2{flex:0 0 auto} /* 1.7: a button and the Dark | Light control keep their own width; the field takes the rest */
 input[type="range"]{width:100%;accent-color:var(--accent);min-height:44px}
 input[type="color"]{width:44px;height:44px;border:1px solid var(--hair);border-radius:10px;background:var(--ink);padding:2px;cursor:pointer;flex:0 0 auto}
 
@@ -91,7 +96,11 @@ input[type="color"]{width:44px;height:44px;border:1px solid var(--hair);border-r
 .swatch .nm{font-weight:700;font-size:15px;letter-spacing:-.01em}
 .swatch .bar{height:4px;border-radius:999px;width:60%}
 .swatch .sm{font-size:10px;letter-spacing:.12em;text-transform:uppercase;opacity:.8}
-.swatch .del{position:absolute;top:.35rem;right:.35rem;width:28px;height:28px;border-radius:999px;border:0;background:rgba(0,0,0,.25);color:inherit;cursor:pointer;font-size:14px;line-height:1}
+.swatch-wrap{position:relative;display:flex;min-width:0}
+.swatch-wrap>.swatch{flex:1 1 auto;min-width:0}
+.swatch-wrap .swatch .nm,.swatch-wrap .swatch .sm{padding-right:2rem} /* 1.7: the × no longer sits on the name */
+.swatch-wrap .del{position:absolute;top:.35rem;right:.35rem;width:28px;height:28px;border-radius:999px;border:0;background:rgba(0,0,0,.25);color:inherit;cursor:pointer;font-size:14px;line-height:1}
+.swatch-wrap .del:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .seg2{display:inline-flex;border:1px solid var(--hair);border-radius:999px;overflow:hidden}
 .seg2 button{font:inherit;font-weight:600;color:var(--dim);background:transparent;border:0;padding:.5em 1em;cursor:pointer;min-height:40px}
 .seg2 button+button{border-left:1px solid var(--hair)}
@@ -122,7 +131,8 @@ input[type="color"]{width:44px;height:44px;border:1px solid var(--hair);border-r
   font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--text);
   background:var(--ink);border:1px solid var(--hair-hi);border-radius:6px;padding:.15em .5em;white-space:nowrap;
 }
-.keys span{color:var(--muted)}
+.keys span,.keys dd{color:var(--muted)}
+.keys dt,.keys dd{margin:0} /* 1.7: a definition list, so a reader pairs each key with its action */
 
 /* history */
 .day{margin:.6rem 0}
@@ -184,7 +194,7 @@ dialog.panel h3.first{margin-top:.2rem}
 .days button[aria-pressed="true"]{color:var(--accent-text);border-color:var(--accent);background:var(--ink-3)}
 .days button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #repeat-kinds button[aria-checked="true"]{color:var(--accent-text);background:var(--ink-3)}
-#repeat-kinds button[aria-checked="true"]::after{content:"✓";margin-left:auto;color:var(--accent-text)}
+#repeat-kinds button[aria-checked="true"]::after{content:"✓" / "";margin-left:auto;color:var(--accent-text)} /* 1.7: the mark is not spoken; the radio's state is */
 .field input[type="number"]{font:inherit;color:var(--text);background:var(--ink);border:1px solid var(--hair);border-radius:10px;padding:.6em .8em;min-height:44px;width:100%}
 
 /* how it works: sectioned, readable */
@@ -205,12 +215,15 @@ dialog.panel h3.first{margin-top:.2rem}
 
 
 @media (hover:none){
+  .menu label.item select,.menu label.item input[type="range"]{min-height:44px} /* 1.7: the two controls under the 44 px floor */
+  dialog.panel h2 .back{min-height:44px}
   .swatch{border-color:var(--hair-hi)}
   .field input[type="text"],.field input[type="url"],.field select{border-color:var(--hair-hi)}
 }
 
 @media (hover:none){
-  .swatch .del{width:44px;height:44px}
+  .swatch-wrap .del{width:44px;height:44px}
+  .swatch-wrap .swatch .nm,.swatch-wrap .swatch .sm{padding-right:2.6rem}
   dialog.panel .x{width:44px;height:44px}
   .row-actions .chip,.seg2 button{min-height:44px}
 }
@@ -259,7 +272,7 @@ dialog.panel.pop .menu .lb .sub{font-size:11px}
 /* ---------------- 1.4 ---------------- */
 .lk-block.keys{border-top:1px solid var(--hair);margin-top:1.2rem;padding-top:.8rem}
 .lk-block.keys .row-actions{margin-top:0}
-.menu .group-h{font-family:var(--font-ui);font-weight:700;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:.9rem .2rem .3rem}
+.menu .group-h{font-family:var(--font-ui);font-weight:700;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:.9rem .8em .3rem}
 .menu .group-h:first-child{margin-top:.2rem}
 .menu .row{display:flex;align-items:stretch;gap:.3rem}
 .menu .row > button:first-child{flex:1 1 auto;min-width:0}

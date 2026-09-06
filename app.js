@@ -104,6 +104,9 @@ let sync = null, transport = null, syncStatus = "off", syncLive = false, liveGra
 let openGen = 0;
 let theme = null;
 let editing = null;            // { id, el, ta, note, isNew, orig }
+let pendingFocus = null;       // 1.7: refocus after the deferred render
+/** 1.7: one sentence for a screen reader. */
+function announce(text) { const s = $("#sr-note"); if (!s) return; s.textContent = ""; setTimeout(() => { s.textContent = text; }, 30); }
 let wasAll = false;
 let rows = new Map();          // id -> <li>
 let lastRowId = null;
@@ -132,7 +135,7 @@ const STATUS_LABEL = {
   synced: "Synced", syncing: "Syncing", offline: "Offline", error: "Sync trouble — will retry",
   gone: "This link no longer works", off: "Sync off", busy: "Server busy — retrying in a few minutes",
   full: "The service is full — saved on this device only", toolarge: "Too large to sync — saved on this device only",
-  readonly: "View only", unreadable: "This link can't read this list"
+  readonly: "View only", unreadable: "This link can't open this list"
 };
 let lastCat = "", lastLimitToast = "";
 const viewCollapsed = new Set(); // view-only mode: a viewer's collapse must never win a merge against the editors
@@ -291,6 +294,8 @@ function tickTheme() {
 DARK_MQ.addEventListener("change", tickTheme);
 
 /* ---------------- boot ---------------- */
+// Everything boot() can reach is declared above this line: a const below it is in its temporal dead zone while boot runs (1.7: DAY_NAMES was).
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]; // ruleLabel, which every row render reaches
 appliedCode = currentThemeCode();
 applyThemeCode(appliedCode);
 paintDate();
@@ -321,12 +326,14 @@ function takeExtrasFromHash() {
     Not cancelable: the answer is how the list is filed from here on, and Lists can change it. */
 function askWhose() {
   return new Promise(resolve => {
-    const d = $("#whose");
-    const finish = v => { d.removeEventListener("click", onClick); d.removeEventListener("cancel", onCancel); resolve(v === "shared" ? "shared" : "mine"); d.close(); };
+    const d = $("#whose"); let done = false;
+    const finish = v => { if (done) return; done = true; d.removeEventListener("click", onClick); d.removeEventListener("cancel", onCancel); d.removeEventListener("close", onClose); resolve(v === "shared" ? "shared" : "mine"); if (d.open) d.close(); };
     const onClick = e => { const b = e.target.closest("[data-whose]"); if (b) finish(b.dataset.whose); };
     const onCancel = e => e.preventDefault();
-    d.addEventListener("click", onClick); d.addEventListener("cancel", onCancel);
-    panelCss.then(() => { if (!d.open) d.showModal(); });
+    // 1.7: closed by anything but an answer, it files as shared (the backdrop no longer closes it)
+    const onClose = () => finish("shared");
+    d.addEventListener("click", onClick); d.addEventListener("cancel", onCancel); d.addEventListener("close", onClose);
+    panelCss.then(() => { if (!d.open) { d.showModal(); const body = d.querySelector(".body"); if (body) { body.tabIndex = -1; body.focus({ preventScroll: true }); } } }); // focus on the card, not on the first answer: no answer looks chosen
   });
 }
 /** A View link's id against the lists this device holds under their Private links: the origin of the one it belongs to, or null. */
@@ -464,7 +471,7 @@ async function openList(r) {
   rows.clear(); $("#list").innerHTML = ""; clearAll();
   wasAll = allDoneToday();
   paintWho(0);
-  setView(view, { force: true });
+  try { setView(view, { force: true }); } catch (e) { console.error("render at open", e); } // 1.7: a bad row must not stop the engine
   paintListName();
   syncLive = false; lastCat = ""; paintStatus(transport || TRANSPORT_KIND ? "syncing" : "off");
   if (legacy) {
@@ -654,6 +661,7 @@ function applyPendingAdd() {
   if (fresh && syncStatus !== "gone" && syncStatus !== "off") return; // a link this device never had: wait for the pull
   pendingAdd = null;
   if (syncStatus === "gone") { toast("This link no longer works, so nothing was added"); return; }
+  a.text = (Array.isArray(a.text) ? a.text : [a.text]).map(s => String(s).trim()).filter(Boolean); // 1.7: spaces are nothing
   if (!a.text.length) { setView("today"); newItem({ today: true }); return; }
   const secs = M.sectionsOrdered(doc);
   const sec = a.section ? secs.find(s => s.name.toLowerCase() === a.section.toLowerCase()) : null;
@@ -713,6 +721,7 @@ function render({ animate = true, quiet = false } = {}) {
   if (!doc) return;
   if (view === "today") renderToday({ animate, quiet }); else renderAll({ animate, quiet });
   paint();
+  if (pendingFocus) { const li = rows.get(pendingFocus.id); const el = li && li.querySelector(pendingFocus.sel); pendingFocus = null; if (el && document.activeElement !== el) { try { el.focus({ preventScroll: true }); } catch (e) { /* ignore */ } } }
 }
 
 function makeRow(it) {
@@ -726,7 +735,7 @@ function makeRow(it) {
   if (view === "all") {
     const today = document.createElement("button"); today.type = "button"; today.className = "tool today";
     today.innerHTML = ICONS.star; today.setAttribute("aria-pressed", "false"); today.setAttribute("aria-label", "Today");
-    today.addEventListener("click", e => { e.stopPropagation(); toggleToday(it.id); });
+    today.addEventListener("click", e => { e.stopPropagation(); if (e.detail === 0 && document.activeElement === today) pendingFocus = { id: it.id, sel: ".tool.today" }; toggleToday(it.id); }); // keyboard only (detail 0)
     tools.appendChild(today);
   }
   const grip = document.createElement("button"); grip.type = "button"; grip.className = "tool lmenu"; grip.innerHTML = ICONS.menu;
@@ -769,25 +778,29 @@ function updateRow(li, it) {
     if (rule) { const r = document.createElement("span"); r.className = "rep"; r.textContent = "↻"; r.title = ruleLabel(rule); r.setAttribute("aria-label", "Repeats: " + ruleLabel(rule)); tx.appendChild(r); }
     const cap = captionFor(it);
     if (cap) { const c = document.createElement("span"); c.className = "cap"; c.textContent = cap; tx.appendChild(c); }
-    if (ret) { const c = document.createElement("span"); c.className = "cap tmr"; c.textContent = "tomorrow"; c.title = "Not today: back on Today at tomorrow's rollover"; tx.appendChild(c); }
+    if (ret) { const c = document.createElement("span"); c.className = "cap tmr"; c.textContent = "tomorrow"; c.title = "Not today: back on Today tomorrow"; tx.appendChild(c); }
     if (it.note) { const n = document.createElement("span"); n.className = "note"; n.textContent = it.note; tx.appendChild(n); }
   }
   li.classList.toggle("done", it.done);
   const chk = li.querySelector(".check");
   chk.setAttribute("aria-checked", it.done ? "true" : "false");
+  // 1.7: the name is the line, the rest its description
+  chk.setAttribute("aria-label", it.text);
+  const desc = Array.from(tx.querySelectorAll(".rep, .cap, .note")).map(e => e.getAttribute("aria-label") || e.title || e.textContent.trim()).filter(Boolean).join(". ");
+  if (desc) chk.setAttribute("aria-description", desc); else chk.removeAttribute("aria-description");
   if (listMode === "view") chk.setAttribute("aria-readonly", "true"); else chk.removeAttribute("aria-readonly");
   const today = li.querySelector(".today");
   if (today) {
     // the name stays "Today"; aria-pressed carries the state, the description says what a press does
     today.setAttribute("aria-pressed", it.today ? "true" : "false");
     today.setAttribute("aria-description", it.today ? "Take this line off Today" : "Put this line on Today");
+    today.title = it.today ? "On Today — click to take it off" : "Put this line on Today";
     today.dataset.tip = it.today ? "On Today — click to take it off" : "Put this line on Today";
   }
   if (view === "all") li.classList.toggle("miss", !!query && !matches(it, query));
   return changedText;
 }
 function captionFor(it) { return view === "today" ? M.sectionName(doc, it.sectionId) : ""; }
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 function ruleLabel(r) {
   if (!r) return "Never";
   if (r.kind === "daily") return "Every day";
@@ -800,6 +813,7 @@ function ordinal(n) { const s = ["th", "st", "nd", "rd"], v = n % 100; return n 
 function matches(it, q) { const s = q.toLowerCase(); return it.text.toLowerCase().includes(s) || (it.note || "").toLowerCase().includes(s); }
 
 function renderToday({ animate, quiet }) {
+  { const e = $("#today-empty"); const none = !demo && todayList().length === 0; e.hidden = !none; if (none) e.textContent = listMode === "view" ? "Nothing on Today." : "Nothing on Today yet. Add a line, or bring one over from Everything."; }
   const list = $("#list");
   const items = todayList();
   const n = items.length;
@@ -921,7 +935,7 @@ function restoreItem(id) {
 function makeSection(g) {
   const sec = document.createElement("section");
   sec.className = "sec"; sec.dataset.id = g.id;
-  sec.innerHTML = `<h2 class="sec-h"><button class="sec-toggle" type="button" aria-expanded="true"><span class="caret" aria-hidden="true">▾</span><span class="nm"></span></button><span class="sec-count"></span><span class="spacer"></span><button class="chip sec-more" type="button" aria-haspopup="dialog" aria-label="Section options">⋯</button></h2><ol class="seclist" role="list"></ol><div class="empty" hidden>Nothing here yet</div><button class="add" type="button">+ Add</button>`;
+  sec.innerHTML = `<h2 class="sec-h"><button class="sec-toggle" type="button" aria-expanded="true" title="Collapse this section"><span class="caret" aria-hidden="true">▾</span><span class="nm"></span></button><span class="sec-count"></span><span class="spacer"></span><button class="chip sec-more" type="button" aria-haspopup="dialog" aria-label="Section options" title="Section options">⋯</button></h2><ol class="seclist" role="list"></ol><div class="empty" hidden>Nothing here yet</div><button class="add" type="button">+ New line</button>`;
   sec.querySelector(".sec-toggle").addEventListener("click", () => toggleCollapse(g.id));
   sec.querySelector(".sec-more").addEventListener("click", () => openSectionMenu(g.id));
   sec.querySelector(".add").addEventListener("click", () => newItem({ sectionId: g.id, today: false }));
@@ -932,7 +946,7 @@ function updateSection(sec, g) {
   h.hidden = !!g.implicit;
   sec.querySelector(".nm").textContent = g.name;
   sec.classList.toggle("collapsed", !!g.collapsed && !g.implicit);
-  sec.querySelector(".sec-toggle").setAttribute("aria-expanded", g.collapsed ? "false" : "true");
+  sec.querySelector(".sec-toggle").setAttribute("aria-expanded", g.collapsed ? "false" : "true"); sec.querySelector(".sec-toggle").title = g.collapsed ? "Expand this section" : "Collapse this section";
   sec.querySelector(".sec-more").hidden = false; // Unsorted has a menu too (templates, put all on Today)
   sec.querySelector(".sec-more").dataset.unsorted = g.id === "" ? "1" : "";
 }
@@ -954,10 +968,13 @@ function orderInto(container, ids, animate) {
     if (el) container.insertBefore(el, before && before.parentNode === container ? before : null);
   }
   if (active && active !== document.body && document.activeElement !== active && active.isConnected) { try { active.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
+  let moved = false;
   if (animate && !RM.matches) for (const [el, top] of first) {
     const d = top - el.getBoundingClientRect().top;
-    if (d && el.animate) el.animate([{ transform: `translateY(${d}px)` }, { transform: "none" }], { duration: 520, easing: "cubic-bezier(.22,1,.36,1)" });
+    if (d && el.animate) { moved = true; el.animate([{ transform: `translateY(${d}px)` }, { transform: "none" }], { duration: 520, easing: "cubic-bezier(.22,1,.36,1)" }); }
   }
+  // 1.7: no hover on a row that slid under a still cursor
+  if (moved && matchMedia("(hover: hover)").matches) { container.classList.add("no-hover"); document.addEventListener("pointermove", () => container.classList.remove("no-hover"), { once: true, capture: true }); }
 }
 
 /* strike: one measured overlay per rendered line (v1) */
@@ -1011,7 +1028,7 @@ function paint() {
   else { fin.classList.remove("on"); hint.classList.remove("off"); }
   if (finale !== finaleOn) { finaleOn = finale; idleReset(); } // the controls never fade during the finale
   paintReview(finale);
-  $("#streak-k").textContent = (s => s ? s + " day" + (s > 1 ? "s" : "") : "")(M.streak(doc));
+  $("#streak-k").textContent = (s => s ? s + "-day streak" : "")(M.streak(doc));
 }
 /** Day review: a quiet card under "That's the list", only when the setting is on, dismissed by any tap or key. */
 function paintReview(finale) {
@@ -1037,7 +1054,7 @@ function paintStatus(s) {
   const label = (paused ? "Synced · live updates paused" : STATUS_LABEL[s]) || s;
   dot.querySelector(".lbl").textContent = STATUS_SHORT[s] || label;
   dot.setAttribute("title", label);
-  dot.setAttribute("aria-label", "Sync status: " + label);
+  dot.setAttribute("aria-label", "Sync status: " + label.replace(/^Sync /, ""));
   const cat = STATUS_CAT(s);
   if (cat !== lastCat) { lastCat = cat; const sr = $("#dot-sr"); if (sr) sr.textContent = cat === "ok" ? (lastCat && s === "synced" ? "Synced" : "") : label; }
   if (s === "synced") { settleMigrations(); retryPendingKills(); } // follow-ups that wait for the first successful push
@@ -1046,7 +1063,7 @@ function paintStatus(s) {
     toast(s === "busy" ? "The server's busy. Your list is safe here—it'll sync again in a few minutes." : s === "full" ? "The service is full right now. Your list is safe on this device." : "This list is too large to sync. Clear out some old lines or history.");
   }
   if (s === "synced") lastLimitToast = "";
-  if (s === "gone") applyPendingAdd();
+  if (s === "gone") { applyPendingAdd(); panels().then(m => m.carryToKin()); } // 1.7: a dead link's unsynced edits find their successor
 }
 $("#dot").addEventListener("click", () => { toast($("#dot").getAttribute("title") || ""); });
 /** Who's here: one dot per other device (five, then "+n"), fading in and out. */
@@ -1077,7 +1094,7 @@ function afterChange({ animate = true, delay = 0 } = {}) {
 /** A remote document arrived (`prev` is the one it replaces). Quiet by default: no sound, no confetti, no kick; rows
     animate into place. A view link celebrates what the editors did; an edit link only when the setting says so. */
 function applyRemote(prev) {
-  if (drag) abortDrag(); // the row under the finger may be gone or moved; a stuck drag would swallow every tap
+  if (drag && (drag.moved || !drag.li.isConnected)) abortDrag(); // a moved drag or a lost row: abort; 1.7: an unmoved hold rides the render
   const before = wasAll;
   const nowAll = allDoneToday();
   render({ animate: true, quiet: true });
@@ -1097,7 +1114,7 @@ function celebrateRemote(prev, before, nowAll) {
     const r = li.querySelector(".tx").getBoundingClientRect();
     fx.burst(Math.min(r.right, innerWidth - 40), r.top + r.height * 0.5, 30, 11, 1.8);
   }
-  if (nowAll && !before) setTimeout(() => { sound.finish(); finaleFx(); const g = $("#glow"); g.classList.add("flare"); setTimeout(() => g.classList.remove("flare"), 900); }, 500);
+  if (nowAll && !before) setTimeout(() => { sound.finish(); finaleFx(); if (!RM.matches) { const g = $("#glow"); g.classList.add("flare"); setTimeout(() => g.classList.remove("flare"), 900); } }, 500);
 }
 
 function toggle(id, px, py, fromPointer) {
@@ -1126,6 +1143,7 @@ function toggle(id, px, py, fromPointer) {
     }
     if (view === "today") fx.burst(x, y, 46, 13, 2.0); else fx.burst(x, y, 18, 9, 1.6);
     toast("Done", { undo: true });
+    { const tl = todayList(), d = tl.filter(i => i.done).length; announce(`${d} of ${tl.length} done${d && d === tl.length ? ". That's the list." : ""}`); }
   } else {
     sound.uncheck();
   }
@@ -1136,7 +1154,7 @@ function toggle(id, px, py, fromPointer) {
     if (now && !wasAll) setTimeout(() => {
       if (dev.oneThing) setOneThing(false, { silent: true }); // the finale shows the whole list
       sound.finish(); finaleFx();
-      const g = $("#glow"); g.classList.add("flare"); setTimeout(() => g.classList.remove("flare"), 900);
+      if (!RM.matches) { const g = $("#glow"); g.classList.add("flare"); setTimeout(() => g.classList.remove("flare"), 900); }
     }, 640);
     wasAll = now;
   }
@@ -1304,6 +1322,9 @@ function undo() {
   afterChange();
   wasAll = allDoneToday();
   toast("Undone");
+  // 1.7: focus to the line the undo touched
+  const firstId = u.items && u.items[0] && u.items[0][0];
+  setTimeout(() => { const li = rows.get(firstId); const el = li && li.querySelector(".check"); const a = document.activeElement; if (el && (a === document.body || a.id === "toast-undo")) { try { el.focus({ preventScroll: true }); } catch (e) { /* ignore */ } } }, 300);
 }
 
 /** A toast. `undo: true` offers the undo stack; `action` offers a one-off undo of its own (delete everywhere) for `ms`. */
@@ -1312,11 +1333,16 @@ function toast(msg, { undo: withUndo = false, action = null, ms = 0 } = {}) {
   t.querySelector(".msg").textContent = msg;
   toastAction = action;
   $("#toast-undo").hidden = !(action || (withUndo && canEdit()));
+  // 1.7: under a modal the toast lives inside the panel (the rest of the page is inert), and moves back out after
+  const modal = document.querySelector("dialog.panel[open] .body"); if (modal && t.parentNode !== modal) modal.appendChild(t); else if (!modal && t.parentNode !== document.body) document.body.appendChild(t);
   t.classList.add("on");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(hideToast, ms || (action ? 10000 : withUndo ? 4500 : 2600));
 }
-function hideToast() { $("#toast").classList.remove("on"); $("#toast-undo").hidden = true; toastAction = null; }
+function hideToast() {
+  const t = $("#toast"); t.classList.remove("on"); $("#toast-undo").hidden = true; toastAction = null;
+  if (t.parentNode !== document.body) setTimeout(() => { if (!t.classList.contains("on") && t.parentNode !== document.body) document.body.appendChild(t); }, 300); // back out after the fade
+}
 
 /* ---------------- inline editing ---------------- */
 function startEdit(id, { isNew = false } = {}) {
@@ -1451,6 +1477,10 @@ function openLineMenu(id) { if (!canEdit()) return; if (editing) commitEdit(); p
 function openRepeat(id) { if (!canEdit()) return; panels().then(p => p.openRepeat(id)); }
 
 /* ---------------- keyboard move ---------------- */
+/** 1.7: where the line landed, for a screen reader. */
+function announceMove(dir) {
+  setTimeout(() => { const li = document.activeElement && document.activeElement.closest(".row"); if (!li) return; const all = Array.from(li.parentNode.querySelectorAll(".row:not(.done)")); announce(`Moved ${dir < 0 ? "up" : "down"}, ${all.indexOf(li) + 1} of ${all.length}`); }, 350);
+}
 function moveFocused(dir) {
   if (!canEdit()) return;
   const id = focusedRowId(); if (!id) return;
@@ -1528,7 +1558,9 @@ function beginDrag(li, e, fromLongPress) {
   press = null;
   if (swipe) { swipe.li.style.transform = ""; swipe.li.style.opacity = ""; swipe = null; }
   const rect = li.getBoundingClientRect();
-  drag = { id, li, offY: e.clientY - rect.top, startTop: rect.top, pointerId: e.pointerId, overSec: null, lastY: e.clientY, raf: 0, fromHold: !!fromLongPress, startY: e.clientY, moved: false };
+  const live = Array.from(li.parentNode.children).filter(r => r.classList.contains("row") && !r.classList.contains("done")); const at = live.indexOf(li);
+  const startPrev = at > 0 ? live[at - 1].dataset.id : "", startNext = at >= 0 && at < live.length - 1 ? live[at + 1].dataset.id : "";
+  drag = { id, li, offY: e.clientY - rect.top, startTop: rect.top, pointerId: e.pointerId, overSec: null, lastY: e.clientY, raf: 0, fromHold: !!fromLongPress, startY: e.clientY, moved: false, startPrev, startNext, startSec: view === "today" ? "" : (li.closest(".sec") || {}).dataset ? li.closest(".sec").dataset.id : "" };
   li.classList.add("dragging"); document.body.classList.add("is-dragging");
   try { li.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ }
   document.addEventListener("touchmove", preventTouch, { passive: false });
@@ -1602,7 +1634,7 @@ function domMove(li, list, ref) {
 }
 function endDrag(move, up, cancelled, aborted) {
   if (!drag) return;
-  const { id, li, fromHold, moved } = drag;
+  const { id, li, fromHold, moved } = drag; const drag0 = drag;
   li.removeEventListener("pointermove", move); li.removeEventListener("pointerup", up); li.removeEventListener("pointercancel", cancelled);
   document.removeEventListener("touchmove", preventTouch);
   try { li.releasePointerCapture(drag.pointerId); } catch (x) { /* ignore */ }
@@ -1612,6 +1644,8 @@ function endDrag(move, up, cancelled, aborted) {
   drag = null;
   dragEndedAt = performance.now();
   if (aborted) { render({ animate: false }); return; }
+  // 1.7: a finger that never travelled moved nothing: a hold released in place gets its menu
+  if (!moved) { render({ animate: false }); if (fromHold) openLineMenu(id); return; }
   // derive the new position from the DOM
   const it = doc.items[id]; if (!it || it.deleted) return;
   const list = li.parentNode;
@@ -1624,7 +1658,8 @@ function endDrag(move, up, cancelled, aborted) {
   let o = M.orderBetween(prev ? prev[key] : undefined, next ? next[key] : undefined);
   const secId = view === "today" ? it.sectionId : list.closest(".sec").dataset.id;
   if (o === null) { renumber(view === "today" ? null : secId, key); o = M.orderBetween(prev ? prev[key] : undefined, next ? next[key] : undefined) || M.lastOrder(sib.map(r => doc.items[r.dataset.id]), i => i[key]); }
-  const changed = it[key] !== o || (view === "all" && it.sectionId !== secId);
+  // 1.7: moved means the neighbours or the section changed (the old midpoint test wrote phantom moves)
+  const changed = (prevEl ? prevEl.dataset.id : "") !== drag0.startPrev || (nextEl ? nextEl.dataset.id : "") !== drag0.startNext || (view === "all" && secId !== drag0.startSec);
   if (!changed) { render({ animate: false }); if (fromHold && !moved) openLineMenu(id); return; } // a hold released in place: the menu
   pushUndo("Moved", [id]);
   it[key] = o;
@@ -1664,6 +1699,7 @@ function showPanel(id, { anchor = null } = {}) {
   const pop = !!anchor && !sheetUi() && anchor.isConnected;
   d.classList.toggle("pop", pop); d.style.left = ""; d.style.top = "";
   if (!d.open) d.showModal();
+  if (!/^(p-menu|p-line|p-sec|ask|whose)$/.test(d.id)) { const b = d.querySelector(".body"); if (b) { if (!b.hasAttribute("tabindex")) b.tabIndex = -1; b.focus({ preventScroll: true }); } } // 1.7: a sheet starts at its title
   const body = d.querySelector(".body"); if (body) body.scrollTop = 0; // a sheet opens at its top, whatever it was scrolled to when it closed (⋯ → Theme must land on Appearance)
   if (pop) {
     const r = anchor.getBoundingClientRect(), w = d.offsetWidth, h = d.offsetHeight;
@@ -1731,7 +1767,7 @@ addEventListener("popstate", e => {
 $$("dialog.panel").forEach(d => {
   d.addEventListener("close", () => { if (!panelSwitching && !backPending && openPanel === d) closeAll(); idleReset(); }); // a close from anywhere else takes the stack with it (not one the browser forces while a Back is already on its way)
   d.addEventListener("cancel", e => { if (openPanel !== d) return; e.preventDefault(); goBack(); }); // Escape: back one level, closed at the root
-  d.addEventListener("click", e => { if (e.target === d && !clickAfterDrag()) { if (openPanel === d) closeAll(); else d.close(); } }); // not the click a browser synthesises after the hold that opened it
+  d.addEventListener("click", e => { if (e.target === d && d.id !== "whose" && !clickAfterDrag()) { if (openPanel === d) closeAll(); else d.close(); } }); // not the click a browser synthesises after the hold that opened it
   d.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => { if (openPanel === d) closeAll(); else d.close(); }));
   if (d.classList.contains("sheet")) wireSheetSwipe(d);
   wireBackSwipe(d);
@@ -1778,7 +1814,7 @@ function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger =
     const field = $("#ask-field"), input = $("#ask-input");
     field.hidden = !label; input.value = value; input.setAttribute("aria-label", label || title);
     $("#ask-ok").textContent = confirm;
-    $("#ask-ok").classList.toggle("danger", danger);
+    $("#ask-ok").classList.toggle("danger", danger); $("#ask-ok").classList.toggle("accent", !danger);
     let done = false;
     const finish = v => { if (done) return; done = true; resolve(v); };
     const form = $("#ask-form");
@@ -1884,7 +1920,8 @@ async function copyText(text, okMsg) {
 }
 function nativeShare(text) {
   if (!navigator.share) return false;
-  navigator.share({ title: "Today's Five", text: "Today's Five list", url: text }).catch(() => {});
+  // 1.7: a cancel is silent; any other failure falls back to a copy
+  navigator.share({ title: "Today's Five", text: "A live view of a Today's Five list. It updates as lines are crossed off.", url: text }).catch(e => { if (!e || e.name !== "AbortError") copyText(text, "The share sheet didn't open, so the link was copied instead"); });
   return true;
 }
 $$(".link").forEach(el => el.addEventListener("focus", () => { try { el.select(); } catch (e) { /* ignore */ } }));
@@ -1922,7 +1959,7 @@ function parseLink(s) {
 }
 function switchTo(r, { paste = false } = {}) {
   if (r.id === listId && r.mode === listMode) return;
-  if (paste && listId && syncStatus === "gone" && r.mode === "edit") {
+  if (listId && syncStatus === "gone" && r.mode === "edit") { // 1.7: a tap counts as a paste
     // the old link died (rotated or migrated elsewhere): remember where it went, and carry unsynced edits if the docs are kin
     meta.redirect = { ...(meta.redirect || {}), [listId]: r.id };
     meta.carry = { from: listId, to: r.id };
@@ -1946,8 +1983,9 @@ $("#w-skip").addEventListener("click", keepDemo); // Skip is Keep without the pl
 $("#w-paste-show").addEventListener("click", () => { $("#w-paste-form").hidden = false; $("#w-paste").focus(); });
 $("#w-paste-form").addEventListener("submit", e => {
   e.preventDefault();
+  $("#w-err").textContent = "";
   const r = parseLink($("#w-paste").value);
-  if (!r) { $("#w-err").textContent = "That doesn't look like a list link. It ends in #/l/ or #/r/ followed by 22 letters and digits."; return; }
+  if (!r) { $("#w-err").textContent = "That doesn't look like a list link. Paste the whole address, including the part after the #."; return; }
   switchTo(r, { paste: true });
 });
 
@@ -2063,7 +2101,7 @@ function wireUi() {
   $("#toast-undo").addEventListener("click", () => { const a = toastAction; hideToast(); if (a) a(); else undo(); });
   $("#install-x").addEventListener("click", () => { $("#install").hidden = true; document.body.classList.remove("install-on"); dev.installHint = true; saveDevice(); });
   if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc && !demo && !openPanel) { $("#install").hidden = false; document.body.classList.add("install-on"); } }, 2500);
-  document.addEventListener("pointerdown", () => sound.prime(), { once: true, capture: true });
+  document.addEventListener("pointerdown", () => { sound.prime(); setTimeout(() => panels(), 300); }, { once: true, capture: true }); // 1.7: the panels warm on the first gesture
   document.body.classList.toggle("one", !!dev.oneThing);
 }
 function toggleMute() { dev.muted = !dev.muted; saveDevice(); paintMute(); if (!dev.muted) sound.tick(); dispatchEvent(new CustomEvent("tf:settings")); }
@@ -2097,7 +2135,7 @@ document.addEventListener("keydown", e => {
   if (openPanel || editing || inField) return;
   if (!doc) return;
   const edit = canEdit();
-  if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) { if (edit) { e.preventDefault(); moveFocused(e.key === "ArrowUp" ? -1 : 1); } return; }
+  if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) { if (edit) { e.preventDefault(); moveFocused(e.key === "ArrowUp" ? -1 : 1); announceMove(e.key === "ArrowUp" ? -1 : 1); } return; }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key;
   if (k === "Escape") { hideToast(); if (query) setSearch(""); return; }
@@ -2193,7 +2231,8 @@ const api = {
 };
 
 /* test hook (read-only) */
-window.__tf = () => ({ stats: { ...stats }, view, listId, mode: listMode, lookupId: ref ? ref.lookupId : null, R: ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, secret: !!dev.secret, field: !!field, demo, shuffled: shuffledId, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry(), origin: (entryOf(listId) || {}).origin || null, nickname: (entryOf(listId) || {}).nickname || null, whose: $("#whose").open, panels: panelStackIds() });
+// 1.7: the secrets only on the local transport
+window.__tf = () => ({ stats: { ...stats }, view, listId: TRANSPORT_KIND === "local" ? listId : (listId ? "held" : null), mode: listMode, lookupId: TRANSPORT_KIND === "local" && ref ? ref.lookupId : null, R: TRANSPORT_KIND === "local" && ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, secret: !!dev.secret, field: !!field, demo, shuffled: shuffledId, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry(), origin: (entryOf(listId) || {}).origin || null, nickname: (entryOf(listId) || {}).nickname || null, whose: $("#whose").open, panels: panelStackIds() });
 // test-only controls, on the local transport: simulate what iOS does to the audio context
 if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneToday(); } }, presence: n => paintWho(n) };
 

@@ -76,9 +76,16 @@ export function createSound(opts) {
   }
   function play(fn, step) {
     const c = ctx(); if (!c) return false;
-    if (!packs) { loadPacks(); return false; } // the very first sound on a cold page arrives a moment late; nothing else is lost
+    if (!packs) { // 1.7: the very first sound on a cold page plays as soon as the engines land (they used to be dropped), unless that took longer than a beat
+      const t0 = Date.now(); const p = loadPacks(); if (p && p.then) p.then(() => { if (packs && Date.now() - t0 < 1500) play(fn, step); });
+      return false;
+    }
     const k = kit();
-    const pack = engineOf(k.engine); if (!pack) return false;
+    const pack = engineOf(k.engine);
+    if (!pack) { // 1.8: a Secret kit's engine is in a module of its own; play as soon as it lands, the way 1.7 does for the twelve
+      const t0 = Date.now(); const p = loadExtra(); if (p && p.then) p.then(() => { if (extra && Date.now() - t0 < 1500) play(fn, step); });
+      return false;
+    }
     try { pack[fn]({ c, master, kit: k, P: (key, d) => { const v = k[key]; return typeof v === "number" ? v : d; } }, step || 0); } catch (e) { return false; }
     return true;
   }
@@ -93,6 +100,8 @@ export function createSound(opts) {
     tick() { return play("uncheck"); },
     /** Warm the context up inside a user gesture and start loading the engines, so the first real sound is not swallowed. */
     prime() { ctx(); loadPacks(); warm(kit().engine); },
+    /** 1.7: fetch the engines at idle, outside any gesture (no context is made), so the first check-off finds them loaded. */
+    preload() { loadPacks(); warm(kit().engine); },
     /** Start fetching an engine's module before it is needed (app.js calls this when a kit that carries one goes on). */
     warm,
     /** Resolves once an engine can play, so a caller that wants to be heard the first time can wait for it. */

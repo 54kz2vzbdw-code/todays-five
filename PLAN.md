@@ -1007,6 +1007,68 @@ Only the Sound section changes on screen; the rest of the after set matches the 
 
 Build 75 went live at 22:02 (Pages served it on the sixth poll; `version.js` 1.5, the worker `tf-v1.5-b75`, `packs.js?v=75` with the twelve). A "1.4 device" (a Chrome profile that made its list on the live site at build 72, six packs in its Settings) opened the URL fresh: the first navigation ran 1.5, the same list with the same rows and check, synced at rev 1, mine, and the what's-new toast the only new thing ("New in 1.5: Six more sounds."; no question, no sheet, no hint, no dialog); its Settings listed Theme's pick (Knock) and the twelve, a pick of Cork saved and the sub-line read "Dark picks Knock; this device plays Cork" with the context running; on the second open the toast stayed hidden. A fresh device: the welcome (three lines, the demo), three check-offs through a running context with the packs loaded, Keep, the save sheet, the list synced at rev 1 as an envelope (`v, z, ct, iv, alg`, 501 bytes, no plaintext), Settings with the twelve, About reading "Version 1.5 (build 75)" with the changelog 1.5 → 1.0. Both lists deleted everywhere afterwards; no page errors. The record commit stamps build 76 and changes nothing else.
 
+
+# Today's Five 1.7 — plan
+
+The full pass: UI, feel, copy and bugs, with no features. Six rounds in a week grew the app; this round steps back and looks at it through eleven lenses in many environments, ranks what it finds, ships the part that is not a taste call, and puts the rest to Price in AUDIT.md. The brief names the round 1.6 in places and 1.7 in others (Price flipped the two: 1.6 is another session's secret super-pink mode); the branch, the version and the About line are 1.7.
+
+## Process
+
+- **Agents look; the orchestrator judges.** Twelve agents, one lens each (accessibility has two: one measures, one judges), run in parallel with a written brief: the lens, the environments, the fixture, the local-transport rule, a budget (about 60 tool calls or 50 minutes; 80–90 for the serial platform and data lenses) and one output contract per finding (title · severity blocker/bug/papercut/proposal · environment · steps · evidence path · why it matters · proposed fix · the copy line). Nothing without evidence; no agent edits the repo or touches the live server. Their raw reports are kept in `audit/raw/`. Every bug shipped was reproduced here first; every copy change went through the voice skill; every design item got its own judgment before it entered AUDIT.md.
+- **The code under audit is frozen**: a clone of `main` at build 76 (1.5) served on its own port, so a fix landing on the 1.7 branch never changes what an agent is looking at mid-run. Fixes go to the working copy on another port and are verified there.
+- **Waves**: the first six (never seen it, copy, consolidation, feel, consistency, privacy — the judgment lenses, on opus) went first; the platform and accessibility-tooling lenses (sonnet) followed once the load was known; the accessibility-judgment, sync-and-data, surfaces and performance lenses last. The machine held twelve at a load of about five on fourteen cores, so the waves overlapped rather than queued.
+- **Server hygiene**: every agent opens the app with `?transport=local`; only the platform lens runs the real-backend suite, once. Nothing on the server changes.
+
+## Fixtures and harness (committed first)
+
+- `tools/fixture.js` writes `test/fixtures/longtime.json`: a device that has used the app for months — four lists (Work: 84 lines in six sections, fifteen notes, six repeating lines of every kind, two Not today, 90 days of history, two saved themes that are partners, a template; Home; Trip, shared with this device and nicknamed; Old, archived), every hint seen, 1.5 seen, a theme of its own in the Day slot. Times are relative to the moment it was generated; the harness shifts them to load time and buckets the history by local day, so "done today" is today whenever it runs.
+- `tools/audit/harness.mjs`: one way to open the app in every environment the brief lists with the installed Chrome — desktop 1440×900 and 1920×1080, a narrow 900×700 window, browser zoom 150% and 200% (a smaller viewport at a higher device scale), phone 390×844 and landscape, Android (Pixel 7), iPad both ways; dark and light, reduced motion, a timezone, a fake clock (Playwright's), offline and slow 3G; the fixtures (`fresh`, `longtime`, `none`), a stranger arriving by a link (a second profile given the first profile's local-server rows), and evidence to a directory. The browser suite reuses its seeding for a new test.
+- The simulators (iOS 26.5 and 18.1) through WebDriver, the deploy-transition swap directory, macOS Safari through safaridriver if it allows automation, and Lighthouse's runner are the platform and performance lenses' tools.
+
+## Lenses × environments
+
+| lens | model | environments | fixture |
+|---|---|---|---|
+| Never seen it | opus | desktop, phone, Android; a stranger by View link and by Private link | none, fresh |
+| Copy | opus | every string in the markup, the code and About; desktop and phone for wrapping | longtime |
+| Consolidation | opus | desktop, phone; counts of controls, rows and taps | longtime |
+| Feel | opus | desktop, phone, reduced motion; three sound packs | fresh, longtime |
+| Consistency | opus | desktop dark/light, phone dark/light, 1920×1080, 900×700, zoom | longtime |
+| Accessibility, tooling | sonnet | contrast on 12 kits + 20 random themes, targets on phone, keyboard order on desktop, focus rings, the tree, text scaling, reduced motion, announcements | longtime |
+| Accessibility, judgment | opus | the tree as spoken, keyboard-only tasks, low vision, reduced motion, touch alternatives | longtime |
+| Bugs: sync and data | opus | two devices on one list, offline and lag, a fake clock across midnight, DST and a timezone change, import/export, moves, delete/undo, New keys with a stale device, eight idle hours, sleep and wake, a busy server | longtime |
+| Bugs: surfaces | opus | desktop, narrow, zoom, phone, landscape, Android, iPad both ways | longtime, fresh, none |
+| Bugs: platform | sonnet | Chrome and both simulators across a deploy, audio after suspend/kill, wake lock, motion permission, share, clipboard, the blob manifest, Android back, standalone; the real-backend suite once | fresh |
+| Performance | sonnet | Lighthouse, first paint by theme and viewport, eight idle hours, long lists, cold lazy modules on slow 3G, leaks, the worker cache, byte budget | longtime |
+| Privacy and security | opus | code reading, the console, storage and caches, rendering of hostile text, import parsing, the QR and share texts, the RPCs' edges, the CSP | fresh |
+
+## What ships and what waits
+
+Ships on the 1.7 branch, verified per COMPATIBILITY.md §7: bugs the orchestrator reproduced, copy that fails an unfamiliar reader (through the voice skill), and cosmetic defects that are not taste calls. Waits, in AUDIT.md: anything that changes design — combining or removing controls, restructuring a panel, a different interaction, a change to motion or sound character — ranked by impact against effort with evidence and, where it helps, a mockup. Anything on the line waits.
+
+## Found before the agents started
+
+Loading the fixture showed a defect on its first run: a list with a chosen-days repeat opened half done. `DAY_NAMES` was declared five hundred lines below the boot call and the first render reaches it (`ruleLabel`, on every row with a rule), so the open threw after the first rows — the rest of Today missing, the count 0/0, the sync engine never started, "Sync off" in the rail — on every cold open of a device whose current list has a weekly repeat on chosen days. Fixed (moved above the boot block), with a features test that pins the short list of module-level bindings allowed below `boot()` and a browser test that boots the long-time fixture at both viewports and asserts no page error, every Today line, the count and a running engine.
+
+## What the lenses found
+
+Twelve reports, 143 findings before deduplication: 3 blockers (all the same boot bug, seen through five lenses), 41 bugs, 52 papercuts, 47 proposals. Every fix in AUDIT.md's appendix was reproduced on the working copy first (the scripts are in the session's scratch; the harness makes them short), and the fixes landed in seven commits on the branch, each with tests: the boot bug (a static guard and the fixture at boot), thirty-one copy changes, the whose question and the first sound and the flare and the hover and the empty Today and the line menu and the tooltips, the sync and data four, the hold and the add-from-anywhere and the paste error and the sheet and the swatch and the toast, the consistency ten, the accessibility fourteen, the worker and the hook and the share and copy fallbacks and the kits' floors.
+
+## Verification results (1.7)
+
+Checklist §7 of COMPATIBILITY.md, on the working copy served locally (the audit itself ran on a frozen clone of main at build 76, on its own port):
+
+- **Node suites** (`node test/*.test.js`): compat 7, crypto 9, features 23 (a boot-allowlist guard and About's fallback version added), model 27 (moveItem's section and purgeTombstones' fixed point added), sound 10 (the replay and the preload added), sync 13, theme 25 (the curated kits' elevated floors added) — 114 of 114.
+- **Browser suite** (`tools/e2e4.js`, 1440×900 mouse and 390×844 touch, the installed Chrome): 131 of 131 (12 minutes, 00:21–00:33 on 2026-09-06). The first full run failed six: four tests pinned the pre-1.7 state (the welcome's one sentence, the Lists switch's old label, and the save sheet's focus landing on a line, whose ⋯ it then showed at rest) and one crossed midnight (the fixture's day strings did not move with its times); each is a decision in DECISIONS.md, and the second run is the number above.
+- **Real backend** (`tools/e2e-realsync.js`): 6 of 6, once, at 23:42 on 2026-09-05 (the platform lens's run an hour earlier came back "busy": the 1.5 round's live checks had spent the hour's creates).
+- **Lighthouse** (mobile, simulated throttling, cold = first visit, warm = the worker's cache): 1.5 cold 99 (LCP 1852 ms) → 1.7 cold 99 (LCP 1857 ms; an earlier run of the same code read 1830 ms); warm 100 → 100 (LCP 1186 → 1176 ms); desktop 100 → 100. Not worse. app.js stays under the simulated TCP window (44,0xx B gzipped against 1.5's 42,252): the first draft's commentary cost an extra round trip (98, LCP +270 ms) and was trimmed to pointers, with the dead-link carry moved into the lazy panels module.
+- **Simulators** (safaridriver, iOS 26.5 and 18.1): the platform lens's pass over the sheets, the hold and the Share sheet; nothing was verified on a physical device (see AUDIT.md, "What no agent could verify").
+- **First paint**: the boot script's hash re-computed (`tools/csp-hash.js`); no new fetch before the largest paint (the panels module now loads 300 ms after the first gesture, the sound engines at idle).
+
+## Live checks (1.7)
+
+Build 87 went live at 00:36 on 2026-09-06 (Pages served the worker on the third poll, 50 s after the push; `tf-v1.7-b87`). A "1.5 device" (a Chrome profile that made its list on the live site at build 76 the evening before: three lines, one crossed off) opened the URL fresh: the first navigation ran 1.7; the same list, synced, mine, the what's-new toast the only new thing ("New in 1.7: Sharper all over."), no other sheet or question, and the test hook handing out no secret. The list showed two lines and no check: the day had rolled over at midnight between the staging and the check, and the crossed-off line had gone to History as the rollover does (rev 2 was that write). On the live code: the star's tooltip and the section's, a line's name read as its text, Lists starting at its title with "Remove this list from this device" and the key hints hidden from the reader, the Share sheet's warning under "Let someone edit" and the two Copy buttons named for their links, the toast gone on the second open, the delete confirm in danger rather than orange; Delete everywhere left the welcome. A fresh device: the welcome one sentence over three lines, the three check-offs made sound and the finale announced "3 of 3 done. That's the list.", Keep and the save sheet, the kept list synced at rev 1 with the server row an envelope (v, z, ct, iv, alg — 501 bytes, nothing readable), About "Version 1.7 (build 87)" with the changelog in order and the crumb "‹ Back to the list"; Delete everywhere left the welcome. No page errors on either device. The script (`live17.mjs`) and both screenshots stay in the session's scratch; nothing was left on the server.
+
 # Today's Five 1.6 — plan
 
 A secret pair of themes: undocumented, unlocked by a word, shareable by that word, built to the same bar as every other kit. Nothing else was added. Nothing on the server changes; links, keys, the document shape and the three RPCs are untouched, and the unlock never leaves the device it was given to. The calls are in DECISIONS.md under "1.6 decisions".

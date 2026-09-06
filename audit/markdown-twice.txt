@@ -1,0 +1,153 @@
+
+=== merge is a lattice join over every collection (fuzz, 400 triples) ===
+  ok   commutative
+  ok   associative
+  ok   idempotent
+  ok   absorbing (merge(merge(a,b),a) === merge(a,b))
+
+=== merge never invents or silently drops a line's text ===
+  ok   later edit wins
+  ok   no duplicate row is created for the loser
+       NOTE: the losing text "call the credit union" is not recorded anywhere in the merged doc: it is not
+  ok   tie is broken deterministically (both orders agree)
+       tie winner text = "abc" (longer canonical JSON wins the tie)
+
+=== a line deleted on A while B edits it ===
+  ok   a later edit resurrects a deleted line (edit beats delete by clock)
+  ok   an earlier edit loses to the delete: the edit is gone for good
+
+=== a section deleted on A while B moves a line into it ===
+  ok   the line survives
+  ok   the line falls back to Unsorted, not lost
+  ok   the line appears in exactly one section view
+
+=== both devices add a line at the same instant (stable order?) ===
+  ok   both lines survive
+  ok   the order is identical whichever side merges
+       identical todayOrder → tie-break by id: ["A's line","B's line"]
+
+=== both devices cross off the last line (one finale?) ===
+  ok   crossed off once, one record
+
+=== rollover: two devices, different clocks, converge ===
+  ok   identical records regardless of the wall clock
+  ok   merging the two rollovers changes nothing
+  ok   rollover is idempotent
+  ok   a done line went to History exactly once
+  ok   a plain done line is tombstoned
+  ok   a plain undone line stays put and on Today
+  ok   a daily repeat comes back undone and on Today
+  ok   a weekly repeat due today is placed
+  ok   a Not today line returns on its day
+  ok   no line is duplicated
+  ok   an offline device's own rollover merges to the same document
+  ok   History has no duplicate entry after the merge
+
+=== rollover: a device asleep for several days ===
+  ok   the line finished 3 days ago lands in History under that day
+  ok   nothing is recorded for the 2 days the device slept
+  ok   the daily line is back on Today, undone
+
+=== timezone: a list rolled over in Chicago, then opened in Tokyo (Tokyo is a day ahead) ===
+  ok   Chicago leaves it alone (finished today)
+       doneAt UTC = 2026-09-05T14:30:00.000Z
+  ok   Tokyo rolls the line away while Chicago still calls it today
+       History days written by the Tokyo roll: ["2026-09-05"]
+  ok   after the merge the line is gone from Chicago's list too
+       Chicago's History now carries: ["2026-09-05"]
+
+=== DST: America/Chicago 2026-03-08 (spring forward) and 2026-11-01 (fall back) ===
+  ok   addDays across spring forward
+  ok   addDays across fall back
+  ok   weekdayOf on the DST days
+  ok   localDate holds through the skipped hour
+  ok   localDate holds through the repeated hour
+  ok   it lands in History under 2026-11-01
+  ok   streak counts 3 across the fall-back night
+  ok   streak counts 3 across the spring-forward night
+  ok   a monthly rule on the 31st fires on the 30th of a 30-day month
+  ok   a monthly rule on the 31st fires only on the 31st of a 31-day month
+  ok   a monthly rule on the 29th in February 2026 fires on the 28th
+
+=== export / import round trips ===
+  ok   the list secret is not in the export
+  ok   import(export(doc)) equals normalize(doc) apart from the id
+  ok   import is idempotent (a second import into the same list adds nothing)
+  ok   rules survive
+  ok   returns survive
+  ok   templates survive
+  ok   saved themes survive
+  ok   history survives
+  ok   a remembering tombstone survives (Recently deleted carries over)
+  ok   an unknown future collection survives the round trip
+  ok   the list name survives
+  ok   a bare {items:…} document is accepted
+  ok   a bare document is stamped with the current doc version
+  ok   a JSON file that is not an export is refused with a readable message
+  ok   a non-JSON file is refused with a readable message
+--- markdown export ---
+# Work
+
+_Exported 2026-09-05_
+
+## Today
+
+- [ ] post the form ★ ↻
+  before five
+- [x] water the plants ★
+
+## Errands
+
+- [ ] post the form ★ ↻
+  before five
+- [x] water the plants ★
+
+## History
+
+### 2026-09-01
+
+- an old finish · Errands
+--- end ---
+  ok   markdown: the Today section lists the starred lines
+  ok   markdown: a done line carries [x]
+  ok   markdown: the note is indented under its line
+  ok   markdown: the section heading appears
+  ok   markdown: History appears
+  ok   markdown: a deleted line is not exported
+  ok   markdown: the Unsorted heading is skipped when empty
+
+=== moveItem: what carries and what stays behind ===
+  ok   the note carries
+  ok   the repeat rule carries
+  ok   the Not today return carries
+  ok   the done state carries
+  ok   the Today star carries
+  ok   the line lands in Unsorted in the new list
+  ok   the source keeps a bare tombstone
+  ok   the moved line is NOT offered in Recently deleted in the source
+  ok   the source's rule and return are tombstoned too
+       the carried rule still says placed="2026-09-05" and sectionId=""
+       the carried rule's snapshot sectionId is cleared but the item's note/text snapshot is "book the van"
+  ok   restoreItem cannot undo a move (the bare tombstone has no text)
+
+=== restoreItem: bringing a deleted line back ===
+  ok   a restored line keeps its text and note
+  ok   a restored line comes back undone and off Today
+  ok   a restored line returns to its section
+  ok   a line whose section is gone lands in Unsorted
+  ok   restoring twice is harmless
+
+=== purgeTombstones and the History cap ===
+  ok   a 31-day-old tombstone goes
+  ok   a 2-day-old tombstone stays
+  ok   a live line stays
+  ok   an orphan rule with no line at all is dropped
+  ok   an orphan return with no line is dropped
+  ok   History is capped at 365 days
+  FAIL a second purge is a no-op (same object back)
+       rule for the line whose tombstone was just purged: KEPT this pass
+  ok   nothing resurrects across purges
+  ok   a device 31+ days behind resurrects a line whose tombstone was purged (documented 30-day TTL)
+       document size before purge 33KB, after 30KB
+
+1 of 90 checks FAILED

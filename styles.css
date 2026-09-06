@@ -203,7 +203,7 @@ button{font:inherit;color:inherit}
   background:var(--strike-bg);background-size:var(--strike-size);
   box-shadow:var(--strike-shadow);
   transform:scaleX(0);
-  transition:transform .38s cubic-bezier(.16,1,.3,1) var(--d,0s);
+  transition:transform .22s cubic-bezier(.16,1,.3,1) var(--d,0s); /* 1.9: the ink lands inside the knock's decay (it was .38s, 270 ms of silent drawing after a 108 ms sound) */
 }
 /* a strike that moves animates background-position, which the compositor cannot take, so it runs on struck rows
    only: an overlay at scaleX(0) was invisible and cost the same (DECISIONS.md, "The sparkle field") */
@@ -335,7 +335,12 @@ button{font:inherit;color:inherit}
 .row.dragging .tool{opacity:1}
 body.is-dragging{cursor:grabbing}
 body.is-dragging .row:hover{background:transparent}
-.row.moving{transition:transform .26s cubic-bezier(.22,1,.36,1)}
+/* 1.9: a row on its way to a new place (a done line sinking, a remote reorder) carries the page's own ground and sits above the rows it
+   passes, so the reorder reads as one object moving past another instead of two lines of type drawn over each other; the crossed-off
+   line rides on top of the rows it displaces. app.js adds the class for the length of the FLIP. */
+.row.moving{background:var(--ink);z-index:2;transition-property:color} /* the ground is there from the first frame: the row's .2s background fade would let the rows show through while they cross */
+.row.moving.done{z-index:3}
+.no-hover .row.moving:hover{background:var(--ink)}
 
 /* ---------------- view-only mode: nothing that edits is rendered ---------------- */
 html[data-mode="view"] .tools,html[data-mode="view"] .add,html[data-mode="view"] #addtoday,html[data-mode="view"] .sec-more,

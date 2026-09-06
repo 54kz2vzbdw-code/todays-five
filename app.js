@@ -122,6 +122,7 @@ const openers = {}; // panel id → repaint-and-show, registered by panels.js (t
 let markTarget = null, markKey = ""; // the just-in-time hint on screen, if any (declared up here: boot() reaches it)
 let menuHintFor = null;        // the line whose edit just ended by hand: the menu hint points at it once the editor is gone
 let idleTimer = 0, idleOn = false, finaleOn = false; // the idle fade (desktop)
+let finaleHold = false;        // 1.9: the finale card waits for the chord (300 ms after the last check-off); paint() reads it
 let query = "";                // Everything's search
 let pendingAdd = null, pendingOrigin = null; // { text: [...], section } from an add-from-anywhere link, applied once the doc is ready
 let whoCount = 0;
@@ -899,7 +900,7 @@ function renderAll({ animate, quiet }) {
   if (animate && !RM.matches) for (const li of rows.values()) first.set(li, li.getBoundingClientRect().top);
   for (const m of moves) { if (m[0] === "order") orderInto(m[1], m[2], false); else m[1].appendChild(m[0]); }
   for (const m of moves) if (m[0] === "order") orderInto(m[1], m[2], false);
-  if (animate && !RM.matches) for (const [li, top] of first) { const d = top - li.getBoundingClientRect().top; if (d && li.animate) li.animate([{ transform: `translateY(${d}px)` }, { transform: "none" }], { duration: 420, easing: "cubic-bezier(.22,1,.36,1)" }); }
+  if (animate && !RM.matches) { let k = 0; for (const [li, top] of first) { const d = top - li.getBoundingClientRect().top; if (d) flipRow(li, d, li.classList.contains("done") ? 0 : ++k); } }
   let addsec = root.querySelector("#addsec");
   if (!addsec) { addsec = document.createElement("button"); addsec.id = "addsec"; addsec.className = "add"; addsec.type = "button"; addsec.textContent = "+ Section"; addsec.addEventListener("click", addSection); }
   root.appendChild(addsec);
@@ -965,6 +966,18 @@ function updateSection(sec, g) {
   sec.querySelector(".sec-more").dataset.unsorted = g.id === "" ? "1" : "";
 }
 
+/** 1.9: one row on its way to a new place — a done line sinking, a remote reorder — is a 300 ms FLIP that starts as the last
+    of the ink lands (it was 520, after 170 ms of dead air). While it travels the row carries the page's ground and sits above
+    the rows it passes (`.moving`, styles.css), so the reorder reads as one object moving past another; the displaced rows follow
+    in a 20 ms wave, `k` being a row's place in it (the crossed-off line goes first). Never under reduced motion (the callers skip it). */
+function flipRow(el, d, k = 0) {
+  if (!d || !el.animate) return false;
+  el.classList.add("moving");
+  const a = el.animate([{ transform: `translateY(${d}px)` }, { transform: "none" }], { duration: 300, delay: k * 20, easing: "cubic-bezier(.22,1,.36,1)", fill: "backwards" });
+  const settle = () => el.classList.remove("moving");
+  a.onfinish = settle; a.oncancel = settle;
+  return true;
+}
 /** Put the given ids in order inside `container` with the fewest DOM moves (rows already in place are never
     detached, so a render cannot cancel a click in progress or steal focus), FLIP-animating when asked. */
 function orderInto(container, ids, animate) {
@@ -982,10 +995,10 @@ function orderInto(container, ids, animate) {
     if (el) container.insertBefore(el, before && before.parentNode === container ? before : null);
   }
   if (active && active !== document.body && document.activeElement !== active && active.isConnected) { try { active.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
-  let moved = false;
+  let moved = false, k = 0;
   if (animate && !RM.matches) for (const [el, top] of first) {
     const d = top - el.getBoundingClientRect().top;
-    if (d && el.animate) { moved = true; el.animate([{ transform: `translateY(${d}px)` }, { transform: "none" }], { duration: 520, easing: "cubic-bezier(.22,1,.36,1)" }); }
+    if (d && flipRow(el, d, el.classList.contains("done") ? 0 : ++k)) moved = true;
   }
   // 1.7: no hover on a row that slid under a still cursor
   if (moved && matchMedia("(hover: hover)").matches) { container.classList.add("no-hover"); document.addEventListener("pointermove", () => container.classList.remove("no-hover"), { once: true, capture: true }); }
@@ -1009,7 +1022,7 @@ function layoutStrikes(el, instant) {
     if (r.width < 1) continue;
     const pos = `left:${r.left - base.left}px;top:${(r.top - base.top) + r.height * 0.555}px;width:${r.width}px`;
     const g = document.createElement("i"); g.className = "ghost"; g.style.cssText = pos;
-    const k = document.createElement("i"); k.className = "ink"; k.style.cssText = pos + `;--d:${i * 0.13}s`;
+    const k = document.createElement("i"); k.className = "ink"; k.style.cssText = pos + `;--d:${i * 0.08}s`; // 1.9: wrapped lines follow at .08s, not .13s
     wrap.appendChild(g); wrap.appendChild(k);
   }
   if (instant) { void el.offsetHeight; requestAnimationFrame(() => el.classList.remove("nofx")); }
@@ -1037,7 +1050,7 @@ function paint() {
     ? `<em>${n > 1 ? "1–" + Math.min(n, 9) : "1"}</em> check off &nbsp;·&nbsp; <em>N</em> new &nbsp;·&nbsp; <em>E</em> edit &nbsp;·&nbsp; <em>?</em> help`
     : `<em>A</em> today &nbsp;·&nbsp; <em>N</em> new &nbsp;·&nbsp; <em>/</em> search &nbsp;·&nbsp; <em>?</em> help`;
   const fin = $("#finale"), hint = $("#hint");
-  const finale = view === "today" && allDoneToday() && !editing;
+  const finale = view === "today" && allDoneToday() && !editing && !finaleHold; // 1.9: the card waits for the chord
   if (finale) { fin.classList.add("on"); hint.classList.add("off"); }
   else { fin.classList.remove("on"); hint.classList.remove("off"); }
   if (finale !== finaleOn) { finaleOn = finale; idleReset(); } // the controls never fade during the finale
@@ -1161,17 +1174,22 @@ function toggle(id, px, py, fromPointer) {
   } else {
     sound.uncheck();
   }
-  afterChange({ animate: true, delay: it.done ? 520 : 200 });
-  paint();
+  // 1.9: the sink starts as the last of the ink lands (320 after a check-off, 160 after an uncheck; it was 520 and 200, with dead air between the strike and the move)
+  afterChange({ animate: true, delay: it.done ? 320 : 160 });
   if (view === "today") {
     const now = allDoneToday();
-    if (now && !wasAll) setTimeout(() => {
+    // 1.9: the chord and the volley at 300 ms, as the ink lands, with the card fading in under them (it was fully on screen 110 ms before the sound)
+    if (now && !wasAll) { finaleHold = true; const gen = openGen; setTimeout(() => {
+      finaleHold = false;
+      if (gen !== openGen || !doc || !allDoneToday() || view !== "today") { paint(); return; } // taken back, or another list opened, in the meantime: no chord for a finale that is not there
       if (dev.oneThing) setOneThing(false, { silent: true }); // the finale shows the whole list
+      paint(); // the card starts its fade now, under the chord
       sound.finish(); finaleFx();
       if (!RM.matches) { const g = $("#glow"); g.classList.add("flare"); setTimeout(() => g.classList.remove("flare"), 900); }
-    }, 640);
+    }, 300); }
     wasAll = now;
   }
+  paint();
 }
 /** iOS haptics through a hidden native switch: toggling it inside the tap is what fires the tick. No-op elsewhere. */
 function haptic() {

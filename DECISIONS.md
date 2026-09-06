@@ -560,3 +560,41 @@ Calls made where the 1.6 and 1.8 briefs left things open. The design is in PLAN.
 - **Nowhere a reader of the app can find it.** Not on How it works (which still counts twelve sound packs, because twelve is what is on offer), not on About, not in Settings, not in the README beyond the same wink, and not in `CHANGELOG.md` beyond a heading and one item—no "For the record" paragraph, which every other version has. A Node test asserts all of that, and a browser test walks a device that never gives the key through the picker, Settings and How it works and asserts it fetched nothing of the pair and was told nothing about it.
 - **The what's-new entry is one line and a wink**, exactly as the brief wrote it: "A little something for someone in particular." / "If you know, you know."
 - **The markup carries the group's heading and its way out, and neither theme's name.** The swatches are built from `theme.js` when the picker paints, so a reader of `index.html` learns that there is a group called Secret and nothing else.
+
+# 1.9 decisions
+
+Calls made where the 1.9 brief — the 1.7 audit's proposals 1–31 and its open bug, the guards Price put on them, and one addition (the sound packs redistributed, and a sound for Day and one for Night) — left things open. The design is in PLAN.md, "Today's Five 1.9 — plan"; the audit is AUDIT.md; the rules every change must keep are in COMPATIBILITY.md.
+
+## Running the round
+
+- **In the audit's rank order, one logical commit per item, pushed as it lands.** The branch is `1.9`; an untouched clone of `main` (1.8, build 99) sits on port 8792 as the baseline for the browser suite, the before GIF, the before screenshots and Lighthouse, the working copy on 8791. Node 24 and Playwright 1.62 come from the Codex runtime cache as in 1.1–1.8; Lighthouse 12.8 from the 1.7 session's scratchpad.
+- **Proposal 4 stops at a checkpoint.** The motion is Price's to approve: it was built, the two GIFs recorded, and the round paused there. If the answer is no, the commit is reverted and the round goes on from proposal 5.
+- **The suites keep the seed lines the way Keep does.** Skip starts an empty list now (proposal 1), so every place a suite pressed Skip to get the three lines presses the hidden Keep instead (`document.getElementById("w-keep").click()`, which keepDemo honours whether or not the button is showing). The Skip test itself covers both of Skip's meanings.
+
+## The welcome (proposal 1)
+
+- **Skip's label says which of two things it does.** "Skip — start with an empty list" until the person has made the welcome theirs; "Skip — keep these lines" once Keep is offered (a line of their own, or all three crossed off), when Skip is Keep without the ceremony, as the 1.3 decision meant it. One line of the person's own is the threshold, not one check mark: a tap is trying, a line is work.
+- **An in-progress line counts.** Skip commits an open editor first, and decides after: a person who typed a line and reached for Skip keeps it.
+- **An empty first list opens on the empty-Today line** ("Nothing on Today yet…", 1.7's) with + New line under it, and the save sheet follows as for any new list.
+
+## The save sheet (proposal 2)
+
+- **× and Not yet are the same exit.** Both close the sheet and leave `linkSaved` false, so ⋯ keeps its Save your link row with the dot and the Share sheet repeats the key line — exactly what Escape and a swipe already did invisibly. Copy and I've saved it remain the only two things that count as saved (the 1.3 decision stands).
+- **Focus goes to the list however the sheet closes.** 1.7 put it there for I've saved it; the `close` event covers ×, Not yet, Escape and the swipe now.
+
+## The home zone (proposal 3)
+
+- **The key is `zone`, an IANA name, on the document.** Written by `createList` when a list is made, so the maker's zone is home. A list from before 1.9 gets its zone from the device that made it (the registry's `created`), on that device's next open, and pushed; a device that only holds the link never writes one. The alternative — the first 1.9 device to open the list pins it — would let the phone in Tokyo make Tokyo the home of a Chicago list; the maker is the one device with a claim. A list whose maker is gone stays unzoned, behind the guard, and is documented rather than solved.
+- **Two zones merge by the larger string.** That is the rule `merge()` has applied to any top-level key it does not know since v4, so a 1.8 client carrying the key agrees with a 1.9 client about which value wins; the test pins it in both orders. It is arbitrary and it converges, which is what a merge rule is for.
+- **The value is kept as written and used only when the platform can compute in it.** A zone from a future version's spelling (an offset, say) must survive a 1.9 client's pass; `zoneOf()` returns "" for what `Intl` refuses, and the document rolls as if unzoned.
+- **"Today" is a function of the document now**: `todayFor(doc)` for rollover, not-today's return date, a rule's placement, the streak, the day review and the Markdown export; `dayOf(doc, ts)` for the day a line was finished on. History's day keys are home days; the panel still shows the *time* in the device's clock, which is what a person expects of a time.
+- **The guard applies only to a document without a zone.** With a zone there is nothing to guard against: a line finished two hours ago is today at home unless home midnight passed, and then it should roll. Without one, a line finished under six hours ago is never rolled, whatever `today` the caller passes — so `rollover`'s third argument is the clock, and the two tests that passed small integers for it pass a real morning now.
+- **The merge fixtures are for the Swift core.** `test/fixtures/merge/` holds golden cases for merge (records, the zone), normalize and rollover (the zone, the guard, repeats, returns, revival), every input spelled out, `today` and `ts` given, `expect` what model.js produced; `tools/merge-fixtures.js` writes them and `test/compat.test.js` replays them. Another implementation that reproduces every file agrees with this one about the document.
+
+## The check-off, choreographed (proposal 4)
+
+- **The numbers are the audit's.** The re-render after a check-off at 320 ms (520), after an uncheck at 160 (200); the FLIP 300 ms (520) on the app's own curve; the strike .22 s (.38) with wrapped lines at .08 s (.13); the chord and the volley at 300 ms (640) as the ink lands, the card starting its fade there rather than 110 ms before the sound. Tap to rest on the desktop measured 1.04 s in 1.7 and 0.65 s now, with no dead air between the ink and the move.
+- **A moving row carries the page's ground and a z-index, from the first frame.** `.row.moving` (a class the FLIP adds and removes) paints `--ink` and sits at 2, the crossed-off line at 3, so a sink reads as one object passing another instead of two lines of type drawn over each other; the first cut let the row's own .2 s background fade run and the rows showed through while they crossed, so the class turns that transition off. The displaced rows follow in a 20 ms wave, the crossed-off line first.
+- **No chord for a finale that is not there.** The 300 ms hold checks that the list is still all done, in Today, and the same list; an undo or a switch inside the window paints the plain footer and plays nothing (the 640 ms version played regardless).
+- **Everything's cross-section FLIP takes the same 300 ms and the same class.** It was 420 and had no ground; a line struck in a section sinks the same way a Today line does.
+- **The GIFs are Chrome's own screencast**, real frames with real timestamps assembled at half size (`tools/motion.mjs`), not screenshots taken in a loop, which cost 150–250 ms a frame in 1.7 and would have shown a choreography that never existed.

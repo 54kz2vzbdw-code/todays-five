@@ -1217,3 +1217,27 @@ Build 98 went live on the third poll (`version.js` 1.8 build 98, the worker `tf-
 **A device that last saw 1.7** (a phone-sized profile that made a list, crossed one line off, and remembers 1.7): a fresh navigation to the URL — not a refresh — brought 1.8 with the list intact, three rows with the one still struck, synced, and the what's-new toast the only new thing: "New in 1.8: A little something for someone in particular." No sheet, no question, no hint, nothing of the pair fetched and nothing of it on screen; on the next open the toast stayed hidden. Deleted everywhere afterwards. (The list *id* could not be compared across the two opens: since 1.7 the test hook reports "held" rather than the id off the local transport. The rows, the struck line and the synced status are the comparison.)
 
 This record commit stamps build 99 and changes nothing else.
+
+# Today's Five 1.9 — plan
+
+The audit's proposals, in rank order: 1–31 and the open bug, with Price's guards, and one addition (the sound packs redistributed across the curated kits, and a sound for Day and one for Night). Nothing on the server changes; links, keys and the three RPCs are untouched; the document gains one optional top-level key (`zone`, proposal 3). The calls are in DECISIONS.md under "1.9 decisions"; each proposal's line in AUDIT.md says whether it shipped.
+
+## The check-off, before and after (proposal 4)
+
+Both GIFs are the three seed lines at 1440×900 on Dark: the first line crossed off (a sink past two rows), the next (a sink past one), then the last (the finale). Recorded from Chrome's own screencast with real timestamps by `tools/motion.mjs`, the before from the untouched 1.8 clone, at half size.
+
+| before (1.8, build 99) | after (1.9) |
+|---|---|
+| <img src="shots/1.9/motion-before.gif" width="440" alt="the check-off in 1.8: strike, a pause, the sink"> | <img src="shots/1.9/motion-after.gif" width="440" alt="the check-off in 1.9: strike, the sink as the ink lands"> |
+
+What the page itself measured while the GIFs were recorded (ms after the tap, desktop):
+
+| moment | 1.8 | 1.9 |
+|---|---|---|
+| the knock scheduled | +2 | +2 |
+| the ink lands (one line) | +386 to +400 | +235 to +262 |
+| the re-render, the sink's first frame | +520 | +320 |
+| the sink at rest | ~+1040 (520 + 520) | ~+650 (320 + 300 + the wave) |
+| the finale card on screen | +3, fully in by +525 | starts at +303, under the chord |
+| the chord and the confetti | +643 | +303 |
+| rows crossing | drawn over each other for ~150 ms | the crossed-off line passes over the others on the page's ground |

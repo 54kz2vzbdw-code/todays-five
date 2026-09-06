@@ -1,0 +1,17 @@
+Tokyo: now      = 06/09/2026, 00:30:00
+Tokyo: today    = 2026-09-06
+Tokyo: doneAt   = 2026-09-05 (the line was crossed off on this local day)
+Tokyo: rollover moved 1 line(s): ["crossed off at breakfast"]
+Tokyo: the line is now TOMBSTONED
+Tokyo: History days   = ["2026-09-05"]
+
+Chicago: now    = 05/09/2026, 10:30:00
+Chicago: today  = 2026-09-05
+Chicago: its own rollover moves 0 line(s) — it is still mid-morning here
+Chicago: Today after merging Tokyo's push = ["still to do"]
+Chicago: 'crossed off at breakfast' is GONE FROM THE LIST (tombstoned by Tokyo)
+Chicago: it now sits in History under ["2026-09-05"] — Chicago calls today 2026-09-05
+Chicago: History under today (2026-09-05) = ["crossed off at breakfast"]
+Chicago: streak today = 1
+Chicago: a later rollover here moves 0 more line(s) (double counting?)
+Chicago: the undone line 'still to do' is untouched — undone lines are never rolled

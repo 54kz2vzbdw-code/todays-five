@@ -1,0 +1,250 @@
+import label: payloads.json: 5 lines, 2 sections, 1 days of history, named “<img src=x onerror="window.__pwn=1"> listname”
+after import + typing: {"imgs":16,"bolds":1}
+row .tx nodes: [
+ {
+  "html": "&lt;img src=x onerror=\"window.__pwn=1\"&gt; line<span class=\"note\">\"&gt;&lt;svg onload=\"window.__pwn3=1\"&gt; note</span>",
+  "text": "<img src=x onerror=\"window.__pwn=1\"> line\"><svg onload=\"wind",
+  "len": 78
+ },
+ {
+  "html": "&lt;b&gt;bold&lt;/b&gt; javascript:window.__pwn2=1<span class=\"note\">javascript:window.__pwn2=1</span>",
+  "text": "<b>bold</b> javascript:window.__pwn2=1javascript:window.__pw",
+  "len": 64
+ },
+ {
+  "html": "safe‮gnp.exe‬ tail<span class=\"note\">🚩👨‍👩‍👧‍👦🇺🇸 emoji</span>",
+  "text": "safe‮gnp.exe‬ tail🚩👨‍👩‍👧‍👦🇺🇸 emoji",
+  "len": 41
+ },
+ {
+  "html": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+  "text": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+  "len": 540
+ },
+ {
+  "html": "Tap or click to cross this off",
+  "text": "Tap or click to cross this off",
+  "len": 30
+ },
+ {
+  "html": "Add a line of your own",
+  "text": "Add a line of your own",
+  "len": 22
+ }
+]
+lists menu html: <div class="row"><button type="button"><span class="lb cur">Untitled list </span><span class="id">icr5UA…</span></button><button type="button" class="more" aria-label="Details: Untitled list">›</button></div>
+pwn after lists: {"imgs":16,"bolds":1}
+url after add: http://127.0.0.1:8796/?transport=local#/l/icr5UAaBfV18NPsF28UxFj
+pwn after add-from-url: {"imgs":18,"bolds":1}
+panel history failed: page.click: Timeout 8000ms exceeded.
+Call log:
+  - waiting for locator('#p-menu 
+panel settings: pwn={"imgs":18,"bolds":1}
+panel theme: pwn={"imgs":18,"bolds":1}
+pick-menu html: <button type="button"><span class="lb">&lt;img src=x onerror="window.__pwn=1"&gt; tpl<span class="sub">&lt;img src=x onerror="window.__pwn=1"&gt;</span></span><button type="button" class="chip" aria-label="Delete &lt;img src=x onerror=&quot;window.__pwn=1&quot;&gt; tpl">Delete</button></button>
+FINAL pwn: {"imgs":18,"bolds":1}
+page errors: 0 []
+csp violations: 0 []
+console errors: 0 []
+
+### service worker caches
+{
+ "tf-v1.5-b76": [
+  "http://127.0.0.1:8796/",
+  "http://127.0.0.1:8796/index.html",
+  "http://127.0.0.1:8796/about.html",
+  "http://127.0.0.1:8796/panels.css",
+  "http://127.0.0.1:8796/packs.js",
+  "http://127.0.0.1:8796/qr.js",
+  "http://127.0.0.1:8796/panels.js",
+  "http://127.0.0.1:8796/exporter.js",
+  "http://127.0.0.1:8796/whatsnew.json",
+  "http://127.0.0.1:8796/manifest.webmanifest",
+  "http://127.0.0.1:8796/vendor/realtime.js",
+  "http://127.0.0.1:8796/icons/icon-192.png",
+  "http://127.0.0.1:8796/icons/icon-512.png",
+  "http://127.0.0.1:8796/icons/icon-512-maskable.png",
+  "http://127.0.0.1:8796/icons/apple-touch-icon.png",
+  "http://127.0.0.1:8796/packs.js?v=76",
+  "http://127.0.0.1:8796/panels.js?v=76",
+  "http://127.0.0.1:8796/qr.js?v=76",
+  "http://127.0.0.1:8796/?transport=local&sw=1#/l/PnNvmczISa5KH14MewZ4YP",
+  "http://127.0.0.1:8796/app.js",
+  "http://127.0.0.1:8796/model.js",
+  "http://127.0.0.1:8796/styles.css",
+  "http://127.0.0.1:8796/sync.js",
+  "http://127.0.0.1:8796/config.js",
+  "http://127.0.0.1:8796/fx.js",
+  "http://127.0.0.1:8796/crypto.js",
+  "http://127.0.0.1:8796/version.js",
+  "http://127.0.0.1:8796/theme.js",
+  "http://127.0.0.1:8796/sound.js",
+  "http://127.0.0.1:8796/fonts/pt-sans-700.woff2",
+  "http://127.0.0.1:8796/fonts/lato-900.woff2",
+  "http://127.0.0.1:8796/panels.css?v=76"
+ ]
+}
+W in any cached URL? true  R? false  lookupId? false
+cached entries: [
+ {
+  "url": "http://127.0.0.1:8796/",
+  "ct": "text/html; charset=utf-8",
+  "bytes": 43392
+ },
+ {
+  "url": "http://127.0.0.1:8796/index.html",
+  "ct": "text/html; charset=utf-8",
+  "bytes": 43392
+ },
+ {
+  "url": "http://127.0.0.1:8796/about.html",
+  "ct": "text/html; charset=utf-8",
+  "bytes": 9705
+ },
+ {
+  "url": "http://127.0.0.1:8796/panels.css",
+  "ct": "text/css; charset=utf-8",
+  "bytes": 19172
+ },
+ {
+  "url": "http://127.0.0.1:8796/packs.js",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 20031
+ },
+ {
+  "url": "http://127.0.0.1:8796/qr.js",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 56681
+ },
+ {
+  "url": "http://127.0.0.1:8796/panels.js",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 69620
+ },
+ {
+  "url": "http://127.0.0.1:8796/exporter.js",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 1741
+ },
+ {
+  "url": "http://127.0.0.1:8796/whatsnew.json",
+  "ct": "application/json",
+  "bytes": 2778
+ },
+ {
+  "url": "http://127.0.0.1:8796/manifest.webmanifest",
+  "ct": "application/manifest+json",
+  "bytes": 582
+ },
+ {
+  "url": "http://127.0.0.1:8796/vendor/realtime.js",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 58762
+ },
+ {
+  "url": "http://127.0.0.1:8796/icons/icon-192.png",
+  "ct": "image/png",
+  "bytes": 6619
+ },
+ {
+  "url": "http://127.0.0.1:8796/icons/icon-512.png",
+  "ct": "image/png",
+  "bytes": 18583
+ },
+ {
+  "url": "http://127.0.0.1:8796/icons/icon-512-maskable.png",
+  "ct": "image/png",
+  "bytes": 8497
+ },
+ {
+  "url": "http://127.0.0.1:8796/icons/apple-touch-icon.png",
+  "ct": "image/png",
+  "bytes": 3699
+ },
+ {
+  "url": "http://127.0.0.1:8796/packs.js?v=76",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 20031
+ },
+ {
+  "url": "http://127.0.0.1:8796/panels.js?v=76",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 69620
+ },
+ {
+  "url": "http://127.0.0.1:8796/qr.js?v=76",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 56681
+ },
+ {
+  "url": "http://127.0.0.1:8796/?transport=local&sw=1#/l/PnNvmczISa5KH14MewZ4YP",
+  "ct": "text/html; charset=utf-8",
+  "bytes": 43392
+ },
+ {
+  "url": "http://127.0.0.1:8796/app.js",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 138419
+ },
+ {
+  "url": "http://127.0.0.1:8796/model.js",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 39604
+ },
+ {
+  "url": "http://127.0.0.1:8796/styles.css",
+  "ct": "text/css; charset=utf-8",
+  "bytes": 48282
+ },
+ {
+  "url": "http://127.0.0.1:8796/sync.js",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 23741
+ },
+ {
+  "url": "http://127.0.0.1:8796/config.js",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 538
+ },
+ {
+  "url": "http://127.0.0.1:8796/fx.js",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 3288
+ },
+ {
+  "url": "http://127.0.0.1:8796/crypto.js",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 6334
+ },
+ {
+  "url": "http://127.0.0.1:8796/version.js",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 472
+ },
+ {
+  "url": "http://127.0.0.1:8796/theme.js",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 36933
+ },
+ {
+  "url": "http://127.0.0.1:8796/sound.js",
+  "ct": "text/javascript; charset=utf-8",
+  "bytes": 5010
+ },
+ {
+  "url": "http://127.0.0.1:8796/fonts/pt-sans-700.woff2",
+  "ct": "font/woff2",
+  "bytes": 11624
+ },
+ {
+  "url": "http://127.0.0.1:8796/fonts/lato-900.woff2",
+  "ct": "font/woff2",
+  "bytes": 13724
+ },
+ {
+  "url": "http://127.0.0.1:8796/panels.css?v=76",
+  "ct": "text/css; charset=utf-8",
+  "bytes": 19172
+ }
+]
+sw registered: http://127.0.0.1:8796/sw.js

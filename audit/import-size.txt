@@ -1,0 +1,51 @@
+### secrets
+W        = dWclolDSexW6hnOLLuKVPo
+R        = 77APU55Ycne6hiQPFRPpGh
+lookupId = XpkzGp9YL3FWGwLHHmNTFiilhX0wzJjN
+
+### window hooks: {"tf":"function","tfTest":"object","tfManifest":"function","keys":["__tfManifest","__tf","__tfTest"]}
+
+### triggering errors
+advanced control found: false
+import bad-json.json (16B) -> "That file isn't JSON."  pageErrors:+0
+import foreign-shape.json (111B) -> "foreign-shape.json: 0 lines, 0 sections, 0 days of history"  pageErrors:+0
+import proto.json (205B) -> "proto.json: 1 lines, 0 sections, 0 days of history"  pageErrors:+0
+import arrays.json (146B) -> "arrays.json: 1 lines, 0 sections, 0 days of history"  pageErrors:+0
+import huge.json (1729819B) -> "huge.json: 4000 lines, 0 sections, 0 days of history"  pageErrors:+0
+import notours.json (17B) -> "That file isn't a Today's Five export."  pageErrors:+0
+prototype polluted? {}
+offline push done; status = synced
+
+### console lines total: 0  lines containing a secret: 0
+
+### title / url
+title  = Today's Five
+url    = http://127.0.0.1:8796/?transport=local#/l/dWclolDSexW6hnOLLuKVPo
+parts  = {"hash":"#/l/dWclolDSexW6hnOLLuKVPo","search":"?transport=local","path":"/"}
+
+### anchors in index.html DOM: [
+ {
+  "href": "about.html",
+  "target": null,
+  "rel": null,
+  "text": "How it works & privacy"
+ },
+ {
+  "href": "about.html",
+  "target": null,
+  "rel": null,
+  "text": "About & privacy↗"
+ }
+]
+
+### localStorage keys
+  tf/v2/meta  (726B)  W?true R?false lookup?false
+  tf/v2/themecss  (752B)  W?false R?false lookup?false
+  tf/v2/localserver/XpkzGp9YL3FWGwLHHmNTFiilhX0wzJjN  (615B)  W?false R?false lookup?false
+  tf/v3/list/dWclolDSexW6hnOLLuKVPo  (1161B)  W?true R?false lookup?false
+  server row tf/v2/localserver/XpkzGp9YL3FWGwLHHmNTFi keys: doc,rev,token  doc keys: v,alg,z,iv,ct
+  server row ct is base64, contains plaintext 'offline line'?  false
+
+### requests (non-asset)
+   GET http://127.0.0.1:8796/exporter.js?v=76
+third-party: []

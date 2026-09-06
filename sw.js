@@ -34,6 +34,9 @@ self.addEventListener("fetch", e => {
   if (url.origin !== self.location.origin) return; // Supabase calls go straight to the network
   const path = url.pathname;
   const v = url.searchParams.get("v");
+  // 1.7: a navigation's URL carries the list's link in the fragment, and Cache Storage kept it as the key — a copy of the Private
+  // link on disk that Remove and Delete never reached. The key is the URL without its fragment; matching already ignored it.
+  const key = url.hash ? url.origin + url.pathname + url.search : req; // a plain URL key: Cache Storage matches by URL
   if (v && /^\d+$/.test(v) && +v !== BUILD) {
     // a page from another build asking for its own module: that build's cache first; the network as the fallback, where
     // the module's own guard turns a mismatch into the page reloading itself
@@ -43,7 +46,7 @@ self.addEventListener("fetch", e => {
   if (/\/(fonts|vendor|icons)\//.test(path)) {
     // immutable-ish assets: cache first, fill the cache on first use (a font is fetched only when a theme needs it)
     e.respondWith(caches.open(CACHE).then(c => c.match(req, { ignoreSearch: true })).then(r => r || fetch(req).then(res => {
-      if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+      if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(key, copy)); }
       return res;
     })));
     return;
@@ -54,7 +57,7 @@ self.addEventListener("fetch", e => {
     fetch(req, { cache: "no-cache" }).then(res => {
       if (res && res.ok && (path.endsWith("/") || /\.(html|js|css|webmanifest|png|json)$/.test(path))) {
         const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(req, copy));
+        caches.open(CACHE).then(c => c.put(key, copy));
       }
       return res;
     }).catch(() => caches.open(CACHE).then(c => c.match(req, { ignoreSearch: true }).then(r => r || (req.mode === "navigate" ? c.match("./index.html") : undefined))))

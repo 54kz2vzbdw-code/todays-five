@@ -211,7 +211,7 @@ function wireTheme() {
     A.toast(`Saved “${prec.name}”, its partner`);
   });
   $("#c-surprise").addEventListener("click", () => { const t = T.surprise(); custom = { accent: t.accent, base: t.base, pair: t.pair, name: "", pack: "" }; paintCustom(); previewCustom(); });
-  $("#c-export").addEventListener("click", async () => { try { await navigator.clipboard.writeText(T.themeCode(customTheme())); A.toast("Theme code copied"); } catch (e) { A.toast(T.themeCode(customTheme())); } });
+  $("#c-export").addEventListener("click", async () => { try { await navigator.clipboard.writeText(T.themeCode(customTheme())); A.toast("Theme code copied"); } catch (e) { const f = $("#c-import"); f.value = T.themeCode(customTheme()); f.focus(); f.select(); A.toast("Select the code and copy it"); } /* 1.7: not the raw code as a toast */ });
   $("#c-import-go").addEventListener("click", () => {
     const t = T.parseCode($("#c-import").value);
     if (!t) { A.toast("That code doesn't parse"); return; }

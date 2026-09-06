@@ -1,0 +1,297 @@
+{
+  "coldResults": [
+    {
+      "label": "tap-more-to-menu",
+      "ms": 363,
+      "ok": true
+    },
+    {
+      "label": "tap-settings-to-sheet",
+      "ms": 376,
+      "ok": true
+    },
+    {
+      "label": "tap-share-to-sheet",
+      "ms": 12398,
+      "ok": false,
+      "error": "page.waitForSelector: Timeout 12000ms exceeded."
+    },
+    {
+      "label": "share-sheet-to-qr.js-response",
+      "ms": 12003,
+      "ok": false,
+      "error": "page.waitForResponse: Timeout 12000ms exceeded while waiting for event \"response\""
+    },
+    {
+      "label": "tap-export-row-to-sheet",
+      "ms": 421,
+      "ok": true
+    },
+    {
+      "label": "tap-export-json-to-module",
+      "ms": 424,
+      "ok": true
+    }
+  ],
+  "warmResults": [
+    {
+      "label": "tap-more-to-menu",
+      "ms": 372,
+      "ok": true
+    },
+    {
+      "label": "tap-settings-to-sheet",
+      "ms": 384,
+      "ok": true
+    },
+    {
+      "label": "tap-share-to-sheet",
+      "ms": 12414,
+      "ok": false,
+      "error": "page.waitForSelector: Timeout 12000ms exceeded."
+    },
+    {
+      "label": "share-sheet-to-qr.js-response",
+      "ms": 12001,
+      "ok": false,
+      "error": "page.waitForResponse: Timeout 12000ms exceeded while waiting for event \"response\""
+    },
+    {
+      "label": "tap-export-row-to-sheet",
+      "ms": 401,
+      "ok": true
+    },
+    {
+      "label": "tap-export-json-to-module",
+      "ms": 444,
+      "ok": true
+    }
+  ],
+  "networkLog": [
+    {
+      "t": 1788666230301,
+      "url": "packs.js?v=76",
+      "status": 200
+    },
+    {
+      "t": 1788666230602,
+      "url": "panels.js?v=76",
+      "status": 200
+    },
+    {
+      "t": 1788666257202,
+      "url": "exporter.js?v=76",
+      "status": 200
+    },
+    {
+      "t": 1788666258537,
+      "url": "model.js",
+      "status": 200
+    },
+    {
+      "t": 1788666258538,
+      "url": "app.js",
+      "status": 200
+    },
+    {
+      "t": 1788666258538,
+      "url": "sync.js",
+      "status": 200
+    },
+    {
+      "t": 1788666258538,
+      "url": "config.js",
+      "status": 200
+    },
+    {
+      "t": 1788666258538,
+      "url": "fx.js",
+      "status": 200
+    },
+    {
+      "t": 1788666258538,
+      "url": "version.js",
+      "status": 200
+    },
+    {
+      "t": 1788666258538,
+      "url": "crypto.js",
+      "status": 200
+    },
+    {
+      "t": 1788666258538,
+      "url": "theme.js",
+      "status": 200
+    },
+    {
+      "t": 1788666258538,
+      "url": "styles.css",
+      "status": 200
+    },
+    {
+      "t": 1788666258538,
+      "url": "sound.js",
+      "status": 200
+    },
+    {
+      "t": 1788666258799,
+      "url": "panels.css?v=76",
+      "status": 200
+    },
+    {
+      "t": 1788666258919,
+      "url": "packs.js?v=76",
+      "status": 200
+    },
+    {
+      "t": 1788666259302,
+      "url": "panels.js?v=76",
+      "status": 200
+    },
+    {
+      "t": 1788666285933,
+      "url": "exporter.js?v=76",
+      "status": 200
+    }
+  ],
+  "swInfo": {
+    "tf-v1.5-b76": {
+      "count": 33,
+      "totalBytes": 856643,
+      "entries": [
+        {
+          "url": "",
+          "size": 43392
+        },
+        {
+          "url": "index.html",
+          "size": 43392
+        },
+        {
+          "url": "about.html",
+          "size": 9705
+        },
+        {
+          "url": "panels.css",
+          "size": 19172
+        },
+        {
+          "url": "packs.js",
+          "size": 20031
+        },
+        {
+          "url": "qr.js",
+          "size": 56681
+        },
+        {
+          "url": "panels.js",
+          "size": 69620
+        },
+        {
+          "url": "exporter.js",
+          "size": 1741
+        },
+        {
+          "url": "whatsnew.json",
+          "size": 2778
+        },
+        {
+          "url": "manifest.webmanifest",
+          "size": 582
+        },
+        {
+          "url": "vendor/realtime.js",
+          "size": 58762
+        },
+        {
+          "url": "icons/icon-192.png",
+          "size": 6619
+        },
+        {
+          "url": "icons/icon-512.png",
+          "size": 18583
+        },
+        {
+          "url": "icons/icon-512-maskable.png",
+          "size": 8497
+        },
+        {
+          "url": "icons/apple-touch-icon.png",
+          "size": 3699
+        },
+        {
+          "url": "fonts/pt-sans-700.woff2",
+          "size": 11624
+        },
+        {
+          "url": "fonts/lato-900.woff2",
+          "size": 13724
+        },
+        {
+          "url": "fonts/pt-sans-400.woff2",
+          "size": 11464
+        },
+        {
+          "url": "?transport=local&sw=1#/l/MX8U7bEB0BHSa5ZeVYMler",
+          "size": 43392
+        },
+        {
+          "url": "app.js",
+          "size": 138419
+        },
+        {
+          "url": "model.js",
+          "size": 39604
+        },
+        {
+          "url": "sync.js",
+          "size": 23741
+        },
+        {
+          "url": "fx.js",
+          "size": 3288
+        },
+        {
+          "url": "config.js",
+          "size": 538
+        },
+        {
+          "url": "version.js",
+          "size": 472
+        },
+        {
+          "url": "crypto.js",
+          "size": 6334
+        },
+        {
+          "url": "theme.js",
+          "size": 36933
+        },
+        {
+          "url": "styles.css",
+          "size": 48282
+        },
+        {
+          "url": "sound.js",
+          "size": 5010
+        },
+        {
+          "url": "panels.css?v=76",
+          "size": 19172
+        },
+        {
+          "url": "packs.js?v=76",
+          "size": 20031
+        },
+        {
+          "url": "panels.js?v=76",
+          "size": 69620
+        },
+        {
+          "url": "exporter.js?v=76",
+          "size": 1741
+        }
+      ]
+    }
+  }
+}

@@ -60,6 +60,16 @@ test("dark, light, pink keep v1's primary tokens exactly", () => {
   assert.deepEqual(CURATED.find(t => t.id === "pink").confetti, ["#FF3D9A", "#FF8FBE", "#FFD36E", "#FFFFFF", "#FF6FAF", "#FFB8D9"]);
 });
 
+test("1.7: every curated kit's accent text and danger clear 4.5:1 and its accent 3:1 on the elevated surface too (the originals keep their tokens)", () => {
+  for (const t of CURATED) {
+    if (["dark", "light", "pink"].includes(t.id)) continue;
+    const c = t.colors;
+    assert.ok(contrast(c.accentText, c.ink3) >= 4.5, t.id + " accentText on ink-3: " + contrast(c.accentText, c.ink3).toFixed(2));
+    assert.ok(contrast(c.danger, c.ink3) >= 4.5 && contrast(c.danger, c.ink2) >= 4.5, t.id + " danger on ink-2/3: " + contrast(c.danger, c.ink2).toFixed(2));
+    assert.ok(contrast(c.accent, c.ink3) >= 3, t.id + " accent (the focus ring) on ink-3: " + contrast(c.accent, c.ink3).toFixed(2));
+  }
+});
+
 test("best-fit sound packs: Paper types, Forest drops marbles, Harbor pops, the originals keep theirs", () => {
   const eng = id => CURATED.find(t => t.id === id).sound.engine;
   assert.equal(eng("paper"), "typewriter"); assert.equal(eng("forest"), "marble"); assert.equal(eng("harbor"), "pop");

@@ -1,0 +1,51 @@
+
+===== A sink burst (desktop/fresh) =====
+  frames where the row's top changed (ms since pointerdown | top px | transform):
+    -18 | 252 | -
+    99 | 251 | matrix(1.01616, 0, 0, 1.01616, 0, 0)
+    204 | 252 | matrix(1.0103, 0, 0, 1.0103, 0, 0)
+    598 | 285 | matrix(1, 0, 0, 1, 0, -203.681)
+    632 | 344 | matrix(1, 0, 0, 1, 0, -145.162)
+    648 | 369 | matrix(1, 0, 0, 1, 0, -120.416)
+    665 | 390 | matrix(1, 0, 0, 1, 0, -99.2486)
+    681 | 408 | matrix(1, 0, 0, 1, 0, -81.128)
+    698 | 423 | matrix(1, 0, 0, 1, 0, -66.0162)
+    726 | 436 | matrix(1, 0, 0, 1, 0, -53.3967)
+    735 | 446 | matrix(1, 0, 0, 1, 0, -43.0079)
+    748 | 455 | matrix(1, 0, 0, 1, 0, -34.5009)
+    765 | 462 | matrix(1, 0, 0, 1, 0, -27.5982)
+    782 | 467 | matrix(1, 0, 0, 1, 0, -21.9753)
+    798 | 472 | matrix(1, 0, 0, 1, 0, -17.3811)
+    815 | 475 | matrix(1, 0, 0, 1, 0, -13.6611)
+    831 | 478 | matrix(1, 0, 0, 1, 0, -10.6576)
+    848 | 481 | matrix(1, 0, 0, 1, 0, -8.25409)
+    865 | 483 | matrix(1, 0, 0, 1, 0, -6.31597)
+    881 | 484 | matrix(1, 0, 0, 1, 0, -4.78067)
+    910 | 486 | matrix(1, 0, 0, 1, 0, -3.55859)
+    924 | 487 | matrix(1, 0, 0, 1, 0, -2.60118)
+    949 | 488 | matrix(1, 0, 0, 1, 0, -1.29394)
+    981 | 489 | matrix(1, 0, 0, 1, 0, -0.563296)
+
+===== B idle fade (desktop/longtime) =====
+  body.idle after 4016 ms still (IDLE_MS=4000)
+  computed opacity while idle: {"#foot":"0","#more":"0","#date":"1","#mute":"none","#full":"none","#count":"1"}
+  class off 5 ms after a move; fade back is .25s vs 1.4s out
+
+===== C reduced motion (desktop/fresh) =====
+  after a check-off: ["trans:width:","trans:background-color:row done","trans:color:row done","trans:border-bottom-color:box","trans:border-left-color:box","trans:border-right-color:box","trans:border-top-color:box","trans:background-color:box","trans:opacity:tool lmenu","trans:transform:ink","trans:stroke-dashoffset:[object SVGAnimatedStrin","trans:opacity:dot","trans:background-color:row"]
+  fx stats (burst counted even when suppressed): {"check":1,"uncheck":0,"finish":0,"burst":1,"volley":0,"tick":0}
+  non-transparent samples on the confetti canvas: 0 (0 = no confetti)
+  finale under reduce: ["trans:width:","trans:opacity:tool lmenu","trans:color:row done","trans:background-color:box","trans:opacity:ghost","trans:transform:ink","trans:stroke-dashoffset:[object SVGAnimatedStrin","trans:opacity:dot","trans:opacity:off","trans:box-shadow:full","trans:width:full","trans:color:row done nofx","trans:background-color:row done nofx","trans:border-bottom-color:box","trans:border-left-color:box","trans:border-right-color:box","trans:border-top-color:box","trans:background-color:row done","trans:opacity:flare"]
+
+===== D packs vs motion =====
+  {"pack":"knock","checkOnsetMs":0.1,"checkPeakMs":6.6,"checkPeak":0.403,"checkLenMs":108,"finishOnsetMs":13.8,"finishLenMs":653}
+  {"pack":"bell","checkOnsetMs":0.1,"checkPeakMs":6.5,"checkPeak":0.403,"checkLenMs":480,"finishOnsetMs":9,"finishLenMs":1082}
+  {"pack":"pencil","checkOnsetMs":3,"checkPeakMs":112.5,"checkPeak":0.274,"checkLenMs":232,"finishOnsetMs":2.8,"finishLenMs":1042}
+  motion for comparison: strike .38s (per-line delay .13s), kick .30s, pop .34s, sink at 520 ms, finale sound+confetti at 640 ms
+
+===== E phone sheet + ⋯ =====
+  ⋯ sheet open (first): 45 ms
+  ⋯ sheet open (second): 47 ms
+  Settings from ⋯ (first, lazy panels.js): 453 ms
+
+===== F popover + theme flip (desktop/longtime) =====

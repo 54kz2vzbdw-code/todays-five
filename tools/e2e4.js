@@ -254,6 +254,34 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join(" | ")); await t.close();
   });
 
+  await test(label + ": 1.7: the worker keys the cached navigation without the fragment; the test hook hands out no secret off the local transport (by code); Share… falls back to a copy when the system sheet fails; Copy code falls back to a field", async () => {
+    const t = await fresh(opts, { url: BASE + "?transport=local&sw=1", init: "window.__clip = null; navigator.clipboard.writeText = async t => { window.__clip = t; };" });
+    const id = (await t.s()).listId;
+    await t.page.waitForFunction(() => navigator.serviceWorker && !!navigator.serviceWorker.controller, null, { timeout: 15000 }).catch(() => null);
+    await t.page.goto(BASE + "?transport=local&sw=1#/l/" + id); await t.page.waitForSelector("#list .row"); await wait(1200);
+    const keys = await t.page.evaluate(async () => { const out = []; for (const n of await caches.keys()) { const c = await caches.open(n); for (const r of await c.keys()) out.push(r.url); } return out; });
+    assert.ok(keys.length > 5, "the shell is cached: " + keys.length); assert.ok(keys.every(u => !u.includes("#")), "no fragment in any cache key: " + keys.filter(u => u.includes("#")).join(" "));
+    assert.ok(!keys.some(u => u.includes(id)), "the list's link is in no cache key");
+    // Share… failing for a real reason
+    if (opts.hasTouch) {
+      await t.page.evaluate(() => { navigator.share = async () => { throw new Error("nope"); }; });
+      await t.press("#more"); await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await wait(300);
+      await t.page.click("#share-native"); await wait(400);
+      assert.ok(/copied instead/.test(await t.page.textContent("#toast .msg")), "a copy instead, and a word about it: " + await t.page.textContent("#toast .msg"));
+      assert.ok(/#\/r\//.test(await t.page.evaluate(() => window.__clip)), "the View link on the clipboard");
+      await t.esc(); await wait(200);
+    }
+    // Copy code without a clipboard
+    await t.page.evaluate(() => { navigator.clipboard.writeText = async () => { throw new Error("no"); }; });
+    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]"); await wait(200);
+    await t.page.click("#c-export"); await wait(300);
+    assert.ok(/^T2:/.test(await t.page.inputValue("#c-import")), "the code lands in the field"); assert.ok(/Select the code/.test(await t.page.textContent("#toast .msg")), "and the toast says so");
+    await t.esc();
+    const src = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
+    assert.ok(/listId: TRANSPORT_KIND === "local" \? listId/.test(src) && /lookupId: TRANSPORT_KIND === "local" && ref/.test(src), "the hook's secrets are gated to the local transport");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
+  });
+
   await test(label + ": 1.7: under reduced motion the finale's glow never flares", async () => {
     const t = await fresh(opts, { reducedMotion: "reduce" });
     await t.page.evaluate(() => { window.__flared = false; new MutationObserver(() => { if (document.getElementById("glow").classList.contains("flare")) window.__flared = true; }).observe(document.getElementById("glow"), { attributes: true, attributeFilter: ["class"] }); });
@@ -1642,13 +1670,14 @@ for (const [label, opts, touch] of VIEWPORTS) {
     // the reload path
     await t.page.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); if (r) await r.unregister(); });
     await t.page.goto(BASE + "?transport=local"); await t.page.waitForSelector("#list .row"); await wait(400);
-    await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])"); await wait(200);
+    // 1.7: the panels warm on the first gesture, so a stale build is caught there: the guard reloads once and comes back to the view it had
     await t.page.evaluate(() => document.documentElement.setAttribute("data-build", "62"));
     const loaded = t.page.waitForEvent("load", { timeout: 8000 });
-    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await t.press('#p-menu [data-act="settings"]');
-    await loaded; await t.page.waitForFunction(() => window.__tf && window.__tf().listId, null, { timeout: 9000 });
-    await t.page.waitForFunction(() => window.__tf().panel === "p-settings", null, { timeout: 8000 }); await wait(300);
-    assert.equal((await t.s()).view, "all", "back on the view it had"); assert.equal((await t.s()).panel, "p-settings", "with the panel it asked for");
+    await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])");
+    await loaded; await t.page.waitForFunction(() => window.__tf && window.__tf().listId, null, { timeout: 9000 }); await wait(400);
+    assert.equal((await t.s()).view, "all", "back on the view it had");
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await t.press('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await wait(200);
+    assert.equal((await t.s()).panel, "p-settings", "and a panel opens whole on the new page");
     assert.ok(!/Couldn't load/.test(await t.page.textContent("#toast")), "no failure toast"); assert.equal(t.errors.length, 0, t.errors.join("; "));
     await t.page.keyboard.press("Escape"); await wait(200); await t.close();
   });

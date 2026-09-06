@@ -2,16 +2,17 @@
 // The derivation vectors are PINNED. If this file fails after a refactor, the refactor changed the key
 // derivation and would orphan every existing list: fix the code, never the vectors.
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import * as C from "../crypto.js";
 
 let passed = 0;
 async function test(name, fn) { await fn(); passed++; console.log("ok -", name); }
 
-const VECTORS = [
-  { W: "0000000000000000000000", R: "f5jwBqepsm4euDWGqzIaoz", lookupId: "Pw65fk7NC0dA6FXNQZqS7ByhW8leXlEX", token: "2ypXzsOVYhrGZ5LeMwr_nyEdjFdrP8rt49XD8o7OW5I", keyHex: "d9c865725135ec37dfdc335292f53a807efe9ae87475d9d33f621d9432cf6518" },
-  { W: "AbCdEfGhIjKlMnOpQrStUv", R: "mgmG3Iy1o4Po3rGCzouWck", lookupId: "vyYoOBXhDMNnl4aAaKYKSwyouuuG31sc", token: "bhiaZ9Bmf2RkcvSM1V7qSgZCZWwkJd1vm3XtL0OkcGI", keyHex: "7af2e2f8cabe7dcb1cea93c4b485cfc76e27f7265510df1cc0e961e7b67a69d4" },
-  { W: "zzzzzzzzzzzzzzzzzzzzzz", R: "62QPblnKIY0WDeOaCZm70X", lookupId: "JhwQ61Xd491BdswU1nNy20RGC6YSWxKm", token: "odx3wxFh5q21nfpDFQjYm2OGSCdB-gaFKqrWRqNMi6M", keyHex: "36a5a467d2ac419e1c97bc8b1068b614c6078274f51a749173a8153cb1a5bf14" }
-];
+// The vectors live in test/fixtures/vectors.json, which the Swift core reads too: two implementations of a
+// frozen derivation must not keep two copies of the numbers. Regenerate with test/tools/gen-vectors.mjs,
+// which refuses to write if crypto.js no longer reproduces them.
+const FIXTURES = JSON.parse(fs.readFileSync(new URL("./fixtures/vectors.json", import.meta.url), "utf8"));
+const VECTORS = FIXTURES.derivation;
 
 const doc = () => ({ v: 2, name: "Test", items: { a: { id: "a", text: "Call the bank", done: false, updatedAt: 1 } }, sections: {}, history: { "2026-01-01": [{ id: "h", text: "x", doneAt: 1, section: "" }] }, themes: {}, updatedAt: 1 });
 
@@ -105,6 +106,25 @@ await test("base62 mapping is deterministic and rejects biased bytes", () => {
 await test("isSecret accepts 22–64 base62 and nothing else", () => {
   assert.ok(C.isSecret("AbCdEfGhIjKlMnOpQrStUv")); assert.ok(C.isSecret("Pw65fk7NC0dA6FXNQZqS7ByhW8leXlEX"));
   assert.ok(!C.isSecret("short")); assert.ok(!C.isSecret("has-dash-has-dash-has-dash")); assert.ok(!C.isSecret(42));
+});
+
+await test("the shared fixture is the contract the Swift core reads: three derivations, the salt, the alphabet, real envelopes", async () => {
+  assert.equal(FIXTURES.salt, "todays-five/v3");
+  assert.equal(FIXTURES.envelopeVersion, C.ENVELOPE_VERSION);
+  assert.equal(FIXTURES.alg, C.ALG);
+  assert.equal(FIXTURES.b62Alphabet.length, 62);
+  assert.equal(VECTORS.length, 3);
+  assert.ok(FIXTURES.envelopes.length >= 3, "envelopes for the second client to open");
+  for (const e of FIXTURES.envelopes) {
+    const ref = await C.fromWrite(e.W);
+    assert.ok(!("z" in e.raw), "the uncompressed envelope is the byte-for-byte one");
+    assert.equal(e.zipped.z, "deflate-raw");
+    assert.deepEqual(await C.open(ref.key, e.raw), e.doc, e.name + " raw");
+    assert.deepEqual(await C.open(ref.key, e.zipped), e.doc, e.name + " zipped");
+    assert.equal(JSON.stringify(e.doc), e.plaintext, e.name + " plaintext bytes");
+  }
+  for (const c of FIXTURES.b62) assert.equal(C.b62FromBytes(new Uint8Array(c.bytes), c.len), c.out);
+  for (const c of FIXTURES.secrets) assert.equal(C.isSecret(c.s), c.ok, c.s);
 });
 
 console.log(`\n${passed} crypto tests passed`);

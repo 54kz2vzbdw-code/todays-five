@@ -282,12 +282,16 @@ function takeExtrasFromHash() {
     Not cancelable: the answer is how the list is filed from here on, and Lists can change it. */
 function askWhose() {
   return new Promise(resolve => {
-    const d = $("#whose");
-    const finish = v => { d.removeEventListener("click", onClick); d.removeEventListener("cancel", onCancel); resolve(v === "shared" ? "shared" : "mine"); d.close(); };
+    const d = $("#whose"); let done = false;
+    const finish = v => { if (done) return; done = true; d.removeEventListener("click", onClick); d.removeEventListener("cancel", onCancel); d.removeEventListener("close", onClose); resolve(v === "shared" ? "shared" : "mine"); if (d.open) d.close(); };
     const onClick = e => { const b = e.target.closest("[data-whose]"); if (b) finish(b.dataset.whose); };
     const onCancel = e => e.preventDefault();
-    d.addEventListener("click", onClick); d.addEventListener("cancel", onCancel);
-    panelCss.then(() => { if (!d.open) d.showModal(); });
+    // 1.7: a tap on the backdrop used to close the question with no answer, and the open never settled (a rail over nothing);
+    // the backdrop no longer closes it, and if anything else ever does, the list files as shared — the answer that grants the
+    // least, and Lists can flip it
+    const onClose = () => finish("shared");
+    d.addEventListener("click", onClick); d.addEventListener("cancel", onCancel); d.addEventListener("close", onClose);
+    panelCss.then(() => { if (!d.open) { d.showModal(); const body = d.querySelector(".body"); if (body) { body.tabIndex = -1; body.focus({ preventScroll: true }); } } }); // focus on the card, not on the first answer: no answer looks chosen
   });
 }
 /** A View link's id against the lists this device holds under their Private links: the origin of the one it belongs to, or null. */
@@ -425,7 +429,7 @@ async function openList(r) {
   rows.clear(); $("#list").innerHTML = ""; clearAll();
   wasAll = allDoneToday();
   paintWho(0);
-  setView(view, { force: true });
+  try { setView(view, { force: true }); } catch (e) { console.error("render at open", e); } // 1.7: one bad row must not stop the engine from starting
   paintListName();
   syncLive = false; lastCat = ""; paintStatus(transport || TRANSPORT_KIND ? "syncing" : "off");
   if (legacy) {
@@ -742,6 +746,7 @@ function updateRow(li, it) {
     // the name stays "Today"; aria-pressed carries the state, the description says what a press does
     today.setAttribute("aria-pressed", it.today ? "true" : "false");
     today.setAttribute("aria-description", it.today ? "Take this line off Today" : "Put this line on Today");
+    today.title = it.today ? "On Today — click to take it off" : "Put this line on Today"; // 1.7: the hover tooltip the v3 pass gave it, back
     today.dataset.tip = it.today ? "On Today — click to take it off" : "Put this line on Today";
   }
   if (view === "all") li.classList.toggle("miss", !!query && !matches(it, query));
@@ -760,6 +765,7 @@ function ordinal(n) { const s = ["th", "st", "nd", "rd"], v = n % 100; return n 
 function matches(it, q) { const s = q.toLowerCase(); return it.text.toLowerCase().includes(s) || (it.note || "").toLowerCase().includes(s); }
 
 function renderToday({ animate, quiet }) {
+  { const e = $("#today-empty"); const none = !demo && todayList().length === 0; e.hidden = !none; if (none) e.textContent = listMode === "view" ? "Nothing on Today." : "Nothing on Today yet. Add a line, or bring one over from Everything."; } // 1.7: the one empty surface that said nothing
   const list = $("#list");
   const items = todayList();
   const n = items.length;
@@ -881,7 +887,7 @@ function restoreItem(id) {
 function makeSection(g) {
   const sec = document.createElement("section");
   sec.className = "sec"; sec.dataset.id = g.id;
-  sec.innerHTML = `<h2 class="sec-h"><button class="sec-toggle" type="button" aria-expanded="true"><span class="caret" aria-hidden="true">▾</span><span class="nm"></span></button><span class="sec-count"></span><span class="spacer"></span><button class="chip sec-more" type="button" aria-haspopup="dialog" aria-label="Section options">⋯</button></h2><ol class="seclist" role="list"></ol><div class="empty" hidden>Nothing here yet</div><button class="add" type="button">+ New line</button>`;
+  sec.innerHTML = `<h2 class="sec-h"><button class="sec-toggle" type="button" aria-expanded="true" title="Collapse this section"><span class="caret" aria-hidden="true">▾</span><span class="nm"></span></button><span class="sec-count"></span><span class="spacer"></span><button class="chip sec-more" type="button" aria-haspopup="dialog" aria-label="Section options" title="Section options">⋯</button></h2><ol class="seclist" role="list"></ol><div class="empty" hidden>Nothing here yet</div><button class="add" type="button">+ New line</button>`;
   sec.querySelector(".sec-toggle").addEventListener("click", () => toggleCollapse(g.id));
   sec.querySelector(".sec-more").addEventListener("click", () => openSectionMenu(g.id));
   sec.querySelector(".add").addEventListener("click", () => newItem({ sectionId: g.id, today: false }));
@@ -892,7 +898,7 @@ function updateSection(sec, g) {
   h.hidden = !!g.implicit;
   sec.querySelector(".nm").textContent = g.name;
   sec.classList.toggle("collapsed", !!g.collapsed && !g.implicit);
-  sec.querySelector(".sec-toggle").setAttribute("aria-expanded", g.collapsed ? "false" : "true");
+  sec.querySelector(".sec-toggle").setAttribute("aria-expanded", g.collapsed ? "false" : "true"); sec.querySelector(".sec-toggle").title = g.collapsed ? "Expand this section" : "Collapse this section";
   sec.querySelector(".sec-more").hidden = false; // Unsorted has a menu too (templates, put all on Today)
   sec.querySelector(".sec-more").dataset.unsorted = g.id === "" ? "1" : "";
 }
@@ -914,10 +920,13 @@ function orderInto(container, ids, animate) {
     if (el) container.insertBefore(el, before && before.parentNode === container ? before : null);
   }
   if (active && active !== document.body && document.activeElement !== active && active.isConnected) { try { active.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
+  let moved = false;
   if (animate && !RM.matches) for (const [el, top] of first) {
     const d = top - el.getBoundingClientRect().top;
-    if (d && el.animate) el.animate([{ transform: `translateY(${d}px)` }, { transform: "none" }], { duration: 520, easing: "cubic-bezier(.22,1,.36,1)" });
+    if (d && el.animate) { moved = true; el.animate([{ transform: `translateY(${d}px)` }, { transform: "none" }], { duration: 520, easing: "cubic-bezier(.22,1,.36,1)" }); }
   }
+  // 1.7: whatever row lands under a cursor that has not moved used to light up as hovered; hover is off until the mouse moves
+  if (moved && matchMedia("(hover: hover)").matches) { container.classList.add("no-hover"); document.addEventListener("pointermove", () => container.classList.remove("no-hover"), { once: true, capture: true }); }
 }
 
 /* strike: one measured overlay per rendered line (v1) */
@@ -1057,7 +1066,7 @@ function celebrateRemote(prev, before, nowAll) {
     const r = li.querySelector(".tx").getBoundingClientRect();
     fx.burst(Math.min(r.right, innerWidth - 40), r.top + r.height * 0.5, 30, 11, 1.8);
   }
-  if (nowAll && !before) setTimeout(() => { sound.finish(); fx.volley(); const g = $("#glow"); g.classList.add("flare"); setTimeout(() => g.classList.remove("flare"), 900); }, 500);
+  if (nowAll && !before) setTimeout(() => { sound.finish(); fx.volley(); if (!RM.matches) { const g = $("#glow"); g.classList.add("flare"); setTimeout(() => g.classList.remove("flare"), 900); } }, 500);
 }
 
 function toggle(id, px, py, fromPointer) {
@@ -1096,7 +1105,7 @@ function toggle(id, px, py, fromPointer) {
     if (now && !wasAll) setTimeout(() => {
       if (dev.oneThing) setOneThing(false, { silent: true }); // the finale shows the whole list
       sound.finish(); fx.volley();
-      const g = $("#glow"); g.classList.add("flare"); setTimeout(() => g.classList.remove("flare"), 900);
+      if (!RM.matches) { const g = $("#glow"); g.classList.add("flare"); setTimeout(() => g.classList.remove("flare"), 900); } // 1.7: no flare under reduced motion
     }, 640);
     wasAll = now;
   }
@@ -1691,7 +1700,7 @@ addEventListener("popstate", e => {
 $$("dialog.panel").forEach(d => {
   d.addEventListener("close", () => { if (!panelSwitching && !backPending && openPanel === d) closeAll(); idleReset(); }); // a close from anywhere else takes the stack with it (not one the browser forces while a Back is already on its way)
   d.addEventListener("cancel", e => { if (openPanel !== d) return; e.preventDefault(); goBack(); }); // Escape: back one level, closed at the root
-  d.addEventListener("click", e => { if (e.target === d && !clickAfterDrag()) { if (openPanel === d) closeAll(); else d.close(); } }); // not the click a browser synthesises after the hold that opened it
+  d.addEventListener("click", e => { if (e.target === d && d.id !== "whose" && !clickAfterDrag()) { if (openPanel === d) closeAll(); else d.close(); } }); // 1.7: the whose question is not cancelable from the backdrop either // not the click a browser synthesises after the hold that opened it
   d.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => { if (openPanel === d) closeAll(); else d.close(); }));
   if (d.classList.contains("sheet")) wireSheetSwipe(d);
   wireBackSwipe(d);
@@ -2023,7 +2032,8 @@ function wireUi() {
   $("#toast-undo").addEventListener("click", () => { const a = toastAction; hideToast(); if (a) a(); else undo(); });
   $("#install-x").addEventListener("click", () => { $("#install").hidden = true; document.body.classList.remove("install-on"); dev.installHint = true; saveDevice(); });
   if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc && !demo && !openPanel) { $("#install").hidden = false; document.body.classList.add("install-on"); } }, 2500);
-  document.addEventListener("pointerdown", () => sound.prime(), { once: true, capture: true });
+  document.addEventListener("pointerdown", () => { sound.prime(); setTimeout(() => panels(), 300); }, { once: true, capture: true }); // 1.7: the panels warm on the first gesture too, so the first ⋯ → Settings does not wait for a fetch
+  (window.requestIdleCallback || (f => setTimeout(f, 2000)))(() => sound.preload()); // 1.7: the sound engines at idle, after first paint
   document.body.classList.toggle("one", !!dev.oneThing);
 }
 function toggleMute() { dev.muted = !dev.muted; saveDevice(); paintMute(); if (!dev.muted) sound.tick(); dispatchEvent(new CustomEvent("tf:settings")); }

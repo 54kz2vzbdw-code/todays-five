@@ -107,6 +107,41 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  await test(label + ": 1.7: the first check-off on a cold page plays once the engines land; the panels warm on the first gesture; an empty Today says so; the star row explains itself; tooltips in Everything", async () => {
+    const t = await fresh(opts);
+    await t.ctx.addInitScript(() => { window.__nodes = 0; for (const m of ["createOscillator", "createBufferSource"]) { const o = AudioContext.prototype[m]; AudioContext.prototype[m] = function () { window.__nodes++; return o.apply(this, arguments); }; } });
+    await t.reload(); await t.page.waitForSelector("#list .row"); await wait(2600); // past the idle preload
+    const step = async (name, fn) => { try { await fn(); } catch (e) { throw new Error(name + ": " + String(e.message || e).split("\n")[0]); } };
+    await step("first check-off", () => t.press("#list .row:first-child .check")); await wait(1200);
+    assert.ok(await t.page.evaluate(() => window.__nodes) > 0, "the first check-off on a cold page made sound nodes");
+    assert.ok(await t.page.evaluate(() => performance.getEntriesByType("resource").some(r => /panels\.js/.test(r.name))), "the panels module was fetched on the first gesture");
+    await step("uncheck", () => t.press("#list .row.done .check")); await wait(700);
+    // an empty Today: take the three lines off it with the star in Everything
+    if (opts.hasTouch) await t.press("#v-all"); else await t.page.keyboard.press("a"); await wait(400);
+    for (let i = 0; i < 3; i++) { await step("star " + i, () => t.press('#all .row .tool.today[aria-pressed="true"]')); await wait(500); }
+    if (opts.hasTouch) await t.press("#v-today"); else await t.page.keyboard.press("a"); await wait(500);
+    assert.equal(await t.page.locator("#list .row").count(), 0);
+    assert.ok(await t.page.locator("#today-empty").isVisible(), "the empty Today says so"); assert.equal((await t.page.textContent("#today-empty")).trim(), "Nothing on Today yet. Add a line, or bring one over from Everything.");
+    if (opts.hasTouch) await t.press("#v-all"); else await t.page.keyboard.press("a"); await wait(400);
+    assert.equal(await t.page.$eval("#all .row:first-child .tool.today", e => e.title), "Put this line on Today", "the star's tooltip");
+    assert.equal(await t.page.$eval("#all .sec-toggle", e => e.title), "Collapse this section"); assert.equal(await t.page.$eval("#all .sec-more", e => e.title), "Section options");
+    await t.lineMenu("#all .row:first-child"); assert.equal(await t.page.$eval("#line-today-lb", e => Array.from(e.childNodes).map(n => n.textContent.trim()).join(" ")), "Put on Today It stays in Everything too"); await t.esc(); await wait(200);
+    await t.press("#all .row:first-child .tool.today"); await wait(400);
+    if (opts.hasTouch) await t.press("#v-today"); else await t.page.keyboard.press("a"); await wait(400);
+    assert.ok(await t.page.locator("#today-empty").isHidden(), "gone once a line is on Today"); assert.equal(await t.page.locator("#list .row").count(), 1);
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join(" | ")); await t.close();
+  });
+
+  await test(label + ": 1.7: under reduced motion the finale's glow never flares", async () => {
+    const t = await fresh(opts, { reducedMotion: "reduce" });
+    await t.page.evaluate(() => { window.__flared = false; new MutationObserver(() => { if (document.getElementById("glow").classList.contains("flare")) window.__flared = true; }).observe(document.getElementById("glow"), { attributes: true, attributeFilter: ["class"] }); });
+    for (let i = 0; i < 3; i++) { await t.press("#list .row:not(.done) .check"); await wait(500); }
+    await wait(1600);
+    assert.ok(await t.page.locator("#finale").isVisible(), "the finale"); assert.equal(await t.page.evaluate(() => window.__flared), false, "no flare");
+    assert.equal((await t.page.textContent("#again")).trim(), "Bring them all back");
+    await t.close();
+  });
+
   await test(label + ": a new list — the save sheet, then the three seed lines of 32 characters or fewer all on screen, no tour, no mark, nothing else", async () => {
     const t = await fresh(opts);
     assert.equal(await t.page.locator("#list .row").count(), 3);
@@ -1255,6 +1290,20 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.goto(BASE + "?transport=local#/r/" + c.R); await t.page.waitForFunction(() => document.getElementById("whose").open, null, { timeout: 9000 });
     await t.press('#whose [data-whose="mine"]'); await t.page.waitForFunction(() => window.__tf().mode === "view" && !document.getElementById("whose").open, null, { timeout: 9000 }); await wait(500);
     st = await t.s(); assert.equal(st.origin, "mine"); assert.equal(st.mode, "view"); assert.ok(await t.page.$eval("#shared", e => e.hidden), "no pill on a list of one's own");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
+  });
+
+  await test(label + ": 1.7: the whose question survives a tap outside the card and Escape, no answer carries a focus ring, and an answer opens the list", async () => {
+    const t = await fresh(opts);
+    const c = await makeList(t, "Reading"); await forget(t.page, c.id);
+    await t.page.goto(BASE + "?transport=local#/l/" + c.id); await t.page.waitForFunction(() => document.getElementById("whose").open, null, { timeout: 9000 }); await wait(400);
+    assert.equal(await t.page.$$eval("#whose [data-whose]", els => els.filter(e => e.matches(":focus-visible")).length), 0, "no answer looks chosen");
+    if (opts.hasTouch) await t.page.touchscreen.tap(12, 60); else await t.page.mouse.click(12, 60); await wait(500);
+    assert.ok(await whoseOpen(t.page), "a tap outside the card is not an answer");
+    await t.page.keyboard.press("Escape"); await wait(300); assert.ok(await whoseOpen(t.page), "nor is Escape");
+    await t.press('#whose [data-whose="shared"]'); await t.page.waitForFunction(id => !document.getElementById("whose").open && window.__tf().listId === id, c.id, { timeout: 9000 }); await wait(400);
+    await t.page.waitForFunction(() => window.__tf().status === "synced" && !document.getElementById("today-empty").hidden, null, { timeout: 9000 }); // a list made by New list is empty: the empty Today says so
+    assert.equal((await t.s()).origin, "shared");
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 

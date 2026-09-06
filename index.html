@@ -123,7 +123,7 @@
     </div>
     <div class="rail-r">
       <span class="status">
-        <button id="count" class="count" type="button" aria-pressed="false" title="One thing at a time (O)"><b>0</b>/0<span class="sr-only"> done</span></button>
+        <button id="count" class="count" type="button" aria-pressed="false" title="One thing at a time (O)" aria-description="One thing at a time: shows a single line"><b>0</b>/0<span class="sr-only"> done</span></button>
         <button id="shuffle" class="count shuffle" type="button" title="Shuffle (S)" aria-label="Shuffle: a different line">↻</button>
         <button id="dot" class="dot" data-s="off" data-live="0" type="button" aria-label="Sync status"><span class="lbl">Sync off</span></button>
         <span class="sr-only" id="dot-sr" role="status" aria-live="polite"></span>
@@ -143,6 +143,7 @@
     <h1 class="sr-only" id="list-h1">Today's Five</h1>
     <div id="today" class="view" role="tabpanel" aria-labelledby="v-today">
       <ol id="list" role="list" aria-label="Today's list" aria-describedby="ro"></ol>
+      <p class="empty" id="today-empty" hidden>Nothing on Today yet. Add a line, or bring one over from Everything.</p>
       <button id="addtoday" class="add" type="button" title="New line (N)">+ New line</button>
     </div>
     <div id="all" class="view" role="tabpanel" aria-labelledby="v-all" aria-describedby="ro" hidden>
@@ -155,7 +156,7 @@
          exists nowhere else), and below it Keep, Skip and Paste -->
     <div id="welcome" class="view" hidden>
       <h1>Today's Five</h1>
-      <p id="welcome-msg">A short list you keep open on screen all day—try it below, then keep it.</p>
+      <p id="welcome-msg">A short list you keep open on screen all day. Try it below—nothing is saved until you keep it.</p>
     </div>
     <div id="demo-foot" class="view" hidden>
       <div class="actions"><button class="big" id="w-keep" type="button" hidden>Keep this list</button></div>
@@ -172,7 +173,7 @@
   <footer id="foot">
     <div class="foot-row">
       <div id="hint"></div>
-      <div id="finale"><span>That's the list.</span><button class="chip" id="again" type="button">Start again</button></div>
+      <div id="finale"><span>That's the list.</span><button class="chip" id="again" type="button">Bring them all back</button></div>
     </div>
     <div id="review" class="review" hidden aria-live="polite"></div>
   </footer>

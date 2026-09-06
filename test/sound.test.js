@@ -103,6 +103,17 @@ await test("1.5: twelve packs, the six new ones after the six of 1.1, every one 
   assert.equal(s.check(0), true); assert.equal(s.finish(), true);
 });
 
+await test("1.7: a check-off before the engines land plays as soon as they do, once; a late arrival is dropped; preload makes no context", async () => {
+  let resolveLoad; const s = make({ loadPacks: () => new Promise(r => { resolveLoad = r; }) });
+  s.prime(); await tick();
+  assert.equal(s.check(0), false, "not yet"); const c = last(); const before = c.nodes;
+  resolveLoad({ PACKS }); await tick(); await tick();
+  assert.ok(c.nodes > before, "played when the engines landed"); assert.equal(s.state().packs, true);
+  const n = c.nodes; await tick(); assert.equal(c.nodes, n, "once");
+  const s2 = make({ loadPacks: () => Promise.resolve({ PACKS }) }); s2.preload(); await tick();
+  assert.equal(FakeAC.all.length, 0, "preload made no context"); assert.equal(s2.state().packs, true);
+});
+
 await test("an unknown engine name falls back to the knock", async () => {
   const s = make({ kit: () => ({ engine: "kazoo" }) }); s.prime(); await tick();
   assert.equal(s.check(0), true);

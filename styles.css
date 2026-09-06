@@ -149,6 +149,8 @@ button{font:inherit;color:inherit}
   transition:background-color .2s ease,color .3s ease .1s;
 }
 .row:hover{background:var(--ink-2)}
+.no-hover .row:hover{background:transparent} /* 1.7: a row that slid under a still cursor is not hovered */
+.no-hover .row:hover .box{border-color:var(--hair-solid)}
 .row.done{color:var(--done)}
 .row.editing{background:transparent}
 .row.editing:hover{background:transparent}
@@ -314,6 +316,7 @@ button{font:inherit;color:inherit}
 .add:hover{color:var(--accent-text);border-color:var(--accent)}
 .add:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #addsec{margin-top:.2rem}
+#today-empty{margin:.2rem 0 .6rem;padding:.35em .6em .35em .1em}
 .empty{
   font-family:var(--font-ui);font-size:clamp(11px,1.2vw,14px);letter-spacing:.06em;color:var(--dim);
   padding:.6rem .3rem;
@@ -445,7 +448,7 @@ html[data-mode="view"] #hint{visibility:hidden}
   .row{transition:background-color .08s ease,color .08s ease}
   .box,.box path{transition-duration:.08s}
   #fill{transition-duration:.1s}
-  #glow{transition:none}
+  #glow,#glow.flare{transition:none}
   .row.kick,.box.pop,.row.arrive{animation:none}
   .ink{animation:none}
   .dot[data-s="syncing"]::before{animation:none;opacity:.5}

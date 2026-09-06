@@ -693,7 +693,7 @@ export function openLineMenu(id) {
   const it = A.doc.items[id]; if (!it || it.deleted) return;
   lineId = id;
   $("#p-line-h").textContent = it.text.length > 48 ? it.text.slice(0, 48) + "…" : it.text || "Line";
-  $("#line-today-lb").textContent = it.today ? "Take off Today" : "Put on Today";
+  { const lb = $("#line-today-lb"); lb.textContent = it.today ? "Take off Today" : "Put on Today"; const sub = document.createElement("span"); sub.className = "sub"; sub.textContent = it.today ? "It stays in Everything" : "It stays in Everything too"; lb.appendChild(sub); } // 1.7: read beside Not today, the row needed a sub-line
   $("#line-repeat-sub").textContent = A.ruleLabel(M.ruleOf(A.doc, id));
   $('#p-line [data-lact="nottoday"]').hidden = !it.today || it.done;
   $('#p-line [data-lact="move"]').hidden = !meta().lists.some(l => l.id !== A.listId && l.mode !== "view" && !l.archived);

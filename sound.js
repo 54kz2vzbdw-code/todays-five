@@ -57,7 +57,10 @@ export function createSound(opts) {
   }
   function play(fn, step) {
     const c = ctx(); if (!c) return false;
-    if (!packs) { loadPacks(); return false; } // the very first sound on a cold page arrives a moment late; nothing else is lost
+    if (!packs) { // 1.7: the very first sound on a cold page plays as soon as the engines land (they used to be dropped), unless that took longer than a beat
+      const t0 = Date.now(); const p = loadPacks(); if (p && p.then) p.then(() => { if (packs && Date.now() - t0 < 1500) play(fn, step); });
+      return false;
+    }
     const k = kit();
     const pack = packs[k.engine] || packs.knock;
     try { pack[fn]({ c, master, kit: k, P: (key, d) => { const v = k[key]; return typeof v === "number" ? v : d; } }, step || 0); } catch (e) { return false; }
@@ -74,6 +77,8 @@ export function createSound(opts) {
     tick() { return play("uncheck"); },
     /** Warm the context up inside a user gesture and start loading the engines, so the first real sound is not swallowed. */
     prime() { ctx(); loadPacks(); },
+    /** 1.7: fetch the engines at idle, outside any gesture (no context is made), so the first check-off finds them loaded. */
+    preload() { loadPacks(); },
     /** The page came back to the foreground: ask the context to resume (allowed outside a gesture once one has happened). */
     foreground() { if (ac && ac.state !== "running" && ac.state !== "closed") askResume(); },
     /** Play a pack's check sound regardless of the theme (Settings → Sound preview). */

@@ -47,7 +47,8 @@ async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: 
   await page.goto(url);
   if (list) {
     await page.waitForSelector("#welcome:not([hidden])");
-    await page.click("#w-skip"); await page.waitForSelector("#p-save[open]"); await page.click("#save-done"); await wait(500);
+    // 1.9: Skip starts an empty list; the suite keeps the three seed lines the way Keep does (the button waits for a line of your own, so it is pressed by hand)
+    await page.evaluate(() => document.getElementById("w-keep").click()); await page.waitForSelector("#p-save[open]"); await page.click("#save-done"); await wait(500);
     await page.waitForSelector("#list .row");
     if (!opts.hasTouch) { await page.mouse.move(2, 2); await wait(400); } // past the tools' fade, so "at rest" means at rest
   }
@@ -1433,10 +1434,17 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": Skip starts the list as it stands; Paste opens the form, refuses junk, and opens a real link", async () => {
+  await test(label + ": 1.9: Skip on an untouched welcome starts an empty list; once a line of your own is on it, Skip keeps the lines; Paste opens the form, refuses junk, and opens a real link", async () => {
+    // a line of your own: Skip's label flips to keeping the lines, and it does (the audit's proposal 1)
+    const k = await welcome();
+    assert.equal(await k.page.textContent("#w-skip"), "Skip — start with an empty list", "Skip says what it does before the welcome is touched");
+    await k.press("#addtoday"); await k.page.keyboard.type("Mine"); await k.page.keyboard.press("Enter"); await wait(200); await k.page.keyboard.press("Escape"); await wait(200);
+    assert.ok(!(await k.page.$eval("#w-keep", e => e.hidden)), "Keep is offered"); assert.equal(await k.page.textContent("#w-skip"), "Skip — keep these lines", "and Skip now keeps");
+    await k.press("#w-skip"); await k.page.waitForSelector("#p-save[open]", { timeout: 9000 }); await k.page.click("#save-done"); await wait(400);
+    assert.equal(await k.page.locator("#list .row").count(), 4, "the three seed lines and the line of your own"); await k.close();
     const t = await welcome();
     await t.press("#w-skip"); await t.page.waitForSelector("#p-save[open]", { timeout: 9000 }); await t.page.click("#save-done"); await wait(400);
-    assert.equal(await t.page.locator("#list .row").count(), 3, "the three lines, untouched"); assert.equal(await t.page.locator("#list .row.done").count(), 0);
+    assert.equal(await t.page.locator("#list .row").count(), 0, "an empty list: nothing to delete"); assert.ok(!(await t.page.$eval("#today-empty", e => e.hidden)), "and the empty Today says so");
     const { R } = await t.s(); await t.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
     // a second tab of the same device lands on the welcome without a current list: Paste the View link
     await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.current = null; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
@@ -1446,8 +1454,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.ok(!(await p2.$eval("#w-paste-form", e => e.hidden)));
     await p2.fill("#w-paste", "not a link"); await p2.press("#w-paste", "Enter"); await wait(200);
     assert.ok(/doesn't look like a list link/.test(await p2.textContent("#w-err")), "junk is refused out loud");
-    await p2.fill("#w-paste", BASE + "#/r/" + R); await p2.press("#w-paste", "Enter"); await p2.waitForSelector("#ro:not([hidden])", { timeout: 9000 }); await p2.waitForSelector("#list .row", { timeout: 9000 }); await wait(300);
-    assert.equal((await p2.evaluate(() => window.__tf())).mode, "view", "the View link opens the list view-only"); assert.equal(await p2.locator("#list .row").count(), 3);
+    await p2.fill("#w-paste", BASE + "#/r/" + R); await p2.press("#w-paste", "Enter"); await p2.waitForSelector("#ro:not([hidden])", { timeout: 9000 }); await p2.waitForSelector("#today-empty:not([hidden])", { timeout: 9000 }); await wait(300);
+    assert.equal((await p2.evaluate(() => window.__tf())).mode, "view", "the View link opens the list view-only"); assert.equal(await p2.locator("#list .row").count(), 0, "the empty list, view-only"); assert.equal((await p2.textContent("#today-empty")).trim(), "Nothing on Today.");
     await p2.close(); await t.close();
   });
 
@@ -1477,7 +1485,13 @@ for (const [label, opts, touch] of VIEWPORTS) {
 
   await test(label + ": saving counts on Copy or I've saved it; until then ⋯ carries Save your link with a dot and the Share sheet repeats the key line; a device from before is grandfathered", async () => {
     const t = await welcome();
-    await t.press("#w-skip"); await t.page.waitForSelector("#p-save[open]", { timeout: 9000 }); await wait(200);
+    await t.page.evaluate(() => document.getElementById("w-keep").click()); await t.page.waitForSelector("#p-save[open]", { timeout: 9000 }); await wait(200); // the seed lines kept (Skip starts empty since 1.9)
+    // 1.9: the sheet has the standard × and a Not yet chip; both close it and leave the nudge on (the audit's proposal 2)
+    assert.ok(await t.page.$("#p-save h2 .x[data-close]"), "the × beside the title"); assert.equal((await t.page.textContent("#save-later")).trim(), "Not yet");
+    await t.press("#save-later"); await wait(300); assert.ok(!(await t.page.$("#p-save[open]")), "Not yet closes the sheet"); assert.ok((await t.s()).unsaved, "and leaves the link unsaved");
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await t.page.click('#p-menu [data-act="save"]'); await t.page.waitForSelector("#p-save[open]"); await wait(200);
+    await t.press("#p-save h2 .x"); await wait(300); assert.ok(!(await t.page.$("#p-save[open]")), "× closes the sheet"); assert.ok((await t.s()).unsaved, "and leaves the link unsaved too");
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await t.page.click('#p-menu [data-act="save"]'); await t.page.waitForSelector("#p-save[open]"); await wait(200);
     await t.esc(); await wait(300); // closed without saving
     assert.ok((await t.s()).unsaved, "not saved yet");
     await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await wait(200);
@@ -1597,7 +1611,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": Keep under the server's create limit still degrades politely — the list is kept here, the toast says so, no error", async () => {
     const t = await welcome();
     await t.page.evaluate(() => localStorage.setItem("tf/test/limit", "1"));
-    await t.press("#w-skip"); await t.page.waitForSelector("#p-save[open]", { timeout: 9000 }); await t.page.click("#save-done"); await wait(300);
+    await t.page.evaluate(() => document.getElementById("w-keep").click()); await t.page.waitForSelector("#p-save[open]", { timeout: 9000 }); await t.page.click("#save-done"); await wait(300);
     await t.page.waitForFunction(() => window.__tf().status === "busy", null, { timeout: 8000, polling: 200 });
     assert.equal(await t.page.locator("#list .row").count(), 3, "the list is here"); assert.ok(/busy/i.test(await t.page.textContent("#toast .msg")) && /safe here/.test(await t.page.textContent("#toast .msg")), await t.page.textContent("#toast .msg"));
     assert.ok((await storedLists(t.page)).some(k => k.startsWith("tf/v3/list/")), "kept locally");

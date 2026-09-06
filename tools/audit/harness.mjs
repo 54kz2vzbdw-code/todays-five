@@ -98,7 +98,7 @@ export async function openApp(browser, { env = "desktop", fixture = "fresh", sch
   await page.goto(target);
   if (fixture === "fresh" && !hash) {
     await page.waitForSelector("#welcome:not([hidden])");
-    await page.click("#w-skip"); await page.waitForSelector("#p-save[open]"); await page.click("#save-done"); await wait(500);
+    await page.evaluate(() => document.getElementById("w-keep").click()); await page.waitForSelector("#p-save[open]"); await page.click("#save-done"); await wait(500); // 1.9: Skip starts an empty list; the fixture keeps the seed lines the way Keep does
     await page.waitForSelector("#list .row");
   } else if (fixture === "longtime") {
     await page.waitForSelector("#list .row"); await wait(1200);       // the four lists reach the local server, the theme CSS is cached

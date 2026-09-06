@@ -162,7 +162,7 @@
     </div>
     <div id="demo-foot" class="view" hidden>
       <div class="actions"><button class="big" id="w-keep" type="button" hidden>Keep this list</button></div>
-      <p class="quiet-links"><button class="linkish" id="w-skip" type="button">Skip — keep these lines</button><span class="sep" aria-hidden="true">·</span><button class="linkish" id="w-paste-show" type="button">Already have a list? Paste your link</button></p>
+      <p class="quiet-links"><button class="linkish" id="w-skip" type="button">Skip — start with an empty list</button><span class="sep" aria-hidden="true">·</span><button class="linkish" id="w-paste-show" type="button">Already have a list? Paste your link</button></p>
       <form class="paste" id="w-paste-form" novalidate hidden>
         <input id="w-paste" type="url" inputmode="url" autocomplete="off" placeholder="https://…/#/l/…" aria-label="Paste a link">
         <button class="big" type="submit">Open</button>
@@ -389,7 +389,7 @@
 
 <dialog class="panel sheet" id="p-save" aria-labelledby="save-title" aria-describedby="save-msg"><div class="body" tabindex="-1" id="save-body">
   <div class="grip" aria-hidden="true"></div>
-  <h2 id="p-save-h"><span id="save-title">Save your link</span></h2>
+  <h2 id="p-save-h" aria-labelledby="save-title"><span id="save-title">Save your link</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <p id="save-msg" class="save-msg">This link is your list's only key. Anyone holding it can open the list, and there is no spare.</p>
   <p id="save-migrated" class="save-msg" hidden>The old link is dead everywhere. Open this one on your other devices and add it to the Home Screen again.</p>
   <!-- 1.3: the lead depends on the device — Safari on a phone, the installed app, or a desktop -->
@@ -414,6 +414,7 @@
   </details>
   <div class="row-actions">
     <button class="chip" id="save-done" type="button">I've saved it</button>
+    <button class="chip" id="save-later" type="button">Not yet</button>
   </div>
 </div></dialog>
 

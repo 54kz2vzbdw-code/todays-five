@@ -364,8 +364,12 @@ function markSaved() {
 }
 function wireSave() {
   $("#save-copy").addEventListener("click", async () => { await A.copyText($("#save-link").value, "Link copied"); markSaved(); A.closePanel(); });
-  $("#save-done").addEventListener("click", () => { markSaved(); A.closePanel(); setTimeout(() => { if (document.activeElement === document.body) document.getElementById("list").focus({ preventScroll: true }); }, 80); }); // 1.7: the sheet opened by itself, so focus goes to the list (the list, not a line: a focused line shows its ⋯)
-  $("#p-save").addEventListener("close", () => { const e = meta().lists.find(l => l.id === A.listId); if (e && e.migrated) { e.migrated = false; A.saveDevice(); } }); // "Your link changed" shows once either way
+  $("#save-done").addEventListener("click", () => { markSaved(); A.closePanel(); });
+  $("#save-later").addEventListener("click", () => A.closePanel()); // 1.9: Not yet — the sheet closes and the nudge stays on (⋯ carries Save your link until Copy or I've saved it), like the × beside the title
+  $("#p-save").addEventListener("close", () => {
+    const e = meta().lists.find(l => l.id === A.listId); if (e && e.migrated) { e.migrated = false; A.saveDevice(); } // "Your link changed" shows once either way
+    setTimeout(() => { if (document.activeElement === document.body) document.getElementById("list").focus({ preventScroll: true }); }, 80); // 1.7: the sheet opened by itself, so focus goes to the list (the list, not a line: a focused line shows its ⋯) — whichever way it closed
+  });
 }
 
 /* ---------------- lists ---------------- */

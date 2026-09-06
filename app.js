@@ -456,6 +456,9 @@ async function openList(r) {
   doc = local ? local.doc : legacy ? legacy.doc : M.normalize({}, r.id);
   let rolled = false;
   if (mode === "edit") {
+    // 1.9: a list from before the home zone gets one from the device that made it (the creator's zone is home); a device that only
+    // holds the link leaves it alone and rolls behind the six-hour guard until then
+    if (entry.created && !M.zoneOf(doc) && M.deviceZone()) { doc = M.withZone(M.normalize(doc, r.id)); rolled = true; }
     doc = M.purgeTombstones(doc);
     const roll = M.rollover(doc);
     if (roll.moved.length || roll.doc !== doc) { doc = roll.doc; rolled = true; }
@@ -546,6 +549,7 @@ function showWelcome(msg) {
   document.documentElement.dataset.mode = "edit";
   document.body.classList.add("welcome"); document.documentElement.classList.remove("welcome"); // the body class carries it from here
   $("#all").hidden = true; $("#welcome").hidden = false; $("#demo-foot").hidden = false; $("#w-keep").hidden = true; $("#w-paste-form").hidden = true;
+  paintSkip();
   $("#w-err").textContent = msg || "";
   $("#dot").hidden = true; // no list yet: nothing to report
   $("#ro").hidden = true;
@@ -565,7 +569,7 @@ function demoNudge() {
   if (!demo || !doc) return;
   const items = M.liveItems(doc);
   const own = items.some(i => !M.SEED_LINES.includes(i.text) && i.text.trim());
-  if ((own || allDoneToday()) && $("#w-keep").hidden) { $("#w-keep").hidden = false; }
+  if ((own || allDoneToday()) && $("#w-keep").hidden) { $("#w-keep").hidden = false; paintSkip(); }
 }
 /** Keep this list: the same document under a real id, through the ordinary create path (the save sheet follows). */
 function keepDemo() {
@@ -576,6 +580,16 @@ function keepDemo() {
   demo = false;
   createList(d, id);
 }
+/** Skip (1.9): the welcome was not touched, so the first list starts empty — nothing to delete, nothing that reads as junk. */
+function skipDemo() {
+  if (!demo || !doc) return;
+  if (editing) cancelEdit(true);
+  const id = M.newId();
+  demo = false;
+  createList(M.emptyDoc(id, ""), id);
+}
+/** Skip's label says what it does right now: an empty list until the person has made the welcome theirs, then the lines as they stand. */
+function paintSkip() { $("#w-skip").textContent = $("#w-keep").hidden ? "Skip — start with an empty list" : "Skip — keep these lines"; }
 
 /* ---------------- migration of a v2 (plaintext) list ---------------- */
 async function migrateLegacy(oldId, legacyLocal, serverRow, gen = openGen) {
@@ -1240,7 +1254,7 @@ function toggleToday(id) {
   it.today = !it.today;
   if (it.today) it.todayOrder = M.lastOrder(todayList(), i => i.todayOrder);
   it.updatedAt = M.now();
-  if (it.today) { const r = M.ruleOf(doc, id); if (r) doc.rules[id] = { ...r, placed: M.localDate(), updatedAt: M.now() }; }
+  if (it.today) { const r = M.ruleOf(doc, id); if (r) doc.rules[id] = { ...r, placed: M.todayFor(doc), updatedAt: M.now() }; }
   sound.tick();
   afterChange();
   toast(it.today ? "On Today" : "Off Today");
@@ -1946,6 +1960,7 @@ addEventListener("online", () => setTimeout(() => { retryPendingKills(); settleM
 /* lists: the pieces the welcome screen and the switcher need before any panel has loaded */
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function createList(d, id) {
+  M.withZone(d); // 1.9: a list made here carries this device's zone as its home zone; a document that already has one (an import) keeps it
   saveLocal(id, { doc: d, rev: 0, dirty: true, created: true, mode: "edit" });
   const e = registerList(id, d.name, "edit"); e.created = true; e.linkSaved = false;
   switchTo({ id, mode: "edit" });
@@ -1979,7 +1994,9 @@ function switchTo(r, { paste = false } = {}) {
 }
 $("#listname").addEventListener("click", () => { askedPanel = "lists"; panels().then(p => p.openLists()); });
 $("#w-keep").addEventListener("click", keepDemo);
-$("#w-skip").addEventListener("click", keepDemo); // Skip is Keep without the play: the same three lines, as they stand
+// 1.9: Skip on an untouched welcome starts an empty list (the seed lines were the first real list, and deleting them on a phone
+// was three holds); once Keep is showing — a line of your own, or all three crossed off — Skip is Keep without the ceremony
+$("#w-skip").addEventListener("click", () => { if (editing) commitEdit(); if ($("#w-keep").hidden) skipDemo(); else keepDemo(); });
 $("#w-paste-show").addEventListener("click", () => { $("#w-paste-form").hidden = false; $("#w-paste").focus(); });
 $("#w-paste-form").addEventListener("submit", e => {
   e.preventDefault();
@@ -2232,7 +2249,7 @@ const api = {
 
 /* test hook (read-only) */
 // 1.7: the secrets only on the local transport
-window.__tf = () => ({ stats: { ...stats }, view, listId: TRANSPORT_KIND === "local" ? listId : (listId ? "held" : null), mode: listMode, lookupId: TRANSPORT_KIND === "local" && ref ? ref.lookupId : null, R: TRANSPORT_KIND === "local" && ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, secret: !!dev.secret, field: !!field, demo, shuffled: shuffledId, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry(), origin: (entryOf(listId) || {}).origin || null, nickname: (entryOf(listId) || {}).nickname || null, whose: $("#whose").open, panels: panelStackIds() });
+window.__tf = () => ({ stats: { ...stats }, view, listId: TRANSPORT_KIND === "local" ? listId : (listId ? "held" : null), mode: listMode, lookupId: TRANSPORT_KIND === "local" && ref ? ref.lookupId : null, R: TRANSPORT_KIND === "local" && ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, secret: !!dev.secret, field: !!field, demo, shuffled: shuffledId, zone: doc && doc.zone ? doc.zone : null, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry(), origin: (entryOf(listId) || {}).origin || null, nickname: (entryOf(listId) || {}).nickname || null, whose: $("#whose").open, panels: panelStackIds() });
 // test-only controls, on the local transport: simulate what iOS does to the audio context
 if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneToday(); } }, presence: n => paintWho(n) };
 

@@ -810,8 +810,7 @@ export function exportMarkdown(doc, { today = todayFor(doc) } = {}) {
   lines.push("");
   lines.push("_Exported " + today + "_");
   const line = i => `- [${i.done ? "x" : " "}] ${i.text}${i.today ? " ★" : ""}${ruleOf(doc, i.id) ? " ↻" : ""}${i.note ? "\n  " + i.note.replace(/\n/g, "\n  ") : ""}`;
-  const t = todayItems(doc);
-  if (t.length) { lines.push("", "## Today", ""); for (const i of t) lines.push(line(i)); }
+  // 1.9: a Today line is marked in place (★) and printed once, under its section — no separate Today block (proposal 30)
   const secs = [{ id: "", name: "Unsorted" }].concat(sectionsOrdered(doc));
   for (const s of secs) {
     const items = itemsInSection(doc, s.id);

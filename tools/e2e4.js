@@ -528,6 +528,24 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 
+  await test(label + ": 1.9: a done line while lifted reads in --done-2 (29), the ⋯ menu is two columns in phone landscape and one otherwise (31)", async () => {
+    const t = await fresh(opts);
+    const hex = c => { const m = c.match(/\d+/g); return m ? "#" + m.slice(0, 3).map(n => (+n).toString(16).padStart(2, "0")).join("").toUpperCase() : c; };
+    await t.press("#list .row:first-child .check"); await wait(700);
+    const c = await t.page.evaluate(() => { const r = document.querySelector("#list .row.done"); const rest = getComputedStyle(r).color; r.classList.add("dragging"); const lifted = getComputedStyle(r).color; r.classList.remove("dragging"); const cs = getComputedStyle(document.documentElement); return { rest, lifted, done: cs.getPropertyValue("--done").trim(), done2: cs.getPropertyValue("--done-2").trim() }; });
+    assert.equal(hex(c.rest), c.done.toUpperCase(), "at rest a done line reads in --done"); assert.equal(hex(c.lifted), c.done2.toUpperCase(), "lifted, in --done-2"); assert.ok(c.done2 && c.done2 !== c.done || opts.hasTouch, "the two differ on the kit where it matters: " + JSON.stringify(c));
+    const cols = async p => p.evaluate(() => { const rows = [...document.querySelectorAll("#p-menu .menu > *")].filter(e => !e.hidden && getComputedStyle(e).display !== "none"); const body = document.querySelector("#p-menu .body"); return { cols: new Set(rows.map(r => Math.round(r.getBoundingClientRect().left))).size, scroll: body.scrollHeight - body.clientHeight, minH: Math.min(...rows.map(r => r.getBoundingClientRect().height)), n: rows.length }; });
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await wait(400);
+    const m1 = await cols(t.page); assert.equal(m1.cols, 1, "one column here: " + JSON.stringify(m1)); await t.esc();
+    if (opts.hasTouch) {
+      const z = await fresh({ ...opts, viewport: { width: 844, height: 390 } });
+      await z.press("#more"); await z.page.waitForSelector("#p-menu[open]"); await wait(500);
+      const m2 = await cols(z.page); assert.ok(m2.cols === 2 && m2.scroll <= 1 && m2.minH >= 44 && m2.n >= 9, "landscape: two columns, no scroll, 44 px rows: " + JSON.stringify(m2));
+      await z.esc(); assert.equal(z.errors.length, 0, z.errors.join("; ")); await z.close();
+    }
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
+  });
+
   await test(label + ": the three just-in-time hints each appear once and never again (the star, drag, the menu)", async () => {
     const t = await fresh(opts);
     assert.equal(JSON.stringify((await t.s()).hints), "{}", "a fresh device has seen none");

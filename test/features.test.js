@@ -184,6 +184,7 @@ test("export → import round trip is byte-identical, carries no secret, and Mar
   assert.equal(M.importJSON(JSON.stringify(d)).items.a.text, "Alpha", "a bare document is accepted too");
   const md = M.exportMarkdown(d, { today: "2026-09-01" });
   assert.ok(md.startsWith("# Work\n")); assert.ok(md.includes("- [ ] Alpha ★ ↻\n  with a note")); assert.ok(md.includes("- [x] Beta ★")); assert.ok(md.includes("## Home")); assert.ok(md.includes("### 2026-08-30\n\n- Old · Home"));
+  assert.ok(!md.includes("## Today"), "1.9: no separate Today block (proposal 30)"); assert.equal(md.split("Alpha ★").length - 1, 1, "a Today line prints once, marked in place");
   assert.ok(!md.includes("Gone"));
 });
 

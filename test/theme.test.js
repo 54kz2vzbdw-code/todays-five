@@ -54,11 +54,23 @@ test("dark, light, pink keep v1's primary tokens exactly", () => {
   const d = CURATED.find(t => t.id === "dark").colors, l = CURATED.find(t => t.id === "light").colors, p = CURATED.find(t => t.id === "pink").colors;
   assert.deepEqual([d.ink, d.ink2, d.ink3, d.text, d.muted, d.accent, d.accentHi, d.accentDeep, d.accentText, d.danger], ["#1A1D21", "#23272C", "#2E343A", "#F5F1EA", "#9AA0A8", "#D26128", "#E8814A", "#A34A1C", "#E8814A", "#E0745A"]);
   assert.deepEqual([l.ink, l.ink2, l.ink3, l.text, l.accent, l.accentHi, l.accentDeep, l.accentText, l.danger], ["#FAF8F4", "#F1ECE3", "#E4DED2", "#494F55", "#CB6015", "#E07B33", "#9E4A10", "#9E4A10", "#B8402A"]);
-  assert.deepEqual([p.ink, p.ink2, p.ink3, p.text, p.muted, p.dim, p.done, p.accent, p.accentHi, p.accentDeep, p.accentText, p.danger], ["#2E0A1C", "#421029", "#58163A", "#FFF0F6", "#F2A8C8", "#C97A9E", "#C97A9E", "#FF3D9A", "#FFD36E", "#C2185B", "#FF3D9A", "#FF6B8A"]);
+  assert.deepEqual([p.ink, p.ink2, p.ink3, p.text, p.muted, p.dim, p.done, p.accent, p.accentHi, p.accentDeep, p.accentText, p.danger], ["#2E0A1C", "#421029", "#58163A", "#FFF0F6", "#F2A8C8", "#C97A9E", "#C97A9E", "#FF3D9A", "#FFD36E", "#C2185B", "#FF58A2", "#FF6B8A"]); // 1.9: accentText nudged from #FF3D9A to 4.5:1 on ink-3, the one change to Pink (proposal 29)
   assert.equal(p.strikeAnim, "shimmer 3.4s linear infinite");
   assert.equal(p.boxDoneBg, "linear-gradient(135deg,#FF3D9A,#FFD36E)");
   assert.equal(CURATED.find(t => t.id === "pink").shapes, 3);
   assert.deepEqual(CURATED.find(t => t.id === "pink").confetti, ["#FF3D9A", "#FF8FBE", "#FFD36E", "#FFFFFF", "#FF6FAF", "#FFB8D9"]);
+});
+
+test("1.9: --done-2 clears 4.5:1 on --ink-3 in every kit and in a theme you make, styles.css lifts a dragged line into it, and Pink's accent text clears the same bar (proposal 29)", () => {
+  for (const t of CURATED) assert.ok(contrast(t.colors.done2, t.colors.ink3) >= 4.5, t.id + " done-2 on ink-3: " + contrast(t.colors.done2, t.colors.ink3).toFixed(2));
+  for (const accent of ["#3366FF", "#FF3D9A", "#1E9A4F", "#D9A066"]) { const t = derive({ accent }); assert.ok(contrast(t.colors.done2, t.colors.ink3) >= 4.5, accent); }
+  assert.ok(cssText(CURATED[0]).includes("--done-2:"), "the token reaches the page");
+  const p = CURATED.find(t => t.id === "pink").colors;
+  assert.ok(contrast(p.accentText, p.ink3) >= 4.5, "Pink's accent text on ink-3: " + contrast(p.accentText, p.ink3).toFixed(2));
+  assert.ok(contrast(p.accentText, p.ink) >= 4.5, "and on ink");
+  const css = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
+  assert.ok(/\.row\.dragging\{[^}]*--done:var\(--done-2\)/.test(css), "a dragged line reads in --done-2");
+  assert.ok(/dialog\.panel\{[^}]*--done:var\(--done-2\)/.test(fs.readFileSync(new URL("../panels.css", import.meta.url), "utf8")), "and so does a panel");
 });
 
 test("1.7: every curated kit's accent text and danger clear 4.5:1 and its accent 3:1 on the elevated surface too (the originals keep their tokens)", () => {

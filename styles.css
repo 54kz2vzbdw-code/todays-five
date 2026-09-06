@@ -330,7 +330,7 @@ button{font:inherit;color:inherit}
 
 /* drag */
 .row.dragging{
-  z-index:5;background:var(--ink-3);box-shadow:0 12px 32px rgba(0,0,0,.35);
+  z-index:5;background:var(--ink-3);box-shadow:0 12px 32px rgba(0,0,0,.35);--done:var(--done-2); /* 1.9: a done line reads at 4.5:1 while lifted (proposal 29) */
   transition:none;cursor:grabbing;
 }
 .row.dragging .tool{opacity:1}

@@ -107,7 +107,7 @@ export function pairFamilies(pairId) {
 /* ---------------- curated kits ----------------
    Sound packs (v4): knock, bell, blip, typewriter, marble, pop — see packs.js. Paper types, Forest drops marbles,
    Harbor pops; the rest keep their v3 engines. A device can override the pack in Settings → Sound.
-   Dark, Light and Pink carry v1's exact tokens, fonts, sounds and confetti,
+   Dark, Light and Pink carry v1's exact tokens (1.9 nudged Pink's accent text alone, to 4.5:1 on ink-3), fonts, sounds and confetti,
    with one exception recorded in DECISIONS.md: the two secondary greys (dim,
    muted) in Dark and Light are nudged to the nearest values that pass 4.5:1.
    1.2: every kit leans day or night and names its designed partner (the pairs are in DECISIONS.md, "1.2
@@ -140,7 +140,7 @@ const RAW = [
   kit("pink", "Pink", "dark", "fraunces", {
     ink: "#2E0A1C", ink2: "#421029", ink3: "#58163A",
     text: "#FFF0F6", muted: "#F2A8C8", dim: "#C97A9E", done: "#C97A9E",
-    accent: "#FF3D9A", accentHi: "#FFD36E", accentDeep: "#C2185B", accentText: "#FF3D9A", danger: "#FF6B8A",
+    accent: "#FF3D9A", accentHi: "#FFD36E", accentDeep: "#C2185B", accentText: "#FF58A2", danger: "#FF6B8A", // 1.9: accentText was #FF3D9A (4.01:1 on ink-3, a hovered star); the one nudge to Pink, everything else byte-for-byte (proposal 29)
     hair: "rgba(255,240,246,.16)", hairHi: "rgba(255,240,246,.42)",
     glow: "radial-gradient(120% 92% at 50% 42%, rgba(255,61,154,.26), rgba(255,143,190,.12) 46%, rgba(255,61,154,0) 74%)",
     strikeShadow: "0 0 12px rgba(255,61,154,.60)",
@@ -304,6 +304,7 @@ function elevated(t) {
   const c = t.colors, dir = t.base === "dark" ? 1 : -1;
   const fix = hex => { const o = hexToOklch(hex); return ensure(o.L, o.C, o.h, c.ink3, 4.5, dir); };
   c.dim2 = fix(c.dim); c.muted2 = fix(c.muted);
+  c.done2 = fix(c.done); // 1.9: a done line while it is lifted (dragged) sits on --ink-3 too (proposal 29)
 }
 function hairSolidFor(ink, text) {
   // a solid line colour that clears 3:1 against the background (checkbox borders, focus rings' neighbours)
@@ -398,7 +399,7 @@ export function derive({ accent, base = "dark", pair, name = "", id, pack }) {
     c.strikeShadow = "none";
   }
   c.done = c.dim;
-  c.dim2 = c.dim; c.muted2 = c.muted; // already derived against ink3
+  c.dim2 = c.dim; c.muted2 = c.muted; c.done2 = c.done; // already derived against ink3 (1.9: done too)
   c.hair = rgba(c.text, dark ? .10 : .16);
   c.hairHi = rgba(c.text, dark ? .30 : .42);
   c.hairSolid = hairSolidFor(c.ink, c.text);
@@ -590,7 +591,7 @@ export function cssTextBetween(a, b, t) {
 
 export function cssText(t) {
   const c = t.colors, p = pairOf(t.pair) || PAIRS.lato;
-  return `:root{--ink:${c.ink};--ink-2:${c.ink2};--ink-3:${c.ink3};--text:${c.text};--muted:${c.muted};--dim:${c.dim};--done:${c.done};--muted-2:${c.muted2};--dim-2:${c.dim2};` +
+  return `:root{--ink:${c.ink};--ink-2:${c.ink2};--ink-3:${c.ink3};--text:${c.text};--muted:${c.muted};--dim:${c.dim};--done:${c.done};--muted-2:${c.muted2};--dim-2:${c.dim2};--done-2:${c.done2};` +
     `--accent:${c.accent};--accent-hi:${c.accentHi};--accent-deep:${c.accentDeep};--accent-text:${c.accentText};--danger:${c.danger};` +
     `--hair:${c.hair};--hair-hi:${c.hairHi};--hair-solid:${c.hairSolid};--glow:${c.glow};--strike-shadow:${c.strikeShadow};` +
     `--box-done-bg:${c.boxDoneBg};--bar-bg:${c.barBg};--strike-bg:${c.strikeBg};--strike-size:${c.strikeSize};--strike-anim:${c.strikeAnim};--finale-style:${c.finaleStyle};` +
@@ -603,7 +604,7 @@ export function report(t) {
   return {
     text: contrast(c.text, c.ink), muted: contrast(c.muted, c.ink), dim: contrast(c.dim, c.ink),
     accentText: contrast(c.accentText, c.ink), accent: contrast(c.accent, c.ink), hairSolid: contrast(c.hairSolid, c.ink), danger: contrast(c.danger, c.ink),
-    muted2: contrast(c.muted2, c.ink3), dim2: contrast(c.dim2, c.ink3), accentText2: contrast(c.accentText, c.ink3)
+    muted2: contrast(c.muted2, c.ink3), dim2: contrast(c.dim2, c.ink3), done2: contrast(c.done2, c.ink3), accentText2: contrast(c.accentText, c.ink3)
   };
 }
 

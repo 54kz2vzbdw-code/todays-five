@@ -3,7 +3,7 @@
 
 /* ---------------- panels (dialogs) ---------------- */
 /* text on the elevated surfaces (--ink-2 / --ink-3) uses the greys guaranteed to clear 4.5:1 there */
-dialog.panel{--dim:var(--dim-2);--muted:var(--muted-2)}
+dialog.panel{--dim:var(--dim-2);--muted:var(--muted-2);--done:var(--done-2)} /* 1.9: --done-2 joins the pair (proposal 29) */
 dialog.panel{
   color:var(--text);background:var(--ink-2);border:1px solid var(--hair-hi);border-radius:18px;
   padding:0;width:min(92vw,30rem);max-height:min(88vh,52rem);
@@ -285,3 +285,9 @@ dialog.panel.pop .menu .lb .sub{font-size:11px}
 .save-lead .steps li::marker{color:var(--dim);font-weight:700}
 .glyph{width:1.1em;height:1.1em;vertical-align:-.18em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:inline-block}
 .glyph circle{fill:currentColor;stroke:none}
+
+/* 1.9: in phone landscape the ⋯ menu is one glance again — two columns of 44 px rows, no scroll (proposal 31) */
+@media (hover:none) and (max-height:420px){
+  #p-menu .menu{display:grid;grid-template-columns:1fr 1fr;gap:2px .4rem}
+  #p-menu .menu button,#p-menu .menu a.item{min-height:44px}
+}

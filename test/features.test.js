@@ -287,8 +287,8 @@ test("the version is one number in three places, the build in four, and there ar
   assert.deepEqual(wn.versions.map(v => v.version), ["1.8", "1.7", "1.5", "1.4", "1.3", "1.2", "1.1", "1.0"], "the public history: 1.0 and later (4.0.0 became 1.0; the pre-releases live in CHANGELOG.md)");
   for (const v of wn.versions) { assert.match(v.version, /^\d+\.\d+(\.\d+)?$/); assert.ok(!("date" in v), v.version + ": no date field"); assert.ok(typeof v.headline === "string" && v.items.length >= 1 && v.items.length <= 3, v.version + ": a headline and one to three items"); }
   assert.ok(!/\b20\d\d-\d\d-\d\d\b/.test(fs.readFileSync(new URL("../about.html", import.meta.url), "utf8")), "no dates on the About page");
-  for (const f of ["packs.js", "packs-secret.js", "secretfx.js", "panels.js", "panels.css", "exporter.js", "version.js", "whatsnew.json"]) assert.ok(sw.includes(`"./${f}"`), "precached: " + f);
-  for (const f of ["packs-secret.js", "secretfx.js"]) assert.ok(panels.includes(`"./${f}"`), "and refreshed before the guard's one reload: " + f);
+  for (const f of ["packs.js", "packs-secret.js", "secretfx.js", "secretfx.css", "panels.js", "panels.css", "exporter.js", "version.js", "whatsnew.json"]) assert.ok(sw.includes(`"./${f}"`), "precached: " + f);
+  for (const f of ["packs-secret.js", "secretfx.js", "secretfx.css"]) assert.ok(panels.includes(`"./${f}"`), "and refreshed before the guard's one reload: " + f);
 });
 
 test("1.8: the Secret pair is nowhere anyone reading the app can find it — not About, not How it works, not the changelog beyond the wink", () => {

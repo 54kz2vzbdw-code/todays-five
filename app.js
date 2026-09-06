@@ -194,7 +194,7 @@ function paintField() {
   if (field) { field.stop(); field = null; }
   if (!want) return;
   import("./secretfx.js?v=" + BUILD)
-    .then(m => { if (tok === fieldTok) field = m.createField($("#field"), { palette: theme.confetti, reduced: () => RM.matches }); })
+    .then(m => { if (tok === fieldTok) field = m.createField($("#field"), { palette: theme.confetti, reduced: () => RM.matches, build: BUILD }); })
     .catch(() => { if (tok === fieldTok) fieldKind = ""; });
 }
 

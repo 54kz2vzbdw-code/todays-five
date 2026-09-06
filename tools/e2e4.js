@@ -1159,6 +1159,9 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.deepEqual(await t.page.$$eval("#p-theme h3:not([hidden])", els => els.map(e => e.textContent)), ["Made for day", "Made for night", "Secret", "Your own"], "the group sits with the others");
     assert.deepEqual(await t.page.$$eval("#sw-secret .swatch .nm", els => els.map(e => e.textContent)), ["Superpink", "Birthday"]);
     assert.deepEqual(await t.page.$$eval("#sw-secret .swatch .sm", els => els.map(e => e.textContent)), ["Night · pairs with Birthday", "Day · pairs with Superpink"], "tagged as partners of each other");
+    // 1.7 made the picker a sheet on touch; the group is inside it, above Yours and below the two open groups
+    if (touch) assert.ok(await t.page.$eval("#p-theme", d => d.classList.contains("sheet") && !!d.querySelector(".grip") && d.querySelector("#sw-secret") !== null), "the sheet holds the group");
+    assert.ok(await t.page.evaluate(() => { const b = document.querySelector("#sw-secret .swatch"); return b.parentElement.id === "sw-secret" && b.tagName === "BUTTON"; }), "its swatches are the bare buttons, not the wrapper a saved theme's × needs");
     assert.ok((await t.s()).stats.burst > 0, "a sparkle went up");
     // it persists, and Settings → Sound gains the pair's own two
     await t.esc(); await t.reload(); await t.page.waitForSelector("#list .row"); await wait(600);
@@ -1242,11 +1245,11 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.ok(/^tf-d\d$/.test(props[0]) && props[1] === "tf-twinkle", "the two are running: " + props);
     const drifts = await t.page.$$eval("#field i", els => Array.from(new Set(els.map(e => getComputedStyle(e).animationName))).sort());
     assert.ok(drifts.length >= 4 && drifts.every(n => /^tf-d\d$/.test(n)), "no two twinkles move alike: " + drifts);
-    const frames = await t.page.evaluate(async () => {
-      const css = await (await fetch("styles.css")).text();
-      return [...css.matchAll(/@keyframes (tf-[a-z0-9]+)\{([^}]*\}[^}]*)\}/g)].filter(m => /var\(/.test(m[2])).map(m => m[1]);
-    });
+    const css = await t.page.evaluate(async () => ({ field: await (await fetch("secretfx.css")).text(), shell: await (await fetch("styles.css")).text() }));
+    const frames = [...css.field.matchAll(/@keyframes (tf-[a-z0-9]+)\{([^}]*\}[^}]*)\}/g)].filter(m => /var\(/.test(m[2])).map(m => m[1]);
     assert.deepEqual(frames, [], "a keyframe that reads a custom property cannot be composited: " + frames);
+    assert.ok(!/#field\s*[{,]|#field\s+i/.test(css.shell), "and no rule for it is in the render-blocking stylesheet every device waits for");
+    assert.ok(await t.page.evaluate(() => !!document.querySelector('link[data-secretfx][href^="secretfx.css?v="]')), "the field's stylesheet came with the module, by build");
     // wait for the confetti of the unlock and the theme's crossfade to finish first — on a loaded machine their
     // frames are throttled, so they take longer in wall-clock than they do in frames
     let settled = 0;
@@ -1304,7 +1307,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.ok(!/Superpink|Birthday|Secret/i.test(help), "How it works says nothing about it");
     assert.ok(/twelve sound packs/.test(help), "and still counts twelve packs");
     await t.esc(); await wait(300);
-    const asked = await t.page.evaluate(() => performance.getEntriesByType("resource").map(r => r.name).filter(n => /secretfx|packs-secret|fredoka|baloo/.test(n)));
+    const asked = await t.page.evaluate(() => performance.getEntriesByType("resource").map(r => r.name).filter(n => /secretfx|packs-secret|fredoka|baloo/.test(n)));  // the two modules, the field's stylesheet and the two faces
     assert.deepEqual(asked, [], "nothing of the pair is fetched: " + asked);
     assert.equal(t.thirdParty.length, 0, "third party: " + t.thirdParty);
     assert.equal(t.errors.length, 0, t.errors.join("; "));

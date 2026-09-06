@@ -1069,15 +1069,15 @@ Checklist §7 of COMPATIBILITY.md, on the working copy served locally (the audit
 
 Build 87 went live at 00:36 on 2026-09-06 (Pages served the worker on the third poll, 50 s after the push; `tf-v1.7-b87`). A "1.5 device" (a Chrome profile that made its list on the live site at build 76 the evening before: three lines, one crossed off) opened the URL fresh: the first navigation ran 1.7; the same list, synced, mine, the what's-new toast the only new thing ("New in 1.7: Sharper all over."), no other sheet or question, and the test hook handing out no secret. The list showed two lines and no check: the day had rolled over at midnight between the staging and the check, and the crossed-off line had gone to History as the rollover does (rev 2 was that write). On the live code: the star's tooltip and the section's, a line's name read as its text, Lists starting at its title with "Remove this list from this device" and the key hints hidden from the reader, the Share sheet's warning under "Let someone edit" and the two Copy buttons named for their links, the toast gone on the second open, the delete confirm in danger rather than orange; Delete everywhere left the welcome. A fresh device: the welcome one sentence over three lines, the three check-offs made sound and the finale announced "3 of 3 done. That's the list.", Keep and the save sheet, the kept list synced at rev 1 with the server row an envelope (v, z, ct, iv, alg — 501 bytes, nothing readable), About "Version 1.7 (build 87)" with the changelog in order and the crumb "‹ Back to the list"; Delete everywhere left the welcome. No page errors on either device. The script (`live17.mjs`) and both screenshots stay in the session's scratch; nothing was left on the server.
 
-# Today's Five 1.6 — plan
+# Today's Five 1.8 — plan
 
-A secret pair of themes: undocumented, unlocked by a word, shareable by that word, built to the same bar as every other kit. Nothing else was added. Nothing on the server changes; links, keys, the document shape and the three RPCs are untouched, and the unlock never leaves the device it was given to. The calls are in DECISIONS.md under "1.6 decisions".
+A secret pair of themes: undocumented, unlocked by a word, shareable by that word, built to the same bar as every other kit. Nothing else was added. Nothing on the server changes; links, keys, the document shape and the three RPCs are untouched, and the unlock never leaves the device it was given to. The calls are in DECISIONS.md under "1.8 decisions".
 
-This round started from the 1.5 branch, not from `main`: 1.5 was finished but unmerged then, and the 1.6 brief takes its twelve sound packs as given. 1.5 went live on its own while this was being built (build 76), so 1.6 rebased onto it and ships alone: `main` goes 1.5 → 1.6. What a person with a saved list meets is one new thing—the what's-new toast, carrying 1.6's wink.
+The pair was built as 1.6 against 1.5, finished and stamped at build 79, and never merged; `main` went on through 1.7, the audit round, which changed the theme picker (a sheet on the phone), a saved theme's delete, the curated kits' contrast on the elevated surface, the panel machinery and thirty strings. This round merges `main` into the pair's branch, keeps the audit's fix wherever the two touched the same thing, re-applies the pair on top and ships it as 1.8. There is no 1.6 in the changelog, because there was no 1.6. What a person with a saved list meets is one new thing—the what's-new toast, carrying the wink.
 
 ## What changed, by surface
 
-| surface | 1.5 | 1.6 |
+| surface | 1.7 | 1.8 |
 |---|---|---|
 | The theme picker | Made for day · Made for night · Yours | the same, plus **Secret** between Yours and the groups above it — on a device that has been given the key, and only then, with a quiet **Forget the secret** under it |
 | Import a code | parses a theme code, or says it doesn't | the same, and it takes the key: the group appears, a sparkle goes up in the pair's own colours, and its own chime plays |
@@ -1088,15 +1088,15 @@ This round started from the 1.5 branch, not from `main`: 1.5 was finished but un
 | The strike | a colour, or Pink's shimmer | the same, and Superpink's pink → gold → white shimmer and Birthday's candy stripe |
 | The progress bar | the accent's three tones | the same by default (a token now), and each Secret kit names its own |
 | The finale | confetti and "That's the list." | the same, and a full-screen bloom under "Everything crossed off but you." or a cake with candles under "Make a wish. The list can wait." |
-| What's new | 1.5's entry | 1.6: "A little something for someone in particular." and one line |
+| What's new | 1.7's entry | 1.8: "A little something for someone in particular." and one line |
 
 ## Structure of the change
 
-- `theme.js`: two kits in `RAW` with `secret: true`, so `finalize()` derives, contrast-checks and codes them like every other kit while `CURATED_DAY`/`CURATED_NIGHT` leave them out; `SECRET`, `SECRET_IDS`, `isSecretTheme`, `isSecretCode`; `isSecretKey` (two FNV-1a passes, so the word is not a string in the file); two font pairs (`fredoka`, `baloo`), not in `CUSTOM_PAIRS`; a `barBg` token with the old bar as its default. 583 → 651 lines.
-- `packs-secret.js` (new, 84 lines): Sparkle and Party, built from `packs.js`'s `HELPERS` passed in. `sound.js` fetches it only when the kit that is on asks for one of them — `warm(engine)` from `applyThemeCode`, `ready(engine)` for the unlock chime — and `state()` reports whether it arrived.
-- `secretfx.js` (new, 156 lines): `createField(host, …)` builds the twinkles and keeps them in step with `prefers-reduced-motion` and the tab's visibility; `finale(kind, fx, …)` plays the bloom or the cake.
+- `theme.js`: two kits in `RAW` with `secret: true`, so `finalize()` derives, contrast-checks (against `--ink-3` since 1.7) and codes them like every other kit while `CURATED_DAY`/`CURATED_NIGHT` leave them out; `SECRET`, `SECRET_IDS`, `isSecretTheme`, `isSecretCode`; `isSecretKey` (two FNV-1a passes, so the word is not a string in the file); two font pairs (`fredoka`, `baloo`), not in `CUSTOM_PAIRS`; a `barBg` token with the old bar as its default. 586 → 644 lines.
+- `packs-secret.js` (new, 80 lines): Sparkle and Party, built from `packs.js`'s `HELPERS` passed in. `sound.js` fetches it only when the kit that is on asks for one of them — `warm(engine)` from `applyThemeCode`, `ready(engine)` for the unlock chime — and `state()` reports whether it arrived.
+- `secretfx.js` (new, 177 lines): `createField(host, …)` builds the twinkles and keeps them in step with `prefers-reduced-motion` and the tab's visibility; `finale(kind, fx, …)` plays the bloom or the cake.
 - `fx.js`: `scene(draw)` — a drawing in the same frame loop on the same canvas, dropped when it returns false, suppressed under reduced motion like everything else there; the sparkle and sprinkle shapes; `shapes` may be a list; `burst` takes a palette-and-shapes override for one throw.
-- `app.js`: `finaleFx()` (the volley, or the kit's own finale); `paintField()`; the finale line per kit; `unlockSecret()` and `forgetSecret()` on the api; `secret` and `field` on the test hook.
+- `app.js`: `finaleFx()` (the volley, or the kit's own finale, inside 1.7's reduced-motion guard); `paintField()`; the finale line per kit; `unlockSecret()` and `forgetSecret()` on the api; `secret` and `field` on the test hook, beside 1.7's redaction of the list's own.
 - `panels.js`: the Secret group and its Forget row; the key in Import a code; the two engines in Settings → Sound once unlocked; the two new modules in `SHELL_FILES`.
 - `index.html`: `#field` (hidden), the group's heading, its swatch row and its Forget chip. `styles.css`: the field's nine rules, the candy keyframe, `--bar-bg` with the old bar as the fallback the first frame paints. `sw.js`: the two modules in the shell precache.
 - Two font files: `fonts/fredoka-500-700.woff2` (30 KB) and `fonts/baloo-2-500-800.woff2` (33 KB), latin subsets, OFL, self-hosted like the rest.
@@ -1108,20 +1108,20 @@ The before set is 1.5's code, the after set this branch: 70 shots across 1440×9
 
 | surface | desktop | phone |
 |---|---|---|
-| the group | <img src="shots/1.6/after/desktop-theme-secret.png" width="300" alt="The theme picker's Secret group, desktop"> | <img src="shots/1.6/after/phone-theme-secret.png" width="300" alt="The theme picker's Secret group, phone"> |
-| Superpink | <img src="shots/1.6/after/desktop-superpink.png" width="300" alt="Today under Superpink, desktop"> | <img src="shots/1.6/after/phone-superpink.png" width="300" alt="Today under Superpink, phone"> |
-| Birthday | <img src="shots/1.6/after/desktop-birthday.png" width="300" alt="Today under Birthday, desktop"> | <img src="shots/1.6/after/phone-birthday.png" width="300" alt="Today under Birthday, phone"> |
-| Superpink's finale, mid-bloom | <img src="shots/1.6/after/desktop-finale-superpink.png" width="300" alt="Superpink's finale mid-bloom, desktop"> | <img src="shots/1.6/after/phone-finale-superpink.png" width="300" alt="Superpink's finale mid-bloom, phone"> |
-| Birthday's finale, candles lit | <img src="shots/1.6/after/desktop-finale-birthday.png" width="300" alt="Birthday's cake with its candles lit, desktop"> | <img src="shots/1.6/after/phone-finale-birthday.png" width="300" alt="Birthday's cake with its candles lit, phone"> |
+| the group | <img src="shots/1.8/after/desktop-theme-secret.png" width="300" alt="The theme picker's Secret group, desktop"> | <img src="shots/1.8/after/phone-theme-secret.png" width="300" alt="The theme picker's Secret group, phone"> |
+| Superpink | <img src="shots/1.8/after/desktop-superpink.png" width="300" alt="Today under Superpink, desktop"> | <img src="shots/1.8/after/phone-superpink.png" width="300" alt="Today under Superpink, phone"> |
+| Birthday | <img src="shots/1.8/after/desktop-birthday.png" width="300" alt="Today under Birthday, desktop"> | <img src="shots/1.8/after/phone-birthday.png" width="300" alt="Today under Birthday, phone"> |
+| Superpink's finale, mid-bloom | <img src="shots/1.8/after/desktop-finale-superpink.png" width="300" alt="Superpink's finale mid-bloom, desktop"> | <img src="shots/1.8/after/phone-finale-superpink.png" width="300" alt="Superpink's finale mid-bloom, phone"> |
+| Birthday's finale, candles lit | <img src="shots/1.8/after/desktop-finale-birthday.png" width="300" alt="Birthday's cake with its candles lit, desktop"> | <img src="shots/1.8/after/phone-finale-birthday.png" width="300" alt="Birthday's cake with its candles lit, phone"> |
 
 The surfaces that did not change, before and after, for the record:
 
 | surface | desktop before | desktop after | phone before | phone after |
 |---|---|---|---|---|
-| today | <img src="shots/1.6/before/desktop-today.png" width="240" alt="Today, desktop, before"> | <img src="shots/1.6/after/desktop-today.png" width="240" alt="Today, desktop, after"> | <img src="shots/1.6/before/phone-today.png" width="240" alt="Today, phone, before"> | <img src="shots/1.6/after/phone-today.png" width="240" alt="Today, phone, after"> |
-| theme | <img src="shots/1.6/before/desktop-theme.png" width="240" alt="The theme picker, desktop, before"> | <img src="shots/1.6/after/desktop-theme.png" width="240" alt="The theme picker, desktop, after"> | <img src="shots/1.6/before/phone-theme.png" width="240" alt="The theme picker, phone, before"> | <img src="shots/1.6/after/phone-theme.png" width="240" alt="The theme picker, phone, after"> |
-| settings-sound | <img src="shots/1.6/before/desktop-settings-sound.png" width="240" alt="Settings, Sound, desktop, before"> | <img src="shots/1.6/after/desktop-settings-sound.png" width="240" alt="Settings, Sound, desktop, after"> | <img src="shots/1.6/before/phone-settings-sound.png" width="240" alt="Settings, Sound, phone, before"> | <img src="shots/1.6/after/phone-settings-sound.png" width="240" alt="Settings, Sound, phone, after"> |
-| about | <img src="shots/1.6/before/desktop-about.png" width="240" alt="About, desktop, before"> | <img src="shots/1.6/after/desktop-about.png" width="240" alt="About, desktop, after"> | <img src="shots/1.6/before/phone-about.png" width="240" alt="About, phone, before"> | <img src="shots/1.6/after/phone-about.png" width="240" alt="About, phone, after"> |
+| today | <img src="shots/1.8/before/desktop-today.png" width="240" alt="Today, desktop, before"> | <img src="shots/1.8/after/desktop-today.png" width="240" alt="Today, desktop, after"> | <img src="shots/1.8/before/phone-today.png" width="240" alt="Today, phone, before"> | <img src="shots/1.8/after/phone-today.png" width="240" alt="Today, phone, after"> |
+| theme | <img src="shots/1.8/before/desktop-theme.png" width="240" alt="The theme picker, desktop, before"> | <img src="shots/1.8/after/desktop-theme.png" width="240" alt="The theme picker, desktop, after"> | <img src="shots/1.8/before/phone-theme.png" width="240" alt="The theme picker, phone, before"> | <img src="shots/1.8/after/phone-theme.png" width="240" alt="The theme picker, phone, after"> |
+| settings-sound | <img src="shots/1.8/before/desktop-settings-sound.png" width="240" alt="Settings, Sound, desktop, before"> | <img src="shots/1.8/after/desktop-settings-sound.png" width="240" alt="Settings, Sound, desktop, after"> | <img src="shots/1.8/before/phone-settings-sound.png" width="240" alt="Settings, Sound, phone, before"> | <img src="shots/1.8/after/phone-settings-sound.png" width="240" alt="Settings, Sound, phone, after"> |
+| about | <img src="shots/1.8/before/desktop-about.png" width="240" alt="About, desktop, before"> | <img src="shots/1.8/after/desktop-about.png" width="240" alt="About, desktop, after"> | <img src="shots/1.8/before/phone-about.png" width="240" alt="About, phone, before"> | <img src="shots/1.8/after/phone-about.png" width="240" alt="About, phone, after"> |
 
 ## The two palettes, measured
 
@@ -1139,7 +1139,7 @@ Both go through `finalize()` with every other kit: text at 7:1 against the backg
 
 ## The sounds, measured
 
-`node tools/sounds.js shots/1.6/sounds` renders all fourteen over 4.6 s (check-offs at 0, 0.45 and 0.9 s, an uncheck at 1.5 s, the finale at 2.1 s) and draws the loudness. The twelve are 1.5's; the two are new:
+`node tools/sounds.js shots/1.8/sounds` renders all fourteen over 4.6 s (check-offs at 0, 0.45 and 0.9 s, an uncheck at 1.5 s, the finale at 2.1 s) and draws the loudness. The twelve are 1.5's; the two are new:
 
 | pack | check peak / RMS | uncheck peak / RMS | finale peak / RMS | finale length |
 |---|---|---|---|---|
@@ -1160,8 +1160,8 @@ Both go through `finalize()` with every other kit: text at 7:1 against the backg
 
 | pack | the loudness over 4.6 s |
 |---|---|
-| sparkle | <img src="shots/1.6/sounds/sparkle.png" width="700" alt="sparkle: three glissandi up, a softer one down, a cascade climbing to a shimmer"> |
-| party | <img src="shots/1.6/sounds/party.png" width="700" alt="party: a pop and a ta-da per check, a deflating pop, the birthday phrase over sprinkles"> |
+| sparkle | <img src="shots/1.8/sounds/sparkle.png" width="700" alt="sparkle: three glissandi up, a softer one down, a cascade climbing to a shimmer"> |
+| party | <img src="shots/1.8/sounds/party.png" width="700" alt="party: a pop and a ta-da per check, a deflating pop, the birthday phrase over sprinkles"> |
 
 ## The sparkle field, measured
 

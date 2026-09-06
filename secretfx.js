@@ -5,17 +5,28 @@
 //
 // The field is CSS, not a frame loop: twenty-six two-element twinkles animating opacity, scale and a translate, and
 // nothing else, so the compositor owns them and a list left on screen all day costs the main thread nothing (there
-// is a trap in that — see the note above #field in styles.css). Its rules ship with the stylesheet rather than
-// being built here: a <style> element made at runtime is inline style, which this app's CSP refuses.
+// is a trap in that — see the note at the top of secretfx.css). Its rules are a stylesheet of their own, linked from
+// here by the page's build the way panels.css is, so the render-blocking one every device waits for does not carry
+// them; they cannot be built at runtime either, because a <style> element made then is inline style and the CSP
+// refuses it.
 
 const N = 26, DRIFTS = 6;
+
+/** The field's own stylesheet, asked for with the page's build (COMPATIBILITY.md §6) and only once. */
+function linkCss(build) {
+  const href = "secretfx.css" + (build ? "?v=" + build : "");
+  if (document.querySelector('link[data-secretfx]')) return;
+  const l = document.createElement("link"); l.rel = "stylesheet"; l.href = href; l.dataset.secretfx = "1";
+  document.head.appendChild(l);
+}
 
 /** A twinkling background layer inside `host`. `palette` is the kit's confetti list; `reduced` a getter.
     Every per-twinkle value is written straight onto the element: nothing an animation reads comes from a custom
     property, because a keyframe that has to resolve one is recalculated on the main thread every frame.
     Returns { stop } — it removes the twinkles and its listeners and leaves the host empty and hidden. */
-export function createField(host, { palette = ["#FFFFFF"], reduced = () => false } = {}) {
+export function createField(host, { palette = ["#FFFFFF"], reduced = () => false, build = "" } = {}) {
   if (!host) return { stop() {} };
+  linkCss(build);
   const rnd = (a, b) => a + Math.random() * (b - a);
   const frag = document.createDocumentFragment();
   for (let i = 0; i < N; i++) {

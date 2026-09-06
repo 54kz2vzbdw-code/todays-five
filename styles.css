@@ -46,28 +46,7 @@ button{font:inherit;color:inherit}
 #glow{position:fixed;inset:0;pointer-events:none;z-index:0;background:var(--glow);opacity:.62;transition:opacity .85s ease}
 #glow.flare{opacity:1;transition:opacity .22s ease}
 #fx{position:fixed;inset:0;pointer-events:none;z-index:60}
-/* a kit that carries a background layer (theme.js, `field`) fills #field from secretfx.js: twenty-six twinkles, two
-   elements each — the outer drifts, the inner fades and swells. Every animated value here is a literal, and every
-   animated property is transform or opacity, because a keyframe that reads a custom property cannot be composited:
-   Chrome resolves it on the main thread every frame, which cost 7% of a core in the first cut of this (the recalc
-   showed up in Performance.RecalcStyleDuration). Six drift paths, handed out at random with a random duration and a
-   negative delay, are enough that no two twinkles move alike. The rules live here rather than in the module because
-   a <style> element built at runtime is inline style, which the CSP refuses; #field stays hidden until the module
-   fills it, so a device that never unlocked matches nine selectors it never sees. */
-#field{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden;contain:layout paint style}
-#field i{position:absolute;display:block;will-change:transform}          /* left/top, opacity and the animation are set per twinkle */
-#field i>b{display:block;border-radius:50%;will-change:transform,opacity}
-@keyframes tf-twinkle{from{opacity:.09;transform:scale(.55)}to{opacity:1;transform:scale(1)}}
-@keyframes tf-d0{to{transform:translate3d(6.5vw,4.2vh,0)}}
-@keyframes tf-d1{to{transform:translate3d(-5.2vw,3.1vh,0)}}
-@keyframes tf-d2{to{transform:translate3d(4.1vw,-4.4vh,0)}}
-@keyframes tf-d3{to{transform:translate3d(-6.1vw,-2.8vh,0)}}
-@keyframes tf-d4{to{transform:translate3d(2.9vw,5.3vh,0)}}
-@keyframes tf-d5{to{transform:translate3d(-3.7vw,-5.1vh,0)}}
-#field.still i,#field.still i>b{animation:none !important}                /* prefers-reduced-motion: the field is there, and still */
-#field.still i>b{opacity:.7 !important}
-#field.off i,#field.off i>b{animation-play-state:paused !important}       /* a hidden tab */
-
+/* a kit may carry a background layer in #field; its rules come with secretfx.js (secretfx.css), not with this file */
 /* ---------------- shell ---------------- */
 #shell{
   position:relative;z-index:2;height:100vh;height:100dvh;
@@ -226,10 +205,8 @@ button{font:inherit;color:inherit}
   transform:scaleX(0);
   transition:transform .38s cubic-bezier(.16,1,.3,1) var(--d,0s);
 }
-/* a kit whose strike moves (Pink, Blush, Sunset, and 1.6's two) animates background-position, which the compositor
-   cannot take: every frame is a style recalc and a repaint of a gradient three times the row's width. So it runs on
-   struck rows only — a row that is not struck holds its overlay at scaleX(0), where the animation was invisible and
-   cost the same. A list left on screen with things still to do now costs what Dark costs. */
+/* a strike that moves animates background-position, which the compositor cannot take, so it runs on struck rows
+   only: an overlay at scaleX(0) was invisible and cost the same (DECISIONS.md, "The sparkle field") */
 .row.done .ink{transform:scaleX(1);animation:var(--strike-anim)}
 .row.nofx .ink,.row.nofx .ghost{transition:none}
 @keyframes shimmer{to{background-position:-300% 0}}
@@ -408,7 +385,7 @@ dialog.panel #toast{z-index:60} /* 1.7: a toast raised while a sheet is open mov
 /* the track is transparent (an empty 3 px of --ink-3 read as a hairline under the iPhone's home indicator);
    only the fill draws, and it sits above the safe-area inset */
 #bar{position:fixed;left:0;right:0;bottom:env(safe-area-inset-bottom,0px);height:3px;background:transparent;z-index:40;pointer-events:none}
-#fill{height:100%;width:0%;background:var(--bar-bg,linear-gradient(90deg,var(--accent-deep),var(--accent) 55%,var(--accent-hi)));transition:width .5s cubic-bezier(.22,1,.36,1),box-shadow .4s ease} /* the fallback is the token's own default (theme.js): it paints the first frame, before theme.js has run */
+#fill{height:100%;width:0%;background:var(--bar-bg,linear-gradient(90deg,var(--accent-deep),var(--accent) 55%,var(--accent-hi)));transition:width .5s cubic-bezier(.22,1,.36,1),box-shadow .4s ease} /* the fallback is the token's own default (theme.js), for the first frame */
 #fill.full{box-shadow:0 0 24px 2px var(--accent)}
 
 /* ---------------- welcome ---------------- */

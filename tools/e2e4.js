@@ -491,6 +491,43 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  await test(label + ": 1.9: the idle fade rests at 0.2 (26), the rail wraps whole at 200 % text (27), the Undo chip names its key (28)", async () => {
+    const t = await fresh(opts);
+    if (!opts.hasTouch) { // 26: after four seconds the controls step back to 0.2, the count stays, a move brings them back
+      await wait(5800);
+      assert.ok(await t.page.$eval("body", b => b.classList.contains("idle")), "idle after four seconds still");
+      const op = await t.page.$eval(".rail-r .tools", e => parseFloat(getComputedStyle(e).opacity)), foot = await t.page.$eval("#foot", e => parseFloat(getComputedStyle(e).opacity));
+      assert.ok(Math.abs(op - 0.2) < 0.03 && Math.abs(foot - 0.2) < 0.03, "the controls rest at 0.2, not 0: " + op + " " + foot);
+      assert.equal(await t.page.$eval("#count", e => getComputedStyle(e).opacity), "1", "the count stays");
+      await t.page.mouse.move(300, 300); await wait(400);
+      assert.ok(!(await t.page.$eval("body", b => b.classList.contains("idle"))), "a move wakes it");
+    }
+    // 27: at the phone's own width the tabs share the line with the count (nothing moved); at 200 % text they drop to their own line, whole
+    { const m = await t.page.evaluate(() => { const b = s => document.querySelector(s).getBoundingClientRect(); return { sameLine: b(".seg").top < b(".status").bottom, whole: document.querySelector(".seg").scrollWidth <= document.querySelector(".seg").clientWidth + 1 }; }); assert.ok(m.sameLine && m.whole, "one line, whole, at " + opts.viewport.width + ": " + JSON.stringify(m)); }
+    if (opts.hasTouch) {
+      const z = await fresh({ ...opts, viewport: { width: 195, height: 422 }, deviceScaleFactor: 4 });
+      const m = await z.page.evaluate(() => { const b = s => document.querySelector(s).getBoundingClientRect(); const seg = document.querySelector(".seg"); return { segBelow: b(".seg").top >= b(".status").bottom - 1, whole: seg.scrollWidth <= seg.clientWidth + 1, docW: document.documentElement.scrollWidth, tabs: [...seg.querySelectorAll("button")].every(x => x.scrollWidth <= x.clientWidth + 1) }; });
+      assert.ok(m.segBelow && m.whole && m.tabs, "the tabs drop to their own line and read whole: " + JSON.stringify(m)); assert.equal(m.docW, 195, "no sideways scroll");
+      assert.equal(z.errors.length, 0, z.errors.join("; ")); await z.close();
+      // the audit's own case: the phone at its width with the root text at 200 % (the margins grow, the rail narrows)
+      await t.page.evaluate(() => { document.documentElement.style.fontSize = "200%"; }); await wait(300);
+      const m2 = await t.page.evaluate(() => { const b = s => document.querySelector(s).getBoundingClientRect(); const seg = document.querySelector(".seg"); return { railW: Math.round(b(".rail").width), segBelow: b(".seg").top >= b(".status").bottom - 1, whole: seg.scrollWidth <= seg.clientWidth + 1, docW: document.documentElement.scrollWidth, tabs: [...seg.querySelectorAll("button")].every(x => x.scrollWidth <= x.clientWidth + 1) }; });
+      assert.ok(m2.railW < 341 && m2.whole && m2.tabs, "at 200 % root text the tabs read whole: " + JSON.stringify(m2)); assert.equal(m2.docW, opts.viewport.width, "no sideways scroll");
+      await t.page.evaluate(() => { document.documentElement.style.fontSize = ""; }); await wait(300);
+    }
+    // 28: an Undo on the toast names its key — printed where there is a keyboard, aria-keyshortcuts everywhere, the reader hears "Undo" alone
+    await t.press("#list .row:first-child .check"); await wait(400);
+    assert.ok(!(await t.page.$eval("#toast-undo", e => e.hidden)), "an Undo on the toast");
+    const ks = await t.page.$eval("#toast-undo", e => e.getAttribute("aria-keyshortcuts")); assert.ok(/^(Meta|Control)\+Z$/.test(ks), "aria-keyshortcuts names the key: " + ks);
+    assert.equal(await t.page.$eval("#toast-undo-key", e => getComputedStyle(e).display !== "none" && !e.hidden), !opts.hasTouch, "the printed hint only where there is a key to press");
+    if (!opts.hasTouch) assert.ok(/⌘Z|Ctrl\+Z/.test(await t.page.textContent("#toast-undo-key")), "⌘Z or Ctrl+Z");
+    { const snap = await t.page.locator("#toast-undo").ariaSnapshot(); assert.ok(/button "Undo"$/m.test(snap.trim()), "the reader hears Undo alone: " + snap); }
+    assert.equal(await t.page.textContent("#count b"), "1");
+    await t.page.keyboard.press(process.platform === "darwin" ? "Meta+z" : "Control+z"); await wait(500);
+    assert.equal(await t.page.textContent("#count b"), "0", "and the key undoes");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
+  });
+
   await test(label + ": the three just-in-time hints each appear once and never again (the star, drag, the menu)", async () => {
     const t = await fresh(opts);
     assert.equal(JSON.stringify((await t.s()).hints), "{}", "a fresh device has seen none");

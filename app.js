@@ -21,6 +21,8 @@ const NARROW = matchMedia("(max-width: 680px)");
 const DARK_MQ = matchMedia("(prefers-color-scheme: dark)");
 // iPadOS reports itself as a Mac; a real touch screen tells it apart (headless/desktop Chrome can expose ontouchend without one)
 const IOS = /iP(hone|ad|od)/.test(navigator.platform) || (navigator.userAgent.includes("Mac") && navigator.maxTouchPoints > 0);
+const MAC_KEYS = /Mac|iPhone|iPad/.test(navigator.platform); // 1.9: which modifier the Undo chip names (proposal 28)
+const UNDO_HINT = MAC_KEYS ? "⌘Z" : "Ctrl+Z", UNDO_KEYS = MAC_KEYS ? "Meta+Z" : "Control+Z";
 const STANDALONE = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 const V1_KEY = "todays-five/v1";
 const BASE = location.origin + location.pathname.replace(/[^/]*$/, "");
@@ -1383,6 +1385,8 @@ function toast(msg, { undo: withUndo = false, action = null, ms = 0 } = {}) {
   t.querySelector(".msg").textContent = msg;
   toastAction = action;
   $("#toast-undo").hidden = !(action || (withUndo && canEdit()));
+  // 1.9: the chip names its key (Cmd/Ctrl+Z undoes from anywhere; an action toast's chip is its own thing and names none) (proposal 28)
+  $("#toast-undo-key").hidden = !!action; if (action) $("#toast-undo").removeAttribute("aria-keyshortcuts"); else $("#toast-undo").setAttribute("aria-keyshortcuts", UNDO_KEYS);
   // 1.7: under a modal the toast lives inside the panel (the rest of the page is inert), and moves back out after
   const modal = document.querySelector("dialog.panel[open] .body"); if (modal && t.parentNode !== modal) modal.appendChild(t); else if (!modal && t.parentNode !== document.body) document.body.appendChild(t);
   t.classList.add("on");
@@ -2157,6 +2161,7 @@ function wireUi() {
   $("#addtoday").addEventListener("click", () => newItem({ today: true }));
   $("#daynight").addEventListener("click", flipSlot);
   $("#toast-undo").addEventListener("click", () => { const a = toastAction; hideToast(); if (a) a(); else undo(); });
+  $("#toast-undo-key").textContent = UNDO_HINT; // 1.9 (proposal 28)
   $("#install-x").addEventListener("click", () => { $("#install").hidden = true; document.body.classList.remove("install-on"); dev.installHint = true; saveDevice(); });
   if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc && !demo && !openPanel) { $("#install").hidden = false; document.body.classList.add("install-on"); } }, 2500);
   document.addEventListener("pointerdown", () => { sound.prime(); setTimeout(() => panels(), 300); }, { once: true, capture: true }); // 1.7: the panels warm on the first gesture

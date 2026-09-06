@@ -63,6 +63,7 @@ button{font:inherit;color:inherit}
   min-height:44px;
 }
 .rail-l,.rail-r{display:flex;align-items:center;gap:clamp(.4rem,1.2vw,.85rem);min-width:0}
+.rail-r .tools{display:flex;align-items:center;gap:clamp(.4rem,1.2vw,.85rem)} /* 1.9: the same gap as the rail, so nothing moves (proposal 27) */
 .rail-l{flex:1 1 auto}
 #date{white-space:nowrap}
 #count,#shuffle{color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.09em;white-space:nowrap;background:transparent;border:0;padding:.3em .2em;font:inherit;letter-spacing:.09em;text-transform:inherit;cursor:pointer;min-height:32px;border-radius:999px}
@@ -385,6 +386,7 @@ html[data-mode="view"] #hint{visibility:hidden}
 dialog.panel #toast{z-index:60} /* 1.7: a toast raised while a sheet is open moves inside the sheet, above its backdrop, readable and pressable; it moves back out when it hides */
 #toast .msg{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #toast .chip{color:var(--accent-text);border-color:var(--accent);min-height:36px}
+#toast .key{color:var(--muted);letter-spacing:.09em;margin-left:.55em} /* 1.9: the shortcut beside Undo, for the keyboard user it sits past every row from (proposal 28) */
 
 /* ---------------- progress ---------------- */
 /* the track is transparent (an empty 3 px of --ink-3 read as a hairline under the iPhone's home indicator);
@@ -431,6 +433,18 @@ dialog.panel #toast{z-index:60} /* 1.7: a toast raised while a sheet is open mov
 
 /* ---------------- responsive ---------------- */
 @media (max-width:900px){ #date{display:none} }
+/* 1.9: the rail wraps before it truncates. It is measured by its own width, not the viewport's — the page margins grow with the
+   text, so at 200 % text on a 390 px phone the rail is 332 px wide — and under 341 px a list chip takes the first line whole, the
+   count and the tools the next, and the tabs drop below them, whole. At 341 px and up nothing moves; a browser without container
+   queries keeps 1.8's rail (proposal 27) */
+.rail-wrap{flex:0 0 auto;container-type:inline-size}
+@container (max-width:340px){
+  .rail{flex-wrap:wrap;row-gap:.4rem}
+  .rail-l{display:contents} /* the chip and the pills join the rail's own line-breaking; an empty group leaves no empty line */
+  .rail-r{flex:1 1 auto;flex-wrap:wrap;justify-content:space-between;gap:.3rem;row-gap:.4rem}
+  .rail-r .tools{margin-left:auto}
+  .rail-r .tools,.rail-r .status{gap:.3rem} /* the count, the tabs and the tools share one line at 200 % text on a 390 px phone */
+}
 @media (max-width:680px){
   .rail{letter-spacing:.1em;gap:.5rem}
   #share{display:none}
@@ -620,6 +634,7 @@ body.install-on #toast,body.install-on #whatsnew{bottom:calc(96px + env(safe-are
   .row-toggle[aria-pressed="true"] .sw::after{transform:translateX(18px)}
   .all-head .chip{min-height:44px}
   .all-head .chip .key{display:none}
+  #toast .key{display:none} /* 1.9: no key to press on a phone */
   #search{min-height:44px;font-size:16px}
   .deleted li .chip{min-height:40px}
 }
@@ -661,7 +676,7 @@ body.welcome .rail,body.welcome #foot,html.welcome .rail,html.welcome #foot{disp
 html.welcome #today{display:none} /* and the empty list stays out of the first paint too: the welcome slots in above it and would push it down */
 /* idle fade (desktop): the rail and the footer step back to the date and the count; the presence dots stay */
 .rail-r > *,.rail-l > *,#foot{transition:opacity .25s ease}
-body.idle .rail-r > :not(.status),body.idle .rail-l > :not(#date),body.idle #foot{opacity:0;transition:opacity 1.4s ease}
+body.idle .rail-r > :not(.status),body.idle .rail-l > :not(#date),body.idle #foot{opacity:.2;transition:opacity 1.4s ease} /* 1.9: to 0.2, not 0 — the quiet survives and a slow-reading mouse user can still see what is there to click (proposal 26) */
 
 /* ================= 1.3 ================= */
 

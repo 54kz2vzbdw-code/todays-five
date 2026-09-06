@@ -117,6 +117,7 @@
 <canvas id="fx" aria-hidden="true"></canvas>
 
 <div id="shell">
+  <div class="rail-wrap"><!-- 1.9: the rail measured by its own width, so it can wrap before it truncates (proposal 27) -->
   <header class="rail">
     <div class="rail-l">
       <span id="date"></span>
@@ -137,11 +138,14 @@
         <button id="v-today" role="tab" aria-selected="true" aria-controls="today" title="Today (A)">Today</button>
         <button id="v-all" role="tab" aria-selected="false" aria-controls="all" title="Everything (A)">Everything</button>
       </div>
+      <span class="tools"><!-- 1.9: the three tools as one unit, so a narrow rail wraps them together (proposal 27) -->
       <button class="chip icon" id="daynight" type="button" title="Night · T" aria-label="Switch to night" data-next="night"><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.5 1.5M17.2 17.2l1.5 1.5M5.3 18.7l1.5-1.5M17.2 6.8l1.5-1.5"/></svg><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6z"/></svg></button>
       <button class="chip" id="share" title="Share this list" aria-haspopup="dialog">Share</button>
       <button class="chip icon" id="more" title="More" aria-haspopup="dialog" aria-label="More">⋯</button>
+      </span>
     </div>
   </header>
+  </div>
 
   <main id="main">
     <h1 class="sr-only" id="list-h1">Today's Five</h1>
@@ -183,7 +187,7 @@
   </footer>
 </div>
 
-<div id="toast" role="status" aria-live="polite"><span class="msg"></span><button class="chip" id="toast-undo" type="button" hidden>Undo</button></div>
+<div id="toast" role="status" aria-live="polite"><span class="msg"></span><button class="chip" id="toast-undo" type="button" hidden>Undo<span class="key" id="toast-undo-key" aria-hidden="true">⌘Z</span></button></div>
 <div id="whatsnew" role="status" hidden><span class="msg" id="wn-msg"></span><button class="chip" id="wn-more" type="button">What's new</button><button class="x" id="wn-x" type="button" aria-label="Dismiss">×</button></div>
 <div id="bar" aria-hidden="true"><div id="fill"></div></div>
 <div id="install" role="status" hidden><span>Add this to your Home Screen: tap <b>Share</b>, then <b>Add to Home Screen</b>.</span><button class="x" id="install-x" type="button" aria-label="Dismiss">×</button></div>

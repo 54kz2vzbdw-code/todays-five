@@ -104,8 +104,8 @@ let sync = null, transport = null, syncStatus = "off", syncLive = false, liveGra
 let openGen = 0;
 let theme = null;
 let editing = null;            // { id, el, ta, note, isNew, orig }
-let pendingFocus = null;       // 1.7: { id, sel } — a control to refocus after the deferred render (the star toggled by keyboard)
-/** 1.7: one sentence for a screen reader, through a polite region that is otherwise empty. */
+let pendingFocus = null;       // 1.7: refocus after the deferred render
+/** 1.7: one sentence for a screen reader. */
 function announce(text) { const s = $("#sr-note"); if (!s) return; s.textContent = ""; setTimeout(() => { s.textContent = text; }, 30); }
 let wasAll = false;
 let rows = new Map();          // id -> <li>
@@ -251,9 +251,7 @@ function tickTheme() {
 DARK_MQ.addEventListener("change", tickTheme);
 
 /* ---------------- boot ---------------- */
-// Everything boot() can reach is declared above this line (DECISIONS.md, v3 "From the two review passes"): a module-level
-// const below it is in its temporal dead zone while boot runs. 1.7: DAY_NAMES sat below and the first render of a list with a
-// chosen-days repeat threw, leaving the open half done (rows missing, the count 0/0, sync never started).
+// Everything boot() can reach is declared above this line: a const below it is in its temporal dead zone while boot runs (1.7: DAY_NAMES was).
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]; // ruleLabel, which every row render reaches
 appliedCode = currentThemeCode();
 applyThemeCode(appliedCode);
@@ -289,9 +287,7 @@ function askWhose() {
     const finish = v => { if (done) return; done = true; d.removeEventListener("click", onClick); d.removeEventListener("cancel", onCancel); d.removeEventListener("close", onClose); resolve(v === "shared" ? "shared" : "mine"); if (d.open) d.close(); };
     const onClick = e => { const b = e.target.closest("[data-whose]"); if (b) finish(b.dataset.whose); };
     const onCancel = e => e.preventDefault();
-    // 1.7: a tap on the backdrop used to close the question with no answer, and the open never settled (a rail over nothing);
-    // the backdrop no longer closes it, and if anything else ever does, the list files as shared — the answer that grants the
-    // least, and Lists can flip it
+    // 1.7: closed by anything but an answer, it files as shared (the backdrop no longer closes it)
     const onClose = () => finish("shared");
     d.addEventListener("click", onClick); d.addEventListener("cancel", onCancel); d.addEventListener("close", onClose);
     panelCss.then(() => { if (!d.open) { d.showModal(); const body = d.querySelector(".body"); if (body) { body.tabIndex = -1; body.focus({ preventScroll: true }); } } }); // focus on the card, not on the first answer: no answer looks chosen
@@ -432,7 +428,7 @@ async function openList(r) {
   rows.clear(); $("#list").innerHTML = ""; clearAll();
   wasAll = allDoneToday();
   paintWho(0);
-  try { setView(view, { force: true }); } catch (e) { console.error("render at open", e); } // 1.7: one bad row must not stop the engine from starting
+  try { setView(view, { force: true }); } catch (e) { console.error("render at open", e); } // 1.7: a bad row must not stop the engine
   paintListName();
   syncLive = false; lastCat = ""; paintStatus(transport || TRANSPORT_KIND ? "syncing" : "off");
   if (legacy) {
@@ -622,7 +618,7 @@ function applyPendingAdd() {
   if (fresh && syncStatus !== "gone" && syncStatus !== "off") return; // a link this device never had: wait for the pull
   pendingAdd = null;
   if (syncStatus === "gone") { toast("This link no longer works, so nothing was added"); return; }
-  a.text = (Array.isArray(a.text) ? a.text : [a.text]).map(s => String(s).trim()).filter(Boolean); // 1.7: blank or whitespace lines are nothing; nothing at all opens a new line to type
+  a.text = (Array.isArray(a.text) ? a.text : [a.text]).map(s => String(s).trim()).filter(Boolean); // 1.7: spaces are nothing
   if (!a.text.length) { setView("today"); newItem({ today: true }); return; }
   const secs = M.sectionsOrdered(doc);
   const sec = a.section ? secs.find(s => s.name.toLowerCase() === a.section.toLowerCase()) : null;
@@ -696,7 +692,7 @@ function makeRow(it) {
   if (view === "all") {
     const today = document.createElement("button"); today.type = "button"; today.className = "tool today";
     today.innerHTML = ICONS.star; today.setAttribute("aria-pressed", "false"); today.setAttribute("aria-label", "Today");
-    today.addEventListener("click", e => { e.stopPropagation(); if (document.activeElement === today) pendingFocus = { id: it.id, sel: ".tool.today" }; toggleToday(it.id); }); // 1.7: a keyboard press keeps its place
+    today.addEventListener("click", e => { e.stopPropagation(); if (document.activeElement === today) pendingFocus = { id: it.id, sel: ".tool.today" }; toggleToday(it.id); });
     tools.appendChild(today);
   }
   const grip = document.createElement("button"); grip.type = "button"; grip.className = "tool lmenu"; grip.innerHTML = ICONS.menu;
@@ -745,7 +741,7 @@ function updateRow(li, it) {
   li.classList.toggle("done", it.done);
   const chk = li.querySelector(".check");
   chk.setAttribute("aria-checked", it.done ? "true" : "false");
-  // 1.7: the name is the line; the repeat, the caption, the tomorrow tag and the note are its description, spoken apart from it
+  // 1.7: the name is the line, the rest its description
   chk.setAttribute("aria-label", it.text);
   const desc = Array.from(tx.querySelectorAll(".rep, .cap, .note")).map(e => e.getAttribute("aria-label") || e.title || e.textContent.trim()).filter(Boolean).join(". ");
   if (desc) chk.setAttribute("aria-description", desc); else chk.removeAttribute("aria-description");
@@ -755,7 +751,7 @@ function updateRow(li, it) {
     // the name stays "Today"; aria-pressed carries the state, the description says what a press does
     today.setAttribute("aria-pressed", it.today ? "true" : "false");
     today.setAttribute("aria-description", it.today ? "Take this line off Today" : "Put this line on Today");
-    today.title = it.today ? "On Today — click to take it off" : "Put this line on Today"; // 1.7: the hover tooltip the v3 pass gave it, back
+    today.title = it.today ? "On Today — click to take it off" : "Put this line on Today";
     today.dataset.tip = it.today ? "On Today — click to take it off" : "Put this line on Today";
   }
   if (view === "all") li.classList.toggle("miss", !!query && !matches(it, query));
@@ -774,7 +770,7 @@ function ordinal(n) { const s = ["th", "st", "nd", "rd"], v = n % 100; return n 
 function matches(it, q) { const s = q.toLowerCase(); return it.text.toLowerCase().includes(s) || (it.note || "").toLowerCase().includes(s); }
 
 function renderToday({ animate, quiet }) {
-  { const e = $("#today-empty"); const none = !demo && todayList().length === 0; e.hidden = !none; if (none) e.textContent = listMode === "view" ? "Nothing on Today." : "Nothing on Today yet. Add a line, or bring one over from Everything."; } // 1.7: the one empty surface that said nothing
+  { const e = $("#today-empty"); const none = !demo && todayList().length === 0; e.hidden = !none; if (none) e.textContent = listMode === "view" ? "Nothing on Today." : "Nothing on Today yet. Add a line, or bring one over from Everything."; }
   const list = $("#list");
   const items = todayList();
   const n = items.length;
@@ -934,7 +930,7 @@ function orderInto(container, ids, animate) {
     const d = top - el.getBoundingClientRect().top;
     if (d && el.animate) { moved = true; el.animate([{ transform: `translateY(${d}px)` }, { transform: "none" }], { duration: 520, easing: "cubic-bezier(.22,1,.36,1)" }); }
   }
-  // 1.7: whatever row lands under a cursor that has not moved used to light up as hovered; hover is off until the mouse moves
+  // 1.7: no hover on a row that slid under a still cursor
   if (moved && matchMedia("(hover: hover)").matches) { container.classList.add("no-hover"); document.addEventListener("pointermove", () => container.classList.remove("no-hover"), { once: true, capture: true }); }
 }
 
@@ -1024,25 +1020,7 @@ function paintStatus(s) {
     toast(s === "busy" ? "The server's busy. Your list is safe here—it'll sync again in a few minutes." : s === "full" ? "The service is full right now. Your list is safe on this device." : "This list is too large to sync. Clear out some old lines or history.");
   }
   if (s === "synced") lastLimitToast = "";
-  if (s === "gone") { applyPendingAdd(); carryToKin(); }
-}
-/** 1.7: a link that died (New keys elsewhere) with unsynced edits on this device, whose successor this device already holds
-    (the new link arrived by a tap, not a paste): the edits are merged into the successor's copy and pushed with it. Kin means
-    sharing a line id, which only a rotation or a migration produces. */
-function carryToKin() {
-  if (!doc || !listId || listMode !== "edit") return;
-  const mine = loadLocal(listId); if (!mine || !mine.dirty) return;
-  for (const other of meta.lists) {
-    if (other.id === listId || other.mode !== "edit") continue;
-    const kin = loadLocal(other.id); if (!kin || !kin.doc) continue;
-    if (!Object.keys(mine.doc.items).some(id => kin.doc.items[id])) continue;
-    const merged = M.normalize(M.merge(kin.doc, mine.doc), other.id);
-    if (M.canon(merged) !== M.canon(kin.doc)) saveLocal(other.id, { ...kin, doc: merged, dirty: true });
-    saveLocal(listId, { ...mine, dirty: false }); // carried: nothing is stranded here any more
-    toast("Carried your unsynced edits over to the new link");
-    flushOthers();
-    return;
-  }
+  if (s === "gone") { applyPendingAdd(); panels().then(m => m.carryToKin()); } // 1.7: a dead link's unsynced edits find their successor
 }
 $("#dot").addEventListener("click", () => { toast($("#dot").getAttribute("title") || ""); });
 /** Who's here: one dot per other device (five, then "+n"), fading in and out. */
@@ -1073,7 +1051,7 @@ function afterChange({ animate = true, delay = 0 } = {}) {
 /** A remote document arrived (`prev` is the one it replaces). Quiet by default: no sound, no confetti, no kick; rows
     animate into place. A view link celebrates what the editors did; an edit link only when the setting says so. */
 function applyRemote(prev) {
-  if (drag && (drag.moved || !drag.li.isConnected)) abortDrag(); // the row under the finger may be gone or moved; a stuck drag would swallow every tap. 1.7: a hold that has not moved rides the render (its row is kept), so a remote change mid-hold no longer costs the menu
+  if (drag && (drag.moved || !drag.li.isConnected)) abortDrag(); // a moved drag or a lost row: abort; 1.7: an unmoved hold rides the render
   const before = wasAll;
   const nowAll = allDoneToday();
   render({ animate: true, quiet: true });
@@ -1122,7 +1100,7 @@ function toggle(id, px, py, fromPointer) {
     }
     if (view === "today") fx.burst(x, y, 46, 13, 2.0); else fx.burst(x, y, 18, 9, 1.6);
     toast("Done", { undo: true });
-    { const tl = todayList(), d = tl.filter(i => i.done).length; announce(`${d} of ${tl.length} done${d && d === tl.length ? ". That's the list." : ""}`); } // 1.7: the count, which only the eye saw change, and the finale with it
+    { const tl = todayList(), d = tl.filter(i => i.done).length; announce(`${d} of ${tl.length} done${d && d === tl.length ? ". That's the list." : ""}`); }
   } else {
     sound.uncheck();
   }
@@ -1133,7 +1111,7 @@ function toggle(id, px, py, fromPointer) {
     if (now && !wasAll) setTimeout(() => {
       if (dev.oneThing) setOneThing(false, { silent: true }); // the finale shows the whole list
       sound.finish(); fx.volley();
-      if (!RM.matches) { const g = $("#glow"); g.classList.add("flare"); setTimeout(() => g.classList.remove("flare"), 900); } // 1.7: no flare under reduced motion
+      if (!RM.matches) { const g = $("#glow"); g.classList.add("flare"); setTimeout(() => g.classList.remove("flare"), 900); }
     }, 640);
     wasAll = now;
   }
@@ -1301,7 +1279,7 @@ function undo() {
   afterChange();
   wasAll = allDoneToday();
   toast("Undone");
-  // 1.7: focus goes to the line the undo touched (it used to land on the document)
+  // 1.7: focus to the line the undo touched
   const firstId = u.items && u.items[0] && u.items[0][0];
   setTimeout(() => { const li = rows.get(firstId); const el = li && li.querySelector(".check"); const a = document.activeElement; if (el && (a === document.body || a.id === "toast-undo")) { try { el.focus({ preventScroll: true }); } catch (e) { /* ignore */ } } }, 300);
 }
@@ -1312,8 +1290,7 @@ function toast(msg, { undo: withUndo = false, action = null, ms = 0 } = {}) {
   t.querySelector(".msg").textContent = msg;
   toastAction = action;
   $("#toast-undo").hidden = !(action || (withUndo && canEdit()));
-  // 1.7: under a modal sheet the toast used to land behind the backdrop, inert and blurred (the modal makes the rest of the page inert,
-  // the top layer included); while a panel is open the toast lives inside it, and moves back out when it hides
+  // 1.7: under a modal the toast lives inside the panel (the rest of the page is inert), and moves back out after
   const modal = document.querySelector("dialog.panel[open] .body"); if (modal && t.parentNode !== modal) modal.appendChild(t); else if (!modal && t.parentNode !== document.body) document.body.appendChild(t);
   t.classList.add("on");
   clearTimeout(toastTimer);
@@ -1457,7 +1434,7 @@ function openLineMenu(id) { if (!canEdit()) return; if (editing) commitEdit(); p
 function openRepeat(id) { if (!canEdit()) return; panels().then(p => p.openRepeat(id)); }
 
 /* ---------------- keyboard move ---------------- */
-/** 1.7: where the line landed, for a screen reader (the render is deferred, so a beat later). */
+/** 1.7: where the line landed, for a screen reader. */
 function announceMove(dir) {
   setTimeout(() => { const li = document.activeElement && document.activeElement.closest(".row"); if (!li) return; const all = Array.from(li.parentNode.querySelectorAll(".row:not(.done)")); announce(`Moved ${dir < 0 ? "up" : "down"}, ${all.indexOf(li) + 1} of ${all.length}`); }, 350);
 }
@@ -1540,7 +1517,7 @@ function beginDrag(li, e, fromLongPress) {
   const rect = li.getBoundingClientRect();
   const live = Array.from(li.parentNode.children).filter(r => r.classList.contains("row") && !r.classList.contains("done")); const at = live.indexOf(li);
   const startPrev = at > 0 ? live[at - 1].dataset.id : "", startNext = at >= 0 && at < live.length - 1 ? live[at + 1].dataset.id : "";
-  drag = { id, li, offY: e.clientY - rect.top, startTop: rect.top, pointerId: e.pointerId, overSec: null, lastY: e.clientY, raf: 0, fromHold: !!fromLongPress, startY: e.clientY, moved: false, startPrev, startNext, startSec: view === "today" ? "" : (li.closest(".sec") || {}).dataset ? li.closest(".sec").dataset.id : "" }; // 1.7: the neighbours say whether it moved
+  drag = { id, li, offY: e.clientY - rect.top, startTop: rect.top, pointerId: e.pointerId, overSec: null, lastY: e.clientY, raf: 0, fromHold: !!fromLongPress, startY: e.clientY, moved: false, startPrev, startNext, startSec: view === "today" ? "" : (li.closest(".sec") || {}).dataset ? li.closest(".sec").dataset.id : "" };
   li.classList.add("dragging"); document.body.classList.add("is-dragging");
   try { li.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ }
   document.addEventListener("touchmove", preventTouch, { passive: false });
@@ -1624,8 +1601,7 @@ function endDrag(move, up, cancelled, aborted) {
   drag = null;
   dragEndedAt = performance.now();
   if (aborted) { render({ animate: false }); return; }
-  // 1.7: a finger that never travelled moved nothing, whatever happened around the row meanwhile (a remote check-off can change its
-  // neighbours mid-hold): nothing to commit, and a hold released in place gets its menu
+  // 1.7: a finger that never travelled moved nothing: a hold released in place gets its menu
   if (!moved) { render({ animate: false }); if (fromHold) openLineMenu(id); return; }
   // derive the new position from the DOM
   const it = doc.items[id]; if (!it || it.deleted) return;
@@ -1639,8 +1615,7 @@ function endDrag(move, up, cancelled, aborted) {
   let o = M.orderBetween(prev ? prev[key] : undefined, next ? next[key] : undefined);
   const secId = view === "today" ? it.sectionId : list.closest(".sec").dataset.id;
   if (o === null) { renumber(view === "today" ? null : secId, key); o = M.orderBetween(prev ? prev[key] : undefined, next ? next[key] : undefined) || M.lastOrder(sib.map(r => doc.items[r.dataset.id]), i => i[key]); }
-  // 1.7: moved means the neighbours changed (or the section), not that the stored order differs from the neighbours' midpoint — which
-  // it always does for a first or last row and for any row after a reorder, so a hold released in place used to write a phantom move
+  // 1.7: moved means the neighbours or the section changed (the old midpoint test wrote phantom moves)
   const changed = (prevEl ? prevEl.dataset.id : "") !== drag0.startPrev || (nextEl ? nextEl.dataset.id : "") !== drag0.startNext || (view === "all" && secId !== drag0.startSec);
   if (!changed) { render({ animate: false }); if (fromHold && !moved) openLineMenu(id); return; } // a hold released in place: the menu
   pushUndo("Moved", [id]);
@@ -1681,7 +1656,7 @@ function showPanel(id, { anchor = null } = {}) {
   const pop = !!anchor && !sheetUi() && anchor.isConnected;
   d.classList.toggle("pop", pop); d.style.left = ""; d.style.top = "";
   if (!d.open) d.showModal();
-  if (!/^(p-menu|p-line|p-sec|ask|whose)$/.test(d.id)) { const b = d.querySelector(".body"); if (b) { if (!b.hasAttribute("tabindex")) b.tabIndex = -1; b.focus({ preventScroll: true }); } } // 1.7: reading starts at the title; the first Enter does not close the sheet
+  if (!/^(p-menu|p-line|p-sec|ask|whose)$/.test(d.id)) { const b = d.querySelector(".body"); if (b) { if (!b.hasAttribute("tabindex")) b.tabIndex = -1; b.focus({ preventScroll: true }); } } // 1.7: a sheet starts at its title
   const body = d.querySelector(".body"); if (body) body.scrollTop = 0; // a sheet opens at its top, whatever it was scrolled to when it closed (⋯ → Theme must land on Appearance)
   if (pop) {
     const r = anchor.getBoundingClientRect(), w = d.offsetWidth, h = d.offsetHeight;
@@ -1749,7 +1724,7 @@ addEventListener("popstate", e => {
 $$("dialog.panel").forEach(d => {
   d.addEventListener("close", () => { if (!panelSwitching && !backPending && openPanel === d) closeAll(); idleReset(); }); // a close from anywhere else takes the stack with it (not one the browser forces while a Back is already on its way)
   d.addEventListener("cancel", e => { if (openPanel !== d) return; e.preventDefault(); goBack(); }); // Escape: back one level, closed at the root
-  d.addEventListener("click", e => { if (e.target === d && d.id !== "whose" && !clickAfterDrag()) { if (openPanel === d) closeAll(); else d.close(); } }); // 1.7: the whose question is not cancelable from the backdrop either // not the click a browser synthesises after the hold that opened it
+  d.addEventListener("click", e => { if (e.target === d && d.id !== "whose" && !clickAfterDrag()) { if (openPanel === d) closeAll(); else d.close(); } }); // not the click a browser synthesises after the hold that opened it
   d.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => { if (openPanel === d) closeAll(); else d.close(); }));
   if (d.classList.contains("sheet")) wireSheetSwipe(d);
   wireBackSwipe(d);
@@ -1796,7 +1771,7 @@ function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger =
     const field = $("#ask-field"), input = $("#ask-input");
     field.hidden = !label; input.value = value; input.setAttribute("aria-label", label || title);
     $("#ask-ok").textContent = confirm;
-    $("#ask-ok").classList.toggle("danger", danger); $("#ask-ok").classList.toggle("accent", !danger); // 1.7: never both
+    $("#ask-ok").classList.toggle("danger", danger); $("#ask-ok").classList.toggle("accent", !danger);
     let done = false;
     const finish = v => { if (done) return; done = true; resolve(v); };
     const form = $("#ask-form");
@@ -1902,7 +1877,7 @@ async function copyText(text, okMsg) {
 }
 function nativeShare(text) {
   if (!navigator.share) return false;
-  // 1.7: a cancel is silent; any other failure falls back to a copy, like Send a note does (it used to swallow every error)
+  // 1.7: a cancel is silent; any other failure falls back to a copy
   navigator.share({ title: "Today's Five", text: "A live view of a Today's Five list. It updates as lines are crossed off.", url: text }).catch(e => { if (!e || e.name !== "AbortError") copyText(text, "The share sheet didn't open, so the link was copied instead"); });
   return true;
 }
@@ -1941,7 +1916,7 @@ function parseLink(s) {
 }
 function switchTo(r, { paste = false } = {}) {
   if (r.id === listId && r.mode === listMode) return;
-  if (listId && syncStatus === "gone" && r.mode === "edit") { // 1.7: a tap on the new link counts as much as a paste
+  if (listId && syncStatus === "gone" && r.mode === "edit") { // 1.7: a tap counts as a paste
     // the old link died (rotated or migrated elsewhere): remember where it went, and carry unsynced edits if the docs are kin
     meta.redirect = { ...(meta.redirect || {}), [listId]: r.id };
     meta.carry = { from: listId, to: r.id };
@@ -1965,7 +1940,7 @@ $("#w-skip").addEventListener("click", keepDemo); // Skip is Keep without the pl
 $("#w-paste-show").addEventListener("click", () => { $("#w-paste-form").hidden = false; $("#w-paste").focus(); });
 $("#w-paste-form").addEventListener("submit", e => {
   e.preventDefault();
-  $("#w-err").textContent = ""; // 1.7: a stale error under a link that is opening said the opposite of what happened
+  $("#w-err").textContent = "";
   const r = parseLink($("#w-paste").value);
   if (!r) { $("#w-err").textContent = "That doesn't look like a list link. Paste the whole address, including the part after the #."; return; }
   switchTo(r, { paste: true });
@@ -2083,8 +2058,7 @@ function wireUi() {
   $("#toast-undo").addEventListener("click", () => { const a = toastAction; hideToast(); if (a) a(); else undo(); });
   $("#install-x").addEventListener("click", () => { $("#install").hidden = true; document.body.classList.remove("install-on"); dev.installHint = true; saveDevice(); });
   if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc && !demo && !openPanel) { $("#install").hidden = false; document.body.classList.add("install-on"); } }, 2500);
-  document.addEventListener("pointerdown", () => { sound.prime(); setTimeout(() => panels(), 300); }, { once: true, capture: true }); // 1.7: the panels warm on the first gesture too, so the first ⋯ → Settings does not wait for a fetch
-  (window.requestIdleCallback || (f => setTimeout(f, 2000)))(() => sound.preload()); // 1.7: the sound engines at idle, after first paint
+  document.addEventListener("pointerdown", () => { sound.prime(); setTimeout(() => panels(), 300); }, { once: true, capture: true }); // 1.7: the panels warm on the first gesture
   document.body.classList.toggle("one", !!dev.oneThing);
 }
 function toggleMute() { dev.muted = !dev.muted; saveDevice(); paintMute(); if (!dev.muted) sound.tick(); dispatchEvent(new CustomEvent("tf:settings")); }
@@ -2214,7 +2188,7 @@ const api = {
 };
 
 /* test hook (read-only) */
-// 1.7: the hook hands out the secrets (the list id, the view id, the lookup id) only on the local transport
+// 1.7: the secrets only on the local transport
 window.__tf = () => ({ stats: { ...stats }, view, listId: TRANSPORT_KIND === "local" ? listId : (listId ? "held" : null), mode: listMode, lookupId: TRANSPORT_KIND === "local" && ref ? ref.lookupId : null, R: TRANSPORT_KIND === "local" && ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, demo, shuffled: shuffledId, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry(), origin: (entryOf(listId) || {}).origin || null, nickname: (entryOf(listId) || {}).nickname || null, whose: $("#whose").open, panels: panelStackIds() });
 // test-only controls, on the local transport: simulate what iOS does to the audio context
 if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneToday(); } }, presence: n => paintWho(n) };

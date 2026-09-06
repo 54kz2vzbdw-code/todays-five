@@ -574,6 +574,25 @@ function wireSettings() {
   });
   addEventListener("tf:settings", () => { if ($("#p-settings").open) paintSettings(); });
 }
+/** 1.7: a link that died (New keys elsewhere) with unsynced edits on this device, whose successor this device already holds (the new link
+    arrived by a tap, not a paste): the edits are merged into the successor's copy and pushed with it. Kin means sharing a line id, which
+    only a rotation or a migration produces. Called by app.js when the open list turns gone. */
+export function carryToKin() {
+  if (!A.doc || !A.listId || !A.canEdit()) return;
+  const mine = A.loadLocal(A.listId); if (!mine || !mine.dirty) return;
+  for (const other of meta().lists) {
+    if (other.id === A.listId || other.mode !== "edit") continue;
+    const kin = A.loadLocal(other.id); if (!kin || !kin.doc) continue;
+    if (!Object.keys(mine.doc.items).some(id => kin.doc.items[id])) continue;
+    const merged = M.normalize(M.merge(kin.doc, mine.doc), other.id);
+    if (M.canon(merged) !== M.canon(kin.doc)) A.saveLocal(other.id, { ...kin, doc: merged, dirty: true });
+    A.saveLocal(A.listId, { ...mine, dirty: false }); // carried: nothing is stranded here any more
+    A.toast("Carried your unsynced edits over to the new link");
+    A.flushOthers();
+    return;
+  }
+}
+
 /* ---------------- export & import: Settings → Advanced → Export & import › ---------------- */
 function paintExport() {
   $("#set-export-json").disabled = !A.doc; $("#set-export-md").disabled = !A.doc;

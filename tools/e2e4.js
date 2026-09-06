@@ -1978,14 +1978,25 @@ for (const [label, opts, touch] of VIEWPORTS) {
     }
   });
 
-  await test(label + ": a page open across a deploy — its later modules are asked for by build and the service worker answers from that build's cache, this build's come fresh, an unknown build falls back to the network; a page whose build cannot be served reloads once after flushing and comes back to its view with the panel it asked for", async () => {
+  await test(label + ": a page open across a deploy — its later modules are asked for by build and the service worker answers from that build's cache, this build's from its own cache first (1.9), an unknown build falls back to the network; the cache holds one copy of each file (1.9); a page whose build cannot be served reloads once after flushing and comes back to its view with the panel it asked for", async () => {
     const t = await fresh(opts, { url: BASE + "?transport=local&sw=1" });
     await t.page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 20000 });
     const build = await t.page.evaluate(() => document.documentElement.getAttribute("data-build"));
     const keys = await t.page.evaluate(() => caches.keys()); assert.ok(keys.includes("tf-v1.8-b" + build), "this build's cache: " + keys.join(","));
     await t.page.evaluate(async () => { const c = await caches.open("tf-v1.3-b62"); await c.put(new Request("./panels.js"), new Response("// build 62's panels", { headers: { "Content-Type": "text/javascript" } })); });
     assert.equal((await t.page.evaluate(async () => (await fetch("panels.js?v=62")).text())).trim(), "// build 62's panels", "a page from build 62 gets build 62's module");
-    assert.ok(/PANELS_BUILD = /.test(await t.page.evaluate(async b => (await fetch("panels.js?v=" + b)).text(), build)), "this build's module comes fresh");
+    assert.ok(/PANELS_BUILD = /.test(await t.page.evaluate(async b => (await fetch("panels.js?v=" + b)).text(), build)), "this build's module is served");
+    // 1.9 (proposal 14): the page's own build is answered from this build's cache first — a marker planted there is what comes back, no network
+    await t.page.evaluate(async b => { const c = await caches.open("tf-v1.8-b" + b); await c.put(new Request("./exporter.js"), new Response("// this build's cached exporter", { headers: { "Content-Type": "text/javascript" } })); }, build);
+    assert.equal((await t.page.evaluate(async b => (await fetch("exporter.js?v=" + b)).text(), build)).trim(), "// this build's cached exporter", "cache-first for the page's own build");
+    assert.ok(/handOff/.test(await t.page.evaluate(async () => (await fetch("exporter.js")).text())), "the plain name is still network-first (the shell)");
+    // 1.9 (proposal 15): one copy of each file — no bare ./ beside index.html, no ?v= keys beside the plain names, the navigation keyed as index.html
+    await t.page.evaluate(async b => { await fetch("panels.js?v=" + b); await fetch("qr.js?v=" + b); }, build); await wait(300);
+    const urls = await t.page.evaluate(async b => (await (await caches.open("tf-v1.8-b" + b)).keys()).map(r => r.url), build);
+    assert.ok(!urls.some(u => u.endsWith("/")), "no bare ./ entry: " + urls.filter(u => u.endsWith("/")).join(","));
+    assert.ok(!urls.some(u => /\?v=/.test(u)), "no ?v= entries: " + urls.filter(u => /\?v=/.test(u)).join(","));
+    assert.ok(urls.some(u => u.endsWith("/index.html")) && !urls.some(u => /transport=local/.test(u)), "the navigation is keyed as index.html, without its query: " + urls.filter(u => /index|transport/.test(u)).join(","));
+    assert.equal(new Set(urls).size, urls.length, "no duplicate urls");
     assert.ok(/PANELS_BUILD = /.test(await t.page.evaluate(async () => (await fetch("panels.js?v=9999")).text())), "a build with no cache falls back to the network");
     assert.ok(/panels\.js\?v=" \+ BUILD/.test(await t.page.evaluate(async () => (await fetch("app.js")).text())), "app.js asks for the panels by build");
     for (const f of ["sound.js", "sync.js", "panels.js"]) assert.ok(/\?v=" \+ (BUILD|PANELS_BUILD)/.test(await t.page.evaluate(async f => (await fetch(f)).text(), f)), f + " asks by build");

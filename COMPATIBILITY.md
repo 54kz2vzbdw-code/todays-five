@@ -101,6 +101,15 @@ invariants, and the checklist to run before anything reaches `main`. Read this b
   exactly that; older generations are reaped on activation. Every new module must be listed in the shell precache
   so an installed app works offline after its first online open of the new version, and so its build's cache can
   answer for it later.
+- A module asked for with the page's *own* build is answered from this build's cache first, the network only when
+  the cache has nothing (1.9). Its content is immutable by construction — a new build gets a new number and a new
+  cache — so re-fetching it bought no freshness, only the round trip a slow connection paid on every open of Settings
+  or Share. The shell files themselves (the page, `app.js`, `styles.css`, everything the first paint needs) stay
+  network-first: their freshness is the deploy signal.
+- The cache holds one copy of each file (1.9): a navigation is stored as `index.html` whatever address it came in on
+  (neither the query nor the fragment reaches the key, so every list a device opens shares one shell entry, and the
+  Private link never touches disk), and a module asked for by build is stored under its plain name. The precache
+  lists `./index.html`, never a bare `./`.
 - A reload is the last resort, only when a module truly cannot be served from its own build (a page two deploys old,
   a cache the browser evicted): the page flushes what is pending (an edit in progress is committed, the sync engine
   is given a moment), remembers its view and the panel that was asked for, reloads, and comes back to that view

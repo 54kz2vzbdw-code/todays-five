@@ -35,7 +35,7 @@ export function init(api) {
   // 1.4: how each panel repaints itself when ‹ Back lands on it (one primitive in app.js, no per-panel buttons)
   if (A.registerOpeners) A.registerOpeners({
     "p-theme": () => openTheme(pickSlot), "p-settings": openSettings, "p-lists": () => openLists(), "p-list": () => { if (detailId) openListDetail(detailId); },
-    "p-share": () => { openShare(); }, "p-save": () => showSaveLink(), "p-help": () => openHelp(lastHelp), "p-keys": openKeys, "p-export": openExport, "p-history": openHistory,
+    "p-share": () => { openShare(); }, "p-save": () => showSaveLink(), "p-help": () => openHelp(lastHelp), "p-keys": openKeys, "p-export": openExport, "p-history": () => openHistory(historyOf ? historyOf.doc : undefined, historyOf ? historyOf.title : undefined),
     "p-pick": () => { if (lastPick) openPick(lastPick); }, "p-line": () => { if (lineId) openLineMenu(lineId); }, "p-sec": () => { if (secMenuId !== null && secMenuId !== undefined) openSectionMenu(secMenuId); }, "p-repeat": () => { if (lineId) openRepeat(lineId); }
   });
 }
@@ -395,9 +395,7 @@ export function openLists({ removed = false } = {}) {
   else mine.forEach(l => menu.appendChild(mk(l, false)));
   archived.forEach(l => rm.appendChild(mk(l, true)));
   $("#lists-removed-h").hidden = !archived.length; rm.hidden = !archived.length;
-  $("#l-archive").hidden = !A.listId;
-  $("#l-rename").hidden = !A.listId || (A.listMode !== "edit" && !A.isShared());
-  $("#l-rename").textContent = A.listId && A.isShared() ? "Nickname this list" : "Rename this list";
+  // 1.9: Rename and Remove live in a list's detail (›) and nowhere else; the shelf keeps New list and the paste field (proposal 5)
   A.showPanel("p-lists");
   if (removed && archived.length) $("#lists-removed-h").scrollIntoView({ block: "start" });
 }
@@ -433,6 +431,10 @@ export function openListDetail(id) {
   o.setAttribute("aria-pressed", shared ? "false" : "true");
   $("#list-detail-origin-sub").textContent = shared ? "Off: filed under Shared with me. On: under My lists, with New keys and Delete this list everywhere." : "On: under My lists. Off: under Shared with me, without New keys or Delete this list everywhere.";
   $('#list-detail-menu [data-lact="open"]').hidden = id === A.listId;
+  // 1.9: History lives here, where a list's own things are (proposal 5); the streak is its state
+  const local = id === A.listId && A.doc ? { doc: A.doc } : A.loadLocal(id);
+  $("#list-detail-history").hidden = !local;
+  $("#list-detail-history-k").textContent = local ? (s => s ? s + "-day streak" : "")(M.streak(local.doc)) : "";
   A.showPanel("p-list");
 }
 function wireListDetail() {
@@ -449,6 +451,7 @@ function wireListDetail() {
       A.toast(l.origin === "shared" ? "Filed under Shared with me" : "Filed under My lists");
     }
     else if (act === "remove") { A.closePanel(); archiveList(l.id); }
+    else if (act === "history") { const local = l.id === A.listId && A.doc ? { doc: A.doc } : A.loadLocal(l.id); if (local) openHistory(local.doc, $("#p-list-h").textContent); }
   });
 }
 /** Rename the open list: the name inside the document, which syncs. */
@@ -469,24 +472,26 @@ function wireLists() {
     const id = M.newId();
     A.createList(M.emptyDoc(id, (name || "").trim().slice(0, 60)), id);
   });
-  $("#l-rename").addEventListener("click", () => { A.closePanel(); if (A.isShared()) nicknameList(A.listId); else renameOpenList(); }); // 1.4: a shared list takes a nickname, its own name stays
-  $("#l-archive").addEventListener("click", () => { A.closePanel(); archiveList(A.listId); });
   wireListDetail();
   $("#l-paste-go").addEventListener("click", () => { const r = A.parseLink($("#l-paste").value); if (!r) { A.toast("That doesn't look like a list link"); return; } A.closePanel(); A.switchTo(r, { paste: true }); });
 }
 
 /* ---------------- history ---------------- */
-export function openHistory() {
-  const s = M.streak(A.doc);
+let historyOf = null; // 1.9: the list whose History is open (its id, or null for the open list), so Back repaints the same one
+export function openHistory(docArg, title) {
+  const doc = docArg || A.doc; if (!doc) return;
+  historyOf = docArg && docArg !== A.doc ? { doc: docArg, title } : null;
+  $("#p-history-h").textContent = title ? "History · " + title : "History";
+  const s = M.streak(doc);
   $("#history-streak").textContent = s ? `${s}-day streak` : "No streak yet";
   const root = $("#history-days"); root.innerHTML = "";
-  const days = M.historyDays(A.doc).slice(0, 60);
+  const days = M.historyDays(doc).slice(0, 60);
   if (!days.length) { root.innerHTML = '<p>Nothing finished on a previous day yet. Finished lines move here at the start of the next day.</p>'; }
   for (const day of days) {
     const d = document.createElement("div"); d.className = "day";
     const h = document.createElement("h4"); h.textContent = new Date(day + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
     const ul = document.createElement("ul");
-    for (const e of A.doc.history[day]) {
+    for (const e of doc.history[day]) {
       const li = document.createElement("li");
       const t = document.createElement("span"); t.className = "t"; t.textContent = new Date(e.doneAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
       const x = document.createElement("span"); x.textContent = e.text + (e.section ? " · " + e.section : "");
@@ -541,11 +546,11 @@ function paintSettings() {
   set("swipe", !d.swipeOff); $("#set-swipe").hidden = !A.touchUi();
   set("keys", !d.keysOff); $("#set-keys").hidden = A.touchUi();
   set("fade", !d.idleFadeOff); $("#set-fade").hidden = A.touchUi();
+  // 1.9: Templates only for a list with no sections, the case the row was written for (a section's ⋯ carries them otherwise);
+  // Removed lists left (Lists shows the removed group itself) and History moved into a list's detail (proposal 5)
   const tpls = A.doc ? M.liveTemplates(A.doc).length : 0;
   $("#set-tpl-k").textContent = tpls ? String(tpls) : "";
-  const removed = meta().lists.filter(l => l.archived).length;
-  $("#set-removed-k").textContent = removed ? String(removed) : "";
-  $("#streak-k").textContent = A.doc ? (s => s ? s + "-day streak" : "")(M.streak(A.doc)) : "";
+  $('#p-settings [data-set="templates"]').hidden = !A.doc || M.liveSections(A.doc).length > 0;
   const W = A.ref && A.ref.mode === "edit" ? A.ref.W : null;
   $("#set-addurl").value = W ? M.addUrl(A.BASE, W) : "Open a Private link to get its URL";
   $("#set-addurl-copy").disabled = !W;
@@ -566,8 +571,6 @@ function wireSettings() {
     else if (k === "keys") { d.keysOff = !d.keysOff; A.saveDevice(); paintSettings(); A.toast(d.keysOff ? "Single-key shortcuts off (Cmd/Ctrl+Z, Esc and ⌥↑↓ still work)" : "Single-key shortcuts on"); }
     else if (k === "fade") { d.idleFadeOff = !d.idleFadeOff; A.saveDevice(); paintSettings(); A.idleReset(); }
     else if (k === "templates") openTemplates();
-    else if (k === "removed") openLists({ removed: true });
-    else if (k === "history") openHistory();
     else if (k === "who") { d.whoOff = !d.whoOff; A.saveDevice(); A.resubscribePresence(); paintSettings(); }
     else if (k === "export") openExport();
   });

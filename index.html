@@ -226,38 +226,29 @@
     </div>
   </div>
 
-  <h3>Sound</h3>
+  <!-- 1.9: three groups — Appearance, this device's habits, this list's own things (the audit's proposals 5 and 8) -->
+  <h3>This device</h3>
   <div class="menu">
     <button type="button" class="row-toggle" data-set="sound" aria-pressed="true"><span class="lb">Sound<span class="sub">The knock, the bell, the finale</span></span><span class="sw" aria-hidden="true"></span></button>
     <label class="item" for="set-pack"><span class="lb">Sound pack<span class="sub" id="set-pack-sub">Each theme picks its own</span></span><select id="set-pack"><option value="">Theme's pick</option></select></label>
     <label class="item" for="volume"><span class="lb">Volume</span><input type="range" id="volume" min="0" max="100" step="5" aria-label="Volume"></label>
     <button type="button" class="row-toggle" data-set="celebrate" aria-pressed="false"><span class="lb">Celebrate changes from other devices<span class="sub">Sound and confetti when someone else crosses a line off</span></span><span class="sw" aria-hidden="true"></span></button>
-  </div>
-
-  <h3>Behavior</h3>
-  <div class="menu">
     <button type="button" class="row-toggle" data-set="review" aria-pressed="false"><span class="lb">Day review<span class="sub">A quiet card under the finale: streak, the week, today's lines</span></span><span class="sw" aria-hidden="true"></span></button>
     <button type="button" class="row-toggle" data-set="wake" aria-pressed="false"><span class="lb">Keep screen awake<span class="sub">While this list is on screen</span></span><span class="sw" aria-hidden="true"></span></button>
     <button type="button" class="row-toggle" data-set="swipe" aria-pressed="true" id="set-swipe"><span class="lb">Swipe left for “Not today”<span class="sub">The line comes back tomorrow</span></span><span class="sw" aria-hidden="true"></span></button>
     <button type="button" class="row-toggle" data-set="keys" aria-pressed="true" id="set-keys"><span class="lb">Single-key shortcuts<span class="sub">N, E, A, T, M, F, O, S, 1–9. Cmd/Ctrl+Z and Esc always work</span></span><span class="sw" aria-hidden="true"></span></button>
     <button type="button" class="row-toggle" data-set="fade" aria-pressed="true" id="set-fade"><span class="lb">Fade controls when idle<span class="sub">A few seconds without the mouse and the top bar and footer step back to the date and the count. Any move brings them back</span></span><span class="sw" aria-hidden="true"></span></button>
+    <button type="button" class="row-toggle" data-set="who" aria-pressed="true"><span class="lb">Show who's here<span class="sub">A dot per other device with this list open. Off: this device neither shows nor counts</span></span><span class="sw" aria-hidden="true"></span></button>
   </div>
 
-  <h3>Lists</h3>
-  <div class="menu">
-    <button type="button" class="row-set" data-set="templates"><span class="lb">Templates<span class="sub">Saved from a section; insert them anywhere</span></span><span class="k state" id="set-tpl-k"></span></button>
-    <button type="button" class="row-set" data-set="removed"><span class="lb">Removed from this device<span class="sub">Hidden here only; Lists brings one back</span></span><span class="k state" id="set-removed-k"></span></button>
-    <button type="button" class="row-set" data-set="history"><span class="lb">History</span><span class="k state" id="streak-k"></span></button>
-  </div>
-
-  <h3>Advanced</h3>
+  <h3>This list</h3>
   <div class="menu">
     <div class="sub-block">
       <span class="lb">Add from anywhere<span class="sub">Open this URL with text on the end and the line lands on Today. How it works has a Shortcut and a bookmarklet.</span></span>
       <div class="inline"><input class="link" id="set-addurl" type="text" readonly aria-label="Add-from-anywhere URL" spellcheck="false"><button class="chip" id="set-addurl-copy" type="button">Copy</button></div>
     </div>
     <button type="button" class="row-set" data-set="export"><span class="lb">Export &amp; import<span class="sub">The only backup there is. Export a file, and import one back.</span></span><span class="k state">›</span></button>
-    <button type="button" class="row-toggle" data-set="who" aria-pressed="true"><span class="lb">Show who's here<span class="sub">A dot per other device with this list open. Off: this device neither shows nor counts</span></span><span class="sw" aria-hidden="true"></span></button>
+    <button type="button" class="row-set" data-set="templates" hidden><span class="lb">Templates<span class="sub">Saved lines to insert. A section's ⋯ has them once the list has sections.</span></span><span class="k state" id="set-tpl-k"></span></button>
   </div>
   <p class="fine" id="set-version"></p>
 </div></dialog>
@@ -426,8 +417,6 @@
   <div class="menu lists" id="lists-removed"></div>
   <div class="row-actions">
     <button class="chip accent" id="l-new" type="button">New list</button>
-    <button class="chip" id="l-rename" type="button">Rename this list</button>
-    <button class="chip" id="l-archive" type="button">Remove this list from this device</button>
   </div>
   <div class="field">
     <label for="l-paste">Paste a link</label>
@@ -447,6 +436,7 @@
     <button type="button" data-lact="open"><span class="lb">Open</span></button>
     <button type="button" data-lact="rename"><span class="lb" id="list-detail-rename">Rename</span></button>
     <button type="button" class="row-toggle" data-lact="origin" id="list-detail-origin" aria-pressed="false"><span class="lb" id="list-detail-origin-lb">Mine<span class="sub" id="list-detail-origin-sub"></span></span><span class="sw" aria-hidden="true"></span></button>
+    <button type="button" data-lact="history" id="list-detail-history"><span class="lb">History<span class="sub">Finished lines, by day</span></span><span class="k state" id="list-detail-history-k"></span></button>
     <button type="button" data-lact="remove"><span class="lb">Remove from this device</span></button>
   </div>
 </div></dialog>

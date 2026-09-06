@@ -538,11 +538,17 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": Settings has five sections, the toggles hold, and Advanced keeps the add-from-anywhere URL and who's-here beside Export & import ›", async () => {
+  await test(label + ": 1.9: Settings is three groups — Appearance, This device, This list — the toggles hold, Templates shows only for a list with no sections, and This list keeps the add-from-anywhere URL beside Export & import ›", async () => {
     const t = await fresh(opts);
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
     const heads = await t.page.$$eval("#p-settings h3", els => els.map(e => e.textContent.trim()));
-    assert.equal(heads.join("|"), "Appearance|Sound|Behavior|Lists|Advanced");
+    assert.equal(heads.join("|"), "Appearance|This device|This list");
+    assert.equal(await t.page.locator('#p-settings [data-set="removed"], #p-settings [data-set="history"]').count(), 0, "Removed lists and History left Settings (proposal 5)");
+    const habits = await t.page.$$eval("#p-settings h3:nth-of-type(2) + .menu > *:not([hidden])", els => els.map(e => (e.querySelector(".lb") || e).firstChild.textContent.trim()));
+    const wake = (await t.page.locator('[data-set="wake"]:not([hidden])').count()) ? ["Keep screen awake"] : [];
+    const want = ["Sound", "Sound pack", "Volume", "Celebrate changes from other devices", "Day review", ...wake, ...(touch ? ["Swipe left for “Not today”"] : ["Single-key shortcuts", "Fade controls when idle"]), "Show who's here"];
+    assert.equal(habits.join("|"), want.join("|"), "this device's habits, in the mockup's order");
+    assert.ok(!(await t.page.$eval('[data-set="templates"]', e => e.hidden)), "no sections yet: Templates shows under This list");
     assert.equal(await t.page.locator("#set-full").count(), 0, "Full screen left Settings for ⋯");
     assert.ok(new RegExp(VERSION_LABEL.replace(/[.()]/g, "\\$&")).test(await t.page.textContent("#set-version")), "the version line: " + await t.page.textContent("#set-version"));
     for (const k of ["review", "celebrate", "who"]) { await t.page.click(`[data-set="${k}"]`); }
@@ -557,9 +563,9 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.selectOption("#set-switch", "schedule"); await wait(150); assert.ok(await t.page.locator("#schedule-block").isVisible(), "the times show for a schedule"); assert.ok(/Day from 07:00, night from 19:00/.test(await t.page.textContent("#set-switch-sub")));
     await t.page.selectOption("#set-switch", "hand"); await wait(150); assert.ok(await t.page.locator("#schedule-block").isHidden()); assert.ok(/sun and moon/.test(await t.page.textContent("#set-switch-sub")));
     await t.page.selectOption("#set-switch", "system"); await wait(150);
-    // Advanced: the URL and who's here on top, export and import one level down
-    const adv = await t.page.$$eval("#p-settings h3:last-of-type ~ .menu > *", els => els.map(e => (e.querySelector(".lb") || e).textContent.trim().split(/\n|(?<=[a-z])(?=[A-Z])/)[0].slice(0, 18)));
-    assert.equal(adv.join("|"), "Add from anywhere|Export & import|Show who's here", adv.join("|"));
+    // This list: the URL, export and import one level down, Templates while the list has no sections
+    const adv = await t.page.$$eval("#p-settings h3:last-of-type ~ .menu > *:not([hidden])", els => els.map(e => (e.querySelector(".lb") || e).textContent.trim().split(/\n|(?<=[a-z])(?=[A-Z])/)[0].slice(0, 18)));
+    assert.equal(adv.join("|"), "Add from anywhere|Export & import|Templates", adv.join("|"));
     assert.ok((await t.page.inputValue("#set-addurl")).includes("/add?text="), "the personalised URL is still there");
     await t.page.click('[data-set="export"]'); await t.page.waitForSelector("#p-export[open]");
     assert.equal(await t.page.locator("#set-export-json:not([disabled]), #set-export-md:not([disabled]), #set-import-file").count(), 3, "export and import inside the sub-sheet");
@@ -951,8 +957,12 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const { listId, lookupId } = await t.s();
     await t.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
     await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]");
-    assert.equal((await t.page.textContent("#l-archive")).trim(), "Remove this list from this device");
-    await t.page.click("#l-archive"); await wait(600);
+    // 1.9: Remove and Rename live in the list's detail only (proposal 5); the shelf keeps New list and the paste field
+    assert.equal(await t.page.locator("#l-archive, #l-rename").count(), 0, "no second Rename or Remove at the bottom of Lists");
+    assert.equal(await t.page.$$eval("#p-lists .row-actions .chip", els => els.map(e => e.textContent.trim()).join("|")), "New list");
+    await t.page.click("#lists-menu .row .more"); await t.page.waitForSelector("#p-list[open]"); await wait(200);
+    assert.equal((await t.page.textContent('#list-detail-menu [data-lact="remove"] .lb')).trim(), "Remove from this device");
+    await t.page.click('#list-detail-menu [data-lact="remove"]'); await wait(600);
     assert.ok(await t.page.locator("#welcome").isVisible());
     assert.ok(await t.page.evaluate(id => !!localStorage.getItem("tf/v2/localserver/" + id), lookupId), "server row untouched");
     await t.page.evaluate(() => document.getElementById("more").click()); await t.page.waitForSelector("#p-menu[open]"); await t.page.click('#p-menu [data-act="lists"]');
@@ -1732,8 +1742,10 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); await wait(300);
     const groups = await t.page.$$eval("#lists-menu > *", els => els.map(e => e.classList.contains("group-h") ? "#" + e.textContent : e.querySelector(".lb").firstChild.textContent.trim()));
     assert.deepEqual(groups, ["#My lists", "Untitled list", "#Shared with me", "Groceries"], "grouped: " + groups);
-    assert.equal((await t.page.textContent("#l-rename")).trim(), "Nickname this list");
-    await t.page.click("#l-rename"); await t.page.waitForSelector("#ask[open]"); await t.page.fill("#ask-input", "Sarah's groceries"); await t.page.click("#ask-ok"); await wait(400);
+    // 1.9: the nickname is in the list's detail (›), the one place Rename or Nickname lives now (proposal 5)
+    await t.page.click('#lists-menu .row:has(.cur) .more'); await t.page.waitForSelector("#p-list[open]"); await wait(200);
+    assert.equal((await t.page.textContent("#list-detail-rename")).trim(), "Nickname");
+    await t.page.click('#list-detail-menu [data-lact="rename"]'); await t.page.waitForSelector("#ask[open]"); await t.page.fill("#ask-input", "Sarah's groceries"); await t.page.click("#ask-ok"); await wait(400);
     assert.equal((await t.page.textContent("#listname")).trim(), "Sarah's groceries", "the rail goes by the nickname"); assert.equal((await t.s()).nickname, "Sarah's groceries");
     assert.equal(await t.page.evaluate(id => JSON.parse(localStorage.getItem("tf/v3/list/" + id)).doc.name, a.id), "Groceries", "the name inside the document is untouched");
     // the other device (a page that pulls the list fresh) still sees the list's own name
@@ -1856,7 +1868,13 @@ for (const [label, opts, touch] of VIEWPORTS) {
     // Export & import and Removed lists, from Settings
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('#p-settings [data-set="export"]'); await t.page.waitForSelector("#p-export[open]"); await wait(200);
     assert.equal((await t.s()).panels.join(","), "p-settings,p-export"); await t.page.click("#p-export h2 .back"); await t.page.waitForSelector("#p-settings[open]"); await wait(250); assert.equal((await t.s()).panels.join(","), "p-settings");
-    await t.page.click('#p-settings [data-set="removed"]'); await t.page.waitForSelector("#p-lists[open]"); await wait(200); assert.equal((await t.s()).panels.join(","), "p-settings,p-lists"); await t.page.click("#p-lists h2 .back"); await wait(300); assert.equal((await t.s()).panels.join(","), "p-settings");
+    await t.page.keyboard.press("Escape"); await wait(250);
+    // 1.9: History from a list's detail, two levels under Lists (proposal 5); Back lands on the detail, then on Lists
+    await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); await t.page.click("#lists-menu .row:has(.cur) .more"); await t.page.waitForSelector("#p-list[open]"); await wait(200);
+    assert.ok(!(await t.page.$eval("#list-detail-history", e => e.hidden)), "History is in the detail"); await t.page.click('#list-detail-menu [data-lact="history"]'); await t.page.waitForSelector("#p-history[open]"); await wait(200);
+    assert.equal((await t.s()).panels.join(","), "p-lists,p-list,p-history"); assert.ok(/Nothing finished on a previous day/.test(await t.page.textContent("#history-days")));
+    await t.page.click("#p-history h2 .back"); await t.page.waitForSelector("#p-list[open]"); await wait(300); assert.equal((await t.s()).panels.join(","), "p-lists,p-list");
+    await t.page.click("#p-list h2 .back"); await t.page.waitForSelector("#p-lists[open]"); await wait(300); assert.equal((await t.s()).panels.join(","), "p-lists");
     await t.page.keyboard.press("Escape"); await wait(250);
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });

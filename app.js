@@ -1055,7 +1055,6 @@ function paint() {
   else { fin.classList.remove("on"); hint.classList.remove("off"); }
   if (finale !== finaleOn) { finaleOn = finale; idleReset(); } // the controls never fade during the finale
   paintReview(finale);
-  $("#streak-k").textContent = (s => s ? s + "-day streak" : "")(M.streak(doc));
 }
 /** Day review: a quiet card under "That's the list", only when the setting is on, dismissed by any tap or key. */
 function paintReview(finale) {

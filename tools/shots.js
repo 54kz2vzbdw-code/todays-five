@@ -100,6 +100,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const other = await page.evaluate(() => window.__tf().listId); const home = await page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).lists.find(l => l.id !== window.__tf().listId).id);
     await page.goto(BASE + "?transport=local#/l/" + home); await wait(1500);
     await page.evaluate(id => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.lists = m.lists.filter(l => l.id !== id); localStorage.setItem("tf/v2/meta", JSON.stringify(m)); localStorage.removeItem("tf/v3/list/" + id); }, other);
+    await page.reload(); await page.waitForFunction(() => window.__tf && window.__tf().listId); await wait(400); // the page's own registry is rebuilt from storage
     await page.goto(BASE + "?transport=local#/l/" + other); await page.waitForFunction(() => document.getElementById("whose").open, null, { timeout: 9000 }); await wait(400); await shot("whose");
     await press('#whose [data-whose="shared"]'); await page.waitForFunction(id => window.__tf().listId === id && !document.getElementById("whose").open, other, { timeout: 9000 }); await wait(800);
     await openMore("lists"); await page.waitForSelector("#p-lists[open]"); await page.click("#l-rename"); await page.waitForSelector("#ask[open]"); await page.fill("#ask-input", "Sarah's groceries"); await page.click("#ask-ok"); await wait(500);

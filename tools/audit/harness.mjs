@@ -43,7 +43,7 @@ export async function launch({ headless = true } = {}) {
 }
 
 /** The seeding script: writes the fixture into localStorage with every time shifted to now and the history bucketed by local day. */
-function seedScript() {
+export function seedScript() {
   return `(() => {
     if (localStorage.getItem("tf/v2/meta")) return; // seeded already (a reload)
     const F = ${JSON.stringify(FIXTURE)};

@@ -83,10 +83,29 @@ async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: 
   return { ctx, page, errors, csp, thirdParty, consoleErrors, s, press, hold, lineMenu, away, visibleTools, front, esc, reload, close: () => shared ? page.close() : ctx.close() };
 }
 const rect = (page, sel) => page.$eval(sel, e => { const r = e.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; });
+const { seedScript } = await import("./audit/harness.mjs"); // 1.7: the long-time fixture (four lists, repeats, history, saved themes)
 const seedLines = JSON.parse(fs.readFileSync(new URL("../model.js", import.meta.url), "utf8").match(/SEED_LINES = (\[[\s\S]*?\]);/)[1].replace(/,\s*\]/, "]"));
 
 for (const [label, opts, touch] of VIEWPORTS) {
   console.log("\n==", label);
+
+  await test(label + ": a long-time device opens whole — four lists, a chosen-days repeat on the current one, 90 days of history: no page error, every Today line, the count, sync running", async () => {
+    const t = await fresh(opts, { list: false, init: seedScript() });
+    await t.page.waitForSelector("#list .row"); await wait(1500);
+    await t.reload(); await t.page.waitForSelector("#list .row"); await wait(800);
+    assert.equal(t.errors.length, 0, "page errors at boot: " + t.errors.map(e => e.split("\n")[0]).join(" | "));
+    assert.equal(await t.page.locator("#list .row").count(), 7, "every Today line rendered"); assert.equal(await t.page.locator("#list .row.done").count(), 2);
+    assert.equal((await t.page.textContent("#count")).replace(/\s+/g, " ").trim(), "2/7 done");
+    const s = await t.s(); assert.equal(s.status, "synced", "the engine started: " + s.status); assert.equal(s.migrations, 0);
+    assert.ok(await t.page.$$eval("#list .row", els => els.some(e => /Writing/i.test(e.textContent))), "the section caption on a Today line");
+    if (opts.hasTouch) await t.press("#v-all"); else await t.page.keyboard.press("a"); await wait(400);
+    assert.equal(await t.page.locator("#all .row").count(), 84); assert.equal(await t.page.locator("#all .sec").count(), 7, "six sections and Unsorted");
+    await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); await wait(300);
+    assert.equal(await t.page.locator("#lists-menu .group-h").count(), 2, "My lists and Shared with me"); assert.equal(await t.page.locator("#lists-menu .row").count(), 3, "the archived one is not listed");
+    await t.esc();
+    assert.equal(t.errors.length, 0, t.errors.join(" | ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join(" | "));
+    await t.close();
+  });
 
   await test(label + ": a new list — the save sheet, then the three seed lines of 32 characters or fewer all on screen, no tour, no mark, nothing else", async () => {
     const t = await fresh(opts);

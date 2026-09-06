@@ -248,6 +248,10 @@ function tickTheme() {
 DARK_MQ.addEventListener("change", tickTheme);
 
 /* ---------------- boot ---------------- */
+// Everything boot() can reach is declared above this line (DECISIONS.md, v3 "From the two review passes"): a module-level
+// const below it is in its temporal dead zone while boot runs. 1.7: DAY_NAMES sat below and the first render of a list with a
+// chosen-days repeat threw, leaving the open half done (rows missing, the count 0/0, sync never started).
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]; // ruleLabel, which every row render reaches
 appliedCode = currentThemeCode();
 applyThemeCode(appliedCode);
 paintDate();
@@ -744,7 +748,6 @@ function updateRow(li, it) {
   return changedText;
 }
 function captionFor(it) { return view === "today" ? M.sectionName(doc, it.sectionId) : ""; }
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 function ruleLabel(r) {
   if (!r) return "Never";
   if (r.kind === "daily") return "Every day";

@@ -294,4 +294,13 @@ test("no class or id the common content-blocker lists hide everywhere (build 69:
   const bad = hidden.filter(h => names.has(h)); assert.deepEqual(bad, [], "hidden by a content blocker: " + bad.join(", "));
 });
 
+test("1.7: nothing boot() can reach is declared below the boot call — the module-level const/let after it are the known few", () => {
+  const src = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8").split("\n");
+  const bootAt = src.findIndex(l => l === "boot();");
+  assert.ok(bootAt > 0, "the boot call");
+  const late = src.slice(bootAt + 1).map(l => (l.match(/^(?:const|let) ([A-Za-z_$][\w$]*)/) || [])[1]).filter(Boolean);
+  assert.deepEqual(late, ["downPointers", "preventTouch", "backBtn", "IDLE_MS", "api"], "a new module-level binding below boot() must be one no render, open or paint reaches at boot (DAY_NAMES was, 1.7): declare it above the boot block, or add it here after checking");
+  assert.ok(src.slice(0, bootAt).some(l => l.startsWith("const DAY_NAMES = ")), "DAY_NAMES is above boot");
+});
+
 console.log(`\n${passed} feature tests passed`);

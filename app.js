@@ -175,7 +175,15 @@ const HAPTIC = IOS && (() => { const h = document.getElementById("haptic"); retu
 
 /* ---------------- sound & fx ---------------- */
 const stats = { check: 0, uncheck: 0, finish: 0, burst: 0, volley: 0, tick: 0 }; // read by the test hook
-const rawSound = createSound({ muted: () => !!dev.muted, volume: () => dev.volume, kit: () => theme && theme.sound, pack: () => dev.soundPack || "" });
+const rawSound = createSound({ muted: () => !!dev.muted, volume: () => dev.volume, kit: () => theme && theme.sound, pack: () => packFor(T.activeSlot(dev, envNow())) }); // 1.9: the slot's own pack
+/** 1.9: this device's pack for a slot ("" = the theme's pick). */
+function packFor(slot) { return (dev.soundPacks && dev.soundPacks[slot]) || ""; }
+function setSoundPack(slot, id) {
+  if (slot !== "day" && slot !== "night") return;
+  if (!dev.soundPacks) dev.soundPacks = { day: "", night: "" }; if (!dev.soundPins) dev.soundPins = { day: "", night: "" };
+  dev.soundPacks[slot] = id || ""; dev.soundPins[slot] = ""; // a choice of your own replaces a pin
+  saveDevice();
+}
 const sound = { ...rawSound, check: s => { stats.check++; return rawSound.check(s); }, uncheck: () => { stats.uncheck++; return rawSound.uncheck(); }, finish: () => { stats.finish++; return rawSound.finish(); }, tick: () => { stats.tick++; return rawSound.tick(); } };
 const rawFx = createFx($("#fx"), { palette: () => theme ? theme.confetti : ["#D26128"], shapes: () => theme ? theme.shapes : 1, reduced: () => RM.matches });
 const fx = { burst: (...a) => { stats.burst++; return rawFx.burst(...a); }, volley: () => { stats.volley++; return rawFx.volley(); } };
@@ -209,6 +217,15 @@ function paintField() {
    and lives in theme.js (migrateSlots, activeSlot, flipSlot…); this is the DOM side: apply, crossfade, the glyph. */
 const envNow = () => ({ systemDark: DARK_MQ.matches, now: new Date() });
 if (T.migrateSlots(dev, { returning: RETURNING, env: envNow() })) saveDevice(); // once, on the first open of 1.2; the old keys stay
+// 1.9: a sound pack for Day and one for Night. The single override moves into both slots, so nobody hears a change; a
+// slot holding a kit whose pack changed in 1.9 gets the old pack pinned, until that slot's theme changes. Once, on the
+// first open of 1.9; the old key stays.
+if (!dev.soundPacks || typeof dev.soundPacks !== "object") {
+  const old = typeof dev.soundPack === "string" ? dev.soundPack : "";
+  dev.soundPacks = { day: old, night: old }; dev.soundPins = { day: "", night: "" };
+  if (RETURNING && !old) for (const slot of ["day", "night"]) { const code = dev[slot] || T.SLOT_DEFAULT[slot], was = T.packBefore19(code); if (was) { dev.soundPacks[slot] = was; dev.soundPins[slot] = T.parseCode(code).id; } }
+  saveDevice();
+}
 /** The code of the theme that is on right now. */
 function currentThemeCode() { return T.slotCode(dev, envNow()); }
 let appliedCode = "", fadeRaf = 0;
@@ -265,7 +282,9 @@ function flipSlot() {
 /** Settings → Appearance: a theme for a slot (applied at once when that slot is on), the switch, its times. */
 function setSlotTheme(slot, code) {
   if ((slot !== "day" && slot !== "night") || !T.parseCode(code)) return;
-  dev[slot] = code; saveDevice();
+  dev[slot] = code;
+  if (dev.soundPins && dev.soundPins[slot]) { dev.soundPins[slot] = ""; dev.soundPacks[slot] = ""; } // 1.9: a pin kept the old kit's pack; a new kit plays its own
+  saveDevice();
   if (T.activeSlot(dev, envNow()) === slot) { appliedCode = code; applyThemeCode(code); if (!dev.muted) sound.tick(); }
   else dispatchEvent(new CustomEvent("tf:theme"));
 }
@@ -2287,7 +2306,7 @@ const api = {
   focusRow, newItem, startEdit, commitEdit, deleteItem, toggle, toggleToday, notToday, pushUndo, undo, restoreItem,
   saveDevice, registerList, switchTo, openList, showWelcome, createList, parseLink, flushQuick, flushOthers, killRemote, queueKill, retryPendingKills,
   applyThemeCode, currentThemeCode, tickTheme, setSlotTheme, flipSlot, setSwitchMode, setSwitchTimes, unlockSecret, forgetSecret, activeSlot: () => T.activeSlot(dev, envNow()), autoSlot: () => T.autoSlot(dev, envNow()),
-  slotCode: slot => dev[slot] || T.SLOT_DEFAULT[slot], setWake, toggleMute, toggleFullscreen, setOneThing, setSearch, ruleLabel, idleReset,
+  slotCode: slot => dev[slot] || T.SLOT_DEFAULT[slot], packFor, setSoundPack, soundPacks: () => ({ day: "", night: "", ...(dev.soundPacks || {}) }), soundPins: () => ({ day: "", night: "", ...(dev.soundPins || {}) }), setWake, toggleMute, toggleFullscreen, setOneThing, setSearch, ruleLabel, idleReset,
   editLink, viewLink, copyText, nativeShare, escapeHtml, drawQr, frag,
   resubscribePresence: () => { if (sync) sync.resubscribe(); paintWho(dev.whoOff ? 0 : whoCount); },
   loadLocal, saveLocal, removeLocal,
@@ -2296,7 +2315,7 @@ const api = {
 
 /* test hook (read-only) */
 // 1.7: the secrets only on the local transport
-window.__tf = () => ({ stats: { ...stats }, view, listId: TRANSPORT_KIND === "local" ? listId : (listId ? "held" : null), mode: listMode, lookupId: TRANSPORT_KIND === "local" && ref ? ref.lookupId : null, R: TRANSPORT_KIND === "local" && ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, secret: !!dev.secret, field: !!field, demo, shuffled: shuffledId, zone: doc && doc.zone ? doc.zone : null, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry(), origin: (entryOf(listId) || {}).origin || null, nickname: (entryOf(listId) || {}).nickname || null, whose: $("#whose").open, panels: panelStackIds() });
+window.__tf = () => ({ stats: { ...stats }, view, listId: TRANSPORT_KIND === "local" ? listId : (listId ? "held" : null), mode: listMode, lookupId: TRANSPORT_KIND === "local" && ref ? ref.lookupId : null, R: TRANSPORT_KIND === "local" && ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, secret: !!dev.secret, field: !!field, demo, soundPacks: { ...(dev.soundPacks || {}) }, soundPins: { ...(dev.soundPins || {}) }, shuffled: shuffledId, zone: doc && doc.zone ? doc.zone : null, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry(), origin: (entryOf(listId) || {}).origin || null, nickname: (entryOf(listId) || {}).nickname || null, whose: $("#whose").open, panels: panelStackIds() });
 // test-only controls, on the local transport: simulate what iOS does to the audio context
 if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneToday(); } }, presence: n => paintWho(n) };
 

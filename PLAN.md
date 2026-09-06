@@ -1241,3 +1241,44 @@ What the page itself measured while the GIFs were recorded (ms after the tap, de
 | the finale card on screen | +3, fully in by +525 | starts at +303, under the chord |
 | the chord and the confetti | +643 | +303 |
 | rows crossing | drawn over each other for ~150 ms | the crossed-off line passes over the others on the page's ground |
+
+## The sound packs, redistributed (the addition)
+
+Twelve public packs, sixteen public kits after this round. Until 1.9 the six packs of 1.5 (kalimba, pencil, whistle, bongo, cork, arcade) sat on no kit at all — a person heard one only by overriding — while four kits knocked and five rang bells. The rule was to change a kit only where the new pack is clearly the better fit, and to leave Dark, Light and Pink exactly as 1.0 made them.
+
+| kit | 1.8 | 1.9 | why |
+|---|---|---|---|
+| Dark | knock | knock | v1's, kept |
+| Light | knock | knock | v1's, kept |
+| Pink | bell | bell | v1's, kept |
+| Midnight | bell (low) | bell | a low bell at midnight is right |
+| Forest | marble | marble | 1.0's call (wood and glass) holds |
+| Paper | typewriter | typewriter | 1.0's call holds |
+| Terminal | blip | blip | a terminal beeps; an arcade is another place |
+| Sunset | bell | **cork** | the aperitivo hour: a cork and a glug, in Sunset's lower register |
+| Dusk | bell (high) | bell | a high bell at twilight is right |
+| Harbor | pop | **whistle** | a ferry, not a splash; the whistle at Harbor's pitch |
+| Ember | knock (sawtooth) | **bongo** | hands by a fire; the harsh knock was a stand-in |
+| Cocoa | knock (soft) | **kalimba** | warm wood; the soft knock was a stand-in |
+| Blush | bell (Pink's) | **pop** | fizz — its own voice instead of a borrowed bell |
+| Teletype | blip | blip | Terminal's day keeps Terminal's engine |
+| **Sketch** (new) | — | **pencil** | a pencil fits no kit that exists (Paper types, on purpose, since 1.0): a sketchbook by day |
+| **Arcade** (new) | — | **arcade** | a coin fits no kit that exists (Terminal beeps): a cabinet in the dark, Sketch's night |
+
+Every changed kit keeps every parameter it had (pitch, decay, and Ember's and Cocoa's knock-only noise, filter and tone), so a device that pins its old pack through the update hears exactly what it heard. Whistle and kalimba are each on a kit (Harbor, Cocoa); every one of the twelve is on at least one.
+
+**The two new kits** went through the same floors as every kit (`report()`): Sketch — text 13.2:1, muted 6.0, dim 4.6, accent text 6.7, accent 3.8, danger 5.8, and 4.6–5.4 for the greys and accent text on ink-3; Arcade — text 17.4, muted 9.2, dim 5.8, accent text 8.0, accent 6.1, danger 6.5. They are a day/night pair (the picker offers one beside the other) on the Outfit pair. Their engines play the packs' own parameters, so 1.5's level table applies unchanged; it was re-rendered for the record (`shots/1.9/sounds/`): pencil peaks 0.376 / 0.143 / 0.421 (check, uncheck, finale), arcade 0.074 / 0.070 / 0.119 — the same figures as 1.5.
+
+| Sketch | Arcade |
+|---|---|
+| <img src="shots/1.9/kit-sketch-desktop.png" width="440" alt="Sketch: warm paper, graphite text, a mustard accent"> | <img src="shots/1.9/kit-arcade-desktop.png" width="440" alt="Arcade: near-black indigo, neon magenta"> |
+
+## A sound for Day and one for Night (the addition)
+
+The single per-device override became one per slot without a new row: Settings › Sound pack keeps its place, its sub-line reads both slots (`Day: Theme's pick (Knock) · Night: Kalimba`) and opens a sheet with two pickers. Each defaults to Theme's pick with the theme's pack named, each previews on select, and each sub-line says which one wins: "Light picks Knock, and that's what plays by day" or "Light picks Knock; this device plays Kalimba by day". The builder's own Sound choice is what "Theme's pick" means for a theme you made.
+
+| the row | the sheet | a pick |
+|---|---|---|
+| <img src="shots/1.9/settings-sound-row-phone.png" width="260" alt="Settings: the Sound pack row reads both slots"> | <img src="shots/1.9/sound-sheet-phone.png" width="260" alt="the Sound pack sheet: Day and Night pickers"> | <img src="shots/1.9/sound-sheet-picked-phone.png" width="260" alt="Night set to Kalimba: the sub-line says this device plays it at night"> |
+
+**Nobody hears a change on update.** A device's single override (`dev.soundPack`) lands in both slots. A device with no override whose Day or Night theme is one of the five kits whose pack changed gets the old pack pinned in that slot (`PACK_BEFORE_19`), and the sheet says so: "Cocoa picks Kalimba since 1.9; this device keeps Knock at night, as before". The pin lifts when that slot gets a different theme (the new theme plays its own pack) or when the person picks anything in the sheet. The migration runs once, on the first open of 1.9; the old key stays for a rollback. The browser suite checks all three devices — fresh, one override, two pinned kits — at both viewports.

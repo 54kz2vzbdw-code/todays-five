@@ -31,10 +31,10 @@ export function init(api) {
     }
   }
   A = api; $ = api.$; $$ = api.$$; M = api.M; T = api.T; C = api.C;
-  wireTheme(); wireShare(); wireSave(); wireLists(); wireSettings(); wireSection(); wireLine(); wireRepeat(); wireKeys(); wireMisc();
+  wireTheme(); wireShare(); wireSave(); wireLists(); wireSettings(); wireSound(); wireSection(); wireLine(); wireRepeat(); wireKeys(); wireMisc();
   // 1.4: how each panel repaints itself when ‹ Back lands on it (one primitive in app.js, no per-panel buttons)
   if (A.registerOpeners) A.registerOpeners({
-    "p-theme": () => openTheme(pickSlot, { keepOffer: true }), "p-builder": openBuilder, "p-settings": openSettings, "p-lists": () => openLists(), "p-list": () => { if (detailId) openListDetail(detailId); },
+    "p-theme": () => openTheme(pickSlot, { keepOffer: true }), "p-builder": openBuilder, "p-settings": openSettings, "p-sound": openSound, "p-lists": () => openLists(), "p-list": () => { if (detailId) openListDetail(detailId); },
     "p-share": () => { openShare(); }, "p-save": () => showSaveLink(), "p-help": () => openHelp(lastHelp), "p-keys": openKeys, "p-export": openExport, "p-history": () => openHistory(historyOf ? historyOf.doc : undefined, historyOf ? historyOf.title : undefined),
     "p-pick": () => { if (lastPick) openPick(lastPick); }, "p-line": () => { if (lineId) openLineMenu(lineId); }, "p-sec": () => { if (secMenuId !== null && secMenuId !== undefined) openSectionMenu(secMenuId); }, "p-repeat": () => { if (lineId) openRepeat(lineId); }
   });
@@ -525,6 +525,35 @@ const SECRET_PACKS = [["sparkle", "Sparkle"], ["party", "Party"]]; // 1.6: the S
 function packList() { return dev().secret ? PACKS.concat(SECRET_PACKS) : PACKS; }
 let importedDoc = null;
 export function openSettings() { paintSettings(); A.showPanel("p-settings"); }
+/* 1.9: a sound for Day and one for Night. The Sound pack row keeps its place in Settings; its sub-line reads both slots and
+   opens this sheet — two pickers, each defaulting to the theme's pick with the theme's pack named, each previewing on select.
+   The builder's own Sound choice is the theme's pick for a theme you made; a pick here plays instead of it, for that slot. */
+const packName = id => id ? (packList().find(p => p[0] === id)?.[1] || "") : ""; // "" is the theme's pick, not a pack
+function slotTheme(slot) { return T.parseCode(A.slotCode(slot)); }
+function slotThemePack(slot) { const th = slotTheme(slot); return (th && th.sound && packName(th.sound.engine)) || "Knock"; }
+function slotPackLabel(slot) { const o = packName(A.soundPacks()[slot]); return o || "Theme's pick (" + slotThemePack(slot) + ")"; }
+export function openSound() { paintSound(); A.showPanel("p-sound"); }
+function paintSound() {
+  const packs = packList();
+  for (const slot of ["day", "night"]) {
+    const sel = $("#snd-" + slot);
+    if (sel.options.length !== packs.length) { sel.innerHTML = ""; packs.forEach(([v, n]) => { const o = document.createElement("option"); o.value = v; o.textContent = n; sel.appendChild(o); }); }
+    const th = slotTheme(slot), themePack = slotThemePack(slot), name = th ? th.name : "The theme";
+    sel.options[0].textContent = "Theme's pick (" + themePack + ")";
+    const chosen = A.soundPacks()[slot], override = packName(chosen), when = slot === "day" ? "by day" : "at night";
+    sel.value = override ? chosen : "";
+    $("#snd-" + slot + "-sub").textContent = !override ? name + " picks " + themePack + ", and that's what plays " + when
+      : A.soundPins()[slot] ? name + " picks " + themePack + " since 1.9; this device keeps " + override + " " + when + ", as before"
+      : name + " picks " + themePack + "; this device plays " + override + " " + when;
+  }
+}
+function wireSound() {
+  for (const slot of ["day", "night"]) $("#snd-" + slot).addEventListener("change", e => {
+    A.setSoundPack(slot, e.target.value); paintSound(); paintSettings();
+    const th = slotTheme(slot), eng = e.target.value || (th && th.sound && th.sound.engine) || "knock";
+    if (!dev().muted) A.sound.preview(eng);
+  });
+}
 /** Appearance (1.2): Day theme · Night theme · Switch. The rows name what fills each slot and which one is on; the
     Switch row says how the flip happens and whether a tap on the sun or moon is holding an automation off. */
 function paintAppearance(d) {
@@ -547,14 +576,8 @@ function paintSettings() {
   const d = dev(), set = (name, on) => { const b = $(`#p-settings [data-set="${name}"]`); if (b) b.setAttribute("aria-pressed", on ? "true" : "false"); };
   paintAppearance(d);
   set("sound", !d.muted);
-  const packs = packList();
-  const pk = $("#set-pack"); if (!pk.options.length || pk.options.length !== packs.length) { pk.innerHTML = ""; packs.forEach(([v, n]) => { const o = document.createElement("option"); o.value = v; o.textContent = n; pk.appendChild(o); }); }
-  // "Theme's pick" names the theme's pack, and the sub-line says which one wins on this device
-  const themePack = A.theme ? (packs.find(p => p[0] === (A.theme.sound && A.theme.sound.engine))?.[1] || "Knock") : "";
-  pk.options[0].textContent = themePack ? `Theme's pick (${themePack})` : "Theme's pick";
-  pk.value = d.soundPack || "";
-  const override = packs.find(p => p[0] === d.soundPack)?.[1];
-  $("#set-pack-sub").textContent = !A.theme ? "Each theme picks its own" : override ? `${A.theme.name} picks ${themePack}; this device plays ${override}` : `${A.theme.name} picks ${themePack}, and that's what plays`;
+  // 1.9: one row, both slots — "Day: Theme's pick (Knock) · Night: Kalimba"; the sheet behind it holds a picker for each
+  $("#set-pack-sub").textContent = A.theme ? "Day: " + slotPackLabel("day") + " · Night: " + slotPackLabel("night") : "Each theme picks its own";
   $("#volume").value = Math.round(d.volume * 100);
   set("celebrate", !!d.celebrateRemote);
   set("review", !!d.review);
@@ -580,6 +603,7 @@ function wireSettings() {
     const k = b.dataset.set;
     if (k === "day" || k === "night") openTheme(k);
     else if (k === "sound") { A.toggleMute(); paintSettings(); }
+    else if (k === "pack") openSound(); // 1.9
     else if (k === "celebrate") { d.celebrateRemote = !d.celebrateRemote; A.saveDevice(); paintSettings(); }
     else if (k === "review") { d.review = !d.review; A.saveDevice(); paintSettings(); A.paint(); }
     else if (k === "wake") { await A.setWake(!d.wake); paintSettings(); }
@@ -593,7 +617,6 @@ function wireSettings() {
   $("#set-switch").addEventListener("change", e => { A.setSwitchMode(e.target.value); paintSettings(); });
   const sch = () => { A.setSwitchTimes($("#sch-day-at").value, $("#sch-night-at").value); paintSettings(); };
   ["#sch-day-at", "#sch-night-at"].forEach(s => $(s).addEventListener("change", sch));
-  $("#set-pack").addEventListener("change", e => { d.soundPack = e.target.value; A.saveDevice(); paintSettings(); const eng = e.target.value || (A.theme && A.theme.sound && A.theme.sound.engine) || "knock"; if (!d.muted) A.sound.preview(eng); });
   $("#set-addurl-copy").addEventListener("click", () => A.copyText($("#set-addurl").value, "URL copied. Put text after text= and open it."));
   $("#set-export-json").addEventListener("click", () => exportList("json"));
   $("#set-export-md").addEventListener("click", () => exportList("md"));

@@ -107,6 +107,12 @@ export function pairFamilies(pairId) {
 /* ---------------- curated kits ----------------
    Sound packs (v4): knock, bell, blip, typewriter, marble, pop — see packs.js. Paper types, Forest drops marbles,
    Harbor pops; the rest keep their v3 engines. A device can override the pack in Settings → Sound.
+   1.9: the six packs of 1.5 land on kits. Harbor whistles (a ferry, not a splash), Sunset uncorks (the aperitivo hour),
+   Ember drums (hands by a fire; the sawtooth knock was a stand-in), Cocoa plays the kalimba (warm wood; the soft knock
+   was a stand-in), Blush pops (fizz, its own voice instead of Pink's bell), and two new kits carry the last two: Sketch
+   scratches a pencil, Arcade drops a coin. Each changed kit keeps every old parameter, so a device that pins its old
+   pack through the update (PACK_BEFORE_19, app.js) hears exactly what it heard. Dark, Light, Pink, Midnight, Forest,
+   Paper, Terminal, Dusk and Teletype keep their engines.
    Dark, Light and Pink carry v1's exact tokens (1.9 nudged Pink's accent text alone, to 4.5:1 on ink-3), fonts, sounds and confetti,
    with one exception recorded in DECISIONS.md: the two secondary greys (dim,
    muted) in Dark and Light are nudged to the nearest values that pass 4.5:1.
@@ -186,7 +192,7 @@ const RAW = [
     boxDoneBg: "linear-gradient(135deg,#FF7A59,#FFC26B)",
     strikeBg: "linear-gradient(90deg,#FF7A59,#FFC26B,#FF9EB5,#FF7A59)", strikeSize: "300% 100%", strikeAnim: "shimmer 4s linear infinite",
     finaleStyle: "italic"
-  }, { engine: "bell", pitch: 0.84, decay: 1.2, bright: 0.6 }, ["#FF7A59", "#FFC26B", "#FF9EB5", "#FFF1E6", "#C2452B"], { shapes: 2, lean: "day", partner: "dusk" }),
+  }, { engine: "cork", pitch: 0.84, decay: 1.2, bright: 0.6 }, ["#FF7A59", "#FFC26B", "#FF9EB5", "#FFF1E6", "#C2452B"], { shapes: 2, lean: "day", partner: "dusk" }),
 
   kit("dusk", "Dusk", "dark", "cormorant", {
     ink: "#171226", ink2: "#211A35", ink3: "#2C2446",
@@ -201,21 +207,21 @@ const RAW = [
     text: "#123A3E", muted: "#3F6A6E", dim: "#4C777A", done: "#4C777A",
     accent: "#0F8C8C", accentHi: "#38B3AF", accentDeep: "#0A6666", accentText: "#0C7070", danger: "#C24A3A",
     glow: V1_GLOW("#0F8C8C", .08, 30, 60), strikeShadow: "none"
-  }, { engine: "pop", pitch: 0.95, decay: 1.1 }, ["#0F8C8C", "#38B3AF", "#E8D8B0", "#FFFFFF", "#7ED0C8"], { lean: "day", partner: "forest" }),
+  }, { engine: "whistle", pitch: 0.95, decay: 1.1 }, ["#0F8C8C", "#38B3AF", "#E8D8B0", "#FFFFFF", "#7ED0C8"], { lean: "day", partner: "forest" }),
 
   kit("ember", "Ember", "dark", "archivo", {
     ink: "#1B0F0D", ink2: "#271512", ink3: "#351C18",
     text: "#FFEDE4", muted: "#E0AA97", dim: "#C48B78", done: "#C48B78",
     accent: "#FF4D2E", accentHi: "#FFB02E", accentDeep: "#B4291A", accentText: "#FF6A4F", danger: "#FF6B8A",
     glow: V1_GLOW("#FF4D2E", .14, 36, 64), strikeShadow: "0 0 14px rgba(255,77,46,.55)"
-  }, { engine: "knock", pitch: 0.7, decay: 1.3, noise: 1.8, filter: 3200, tone: "sawtooth" }, ["#FF4D2E", "#FFB02E", "#FF8A3D", "#FFEDE4", "#B4291A"], { lean: "night", partner: "cocoa" }),
+  }, { engine: "bongo", pitch: 0.7, decay: 1.3, noise: 1.8, filter: 3200, tone: "sawtooth" }, ["#FF4D2E", "#FFB02E", "#FF8A3D", "#FFEDE4", "#B4291A"], { lean: "night", partner: "cocoa" }),
 
   kit("cocoa", "Cocoa", "dark", "lora", {
     ink: "#2A1F1A", ink2: "#362923", ink3: "#45352D",
     text: "#F6EBDD", muted: "#CFB8A2", dim: "#B39C86", done: "#B39C86",
     accent: "#D9A066", accentHi: "#F0C48A", accentDeep: "#A66A34", accentText: "#E4AE76", danger: "#E8846A",
     glow: V1_GLOW("#D9A066", .10), strikeShadow: "0 0 10px rgba(217,160,102,.35)"
-  }, { engine: "knock", pitch: 0.85, decay: 1.25, noise: 0.5, filter: 1400 }, ["#D9A066", "#F0C48A", "#F6EBDD", "#8C5A3C", "#A66A34"], { lean: "day", partner: "ember" }),
+  }, { engine: "kalimba", pitch: 0.85, decay: 1.25, noise: 0.5, filter: 1400 }, ["#D9A066", "#F0C48A", "#F6EBDD", "#8C5A3C", "#A66A34"], { lean: "day", partner: "ember" }),
 
   // 1.2: Pink's day. The same Fraunces, the same bell (lighter and quicker), the same hearts and stars, on blush paper.
   kit("blush", "Blush", "light", "fraunces", {
@@ -227,7 +233,7 @@ const RAW = [
     boxDoneBg: "linear-gradient(135deg,#E02A80,#F2A33A)",
     strikeBg: "linear-gradient(90deg,#E02A80,#F2A33A,#FF8FBE,#E02A80)", strikeSize: "300% 100%", strikeAnim: "shimmer 3.4s linear infinite",
     finaleStyle: "italic"
-  }, { engine: "bell", pitch: 1.12, decay: 0.85, bright: 0.7 }, ["#E02A80", "#FF78B4", "#F2A33A", "#FFFFFF", "#FFD1E4", "#A8145A"], { shapes: 3, lean: "day", partner: "pink" }),
+  }, { engine: "pop", pitch: 1.12, decay: 0.85, bright: 0.7 }, ["#E02A80", "#FF78B4", "#F2A33A", "#FFFFFF", "#FFD1E4", "#A8145A"], { shapes: 3, lean: "day", partner: "pink" }),
 
   // 1.2: Terminal's day. The same mono pair and the same blip (lower, softer: paper, not phosphor), green ink on printout paper.
   kit("teletype", "Teletype", "light", "mono", {
@@ -236,6 +242,23 @@ const RAW = [
     accent: "#1E9A4F", accentHi: "#4CC77A", accentDeep: "#137039", accentText: "#14703A", danger: "#B8402A",
     glow: V1_GLOW("#1E9A4F", .06, 30, 60), strikeShadow: "none"
   }, { engine: "blip", pitch: 0.9, decay: 0.8, noise: 0.6 }, ["#1E9A4F", "#4CC77A", "#14261B", "#FFFFFF", "#DCE4D5"], { lean: "day", partner: "terminal" }),
+
+  // 1.9: a sketchbook by day. Warm paper, graphite text, a pencil-yellow accent; the pencil (packs.js, 1.5) on a kit at last.
+  kit("sketch", "Sketch", "light", "outfit", {
+    ink: "#F8F6F1", ink2: "#EFECE5", ink3: "#E2DED4",
+    text: "#2A2A2E", muted: "#5F5E63", dim: "#767579", done: "#767579",
+    accent: "#A88000", accentHi: "#D9A800", accentDeep: "#7A5C00", accentText: "#6E5300", danger: "#B8402A",
+    glow: V1_GLOW("#A88000", .07, 30, 60), strikeShadow: "none"
+  }, { engine: "pencil" }, ["#A88000", "#2A2A2E", "#D9A800", "#FFFFFF", "#6B9BD2", "#D2452B"], { lean: "day", partner: "arcade" }),
+
+  // 1.9: Sketch's night. A cabinet in the dark: near-black indigo, neon magenta, and the coin that rises (packs.js, 1.5).
+  kit("arcade", "Arcade", "dark", "outfit", {
+    ink: "#0C0B1E", ink2: "#161536", ink3: "#211F4A",
+    text: "#F3F1FF", muted: "#B3ADE0", dim: "#8B85C2", done: "#8B85C2",
+    accent: "#FF2BD6", accentHi: "#FF7AE8", accentDeep: "#B3128F", accentText: "#FF6FE0", danger: "#FF5A7A",
+    glow: "radial-gradient(120% 92% at 50% 40%, rgba(255,43,214,.22), rgba(43,240,255,.10) 46%, rgba(255,43,214,0) 74%)",
+    strikeShadow: "0 0 12px rgba(255,43,214,.55)"
+  }, { engine: "arcade" }, ["#FF2BD6", "#2BF0FF", "#FFE600", "#FFFFFF", "#8A2BFF", "#FF7AE8"], { lean: "night", partner: "sketch" }),
 
   /* 1.6: the Secret pair. Two complete kits like any other — palette through the same derivation, the same contrast
      floors, their own fonts, sounds, confetti and finale — that the picker only offers on a device that has been
@@ -316,9 +339,13 @@ function hairSolidFor(ink, text) {
 export const CURATED = RAW.map(finalize);
 export function curated(id) { return CURATED.find(t => t.id === id); }
 /** The pairs, day first, in the order the picker shows them (a day kit and its night partner share an index). */
-export const CURATED_DAY = ["light", "paper", "harbor", "blush", "teletype", "sunset", "cocoa"].map(curated);
+export const CURATED_DAY = ["light", "paper", "harbor", "blush", "teletype", "sunset", "cocoa", "sketch"].map(curated); // 1.9: Sketch (and Arcade, its night)
 export const CURATED_NIGHT = CURATED_DAY.map(t => curated(t.partner));
 /** A curated theme's designed partner (the other side of its pair), or null for a theme that has none. */
+/** 1.9: the pack a curated kit played before this version. A device that held one of these in a slot with no override of
+    its own gets the old pack pinned in that slot on its first open of 1.9 (app.js), until that slot's theme changes. */
+export const PACK_BEFORE_19 = { harbor: "pop", sunset: "bell", ember: "knock", cocoa: "knock", blush: "bell" };
+export function packBefore19(code) { const t = parseCode(code); return t && t.kind === "curated" && PACK_BEFORE_19[t.id] ? PACK_BEFORE_19[t.id] : ""; }
 export function partnerOf(t) { return t && t.kind === "curated" && t.partner ? curated(t.partner) || null : null; }
 
 /* ---------------- the Secret group (1.6) ----------------

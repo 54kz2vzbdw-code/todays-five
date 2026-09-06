@@ -236,7 +236,7 @@
   <h3>This device</h3>
   <div class="menu">
     <button type="button" class="row-toggle" data-set="sound" aria-pressed="true"><span class="lb">Sound<span class="sub">The knock, the bell, the finale</span></span><span class="sw" aria-hidden="true"></span></button>
-    <label class="item" for="set-pack"><span class="lb">Sound pack<span class="sub" id="set-pack-sub">Each theme picks its own</span></span><select id="set-pack"><option value="">Theme's pick</option></select></label>
+    <button type="button" class="row-set" data-set="pack" id="set-pack" aria-haspopup="dialog"><span class="lb">Sound pack<span class="sub" id="set-pack-sub">Day: Theme's pick · Night: Theme's pick</span></span></button><!-- 1.9: one row, a sheet with a picker for each slot -->
     <label class="item" for="volume"><span class="lb">Volume</span><input type="range" id="volume" min="0" max="100" step="5" aria-label="Volume"></label>
     <button type="button" class="row-toggle" data-set="celebrate" aria-pressed="false"><span class="lb">Celebrate changes from other devices<span class="sub">Sound and confetti when someone else crosses a line off</span></span><span class="sw" aria-hidden="true"></span></button>
     <button type="button" class="row-toggle" data-set="review" aria-pressed="false"><span class="lb">Day review<span class="sub">A quiet card under the finale: streak, the week, today's lines</span></span><span class="sw" aria-hidden="true"></span></button>
@@ -257,6 +257,17 @@
     <button type="button" class="row-set" data-set="templates" hidden><span class="lb">Templates<span class="sub">Saved lines to insert. A section's ⋯ has them once the list has sections.</span></span><span class="k state" id="set-tpl-k"></span></button>
   </div>
   <p class="fine" id="set-version"></p>
+</div></dialog>
+
+<!-- 1.9: a sound for Day and one for Night, behind Settings › Sound pack -->
+<dialog class="panel sheet" id="p-sound" aria-labelledby="p-sound-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
+  <h2><span id="p-sound-h">Sound pack</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <p>Theme's pick plays what the theme chose. Anything else plays instead of it, for that slot alone.</p>
+  <div class="menu">
+    <label class="item" for="snd-day"><span class="lb">Day<span class="sub" id="snd-day-sub"></span></span><select id="snd-day"><option value="">Theme's pick</option></select></label>
+    <label class="item" for="snd-night"><span class="lb">Night<span class="sub" id="snd-night-sub"></span></span><select id="snd-night"><option value="">Theme's pick</option></select></label>
+  </div>
 </div></dialog>
 
 <dialog class="panel sheet" id="p-export" aria-labelledby="p-export-h"><div class="body">

@@ -5,7 +5,7 @@ import {
   hexToOklch, oklch, contrast, cssText, normalizeHex, pickPair, PACK_IDS, hueSound,
   CURATED_DAY, CURATED_NIGHT, curated, partnerOf, makePartner, SLOT_DEFAULT, scheduledSlot, autoSlot, activeSlot, slotCode,
   flipSlot, settleHold, setSwitchMode, migrateSlots, mixHex, cssTextBetween,
-  SECRET, SECRET_IDS, isSecretTheme, isSecretCode, isSecretKey
+  SECRET, SECRET_IDS, isSecretTheme, isSecretCode, isSecretKey, PACK_BEFORE_19, packBefore19
 } from "../theme.js";
 import fs from "node:fs";
 
@@ -38,13 +38,13 @@ test("out-of-gamut oklch is mapped by dropping chroma, never NaN", () => {
   assert.equal(oklch(0.5, 0, 0).length, 7);
 });
 
-test("16 curated themes, each a complete kit (the fourteen on offer and the Secret pair)", () => {
-  assert.equal(CURATED.length, 16);
+test("18 curated themes, each a complete kit (the sixteen on offer and the Secret pair; 1.9 added Sketch and Arcade)", () => {
+  assert.equal(CURATED.length, 18);
   const ids = new Set(CURATED.map(t => t.id));
-  assert.equal(ids.size, 16);
+  assert.equal(ids.size, 18);
   for (const t of CURATED) {
     assert.ok(PAIRS[t.pair], t.id + " pair");
-    assert.ok(["knock", "bell", "blip", "typewriter", "marble", "pop", "sparkle", "party"].includes(t.sound.engine), t.id + " sound");
+    assert.ok([...PACK_IDS, "sparkle", "party"].includes(t.sound.engine), t.id + " sound"); // 1.9: any of the twelve
     assert.ok(t.confetti.length >= 4, t.id + " confetti");
     for (const k of ["ink", "ink2", "ink3", "text", "muted", "dim", "done", "muted2", "dim2", "accent", "accentHi", "accentDeep", "accentText", "danger", "hair", "hairHi", "hairSolid", "glow", "strikeShadow", "boxDoneBg", "barBg", "strikeBg", "strikeAnim", "finaleStyle"]) assert.ok(t.colors[k], `${t.id} missing ${k}`);
   }
@@ -73,6 +73,25 @@ test("1.9: --done-2 clears 4.5:1 on --ink-3 in every kit and in a theme you make
   assert.ok(/dialog\.panel\{[^}]*--done:var\(--done-2\)/.test(fs.readFileSync(new URL("../panels.css", import.meta.url), "utf8")), "and so does a panel");
 });
 
+test("1.9: the twelve packs across the curated kits — every public pack on a kit, whistle and kalimba among them; Sketch and Arcade are a day/night pair through the same floors; the pin table is exactly the kits whose pack changed", () => {
+  const pub = CURATED.filter(t => !isSecretTheme(t));
+  const on = new Map(); for (const t of pub) on.set(t.sound.engine, [...(on.get(t.sound.engine) || []), t.id]);
+  for (const p of PACK_IDS) assert.ok(on.has(p), p + " is on a kit");
+  assert.deepEqual(on.get("whistle"), ["harbor"]); assert.deepEqual(on.get("kalimba"), ["cocoa"]); assert.deepEqual(on.get("pencil"), ["sketch"]); assert.deepEqual(on.get("arcade"), ["arcade"]);
+  assert.deepEqual(on.get("knock"), ["dark", "light"], "Dark and Light keep v1's knock"); assert.equal(curated("pink").sound.engine, "bell", "Pink keeps its bell");
+  const before = { dark: "knock", light: "knock", pink: "bell", midnight: "bell", forest: "marble", paper: "typewriter", terminal: "blip", sunset: "bell", dusk: "bell", harbor: "pop", ember: "knock", cocoa: "knock", blush: "bell", teletype: "blip" };
+  const changed = Object.keys(before).filter(id => before[id] !== curated(id).sound.engine);
+  assert.deepEqual(Object.fromEntries(changed.map(id => [id, before[id]])), PACK_BEFORE_19, "the pin table is the kits whose pack changed, with the pack they played");
+  for (const id of changed) { const s = curated(id).sound; assert.ok(s.pitch !== undefined || id === "x", id + " keeps its old parameters"); }
+  assert.equal(curated("cocoa").sound.noise, 0.5); assert.equal(curated("ember").sound.tone, "sawtooth"); // so a pinned knock sounds as it did
+  assert.equal(packBefore19("T1:curated:cocoa"), "knock"); assert.equal(packBefore19("T1:curated:dark"), ""); assert.equal(packBefore19("T2:d:3366FF:grotesk:marble:X"), ""); assert.equal(packBefore19("junk"), "");
+  const sk = curated("sketch"), ar = curated("arcade");
+  assert.equal(sk.partner, "arcade"); assert.equal(ar.partner, "sketch"); assert.equal(sk.lean, "day"); assert.equal(ar.lean, "night"); assert.equal(sk.pair, ar.pair, "a pair shares its fonts");
+  assert.ok(CURATED_DAY.includes(sk) && CURATED_NIGHT.includes(ar), "in the open groups");
+  for (const t of [sk, ar]) { const r = report(t); for (const k of ["text", "muted", "dim", "accentText", "danger"]) assert.ok(r[k] >= (k === "text" ? 7 : 4.5), t.id + " " + k + ": " + r[k].toFixed(2)); assert.ok(r.accent >= 3, t.id + " accent " + r.accent.toFixed(2)); }
+  assert.equal(CURATED.length, 18, "fourteen public kits, two new, the Secret pair");
+});
+
 test("1.7: every curated kit's accent text and danger clear 4.5:1 and its accent 3:1 on the elevated surface too (the originals keep their tokens)", () => {
   for (const t of CURATED) {
     if (["dark", "light", "pink"].includes(t.id)) continue;
@@ -83,9 +102,9 @@ test("1.7: every curated kit's accent text and danger clear 4.5:1 and its accent
   }
 });
 
-test("best-fit sound packs: Paper types, Forest drops marbles, Harbor pops, the originals keep theirs", () => {
+test("best-fit sound packs: Paper types, Forest drops marbles, Harbor whistles (pops until 1.9), the originals keep theirs", () => {
   const eng = id => CURATED.find(t => t.id === id).sound.engine;
-  assert.equal(eng("paper"), "typewriter"); assert.equal(eng("forest"), "marble"); assert.equal(eng("harbor"), "pop");
+  assert.equal(eng("paper"), "typewriter"); assert.equal(eng("forest"), "marble"); assert.equal(eng("harbor"), "whistle"); // 1.9: a ferry, not a splash
   assert.equal(eng("dark"), "knock"); assert.equal(eng("light"), "knock"); assert.equal(eng("pink"), "bell"); assert.equal(eng("terminal"), "blip");
 });
 
@@ -198,17 +217,17 @@ test("every curated theme leans day or night and names a partner that names it b
     assert.notEqual(p.lean, t.lean, t.id + " and " + p.id + " lean different ways");
   }
   const pairs = CURATED_DAY.map((d, i) => d.id + "↔" + CURATED_NIGHT[i].id);
-  assert.deepEqual(pairs, ["light↔dark", "paper↔midnight", "harbor↔forest", "blush↔pink", "teletype↔terminal", "sunset↔dusk", "cocoa↔ember"]);
+  assert.deepEqual(pairs, ["light↔dark", "paper↔midnight", "harbor↔forest", "blush↔pink", "teletype↔terminal", "sunset↔dusk", "cocoa↔ember", "sketch↔arcade"]);
   assert.equal(CURATED_DAY.length + CURATED_NIGHT.length + SECRET.length, CURATED.length, "every kit is in exactly one group");
   assert.ok(CURATED_DAY.every(t => !t.secret) && CURATED_NIGHT.every(t => !t.secret), "the Secret pair is in neither of the two open groups");
   assert.ok(CURATED_DAY.every(t => t.lean === "day") && CURATED_NIGHT.every(t => t.lean === "night"));
   assert.equal(partnerOf(derive({ accent: "#3366FF" })), null, "a theme you make has no curated partner");
 });
 
-test("the two new kits reach the curated bar and share their partner's DNA: Blush is Pink's day, Teletype is Terminal's day", () => {
+test("the two 1.2 kits reach the curated bar and share their partner's DNA: Blush is Pink's day (with its own pop since 1.9), Teletype is Terminal's day", () => {
   const blush = curated("blush"), pink = curated("pink"), tele = curated("teletype"), term = curated("terminal");
   check(blush, "blush"); check(tele, "teletype");
-  assert.equal(blush.base, "light"); assert.equal(blush.pair, pink.pair); assert.equal(blush.sound.engine, "bell"); assert.equal(blush.shapes, 3); assert.ok(blush.confetti.length >= 5);
+  assert.equal(blush.base, "light"); assert.equal(blush.pair, pink.pair); assert.equal(blush.sound.engine, "pop"); /* 1.9: its own voice (it borrowed Pink's bell until then) */ assert.equal(blush.shapes, 3); assert.ok(blush.confetti.length >= 5);
   assert.equal(blush.colors.strikeAnim, pink.colors.strikeAnim, "the same shimmer strike as Pink");
   assert.equal(tele.base, "light"); assert.equal(tele.pair, term.pair); assert.equal(tele.sound.engine, "blip"); assert.ok(tele.sound.pitch < 1, "a lower, softer blip"); assert.ok(tele.confetti.length >= 5);
   for (const t of [blush, tele]) assert.equal(themeCode(t), "T1:curated:" + t.id, "a curated code like any other");

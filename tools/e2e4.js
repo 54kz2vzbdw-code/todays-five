@@ -89,6 +89,8 @@ const seedLines = JSON.parse(fs.readFileSync(new URL("../model.js", import.meta.
 
 for (const [label, opts, touch] of VIEWPORTS) {
   console.log("\n==", label);
+  /** 1.9: Settings › Sound pack opens a sheet with a picker per slot; read one picker's options and come back */
+  const packOptions = async (t, slot = "day") => { await t.page.click("#set-pack"); await t.page.waitForSelector("#p-sound[open]"); await wait(250); const v = await t.page.$$eval("#snd-" + slot + " option", els => els.map(e => e.textContent)); await t.page.click("#p-sound h2 .back"); await t.page.waitForSelector("#p-settings[open]"); await wait(250); return v; };
   const openBuild = async t => { if (!(await t.page.$("#p-builder[open]"))) { await t.page.click("#sw-build"); await t.page.waitForSelector("#p-builder[open]"); await wait(150); } }; // 1.9: the builder is a sheet under the picker's Make your own row
 
   await test(label + ": a long-time device opens whole — four lists, a chosen-days repeat on the current one, 90 days of history: no page error, every Today line, the count, sync running", async () => {
@@ -562,6 +564,49 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 
+  await test(label + ": 1.9: a sound for Day and one for Night — the row reads both slots and opens a sheet with a picker each, defaulting to the theme's pick and previewing; a 1.8 override lands in both slots; a kit whose pack changed keeps its old pack pinned until the slot's theme changes", async () => {
+    // a fresh device: both slots on the theme's pick; a pick previews and the row says so; the section keeps its rows (no select in Settings)
+    const t = await fresh(opts);
+    await t.press("#list .row:first-child .check"); await wait(400); // a gesture, so a preview has a context
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await wait(200);
+    assert.equal((await t.page.textContent("#set-pack-sub")).trim(), "Day: Theme's pick (Knock) · Night: Theme's pick (Knock)");
+    assert.equal(await t.page.locator("#p-settings select").count(), 1, "the switch select alone: the pack picker is a sheet now");
+    await t.page.click("#set-pack"); await t.page.waitForSelector("#p-sound[open]"); await wait(250);
+    assert.equal((await t.s()).panels.join(","), "p-settings,p-sound", "a sheet under Settings");
+    assert.deepEqual(await t.page.$$eval("#p-sound select", ss => ss.map(s => [s.value, s.options[0].textContent])), [["", "Theme's pick (Knock)"], ["", "Theme's pick (Knock)"]], "each defaults to the theme's pick, named");
+    assert.ok(/Light picks Knock, and that's what plays by day/.test(await t.page.textContent("#snd-day-sub")), await t.page.textContent("#snd-day-sub"));
+    await t.page.selectOption("#snd-day", "kalimba"); await wait(300);
+    assert.equal((await t.s()).audio.state, "running", "a pick previews"); assert.deepEqual((await t.s()).soundPacks, { day: "kalimba", night: "" });
+    assert.ok(/Light picks Knock; this device plays Kalimba by day/.test(await t.page.textContent("#snd-day-sub")));
+    await t.page.click("#p-sound h2 .back"); await t.page.waitForSelector("#p-settings[open]"); await wait(250);
+    assert.equal((await t.page.textContent("#set-pack-sub")).trim(), "Day: Kalimba · Night: Theme's pick (Knock)");
+    await t.esc(); assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
+    // a device from 1.8 with one override: it lands in both slots (the device's record is put back to 1.8's shape and the page reloaded)
+    const a = await fresh(opts);
+    await a.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); delete m.device.soundPacks; delete m.device.soundPins; m.device.soundPack = "arcade"; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
+    await a.reload(); await a.page.waitForSelector("#list .row"); await wait(500);
+    assert.deepEqual((await a.s()).soundPacks, { day: "arcade", night: "arcade" }); assert.deepEqual((await a.s()).soundPins, { day: "", night: "" });
+    await a.press("#more"); await a.page.click('#p-menu [data-act="settings"]'); await a.page.waitForSelector("#p-settings[open]"); await wait(200);
+    assert.equal((await a.page.textContent("#set-pack-sub")).trim(), "Day: Arcade · Night: Arcade");
+    await a.esc(); assert.equal(a.errors.length, 0, a.errors.join("; ")); await a.close();
+    // a device from 1.8 on Cocoa at night (knock then, kalimba now): the knock is pinned, with its old parameters; a new Night theme lifts the pin
+    const b = await fresh(opts);
+    await b.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); delete m.device.soundPacks; delete m.device.soundPins; delete m.device.soundPack; m.device.day = "T1:curated:harbor"; m.device.night = "T1:curated:cocoa"; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
+    await b.reload(); await b.page.waitForSelector("#list .row"); await wait(500);
+    assert.deepEqual((await b.s()).soundPacks, { day: "pop", night: "knock" }, "both slots held a kit whose pack changed"); assert.deepEqual((await b.s()).soundPins, { day: "harbor", night: "cocoa" });
+    await b.press("#more"); await b.page.click('#p-menu [data-act="settings"]'); await b.page.waitForSelector("#p-settings[open]"); await wait(200);
+    assert.equal((await b.page.textContent("#set-pack-sub")).trim(), "Day: Pop · Night: Knock");
+    await b.page.click("#set-pack"); await b.page.waitForSelector("#p-sound[open]"); await wait(250);
+    assert.ok(/Cocoa picks Kalimba since 1.9; this device keeps Knock at night, as before/.test(await b.page.textContent("#snd-night-sub")), await b.page.textContent("#snd-night-sub"));
+    await b.page.click("#p-sound h2 .back"); await b.page.waitForSelector("#p-settings[open]"); await wait(250);
+    await b.page.click('[data-set="night"]'); await b.page.waitForSelector("#p-theme[open]"); await wait(250);
+    await b.press('#p-theme .swatch[data-code="T1:curated:forest"]'); await wait(500);
+    assert.deepEqual((await b.s()).soundPacks, { day: "pop", night: "" }, "a new Night theme plays its own pack"); assert.equal((await b.s()).soundPins.night, "");
+    await b.esc(); await b.reload(); await b.page.waitForSelector("#list .row"); await wait(400);
+    assert.deepEqual((await b.s()).soundPacks, { day: "pop", night: "" }, "and it stays that way: the migration runs once");
+    assert.equal(b.errors.length, 0, b.errors.join("; ")); await b.close();
+  });
+
   await test(label + ": the three just-in-time hints each appear once and never again (the star, drag, the menu)", async () => {
     const t = await fresh(opts);
     assert.equal(JSON.stringify((await t.s()).hints), "{}", "a fresh device has seen none");
@@ -959,19 +1004,22 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const t = await fresh(opts);
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
     await t.page.waitForFunction(() => window.__tf().audio.packs === true, null, { timeout: 5000, polling: 200 });
-    assert.equal(await t.page.$eval("#set-pack option", o => o.textContent), "Theme's pick (Knock)", "Theme's pick names the theme's pack");
+    await t.page.click("#set-pack"); await t.page.waitForSelector("#p-sound[open]"); await wait(250); // 1.9: the sheet, a picker per slot (the system is dark: Night = Dark is on)
+    assert.equal(await t.page.$eval("#snd-night option", o => o.textContent), "Theme's pick (Knock)", "Theme's pick names the theme's pack");
     for (const pack of ["knock", "bell", "blip", "typewriter", "marble", "pop", "kalimba", "pencil", "whistle", "bongo", "cork", "arcade"]) { // 1.5: twelve
-      await t.page.selectOption("#set-pack", pack); await wait(150);
+      await t.page.selectOption("#snd-night", pack); await wait(150);
       const ok = await t.page.evaluate(() => { const s = window.__tf(); return s.audio.state === "running"; });
       assert.ok(ok, pack + ": context running");
     }
-    assert.ok(/Dark picks Knock; this device plays Arcade/.test(await t.page.textContent("#set-pack-sub")), "says which one wins (Dark is on: a dark system, Night = Dark): " + await t.page.textContent("#set-pack-sub"));
+    assert.ok(/Dark picks Knock; this device plays Arcade at night/.test(await t.page.textContent("#snd-night-sub")), "says which one wins (Dark is on: a dark system, Night = Dark): " + await t.page.textContent("#snd-night-sub"));
+    await t.page.click("#p-sound h2 .back"); await t.page.waitForSelector("#p-settings[open]"); await wait(250);
+    assert.equal((await t.page.textContent("#set-pack-sub")).trim(), "Day: Theme's pick (Knock) · Night: Arcade", "the row reads both slots");
     await t.esc(); await wait(200);
     const played = await t.page.evaluate(async () => { const S = await import("./sound.js"); const P = await import("./packs.js"); const snd = S.createSound({ muted: false, volume: 1, kit: () => ({ engine: "knock" }), loadPacks: () => Promise.resolve(P) }); snd.prime(); await new Promise(r => setTimeout(r, 50)); const out = {}; for (const e of P.PACK_ORDER) { out[e] = [snd.preview(e), snd.uncheck(), snd.finish()]; } return { out, st: snd.state() }; });
     for (const e of Object.keys(played.out)) assert.ok(played.out[e][0] && played.out[e][1] && played.out[e][2], e + " scheduled: " + JSON.stringify(played.out[e]));
     assert.equal(played.st.state, "running");
     const themePick = await t.page.evaluate(async () => { const T = await import("./theme.js"); return [T.curated("paper").sound.engine, T.curated("forest").sound.engine, T.curated("harbor").sound.engine]; });
-    assert.equal(themePick.join(","), "typewriter,marble,pop");
+    assert.equal(themePick.join(","), "typewriter,marble,whistle"); // 1.9: Harbor whistles
     assert.equal(t.consoleErrors.length, 0, "console errors: " + t.consoleErrors.join(" | ")); assert.equal(t.errors.length, 0, t.errors.join("; "));
     await t.close();
   });
@@ -996,8 +1044,10 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(await t.page.inputValue("#c-hex"), "#FF3D9A");
     await t.esc(); await wait(200);
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
-    assert.equal(await t.page.$eval("#set-pack option", o => o.textContent), "Theme's pick (Marble)");
-    assert.ok(/Marbles picks Marble, and that's what plays/.test(await t.page.textContent("#set-pack-sub")));
+    assert.ok(/Night: Theme's pick \(Marble\)/.test(await t.page.textContent("#set-pack-sub")), "the row names the slot's own pick: " + await t.page.textContent("#set-pack-sub"));
+    await t.page.click("#set-pack"); await t.page.waitForSelector("#p-sound[open]"); await wait(250);
+    assert.equal(await t.page.$eval("#snd-night option", o => o.textContent), "Theme's pick (Marble)");
+    assert.ok(/Marbles picks Marble, and that's what plays at night/.test(await t.page.textContent("#snd-night-sub")));
     assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join(" | "));
     await t.close();
   });
@@ -1266,7 +1316,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const heads = await t.page.$$eval("#p-theme h3:not([hidden])", els => els.map(e => e.textContent));
     assert.equal(heads.slice(0, 2).join("|"), "Made for day|Made for night"); assert.ok(!heads.includes("Yours"), "no saved themes yet: no Yours group");
     const day = await t.page.$$eval("#sw-day .swatch .nm", els => els.map(e => e.textContent)), night = await t.page.$$eval("#sw-night .swatch .nm", els => els.map(e => e.textContent));
-    assert.equal(day.join(","), "Light,Paper,Harbor,Blush,Teletype,Sunset,Cocoa"); assert.equal(night.join(","), "Dark,Midnight,Forest,Pink,Terminal,Dusk,Ember");
+    assert.equal(day.join(","), "Light,Paper,Harbor,Blush,Teletype,Sunset,Cocoa,Sketch"); assert.equal(night.join(","), "Dark,Midnight,Forest,Pink,Terminal,Dusk,Ember,Arcade");
     assert.equal(await t.page.$eval('#sw-day .swatch[data-code="T1:curated:light"] .sm', e => e.textContent), "Day · pairs with Dark", "a lean and a partner on every curated kit");
     assert.equal(await t.page.$eval('#sw-night .swatch[data-code="T1:curated:ember"] .sm', e => e.textContent), "Night · pairs with Cocoa");
     assert.equal(await t.page.$eval('#sw-day .swatch[data-code="T1:curated:light"]', e => e.getAttribute("aria-pressed")), "true", "the slot's theme is marked");
@@ -1290,9 +1340,9 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#daynight"); await wait(700); assert.equal(await inkOf(t.page), INK.harbor, "Day = Harbor");
     // the sound and the confetti follow the slot's theme like the active theme before
     const kit = await t.page.evaluate(async () => { const T = await import("./theme.js"); const s = window.__tf(); return { engine: T.curated(s.theme).sound.engine, confetti: T.curated(s.theme).confetti[0] }; });
-    assert.equal(kit.engine, "pop", "Harbor pops");
+    assert.equal(kit.engine, "whistle", "Harbor whistles (1.9)");
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
-    assert.equal(await t.page.$eval("#set-pack option", o => o.textContent), "Theme's pick (Pop)", "Settings → Sound names the slot's theme's pack");
+    assert.equal((await packOptions(t, "day"))[0], "Theme's pick (Whistle)", "Settings → Sound names the slot's theme's pack");
     assert.equal(await t.page.textContent("#set-day-k"), "Harbor · on"); assert.equal(await t.page.textContent("#set-night-k"), "Forest");
     assert.equal(t.errors.length, 0, t.errors.join("; "));
     await t.close();
@@ -1363,7 +1413,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.esc(); await t.reload(); await t.page.waitForSelector("#list .row"); await wait(600);
     assert.equal((await t.s()).secret, true, "the key persists in the device's settings");
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
-    assert.deepEqual((await t.page.$$eval("#set-pack option", els => els.map(e => e.textContent))).slice(-2), ["Sparkle", "Party"], "Settings → Sound offers them once unlocked");
+    assert.deepEqual((await packOptions(t, "day")).slice(-2), ["Sparkle", "Party"], "Settings → Sound offers them once unlocked");
     await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]");
     await t.press('#sw-secret .swatch[data-code="T1:curated:superpink"]'); await wait(500);
     await t.press("#partner-use"); await wait(400);
@@ -1496,7 +1546,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     // a whole session: the picker, Settings, How it works
     await openPicker(t); await t.esc(); await wait(200);
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
-    assert.equal((await t.page.$$eval("#set-pack option", els => els.map(e => e.textContent))).length, 13, "Theme's pick and the twelve");
+    assert.equal((await packOptions(t, "day")).length, 13, "Theme's pick and the twelve");
     await t.esc(); await wait(200);
     await t.press("#more"); await t.page.click('#p-menu [data-act="help"]'); await t.page.waitForSelector("#p-help[open]"); await wait(300);
     const help = await t.page.textContent("#p-help");

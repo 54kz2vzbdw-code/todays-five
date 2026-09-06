@@ -175,16 +175,27 @@ vault's payload.
 
 ### How the two stay agreed
 
-- **Restore.** On launch, if the registry is empty or missing and the vault is not, the app loads the
-  most recently seen vaulted link instead of the bare site URL. A wiped web store loses nothing.
-- **Removal.** The vault never deletes on its own. An entry is removed only when the app has read a
-  **non-empty** registry that no longer contains an id it previously saw in that same registry —
-  which is what the page's *Remove from this device* and *Delete this list* do, observed rather than
-  relayed. Reconciling instead of relaying needs no web change, no new bridge message and no new
-  contract, and it survives any future removal path the page grows.
-- **The empty-registry rule is the safety catch**: an empty or unreadable registry is exactly the
-  wiped-storage case the vault exists for, so it never deletes anything. That asymmetry is the whole
-  design: restore is eager, removal is conservative.
+The rule keys on **whether `tf/v2/meta` exists**, never on whether it holds any lists:
+
+- **Restore** only when `localStorage.getItem("tf/v2/meta")` is **null** (or does not parse) and the
+  vault is not empty — the store was wiped, or this is a fresh install over a vault. The app opens
+  the most recently seen vaulted link instead of the bare site URL, and a wiped web store loses
+  nothing.
+- **Reconcile removals** whenever the registry **parses at all — `lists: []` included**. An entry
+  goes from the vault when a parsed registry no longer names it. That is the page's *Remove from
+  this device* and *Delete this list*, observed rather than relayed.
+
+Keying on `lists` being non-empty instead would be a bug: removing the **only** list leaves
+`lists: []`, restore would fire on the next launch, and the list you just removed would come back.
+Existence of the key is the signal that the page's store is intact and speaking for itself; its
+contents are the answer. Restore is eager, removal is exact, and the two never both fire.
+
+Reconciling instead of relaying needs no web change, no new bridge message and no new contract, and
+it survives any future removal path the page grows.
+
+The rules are a pure function — registry JSON in, vault actions out — so they live in
+`TodaysFiveCore` (`VaultReconciler`) and are covered by the existing Swift suite. Only the Keychain
+I/O lives in the app, where a simulator run is the proof.
 
 ---
 
@@ -222,21 +233,22 @@ Three, and nothing else:
 | check-off | `UIImpactFeedbackGenerator(style: .medium)`, `prepare()` on touch-down |
 | un-check | `UIImpactFeedbackGenerator(style: .light)` |
 | finale | `UINotificationFeedbackGenerator`, `.success` |
+| shuffle | `UIImpactFeedbackGenerator(style: .light)` |
 
-No haptic on ordinary taps. The page's sound still plays. On by default; the app gets no settings of
+Shuffle is the fourth (added at checkpoint 1): the page ticks on shuffle today through the switch
+trick, and since 1.10 turns that trick off inside the app, the app has to carry it or the shuffle
+would go quiet. No haptic on ordinary taps. The page's sound still plays. On by default; the app gets no settings of
 its own this phase.
 
 ### The bridge
 
 The page dispatches one `CustomEvent` per moment, from the same place the sound plays.
 
-**On `window`, not `document`** — because `app.js` already dispatches `tf:theme` and `tf:settings`
-there, and a second convention in the same file is a trap for whoever comes next. The brief said
-`document`; this is the one place I have gone the other way, and it is a one-word change if you would
-rather match the brief.
+**On `window`** (settled at checkpoint 1) — matching the page's existing `tf:theme` and
+`tf:settings`, so there is one convention in the file rather than two.
 
-Names, which become contract (§7): **`tf:check`, `tf:uncheck`, `tf:finale`**. No `detail` — nothing
-that could identify a list.
+Names, which become contract (§8): **`tf:check`, `tf:uncheck`, `tf:finale`, `tf:shuffle`**. No
+`detail` — nothing that could identify a list.
 
 Call sites in `app.js`, beside each existing `sound.*` call:
 
@@ -248,6 +260,7 @@ Call sites in `app.js`, beside each existing `sound.*` call:
 | `celebrateRemote()` — `sound.check(…)` | `tf:check` |
 | `celebrateRemote()` — the finale timeout | `tf:finale` |
 | undo (`sound.uncheck()`), Start again (`sound.uncheck()`) | `tf:uncheck` |
+| `shuffle()` — `sound.tick()`, beside the existing `haptic()` | `tf:shuffle` |
 
 Dispatching at the call sites rather than inside `sound.js` is deliberate: `sound.js` returns early
 when the device is muted, and muting the sound must not mute the haptic. They are different senses.
@@ -274,14 +287,16 @@ Dormant on the web: the token never appears in Safari.
 
 ### The one web change: release 1.10
 
-Two lines beyond the event dispatches:
+Two lines beyond the event dispatches, and a third settled at checkpoint 1:
 
 ```js
 const SHELL = / TodaysFive\//.test(navigator.userAgent);
 const HAPTIC = IOS && !SHELL && (() => { … })();   // the shell does its own, and better
+const STANDALONE = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true || SHELL;
 ```
 
-That is the whole of it: `SHELL`, one term added to `HAPTIC`, and six `dispatchEvent` calls. Nothing
+That is the whole of it: `SHELL`, one term on `HAPTIC`, one on `STANDALONE`, and seven
+`dispatchEvent` calls. Nothing
 renders differently, nothing is stored, no file is added to the precache, and a device that is not
 the app cannot tell 1.9 from 1.10 except by the toast.
 
@@ -313,13 +328,8 @@ One more line in 1.10 fixes all three, using the `SHELL` constant §3 already in
 const STANDALONE = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true || SHELL;
 ```
 
-**I have not written it.** It is a third line in a round you scoped to one change, and it changes
-behaviour on real devices (the app's, only) rather than being dormant. It also touches the save
-sheet, which §7 says gains nothing — though this removes a branch rather than adding one.
-
-**Recommendation: include it.** Without it the app ships with an Add-to-Home-Screen hint inside it,
-which is the kind of detail this project does not usually let through. Your call at checkpoint 1;
-the app works either way and the results section will record what shipped.
+**Included** (settled at checkpoint 1). It removes a branch rather than adding one, and without it
+the app would ship with an Add-to-Home-Screen hint inside itself.
 
 ---
 
@@ -401,14 +411,16 @@ Non-negotiable, and cheap to keep:
 
 ---
 
-## Open questions for checkpoint 1
+## Checkpoint 1: answered
 
-1. **`window` or `document`** for the `tf:*` events? I have planned `window`, matching the page's
-   existing `tf:theme` / `tf:settings`. One word either way.
-2. **Does 1.10 include the `STANDALONE` line (§3a)?** I recommend yes; it is the difference between
-   the app looking like Safari and looking like the app.
-3. **Anything to cut?** The plan does §1–§4 fully and stops at §5, which is blocked on the paid
-   program regardless.
+1. **`window`**, matching the page's existing `tf:theme` / `tf:settings`.
+2. **The `STANDALONE` line is in** 1.10.
+3. **A fourth event, `tf:shuffle` → `.light`**, so the app does not lose the tick the page has today.
+4. **The vault keys on `tf/v2/meta` existing**, not on `lists` being non-empty (§2) — otherwise
+   removing the only list resurrects it.
+
+Membership is bought and awaiting the enrolment email, so §5 is written, wired and left switched off:
+the entitlement, the association file and the tests are ready to turn on with a Team ID and a repo.
 
 ## What I will not do without asking
 

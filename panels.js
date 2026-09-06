@@ -3,7 +3,7 @@
 // repeat picker, templates, move-to-list, delete everywhere with its undo, export/import, the ? reference, and How it
 // works. Loaded by app.js on first use; `A` is its api.
 let A = null, $ = null, $$ = null, M = null, T = null, C = null;
-const PANELS_BUILD = 70; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
+const PANELS_BUILD = 71; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
 export const RELOADING = "Today's Five updated: reloading";
 /** The shell, as sw.js lists it (minus the icons): refreshed past the HTTP cache before the one reload the guard below may do. */
 const SHELL_FILES = ["./", "./index.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js", "./sound.js", "./packs.js", "./fx.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json", "./manifest.webmanifest", "./vendor/realtime.js"];
@@ -238,7 +238,9 @@ export async function openShare() {
   $("#share-mine").hidden = view; $("#share-private").hidden = view; $("#share-keys").hidden = view || shared;
   $("#share-unsaved").hidden = view || !A.unsavedEntry();
   $("#share-native").hidden = !navigator.share;
-  $("#qr").hidden = A.sheetUi(); $("#qr-mine").hidden = A.sheetUi(); // the codes have room on the desktop; the phone has Copy (and Share… for the View link)
+  const sheet = A.sheetUi();
+  $("#qr").hidden = sheet; $("#qr-mine").hidden = sheet; $("#qr-private").hidden = true; // the codes have room on the desktop; elsewhere a QR code button beside Copy shows one
+  for (const [btn, always] of [["#share-qr-mine", false], ["#share-qr", false], ["#share-qr-private", true]]) { const b = $(btn); b.hidden = !(sheet || always); b.setAttribute("aria-pressed", "false"); }
   $("#share-link").value = A.viewLink();
   if (!view) { $("#share-link-mine").value = M.hintLink(A.editLink(), "mine"); $("#share-link-private").value = M.hintLink(A.editLink(), "shared"); }
   A.showPanel("p-share");
@@ -246,6 +248,15 @@ export async function openShare() {
 }
 function wireShare() {
   $("#share-copy-mine").addEventListener("click", () => A.copyText($("#share-link-mine").value, "Link copied—open it on your other device"));
+  // a QR code of the link, on request: the box opens above the link and the code is drawn into it
+  const qrToggle = (btn, box, canvas, link) => $(btn).addEventListener("click", async () => {
+    const b = $(btn), q = $(box), on = q.hidden;
+    q.hidden = !on; b.setAttribute("aria-pressed", String(on));
+    if (on) { await A.drawQr($(canvas), link()).catch(() => {}); q.scrollIntoView({ block: "nearest" }); }
+  });
+  qrToggle("#share-qr-mine", "#qr-mine", "#qr-mine-c", () => $("#share-link-mine").value);
+  qrToggle("#share-qr", "#qr", "#qr-c", () => $("#share-link").value);
+  qrToggle("#share-qr-private", "#qr-private", "#qr-private-c", () => $("#share-link-private").value);
   $("#share-copy").addEventListener("click", () => A.copyText($("#share-link").value, "View link copied"));
   $("#share-native").addEventListener("click", () => A.nativeShare($("#share-link").value));
   $("#share-copy-private").addEventListener("click", () => A.copyText($("#share-link-private").value, "Private link copied—it's the key"));

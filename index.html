@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-base="dark" data-build="70">
+<html lang="en" data-base="dark" data-build="71">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -346,7 +346,7 @@
     <p class="share-msg">The Private link, marked as yours: open it on the phone or the other computer and the list files under My lists there.</p>
     <div class="qr" id="qr-mine"><canvas id="qr-mine-c" width="1" height="1" aria-label="QR code for the Private link, marked as yours" role="img"></canvas></div>
     <input class="link" id="share-link-mine" type="text" readonly aria-label="The Private link, marked as yours" spellcheck="false">
-    <div class="row-actions"><button class="chip accent" id="share-copy-mine" type="button">Copy link</button></div>
+    <div class="row-actions"><button class="chip accent" id="share-copy-mine" type="button">Copy link</button><button class="chip" id="share-qr-mine" type="button" aria-pressed="false" aria-label="Show a QR code of this link" hidden>QR code</button></div>
   </section>
   <section class="lk-block" id="share-view">
     <h3>Show it somewhere <span class="sub-h">view only</span></h3>
@@ -356,6 +356,7 @@
     <input class="link" id="share-link" type="text" readonly aria-label="The View link" spellcheck="false">
     <div class="row-actions">
       <button class="chip accent" id="share-copy" type="button">Copy link</button>
+      <button class="chip" id="share-qr" type="button" aria-pressed="false" aria-label="Show a QR code of this link" hidden>QR code</button>
       <button class="chip" id="share-native" type="button" hidden>Share…</button>
     </div>
   </section>
@@ -363,8 +364,9 @@
     <p class="warn" id="share-warn">Careful—this one can change everything, and there is no spare.</p>
     <h3>Let someone edit</h3>
     <p class="share-msg">The Private link, marked as shared: whoever opens it can add, edit and cross off, and the list files under Shared with me on their device. Anything that should only show the list gets the View link instead.</p>
+    <div class="qr" id="qr-private" hidden><canvas id="qr-private-c" width="1" height="1" aria-label="QR code for the Private link, marked as shared" role="img"></canvas></div>
     <input class="link" id="share-link-private" type="text" readonly aria-label="The Private link, marked as shared" spellcheck="false">
-    <div class="row-actions"><button class="chip" id="share-copy-private" type="button">Copy private link</button></div>
+    <div class="row-actions"><button class="chip" id="share-copy-private" type="button">Copy private link</button><button class="chip" id="share-qr-private" type="button" aria-pressed="false" aria-label="Show a QR code of this link">QR code</button></div>
   </section>
   <section class="lk-block friend" id="share-friend">
     <h3>Tell a friend</h3>

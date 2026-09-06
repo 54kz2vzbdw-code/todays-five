@@ -17,6 +17,8 @@ Build 67 — a page that reloads itself after an update comes back whole: iOS se
 
 Build 69 — the Share sheet shows up on phones with a content blocker: its sections carried a class name (`share-block`) that the common social filter lists hide everywhere, so the sheet opened as a bare header there since 1.3; renamed, with a test that keeps blocker-prone names out. The ⋯ menu hands over to a panel without a history traversal.
 
+Build 71 — a QR code when you want one: a QR code button sits beside every Copy link in Share and shows the code for that link (phones had none since 1.4, and the private link marked as shared gets one on request everywhere); and the card a texted link shows fits its title again.
+
 ## 1.3 — A better first minute.
 
 - **New** — The welcome is a list you can try before you keep it.

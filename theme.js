@@ -295,8 +295,8 @@ export function pickPair(base, accentHex) {
 }
 
 /** The sound packs a theme you make can carry (packs.js); "" means the hue rule picks. */
-export const PACK_IDS = ["knock", "bell", "blip", "typewriter", "marble", "pop"];
-export const PACK_NAMES = { knock: "Knock", bell: "Bell", blip: "Blip", typewriter: "Typewriter", marble: "Marble", pop: "Pop" };
+export const PACK_IDS = ["knock", "bell", "blip", "typewriter", "marble", "pop", "kalimba", "pencil", "whistle", "bongo", "cork", "arcade"]; // 1.5: six more; a 1.4 device reading a code with one of them gets the hue rule (packOf)
+export const PACK_NAMES = { knock: "Knock", bell: "Bell", blip: "Blip", typewriter: "Typewriter", marble: "Marble", pop: "Pop", kalimba: "Kalimba", pencil: "Pencil", whistle: "Whistle", bongo: "Bongo", cork: "Cork", arcade: "Arcade" };
 export function packOf(id) { return PACK_IDS.includes(id) ? id : ""; }
 
 /** Every token from an accent + base. Backgrounds are tinted toward the accent hue at low chroma. A `pack` names the

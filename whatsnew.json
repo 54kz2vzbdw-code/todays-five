@@ -2,6 +2,20 @@
   "build": 72,
   "versions": [
     {
+      "version": "1.5",
+      "headline": "Six more sounds.",
+      "items": [
+        {
+          "tag": "New",
+          "text": "Six new sound packs: kalimba, pencil, whistle, bongos, cork and arcade."
+        },
+        {
+          "tag": "New",
+          "text": "Each one has its own finale for the last line of the day."
+        }
+      ]
+    },
+    {
       "version": "1.4",
       "headline": "Yours, and shared with you.",
       "items": [

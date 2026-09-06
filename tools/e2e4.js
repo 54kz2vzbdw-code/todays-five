@@ -568,12 +568,12 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
     await t.page.waitForFunction(() => window.__tf().audio.packs === true, null, { timeout: 5000, polling: 200 });
     assert.equal(await t.page.$eval("#set-pack option", o => o.textContent), "Theme's pick (Knock)", "Theme's pick names the theme's pack");
-    for (const pack of ["knock", "bell", "blip", "typewriter", "marble", "pop"]) {
+    for (const pack of ["knock", "bell", "blip", "typewriter", "marble", "pop", "kalimba", "pencil", "whistle", "bongo", "cork", "arcade"]) { // 1.5: twelve
       await t.page.selectOption("#set-pack", pack); await wait(150);
       const ok = await t.page.evaluate(() => { const s = window.__tf(); return s.audio.state === "running"; });
       assert.ok(ok, pack + ": context running");
     }
-    assert.ok(/Dark picks Knock; this device plays Pop/.test(await t.page.textContent("#set-pack-sub")), "says which one wins (Dark is on: a dark system, Night = Dark): " + await t.page.textContent("#set-pack-sub"));
+    assert.ok(/Dark picks Knock; this device plays Arcade/.test(await t.page.textContent("#set-pack-sub")), "says which one wins (Dark is on: a dark system, Night = Dark): " + await t.page.textContent("#set-pack-sub"));
     await t.esc(); await wait(200);
     const played = await t.page.evaluate(async () => { const S = await import("./sound.js"); const P = await import("./packs.js"); const snd = S.createSound({ muted: false, volume: 1, kit: () => ({ engine: "knock" }), loadPacks: () => Promise.resolve(P) }); snd.prime(); await new Promise(r => setTimeout(r, 50)); const out = {}; for (const e of P.PACK_ORDER) { out[e] = [snd.preview(e), snd.uncheck(), snd.finish()]; } return { out, st: snd.state() }; });
     for (const e of Object.keys(played.out)) assert.ok(played.out[e][0] && played.out[e][1] && played.out[e][2], e + " scheduled: " + JSON.stringify(played.out[e]));
@@ -589,7 +589,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#list .row:first-child .check"); await wait(400); // a gesture, so a preview has a context to play through
     await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]");
     assert.equal((await t.page.textContent("#p-theme-h")).trim(), "Night theme"); assert.equal((await t.page.textContent("#c-use")).trim(), "Use for Night");
-    assert.equal(await t.page.$$eval("#c-pack option", os => os.map(o => o.value).join(",")), ",knock,bell,blip,typewriter,marble,pop");
+    assert.equal(await t.page.$$eval("#c-pack option", os => os.map(o => o.value).join(",")), ",knock,bell,blip,typewriter,marble,pop,kalimba,pencil,whistle,bongo,cork,arcade"); // 1.5
     await t.page.fill("#c-hex", "#3366FF"); await t.page.dispatchEvent("#c-hex", "input"); await wait(150);
     assert.equal(await t.page.$eval("#c-pack option", o => o.textContent), "Auto · Bell", "blue rings a bell by the hue rule");
     await t.page.selectOption("#c-pack", "marble"); await wait(200);

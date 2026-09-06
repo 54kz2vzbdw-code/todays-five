@@ -1,5 +1,7 @@
 // packs.js — the sound engines, loaded lazily by sound.js on the first gesture. Each pack has check, uncheck and
 // finish, and reads the theme's parameters through P(name, default): pitch, decay, noise, filter, bright, tone.
+// Six voices since 1.1 (knock, bell, blip, typewriter, marble, pop) and six more in 1.5 (kalimba, pencil, whistle, bongo,
+// cork, arcade); the lists at the bottom are mirrored in theme.js (codes) and panels.js (Settings).
 // env = { c: AudioContext, master: GainNode, kit, P }.
 
 function noiseBurst({ c, master }, t, len, curve, filt, freq, gain) {
@@ -138,6 +140,147 @@ const popPack = {
   }
 };
 
-export const PACKS = { knock, bell, blip, typewriter, marble, pop: popPack };
-export const PACK_NAMES = { knock: "Knock", bell: "Bell", blip: "Blip", typewriter: "Typewriter", marble: "Marble", pop: "Pop" };
-export const PACK_ORDER = ["knock", "bell", "blip", "typewriter", "marble", "pop"];
+/* 1.5: six more voices. A stroke of noise with its own envelope (attack, hold, release) and a filter that can glide —
+   the pencil, the eraser, the page, the fizz, the palm on a drum. */
+function noiseShape({ c, master }, t, { attack = 0.01, hold = 0.04, release = 0.05, filt = "bandpass", freq = 1500, f1 = 0, q = 1, gain = 0.2 }) {
+  const len = attack + hold + release, N = Math.ceil(len * c.sampleRate) + 64;
+  const n = c.createBufferSource();
+  const buf = c.createBuffer(1, N, c.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < N; i++) d[i] = Math.random() * 2 - 1;
+  n.buffer = buf;
+  const f = c.createBiquadFilter(); f.type = filt; f.Q.value = q; f.frequency.setValueAtTime(freq, t);
+  if (f1) f.frequency.exponentialRampToValueAtTime(f1, t + len);
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + attack); g.gain.setValueAtTime(gain, t + attack + hold); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  n.connect(f); f.connect(g); g.connect(master);
+  n.start(t); n.stop(t + len + 0.02);
+}
+
+/* kalimba — a thumb-piano tine: a warm fundamental, one high partial that dies first, the thumb's tick. Check-offs
+   climb a major pentatonic scale; the finale rolls up it and lands on a chord. */
+const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
+function tine(env, t, f, gain, dec) {
+  tone(env, { f0: f, t, attack: 0.003, peak: 0.26 * gain, len: 0.9 * dec });
+  tone(env, { f0: f * 5.4, t, attack: 0.002, peak: 0.055 * gain, len: 0.18 * dec });
+  tone(env, { type: "triangle", f0: f * 2.01, t, attack: 0.003, peak: 0.04 * gain, len: 0.35 * dec });
+  noiseBurst(env, t, 180, 6, "highpass", 3000, 0.06 * gain);
+}
+const kalimba = {
+  check(env, step) { const { c, P } = env; tine(env, c.currentTime, 392 * Math.pow(2, PENTA[(step || 0) % PENTA.length] / 12) * P("pitch", 1), 1, P("decay", 1)); },
+  uncheck(env) { const { c, P } = env; tine(env, c.currentTime, 294 * P("pitch", 1), 0.35, 0.6 * P("decay", 1)); },
+  finish(env) {
+    const { c, P } = env; const t0 = c.currentTime, p = P("pitch", 1), dec = P("decay", 1);
+    [0, 2, 4, 7, 9, 12, 14, 16].forEach((s, i) => tine(env, t0 + i * 0.07, 392 * Math.pow(2, s / 12) * p, 0.45, dec));
+    [0, 7, 12, 16].forEach(s => tine(env, t0 + 0.64, 196 * Math.pow(2, s / 12) * p, 0.3, 1.7 * dec));
+  }
+};
+
+/* pencil — a check mark drawn on paper: a short stroke down, a longer stroke up; unchecking rubs it out with an
+   eraser; the finale tears the page off the pad. */
+function stroke(env, t, hold, freq, gain, p) {
+  noiseShape(env, t, { attack: 0.012, hold, release: 0.03, filt: "bandpass", freq: freq * p, f1: freq * 0.7 * p, q: 0.8, gain });
+  noiseShape(env, t, { attack: 0.004, hold: 0.01, release: 0.02, filt: "highpass", freq: 4000 * p, gain: gain * 0.5 }); // the tip landing
+}
+const pencil = {
+  check(env, step) {
+    const { c, P } = env; const t = c.currentTime, p = P("pitch", 1), n = P("noise", 1), wob = 1 + (((step || 0) * 5) % 4) * 0.03;
+    stroke(env, t, 0.05, 2400 * wob, 0.30 * n, p);
+    stroke(env, t + 0.10, 0.11, 2000 * wob, 0.36 * n, p);
+  },
+  uncheck(env) {
+    const { c, P } = env; const t = c.currentTime, p = P("pitch", 1);
+    for (let i = 0; i < 3; i++) noiseShape(env, t + i * 0.085, { attack: 0.02, hold: 0.03, release: 0.03, filt: "lowpass", freq: 1200 * p, q: 0.7, gain: 0.26 - i * 0.04 });
+  },
+  finish(env) {
+    const { c, P } = env; const t0 = c.currentTime, p = P("pitch", 1);
+    stroke(env, t0, 0.05, 2400, 0.30, p); stroke(env, t0 + 0.10, 0.11, 2000, 0.36, p);                                                        // the last mark
+    noiseShape(env, t0 + 0.42, { attack: 0.03, hold: 0.30, release: 0.10, filt: "bandpass", freq: 900 * p, f1: 3200 * p, q: 0.5, gain: 0.36 }); // the page coming off the pad
+    for (let i = 0; i < 9; i++) noiseShape(env, t0 + 0.44 + i * 0.038, { attack: 0.003, hold: 0.004, release: 0.012, filt: "highpass", freq: (2500 + i * 300) * p, gain: 0.18 }); // tooth by tooth
+    noiseShape(env, t0 + 0.92, { attack: 0.02, hold: 0.06, release: 0.16, filt: "lowpass", freq: 700 * p, q: 0.6, gain: 0.3 });               // the sheet settling
+  }
+};
+
+/* whistle — someone whistling: a sine with a little vibrato and breath, sliding up for a check-off and down for an
+   uncheck; the finale is a short tune with the last note bent up. */
+function whistle(env, t, f0, f1, len, gain, glide) {
+  const { c, master } = env;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = "sine"; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + glide);
+  const lfo = c.createOscillator(), depth = c.createGain(); lfo.frequency.value = 5.5; depth.gain.value = f1 * 0.012; lfo.connect(depth); depth.connect(o.frequency);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.03); g.gain.setValueAtTime(gain, t + len - 0.06); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + len + 0.02); lfo.start(t); lfo.stop(t + len + 0.02);
+  noiseShape(env, t, { attack: 0.03, hold: Math.max(0.01, len - 0.08), release: 0.05, filt: "bandpass", freq: (f0 + f1) / 2, q: 3, gain: gain * 0.25 }); // the breath
+}
+const whistlePack = {
+  check(env, step) { const { c, P } = env; const p = Math.pow(2, ((step || 0) % 5) / 12) * P("pitch", 1); whistle(env, c.currentTime, 1046 * p, 1568 * p, 0.22, 0.16, 0.12); },
+  uncheck(env) { const { c, P } = env; const p = P("pitch", 1); whistle(env, c.currentTime, 1318 * p, 880 * p, 0.24, 0.13, 0.16); },
+  finish(env) {
+    const { c, P } = env; const t0 = c.currentTime, p = P("pitch", 1);
+    [[1046, 1046, 0.16], [1318, 1318, 0.16], [1568, 1568, 0.16], [1318, 1318, 0.16], [1568, 2093, 0.55]].forEach(([a, b, len], i) => whistle(env, t0 + i * 0.19, a * p, b * p, len, 0.15, len * 0.5));
+  }
+};
+
+/* bongo — a hand drum: the skin's note drops as it settles, the palm slaps on top; check-offs alternate the high and
+   the low drum; the finale is a quick fill and one open hit with both hands. */
+function drum(env, t, f, gain, dec, open) {
+  tone(env, { f0: f * 1.7, f1: f, t, attack: 0.002, peak: 0.29 * gain, len: (open ? 0.32 : 0.16) * dec, bend: 0.035 });
+  tone(env, { type: "triangle", f0: f * 2.9, f1: f * 2.2, t, attack: 0.001, peak: 0.08 * gain, len: 0.06, bend: 0.02 });
+  noiseShape(env, t, { attack: 0.002, hold: 0.008, release: 0.03, filt: "bandpass", freq: 2200, q: 0.7, gain: 0.22 * gain }); // the palm
+}
+const bongo = {
+  check(env, step) { const { c, P } = env; drum(env, c.currentTime, ((step || 0) % 2 === 0 ? 330 : 215) * P("pitch", 1), 1, P("decay", 1), true); },
+  uncheck(env) { const { c, P } = env; drum(env, c.currentTime, 180 * P("pitch", 1), 0.4, 0.6 * P("decay", 1), false); },
+  finish(env) {
+    const { c, P } = env; const t0 = c.currentTime, p = P("pitch", 1), dec = P("decay", 1);
+    [[0, 330, 0.7], [0.11, 215, 0.7], [0.22, 330, 0.8], [0.30, 330, 0.6], [0.38, 215, 0.8], [0.46, 330, 0.7], [0.52, 215, 0.6], [0.58, 330, 0.9]].forEach(([dt, f, g]) => drum(env, t0 + dt, f * p, g * 0.6, dec, false));
+    drum(env, t0 + 0.72, 215 * p, 0.7, 1.6 * dec, true); drum(env, t0 + 0.72, 330 * p, 0.5, 1.4 * dec, true);
+  }
+};
+
+/* cork — a cork eased out of a bottle: the little pop and the bottle's hollow note; unchecking pushes it back in; the
+   finale pops it properly, fizzes, pours, and clinks two glasses. */
+function corkPop(env, t, gain, p, dec) {
+  tone(env, { f0: 620 * p, f1: 240 * p, t, attack: 0.002, peak: 0.36 * gain, len: 0.09 * dec, bend: 0.025 });
+  tone(env, { f0: 165 * p, t: t + 0.01, attack: 0.004, peak: 0.22 * gain, len: 0.16 * dec });
+  noiseShape(env, t, { attack: 0.002, hold: 0.006, release: 0.03, filt: "bandpass", freq: 1500 * p, q: 1.2, gain: 0.25 * gain });
+}
+function glug(env, t, f, gain) { tone(env, { f0: f, f1: f * 1.6, t, attack: 0.006, peak: 0.16 * gain, len: 0.11, bend: 0.06 }); }
+const cork = {
+  check(env, step) { const { c, P } = env; corkPop(env, c.currentTime, 1, Math.pow(2, ((step || 0) % 3) / 24) * P("pitch", 1), P("decay", 1)); },
+  uncheck(env) {
+    const { c, P } = env; const t = c.currentTime, p = P("pitch", 1);
+    tone(env, { f0: 300 * p, f1: 150 * p, t, attack: 0.004, peak: 0.13, len: 0.08, bend: 0.04 });
+    noiseShape(env, t, { attack: 0.004, hold: 0.02, release: 0.04, filt: "lowpass", freq: 900 * p, gain: 0.14 });
+  },
+  finish(env) {
+    const { c, P } = env; const t0 = c.currentTime, p = P("pitch", 1), dec = P("decay", 1);
+    corkPop(env, t0, 1.0, p * 0.9, 1.2 * dec);
+    noiseShape(env, t0 + 0.03, { attack: 0.02, hold: 0.5, release: 0.9, filt: "highpass", freq: 5000 * p, q: 0.5, gain: 0.09 });  // the fizz
+    [150, 160, 175, 190, 205].forEach((f, i) => glug(env, t0 + 0.45 + i * 0.15, f * p, 1 - i * 0.08));                          // the pour
+    [[2640, 0.12], [3520, 0.07], [5280, 0.04]].forEach(([f, g]) => { tone(env, { f0: f * p, t: t0 + 1.3, attack: 0.002, peak: g, len: 0.9 * dec }); tone(env, { f0: f * 1.01 * p, t: t0 + 1.36, attack: 0.002, peak: g * 0.8, len: 0.9 * dec }); }); // two glasses
+  }
+};
+
+/* arcade — a coin machine: the two-note coin, a hurt blip for an uncheck, the level-clear jingle at the end. */
+function chip(env, t, f, len, gain, type) {
+  const { c, master } = env; const o = c.createOscillator(), g = c.createGain();
+  o.type = type || "square"; o.frequency.setValueAtTime(f, t);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.003); g.gain.setValueAtTime(gain, t + Math.max(0.004, len - 0.03)); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + len + 0.02);
+}
+const arcade = {
+  check(env, step) {
+    const { c, P } = env; const t = c.currentTime, p = Math.pow(2, ((step || 0) % 4) / 12) * P("pitch", 1);
+    chip(env, t, 988 * p, 0.07, 0.075); tone(env, { type: "square", f0: 1319 * p, t: t + 0.07, attack: 0.003, peak: 0.075, len: 0.5 * P("decay", 1) }); // the coin: B5, then E6 ringing down
+  },
+  uncheck(env) { const { c, P } = env; const t = c.currentTime, p = P("pitch", 1); chip(env, t, 440 * p, 0.08, 0.07); chip(env, t + 0.08, 330 * p, 0.14, 0.07); },
+  finish(env) {
+    const { c, P } = env; const t0 = c.currentTime, p = P("pitch", 1);
+    [523, 659, 784, 1047, 659, 784, 1047, 1319, 784, 1047, 1319, 1568].forEach((f, i) => chip(env, t0 + i * 0.055, f * p, 0.06, 0.06));
+    [1047, 1319, 1568, 2093].forEach((f, i) => tone(env, { type: i === 3 ? "triangle" : "square", f0: f * p, t: t0 + 0.7, attack: 0.005, peak: 0.035, len: 0.9 })); // the chord, ringing down
+  }
+};
+
+export const PACKS = { knock, bell, blip, typewriter, marble, pop: popPack, kalimba, pencil, whistle: whistlePack, bongo, cork, arcade };
+export const PACK_NAMES = { knock: "Knock", bell: "Bell", blip: "Blip", typewriter: "Typewriter", marble: "Marble", pop: "Pop", kalimba: "Kalimba", pencil: "Pencil", whistle: "Whistle", bongo: "Bongo", cork: "Cork", arcade: "Arcade" };
+export const PACK_ORDER = ["knock", "bell", "blip", "typewriter", "marble", "pop", "kalimba", "pencil", "whistle", "bongo", "cork", "arcade"];

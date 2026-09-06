@@ -107,7 +107,7 @@ test("codes round-trip for curated and custom themes", () => {
 });
 
 test("a theme you make carries a sound pack: T2 codes round-trip, T1 codes still import and get the hue rule", () => {
-  assert.deepEqual(PACK_IDS, ["knock", "bell", "blip", "typewriter", "marble", "pop"]);
+  assert.deepEqual(PACK_IDS, ["knock", "bell", "blip", "typewriter", "marble", "pop", "kalimba", "pencil", "whistle", "bongo", "cork", "arcade"]); // 1.5: six more
   const m = derive({ accent: "#3366FF", base: "dark", pair: "grotesk", name: "Marbles", pack: "marble" });
   assert.equal(m.pack, "marble"); assert.equal(m.sound.engine, "marble"); assert.ok(m.sound.pitch > 0 && m.sound.decay > 0, "the accent still sets pitch and decay");
   const code = themeCode(m);

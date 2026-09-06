@@ -3,7 +3,7 @@
 // (suspended, resume works), a call or Siri interrupts it (resume never lands), and closed contexts.
 import assert from "node:assert/strict";
 import { createSound } from "../sound.js";
-import { PACKS, PACK_ORDER } from "../packs.js";
+import { PACKS, PACK_ORDER, PACK_NAMES } from "../packs.js";
 
 let passed = 0;
 async function test(name, fn) { await fn(); passed++; console.log("ok -", name); }
@@ -16,8 +16,8 @@ class FakeAC {
   createGain() { this.nodes++; return { gain: { value: 1, setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} }; }
   createOscillator() { this.nodes++; return { type: "sine", frequency: { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {}, start() {}, stop() {} }; }
   createBuffer(ch, len) { return { getChannelData: () => new Float32Array(len) }; }
-  createBufferSource() { this.nodes++; return { buffer: null, connect() {}, start() {} }; }
-  createBiquadFilter() { this.nodes++; return { type: "", frequency: { value: 0 }, connect() {} }; }
+  createBufferSource() { this.nodes++; return { buffer: null, connect() {}, start() {}, stop() {} }; }
+  createBiquadFilter() { this.nodes++; return { type: "", Q: { value: 0 }, frequency: { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {}, linearRampToValueAtTime() {} }, connect() {} }; }
 }
 FakeAC.all = [];
 const last = () => FakeAC.all[FakeAC.all.length - 1];
@@ -91,6 +91,16 @@ await test("every pack plays check, uncheck and finish without throwing, and the
   }
   assert.deepEqual(Object.keys(PACKS).sort(), [...PACK_ORDER].sort());
   for (const p of Object.values(PACKS)) for (const fn of ["check", "uncheck", "finish"]) assert.equal(typeof p[fn], "function");
+});
+
+await test("1.5: twelve packs, the six new ones after the six of 1.1, every one named", async () => {
+  assert.deepEqual(PACK_ORDER, ["knock", "bell", "blip", "typewriter", "marble", "pop", "kalimba", "pencil", "whistle", "bongo", "cork", "arcade"]);
+  for (const id of PACK_ORDER) assert.equal(typeof PACK_NAMES[id], "string", id + " has a name");
+  // the new voices climb, alternate or vary with the step and never throw for any step
+  for (const id of ["kalimba", "pencil", "whistle", "bongo", "cork", "arcade"]) { const s = make({ pack: () => id }); s.prime(); await tick(); for (let step = 0; step < 12; step++) assert.equal(s.check(step), true, id + " step " + step); }
+  // a theme's pitch and decay still reach them
+  const s = make({ kit: () => ({ engine: "knock", pitch: 0.7, decay: 1.6 }), pack: () => "cork" }); s.prime(); await tick();
+  assert.equal(s.check(0), true); assert.equal(s.finish(), true);
 });
 
 await test("an unknown engine name falls back to the knock", async () => {

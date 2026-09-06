@@ -5,6 +5,13 @@ items per version, rendered on the About page and in the what's-new toast); the 
 render. No dates anywhere, by design: versions are the marketing version plus a build number (About shows
 `1.4 (build N)`), and what shipped as 4.0.0 is 1.0.
 
+## 1.5 — Six more sounds.
+
+- **New** — Six new sound packs: kalimba, pencil, whistle, bongos, cork and arcade.
+- **New** — Each one has its own finale for the last line of the day.
+
+For the record: the six new packs are made the way the first six are—no audio files, a few oscillators and shaped noise in `packs.js`, loaded on the first gesture—and each one changes with the count (the kalimba climbs a pentatonic scale, the bongos alternate hands, the arcade coin rises a semitone, the pencil's strokes vary a little), has an uncheck, and has a finale for the last line: the kalimba rolls up to a chord, the pencil tears the page off the pad, the whistle whistles a tune, the bongos play a fill, the cork pops, fizzes, pours and clinks two glasses, the arcade plays the level-clear jingle. A theme's pitch and decay still reach them. Settings → Sound lists all twelve, a theme you make can carry any of them in its code, and a 1.4 device given such a code falls back to the hue rule. Nothing on the wire changes. The twelve curated themes keep the sounds they had.
+
 ## 1.4 — Yours, and shared with you.
 
 - **New** — Lists know whether they are yours or shared with you.

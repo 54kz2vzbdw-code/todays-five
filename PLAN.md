@@ -1094,17 +1094,26 @@ The pair was built as 1.6 against 1.5, finished and stamped at build 79, and nev
 
 - `theme.js`: two kits in `RAW` with `secret: true`, so `finalize()` derives, contrast-checks (against `--ink-3` since 1.7) and codes them like every other kit while `CURATED_DAY`/`CURATED_NIGHT` leave them out; `SECRET`, `SECRET_IDS`, `isSecretTheme`, `isSecretCode`; `isSecretKey` (two FNV-1a passes, so the word is not a string in the file); two font pairs (`fredoka`, `baloo`), not in `CUSTOM_PAIRS`; a `barBg` token with the old bar as its default. 586 → 644 lines.
 - `packs-secret.js` (new, 80 lines): Sparkle and Party, built from `packs.js`'s `HELPERS` passed in. `sound.js` fetches it only when the kit that is on asks for one of them — `warm(engine)` from `applyThemeCode`, `ready(engine)` for the unlock chime — and `state()` reports whether it arrived.
-- `secretfx.js` (new, 177 lines): `createField(host, …)` builds the twinkles and keeps them in step with `prefers-reduced-motion` and the tab's visibility; `finale(kind, fx, …)` plays the bloom or the cake.
+- `secretfx.js` (new, 188 lines) and `secretfx.css` (new, 13 rules): `createField(host, …)` links the stylesheet by the page's build, builds the twinkles and keeps them in step with `prefers-reduced-motion` and the tab's visibility; `finale(kind, fx, …)` plays the bloom or the cake. Neither is fetched until a kit that carries one goes on.
 - `fx.js`: `scene(draw)` — a drawing in the same frame loop on the same canvas, dropped when it returns false, suppressed under reduced motion like everything else there; the sparkle and sprinkle shapes; `shapes` may be a list; `burst` takes a palette-and-shapes override for one throw.
 - `app.js`: `finaleFx()` (the volley, or the kit's own finale, inside 1.7's reduced-motion guard); `paintField()`; the finale line per kit; `unlockSecret()` and `forgetSecret()` on the api; `secret` and `field` on the test hook, beside 1.7's redaction of the list's own.
 - `panels.js`: the Secret group and its Forget row; the key in Import a code; the two engines in Settings → Sound once unlocked; the two new modules in `SHELL_FILES`.
-- `index.html`: `#field` (hidden), the group's heading, its swatch row and its Forget chip. `styles.css`: the field's nine rules, the candy keyframe, `--bar-bg` with the old bar as the fallback the first frame paints. `sw.js`: the two modules in the shell precache.
+- `index.html`: `#field` (hidden), the group's heading, its swatch row and its Forget chip, inside 1.7's sheet. `styles.css`: the candy keyframe, the two `@font-face` rules, `--bar-bg` with the old bar as the fallback the first frame paints, and the strike's animation moved to `.row.done .ink`. `sw.js` and `panels.js`: the two modules and the stylesheet in the shell precache.
 - Two font files: `fonts/fredoka-500-700.woff2` (30 KB) and `fonts/baloo-2-500-800.woff2` (33 KB), latin subsets, OFL, self-hosted like the rest.
-- Tests: three in the theme suite (the pair against the floors, the default bar, the key), one in the sound suite (the engines' own module, warm and ready, never fetched otherwise), two in the features suite (the wink, and nothing about the pair anywhere a reader can find it), eight in the browser suite.
+- Tests: three in the theme suite (the pair against the floors, the default bar, the key), one in the sound suite (the engines' own module, warm and ready, never fetched otherwise), two in the features suite (the wink, and nothing about the pair anywhere a reader can find it), eight in the browser suite — 139 there in all, 131 of them 1.7's.
 
 ## Before and after
 
-The before set is 1.5's code, the after set this branch: 70 shots across 1440×900 and 390×844 before, 80 after — the ten the Secret pair adds are five surfaces at each viewport, and a version without the group skips that step, so one script takes both sets. Every other surface is unchanged.
+The before set is 1.7's code as `main` shipped it, the after set this branch: 70 shots across 1440×900 and 390×844 before, 80 after — the ten the Secret pair adds are five surfaces at each viewport, and a version without the group skips that step, so one script takes both sets. Every other surface is unchanged.
+
+**The theme picker, before and after.** Before is 1.7's picker (a sheet on the phone since the audit); after is the same picker on a device that has been given the key, with **Secret** between *Made for night* and *Yours* and *Forget the secret* under it. On a device that has not, the after picker is the before picker.
+
+| the picker | desktop | phone |
+|---|---|---|
+| before — 1.7, and 1.8 before the key | <img src="shots/1.8/before/desktop-theme.png" width="300" alt="The theme picker on 1.7, desktop: Made for day, Made for night, Your own"> | <img src="shots/1.8/before/phone-theme.png" width="300" alt="The theme picker on 1.7, phone: the sheet, Made for day, Made for night, Your own"> |
+| after — the same picker, unlocked | <img src="shots/1.8/after/desktop-theme-secret.png" width="300" alt="The theme picker on 1.8 after the key, desktop: the Secret group with two swatches and Forget the secret"> | <img src="shots/1.8/after/phone-theme-secret.png" width="300" alt="The theme picker on 1.8 after the key, phone: the sheet with the Secret group and Forget the secret"> |
+
+What the pair looks like once one is chosen:
 
 | surface | desktop | phone |
 |---|---|---|
@@ -1114,49 +1123,48 @@ The before set is 1.5's code, the after set this branch: 70 shots across 1440×9
 | Superpink's finale, mid-bloom | <img src="shots/1.8/after/desktop-finale-superpink.png" width="300" alt="Superpink's finale mid-bloom, desktop"> | <img src="shots/1.8/after/phone-finale-superpink.png" width="300" alt="Superpink's finale mid-bloom, phone"> |
 | Birthday's finale, candles lit | <img src="shots/1.8/after/desktop-finale-birthday.png" width="300" alt="Birthday's cake with its candles lit, desktop"> | <img src="shots/1.8/after/phone-finale-birthday.png" width="300" alt="Birthday's cake with its candles lit, phone"> |
 
-The surfaces that did not change, before and after, for the record:
+The surfaces that did not change, before and after, for the record (the picker among them, until the key is given):
 
 | surface | desktop before | desktop after | phone before | phone after |
 |---|---|---|---|---|
 | today | <img src="shots/1.8/before/desktop-today.png" width="240" alt="Today, desktop, before"> | <img src="shots/1.8/after/desktop-today.png" width="240" alt="Today, desktop, after"> | <img src="shots/1.8/before/phone-today.png" width="240" alt="Today, phone, before"> | <img src="shots/1.8/after/phone-today.png" width="240" alt="Today, phone, after"> |
-| theme | <img src="shots/1.8/before/desktop-theme.png" width="240" alt="The theme picker, desktop, before"> | <img src="shots/1.8/after/desktop-theme.png" width="240" alt="The theme picker, desktop, after"> | <img src="shots/1.8/before/phone-theme.png" width="240" alt="The theme picker, phone, before"> | <img src="shots/1.8/after/phone-theme.png" width="240" alt="The theme picker, phone, after"> |
 | settings-sound | <img src="shots/1.8/before/desktop-settings-sound.png" width="240" alt="Settings, Sound, desktop, before"> | <img src="shots/1.8/after/desktop-settings-sound.png" width="240" alt="Settings, Sound, desktop, after"> | <img src="shots/1.8/before/phone-settings-sound.png" width="240" alt="Settings, Sound, phone, before"> | <img src="shots/1.8/after/phone-settings-sound.png" width="240" alt="Settings, Sound, phone, after"> |
 | about | <img src="shots/1.8/before/desktop-about.png" width="240" alt="About, desktop, before"> | <img src="shots/1.8/after/desktop-about.png" width="240" alt="About, desktop, after"> | <img src="shots/1.8/before/phone-about.png" width="240" alt="About, phone, before"> | <img src="shots/1.8/after/phone-about.png" width="240" alt="About, phone, after"> |
 
 ## The two palettes, measured
 
-Both go through `finalize()` with every other kit: text at 7:1 against the background, muted, dim, done, `accent-text` and danger at 4.5:1, the accent at 3:1, the two secondary greys at 4.5:1 against the lightest (dark) or darkest (light) elevated surface. Nothing had to be nudged — the values below are the ones written down.
+Both go through `finalize()` with every other kit: text at 7:1 against the background, muted, dim and done at 4.5:1 there, and — since 1.7's audit — accent text and danger at 4.5:1 and the accent at 3:1 against `--ink-3`, the elevated surface a hovered star, a panel's danger row and the Share warning sit on, with the two secondary greys at 4.5:1 there too. Under that stricter floor the pair's written values came through untouched except Birthday's danger, which the engine darkened one step (`#C0392B` → `#B93225`) to clear it.
 
-| kit | background | text ≥7 | muted ≥4.5 | dim ≥4.5 | accent text ≥4.5 | accent ≥3 | danger ≥4.5 | hairline ≥3 | muted on a panel ≥4.5 | dim on a panel ≥4.5 |
+| kit | background | text ≥7 | muted ≥4.5 | dim ≥4.5 | accent text on a panel ≥4.5 | accent on a panel ≥3 | danger on a panel ≥4.5 | hairline ≥3 | muted on a panel ≥4.5 | dim on a panel ≥4.5 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Superpink | `#3F0026` | 15.18:1 | 9.33:1 | 7.24:1 | 6.30:1 | 4.93:1 | 7.38:1 | 3.07:1 | 7.19:1 | 5.58:1 |
-| Birthday | `#FFF3F8` | 14.98:1 | 7.44:1 | 6.42:1 | 6.16:1 | 4.23:1 | 5.03:1 | 3.08:1 | 6.22:1 | 5.38:1 |
-| Pink (1.2, for the scale) | `#2E0A1C` | 16.19:1 | 9.53:1 | 5.75:1 | 5.43:1 | 5.43:1 | 6.56:1 | 3.13:1 | 7.05:1 | 4.59:1 |
-| Blush (1.2, for the scale) | `#FFF5F8` | 14.88:1 | 7.46:1 | 6.16:1 | 6.28:1 | 4.09:1 | 5.09:1 | 3.06:1 | 6.07:1 | 5.01:1 |
+| Superpink | `#3F0026` | 15.18:1 | 9.33:1 | 7.24:1 | 4.86:1 | 3.80:1 | 5.69:1 | 3.07:1 | 7.19:1 | 5.58:1 |
+| Birthday | `#FFF3F8` | 14.98:1 | 7.44:1 | 6.42:1 | 5.16:1 | 3.54:1 | 4.59:1 | 3.08:1 | 6.22:1 | 5.38:1 |
+| Pink (1.2, for the scale) | `#2E0A1C` | 16.19:1 | 9.53:1 | 5.75:1 | 4.01:1 | 4.01:1 | 4.85:1 | 3.13:1 | 7.05:1 | 4.59:1 |
+| Blush (1.2, for the scale) | `#FFF5F8` | 14.88:1 | 7.46:1 | 6.16:1 | 5.11:1 | 3.33:1 | 4.51:1 | 3.06:1 | 6.07:1 | 5.01:1 |
 
-**Superpink** — dark, Fredoka + Quicksand, the sparkle pack, confetti #FF2E9A #FF7FC4 #FFC2E2 #FFFFFF #FFD36E #B5116F. Background OKLCH L 0.242 C 0.101 h 350; accent `#FF2E9A`, highlight `#FFC2E2`, deep `#B5116F`.
-**Birthday** — light, Baloo 2 + Quicksand, the party pack, confetti #FF7FC4 #5FC9AC #F7D774 #B79BE8 #7FC8F0 #FF8A6B. Background OKLCH L 0.975 C 0.014 h 350; accent `#D62E86`, highlight `#F2B33A`, deep `#96125A`.
+**Superpink** — dark, Fredoka + Quicksand, the sparkle pack, confetti #FF2E9A #FF7FC4 #FFC2E2 #FFFFFF #FFD36E #B5116F. Background OKLCH L 0.242 C 0.101 h 350; accent `#FF2E9A`, highlight `#FFC2E2`, deep `#B5116F`, danger `#FF8A76`.
+**Birthday** — light, Baloo 2 + Quicksand, the party pack, confetti #FF7FC4 #5FC9AC #F7D774 #B79BE8 #7FC8F0 #FF8A6B. Background OKLCH L 0.975 C 0.014 h 350; accent `#D62E86`, highlight `#F2B33A`, deep `#96125A`, danger `#B93225`.
 
 ## The sounds, measured
 
-`node tools/sounds.js shots/1.8/sounds` renders all fourteen over 4.6 s (check-offs at 0, 0.45 and 0.9 s, an uncheck at 1.5 s, the finale at 2.1 s) and draws the loudness. The twelve are 1.5's; the two are new:
+`node tools/sounds.js shots/1.8/sounds` renders all fourteen over 4.6 s (check-offs at 0, 0.45 and 0.9 s, an uncheck at 1.5 s, the finale at 2.1 s) and draws the loudness. The twelve are 1.5's, re-rendered here; the two are the pair's:
 
 | pack | check peak / RMS | uncheck peak / RMS | finale peak / RMS | finale length |
 |---|---|---|---|---|
-| knock | 0.395 / 0.042 | 0.128 / 0.011 | 0.343 / 0.044 | 0.75 s |
-| bell | 0.407 / 0.065 | 0.111 / 0.010 | 0.327 / 0.045 | 1.35 s |
+| knock | 0.425 / 0.042 | 0.128 / 0.011 | 0.343 / 0.044 | 0.75 s |
+| bell | 0.385 / 0.065 | 0.111 / 0.010 | 0.327 / 0.045 | 1.35 s |
 | blip | 0.118 / 0.014 | 0.076 / 0.008 | 0.114 / 0.017 | 0.46 s |
-| typewriter | 0.360 / 0.023 | 0.149 / 0.008 | 0.263 / 0.021 | 0.69 s |
-| marble | 0.365 / 0.029 | 0.141 / 0.009 | 0.366 / 0.035 | 1.17 s |
-| pop | 0.281 / 0.023 | 0.156 / 0.011 | 0.342 / 0.030 | 0.80 s |
-| kalimba | 0.313 / 0.066 | 0.104 / 0.017 | 0.370 / 0.045 | 1.59 s |
-| pencil | 0.362 / 0.049 | 0.136 / 0.017 | 0.399 / 0.040 | 1.06 s |
-| whistle | 0.170 / 0.063 | 0.139 / 0.047 | 0.164 / 0.059 | 1.28 s |
-| bongo | 0.386 / 0.045 | 0.146 / 0.009 | 0.361 / 0.027 | 1.01 s |
-| cork | 0.405 / 0.038 | 0.142 / 0.010 | 0.372 / 0.038 | 1.92 s |
+| typewriter | 0.388 / 0.023 | 0.146 / 0.007 | 0.273 / 0.021 | 0.69 s |
+| marble | 0.365 / 0.029 | 0.141 / 0.009 | 0.365 / 0.035 | 1.17 s |
+| pop | 0.281 / 0.023 | 0.156 / 0.011 | 0.341 / 0.030 | 0.80 s |
+| kalimba | 0.309 / 0.066 | 0.104 / 0.017 | 0.370 / 0.045 | 1.59 s |
+| pencil | 0.369 / 0.049 | 0.158 / 0.015 | 0.341 / 0.040 | 1.07 s |
+| whistle | 0.170 / 0.062 | 0.139 / 0.047 | 0.164 / 0.059 | 1.28 s |
+| bongo | 0.403 / 0.044 | 0.163 / 0.009 | 0.418 / 0.027 | 1.01 s |
+| cork | 0.372 / 0.038 | 0.140 / 0.011 | 0.384 / 0.038 | 1.92 s |
 | arcade | 0.074 / 0.026 | 0.070 / 0.030 | 0.119 / 0.021 | 1.23 s |
-| **sparkle** | **0.211 / 0.027** | **0.100 / 0.011** | **0.210 / 0.028** | **1.33 s** |
-| **party** | **0.252 / 0.026** | **0.133 / 0.015** | **0.229 / 0.021** | **1.11 s** |
+| **sparkle** | **0.197 / 0.027** | **0.100 / 0.011** | **0.210 / 0.028** | **1.33 s** |
+| **party** | **0.253 / 0.026** | **0.133 / 0.015** | **0.229 / 0.021** | **1.11 s** |
 
 | pack | the loudness over 4.6 s |
 |---|---|
@@ -1169,37 +1177,37 @@ Twenty-six twinkles, two elements each: the outer drifts across the screen over 
 
 | a list left on screen for five minutes | main-thread task time | of which style recalc | share of one core |
 |---|---|---|---|
-| Dark, three lines undone | 48 ms | 1 ms | 0.016% |
-| Superpink, the field up, three lines undone | 202 ms | 6 ms | 0.067% |
-| Superpink, the field up, the shimmer forced off | 205 ms | 8 ms | 0.068% |
-| Superpink, all three lines struck (the finale on screen) | 19,513 ms | 6,259 ms | 6.51% |
+| Dark, three lines undone | 50 ms | 2 ms | 0.017% |
+| Superpink, the field up, three lines undone | 235 ms | 10 ms | 0.078% |
+| Superpink, the field up, the shimmer forced off | 253 ms | 11 ms | 0.084% |
+| Superpink, all three lines struck (the finale on screen) | 26,754 ms | 8,850 ms | 8.92% |
 
-The field is the difference between the first two rows: about five hundredths of a percentage point, and forcing the
+The field is the difference between the first two rows: about six hundredths of a percentage point, and forcing the
 shimmer off changes nothing, so the field is all of it. The last row is the shimmer strike, which is not new — it is
 what Pink has cost since 1.2, and until this round it cost it on every row whether struck or not, so a list with
-things still to do cost 4.7%. The animation runs on struck rows only now.
+things still to do cost 4.7%. The animation runs on struck rows only now, which is why the first rows are flat.
 
-## Verification results (1.6)
+## Verification results (1.8)
 
 | check | result |
 |---|---|
-| Node — model, theme, crypto, sync, sound, features, compat | 25 · 27 · 9 · 13 · 10 · 22 · 7, all pass. The crypto vectors are the 1.4 ones, untouched. |
+| Node — model, theme, crypto, sync, sound, features, compat | 27 · 28 · 9 · 13 · 11 · 24 · 7, all pass. The crypto vectors are the 1.4 ones, untouched. |
 | The key | parses trimmed and in any case, refuses the near misses, is never mistaken for a code, and `parseCode` returns null for it; every curated code round-trips, the pair's included. |
-| Contrast | both kits pass every floor at every token (table above), and so do the other fourteen; 2,000 random accents on both bases still pass, unchanged. |
-| The two sound packs | rendered offline with the twelve and level with them (table above); Party's finale is 1.11 s against the bell shimmer's 1.35 s. |
-| Browser suite, 1440×900 and 390×844 | 119 tests, 0 failures, 0 page errors, 0 CSP violations, 0 third-party requests. Eight of them are 1.6's. |
-| The Secret group | hidden until the key, then a group with two swatches tagged as partners of each other; both themes in both slots; the flip between them; the fonts; the two finales and their lines; gone after Forget, with the slots back to Light and Dark and the field with them; the key survives a reload. |
-| The sparkle field | z-index 1 — above the glow, behind the words, `pointer-events: none`; twenty-six twinkles on six drift paths; no `requestAnimationFrame` at rest (0–4 calls in three seconds); paused when the tab hides; no animation at all under `prefers-reduced-motion`, and no bloom there either. |
-| Idle CPU, five minutes each | the field is 0.067% of one core against Dark's 0.016%; the table above |
-| A device that never gives the key | walked through the picker, Settings and How it works: nothing of the pair fetched (`secretfx.js`, `packs-secret.js`, neither font), Settings → Sound still Theme's pick and twelve, How it works still counts twelve, About's changelog is 1.6's wink and one line. |
-| Real backend (`tools/realsync4.js`) | 6 tests, unchanged: envelopes on the wire, a view link's put refused with 403, the unchanged poll 29 bytes, presence, delete-and-undo, add-from-URL. A realistic list is 6,525 bytes encrypted. |
-| Lighthouse (local, gzip, same machine) | desktop 100/100/100 (FCP 395, LCP 415, TBT 0), mobile cold 99/100/100 (FCP 1511, LCP 1829), mobile warm 100/100/100 (FCP 1155, LCP 1174) — against 1.4's 100/100/100 (400/460), 99/100/100 (1704/1854) and 100/100/100 (1166/1192). Not worse on any number. |
-| Installability | Chrome's own manifest read (`Page.getAppManifest`) returns no errors on 1.4 or 1.6, with the same name, short name, `display: standalone`, in-scope `start_url` and three icons. (Lighthouse 12 no longer runs the `installable-manifest` audit — the PWA category is gone — so this is read from Chrome directly.) |
-| iOS 26.5 simulator | the key typed into Import a code unlocks it, both themes with their fonts and the field, the status bar follows the palette, both finales and both lines, the key surviving a reload, Forget putting the group and the slots back. Audio: through WebDriver a click is not a user gesture on 26.5, so the context stays suspended and the machine makes a fresh one per tap — exactly what it should, and the same on 1.4 and 1.5 (recorded in 1.5's decisions). |
-| iOS 18.1 simulator | all of the above, and the audio context **running** after a background and a return, with the Secret pair's own engine loaded (`extra: true`) and the finale playing through it. |
-| Home Screen app | **not verified this round.** The Simulator's device windows were not reachable from this session (they sit on another Space and do not enumerate), the native simulator integration is unselected on this Mac (`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` — a password the session does not have), and a hand-written web clip is not registered with launch services, so it cannot be launched. What can be said from the code: nothing in this round reads `STANDALONE` or `display-mode` — the three places that do are the save-link sheet, the install hint and the wake lock, all untouched — and a web clip has its own storage, so the key has to be given to the installed app as well as to Safari. |
-| Sizes | `secretfx.js` 10.2 KB, `packs-secret.js` 5.3 KB, both fetched only after the group is unlocked and a kit chosen; `fredoka-500-700.woff2` 30 KB and `baloo-2-500-800.woff2` 33 KB, fetched only when one of the two paints text. First paint asks for none of them. |
+| Contrast, under 1.7's stricter floor | both kits pass every token against the background **and** against the elevated surface (the table above). Their written values came through untouched except Birthday's danger, darkened one step by the engine. The other fourteen pass as they did. 2,000 random accents on both bases still pass. |
+| The two sound packs | rendered offline with the twelve and level with them (the table above): Sparkle's check-off peaks at 0.197 / RMS 0.027 and Party's at 0.253 / 0.026, inside the twelve's 0.074–0.425 and 0.014–0.066. Party's finale is 1.11 s against the bell shimmer's 1.35 s. |
+| Browser suite, 1440×900 and 390×844 | 139 tests, 0 failures, 0 page errors, 0 CSP violations, 0 third-party requests. 131 are 1.7's; 8 are the pair's. |
+| The Secret group | hidden until the key, then a group of two swatches tagged as partners of each other; **inside 1.7's sheet on the phone**, with the grip, above *Yours*; its swatches are the bare buttons, not the wrapper a saved theme's × needs, so the partner chip still lands under the right group. Both themes in both slots; the flip between them; the fonts; the two finale lines; gone after Forget, with the slots back to Light and Dark and the field with them; the key survives a reload. |
+| The sparkle field | z-index 1 — above the glow, behind the words, `pointer-events: none`; twenty-six twinkles on six drift paths, no two alike; no keyframe reads a custom property; no `requestAnimationFrame` at rest (exactly none in three seconds, after waiting for the page to go quiet); paused when the tab hides; no animation at all under `prefers-reduced-motion`, and no bloom there either. Its rules are in `secretfx.css`, not in the render-blocking stylesheet, and the suite asserts that too. |
+| Idle CPU, five minutes each | the field is 0.078% of one core against Dark's 0.017%; the table above. |
+| A device that never gives the key | walked through the picker, Settings and How it works: nothing of the pair fetched (`secretfx.js`, `secretfx.css`, `packs-secret.js`, neither font), Settings → Sound still Theme's pick and twelve, How it works still counts twelve, About's changelog is 1.8's wink and one line above 1.7's entry. |
+| Real backend (`tools/realsync4.js`) | 6 tests, unchanged: envelopes on the wire, a view link's put refused with 403, the unchanged poll 29 bytes, presence, delete-and-undo, add-from-URL. A realistic list is 6,493 bytes encrypted. |
+| Lighthouse (local, gzip, same machine, 1.7 against this branch) | desktop 100/100/100 both; mobile cold 99/100/100 both (FCP 1509 → 1510, LCP 1816 → 1817); mobile warm 100/100/100 both (1155/1174 → 1155/1177). Three earlier pairs after the stylesheet move: mobile cold 99 every time, LCP 1827/1831/1862 against 1857/1855/1842. |
+| Installability | Chrome's own manifest read (`Page.getAppManifest`) returned no errors on either tree in the 1.6 round, with the same name, short name, `display: standalone`, in-scope `start_url` and three icons; nothing about the manifest changed since. (Lighthouse 12 no longer runs the `installable-manifest` audit — the PWA category is gone.) |
+| iOS 26.5 simulator | the key typed into Import a code unlocks it, both themes with their fonts and the field, the status bar following the palette, both finales and both lines, the key surviving a reload, Forget putting the group and the slots back. Audio: through WebDriver a click is not a user gesture on 26.5, so the context stays suspended and the machine makes a fresh one per tap — what it should, and the same on 1.4, 1.5 and 1.7 (1.5's decisions record it). |
+| iOS 18.1 simulator | all of the above, and the audio context **running** after a background and a return, with the Secret pair's own engine loaded (`extra: true`) and both finales playing through it. |
+| Home Screen app | **not verified.** The Simulator's device windows do not enumerate from this session (they sit on another Space), the native simulator integration is unselected on this Mac (`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`, a password the session does not have), and a hand-written web clip is not registered with launch services, so it cannot be launched. From the code: nothing in this round reads `STANDALONE` or `display-mode` — the three places that do are the save-link sheet, the install hint and the wake lock, all untouched — and a web clip has its own storage, so the key has to be given to the installed app as well as to Safari. |
+| Sizes | `secretfx.js` 10.7 KB, `secretfx.css` 1.6 KB, `packs-secret.js` 5.3 KB — none fetched until a kit that carries them goes on; `fredoka-500-700.woff2` 30 KB and `baloo-2-500-800.woff2` 33 KB, fetched only when one of the two paints text. The render-critical set is 4.5 KB gzipped over 1.7's, of which the render-blocking stylesheet is 274 bytes. First paint asks for none of the five. |
 
-## Live checks (1.6)
+## Live checks (1.8)
 
-__LIVE16__
+__LIVE18__

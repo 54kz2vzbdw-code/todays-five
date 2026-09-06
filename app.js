@@ -476,6 +476,7 @@ async function openList(r) {
   if (entry && !entry.name && doc.name) entry.name = doc.name;
   if (local) applyPendingAdd();
   flushNotice();
+  if (TRANSPORT_KIND === "local" && /[?&]open=share\b/.test(SEARCH)) setTimeout(() => { askedPanel = "share"; panels().then(p => p.openShare()); }, 900); // test-only: a web app the simulator cannot tap opens Share by itself
   if (mode === "edit" && entry.created && !entry.linkSaved) panels().then(p => p.showSaveLink({ migrated: !!entry.migrated }));
   maybeWhatsNew();
 }
@@ -1660,6 +1661,13 @@ function closeAll({ unwind = true } = {}) {
   panelDepth = 0;
 }
 function closePanel() { closeAll(); } // forget it now, not when the close event lands: what follows may need the panel gone
+/** The ⋯ menu handing over to a panel (or to the About page): the menu closes, its history entry stays and becomes the new
+    root's, so no traversal runs while the next panel opens or a navigation starts. */
+function closeForSwitch() {
+  const cur = openPanel; openPanel = null; panelStack.length = 0;
+  if (cur && cur.open) { panelSwitching = true; cur.close(); panelSwitching = false; }
+  if (backBtn.parentNode) backBtn.remove();
+}
 /** The app's own place, written back over whatever URL a history traversal brought up. */
 function fixUrl() { history.replaceState(null, "", BASE + SEARCH + (listId && !demo ? frag({ id: listId, mode: listMode }) : "")); }
 /** Resolves once a pending history unwind has landed (at once when none is pending): a reload must not race it. */
@@ -1760,7 +1768,7 @@ $("#p-menu").addEventListener("click", e => {
   const act = b.dataset.act;
   askedPanel = act; // what to reopen if loading the panels means reloading the page
   if (act === "sound") { toggleMute(); return; } // a toggle row: the menu stays, the state flips
-  closePanel();
+  if (act === "full" || act === "delete") closePanel(); else closeForSwitch(); // a panel or the About page follows: the menu's entry carries over, no traversal in between
   if (act === "save") panels().then(p => p.showSaveLink());
   else if (act === "share") panels().then(p => p.openShare());
   else if (act === "theme") panels().then(p => p.openSettings()); // 1.2: Appearance (Day theme · Night theme · Switch) is the theme's home

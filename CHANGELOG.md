@@ -15,6 +15,8 @@ For the record: every list on a device now has an origin, mine or shared, kept i
 
 Build 67 — a page that reloads itself after an update comes back whole: iOS served a reloaded page the new markup with scripts from its HTTP cache, and the Share sheet opened empty on that mix; the page now refreshes every file past that cache before it reloads, checks `app.js`'s build as well as the markup's, and the service worker revalidates shell files and falls back within one build's cache.
 
+Build 69 — the Share sheet shows up on phones with a content blocker: its sections carried a class name (`share-block`) that the common social filter lists hide everywhere, so the sheet opened as a bare header there since 1.3; renamed, with a test that keeps blocker-prone names out. The ⋯ menu hands over to a panel without a history traversal.
+
 ## 1.3 — A better first minute.
 
 - **New** — The welcome is a list you can try before you keep it.

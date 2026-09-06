@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-base="dark" data-build="68">
+<html lang="en" data-base="dark" data-build="69">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -341,14 +341,14 @@
     <span class="lb">This link is your list's only key, and it isn't saved yet.</span>
     <div class="row-actions"><button class="chip accent" id="share-save" type="button">Save your link</button></div>
   </div>
-  <section class="share-block" id="share-mine">
+  <section class="lk-block" id="share-mine">
     <h3>Open on my other device</h3>
     <p class="share-msg">The Private link, marked as yours: open it on the phone or the other computer and the list files under My lists there.</p>
     <div class="qr" id="qr-mine"><canvas id="qr-mine-c" width="1" height="1" aria-label="QR code for the Private link, marked as yours" role="img"></canvas></div>
     <input class="link" id="share-link-mine" type="text" readonly aria-label="The Private link, marked as yours" spellcheck="false">
     <div class="row-actions"><button class="chip accent" id="share-copy-mine" type="button">Copy link</button></div>
   </section>
-  <section class="share-block" id="share-view">
+  <section class="lk-block" id="share-view">
     <h3>Show it somewhere <span class="sub-h">view only</span></h3>
     <p class="share-msg">The View link shows the list and can't change it. Put it on a second screen—a work computer, a TV—and cross things off from your phone; or hand it to someone who should watch.</p>
     <p class="fine" id="share-view-more">Check-offs from your other devices show up here with the sound and the confetti.</p>
@@ -359,20 +359,20 @@
       <button class="chip" id="share-native" type="button" hidden>Share…</button>
     </div>
   </section>
-  <section class="share-block private" id="share-private">
+  <section class="lk-block private" id="share-private">
     <p class="warn" id="share-warn">Careful—this one can change everything, and there is no spare.</p>
     <h3>Let someone edit</h3>
     <p class="share-msg">The Private link, marked as shared: whoever opens it can add, edit and cross off, and the list files under Shared with me on their device. Anything that should only show the list gets the View link instead.</p>
     <input class="link" id="share-link-private" type="text" readonly aria-label="The Private link, marked as shared" spellcheck="false">
     <div class="row-actions"><button class="chip" id="share-copy-private" type="button">Copy private link</button></div>
   </section>
-  <section class="share-block friend" id="share-friend">
+  <section class="lk-block friend" id="share-friend">
     <h3>Tell a friend</h3>
     <p class="share-msg">A short note about the app—not this list, and none of your links—ready to send.</p>
     <div class="row-actions"><button class="chip" id="share-friend-go" type="button">Send a note</button></div>
     <textarea class="link" id="share-note" rows="3" readonly hidden aria-label="The note, to select and copy" spellcheck="false"></textarea>
   </section>
-  <section class="share-block keys" id="share-keys">
+  <section class="lk-block keys" id="share-keys">
     <div class="row-actions"><button class="chip" id="share-rotate" type="button">New keys</button></div>
     <p class="fine" id="share-rotate-note">New keys: the old links stop working everywhere.</p>
   </section>

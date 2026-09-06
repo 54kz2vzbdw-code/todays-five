@@ -1261,7 +1261,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); assert.ok(await t.page.$eval("#menu-delete", e => e.hidden), "no Delete everywhere"); assert.ok(await t.page.$eval("#menu-save", e => e.hidden), "no save nudge");
     await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await wait(300);
     assert.ok(await t.page.$eval("#share-keys", e => e.hidden), "no New keys"); assert.ok(await t.page.$eval("#share-unsaved", e => e.hidden), "no save nudge in Share");
-    assert.deepEqual(await t.page.$$eval("#p-share .share-block:not([hidden])", els => els.map(e => e.id)), ["share-mine", "share-view", "share-private", "share-friend"], "everything else the link allows");
+    assert.deepEqual(await t.page.$$eval("#p-share .lk-block:not([hidden])", els => els.map(e => e.id)), ["share-mine", "share-view", "share-private", "share-friend"], "everything else the link allows");
     await t.page.keyboard.press("Escape"); await wait(250);
     // It's mine after all
     await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); await t.page.click("#lists-menu .row:last-child .more"); await t.page.waitForSelector("#p-list[open]"); await wait(300);
@@ -1291,8 +1291,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const t = await fresh(opts, { init: STUBS + ` document.addEventListener("click", () => { window.__inClick = true; queueMicrotask(() => { window.__inClick = false; }); }, true); navigator.share = d => { window.__shared.push({ ...d, sync: !!(window.event && window.event.type === "click") }); return Promise.resolve(); };` });
     const { listId, R } = await t.s();
     await t.press("#more"); await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await wait(300);
-    assert.deepEqual(await t.page.$$eval("#p-share .share-block:not([hidden])", els => els.map(e => e.id)), ["share-mine", "share-view", "share-private", "share-friend", "share-keys"], "the order");
-    assert.deepEqual(await t.page.$$eval("#p-share .share-block:not([hidden]) h3", els => els.map(e => e.firstChild.textContent.trim())), ["Open on my other device", "Show it somewhere", "Let someone edit", "Tell a friend"]);
+    assert.deepEqual(await t.page.$$eval("#p-share .lk-block:not([hidden])", els => els.map(e => e.id)), ["share-mine", "share-view", "share-private", "share-friend", "share-keys"], "the order");
+    assert.deepEqual(await t.page.$$eval("#p-share .lk-block:not([hidden]) h3", els => els.map(e => e.firstChild.textContent.trim())), ["Open on my other device", "Show it somewhere", "Let someone edit", "Tell a friend"]);
     assert.equal(await t.page.$eval("#share-view h3 .sub-h", e => e.textContent), "view only");
     const viewMsg = await t.page.textContent("#share-view .share-msg"); assert.ok(/can't change it/.test(viewMsg) && /second screen/.test(viewMsg) && /someone who should watch/.test(viewMsg), "both uses in one breath: " + viewMsg);
     assert.ok(/sound and the confetti/.test(await t.page.textContent("#share-view-more")));
@@ -1324,7 +1324,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await v.page.waitForSelector("#ro:not([hidden])"); await v.page.evaluate(() => document.getElementById("more").click()); await v.page.waitForSelector("#p-menu[open]");
     assert.equal((await v.page.textContent("#menu-share-lb")).trim(), "Share the View link");
     await v.page.click('#p-menu [data-act="share"]'); await v.page.waitForSelector("#p-share[open]");
-    assert.deepEqual(await v.page.$$eval("#p-share .share-block:not([hidden])", els => els.map(e => e.id)), ["share-view", "share-friend"], "a View link holder: Show it somewhere and Tell a friend only");
+    assert.deepEqual(await v.page.$$eval("#p-share .lk-block:not([hidden])", els => els.map(e => e.id)), ["share-view", "share-friend"], "a View link holder: Show it somewhere and Tell a friend only");
     assert.equal((await v.page.$eval("#ro", e => e.textContent.replace(/\s+/g, " ").trim())), "View link · view only", "the pill names the link");
     assert.equal(await v.page.$eval("#ro .ro-l", e => getComputedStyle(e).display), touch ? "none" : "inline", "the phone's rail keeps the state alone");
     await v.close();

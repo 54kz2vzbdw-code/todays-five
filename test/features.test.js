@@ -284,4 +284,12 @@ test("the version is one number in three places, the build in four, and there ar
   for (const f of ["packs.js", "panels.js", "panels.css", "exporter.js", "version.js", "whatsnew.json"]) assert.ok(sw.includes(`"./${f}"`), "precached: " + f);
 });
 
+test("no class or id the common content-blocker lists hide everywhere (build 69: .share-block hid the whole Share sheet on a phone with a blocker)", () => {
+  const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8") + fs.readFileSync(new URL("../about.html", import.meta.url), "utf8");
+  const names = new Set(); for (const m of html.matchAll(/class="([^"]+)"/g)) m[1].split(/\s+/).forEach(c => c && names.add("." + c)); for (const m of html.matchAll(/id="([^"]+)"/g)) names.add("#" + m[1]);
+  // the generic (no-domain) cosmetic rules of EasyList, Fanboy Social and Annoyance and AdGuard Base, Social and Annoyances that a small app could plausibly use — checked against all six on 2026-09-05; .share-block was the one hit
+  const hidden = [".share-block", ".share-buttons", ".share-bar", ".share-btn", ".share-box", ".share-links", ".share-tools", ".share-widget", ".social-share", ".social-links", ".sharing", ".share-icons", ".share-this", ".sharebox", ".share-container", ".share-panel", "#share-block", "#share-buttons", "#share-bar", "#social-share", "#sharebox", "#share-box", "#share-this", ".newsletter", ".newsletter-signup", ".cookie-banner", ".cookie-notice", ".popup-overlay", ".ad", ".ads", ".advert", ".banner-ad", ".sponsored", "#ad", "#ads", "#banner-ad", ".push-notification", ".notification-bar", ".sticky-banner", ".promo-bar"];
+  const bad = hidden.filter(h => names.has(h)); assert.deepEqual(bad, [], "hidden by a content blocker: " + bad.join(", "));
+});
+
 console.log(`\n${passed} feature tests passed`);

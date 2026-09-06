@@ -5,7 +5,7 @@
 // cache — so a page open across a deploy keeps loading its own code. The previous build's cache stays for exactly
 // that; older ones are reaped. Bump VERSION and BUILD with version.js on deploy (test/features.test.js checks).
 const VERSION = "tf-v1.6"; // = "tf-v" + version.js's marketing version
-const BUILD = 81;          // = version.js's BUILD
+const BUILD = 82;          // = version.js's BUILD
 const CACHE = VERSION + "-b" + BUILD;
 const SHELL = [
   "./", "./index.html", "./about.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js",

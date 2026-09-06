@@ -1013,10 +1013,18 @@ for (const [label, opts, touch] of VIEWPORTS) {
       return [...css.matchAll(/@keyframes (tf-[a-z0-9]+)\{([^}]*\}[^}]*)\}/g)].filter(m => /var\(/.test(m[2])).map(m => m[1]);
     });
     assert.deepEqual(frames, [], "a keyframe that reads a custom property cannot be composited: " + frames);
+    // wait for the confetti of the unlock and the theme's crossfade to finish first — on a loaded machine their
+    // frames are throttled, so they take longer in wall-clock than they do in frames
+    let settled = 0;
+    for (let i = 0; i < 40 && settled < 2; i++) {
+      const a0 = await t.page.evaluate(() => window.__raf); await wait(500);
+      settled = (await t.page.evaluate(() => window.__raf)) - a0 === 0 ? settled + 1 : 0;
+    }
+    assert.ok(settled >= 2, "the page went quiet within twenty seconds");
     const raf0 = await t.page.evaluate(() => window.__raf);
     await wait(3000);
     const raf1 = await t.page.evaluate(() => window.__raf);
-    assert.ok(raf1 - raf0 <= 4, "no frame loop while the field is up: " + (raf1 - raf0) + " requestAnimationFrame calls in three seconds");
+    assert.equal(raf1 - raf0, 0, "no frame loop while the field is up: " + (raf1 - raf0) + " requestAnimationFrame calls in three seconds");
     // a strike that moves costs a style recalc and a repaint every frame, so it runs on struck rows only: an
     // overlay at scaleX(0) is invisible and cost exactly the same (Pink, Blush and Sunset get this too)
     const idleAnim = await t.page.$$eval("#list .row .ink", els => els.map(e => getComputedStyle(e).animationName));

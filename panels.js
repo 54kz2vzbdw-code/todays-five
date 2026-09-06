@@ -300,7 +300,7 @@ async function rotateLink() {
   if (A.sync) await A.sync.flush();
   A.removeLocal(oldId);
   const dead = await A.killRemote({ lookupId: oldRef.lookupId, token: oldRef.token });
-  A.toast(dead ? "New keys. The old links are dead everywhere." : "New keys. The old links aren't revoked yet; that retries on its own.");
+  A.toast(dead ? "New keys. The old links are dead everywhere." : "New keys. The old links haven't stopped working yet—this device keeps trying.");
 }
 
 /* ---------------- save-your-link sheet (1.3: rebuilt by device) ----------------
@@ -346,7 +346,7 @@ export function openLists({ removed = false } = {}) {
     const b = document.createElement("button"); b.type = "button";
     const docName = listDocName(l), nick = l.origin === "shared" && l.nickname ? l.nickname : "";
     const name = nick || docName || "Untitled list";
-    const tags = [l.mode === "view" ? "view-only" : ""].filter(Boolean).map(t => `<span class="sub">${t}</span>`).join(" ");
+    const tags = [l.mode === "view" ? "View only" : ""].filter(Boolean).map(t => `<span class="sub">${t}</span>`).join(" ");
     const own = nick && docName && docName !== nick ? `<span class="sub name">${A.escapeHtml(docName)}</span>` : ""; // a nickname shows with the list's own name under it
     b.innerHTML = `<span class="lb ${l.id === A.listId ? "cur" : ""}">${A.escapeHtml(name)} ${tags}${own}</span><span class="id">${arch ? "Restore" : l.id.slice(0, 6) + "…"}</span>`;
     b.addEventListener("click", () => { A.closePanel(); if (arch) { l.archived = false; A.saveDevice(); A.toast("Back on this device"); } A.switchTo({ id: l.id, mode: l.mode === "view" ? "view" : "edit" }); });
@@ -380,7 +380,7 @@ async function archiveList(id) {
   const e = A.entryOf(id); if (!e) return;
   await A.flushQuick();
   e.archived = true; A.saveDevice();
-  A.toast("Removed from this device. The server and your other devices still have it—Lists → Removed brings it back.");
+  A.toast("Removed from this device. The server and your other devices still have it—Lists brings it back.");
   if (id !== A.listId) return;
   const next = meta().lists.find(l => !l.archived);
   if (next) A.switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else A.showWelcome();
@@ -395,7 +395,7 @@ export function openListDetail(id) {
   $('#list-detail-menu [data-lact="rename"]').hidden = shared ? false : !(id === A.listId && A.listMode === "edit"); // a rename edits the document, so the list must be open
   const o = $("#list-detail-origin"); o.hidden = !!l.created && !shared; // a list made on this device is mine, no switch
   o.setAttribute("aria-pressed", shared ? "false" : "true");
-  $("#list-detail-origin-sub").textContent = shared ? "Off: shared with me. On: filed under My lists, New keys and Delete everywhere back." : "On: mine. Off: someone else's, filed under Shared with me, no New keys and no Delete everywhere.";
+  $("#list-detail-origin-sub").textContent = shared ? "Off: filed under Shared with me. On: under My lists, with New keys and Delete this list everywhere." : "On: under My lists. Off: under Shared with me, without New keys or Delete this list everywhere.";
   $('#list-detail-menu [data-lact="open"]').hidden = id === A.listId;
   A.showPanel("p-list");
 }
@@ -505,7 +505,7 @@ function paintSettings() {
   $("#set-tpl-k").textContent = tpls ? String(tpls) : "";
   const removed = meta().lists.filter(l => l.archived).length;
   $("#set-removed-k").textContent = removed ? String(removed) : "";
-  $("#streak-k").textContent = A.doc ? (s => s ? s + " day" + (s > 1 ? "s" : "") : "")(M.streak(A.doc)) : "";
+  $("#streak-k").textContent = A.doc ? (s => s ? s + "-day streak" : "")(M.streak(A.doc)) : "";
   const W = A.ref && A.ref.mode === "edit" ? A.ref.W : null;
   $("#set-addurl").value = W ? M.addUrl(A.BASE, W) : "Open a Private link to get its URL";
   $("#set-addurl-copy").disabled = !W;
@@ -577,7 +577,7 @@ async function exportList(kind) {
   const json = kind === "json";
   const text = json ? M.exportJSON(A.doc) : M.exportMarkdown(A.doc);
   const res = await handOff({ text, filename: filenameFor(A.doc.name, json ? "json" : "md"), mime: json ? "application/json" : "text/markdown", ios: A.IOS });
-  A.toast(res === "shared" ? "Handed to the share sheet" : res === "downloaded" ? "Downloaded" : res === "copied" ? "Copied to the clipboard" : res === "cancelled" ? "Export cancelled" : "Couldn't export—try copying instead");
+  A.toast(res === "shared" ? "Sent to the share sheet" : res === "downloaded" ? "Downloaded" : res === "copied" ? "Copied to the clipboard" : res === "cancelled" ? "Export cancelled" : "Couldn't export—try copying instead");
 }
 
 /* ---------------- section menu ---------------- */
@@ -829,14 +829,14 @@ export function openHelp(section) {
     <p>There's no tour. The first list you make is the tutorial, and a one-line hint turns up the first time you open Everything, ${touch ? "hold a line" : "hover a line's ⋯"}, or edit one—once each, then never again. Everything else is on the reference sheet:</p>
     <div class="row-actions"><button class="chip accent" id="help-keys" type="button">${touch ? "Gestures" : "Keys and gestures"}</button></div>
     <h3 id="h-repeat">Repeat, and not today</h3>
-    <p>A line can repeat every day, on weekdays, on days you pick, or monthly on a date: set it from the line's menu or the Repeat chip in the editor. A finished repeating line goes to History at the next rollover and comes back undone on its next day. It never gets deleted by finishing it. A ↻ on the line marks it.</p>
-    <p><b>Not today</b> (${touch ? "swipe left, or the line's menu" : "press - with a line focused, or the line's menu"}) takes a line off Today until tomorrow's rollover puts it back. Everything shows a small “tomorrow” tag on it meanwhile.</p>
+    <p>A line can repeat every day, on weekdays, on days you pick, or monthly on a date: set it from the line's menu or the Repeat chip in the editor. A finished repeating line goes to History at the start of the next day and comes back undone on its next day. It never gets deleted by finishing it. A ↻ on the line marks it.</p>
+    <p><b>Not today</b> (${touch ? "swipe left, or the line's menu" : "press - with a line focused, or the line's menu"}) takes a line off Today until tomorrow. Everything shows a small “tomorrow” tag on it meanwhile.</p>
     <h3 id="h-one">One thing at a time</h3>
     <p>${touch ? "Tap the count in the top bar" : "Press O, or click the count in the top bar"}: only the top undone line, as big as the screen allows. Cross it off and the next one slides in. The finale ends it; ${touch ? "the count" : "O"} brings the whole list back. It's remembered on this device.</p>
     <p><b>Shuffle</b>: ${touch ? "shake the phone, or tap ↻ beside the count" : "press S, or click ↻ beside the count"}, and a different undone line takes the screen—never the same one twice in a row, and the list itself doesn't move. It stays until you cross it off or shuffle again; after a check-off the top line is back.${touch ? " The first time, the phone asks once whether shaking may count; say no and ↻ still works." : ""}</p>
     <h3 id="h-lists">Lists, sections, templates</h3>
     <p>Sections live in Everything; the ⋯ in a section's header can rename it, put every line on Today or take them off, save the section as a <b>template</b> (its lines, no done state), or insert a template. Templates are kept in the list itself, so they sync, and Settings → Lists manages them. A line's menu can <b>move it to another list</b> on this device. Past eight lines, Search shows up at the top of Everything${touch ? "" : "; / opens it any time"}.</p>
-    <p><b>Remove from this device</b> (Lists) only hides a list here; the server and your other devices keep it, and Lists → Removed brings it back. <b>Delete this list everywhere</b> (bottom of ⋯) removes it from the server and from here, with ten seconds to undo. Deleted lines sit in <b>Recently deleted</b> at the bottom of Everything for 30 days, with Restore.</p>
+    <p><b>Remove from this device</b> (Lists) only hides a list here; the server and your other devices keep it, and Lists brings it back. <b>Delete this list everywhere</b> (bottom of ⋯) removes it from the server and from here, with ten seconds to undo. Deleted lines sit in <b>Recently deleted</b> at the bottom of Everything for 30 days, with Restore.</p>
     <h3 id="h-links">Links</h3>
     <p>Two links, named for what they do. The <b>Private link</b> is your list's only key: anyone holding it can open the list, and there is no spare. Lose it, lose the list—nobody can recover it, and Settings → Advanced → Export &amp; import is the only backup there is. The <b>View link</b> shows the list and can't change it; anything that should show the list but not change it gets that one.</p>
     <p><b>Second screen:</b> open the View link on the work computer or a TV, keep the Private link on your phone, and cross things off from the phone—each check-off lands on the big screen with the sound and the confetti.</p>
@@ -866,7 +866,7 @@ export function openKeys() {
   const touch = A.touchUi(), esc = A.escapeHtml;
   const keys = [["1 – 9", "Cross off a line by position"], ["N", "New line"], ["E", "Edit the focused line"], ["O", "One thing at a time"], ["S", "Shuffle: a different line, in one-thing mode"], ["-", "Not today (the focused line)"], ["/", "Search Everything"], ["A", "Today ↔ Everything"], ["⌥ ↑ / ↓", "Move the focused line"], ["⌘ Z", "Undo"], ["T", "Day ↔ Night"], ["⇧ T", "Appearance: the Day and Night themes, and the switch"], ["M", "Mute"], ["F", "Full screen"], ["Enter", "While editing: save, and start a new line below"], ["Tab", "While editing: over to the note"], ["Esc", "While editing: cancel · close a panel · clear the search"], ["⌫", "On an empty line: remove it"], ["?", "This sheet"]];
   const mouse = [["Click a line", "Cross it off, or bring it back"], ["Hover a line, then ⋯", "Click for the menu: edit (the Repeat chip is in the editor), repeat, not today, move, delete. Drag it to move the line"], ["Star, in Everything", "Put the line on Today, or take it off"], ["The count", "One thing at a time"], ["↻ beside the count", "Shuffle: a different line (one-thing mode)"], ["The sun or moon", "Day ↔ Night"]];
-  const gestures = [["Tap a line", "Cross it off, or bring it back"], ["Hold a line", "It lifts: drag to move it, or let go for its menu—edit, repeat, not today, move, delete"], ["Swipe right", "The line's menu"], ["Swipe left", "Not today: the line leaves Today until tomorrow's rollover (Settings → Behavior turns it off)"], ["Star, in Everything", "Put the line on Today, or take it off"], ["Tap the count", "One thing at a time"], ["Shake, or tap ↻ beside the count", "Shuffle: a different line (one-thing mode; the phone asks once whether shaking may count)"], ["Tap the sun or moon", "Day ↔ Night"], ["Swipe down, or tap outside", "Close a sheet like this one"]];
+  const gestures = [["Tap a line", "Cross it off, or bring it back"], ["Hold a line", "It lifts: drag to move it, or let go for its menu—edit, repeat, not today, move, delete"], ["Swipe right", "The line's menu"], ["Swipe left", "Not today: the line leaves Today until tomorrow (Settings → Behavior turns it off)"], ["Star, in Everything", "Put the line on Today, or take it off"], ["Tap the count", "One thing at a time"], ["Shake, or tap ↻ beside the count", "Shuffle: a different line (one-thing mode; the phone asks once whether shaking may count)"], ["Tap the sun or moon", "Day ↔ Night"], ["Swipe down, or tap outside", "Close a sheet like this one"]];
   const g = list => `<div class="gestures">${list.map(x => `<div class="g"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join("")}</div>`;
   $("#p-keys-h").textContent = touch ? "Gestures" : "Keys";
   $("#keys-body").innerHTML = touch ? g(gestures) : `<div class="keys">${keys.map(k => `<kbd>${esc(k[0])}</kbd><span>${esc(k[1])}</span>`).join("")}</div><h3>Mouse</h3>${g(mouse)}`;

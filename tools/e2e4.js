@@ -697,7 +697,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const { listId, lookupId } = await t.s();
     await t.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
     await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]");
-    assert.equal((await t.page.textContent("#l-archive")).trim(), "Remove from this device");
+    assert.equal((await t.page.textContent("#l-archive")).trim(), "Remove this list from this device");
     await t.page.click("#l-archive"); await wait(600);
     assert.ok(await t.page.locator("#welcome").isVisible());
     assert.ok(await t.page.evaluate(id => !!localStorage.getItem("tf/v2/localserver/" + id), lookupId), "server row untouched");
@@ -1322,7 +1322,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.click("#share-copy-mine"); await wait(150); assert.equal(await t.page.evaluate(() => window.__clip), BASE + "#/l/" + listId + "/mine", "the first Copy: the Private link marked as mine");
     await t.page.click("#share-copy"); await wait(150); assert.equal(await t.page.evaluate(() => window.__clip), BASE + "#/r/" + R);
     await t.page.click("#share-copy-private"); await wait(150); assert.equal(await t.page.evaluate(() => window.__clip), BASE + "#/l/" + listId + "/shared", "Copy under the warning: marked as shared");
-    assert.deepEqual(await t.page.$$eval("#share-private button", els => els.map(e => e.textContent.trim())), ["Copy private link", "QR code"], "Copy and a code under the warning, nothing else");
+    assert.deepEqual(await t.page.$$eval("#share-private button", els => els.map(e => e.textContent.trim())), ["Copy the Private link", "QR code"], "Copy and a code under the warning, nothing else");
     // a QR code on request: beside every Copy where the sheet has no room for the code, and always under the warning
     assert.equal(await t.page.$eval("#share-qr-mine", e => e.hidden), !touch, "the QR code button where the code is not already on screen"); assert.equal(await t.page.$eval("#share-qr", e => e.hidden), !touch); assert.ok(!(await t.page.$eval("#share-qr-private", e => e.hidden)));
     if (touch) { assert.ok(await t.page.$eval("#qr-mine", e => e.hidden)); await t.page.click("#share-qr-mine"); await wait(500); assert.ok(!(await t.page.$eval("#qr-mine", e => e.hidden)), "the code opens"); assert.ok(await t.page.$eval("#qr-mine-c", c => c.width > 50), "and is drawn"); assert.equal(await t.page.$eval("#share-qr-mine", e => e.getAttribute("aria-pressed")), "true"); await t.page.click("#share-qr-mine"); await wait(200); assert.ok(await t.page.$eval("#qr-mine", e => e.hidden), "and closes again"); }

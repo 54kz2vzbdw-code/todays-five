@@ -132,7 +132,7 @@ const STATUS_LABEL = {
   synced: "Synced", syncing: "Syncing", offline: "Offline", error: "Sync trouble — will retry",
   gone: "This link no longer works", off: "Sync off", busy: "Server busy — retrying in a few minutes",
   full: "The service is full — saved on this device only", toolarge: "Too large to sync — saved on this device only",
-  readonly: "View only", unreadable: "This link can't read this list"
+  readonly: "View only", unreadable: "This link can't open this list"
 };
 let lastCat = "", lastLimitToast = "";
 const viewCollapsed = new Set(); // view-only mode: a viewer's collapse must never win a merge against the editors
@@ -730,7 +730,7 @@ function updateRow(li, it) {
     if (rule) { const r = document.createElement("span"); r.className = "rep"; r.textContent = "↻"; r.title = ruleLabel(rule); r.setAttribute("aria-label", "Repeats: " + ruleLabel(rule)); tx.appendChild(r); }
     const cap = captionFor(it);
     if (cap) { const c = document.createElement("span"); c.className = "cap"; c.textContent = cap; tx.appendChild(c); }
-    if (ret) { const c = document.createElement("span"); c.className = "cap tmr"; c.textContent = "tomorrow"; c.title = "Not today: back on Today at tomorrow's rollover"; tx.appendChild(c); }
+    if (ret) { const c = document.createElement("span"); c.className = "cap tmr"; c.textContent = "tomorrow"; c.title = "Not today: back on Today tomorrow"; tx.appendChild(c); }
     if (it.note) { const n = document.createElement("span"); n.className = "note"; n.textContent = it.note; tx.appendChild(n); }
   }
   li.classList.toggle("done", it.done);
@@ -881,7 +881,7 @@ function restoreItem(id) {
 function makeSection(g) {
   const sec = document.createElement("section");
   sec.className = "sec"; sec.dataset.id = g.id;
-  sec.innerHTML = `<h2 class="sec-h"><button class="sec-toggle" type="button" aria-expanded="true"><span class="caret" aria-hidden="true">▾</span><span class="nm"></span></button><span class="sec-count"></span><span class="spacer"></span><button class="chip sec-more" type="button" aria-haspopup="dialog" aria-label="Section options">⋯</button></h2><ol class="seclist" role="list"></ol><div class="empty" hidden>Nothing here yet</div><button class="add" type="button">+ Add</button>`;
+  sec.innerHTML = `<h2 class="sec-h"><button class="sec-toggle" type="button" aria-expanded="true"><span class="caret" aria-hidden="true">▾</span><span class="nm"></span></button><span class="sec-count"></span><span class="spacer"></span><button class="chip sec-more" type="button" aria-haspopup="dialog" aria-label="Section options">⋯</button></h2><ol class="seclist" role="list"></ol><div class="empty" hidden>Nothing here yet</div><button class="add" type="button">+ New line</button>`;
   sec.querySelector(".sec-toggle").addEventListener("click", () => toggleCollapse(g.id));
   sec.querySelector(".sec-more").addEventListener("click", () => openSectionMenu(g.id));
   sec.querySelector(".add").addEventListener("click", () => newItem({ sectionId: g.id, today: false }));
@@ -971,7 +971,7 @@ function paint() {
   else { fin.classList.remove("on"); hint.classList.remove("off"); }
   if (finale !== finaleOn) { finaleOn = finale; idleReset(); } // the controls never fade during the finale
   paintReview(finale);
-  $("#streak-k").textContent = (s => s ? s + " day" + (s > 1 ? "s" : "") : "")(M.streak(doc));
+  $("#streak-k").textContent = (s => s ? s + "-day streak" : "")(M.streak(doc));
 }
 /** Day review: a quiet card under "That's the list", only when the setting is on, dismissed by any tap or key. */
 function paintReview(finale) {
@@ -997,7 +997,7 @@ function paintStatus(s) {
   const label = (paused ? "Synced · live updates paused" : STATUS_LABEL[s]) || s;
   dot.querySelector(".lbl").textContent = STATUS_SHORT[s] || label;
   dot.setAttribute("title", label);
-  dot.setAttribute("aria-label", "Sync status: " + label);
+  dot.setAttribute("aria-label", "Sync status: " + label.replace(/^Sync /, ""));
   const cat = STATUS_CAT(s);
   if (cat !== lastCat) { lastCat = cat; const sr = $("#dot-sr"); if (sr) sr.textContent = cat === "ok" ? (lastCat && s === "synced" ? "Synced" : "") : label; }
   if (s === "synced") { settleMigrations(); retryPendingKills(); } // follow-ups that wait for the first successful push
@@ -1907,7 +1907,7 @@ $("#w-paste-show").addEventListener("click", () => { $("#w-paste-form").hidden =
 $("#w-paste-form").addEventListener("submit", e => {
   e.preventDefault();
   const r = parseLink($("#w-paste").value);
-  if (!r) { $("#w-err").textContent = "That doesn't look like a list link. It ends in #/l/ or #/r/ followed by 22 letters and digits."; return; }
+  if (!r) { $("#w-err").textContent = "That doesn't look like a list link. Paste the whole address, including the part after the #."; return; }
   switchTo(r, { paste: true });
 });
 

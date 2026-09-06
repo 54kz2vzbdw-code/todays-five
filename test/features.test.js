@@ -294,6 +294,11 @@ test("no class or id the common content-blocker lists hide everywhere (build 69:
   const bad = hidden.filter(h => names.has(h)); assert.deepEqual(bad, [], "hidden by a content blocker: " + bad.join(", "));
 });
 
+test("1.7: about.html's fallback version line matches version.js (it shows when the script cannot run)", () => {
+  const about = fs.readFileSync(new URL("../about.html", import.meta.url), "utf8");
+  assert.ok(about.includes(`<p class="version" id="version">Version ${VERSION}</p>`), "about.html's static version is " + VERSION);
+});
+
 test("1.7: nothing boot() can reach is declared below the boot call — the module-level const/let after it are the known few", () => {
   const src = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8").split("\n");
   const bootAt = src.findIndex(l => l === "boot();");

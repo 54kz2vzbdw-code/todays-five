@@ -347,13 +347,7 @@
     <span class="lb">This link is your list's only key, and it isn't saved yet.</span>
     <div class="row-actions"><button class="chip accent" id="share-save" type="button">Save your link</button></div>
   </div>
-  <section class="lk-block" id="share-mine">
-    <h3>Open on my other device</h3>
-    <p class="share-msg">The Private link, marked as yours: open it on the phone or the other computer and the list files under My lists there. It's the list's only key.</p>
-    <div class="qr" id="qr-mine"><canvas id="qr-mine-c" width="1" height="1" aria-label="QR code for the Private link, marked as yours" role="img"></canvas></div>
-    <input class="link" id="share-link-mine" type="text" readonly aria-label="The Private link, marked as yours" spellcheck="false">
-    <div class="row-actions"><button class="chip accent" id="share-copy-mine" type="button">Copy the Private link</button><button class="chip" id="share-qr-mine" type="button" aria-pressed="false" aria-label="Show a QR code of this link" hidden>QR code</button></div>
-  </section>
+  <!-- 1.9: the View link first (view only) and the first Copy; the Private link marked as yours second, its heading saying what it does (proposal 9) -->
   <section class="lk-block" id="share-view">
     <h3>Show it somewhere <span class="sub-h">view only</span></h3>
     <p class="share-msg">The View link shows the list and can't change it. Put it on a second screen—a work computer, a TV—and cross things off from your phone; or hand it to someone who should watch.</p>
@@ -365,6 +359,13 @@
       <button class="chip" id="share-qr" type="button" aria-pressed="false" aria-label="Show a QR code of this link" hidden>QR code</button>
       <button class="chip" id="share-native" type="button" hidden>Share…</button>
     </div>
+  </section>
+  <section class="lk-block" id="share-mine">
+    <h3>Open on my other device <span class="sub-h">the same list, with full control</span></h3>
+    <p class="share-msg">The Private link, marked as yours: open it on the phone or the other computer and the list files under My lists there. It's the list's only key.</p>
+    <div class="qr" id="qr-mine"><canvas id="qr-mine-c" width="1" height="1" aria-label="QR code for the Private link, marked as yours" role="img"></canvas></div>
+    <input class="link" id="share-link-mine" type="text" readonly aria-label="The Private link, marked as yours" spellcheck="false">
+    <div class="row-actions"><button class="chip accent" id="share-copy-mine" type="button">Copy the Private link</button><button class="chip" id="share-qr-mine" type="button" aria-pressed="false" aria-label="Show a QR code of this link" hidden>QR code</button></div>
   </section>
   <section class="lk-block private" id="share-private">
     <h3>Let someone edit</h3>
@@ -381,6 +382,7 @@
     <textarea class="link" id="share-note" rows="3" readonly hidden aria-label="The note, to select and copy" spellcheck="false"></textarea>
   </section>
   <section class="lk-block keys" id="share-keys">
+    <h3>Replace both links</h3>
     <div class="row-actions"><button class="chip" id="share-rotate" type="button">New keys</button></div>
     <p class="fine" id="share-rotate-note">New keys: the old links stop working everywhere.</p>
   </section>

@@ -1796,7 +1796,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); assert.ok(await t.page.$eval("#menu-delete", e => e.hidden), "no Delete everywhere"); assert.ok(await t.page.$eval("#menu-save", e => e.hidden), "no save nudge");
     await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await wait(300);
     assert.ok(await t.page.$eval("#share-keys", e => e.hidden), "no New keys"); assert.ok(await t.page.$eval("#share-unsaved", e => e.hidden), "no save nudge in Share");
-    assert.deepEqual(await t.page.$$eval("#p-share .lk-block:not([hidden])", els => els.map(e => e.id)), ["share-mine", "share-view", "share-private", "share-friend"], "everything else the link allows");
+    assert.deepEqual(await t.page.$$eval("#p-share .lk-block:not([hidden])", els => els.map(e => e.id)), ["share-view", "share-mine", "share-private", "share-friend"], "everything else the link allows");
     await t.page.keyboard.press("Escape"); await wait(250);
     // It's mine after all
     await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); await t.page.click("#lists-menu .row:last-child .more"); await t.page.waitForSelector("#p-list[open]"); await wait(300);
@@ -1825,20 +1825,22 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 
-  await test(label + ": the Share sheet by intent — Open on my other device (the Private link marked /mine, the code first, then Copy), Show it somewhere (the View link, both uses in one breath), Let someone edit (the Private link marked /shared under the warning, Copy only), Tell a friend apart, New keys last; the system share sheet gets the note in the tap's own tick, and the note itself is shown when nothing else can take it", async () => {
+  await test(label + ": the Share sheet by intent — Show it somewhere first (the View link, both uses in one breath, the first Copy), Open on my other device (the Private link marked /mine, qualified, the code first, then Copy), Let someone edit (the Private link marked /shared under the warning, Copy only), Tell a friend apart, New keys last; the system share sheet gets the note in the tap's own tick, and the note itself is shown when nothing else can take it", async () => {
     const t = await fresh(opts, { init: STUBS + ` document.addEventListener("click", () => { window.__inClick = true; queueMicrotask(() => { window.__inClick = false; }); }, true); navigator.share = d => { window.__shared.push({ ...d, sync: !!(window.event && window.event.type === "click") }); return Promise.resolve(); };` });
     const { listId, R } = await t.s();
     await t.press("#more"); await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await wait(300);
-    assert.deepEqual(await t.page.$$eval("#p-share .lk-block:not([hidden])", els => els.map(e => e.id)), ["share-mine", "share-view", "share-private", "share-friend", "share-keys"], "the order");
-    assert.deepEqual(await t.page.$$eval("#p-share .lk-block:not([hidden]) h3", els => els.map(e => e.firstChild.textContent.trim())), ["Open on my other device", "Show it somewhere", "Let someone edit", "Tell a friend"]);
+    assert.deepEqual(await t.page.$$eval("#p-share .lk-block:not([hidden])", els => els.map(e => e.id)), ["share-view", "share-mine", "share-private", "share-friend", "share-keys"], "the order");
+    assert.deepEqual(await t.page.$$eval("#p-share .lk-block:not([hidden]) h3", els => els.map(e => e.firstChild.textContent.trim())), ["Show it somewhere", "Open on my other device", "Let someone edit", "Tell a friend", "Replace both links"]);
     assert.equal(await t.page.$eval("#share-view h3 .sub-h", e => e.textContent), "view only");
+    assert.equal(await t.page.$eval("#share-mine h3 .sub-h", e => e.textContent), "the same list, with full control", "1.9: the first block's qualifier says what the link does (proposal 9)");
+    assert.ok(await t.page.evaluate(() => document.getElementById("share-copy").getBoundingClientRect().top < document.getElementById("share-copy-mine").getBoundingClientRect().top), "the View link's Copy is the first Copy");
     const viewMsg = await t.page.textContent("#share-view .share-msg"); assert.ok(/can't change it/.test(viewMsg) && /second screen/.test(viewMsg) && /someone who should watch/.test(viewMsg), "both uses in one breath: " + viewMsg);
     assert.ok(/sound and the confetti/.test(await t.page.textContent("#share-view-more")));
     assert.ok(!/for your other devices|for anyone|who should be able to edit/i.test(await t.page.textContent("#p-share")), "what the link does, never who it is for");
     assert.equal(await t.page.$eval("#share-link-mine", e => e.value), BASE + "#/l/" + listId + "/mine"); assert.equal(await t.page.$eval("#share-link", e => e.value), BASE + "#/r/" + R); assert.equal(await t.page.$eval("#share-link-private", e => e.value), BASE + "#/l/" + listId + "/shared");
     assert.equal(await t.page.$eval("#qr-mine", e => e.hidden), touch, "the code where the sheet has room"); assert.equal(await t.page.$eval("#qr", e => e.hidden), touch);
     if (!touch) assert.ok(await t.page.evaluate(() => document.getElementById("qr-mine").getBoundingClientRect().top < document.getElementById("share-copy-mine").getBoundingClientRect().top), "the code first, then Copy");
-    await t.page.click("#share-copy-mine"); await wait(150); assert.equal(await t.page.evaluate(() => window.__clip), BASE + "#/l/" + listId + "/mine", "the first Copy: the Private link marked as mine");
+    await t.page.click("#share-copy-mine"); await wait(150); assert.equal(await t.page.evaluate(() => window.__clip), BASE + "#/l/" + listId + "/mine", "the Private link marked as mine");
     await t.page.click("#share-copy"); await wait(150); assert.equal(await t.page.evaluate(() => window.__clip), BASE + "#/r/" + R);
     await t.page.click("#share-copy-private"); await wait(150); assert.equal(await t.page.evaluate(() => window.__clip), BASE + "#/l/" + listId + "/shared", "Copy under the warning: marked as shared");
     assert.deepEqual(await t.page.$$eval("#share-private button", els => els.map(e => e.textContent.trim())), ["Copy the Private link", "QR code"], "Copy and a code under the warning, nothing else");
@@ -1849,7 +1851,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const warn = await t.page.$eval("#share-warn", e => ({ text: e.textContent, color: getComputedStyle(e).color, danger: getComputedStyle(document.documentElement).getPropertyValue("--danger").trim() }));
     const hex = c => "#" + c.match(/\d+/g).slice(0, 3).map(v => (+v).toString(16).padStart(2, "0")).join("").toUpperCase();
     assert.equal(hex(warn.color), warn.danger.toUpperCase(), "the warning line is in the danger colour"); assert.ok(/change everything/.test(warn.text) && /no spare/.test(warn.text), warn.text);
-    const tops = await t.page.evaluate(() => ["share-mine", "share-view", "share-private", "share-friend", "share-keys"].map(id => document.getElementById(id).getBoundingClientRect().top)); assert.ok(tops.every((v, i) => !i || v > tops[i - 1]), "top to bottom in that order: " + tops);
+    const tops = await t.page.evaluate(() => ["share-view", "share-mine", "share-private", "share-friend", "share-keys"].map(id => document.getElementById(id).getBoundingClientRect().top)); assert.ok(tops.every((v, i) => !i || v > tops[i - 1]), "top to bottom in that order: " + tops);
     assert.ok(await t.page.evaluate(() => document.getElementById("share-friend").getBoundingClientRect().top - document.getElementById("share-private").getBoundingClientRect().bottom >= 0), "Tell a friend sits apart");
     assert.equal((await t.page.textContent("#share-rotate")).trim(), "New keys"); assert.ok(/old links stop working everywhere/.test(await t.page.textContent("#share-rotate-note")));
     assert.ok(!/edit link|rotate/i.test(await t.page.textContent("#p-share")), "the old names are gone from the sheet");

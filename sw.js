@@ -5,7 +5,7 @@
 // cache — so a page open across a deploy keeps loading its own code. The previous build's cache stays for exactly
 // that; older ones are reaped. Bump VERSION and BUILD with version.js on deploy (test/features.test.js checks).
 const VERSION = "tf-v1.4"; // = "tf-v" + version.js's marketing version
-const BUILD = 66;          // = version.js's BUILD
+const BUILD = 67;          // = version.js's BUILD
 const CACHE = VERSION + "-b" + BUILD;
 const SHELL = [
   "./", "./index.html", "./about.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js",
@@ -37,26 +37,27 @@ self.addEventListener("fetch", e => {
   if (v && /^\d+$/.test(v) && +v !== BUILD) {
     // a page from another build asking for its own module: that build's cache first; the network as the fallback, where
     // the module's own guard turns a mismatch into the page reloading itself
-    e.respondWith(caches.keys().then(keys => { const k = keys.find(n => n.startsWith("tf-") && buildOf(n) === +v); return k ? caches.open(k).then(c => c.match(req, { ignoreSearch: true })) : null; }).then(r => r || fetch(req)));
+    e.respondWith(caches.keys().then(keys => { const k = keys.find(n => n.startsWith("tf-") && buildOf(n) === +v); return k ? caches.open(k).then(c => c.match(req, { ignoreSearch: true })) : null; }).then(r => r || fetch(req, { cache: "no-cache" })));
     return;
   }
   if (/\/(fonts|vendor|icons)\//.test(path)) {
     // immutable-ish assets: cache first, fill the cache on first use (a font is fetched only when a theme needs it)
-    e.respondWith(caches.match(req, { ignoreSearch: true }).then(r => r || fetch(req).then(res => {
+    e.respondWith(caches.open(CACHE).then(c => c.match(req, { ignoreSearch: true })).then(r => r || fetch(req).then(res => {
       if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
       return res;
     })));
     return;
   }
-  // shell: network first, cache fallback (and refresh the cache on success)
+  // shell: network first — revalidated, never a stale HTTP-cache hit, so a page is never a mix of builds — with this
+  // build's cache as the fallback (and the cache refreshed on success)
   e.respondWith(
-    fetch(req).then(res => {
+    fetch(req, { cache: "no-cache" }).then(res => {
       if (res && res.ok && (path.endsWith("/") || /\.(html|js|css|webmanifest|png|json)$/.test(path))) {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(req, copy));
       }
       return res;
-    }).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || (req.mode === "navigate" ? caches.match("./index.html") : undefined)))
+    }).catch(() => caches.open(CACHE).then(c => c.match(req, { ignoreSearch: true }).then(r => r || (req.mode === "navigate" ? c.match("./index.html") : undefined))))
   );
 });
 

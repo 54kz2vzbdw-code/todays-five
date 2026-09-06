@@ -3,8 +3,10 @@
 // repeat picker, templates, move-to-list, delete everywhere with its undo, export/import, the ? reference, and How it
 // works. Loaded by app.js on first use; `A` is its api.
 let A = null, $ = null, $$ = null, M = null, T = null, C = null;
-const PANELS_BUILD = 66; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
+const PANELS_BUILD = 67; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
 export const RELOADING = "Today's Five updated: reloading";
+/** The shell, as sw.js lists it (minus the icons): refreshed past the HTTP cache before the one reload the guard below may do. */
+const SHELL_FILES = ["./", "./index.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js", "./sound.js", "./packs.js", "./fx.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json", "./manifest.webmanifest", "./vendor/realtime.js"];
 
 export function init(api) {
   if (A) return;
@@ -12,14 +14,19 @@ export function init(api) {
   // shell is network-first, the panels load on first use), and the wiring below would throw on elements the old page
   // lacks — every panel failing until a reload. So the page reloads itself, once; a page that already did gets the
   // plain failure rather than a loop.
-  if (document.documentElement.getAttribute("data-build") !== String(PANELS_BUILD)) {
+  // The markup (data-build), app.js (api.BUILD) and this module must be one build; iOS can hand a reloaded page the new
+  // markup with old scripts from its HTTP cache, so app.js is checked too.
+  if (document.documentElement.getAttribute("data-build") !== String(PANELS_BUILD) || (api.BUILD !== undefined && String(api.BUILD) !== String(PANELS_BUILD))) {
     let again = false;
     try { again = sessionStorage.getItem("tf/reloaded") === String(PANELS_BUILD); sessionStorage.setItem("tf/reloaded", String(PANELS_BUILD)); } catch (e) { /* no storage: reload anyway */ }
     if (!again) {
-      // the last resort (COMPATIBILITY.md §6): keep what is pending, remember the view and the panel asked for, reload
+      // the last resort (COMPATIBILITY.md §6): keep what is pending, remember the view and the panel asked for, refresh
+      // every shell file past the HTTP cache (cache: "reload"), so the reload cannot come back as a mix of builds, then reload
       try { sessionStorage.setItem("tf/resume", JSON.stringify({ view: api.view || "today", panel: api.askedPanel || null })); } catch (e) { /* no storage */ }
       try { if (api.editing && api.commitEdit) api.commitEdit(); } catch (e) { /* nothing to keep */ }
-      (api.flushQuick ? api.flushQuick() : Promise.resolve()).catch(() => {}).then(() => location.reload());
+      const refresh = Promise.all(SHELL_FILES.map(f => fetch(f, { cache: "reload" }).catch(() => null)));
+      const capped = Promise.race([refresh, new Promise(r => setTimeout(r, 6000))]);
+      (api.flushQuick ? api.flushQuick() : Promise.resolve()).catch(() => {}).then(() => capped).then(() => location.reload());
       throw new Error(RELOADING);
     }
   }

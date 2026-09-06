@@ -13,6 +13,8 @@ render. No dates anywhere, by design: versions are the marketing version plus a 
 
 For the record: every list on a device now has an origin, mine or shared, kept in the device's own registry (existing lists are mine; nothing on the wire changes); a private link copied from Share's Open on my other device carries `/mine` and one from Let someone edit carries `/shared`, a link with no hint asks once whose list it is, and a shared list files under Shared with me, takes a local nickname, shows a Shared pill, and never offers New keys or Delete everywhere. The Share sheet is four blocks by intent with New keys last. Panels are one stack: ‹ Back returns to the parent with its scroll and its values, × closes the stack, Escape goes back a level, a history entry per level makes Android's back button and the browser's Back go back a level, and on a phone an edge swipe from the left goes back. The save sheet's phone steps cover iOS 26's Safari layouts (Share may sit behind ⋯), the Home Screen name is Today's Five, and a page open across a deploy keeps loading its own build's modules from its own cache, reloading only when a module truly cannot be served—after flushing edits and remembering the view and the panel asked for.
 
+Build 67 — a page that reloads itself after an update comes back whole: iOS served a reloaded page the new markup with scripts from its HTTP cache, and the Share sheet opened empty on that mix; the page now refreshes every file past that cache before it reloads, checks `app.js`'s build as well as the markup's, and the service worker revalidates shell files and falls back within one build's cache.
+
 ## 1.3 — A better first minute.
 
 - **New** — The welcome is a list you can try before you keep it.

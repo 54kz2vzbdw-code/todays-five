@@ -97,6 +97,10 @@ invariants, and the checklist to run before anything reaches `main`. Read this b
   with that panel open. Nothing else may reload a page: no `skipWaiting`-driven reload, no `postMessage` telling the
   page to refresh, no "update available" banner. An old page and a new service worker coexist until the page is
   next opened or a module forces the one reload above.
+- The worker fetches shell files with `cache: "no-cache"` — a revalidation, never a stale hit from the HTTP cache (GitHub
+  Pages marks every file `max-age=600`, and iOS serves recently fetched scripts from that cache on a reload) — and its
+  fallback looks in one build's cache only, so a page is never a mix of builds. The guard's reload first fetches every
+  shell file with `cache: "reload"` for the same reason.
 - `<html data-build>` says which build a page's markup is and `panels.js` says which build it wires
   (`PANELS_BUILD`); `test/features.test.js` keeps them in step with `version.js`. A mismatch is what triggers the
   reload above, once per build (`sessionStorage`), never a loop.

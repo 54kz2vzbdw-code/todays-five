@@ -239,7 +239,7 @@ async function noteFallback(n) {
    is the View link; Let someone edit is the Private link marked `/shared`, under the warning; Tell a friend is the note;
    New keys sits last and never on a list shared with this device. Same links as 1.3 on the wire. */
 export async function openShare() {
-  if (!A.doc || !A.ref) return;
+  if (!A.doc || !A.ref) { A.toast("There's no link to share yet"); return; } // 1.7: never silent
   if (!A.transport) { A.toast("Sync isn't set up, so a link would open an empty list somewhere else"); return; }
   const view = A.listMode === "view", shared = !!(A.isShared && A.isShared());
   $("#share-mine").hidden = view; $("#share-private").hidden = view; $("#share-keys").hidden = view || shared;
@@ -339,7 +339,7 @@ function markSaved() {
 }
 function wireSave() {
   $("#save-copy").addEventListener("click", async () => { await A.copyText($("#save-link").value, "Link copied"); markSaved(); A.closePanel(); });
-  $("#save-done").addEventListener("click", () => { markSaved(); A.closePanel(); });
+  $("#save-done").addEventListener("click", () => { markSaved(); A.closePanel(); setTimeout(() => { if (document.activeElement === document.body) { const f = document.querySelector("#list .row .check") || document.getElementById("addtoday"); if (f) f.focus({ preventScroll: true }); } }, 80); }); // 1.7: the sheet opened by itself, so focus goes to the list
   $("#p-save").addEventListener("close", () => { const e = meta().lists.find(l => l.id === A.listId); if (e && e.migrated) { e.migrated = false; A.saveDevice(); } }); // "Your link changed" shows once either way
 }
 
@@ -355,7 +355,7 @@ export function openLists({ removed = false } = {}) {
     const name = nick || docName || "Untitled list";
     const tags = [l.mode === "view" ? "View only" : ""].filter(Boolean).map(t => `<span class="sub">${t}</span>`).join(" ");
     const own = nick && docName && docName !== nick ? `<span class="sub name">${A.escapeHtml(docName)}</span>` : ""; // a nickname shows with the list's own name under it
-    b.innerHTML = `<span class="lb ${l.id === A.listId ? "cur" : ""}">${A.escapeHtml(name)} ${tags}${own}</span><span class="id">${arch ? "Restore" : l.id.slice(0, 6) + "…"}</span>`;
+    b.innerHTML = `<span class="lb ${l.id === A.listId ? "cur" : ""}">${A.escapeHtml(name)} ${tags}${own}</span><span class="id"${arch ? "" : " aria-hidden=\"true\""}>${arch ? "Restore" : l.id.slice(0, 6) + "…"}</span>`;
     b.addEventListener("click", () => { A.closePanel(); if (arch) { l.archived = false; A.saveDevice(); A.toast("Back on this device"); } A.switchTo({ id: l.id, mode: l.mode === "view" ? "view" : "edit" }); });
     row.appendChild(b);
     if (!arch) { const d = document.createElement("button"); d.type = "button"; d.className = "more"; d.setAttribute("aria-label", "Details: " + name); d.textContent = "›"; d.addEventListener("click", () => openListDetail(l.id)); row.appendChild(d); }
@@ -730,7 +730,7 @@ export function openRepeat(id) {
   const it = A.doc.items[id]; if (!it || it.deleted) return;
   const r = M.ruleOf(A.doc, id);
   rep = { id, kind: r ? r.kind : "", days: r && r.days ? [...r.days] : [], day: r && r.day ? r.day : Math.min(28, new Date().getDate()) };
-  $("#p-repeat-h").textContent = "Repeat · " + (it.text.length > 32 ? it.text.slice(0, 32) + "…" : it.text);
+  $("#p-repeat-h").textContent = "Repeat · " + it.text; // 1.7: whole for the reader; the eye gets an ellipsis from the stylesheet
   paintRepeat();
   A.showPanel("p-repeat");
 }
@@ -879,7 +879,7 @@ export function openKeys() {
   const gestures = [["Tap a line", "Cross it off, or bring it back"], ["Hold a line", "It lifts: drag to move it, or let go for its menu—edit, repeat, not today, move, delete"], ["Swipe right", "The line's menu"], ["Swipe left", "Not today: the line leaves Today until tomorrow (Settings → Behavior turns it off)"], ["Star, in Everything", "Put the line on Today, or take it off"], ["Tap the count", "One thing at a time"], ["Shake, or tap ↻ beside the count", "Shuffle: a different line (one-thing mode; the phone asks once whether shaking may count)"], ["Tap the sun or moon", "Day ↔ Night"], ["Swipe down, or tap outside", "Close a sheet like this one"]];
   const g = list => `<div class="gestures">${list.map(x => `<div class="g"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join("")}</div>`;
   $("#p-keys-h").textContent = touch ? "Gestures" : "Keys";
-  $("#keys-body").innerHTML = touch ? g(gestures) : `<div class="keys">${keys.map(k => `<kbd>${esc(k[0])}</kbd><span>${esc(k[1])}</span>`).join("")}</div><h3>Mouse</h3>${g(mouse)}`;
+  $("#keys-body").innerHTML = touch ? g(gestures) : `<dl class="keys">${keys.map(k => `<dt><kbd>${esc(k[0])}</kbd></dt><dd>${esc(k[1])}</dd>`).join("")}</dl><h3>Mouse</h3>${g(mouse)}`;
   A.showPanel("p-keys");
 }
 function wireKeys() { $("#keys-help").addEventListener("click", () => openHelp()); }

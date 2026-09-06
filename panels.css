@@ -18,6 +18,7 @@ dialog.panel h2{
   display:flex;align-items:center;justify-content:flex-start;gap:.5rem;margin-bottom:.8rem;min-height:32px;
 }
 dialog.panel h2 .x{margin-left:auto}
+#p-repeat-h{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 dialog.panel{touch-action:pan-y} /* 1.4: a horizontal touch stays with the page (the edge swipe back); vertical pans scroll as before */
 /* 1.4: the way back — one button the stack moves into whichever panel sits on a parent */
 dialog.panel h2 .back{font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--accent-text);background:transparent;border:0;padding:.2em .5em .2em .1em;margin:0 .1rem 0 -.1rem;cursor:pointer;display:inline-flex;align-items:center;gap:.15em;min-height:32px;border-radius:8px}
@@ -130,7 +131,8 @@ input[type="color"]{width:44px;height:44px;border:1px solid var(--hair);border-r
   font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--text);
   background:var(--ink);border:1px solid var(--hair-hi);border-radius:6px;padding:.15em .5em;white-space:nowrap;
 }
-.keys span{color:var(--muted)}
+.keys span,.keys dd{color:var(--muted)}
+.keys dt,.keys dd{margin:0} /* 1.7: a definition list, so a reader pairs each key with its action */
 
 /* history */
 .day{margin:.6rem 0}
@@ -192,7 +194,7 @@ dialog.panel h3.first{margin-top:.2rem}
 .days button[aria-pressed="true"]{color:var(--accent-text);border-color:var(--accent);background:var(--ink-3)}
 .days button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #repeat-kinds button[aria-checked="true"]{color:var(--accent-text);background:var(--ink-3)}
-#repeat-kinds button[aria-checked="true"]::after{content:"✓";margin-left:auto;color:var(--accent-text)}
+#repeat-kinds button[aria-checked="true"]::after{content:"✓" / "";margin-left:auto;color:var(--accent-text)} /* 1.7: the mark is not spoken; the radio's state is */
 .field input[type="number"]{font:inherit;color:var(--text);background:var(--ink);border:1px solid var(--hair);border-radius:10px;padding:.6em .8em;min-height:44px;width:100%}
 
 /* how it works: sectioned, readable */

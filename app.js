@@ -104,6 +104,9 @@ let sync = null, transport = null, syncStatus = "off", syncLive = false, liveGra
 let openGen = 0;
 let theme = null;
 let editing = null;            // { id, el, ta, note, isNew, orig }
+let pendingFocus = null;       // 1.7: { id, sel } — a control to refocus after the deferred render (the star toggled by keyboard)
+/** 1.7: one sentence for a screen reader, through a polite region that is otherwise empty. */
+function announce(text) { const s = $("#sr-note"); if (!s) return; s.textContent = ""; setTimeout(() => { s.textContent = text; }, 30); }
 let wasAll = false;
 let rows = new Map();          // id -> <li>
 let lastRowId = null;
@@ -679,6 +682,7 @@ function render({ animate = true, quiet = false } = {}) {
   if (!doc) return;
   if (view === "today") renderToday({ animate, quiet }); else renderAll({ animate, quiet });
   paint();
+  if (pendingFocus) { const li = rows.get(pendingFocus.id); const el = li && li.querySelector(pendingFocus.sel); pendingFocus = null; if (el && document.activeElement !== el) { try { el.focus({ preventScroll: true }); } catch (e) { /* ignore */ } } }
 }
 
 function makeRow(it) {
@@ -692,7 +696,7 @@ function makeRow(it) {
   if (view === "all") {
     const today = document.createElement("button"); today.type = "button"; today.className = "tool today";
     today.innerHTML = ICONS.star; today.setAttribute("aria-pressed", "false"); today.setAttribute("aria-label", "Today");
-    today.addEventListener("click", e => { e.stopPropagation(); toggleToday(it.id); });
+    today.addEventListener("click", e => { e.stopPropagation(); if (document.activeElement === today) pendingFocus = { id: it.id, sel: ".tool.today" }; toggleToday(it.id); }); // 1.7: a keyboard press keeps its place
     tools.appendChild(today);
   }
   const grip = document.createElement("button"); grip.type = "button"; grip.className = "tool lmenu"; grip.innerHTML = ICONS.menu;
@@ -741,6 +745,10 @@ function updateRow(li, it) {
   li.classList.toggle("done", it.done);
   const chk = li.querySelector(".check");
   chk.setAttribute("aria-checked", it.done ? "true" : "false");
+  // 1.7: the name is the line; the repeat, the caption, the tomorrow tag and the note are its description, spoken apart from it
+  chk.setAttribute("aria-label", it.text);
+  const desc = Array.from(tx.querySelectorAll(".rep, .cap, .note")).map(e => e.getAttribute("aria-label") || e.title || e.textContent.trim()).filter(Boolean).join(". ");
+  if (desc) chk.setAttribute("aria-description", desc); else chk.removeAttribute("aria-description");
   if (listMode === "view") chk.setAttribute("aria-readonly", "true"); else chk.removeAttribute("aria-readonly");
   const today = li.querySelector(".today");
   if (today) {
@@ -1114,6 +1122,7 @@ function toggle(id, px, py, fromPointer) {
     }
     if (view === "today") fx.burst(x, y, 46, 13, 2.0); else fx.burst(x, y, 18, 9, 1.6);
     toast("Done", { undo: true });
+    { const tl = todayList(), d = tl.filter(i => i.done).length; announce(`${d} of ${tl.length} done${d && d === tl.length ? ". That's the list." : ""}`); } // 1.7: the count, which only the eye saw change, and the finale with it
   } else {
     sound.uncheck();
   }
@@ -1292,6 +1301,9 @@ function undo() {
   afterChange();
   wasAll = allDoneToday();
   toast("Undone");
+  // 1.7: focus goes to the line the undo touched (it used to land on the document)
+  const firstId = u.items && u.items[0] && u.items[0][0];
+  setTimeout(() => { const li = rows.get(firstId); const el = li && li.querySelector(".check"); const a = document.activeElement; if (el && (a === document.body || a.id === "toast-undo")) { try { el.focus({ preventScroll: true }); } catch (e) { /* ignore */ } } }, 300);
 }
 
 /** A toast. `undo: true` offers the undo stack; `action` offers a one-off undo of its own (delete everywhere) for `ms`. */
@@ -1445,6 +1457,10 @@ function openLineMenu(id) { if (!canEdit()) return; if (editing) commitEdit(); p
 function openRepeat(id) { if (!canEdit()) return; panels().then(p => p.openRepeat(id)); }
 
 /* ---------------- keyboard move ---------------- */
+/** 1.7: where the line landed, for a screen reader (the render is deferred, so a beat later). */
+function announceMove(dir) {
+  setTimeout(() => { const li = document.activeElement && document.activeElement.closest(".row"); if (!li) return; const all = Array.from(li.parentNode.querySelectorAll(".row:not(.done)")); announce(`Moved ${dir < 0 ? "up" : "down"}, ${all.indexOf(li) + 1} of ${all.length}`); }, 350);
+}
 function moveFocused(dir) {
   if (!canEdit()) return;
   const id = focusedRowId(); if (!id) return;
@@ -1665,6 +1681,7 @@ function showPanel(id, { anchor = null } = {}) {
   const pop = !!anchor && !sheetUi() && anchor.isConnected;
   d.classList.toggle("pop", pop); d.style.left = ""; d.style.top = "";
   if (!d.open) d.showModal();
+  if (!/^(p-menu|p-line|p-sec|ask|whose)$/.test(d.id)) { const b = d.querySelector(".body"); if (b) { if (!b.hasAttribute("tabindex")) b.tabIndex = -1; b.focus({ preventScroll: true }); } } // 1.7: reading starts at the title; the first Enter does not close the sheet
   const body = d.querySelector(".body"); if (body) body.scrollTop = 0; // a sheet opens at its top, whatever it was scrolled to when it closed (⋯ → Theme must land on Appearance)
   if (pop) {
     const r = anchor.getBoundingClientRect(), w = d.offsetWidth, h = d.offsetHeight;
@@ -2100,7 +2117,7 @@ document.addEventListener("keydown", e => {
   if (openPanel || editing || inField) return;
   if (!doc) return;
   const edit = canEdit();
-  if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) { if (edit) { e.preventDefault(); moveFocused(e.key === "ArrowUp" ? -1 : 1); } return; }
+  if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) { if (edit) { e.preventDefault(); moveFocused(e.key === "ArrowUp" ? -1 : 1); announceMove(e.key === "ArrowUp" ? -1 : 1); } return; }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key;
   if (k === "Escape") { hideToast(); if (query) setSearch(""); return; }

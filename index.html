@@ -127,6 +127,7 @@
         <button id="shuffle" class="count shuffle" type="button" title="Shuffle (S)" aria-label="Shuffle: a different line">↻</button>
         <button id="dot" class="dot" data-s="off" data-live="0" type="button" aria-label="Sync status"><span class="lbl">Sync off</span></button>
         <span class="sr-only" id="dot-sr" role="status" aria-live="polite"></span>
+        <span class="sr-only" id="sr-note" role="status" aria-live="polite"></span>
         <span class="who" id="who" hidden><span class="dots" aria-hidden="true"></span><span class="plus" aria-hidden="true"></span><span class="sr-only" id="who-sr"></span></span>
       </span>
       <div class="seg" role="tablist" aria-label="View">
@@ -192,13 +193,13 @@
 <!-- panels -->
 <dialog class="panel sheet" id="p-menu" aria-labelledby="p-menu-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
-  <h2><span id="p-menu-h">Today's Five</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <h2 aria-labelledby="p-menu-h"><span id="p-menu-h">Today's Five</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <div class="menu" id="menu">
     <button type="button" data-act="save" id="menu-save" aria-haspopup="dialog" hidden><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M15 12v2"/></svg><span class="lb">Save your link<span class="sub">This list's only key, and it isn't saved yet</span></span><span class="k state dot-k" aria-hidden="true">●</span></button>
-    <button type="button" data-act="share"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M5 12v7h14v-7"/></svg><span class="lb" id="menu-share-lb">Share this list</span><span class="k key">links</span></button>
+    <button type="button" data-act="share"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M5 12v7h14v-7"/></svg><span class="lb" id="menu-share-lb">Share this list</span><span class="k key" aria-hidden="true">links</span></button>
     <button type="button" data-act="theme" aria-haspopup="dialog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-.9 2-1.8 0-.8-.5-1.2-.5-2 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.5 17 3 12 3z"/><circle cx="7.5" cy="11" r="1" fill="currentColor" stroke="none"/><circle cx="10.5" cy="7.5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="7.5" r="1" fill="currentColor" stroke="none"/></svg><span class="lb">Theme</span><span class="k state" id="menu-theme-k">Dark</span></button>
     <button type="button" data-act="sound" aria-pressed="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span class="lb">Sound</span><span class="k state" id="menu-sound-k">On</span></button>
-    <button type="button" data-act="full" id="menu-full"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span class="lb">Full screen</span><span class="k key">F</span></button>
+    <button type="button" data-act="full" id="menu-full"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span class="lb">Full screen</span><span class="k key" aria-hidden="true">F</span></button>
     <button type="button" data-act="help"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/></svg><span class="lb">How it works</span></button>
     <button type="button" data-act="lists"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="lb">Lists</span><span class="k state" id="lists-k"></span></button>
     <button type="button" data-act="settings"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="lb">Settings</span><span class="k state" id="settings-k"></span></button>
@@ -209,7 +210,7 @@
 
 <dialog class="panel sheet" id="p-settings" aria-labelledby="p-settings-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
-  <h2><span id="p-settings-h">Settings</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <h2 aria-labelledby="p-settings-h"><span id="p-settings-h">Settings</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
 
   <h3>Appearance</h3>
   <div class="menu">
@@ -262,7 +263,7 @@
 
 <dialog class="panel sheet" id="p-export" aria-labelledby="p-export-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
-  <h2><span id="p-export-h">Export &amp; import</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <h2 aria-labelledby="p-export-h"><span id="p-export-h">Export &amp; import</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <div class="stack">
     <div class="sub-block">
       <span class="lb">Export<span class="sub">This is the only backup there is. Nobody else holds a copy that can be read.</span></span>
@@ -278,7 +279,7 @@
 
 <dialog class="panel sheet" id="p-theme" aria-labelledby="p-theme-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
-  <h2><span id="p-theme-h">Day theme</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <h2 aria-labelledby="p-theme-h"><span id="p-theme-h">Day theme</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <p class="fine" id="theme-msg">Any theme can go in either slot: the slot is about when, not what. Each one names its partner for the other side.</p>
   <h3 class="first" id="sw-day-h">Made for day</h3>
   <div class="swatches" id="sw-day"></div>
@@ -337,7 +338,7 @@
 
 <dialog class="panel sheet" id="p-share" aria-labelledby="p-share-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
-  <h2><span id="p-share-h">Share</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <h2 aria-labelledby="p-share-h"><span id="p-share-h">Share</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <!-- 1.4: four blocks by what you're doing — my other device, a screen, someone who edits, a friend — and New keys last; the links themselves are 1.3's -->
   <div class="sub-block notice" id="share-unsaved" hidden>
     <span class="lb">This link is your list's only key, and it isn't saved yet.</span>
@@ -414,7 +415,7 @@
 
 <dialog class="panel sheet" id="p-lists" aria-labelledby="p-lists-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
-  <h2><span id="p-lists-h">Lists</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <h2 aria-labelledby="p-lists-h"><span id="p-lists-h">Lists</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <div class="menu lists" id="lists-menu"></div>
   <h3 id="lists-removed-h" hidden>Removed from this device</h3>
   <div class="menu lists" id="lists-removed"></div>
@@ -435,7 +436,7 @@
 <!-- 1.4: a list's detail, opened from Lists: open it, rename it (a nickname when it is shared with this device), say whose it is, remove it -->
 <dialog class="panel sheet" id="p-list" aria-labelledby="p-list-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
-  <h2><span id="p-list-h">List</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <h2 aria-labelledby="p-list-h"><span id="p-list-h">List</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <p class="fine" id="list-detail-sub"></p>
   <div class="menu" id="list-detail-menu">
     <button type="button" data-lact="open"><span class="lb">Open</span></button>
@@ -446,27 +447,27 @@
 </div></dialog>
 <dialog class="panel sheet" id="p-history" aria-labelledby="p-history-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
-  <h2><span id="p-history-h">History</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <h2 aria-labelledby="p-history-h"><span id="p-history-h">History</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <p class="streak" id="history-streak"></p>
   <div id="history-days"></div>
 </div></dialog>
 
 <dialog class="panel sheet" id="p-help" aria-labelledby="p-help-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
-  <h2><span id="p-help-h">How it works</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <h2 aria-labelledby="p-help-h"><span id="p-help-h">How it works</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <div class="help" id="help-body"></div>
 </div></dialog>
 
 <dialog class="panel sheet" id="p-keys" aria-labelledby="p-keys-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
-  <h2><span id="p-keys-h">Keys</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <h2 aria-labelledby="p-keys-h"><span id="p-keys-h">Keys</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <div class="help" id="keys-body"></div>
   <div class="row-actions"><button class="chip" id="keys-help" type="button">How it works</button></div>
 </div></dialog>
 
 <dialog class="panel sheet" id="p-sec" aria-labelledby="p-sec-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
-  <h2><span id="p-sec-h">Section</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <h2 aria-labelledby="p-sec-h"><span id="p-sec-h">Section</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <div class="menu">
     <button type="button" data-sact="rename"><span class="lb">Rename</span></button>
     <button type="button" data-sact="today-on"><span class="lb">Put all on Today</span></button>
@@ -481,12 +482,12 @@
 
 <dialog class="panel sheet" id="p-line" aria-labelledby="p-line-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
-  <h2><span id="p-line-h">Line</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <h2 aria-labelledby="p-line-h"><span id="p-line-h">Line</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <div class="menu">
-    <button type="button" data-lact="edit"><span class="lb">Edit</span><span class="k key">E</span></button>
+    <button type="button" data-lact="edit"><span class="lb">Edit</span><span class="k key" aria-hidden="true">E</span></button>
     <button type="button" data-lact="today"><span class="lb" id="line-today-lb">Put on Today</span></button>
     <button type="button" data-lact="repeat"><span class="lb">Repeat<span class="sub" id="line-repeat-sub">Never</span></span></button>
-    <button type="button" data-lact="nottoday"><span class="lb">Not today<span class="sub">Back on Today tomorrow</span></span><span class="k key">-</span></button>
+    <button type="button" data-lact="nottoday"><span class="lb">Not today<span class="sub">Back on Today tomorrow</span></span><span class="k key" aria-hidden="true">-</span></button>
     <button type="button" data-lact="move"><span class="lb">Move to another list…</span></button>
     <button type="button" data-lact="delete" class="danger"><span class="lb">Delete</span></button>
   </div>
@@ -494,7 +495,7 @@
 
 <dialog class="panel sheet" id="p-repeat" aria-labelledby="p-repeat-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
-  <h2><span id="p-repeat-h">Repeat</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <h2 aria-labelledby="p-repeat-h"><span id="p-repeat-h">Repeat</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <div class="menu" id="repeat-kinds" role="radiogroup" aria-label="Repeat">
     <button type="button" role="radio" data-kind="" aria-checked="true"><span class="lb">Never</span></button>
     <button type="button" role="radio" data-kind="daily" aria-checked="false"><span class="lb">Every day</span></button>
@@ -512,7 +513,7 @@
 
 <dialog class="panel sheet" id="p-pick" aria-labelledby="p-pick-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
-  <h2><span id="p-pick-h">Choose</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <h2 aria-labelledby="p-pick-h"><span id="p-pick-h">Choose</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <p class="fine" id="pick-msg" hidden></p>
   <div class="menu lists" id="pick-menu"></div>
   <div class="row-actions" id="pick-actions" hidden></div>
@@ -520,7 +521,7 @@
 
 <!-- 1.4: one question before a list this device does not hold opens from a link with no hint; not cancelable -->
 <dialog class="panel" id="whose" aria-labelledby="whose-h"><div class="body">
-  <h2><span id="whose-h">Whose list is this?</span></h2>
+  <h2 aria-labelledby="whose-h"><span id="whose-h">Whose list is this?</span></h2>
   <p>Yours from another device, or one somebody sent you. You can change this later in Lists.</p>
   <div class="menu" id="whose-menu">
     <button type="button" data-whose="mine"><span class="lb">Mine, from another device</span></button>

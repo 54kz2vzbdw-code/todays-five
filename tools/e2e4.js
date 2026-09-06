@@ -211,6 +211,49 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 
+  await test(label + ": 1.7: the screen reader's view — a line's name and description, the star keeps keyboard focus, the finale and the count announced, headings without Close, key hints hidden, the keys sheet a list, the Repeat title whole, Undo returns focus, a sheet starts at its title", async () => {
+    const t = await fresh(opts);
+    assert.equal(await t.page.$eval("#list .row:first-child .check", e => e.getAttribute("aria-label")), seedLines[0], "the name is the line");
+    // a note becomes the description
+    await t.press("#addtoday"); await t.page.keyboard.type("Post the form"); await t.page.keyboard.press("Tab"); await t.page.keyboard.type("Take the receipt"); await t.page.keyboard.press("Enter"); await t.page.keyboard.press("Escape"); await wait(500);
+    const withNote = await t.page.$$eval("#list .row .check", els => els.map(e => [e.getAttribute("aria-label"), e.getAttribute("aria-description")]).find(x => x[0] === "Post the form"));
+    assert.ok(withNote && /Take the receipt/.test(withNote[1]), "the note is spoken apart: " + JSON.stringify(withNote));
+    // the count and the finale are announced
+    await t.press("#list .row:first-child .check"); await wait(500);
+    assert.equal((await t.page.textContent("#sr-note")).trim(), "1 of 4 done", "the count");
+    for (let i = 0; i < 3; i++) { await t.press("#list .row:not(.done) .check"); await wait(450); } await wait(800);
+    assert.ok(/That's the list\.$/.test((await t.page.textContent("#sr-note")).trim()), "the finale: " + await t.page.textContent("#sr-note"));
+    await t.press("#again"); await wait(500);
+    // headings are named by their title; key hints are hidden
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]");
+    assert.ok(await t.page.$$eval("#p-menu .k.key", els => els.length > 0 && els.every(e => e.getAttribute("aria-hidden") === "true")), "key hints hidden from the reader");
+    await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); await wait(250);
+    { const snap = await t.page.locator("#p-lists h2").ariaSnapshot(); assert.ok(/heading "Lists"/.test(snap) && !/Close/.test(snap.split("\n")[0]), "the heading is the title alone: " + snap); }
+    assert.equal(await t.page.evaluate(() => document.activeElement && document.activeElement.className), "body", "a sheet starts at its title");
+    await t.esc(); await wait(200);
+    if (!opts.hasTouch) {
+      // the star keeps focus through the re-render
+      await t.page.keyboard.press("a"); await wait(400);
+      const id = await t.page.$eval("#all .row:first-child", e => e.dataset.id);
+      await t.page.evaluate(() => document.querySelector("#all .row:first-child .tool.today").focus()); await t.page.keyboard.press("Enter"); await wait(700);
+      assert.equal(await t.page.evaluate(() => { const a = document.activeElement; return a && a.classList.contains("today") ? a.closest(".row").dataset.id : String(a && a.tagName); }), id, "focus stays on the same line's star");
+      // the keys sheet is a list
+      await t.page.keyboard.press("Escape"); await wait(200); await t.page.keyboard.press("a"); await wait(300);
+      await t.page.keyboard.press("?"); await t.page.waitForSelector("#p-keys[open]"); assert.ok(await t.page.locator("#p-keys dl.keys dt").count() > 5, "keys as a definition list"); await t.esc(); await wait(200);
+      // Undo returns focus to the line
+      await t.press("#list .row:first-child .check"); await wait(400); await t.page.click("#toast-undo"); await wait(600);
+      assert.ok(await t.page.evaluate(() => document.activeElement && document.activeElement.classList.contains("check")), "focus on the line after Undo");
+    } else {
+      assert.notEqual(await t.page.$eval("#list .row:first-child .tool.lmenu", e => getComputedStyle(e).pointerEvents), "none", "the hidden ⋯ takes an assistive tap");
+    }
+    // the Repeat title is whole
+    await t.press("#addtoday"); await t.page.keyboard.type("A line long enough that the old title cut it off before the end"); await t.page.keyboard.press("Enter"); await t.page.keyboard.press("Escape"); await wait(500);
+    await t.lineMenu("#list .row:not(.done):last-of-type"); await t.page.click('#p-line [data-lact="repeat"]'); await t.page.waitForSelector("#p-repeat[open]"); await wait(200);
+    assert.ok(/before the end$/.test((await t.page.textContent("#p-repeat-h")).trim()), "the whole line in the title: " + await t.page.textContent("#p-repeat-h"));
+    await t.esc();
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join(" | ")); await t.close();
+  });
+
   await test(label + ": 1.7: under reduced motion the finale's glow never flares", async () => {
     const t = await fresh(opts, { reducedMotion: "reduce" });
     await t.page.evaluate(() => { window.__flared = false; new MutationObserver(() => { if (document.getElementById("glow").classList.contains("flare")) window.__flared = true; }).observe(document.getElementById("glow"), { attributes: true, attributeFilter: ["class"] }); });

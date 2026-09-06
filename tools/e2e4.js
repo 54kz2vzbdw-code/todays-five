@@ -239,9 +239,22 @@ for (const [label, opts, touch] of VIEWPORTS) {
     }
     if (opts.hasTouch) { for (const sel of ["#set-switch", "#set-pack", "#volume"]) assert.ok((await t.page.$eval(sel, e => e.getBoundingClientRect().height)) >= 44, sel + " is 44 px on touch"); }
     assert.equal(await t.page.$eval("#set-addurl-copy", e => getComputedStyle(e).textTransform), "uppercase", "a chip outside a row of actions carries the chip type");
+    { // 1.9: the panel's title is a step above its section headings (proposal 24)
+      const h2 = await t.page.$eval("#p-settings h2", e => parseFloat(getComputedStyle(e).fontSize)), h3 = await t.page.$eval("#p-settings h3", e => parseFloat(getComputedStyle(e).fontSize));
+      assert.ok(h2 >= h3 + 1.5, "the title a step above its headings: " + h2 + " vs " + h3);
+    }
+    if (!opts.hasTouch) { // 1.9: one hover treatment — the × fills the way a menu row does (proposal 25)
+      const ink3 = (await t.page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--ink-3").trim())).toUpperCase();
+      await t.page.hover('#p-settings [data-set="night"]'); await wait(200);
+      assert.equal(hex(await t.page.$eval('#p-settings [data-set="night"]', e => getComputedStyle(e).backgroundColor)), ink3, "a menu row fills");
+      await t.page.hover("#p-settings h2 .x"); await wait(200);
+      assert.equal(hex(await t.page.$eval("#p-settings h2 .x", e => getComputedStyle(e).backgroundColor)), ink3, "the × fills the same way");
+      assert.equal(await t.page.$eval("#p-settings h2 .x", e => getComputedStyle(e).borderTopColor.replace(/\s/g, "")), "rgba(0,0,0,0)", "and draws no border");
+    }
     await t.esc(); await wait(200);
     // the builder: the Dark | Light control and Import keep their own width
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]"); await wait(200);
+    if (!opts.hasTouch) { await t.page.hover("#p-theme .swatch"); await wait(250); const lift = await t.page.$eval("#p-theme .swatch", e => parseFloat(getComputedStyle(e, "::after").opacity)); assert.ok(lift > 0 && lift < 0.3, "1.9: a swatch lifts its fill on hover, not only its edge: " + lift); }
     await t.page.click("#sw-build"); await t.page.waitForSelector("#p-builder[open]"); await wait(150); // 1.9
     const seg = await t.page.$eval("#p-builder .seg2", e => e.getBoundingClientRect().width), body = await t.page.$eval("#p-builder .body", e => e.getBoundingClientRect().width);
     assert.ok(seg < body * 0.6, "the segmented control is not a bar across the panel: " + Math.round(seg) + " of " + Math.round(body));
@@ -467,6 +480,12 @@ for (const [label, opts, touch] of VIEWPORTS) {
     if (!touch) await t.page.hover('#all .sec:not([data-id=""]) .sec-h');
     await t.press('#all .sec:not([data-id=""]) .sec-more'); await t.page.waitForSelector("#p-sec[open]");
     assert.equal(await t.page.$eval("#p-sec", e => e.classList.contains("pop")), !touch, "section menu: popover on the desktop, sheet on the phone");
+    // 1.9: the three popovers share one anatomy — an icon, a label (with a sub-line where it helps), the state or key slot (proposal 23)
+    for (const id of ["#p-menu", "#p-line", "#p-sec"]) {
+      const rows = await t.page.$eval(id + " .menu", m => [...m.querySelectorAll("button")].map(b => [!!b.querySelector("svg.ic"), !!b.querySelector(".lb")]));
+      assert.ok(rows.length >= 3 && rows.every(r => r[0] && r[1]), id + ": every row has an icon and a label: " + JSON.stringify(rows));
+    }
+    assert.ok(await t.page.$("#p-sec .menu button.danger") && await t.page.$("#p-line .menu button.danger"), "the destructive row is red in each");
     await t.esc();
     assert.equal(t.errors.length, 0, t.errors.join("; "));
     await t.close();

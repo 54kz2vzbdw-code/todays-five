@@ -89,6 +89,7 @@ const seedLines = JSON.parse(fs.readFileSync(new URL("../model.js", import.meta.
 
 for (const [label, opts, touch] of VIEWPORTS) {
   console.log("\n==", label);
+  const openBuild = async t => { if (!(await t.page.$("#p-builder[open]"))) { await t.page.click("#sw-build"); await t.page.waitForSelector("#p-builder[open]"); await wait(150); } }; // 1.9: the builder is a sheet under the picker's Make your own row
 
   await test(label + ": a long-time device opens whole — four lists, a chosen-days repeat on the current one, 90 days of history: no page error, every Today line, the count, sync running", async () => {
     const SAT = new Date("2026-09-12T14:00:00"); // a Saturday: what is on Today depends on the weekday (Groceries repeats on Saturdays)
@@ -206,7 +207,9 @@ for (const [label, opts, touch] of VIEWPORTS) {
     // a theme of one's own, then its ×
     await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]");
     if (opts.hasTouch) assert.ok(await t.page.$eval("#p-theme", d => d.classList.contains("sheet") && !!d.querySelector(".grip")), "a sheet on touch, like every other panel");
+    await t.page.click("#sw-build"); await t.page.waitForSelector("#p-builder[open]"); await wait(150); // 1.9: the builder behind one row
     await t.page.fill("#c-hex", "#2F7F6F"); await t.page.dispatchEvent("#c-hex", "input"); await t.page.fill("#c-name", "Slate green, day"); await t.page.dispatchEvent("#c-name", "input"); await t.page.click("#c-save"); await wait(500);
+    await t.page.click("#p-builder h2 .back"); await t.page.waitForSelector("#p-theme[open]"); await wait(300); // back to the picker, where the saved theme shows
     assert.equal(await t.page.locator("#sw-yours .swatch").count(), 1, "saved"); assert.equal(await t.page.locator("#sw-yours .swatch button").count(), 0, "no button inside the swatch"); assert.equal(await t.page.locator("#sw-yours .swatch-wrap > .del").count(), 1, "the × beside it");
     const nm = await t.page.$eval("#sw-yours .swatch .nm", e => { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect(); }), del = await t.page.$eval("#sw-yours .del", e => e.getBoundingClientRect());
     assert.ok(nm.right <= del.left + 1, "the name stops before the ×: " + JSON.stringify({ nameRight: nm.right, delLeft: del.left }));
@@ -239,7 +242,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.esc(); await wait(200);
     // the builder: the Dark | Light control and Import keep their own width
     await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]"); await wait(200);
-    const seg = await t.page.$eval("#p-theme .seg2", e => e.getBoundingClientRect().width), body = await t.page.$eval("#p-theme .body", e => e.getBoundingClientRect().width);
+    await t.page.click("#sw-build"); await t.page.waitForSelector("#p-builder[open]"); await wait(150); // 1.9
+    const seg = await t.page.$eval("#p-builder .seg2", e => e.getBoundingClientRect().width), body = await t.page.$eval("#p-builder .body", e => e.getBoundingClientRect().width);
     assert.ok(seg < body * 0.6, "the segmented control is not a bar across the panel: " + Math.round(seg) + " of " + Math.round(body));
     assert.equal(await t.page.$eval("#c-import-go", e => getComputedStyle(e).textTransform), "uppercase");
     await t.esc(); await wait(200);
@@ -314,6 +318,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     // Copy code without a clipboard
     await t.page.evaluate(() => { navigator.clipboard.writeText = async () => { throw new Error("no"); }; });
     await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]"); await wait(200);
+    await t.page.click("#sw-build"); await t.page.waitForSelector("#p-builder[open]"); await wait(150); // 1.9
     await t.page.click("#c-export"); await wait(300);
     assert.ok(/^T2:/.test(await t.page.inputValue("#c-import")), "the code lands in the field"); assert.ok(/Select the code/.test(await t.page.textContent("#toast .msg")), "and the toast says so");
     await t.esc();
@@ -865,7 +870,9 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const t = await fresh(opts);
     await t.press("#list .row:first-child .check"); await wait(400); // a gesture, so a preview has a context to play through
     await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]");
-    assert.equal((await t.page.textContent("#p-theme-h")).trim(), "Night theme"); assert.equal((await t.page.textContent("#c-use")).trim(), "Use for Night");
+    assert.equal((await t.page.textContent("#p-theme-h")).trim(), "Night theme");
+    await t.page.click("#sw-build"); await t.page.waitForSelector("#p-builder[open]"); await wait(150); // 1.9: the builder behind one row
+    assert.equal((await t.page.textContent("#p-builder-h")).trim(), "Make your own"); assert.equal((await t.page.textContent("#c-use")).trim(), "Use for Night");
     assert.equal(await t.page.$$eval("#c-pack option", os => os.map(o => o.value).join(",")), ",knock,bell,blip,typewriter,marble,pop,kalimba,pencil,whistle,bongo,cork,arcade"); // 1.5
     await t.page.fill("#c-hex", "#3366FF"); await t.page.dispatchEvent("#c-hex", "input"); await wait(150);
     assert.equal(await t.page.$eval("#c-pack option", o => o.textContent), "Auto · Bell", "blue rings a bell by the hue rule");
@@ -874,7 +881,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const codes = await t.page.evaluate(() => Object.values(JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc.themes).map(x => x.code));
     assert.equal(codes.join(""), "T2:d:3366FF:grotesk:marble:Marbles", "the pack rides in the theme record");
     assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device.night), "T2:d:3366FF:grotesk:marble:Marbles", "and in the Night slot"); assert.equal((await t.s()).theme, "custom-3366ff-d-grotesk-marble", "which is on");
-    await t.page.fill("#c-import", "T1:d:FF3D9A:fraunces:Old pink"); await t.page.click("#c-import-go"); await wait(200);
+    await openBuild(t); await t.page.fill("#c-import", "T1:d:FF3D9A:fraunces:Old pink"); await t.page.click("#c-import-go"); await wait(200);
     assert.equal(await t.page.$eval("#c-pack", s => s.value), "", "a T1 code imports with the hue rule");
     assert.equal(await t.page.inputValue("#c-hex"), "#FF3D9A");
     await t.esc(); await wait(200);
@@ -1185,6 +1192,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const t = await fresh(opts);
     await t.press("#list .row:first-child .check"); await wait(400);
     await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]");
+    await t.page.click("#sw-build"); await t.page.waitForSelector("#p-builder[open]"); await wait(150); // 1.9
     await t.page.fill("#c-hex", "#3366FF"); await t.page.dispatchEvent("#c-hex", "input"); await wait(150);
     await t.page.selectOption("#c-pair", "grotesk"); await t.page.selectOption("#c-pack", "marble"); await wait(150);
     await t.page.fill("#c-name", "Blue"); await t.page.dispatchEvent("#c-name", "input");
@@ -1196,6 +1204,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(blue.code, "T2:d:3366FF:grotesk:marble:Blue"); assert.equal(day.code, "T2:l:3366FF:grotesk:marble:Blue · day", "same accent, same pack, the chosen pair kept, flipped base");
     assert.equal(blue.partner, day.id); assert.equal(day.partner, blue.id, "linked both ways through the partner field");
     let st = await t.s(); assert.equal(st.night, blue.code, "the theme you made fills the slot you were filling"); assert.equal(st.theme, "custom-3366ff-d-grotesk-marble");
+    await t.page.click("#p-builder h2 .back"); await t.page.waitForSelector("#p-theme[open]"); await wait(300); // 1.9: the offer sits in the picker, under Yours
     assert.ok(await t.page.locator("#partner-offer").isVisible()); assert.equal((await t.page.textContent("#partner-use")).trim(), "Use Blue · day for Day");
     const yours = await t.page.$$eval("#sw-yours .swatch .sm", els => els.map(e => e.textContent)); assert.equal(yours.join("|"), "Yours · pairs with Blue · day|Yours · pairs with Blue");
     await t.press("#partner-use"); await wait(400);
@@ -1204,7 +1213,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const round = await t.page.evaluate(async c => { const T = await import("./theme.js"); const p = T.parseCode(c); const back = T.makePartner({ ...p, pairChosen: true }); return T.cssText(back) === T.cssText(T.parseCode("T2:d:3366FF:grotesk:marble:Blue")); }, day.code);
     assert.ok(round, "round trip");
     // Make its partner again on the same theme finds the existing link instead of saving a third theme
-    await t.press("#c-partner"); await wait(500);
+    await openBuild(t); await t.press("#c-partner"); await wait(500);
     assert.equal(await t.page.evaluate(() => Object.values(JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc.themes).filter(x => !x.deleted).length), 2);
     await t.esc(); await wait(200);
     // a saved theme chosen from Yours offers its partner like a curated one
@@ -1222,17 +1231,18 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": the Secret group shows up only after the key, and Forget puts it away and the slots back", async () => {
     const t = await fresh(opts);
     await openPicker(t);
-    assert.deepEqual(await t.page.$$eval("#p-theme h3:not([hidden])", els => els.map(e => e.textContent)), ["Made for day", "Made for night", "Your own"], "three groups before the key");
+    assert.deepEqual(await t.page.$$eval("#p-theme h3:not([hidden])", els => els.map(e => e.textContent)), ["Made for day", "Made for night"], "three groups before the key");
     assert.ok(await t.page.locator("#sw-secret").isHidden() && await t.page.locator("#sw-secret-actions").isHidden(), "no group, no way to forget it");
     assert.equal((await t.s()).secret, false);
     // an ordinary bad code still behaves like one
-    await t.page.fill("#c-import", "not-a-code"); await t.press("#c-import-go"); await wait(250);
+    await openBuild(t);
+    await openBuild(t); await t.page.fill("#c-import", "not-a-code"); await t.press("#c-import-go"); await wait(250);
     assert.equal(await t.page.textContent("#toast .msg"), "That code doesn't parse");
     // the key: trimmed, any case
-    await t.page.fill("#c-import", "  " + KEY.toUpperCase() + "  "); await t.press("#c-import-go"); await wait(700);
+    await openBuild(t); await t.page.fill("#c-import", "  " + KEY.toUpperCase() + "  "); await t.press("#c-import-go"); await wait(700);
     assert.equal((await t.s()).secret, true, "unlocked"); assert.equal(await t.page.inputValue("#c-import"), "", "the field is cleared");
     assert.equal(await t.page.textContent("#toast .msg"), "Found it—two themes, under Secret.");
-    assert.deepEqual(await t.page.$$eval("#p-theme h3:not([hidden])", els => els.map(e => e.textContent)), ["Made for day", "Made for night", "Secret", "Your own"], "the group sits with the others");
+    assert.deepEqual(await t.page.$$eval("#p-theme h3:not([hidden])", els => els.map(e => e.textContent)), ["Made for day", "Made for night", "Secret"], "the group sits with the others");
     assert.deepEqual(await t.page.$$eval("#sw-secret .swatch .nm", els => els.map(e => e.textContent)), ["Superpink", "Birthday"]);
     assert.deepEqual(await t.page.$$eval("#sw-secret .swatch .sm", els => els.map(e => e.textContent)), ["Night · pairs with Birthday", "Day · pairs with Superpink"], "tagged as partners of each other");
     // 1.7 made the picker a sheet on touch; the group is inside it, above Yours and below the two open groups
@@ -1258,7 +1268,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(await inkOf(t.page), INK.dark, "Night is Dark again");
     assert.equal(await t.page.textContent("#finale span"), "That's the list.", "and the finale line is the ordinary one");
     // and the word brings it back
-    await t.page.fill("#c-import", KEY.toLowerCase()); await t.press("#c-import-go"); await wait(500);
+    await openBuild(t); await t.page.fill("#c-import", KEY.toLowerCase()); await t.press("#c-import-go"); await wait(500);
     assert.equal((await t.s()).secret, true);
     assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0, "csp: " + t.csp.join("; "));
     await t.close();
@@ -1267,7 +1277,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": both Secret themes in both slots, the flip between them, their own fonts, and a finale each", async () => {
     const t = await fresh(opts);
     await openPicker(t, "night");
-    await t.page.fill("#c-import", KEY); await t.press("#c-import-go"); await wait(600);
+    await openBuild(t); await t.page.fill("#c-import", KEY); await t.press("#c-import-go"); await wait(600);
     await t.press('#sw-secret .swatch[data-code="T1:curated:superpink"]'); await wait(400);
     assert.equal((await t.page.textContent("#partner-use")).trim(), "Use Birthday for Day", "each names the other");
     await t.press("#partner-use"); await wait(400);
@@ -1308,8 +1318,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
 
   await test(label + ": the sparkle field is behind the words, costs no frames at rest, pauses with the tab and stands still under reduced motion", async () => {
     const t = await fresh(opts, { init: "window.__raf = 0; (function(){ var r = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = function (cb) { window.__raf++; return r(cb); }; })();" });
-    await openPicker(t);
-    await t.page.fill("#c-import", KEY); await t.press("#c-import-go"); await wait(600);
+    await openPicker(t); await openBuild(t);
+    await openBuild(t); await t.page.fill("#c-import", KEY); await t.press("#c-import-go"); await wait(600);
     await t.press('#sw-secret .swatch[data-code="T1:curated:superpink"]'); await wait(400);
     await t.esc(); await wait(900);
     assert.equal(await t.page.$$eval("#field i", els => els.length), 26, "twenty-six twinkles, two elements each");
@@ -1355,8 +1365,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
     // reduced motion: the twinkles are there and still, and the finale throws nothing
     const r = await fresh(opts, { reducedMotion: "reduce" });
-    await openPicker(r);
-    await r.page.fill("#c-import", KEY); await r.press("#c-import-go"); await wait(600);
+    await openPicker(r); await openBuild(r);
+    await openBuild(r); await r.page.fill("#c-import", KEY); await r.press("#c-import-go"); await wait(600);
     await r.press('#sw-secret .swatch[data-code="T1:curated:superpink"]'); await wait(400);
     await r.esc(); await wait(700);
     assert.equal(await r.page.$$eval("#field i", els => els.length), 26, "the field is there");

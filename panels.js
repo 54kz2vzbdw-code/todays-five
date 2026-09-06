@@ -34,7 +34,7 @@ export function init(api) {
   wireTheme(); wireShare(); wireSave(); wireLists(); wireSettings(); wireSection(); wireLine(); wireRepeat(); wireKeys(); wireMisc();
   // 1.4: how each panel repaints itself when ‹ Back lands on it (one primitive in app.js, no per-panel buttons)
   if (A.registerOpeners) A.registerOpeners({
-    "p-theme": () => openTheme(pickSlot), "p-settings": openSettings, "p-lists": () => openLists(), "p-list": () => { if (detailId) openListDetail(detailId); },
+    "p-theme": () => openTheme(pickSlot, { keepOffer: true }), "p-builder": openBuilder, "p-settings": openSettings, "p-lists": () => openLists(), "p-list": () => { if (detailId) openListDetail(detailId); },
     "p-share": () => { openShare(); }, "p-save": () => showSaveLink(), "p-help": () => openHelp(lastHelp), "p-keys": openKeys, "p-export": openExport, "p-history": () => openHistory(historyOf ? historyOf.doc : undefined, historyOf ? historyOf.title : undefined),
     "p-pick": () => { if (lastPick) openPick(lastPick); }, "p-line": () => { if (lineId) openLineMenu(lineId); }, "p-sec": () => { if (secMenuId !== null && secMenuId !== undefined) openSectionMenu(secMenuId); }, "p-repeat": () => { if (lineId) openRepeat(lineId); }
   });
@@ -52,16 +52,20 @@ let pickSlot = "day"; // the slot the picker fills
 let offer = null;     // { code, name, slot }: the partner on offer for the other slot after a choice, if any
 const cap = s => (s === "day" ? "Day" : "Night");
 const otherSlot = s => (s === "day" ? "night" : "day");
-export function openTheme(slot) {
+export function openTheme(slot, { keepOffer = false } = {}) {
   pickSlot = slot === "night" ? "night" : slot === "day" ? "day" : A.activeSlot();
-  offer = null;
+  if (!keepOffer) offer = null; // 1.9: Back from the builder repaints the picker and keeps the partner it offered
   const t = T.parseCode(A.slotCode(pickSlot));
   if (t && t.kind === "custom") custom = { accent: t.accent, base: t.base, pair: t.pair, name: t.name, pack: t.pack || "" };
   $("#p-theme-h").textContent = cap(pickSlot) + " theme";
-  $("#c-use").textContent = "Use for " + cap(pickSlot);
   renderSwatches();
-  paintCustom();
   A.showPanel("p-theme");
+}
+/** 1.9: the builder, a sheet of its own under the picker's Make your own row (proposal 7); Back lands on the picker, repainted, so a theme saved here shows under Yours. */
+export function openBuilder() {
+  $("#c-use").textContent = "Use for " + cap(pickSlot);
+  paintCustom();
+  A.showPanel("p-builder");
 }
 function savedThemes() { return Object.values(A.doc ? A.doc.themes : {}).filter(t => !t.deleted).map(t => ({ ...t, theme: T.parseCode(t.code) })).filter(t => t.theme); }
 /** A saved theme's partner: the live saved record its `partner` field names (or the one naming it back). */
@@ -127,12 +131,16 @@ function choose(code, name, partner, swatch) {
 function unlock() {
   const fresh = A.unlockSecret();
   renderSwatches();
-  try { $("#sw-secret-h").scrollIntoView({ block: "nearest" }); } catch (e) { /* ignore */ }
-  const box = $("#sw-secret-h").getBoundingClientRect();
-  A.fx.burst(box.left + box.width * 0.5, box.top + box.height * 0.5, 46, 13, 2.8, { palette: T.SECRET[0].confetti, shapes: [1, 2, 3] });
   // the chime is the pair's own, so the first time a device asks it has to wait for the module to arrive
   if (!dev().muted && !A.sound.preview("sparkle")) A.sound.ready("sparkle").then(() => A.sound.preview("sparkle"));
-  A.toast(fresh ? "Found it—two themes, under Secret." : "Already yours—they're under Secret.");
+  // 1.9: the key is typed in the builder, a sheet under the picker; the group appears in the picker, so the sheet steps back to it first
+  const reveal = () => {
+    try { $("#sw-secret-h").scrollIntoView({ block: "nearest" }); } catch (e) { /* ignore */ }
+    const box = $("#sw-secret-h").getBoundingClientRect();
+    A.fx.burst(box.left + box.width * 0.5, box.top + box.height * 0.5, 46, 13, 2.8, { palette: T.SECRET[0].confetti, shapes: [1, 2, 3] });
+    A.toast(fresh ? "Found it—two themes, under Secret." : "Already yours—they're under Secret.");
+  };
+  if ($("#p-builder").open) { A.goBack(); setTimeout(reveal, 450); } else reveal();
 }
 function paintOffer() {
   const box = $("#partner-offer");
@@ -167,7 +175,7 @@ async function ensureName() {
   keepPreview = true;
   const n = await A.ask({ title: "Name this theme", label: "Name", value: "" });
   keepPreview = false;
-  if (!n || !n.trim()) { openTheme(pickSlot); previewCustom(); return false; }
+  if (!n || !n.trim()) { openTheme(pickSlot); openBuilder(); previewCustom(); return false; } // back to the builder, over the picker, with the preview still on
   custom.name = n.trim().slice(0, 40);
   return true;
 }
@@ -243,7 +251,9 @@ function wireTheme() {
     renderSwatches();
     A.toast("Forgotten on this device. The word still works.");
   });
-  $("#p-theme").addEventListener("close", () => { if (!keepPreview) A.applyThemeCode(A.currentThemeCode()); });
+  $("#sw-build").addEventListener("click", openBuilder); // 1.9: the builder behind one row
+  // a preview left on screen goes when the builder closes (Back, ×, Escape, a swipe) unless a name is being asked for; the picker's own close does the same
+  for (const id of ["#p-theme", "#p-builder"]) $(id).addEventListener("close", () => { if (!keepPreview) A.applyThemeCode(A.currentThemeCode()); });
   addEventListener("tf:theme", () => { if ($("#p-theme").open) renderSwatches(); if ($("#p-settings").open) paintSettings(); });
 }
 

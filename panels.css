@@ -83,6 +83,7 @@ input[type="color"]{width:44px;height:44px;border:1px solid var(--hair);border-r
 #p-theme h3.first{margin-top:.4rem}
 #theme-msg{margin:0 0 .2rem}
 .partner-offer{margin:.5rem 0 .2rem}
+#theme-more{margin-top:1rem} /* 1.9: the way into the builder, under the swatches */
 .partner-offer .chip{font-family:var(--font-ui);font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;min-height:40px}
 @media (max-width:680px){ .swatches{grid-template-columns:repeat(3,1fr);gap:.4rem} .swatch{padding:.5rem .55rem;min-height:4.2rem} .swatch .nm{font-size:14px} .swatch .sm{font-size:9px;letter-spacing:.08em} }
 .swatch{

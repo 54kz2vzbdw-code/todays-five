@@ -283,7 +283,15 @@
   <h3 id="sw-yours-h" hidden>Yours</h3>
   <div class="swatches" id="sw-yours" hidden></div>
   <div class="row-actions partner-offer" id="partner-offer" hidden><button class="chip accent" id="partner-use" type="button">Use Dark for Night</button></div>
-  <h3>Your own</h3>
+  <!-- 1.9: the builder is a sheet of its own behind one row (proposal 7): picking a kit is the common job, and it is the whole picker now -->
+  <div class="menu" id="theme-more">
+    <button type="button" class="row-set" id="sw-build" aria-haspopup="dialog"><span class="lb">Make your own<span class="sub">An accent, a base, fonts and a sound; save it to this list, or import a code</span></span><span class="k state">›</span></button>
+  </div>
+</div></dialog>
+
+<dialog class="panel sheet" id="p-builder" aria-labelledby="p-builder-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
+  <h2 aria-labelledby="p-builder-h"><span id="p-builder-h">Make your own</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <div class="field">
     <label for="c-hex">Accent</label>
     <div class="inline">

@@ -85,7 +85,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     else { await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('[data-set="theme"]'); }
     await page.waitForSelector("#p-theme[open]"); await wait(400); await shot("theme");
     if (await page.$("#sw-night")) { await page.click('#sw-night .swatch[data-code="T1:curated:dusk"]'); await wait(400); await shot("theme-partner"); }
-    await page.$eval("#p-theme h3", el => el.scrollIntoView({ block: "start" })); await wait(300); await shot("theme-builder"); await esc();
+    if (await page.$("#sw-build")) { await page.click("#sw-build"); await page.waitForSelector("#p-builder[open]"); await wait(400); await shot("theme-builder"); } else { await page.$eval("#p-theme h3", el => el.scrollIntoView({ block: "start" })); await wait(300); await shot("theme-builder"); } await esc(); // 1.9: the builder is a sheet behind one row
   });
   await step("share", async () => { const chip = await page.$("#share"); if (chip && await chip.isVisible()) await press("#share"); else await openMore("share"); await page.waitForSelector("#p-share[open]"); await wait(500); await shot("share"); if (await page.$("#share-friend")) { await page.$eval("#p-share .body", e => { e.scrollTop = e.scrollHeight; }); await wait(300); await shot("share-bottom"); } await esc(); });
   await step("one-thing", async () => { if (!(await page.$("#shuffle"))) return; if (touch) await page.tap("#count"); else await page.keyboard.press("o"); await wait(500); await shot("one-thing"); if (touch) await page.tap("#count"); else await page.keyboard.press("o"); await wait(300); }); // 1.3: ↻ beside the count
@@ -115,7 +115,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
   if (process.env.SECRET !== "0") await step("secret", async () => {
     if (!(await page.$("#sw-secret"))) return;
     await openMore("theme"); await page.waitForSelector("#p-settings[open]"); await page.click('[data-set="night"]'); await page.waitForSelector("#p-theme[open]");
-    await page.fill("#c-import", "SuperPink"); await press("#c-import-go"); await wait(900);
+    if (await page.$("#sw-build")) { await page.click("#sw-build"); await page.waitForSelector("#p-builder[open]"); await wait(300); } // 1.9
+    await page.fill("#c-import", "SuperPink"); await press("#c-import-go"); await wait(1200);
     await page.$eval("#sw-secret-h", el => el.scrollIntoView({ block: "center" })); await wait(300);
     await shot("theme-secret");
     await press('#sw-secret .swatch[data-code="T1:curated:superpink"]'); await wait(500);

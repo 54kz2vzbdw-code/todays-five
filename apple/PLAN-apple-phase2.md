@@ -470,7 +470,9 @@ simulator at 26.5, the web at 390×844).
 
 ### What running it found that reading it had not
 
-Three bugs, all in the app, all caught by putting it on a simulator rather than by reading the code.
+Five bugs, all in the app, all caught by putting it on a simulator rather than by reading the code.
+The last two are the serious ones, and both are in the **vault** — the part whose whole reason for
+existing is that losing a link loses the list.
 
 1. **The async `evaluateJavaScript` throws when the script evaluates to `null`** — which is exactly
    what `localStorage.getItem("tf/v2/meta")` returns on a device that has never held a list. The
@@ -487,8 +489,32 @@ Three bugs, all in the app, all caught by putting it on a simulator rather than 
    `.present`), the reconciler decides nothing on `.unreadable`, and the conflation cannot be written
    down any more.
 
-The third is the one worth remembering: the first two were races, but that one was a plain confusion
-between *"I could not read"* and *"there is nothing there"*, and it was in the design, not the code.
+4. **A wiped web store deleted the vault, in the exact case the vault exists for.** Checkpoint 1's
+   correction said to key on `tf/v2/meta` *existing* rather than on `lists` being non-empty, so that
+   removing the only list could not resurrect it. That rule is right about removal and unreachable
+   about wipes: **the page writes a registry the moment it boots**, so on a real wipe `meta` is never
+   missing — it is `{"lists":[]}` a fraction of a second later. The app read that as "the page
+   removed everything" and logged `vault: +0 −1`, throwing away the only copy of the link.
+
+   The two states are indistinguishable in the registry, so the app now leaves **a mark of its own in
+   the same storage** (`tf/app/seen`, holding nothing). It survives a removal and dies with a wipe,
+   which is precisely the distinction. Mark there → the page is speaking, and removals apply. Mark
+   gone → the store is new to the app, nothing is removed, and the most recently seen link is offered
+   back. Both requirements now hold at once, and `theMarkTellsThemApart` is the test that says so:
+   same registry, same vault, opposite answers.
+
+5. **"Remove from this device" never reached the vault.** It does not take the entry out of `lists` —
+   it sets `archived` on it, because the server and the person's other devices still have the list
+   and Lists brings it back. Reading `lists` naively, the phone went on holding the key to a list it
+   had been told to forget, and a later wipe would have handed it back. An archived entry is now read
+   as *not held*.
+
+The third is the one worth remembering for its shape: the first two were races, but that one was a
+plain confusion between *"I could not read"* and *"there is nothing there"*, and it was in the design.
+The fourth is the same mistake one level up — *"the registry is empty"* is not *"the store is gone"* —
+and it cost the most, because reading rather than relaying means the app has to infer an event from a
+state, and two different events leave the same state. The mark is the app's way of remembering which
+one it saw.
 
 ### The bridge, measured rather than assumed
 
@@ -512,12 +538,32 @@ shellToken=true serviceWorker=true standaloneSeenByPage=false
 
 | | |
 | --- | --- |
-| Swift (`swift test`) | **88 tests in 7 suites** — the 72 from Phase 1 plus 16 for the vault |
+| Swift (`swift test`) | **94 tests in 7 suites** — the 72 from Phase 1 plus 22 for the vault |
 | Node | model 27, theme 30, crypto 10, sync 14, sound 11, features 28, compat 9 — all green |
 | Real backend (`tools/realsync4.js`) | **6 of 6**, six lists created and all six deleted. Unchanged poll **29 bytes**; a realistic list (40 lines, 90 days of history) **6,553 bytes encrypted** against 69,636 plain, well under the 20 KB budget and the 96 KB cap |
 | Browser (`tools/e2e4.js`) | **159 of 159** at 1440×900 and 390×844, zero page errors, zero CSP violations, zero third-party requests — including the new test that the four moments fire once each and show nothing on the web |
 | First paint | 1.9 and 1.10 measured back to back on the same local server, five runs each at 390×844: **FCP 52 ms both**, DCL 36/37 ms, load 39 ms. `app.js` grows 1,126 bytes (0.7 %), all of it comment |
 | Lighthouse 12.8 (Chrome, the same harness and machine as 1.1–1.9, gzip like Pages) | **desktop 100 / 100 / 100 on both**, three runs each (FCP 364–414 ms either way). **Mobile: the same distribution on both** — ten runs each, six scoring 98 and four scoring 99, a11y and best practices 100 throughout, CLS 0.001, TBT 0. The spread is the harness's, not the build's: every mobile run lands in one of two clusters (FCP ≈ 1584 ms → 99, FCP ≈ 1776 ms → 98) and which one it lands in is a coin flip on both 1.9 and 1.10. Installability errors: `in-incognito` and nothing else, on both — the harness's own, as in every previous round |
+
+### On the phone — against the deployed 1.10, not a copy of it
+
+Everything below was done on the **iOS 26.5** simulator against `https://54kz2vzbdw-code.github.io/todays-five/`
+after the merge, with the console open; the haptic tally is how a machine with no motor proves the
+generator was called.
+
+| | |
+| --- | --- |
+| The four moments, from the page's own taps | crossing a line off, taking one back, the last line of the day and a shuffle each arrived: `check=4 uncheck=2 finale=1 shuffle=1`. The finale lands 300 ms after the check-off that caused it, exactly as the sound does |
+| iOS **18.1** | the same app, the same site: `heard=4/4`, `serviceWorker=true`, `shellToken=true`, and a real tap on a line raising `check`. The service worker registers on 18.1, which was the open question |
+| Cold start | ~0.9 s from `simctl launch` to the page's own script running (0.76 s of it before the web view is even asked to load), including simctl's own overhead |
+| Web Share | **it works** — `SHARE…` on the View link opened the iOS share sheet, titled *Today's Five*. This was on the list to verify rather than assume |
+| The save sheet | leads with the link and offers no Add-to-Home-Screen hint: §3a's `STANDALONE` line, seen from the other side |
+| The vault, wiped store | wipe `WKWebsiteDataStore`, relaunch → `vault: restoring a list the web store had lost`, zero removals, and the list back on screen. The page asks *whose list is this?* on the way in, because from its side the link genuinely is new |
+| The vault, removal | *Remove from this device* → `vault: +0 −1` on the next read. The list moves to Lists' **Removed from this device** section, where Restore still brings it back |
+| Paste a link | pasted into Lists and opened; the app vaulted what it saw go by |
+| Off the site | About's **on GitHub** link left the app and opened Safari, with the *◀ Today's Five* chip to come back. Everything on the host stays inside |
+| About, on the phone | **VERSION 1.10 (BUILD 139)** — the deployed build, read off the screen |
+| Privacy | one `print` in the app, `#if DEBUG`, every call site a fixed string with counts or a length. No analytics, no crash reporting, and the four `NSUserActivity` mentions all *receive* a universal link; the app creates none |
 
 ### What could not be run, and why
 
@@ -528,6 +574,16 @@ shellToken=true serviceWorker=true standaloneSeenByPage=false
 - **The interop script was not run.** My own amendment to §7 step 5 says it goes with a change that
   touched §1–§4; 1.10 touched none of them, and the core change (the vault) is not something it
   exercises.
+- **A View link vaulted as a View link was not shown on the phone.** The unit test `seenLink` covers
+  the exact function the app calls, but the device demonstration needs a View link for a list the
+  device does *not* already hold — pasting the View link of a list you hold opens the copy you have,
+  which is right, and vaults nothing new. Worth doing on the phone with a link from another device.
+- **The silent switch, and a real haptic.** A simulator has no ring/silent switch and no Taptic
+  Engine: the tally proves the generator was called, not that anything was felt, and `.ambient` +
+  `.mixWithOthers` is verified by construction rather than by ear. Both want the phone.
+- **An offline open after a first online open.** The service worker is measured as registered and
+  controlling on both simulators, which is the mechanism, but the machine has no way to take this
+  simulator off the network without taking the Mac off it.
 
 ### One thing I got wrong, and what came of it
 

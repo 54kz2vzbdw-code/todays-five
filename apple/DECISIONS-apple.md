@@ -241,19 +241,64 @@ The script now always answers a string, and `""` is the absent case.
 **How to apply:** a `catch` that logs and returns is a place a bug can live quietly. When the failure
 mode and the empty result mean different things, make the script incapable of the ambiguous answer.
 
-## The vault keys on the registry existing, not on it holding anything
+## The vault keeps a mark of its own, because the registry cannot answer the question
 
-Corrected at checkpoint 1, and the correction was right. Restore fires only when `tf/v2/meta` is
-missing or unreadable; removals reconcile whenever it parses, `lists: []` included.
+*(This supersedes the section below it, which was right about removal and wrong about wipes.)*
 
-Keying on `lists` being non-empty instead is a bug with teeth: removing the **only** list leaves
-`lists: []`, restore would fire on the next launch, and the list a person had just removed would come
-back. Existence of the key means the page's store is intact and speaking for itself; its contents are
-the answer.
+The vault has to tell two things apart, and they leave **the same registry**:
+
+* the person removed their last list — `{"lists":[]}`, and the vault must drop it too, or the next
+  launch resurrects what they just removed;
+* the web store was cleared — `{"lists":[]}`, and the vault must give the list back, which is the
+  only reason the vault exists.
+
+Checkpoint 1's correction said to key on `tf/v2/meta` *existing*. That is unreachable in practice:
+`persistMeta()` runs on the page's first boot, so a wiped store has a registry within a frame or two
+of loading, and the app never sees the key missing. Measured on a simulator, the app read a wiped
+store as "the page removed everything" and logged `vault: +0 −1` — it deleted the only copy of the
+link, in the exact case it was built for. Reading it as *absent* is not a design that can be tuned;
+it is a design that cannot fire.
+
+So the app writes **`tf/app/seen`** into the same `localStorage`. It holds nothing. Its entire job is
+to be destroyed by the one event the app cannot otherwise observe, and it is destroyed by exactly
+that event and no other — the page clears only its own keys, never the whole store. Mark there: the
+page is speaking, and `lists: []` means a removal. Mark gone: the store is new to this app, nothing
+is removed, and the most recently seen link is offered back.
+
+It is written **after** the plan is applied, so a crash in between leaves the cautious answer rather
+than the destructive one. `tf/app/` is now the clients' prefix, and §8 of COMPATIBILITY.md says the
+web may not write, read or clear anything under it.
+
+## `archived` is how the page says "not on this device"
+
+*Remove from this device* does not take the entry out of `lists`. `archiveList` sets `archived` on it
+and leaves it there, because the server and the person's other devices still have the list and Lists
+brings it back under **Removed from this device**. Reading `lists` naively — which the first version
+did — the phone went on holding the key to a list it had been told to forget, and the next wipe would
+have offered it back.
+
+This is the cost of observing rather than relaying, stated plainly: the app has to know not just the
+registry's keys but what the page *means* by them. Two of this round's five bugs were that. The
+alternative — a second bridge message from the page saying "I removed this" — was rejected in the
+plan and is still the wrong trade, because a message can be missed and a state cannot; but the state
+has to be read for what it says.
+
+## What checkpoint 1 got right, and what it could not have known
+
+The correction at checkpoint 1 was that `lists` being non-empty is the wrong thing to key on:
+removing the **only** list leaves `lists: []`, and a rule that read that as a wiped store would
+resurrect what the person had just removed. That is exactly right, and it still holds — it is the
+"mark there" half above.
+
+What the amendment proposed instead, keying on `tf/v2/meta` *existing*, turned out to be a test that
+never fires: the page writes a registry on its first boot. Only running it on a device showed that,
+and the mark is what replaced it. Both requirements the checkpoint set are met; the mechanism is one
+level further down than either of us wrote.
 
 A link the app has vaulted but the page has never registered is exempt from removal until it has been
 seen in a registry once — a link tapped from Notes is vaulted before the page finishes opening it,
-and must not be dropped in that window.
+and must not be dropped in that window. That rule is unchanged, and it does double duty: it is also
+what stops the reconcile after a restore from deleting the link it just restored.
 
 ## The events go on `window`
 

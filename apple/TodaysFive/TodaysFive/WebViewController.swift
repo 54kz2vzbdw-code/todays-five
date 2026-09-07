@@ -83,6 +83,7 @@ final class WebViewController: UIViewController {
 
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-TFWipeVault") { try? (vault as? KeychainLinkVault)?.removeAll() }
+        if ProcessInfo.processInfo.arguments.contains("-TFDumpVault") { dumpVault() }
         if ProcessInfo.processInfo.arguments.contains("-TFWipeWebStore") { wipeWebStoreThenLoad(); return }
         #endif
 
@@ -202,22 +203,46 @@ final class WebViewController: UIViewController {
     /// bridge message, no web change, no new contract: the page's *Remove from this device* and
     /// *Delete this list* are observed rather than relayed.
     private func reconcileVault() async {
-        // Three answers, not two. `localStorage` throws a SecurityError on a document that has no
-        // real origin yet — which is what the first load looks like for a moment — and reading that
-        // as "the store is gone" would make the app navigate away from the page the person is on.
-        // The async evaluateJavaScript also throws when the script evaluates to null, so the script
-        // never returns one: "e" it threw, "a" the key is absent, "p…" the value.
+        // Two things come back in one read, because they have to be read together (see
+        // `VaultReconciler.reconcile`): the registry, and the app's own mark saying it has
+        // reconciled against this store before.
+        //
+        // Three answers for the registry, not two. `localStorage` throws a SecurityError on a
+        // document that has no real origin yet — which is what the first load looks like for a
+        // moment — and reading that as "the store is gone" would make the app navigate away from the
+        // page the person is on. The async evaluateJavaScript also throws when the script evaluates
+        // to null, so the script never returns one: "e" it threw, then "s"/"n" for the mark, then
+        // "a" the registry key is absent or "p…" its value.
         let js = "(function(){try{var v=localStorage.getItem('tf/v2/meta');"
-               + "return typeof v==='string'?'p'+v:'a';}catch(e){return 'e';}})()"
+               + "var m=localStorage.getItem('\(VaultReconciler.markKey)')==='1'?'s':'n';"
+               + "return typeof v==='string'?m+'p'+v:m+'a';}catch(e){return 'e';}})()"
         var registry: RegistryRead = .unreadable
-        if let answer = (try? await webView.evaluateJavaScript(js, in: nil, contentWorld: .defaultClient)) as? String {
-            if answer == "a" { registry = .absent }
-            else if answer.hasPrefix("p") { registry = .present(String(answer.dropFirst())) }
+        var storeSeenBefore = false
+        if let answer = (try? await webView.evaluateJavaScript(js, in: nil, contentWorld: .defaultClient)) as? String,
+           answer.count > 1 {
+            storeSeenBefore = answer.hasPrefix("s")
+            let rest = answer.dropFirst()
+            if rest == "a" { registry = .absent }
+            else if rest.hasPrefix("p") { registry = .present(String(rest.dropFirst())) }
         }
+
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-TFDumpVault") {
+            var shape = "unreadable"
+            if registry == .absent { shape = "absent" }
+            else if case let .present(value) = registry {
+                if let meta = (try? JSONReader.parse(value))?.objectValue {
+                    shape = "\((meta["lists"]?.arrayValue ?? []).count) list(s)"
+                } else { shape = "not an object" }
+            }
+            log("read: registry=\(shape) mark=\(storeSeenBefore ? "there" : "gone")")
+        }
+        #endif
 
         do {
             let current = try vault.all()
-            let plan = VaultReconciler.reconcile(registry: registry, vault: current)
+            let plan = VaultReconciler.reconcile(registry: registry, storeSeenBefore: storeSeenBefore,
+                                                 vault: current)
             if plan.unreadable {
                 // Not a decision, just a moment too early. One retry, then leave it to the next
                 // navigation or the next time the app comes forward.
@@ -235,9 +260,16 @@ final class WebViewController: UIViewController {
             if !plan.upsert.isEmpty || !plan.remove.isEmpty {
                 log("vault: +\(plan.upsert.count) −\(plan.remove.count)")
             }
+            // The mark is written *after* the plan is applied, so a crash in between leaves the
+            // cautious answer (an unmarked store removes nothing) rather than the destructive one.
+            if plan.markStore {
+                _ = try? await webView.evaluateJavaScript(
+                    "(function(){try{localStorage.setItem('\(VaultReconciler.markKey)','1');}catch(e){}return 1;})()",
+                    in: nil, contentWorld: .defaultClient)
+            }
             // The page's store is gone and the vault is not: open what the vault remembers, so a
             // wiped web store loses nothing. Once only — the restored load has a registry of its own.
-            if plan.registryMissing, let restore = plan.restore, !restoreAttempted {
+            if let restore = plan.restore, !restoreAttempted {
                 restoreAttempted = true
                 log("vault: restoring a list the web store had lost")
                 // startURL, not siteURL: a debug run pointed at ?transport=local must stay there,
@@ -294,6 +326,18 @@ final class WebViewController: UIViewController {
             guard let self else { return }
             log("debug: web store wiped")
             webView.load(URLRequest(url: Self.startURL))
+        }
+    }
+    #endif
+
+    #if DEBUG
+    /// `-TFDumpVault` — the vault's *shape*, so a check can say a View link was kept as a View link.
+    /// Never the id: a list id is its secret, and the length is all that is ever printed of one.
+    private func dumpVault() {
+        guard let links = try? vault.all() else { log("vault: unreadable"); return }
+        log("vault: \(links.count) link\(links.count == 1 ? "" : "s")")
+        for link in links.sorted(by: { $0.addedAt < $1.addedAt }) {
+            log("  · mode=\(link.mode.rawValue) origin=\(link.origin) seen=\(link.seenInRegistry) id=\(link.id.count) chars")
         }
     }
     #endif

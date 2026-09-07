@@ -215,13 +215,25 @@ stops loading the current page, which is why it never bundles one.
   `STANDALONE` is true (no Add-to-Home-Screen hint inside the app, the save sheet leads with the
   link, and a list switch does not reload the page).
 - The shell reads `tf/v2/meta` to keep its vault in step. **The registry's shape is therefore load-
-  bearing outside the browser too**: an entry's `id`, `mode`, `origin`, `nickname` and `name` are
-  what the vault stores. §5's rule — the keys never change, unknown entries are kept — now protects
-  the app as well as an old browser.
-- The vault keys on whether `tf/v2/meta` **exists**, never on whether it holds any lists: an empty
-  `lists` array is the page speaking (so the app drops what the page dropped), a missing key is the
-  page's store gone (so the app offers its own copy back). Getting that backwards resurrects the list
-  a person just removed.
+  bearing outside the browser too**: an entry's `id`, `mode`, `origin`, `nickname`, `name` and
+  **`archived`** are what the vault reads. §5's rule — the keys never change, unknown entries are
+  kept — now protects the app as well as an old browser.
+- **`archived` says the device does not hold that list.** *Remove from this device* sets the flag and
+  leaves the entry in `lists`, because the server and the person's other devices still have it and
+  Lists brings it back. The app reads an archived entry as *not held* and lets go of the secret:
+  anything else would leave the phone holding the key to a list it was told to forget. A future
+  release that expressed "removed here" some other way would have to say so here first.
+- The vault has to tell two states apart that the registry cannot: **the person removed their last
+  list** (`lists: []`, and the vault must drop it too, or the next launch resurrects it) and **the
+  web store was cleared** (`lists: []` again, and the vault must give the list back). Reading a
+  *missing* `tf/v2/meta` as the second does not work: the page writes a registry the moment it boots,
+  so on a real wipe the key is never missing. The app therefore keeps a mark of its own in the same
+  storage — **`tf/app/seen`**, holding nothing, whose whole job is to be destroyed along with
+  everything else. Mark there: the page is speaking, and the vault follows it. Mark gone: the store
+  is new to the app, nothing is removed, and the most recently seen link is offered back.
+- **The `tf/app/` prefix belongs to the clients, not to the page.** The web must never write, read or
+  clear a key under it — and must go on clearing only its own keys, never the whole store, or it
+  would tell every client that its storage had been wiped.
 - `WKAppBoundDomains` is what lets the service worker run inside the web view at all, so §6's whole
   story — a deploy landing on the next open, a page keeping its own build — holds in the app exactly
   as it does in Safari. A change to the precache list or the cache naming reaches the app too.

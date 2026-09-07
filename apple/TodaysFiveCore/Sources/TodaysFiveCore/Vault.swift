@@ -95,26 +95,53 @@ public struct VaultPlan: Sendable, Equatable {
     public var remove: [String] = []
     /// The link to open because the page's store is gone and the vault is not.
     public var restore: VaultedLink?
-    /// True when the registry key was read and was not there — the wiped-storage case.
+    /// True when the registry key was read and was not there, or held something that is not an
+    /// object.
     public var registryMissing = false
     /// True when the read failed. Nothing in this plan means anything; try again later.
     public var unreadable = false
+    /// Write the app's mark into the page's storage: this store has now been reconciled against.
+    /// Its whole job is to be destroyed when the store is cleared. See `reconcile`.
+    public var markStore = false
 }
 
 public enum VaultReconciler {
 
-    /// The rule keys on **whether the registry exists**, never on whether it holds any lists:
+    /// The key the app keeps in the page's own `localStorage` to say "I have reconciled against this
+    /// store before". It holds nothing — its entire purpose is to be destroyed by the one event the
+    /// app cannot otherwise detect.
+    public static let markKey = "tf/app/seen"
+
+    /// Two questions have to be told apart, and a single read of `tf/v2/meta` cannot tell them apart:
+    ///
+    ///   * **the person removed their last list** — the registry parses and names nothing, and the
+    ///     vault must drop it too, or the next launch resurrects what was just removed;
+    ///   * **the web store was cleared** — iOS reclaimed the site data, or tracking prevention did.
+    ///     The vault exists for exactly this, and must give the list back.
+    ///
+    /// Both look identical: `{"lists":[]}`. Reading `meta` as *absent* in the second case does not
+    /// work either, because the page writes a registry the moment it boots — on a wiped store the
+    /// app has never once seen `meta` missing, and keying on that deleted the vault in the very case
+    /// it was built for. (Measured, on a simulator: `vault: +0 −1` where a restore belonged.)
+    ///
+    /// So the app leaves a **mark of its own in the same storage**, and the mark answers the
+    /// question the registry cannot: it is still there when the person removed a list, and it is
+    /// gone when the store was cleared, because it was cleared with everything else.
     ///
     ///   * unreadable → nothing is decided at all. A failed read says nothing about the store.
-    ///   * absent, or present but not JSON → the store was wiped (or this is a fresh install over a
-    ///     vault). Nothing is removed, and the most recently seen link is offered back.
-    ///   * parses → the page is speaking for itself, `lists: []` included. Every entry is written,
-    ///     and every vaulted link the registry does not name is dropped: that is *Remove from this
-    ///     device* and *Delete this list*, observed rather than relayed.
+    ///   * the mark is **there** → the page is speaking for itself, `lists: []` included. Every entry
+    ///     is written, and every vaulted link the registry does not name is dropped: that is *Remove
+    ///     from this device* and *Delete this list*, observed rather than relayed.
+    ///   * the mark is **gone** → this store is new to the app: a first launch, or a wipe. Nothing is
+    ///     removed, every link the registry does not name has to earn its place again, the most
+    ///     recently seen one is offered back if the registry names none of them, and the mark is
+    ///     written so the next read is an ordinary one.
+    ///   * the registry is **not an object** at all → the page will rewrite it. Nothing is removed
+    ///     and nothing is marked, whatever the mark said.
     ///
-    /// Keying on `lists` being non-empty instead would be a bug — removing the only list leaves
-    /// `lists: []`, restore would fire on the next launch, and the list would come back.
-    public static func reconcile(registry: RegistryRead, vault: [VaultedLink],
+    /// "Names a list" means an entry that is not `archived`: *Remove from this device* leaves the
+    /// entry in `lists` and flags it, and a flagged entry is a list this device no longer holds.
+    public static func reconcile(registry: RegistryRead, storeSeenBefore: Bool, vault: [VaultedLink],
                                  now: Double = CalendarDates.now()) -> VaultPlan {
         var plan = VaultPlan()
 
@@ -127,34 +154,11 @@ public enum VaultReconciler {
 
         var registryJSON: String? = nil
         if case let .present(value) = registry { registryJSON = value }
-
-        guard let registryJSON,
-              let parsed = try? JSONReader.parse(registryJSON),
-              let meta = parsed.objectValue else {
-            plan.registryMissing = true
-            // the most recently seen link, then the most recently added, then the id, so the answer
-            // is the same on every device that holds the same vault
-            plan.restore = vault.sorted { a, b in
-                if a.lastSeenAt != b.lastSeenAt { return a.lastSeenAt > b.lastSeenAt }
-                if a.addedAt != b.addedAt { return a.addedAt > b.addedAt }
-                return JSString(a.id) < JSString(b.id)
-            }.first
-            // Every link has to earn its place again. Opening the restored link gives the page a
-            // registry of its own, and the *next* reconcile reads it — but the page registers a list
-            // asynchronously (it derives keys and fetches before it writes), so that read can land
-            // first and name nothing. Without this, the vault deletes the list it has just restored,
-            // one reconcile after restoring it. Clearing the flag makes each link wait to be named
-            // again before its absence is allowed to mean anything.
-            plan.upsert = vault.filter(\.seenInRegistry).map {
-                var link = $0
-                link.seenInRegistry = false
-                return link
-            }
-            return plan
-        }
+        let meta = registryJSON.flatMap { try? JSONReader.parse($0) }?.objectValue
+        if meta == nil { plan.registryMissing = true }
 
         // `normalizeRegistry` guards the same way: anything that is not an array of entries is none.
-        let entries = (meta["lists"]?.arrayValue ?? []).compactMap { $0.objectValue }
+        let entries = (meta?["lists"]?.arrayValue ?? []).compactMap { $0.objectValue }
         var named = Set<String>()
         var byId: [String: VaultedLink] = [:]
         for link in vault { byId[link.id] = link }
@@ -162,6 +166,12 @@ public enum VaultReconciler {
         for entry in entries {
             let id = entry.str("id").string
             guard Model.isListId(id) else { continue }
+            // *Remove from this device* does not take the entry out of `lists` — it sets `archived`
+            // on it, because the server and the person's other devices still have the list and Lists
+            // brings it back. So an archived entry is a list this device does **not** hold, and the
+            // vault must let go of its secret: keeping it would mean the phone still held the key to
+            // a list the person told it to forget, and a later wipe would hand it back.
+            guard !entry.truthy("archived") else { continue }
             named.insert(id)
             let mode: LinkMode = entry.str("mode") == "view" ? .view : .edit
             let origin = entry.str("origin") == "shared" ? "shared" : "mine"
@@ -185,6 +195,34 @@ public enum VaultReconciler {
                                                name: name, addedAt: addedAt, lastSeenAt: now,
                                                seenInRegistry: true))
             }
+        }
+
+        guard storeSeenBefore, meta != nil else {
+            // A store this app has not reconciled against decides nothing about what is gone. Every
+            // link the registry does not name has to be named again before its absence is allowed to
+            // mean anything — which also covers the race that caught this the first time: the page
+            // registers a list asynchronously, so the reconcile after a restore can land before the
+            // page has named the list it was handed, and without this the vault deletes what it just
+            // restored, one reconcile later.
+            // A registry that is not an object is not the page speaking either — the page will
+            // rewrite it — so it too decides nothing about what is gone, and it is not a store worth
+            // marking.
+            plan.markStore = meta != nil
+            for link in vault where !named.contains(link.id) && link.seenInRegistry {
+                var cleared = link
+                cleared.seenInRegistry = false
+                plan.upsert.append(cleared)
+            }
+            if named.isEmpty, !storeSeenBefore {
+                // the most recently seen link, then the most recently added, then the id, so the
+                // answer is the same on every device that holds the same vault
+                plan.restore = vault.sorted { a, b in
+                    if a.lastSeenAt != b.lastSeenAt { return a.lastSeenAt > b.lastSeenAt }
+                    if a.addedAt != b.addedAt { return a.addedAt > b.addedAt }
+                    return JSString(a.id) < JSString(b.id)
+                }.first
+            }
+            return plan
         }
 
         // A link the app vaulted but the page has never registered is not a removal — it has not had

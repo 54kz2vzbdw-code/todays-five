@@ -172,6 +172,7 @@ Each is `#if DEBUG` only and takes no argument.
 | `-TFSelfTest` | dispatches the four events in the page world and reports whether the bridge heard them, plus the service worker, the shell token and what the page thinks `standalone` is |
 | `-TFWipeWebStore` | clears `WKWebsiteDataStore` before the first load — the wiped-store half of the vault check |
 | `-TFWipeVault` | empties the Keychain items, for a clean run |
+| `-TFDumpVault` | prints the vault's *shape* at launch — mode, origin, whether the registry has named it, and the id's **length** and nothing else — and what each reconcile read (`registry=… mark=…`). It is how a check can say a View link was kept as a View link without a secret ever reaching a log. |
 | `-TFQuery <query>` | appends a query to the start URL. `-TFQuery transport=local` puts the page on its own localStorage-backed test server, so a simulator pass spends nothing from the real backend's create limit (twelve an hour per address, shared with every other suite). Same host, so app-bound domains is untouched. |
 
 ```bash
@@ -216,18 +217,27 @@ Everything else the app needs from the page it **reads** rather than being told:
 One Keychain item per link, `kSecAttrAccessibleAfterFirstUnlock`, **not synchronizable** — iCloud
 Keychain would put list secrets on Apple's servers and change what `about.html` promises.
 
+Two states look identical in the registry and mean opposite things: **the person removed their last
+list** (drop it, or the next launch resurrects it) and **the web store was cleared** (give it back —
+this is what the vault is for). Both leave `lists: []`, and a missing `tf/v2/meta` does not separate
+them either, because the page writes a registry the moment it boots. So the app leaves a mark of its
+own in the same storage, `tf/app/seen`, whose only job is to be destroyed along with everything else.
+
 The rules are pure and live in the core (`VaultReconciler`), where `swift test` covers them:
 
 - the read **failed** → nothing is decided at all, and it retries after a beat. `localStorage` throws
   a `SecurityError` on a document with no origin yet, and reading that as "the store is gone" made
   the app navigate away from the page the person was on.
-- `tf/v2/meta` **absent** → the store was wiped. Nothing is removed, and the most recently seen link
-  is offered back — with every link's "has been named" flag cleared, so the next read cannot delete
-  what was just restored.
-- `tf/v2/meta` **parses**, `lists: []` included → the page is speaking for itself. Every entry is
+- the **mark is there** → the page is speaking for itself, `lists: []` included. Every entry is
   written and every vaulted link it does not name is dropped.
+- the **mark is gone** → the store is new to this app: a first launch, or a wipe. Nothing is removed,
+  every link has to be named again, and the most recently seen one is offered back if the registry
+  names none of them.
+- the registry **is not an object** → the page will rewrite it. Nothing is removed, nothing is marked.
 
-Keying on `lists` being non-empty instead would resurrect the list you just removed.
+"Names a list" excludes an `archived` entry: *Remove from this device* flags the entry and leaves it
+in `lists`, so reading `lists` naively would leave the phone holding the key to a list it was told to
+forget.
 
 ## Privacy
 

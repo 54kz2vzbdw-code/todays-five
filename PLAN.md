@@ -1769,3 +1769,11 @@ and the decision is made at boot, before a link in the address bar has registere
 registry with the list in it did not open either; the device that holds a list is the one that made or
 opened it. Opening the list for real and then ageing the device is the only version of this check that
 tests what it says.
+
+**On the build number and the commit count.** 1.12 is stamped **158**, which is what `main` counted at
+the merge and what is deployed and checked above. The commits that follow it are this record, so
+`git rev-list --count main` reads higher than the build from here on. That is the only way the two can
+agree at the moment a build is made: the number has to be written *before* the round is written up,
+and writing the round up is itself a commit. The build's jobs — About's label, the service worker's
+cache name, and the match between `<html data-build>` and `PANELS_BUILD` — are all about the code that
+shipped, and all three agree at 158.

@@ -855,6 +855,17 @@ export function hashHasExtras(hash) { return /^#\/(l|r)\/[0-9A-Za-z]{22,64}\/./.
     `shared`; a nickname is only ever set by hand, so nothing is added here. Entries are kept as they are otherwise. */
 export function normalizeRegistry(meta) {
   if (!meta || !Array.isArray(meta.lists)) return meta;
+  // 1.12: "Remove from this device" used to park an entry here under `archived`, with a Removed group and a
+  // Restore row. It removes now, so an entry an older build left flagged is finished on read — the person asked
+  // for this once already, and asking again with a toast they did not expect would be the surprising thing.
+  // The vault reads a dropped entry exactly as it read an archived one (COMPATIBILITY.md §8): not held.
+  const gone = meta.lists.filter(l => l && typeof l === "object" && l.archived && l.id).map(l => l.id);
+  if (gone.length) {
+    meta.lists = meta.lists.filter(l => !(l && typeof l === "object" && l.archived));
+    // named, not just dropped: another tab's stored copy still has the entry, and the union on save would hand
+    // it back. `removed` is what says "gone from this device" to that merge (app.js's saveDevice).
+    meta.removed = Array.from(new Set([...(meta.removed || []), ...gone]));
+  }
   for (const l of meta.lists) if (l && typeof l === "object" && l.origin !== "shared") l.origin = "mine";
   return meta;
 }

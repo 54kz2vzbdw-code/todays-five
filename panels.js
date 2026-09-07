@@ -416,31 +416,29 @@ function wireSave() {
 }
 
 /* ---------------- lists ---------------- */
-export function openLists({ removed = false } = {}) {
-  const menu = $("#lists-menu"), rm = $("#lists-removed"); menu.innerHTML = ""; rm.innerHTML = "";
-  const active = meta().lists.filter(l => !l.archived), archived = meta().lists.filter(l => l.archived);
+export function openLists() {
+  const menu = $("#lists-menu"); menu.innerHTML = "";
+  // 1.12: no Removed group and no Restore. A removed list is off this device, and the way back is its link.
+  const active = meta().lists;
   const mine = active.filter(l => l.origin !== "shared"), shared = active.filter(l => l.origin === "shared");
-  const mk = (l, arch) => {
+  const mk = l => {
     const row = document.createElement("div"); row.className = "row";
     const b = document.createElement("button"); b.type = "button";
     const docName = listDocName(l), nick = l.origin === "shared" && l.nickname ? l.nickname : "";
     const name = nick || docName || "Untitled list";
     const tags = [l.mode === "view" ? "View only" : ""].filter(Boolean).map(t => `<span class="sub">${t}</span>`).join(" ");
     const own = nick && docName && docName !== nick ? `<span class="sub name">${A.escapeHtml(docName)}</span>` : ""; // a nickname shows with the list's own name under it
-    b.innerHTML = `<span class="lb ${l.id === A.listId ? "cur" : ""}">${A.escapeHtml(name)} ${tags}${own}</span>${arch ? '<span class="id">Restore</span>' : ""}`; // 1.9: no id fragment on a row — six characters that mean nothing to a person (proposal 21); the › says there is more
-    b.addEventListener("click", () => { A.closePanel(); if (arch) { l.archived = false; A.saveDevice(); A.toast("Back on this device"); } A.switchTo({ id: l.id, mode: l.mode === "view" ? "view" : "edit" }); });
+    b.innerHTML = `<span class="lb ${l.id === A.listId ? "cur" : ""}">${A.escapeHtml(name)} ${tags}${own}</span>`; // 1.9: no id fragment on a row — six characters that mean nothing to a person (proposal 21); the › says there is more
+    b.addEventListener("click", () => { A.closePanel(); A.switchTo({ id: l.id, mode: l.mode === "view" ? "view" : "edit" }); });
     row.appendChild(b);
-    if (!arch) { const d = document.createElement("button"); d.type = "button"; d.className = "more"; d.setAttribute("aria-label", "Details: " + name); d.textContent = "›"; d.addEventListener("click", () => openListDetail(l.id)); row.appendChild(d); }
+    const d = document.createElement("button"); d.type = "button"; d.className = "more"; d.setAttribute("aria-label", "Details: " + name); d.textContent = "›"; d.addEventListener("click", () => openListDetail(l.id)); row.appendChild(d);
     return row;
   };
   const head = t => { const h = document.createElement("div"); h.className = "group-h"; h.textContent = t; menu.appendChild(h); };
-  if (shared.length) { head("My lists"); mine.forEach(l => menu.appendChild(mk(l, false))); head("Shared with me"); shared.forEach(l => menu.appendChild(mk(l, false))); } // the groups appear only once there is something to group
-  else mine.forEach(l => menu.appendChild(mk(l, false)));
-  archived.forEach(l => rm.appendChild(mk(l, true)));
-  $("#lists-removed-h").hidden = !archived.length; rm.hidden = !archived.length;
+  if (shared.length) { head("My lists"); mine.forEach(l => menu.appendChild(mk(l))); head("Shared with me"); shared.forEach(l => menu.appendChild(mk(l))); } // the groups appear only once there is something to group
+  else mine.forEach(l => menu.appendChild(mk(l)));
   // 1.9: Rename and Remove live in a list's detail (›) and nowhere else; the shelf keeps New list and the paste field (proposal 5)
   A.showPanel("p-lists");
-  if (removed && archived.length) $("#lists-removed-h").scrollIntoView({ block: "start" });
 }
 function listDocName(l) { const loc = A.loadLocal(l.id); return (loc && loc.doc.name) || l.name || ""; }
 /** 1.4: a shared list's nickname is this device's own name for it; the name inside the document is never touched. */
@@ -452,15 +450,40 @@ async function nicknameList(id) {
   e.nickname = v; // empty means none
   A.saveDevice(); A.paintListName();
 }
-/** Remove from this device: hide it here, keep it everywhere else. */
-async function archiveList(id) {
+/** Remove from this device (1.12): it goes, and the way back is the link. The server and the person's other
+    devices still have it, but this device forgets the secret — so the sheet says so, and puts the link within
+    reach before it asks. A list whose link was never saved is the one that can actually be lost: that warning
+    is stronger and Copy link comes first. */
+async function removeList(id) {
   const e = A.entryOf(id); if (!e) return;
+  const link = A.BASE + A.frag({ id: e.id, mode: e.mode === "view" ? "view" : "edit" });
+  const name = listDocName(e) || (e.origin === "shared" && e.nickname) || "this list";
+  const unsaved = !!e.created && e.linkSaved === false && e.origin !== "shared"; // made here and never copied anywhere
+  const ok = await A.ask({
+    title: "Remove from this device?",
+    msg: unsaved
+      ? `You've never saved this link. Copy it first — without it there is no way back to ${name}, here or anywhere else.`
+      : `The server and your other devices keep it. This device forgets the link, so you'll need it again to open ${name} here.`,
+    confirm: "Remove",
+    danger: true,
+    extraFirst: unsaved,
+    extra: { label: "Copy link", run: () => A.copyText(link, "Link copied") }
+  });
+  if (!ok) return;
   await A.flushQuick();
-  e.archived = true; A.saveDevice();
-  A.toast("Removed from this device. The server and your other devices still have it—Lists brings it back.");
-  if (id !== A.listId) return;
-  const next = meta().lists.find(l => !l.archived);
-  if (next) A.switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else A.showWelcome();
+  const entry = { ...e }, wasOpen = id === A.listId;
+  meta().lists = meta().lists.filter(l => l.id !== id);
+  meta().removed = Array.from(new Set([...(meta().removed || []), id]));
+  A.saveDevice();
+  // the switch first and the toast after it: opening a list clears whatever toast is on screen (app.js), so a
+  // ten-second Undo raised before the switch would be gone before the person could read it
+  if (wasOpen) { const next = meta().lists[0]; if (next) await A.switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else A.showWelcome(); }
+  A.toast("Removed from this device", { action: () => { // ten seconds, and then the link is the only way back
+    meta().removed = (meta().removed || []).filter(x => x !== id); meta().unremoved = [...(meta().unremoved || []), id]; // in storage too, or the merge on save drops it again
+    const back = A.registerList(id, entry.name || "", entry.mode === "view" ? "view" : "edit", entry.origin);
+    Object.assign(back, entry); A.saveDevice();
+    if (wasOpen) A.switchTo({ id, mode: entry.mode === "view" ? "view" : "edit" }); else A.toast("Back on this device");
+  } });
 }
 /** A list's detail: open it, rename or nickname it, say whose it is, remove it from this device. */
 export function openListDetail(id) {
@@ -488,7 +511,7 @@ function wireListDetail() {
     const act = b.dataset.lact;
     if (act === "open") { A.closePanel(); A.switchTo({ id: l.id, mode: l.mode === "view" ? "view" : "edit" }); }
     else if (act === "rename") { A.closePanel(); if (l.origin === "shared") nicknameList(l.id); else renameOpenList(); }
-    else if (act === "remove") { A.closePanel(); archiveList(l.id); }
+    else if (act === "remove") { A.closePanel(); removeList(l.id); }
     else if (act === "history") { const local = l.id === A.listId && A.doc ? { doc: A.doc } : A.loadLocal(l.id); if (local) openHistory(local.doc, $("#p-list-h").textContent); }
   });
   // 1.9: the two answers to "Whose list is this?", the way the question asked them (proposal 10)
@@ -840,7 +863,7 @@ export function openLineMenu(id) {
   $("#line-repeat-sub").textContent = A.ruleLabel(M.ruleOf(A.doc, id));
   $('#p-line [data-lact="nottoday"]').hidden = !it.today || it.done;
   // 1.9: Move to… covers this list's sections as well as the other lists here (proposal 6)
-  $('#p-line [data-lact="move"]').hidden = !(M.liveSections(A.doc).length || meta().lists.some(l => l.id !== A.listId && l.mode !== "view" && !l.archived));
+  $('#p-line [data-lact="move"]').hidden = !(M.liveSections(A.doc).length || meta().lists.some(l => l.id !== A.listId && l.mode !== "view"));
   const li = A.rows.get(id);
   A.showPanel("p-line", { anchor: li ? li.querySelector(".tool.lmenu") : null });
 }
@@ -904,7 +927,7 @@ function openMove(id) {
   const here = it.sectionId && A.doc.sections[it.sectionId] && !A.doc.sections[it.sectionId].deleted ? it.sectionId : "";
   const secs = M.sectionsOrdered(A.doc);
   const sections = (secs.length ? [{ id: "", name: "Unsorted" }, ...secs] : []).filter(s => s.id !== here);
-  const targets = meta().lists.filter(l => l.id !== A.listId && l.mode !== "view" && !l.archived);
+  const targets = meta().lists.filter(l => l.id !== A.listId && l.mode !== "view");
   const short = it.text.length > 40 ? it.text.slice(0, 40) + "…" : it.text;
   const rows = [];
   if (sections.length) { rows.push({ head: "This list" }); for (const s of sections) rows.push({ label: s.name, run: () => moveToSection(id, s.id) }); }
@@ -955,14 +978,17 @@ export async function deleteEverywhere() {
   meta().lists = meta().lists.filter(l => l.id !== id);
   meta().dead = Array.from(new Set([...(meta().dead || []), id]));
   A.saveDevice();
-  const next = meta().lists.find(l => !l.archived);
-  if (next) A.switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else A.showWelcome();
+  const next = meta().lists[0];
+  // 1.12: awaited. Opening a list clears the toast on screen, and openList is async — so the ten seconds this
+  // sheet promises had a hidden Undo chip whenever there was another list to switch to. Found next door, in
+  // Remove from this device, which raises its Undo the same way.
+  if (next) await A.switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else A.showWelcome();
   A.toast(dead ? `Deleted “${name}” everywhere` : `Deleted “${name}” here; the server copy goes when you're back online`, { action: async () => {
     // the client still holds W and the document: re-create the row under the same link
     meta().dead = (meta().dead || []).filter(x => x !== id); meta().undead = [...(meta().undead || []), id]; // the dead mark goes in storage too, or the merge on save would drop the entry again
     meta().pendingKill = (meta().pendingKill || []).filter(k => k.lookupId !== kill.lookupId);
     A.saveLocal(id, { doc: docCopy, rev: 0, dirty: true, created: true, mode: "edit" });
-    const e = A.registerList(id, entry.name || docCopy.name || "", "edit", entry.origin); e.created = true; e.linkSaved = true; e.archived = false;
+    const e = A.registerList(id, entry.name || docCopy.name || "", "edit", entry.origin); e.created = true; e.linkSaved = true;
     A.saveDevice();
     A.switchTo({ id, mode: "edit", origin: entry.origin === "shared" ? "shared" : "mine" });
     A.toast("Back, under the same link");
@@ -993,7 +1019,7 @@ export function openHelp(section) {
     <p><b>Shuffle</b>: ${touch ? "shake the phone, or tap ↻ beside the count" : "press S, or click ↻ beside the count"}, and a different undone line takes the screen—never the same one twice in a row, and the list itself doesn't move. It stays until you cross it off or shuffle again; after a check-off the top line is back.${touch ? " The first time, the phone asks once whether shaking may count; say no and ↻ still works." : ""}</p>
     <h3 id="h-lists">Lists, sections, templates</h3>
     <p>Sections live in Everything; the ⋯ in a section's header can rename it, put every line on Today or take them off, save the section as a <b>template</b> (its lines, no done state), or insert a template. Templates are kept in the list itself, so they sync, and Settings → Lists manages them. A line's menu can <b>move it to another list</b> on this device. Past eight lines, Search shows up at the top of Everything${touch ? "" : "; / opens it any time"}.</p>
-    <p><b>Remove from this device</b> (Lists) only hides a list here; the server and your other devices keep it, and Lists brings it back. <b>Delete this list everywhere</b> (bottom of ⋯) removes it from the server and from here, with ten seconds to undo. Deleted lines sit in <b>Recently deleted</b> at the bottom of Everything for 30 days, with Restore.</p>
+    <p><b>Remove from this device</b> (a list's › in Lists) takes it off this device and forgets its link. The server and your other devices keep the list, so the link is the way back—the sheet offers to copy it before it asks, and says so plainly if you've never saved it. Ten seconds to undo, and then it's gone from here. <b>Delete this list everywhere</b> (bottom of ⋯) removes it from the server and from here, with ten seconds to undo. Deleted lines sit in <b>Recently deleted</b> at the bottom of Everything for 30 days, with Restore.</p>
     <h3 id="h-links">Links</h3>
     <p>Two links, named for what they do. The <b>Private link</b> is your list's only key: anyone holding it can open the list, and there is no spare. Lose it, lose the list—nobody can recover it, and Settings → Advanced → Export &amp; import is the only backup there is. The <b>View link</b> shows the list and can't change it; anything that should show the list but not change it gets that one.</p>
     <p><b>Second screen:</b> open the View link on the work computer or a TV, keep the Private link on your phone, and cross things off from the phone—each check-off lands on the big screen with the sound and the confetti.</p>
@@ -1009,7 +1035,7 @@ export function openHelp(section) {
     <p><a class="chip" href="${esc(bm)}" onclick="return false" draggable="true" title="Drag me to the bookmarks bar">+ Today's Five</a></p>
     <input class="link" type="text" readonly value="${esc(bm)}" aria-label="Bookmarklet code" spellcheck="false">
     <h3 id="h-who">Day and night, sound, who's here</h3>
-    <p>Every device has a <b>Day theme</b> and a <b>Night theme</b>. The sun or moon in the top bar flips between them${touch ? "" : " (T does too; Shift+T opens Appearance)"}. Settings → Appearance holds both slots and the switch: by hand, with the device's light or dark setting, or on a schedule with a day time and a night time. Under either automation a tap on the sun or moon holds until the next automatic switch, then the automation takes over again.</p>
+    <p>Every device has a <b>Day theme</b> and a <b>Night theme</b>. ⋯ → <b>Theme</b> asks for both, in that order: pick the day one and it moves straight on to night, with that theme's partner offered first. The sun or moon in the top bar flips between them${touch ? "" : " (T does too; Shift+T opens Appearance)"}. Settings → Appearance holds both slots one at a time, and the switch: by hand, with the device's light or dark setting, or on a schedule with a day time and a night time. Under either automation a tap on the sun or moon holds until the next automatic switch, then the automation takes over again.</p>
     <p>Any theme can go in either slot—light, dark, or one of yours; the slot is about when, not what. Every theme names a partner for the other side, one tap away when you pick it, and the builder can make a partner for a theme of your own: same accent, same sound, flipped base. Every theme picks one of the twelve sound packs, a theme you make can carry its own, and Settings → Sound overrides it on this device. On an iPhone, the ring/silent switch mutes the app's sounds too.</p>
     <p>A small dot beside the sync dot marks each other device that has the list open right now—a random session id, nothing else, and Settings → Advanced turns it off.${touch ? "" : " Leave the mouse alone for a few seconds and the top bar and the footer fade to the date and the count; move it and they're back (Settings → Behavior turns that off)."}</p>`;
   $("#help-keys").addEventListener("click", () => openKeys());

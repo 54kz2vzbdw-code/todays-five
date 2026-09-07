@@ -299,6 +299,24 @@ test("1.4: the registry migrates on read — existing entries become mine, a sha
   assert.deepEqual(Object.keys(meta.lists[0]), ["id", "mode", "name", "created", "linkSaved", "origin"], "the entry keeps its shape and gains one field");
   assert.equal(M.normalizeRegistry(null), null); assert.deepEqual(M.normalizeRegistry({}), {});
 });
+test("1.12: an archived entry is finished on read — removed means removed, and nothing else moves", () => {
+  const other = "b".repeat(22);
+  const meta = { lists: [
+    { id: W, mode: "edit", name: "Work", origin: "mine" },
+    { id: R, mode: "view", name: "Gone", origin: "mine", archived: true },
+    { id: other, mode: "edit", origin: "shared", nickname: "Sarah's" },
+    null
+  ] };
+  M.normalizeRegistry(meta);
+  assert.deepEqual(meta.lists.map(l => l && l.id), [W, other, null], "the archived one goes; the order of the rest holds, unknown entries included");
+  assert.ok(!meta.lists.some(l => l && l.archived), "and no entry is left carrying the flag");
+  assert.deepEqual(meta.removed, [R], "it is named as removed, so another tab's copy cannot merge it back in");
+  assert.equal(meta.lists[1].nickname, "Sarah's", "nothing else about an entry is touched");
+  // a registry that never had one is unchanged, and the migration is idempotent
+  const clean = { lists: [{ id: W, mode: "edit", origin: "mine" }] };
+  M.normalizeRegistry(clean); M.normalizeRegistry(clean);
+  assert.deepEqual(clean.lists.map(l => l.id), [W]);
+});
 test("1.4: the frozen 1.3 parser and a hinted link — what a page still running 1.3 does", () => {
   assert.equal(parseHash13("#/l/" + W).id, W, "1.3 reads a plain link");
   assert.equal(parseHash13("#/l/" + W + "/add?text=Milk").add.text[0], "Milk", "and an add link");

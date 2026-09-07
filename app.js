@@ -78,11 +78,18 @@ function saveDevice() {
   const undead = new Set(meta.undead || []); // an id this tab brought back (the ten-second undo after Delete everywhere): the dead mark goes, in storage too
   const dead = new Set([...(stored.dead || []), ...(meta.dead || [])].filter(id => !undead.has(id)));
   delete meta.undead;
+  // 1.12: Remove from this device takes the entry out for good, and the union above would hand it straight back
+  // from another tab's copy — so a removed id is marked the way a dead one is. It is *not* `dead`: that list is
+  // still on the server, and pasting its link again is the way back, which registerList clears the mark for.
+  const unremoved = new Set(meta.unremoved || []);
+  const removed = new Set([...(stored.removed || []), ...(meta.removed || [])].filter(id => !unremoved.has(id)));
+  delete meta.unremoved;
   const byId = new Map();
-  for (const l of [...(stored.lists || []), ...(meta.lists || [])]) if (l && l.id && !dead.has(l.id)) byId.set(l.id, { ...(byId.get(l.id) || {}), ...l });
+  for (const l of [...(stored.lists || []), ...(meta.lists || [])]) if (l && l.id && !dead.has(l.id) && !removed.has(l.id)) byId.set(l.id, { ...(byId.get(l.id) || {}), ...l });
   meta.lists = Array.from(byId.values());
   M.normalizeRegistry(meta);
   meta.dead = Array.from(dead);
+  meta.removed = Array.from(new Set([...removed, ...(meta.removed || [])])); // normalizeRegistry above may have just named one (an `archived` entry finished on read)
   meta.redirect = { ...(stored.redirect || {}), ...(meta.redirect || {}) };
   const kills = new Map(); for (const k of [...(stored.pendingKill || []), ...(meta.pendingKill || [])]) if (k && k.lookupId) kills.set(k.lookupId, k);
   meta.pendingKill = Array.from(kills.values());
@@ -454,6 +461,9 @@ addEventListener("online", retryTransport);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") retryTransport(); });
 
 function registerList(id, name, mode, origin) {
+  // 1.12: this is the one door into the registry, so it is where "removed from this device" ends — pasting the
+  // link again, or opening it from anywhere, means this device holds the list once more.
+  if ((meta.removed || []).includes(id)) { meta.removed = meta.removed.filter(x => x !== id); meta.unremoved = [...(meta.unremoved || []), id]; }
   let e = meta.lists.find(l => l.id === id);
   if (!e) { e = { id, mode: mode === "view" ? "view" : "edit", name: name || "", addedAt: Date.now(), fresh: !dev.tourDone, origin: origin === "shared" ? "shared" : "mine" }; meta.lists.push(e); }
   else if (mode && e.mode !== mode) e.mode = mode;
@@ -644,7 +654,6 @@ async function migrateLegacy(oldId, legacyLocal, serverRow, gen = openGen) {
   const old = meta.lists.find(l => l.id === oldId);
   const e = registerList(W, old ? old.name : (copy.name || ""), "edit");
   e.created = true; e.linkSaved = false; e.migrated = true;
-  if (old && old.archived) e.archived = true;
   meta.lists = meta.lists.filter(l => l.id !== oldId);
   meta.dead = Array.from(new Set([...(meta.dead || []), oldId]));
   meta.redirect = { ...(meta.redirect || {}), [oldId]: W };
@@ -724,7 +733,7 @@ function applyPendingAdd() {
 /* ---------------- lists registry ---------------- */
 function paintListName() {
   const btn = $("#listname");
-  const active = meta.lists.filter(l => !l.archived);
+  const active = meta.lists; // 1.12: nothing is parked in the registry any more, so every entry is a list this device holds
   const entry = meta.lists.find(l => l.id === listId);
   const docName = doc && doc.name ? doc.name : (entry && entry.name) || "";
   const name = (entry && entry.origin === "shared" && entry.nickname) || docName; // 1.4: a shared list goes by its nickname here
@@ -1902,7 +1911,9 @@ function wireSheetSwipe(d) {
   };
   d.addEventListener("pointerup", end); d.addEventListener("pointercancel", end);
 }
-function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger = false }) {
+/** 1.12: `extra` is one more button beside OK — Copy link on the Remove sheet, where the thing the person is
+    about to need is the link they are removing. `extraFirst` puts it before OK, for when it matters more. */
+function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger = false, extra = null, extraFirst = false }) {
   return new Promise(resolve => {
     const d = $("#ask");
     $("#ask-title").textContent = title;
@@ -1911,6 +1922,14 @@ function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger =
     field.hidden = !label; input.value = value; input.setAttribute("aria-label", label || title);
     $("#ask-ok").textContent = confirm;
     $("#ask-ok").classList.toggle("danger", danger); $("#ask-ok").classList.toggle("accent", !danger);
+    const ex = $("#ask-extra"); ex.hidden = !extra; ex.onclick = null;
+    if (extra) {
+      ex.textContent = extra.label;
+      ex.onclick = () => { extra.run(); };
+      const row = ex.parentNode, ok = $("#ask-ok");
+      if (extraFirst) row.insertBefore(ex, ok); else ok.after(ex);
+      ex.classList.toggle("accent", !!extraFirst && !danger);
+    }
     let done = false;
     const finish = v => { if (done) return; done = true; resolve(v); };
     const form = $("#ask-form");
@@ -2079,7 +2098,7 @@ function switchTo(r, { paste = false } = {}) {
     else location.replace(target); // path changes (…/index.html): this is a real navigation, no reload needed
     return;
   }
-  openList(r);
+  return openList(r); // 1.12: returned so a caller that must speak *after* the switch can wait for it — opening a list clears the toast on screen, which was eating the ten-second Undo raised beside it
 }
 $("#listname").addEventListener("click", () => { askedPanel = "lists"; panels().then(p => p.openLists()); });
 $("#w-keep").addEventListener("click", keepDemo);

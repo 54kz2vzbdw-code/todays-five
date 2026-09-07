@@ -221,14 +221,22 @@ stops loading the current page, which is why it never bundles one.
   `STANDALONE` is true (no Add-to-Home-Screen hint inside the app, the save sheet leads with the
   link, and a list switch does not reload the page).
 - The shell reads `tf/v2/meta` to keep its vault in step. **The registry's shape is therefore load-
-  bearing outside the browser too**: an entry's `id`, `mode`, `origin`, `nickname`, `name` and
-  **`archived`** are what the vault reads. §5's rule — the keys never change, unknown entries are
-  kept — now protects the app as well as an old browser.
-- **`archived` says the device does not hold that list.** *Remove from this device* sets the flag and
-  leaves the entry in `lists`, because the server and the person's other devices still have it and
-  Lists brings it back. The app reads an archived entry as *not held* and lets go of the secret:
-  anything else would leave the phone holding the key to a list it was told to forget. A future
-  release that expressed "removed here" some other way would have to say so here first.
+  bearing outside the browser too**: an entry's `id`, `mode`, `origin`, `nickname`, `name` — and
+  **`archived`**, which nothing writes since 1.12 and the vault still reads. §5's rule — the keys
+  never change, unknown entries are kept — now protects the app as well as an old browser.
+- **An entry in `lists` is a list this device holds. Since 1.12 there is no other state.**
+  *Remove from this device* takes the entry out, and the way back is the link — there is no Removed
+  group and no Restore. The vault reads a list the registry does not name as *not held* and lets go
+  of the secret, which is what it always did; only the shape of "not named" changed.
+
+  Until 1.12 the flag `archived` said it instead: the entry stayed in `lists` and was marked. That is
+  the change this paragraph was told to announce, and here it is. `normalizeRegistry` finishes any
+  entry an older build left flagged, on read, once and without a word — the person asked for it when
+  they pressed Remove, and a toast about a list they removed weeks ago would be the surprising thing.
+  **The Swift `VaultReconciler` still skips an `archived` entry**, and should: the registry is
+  device-local and a device can open an older page from its cache, so the flag has to keep meaning
+  what it meant for as long as any build that writes it might run. It is a reader of the old shape,
+  not a writer of it.
 - The vault has to tell two states apart that the registry cannot: **the person removed their last
   list** (`lists: []`, and the vault must drop it too, or the next launch resurrects it) and **the
   web store was cleared** (`lists: []` again, and the vault must give the list back). Reading a

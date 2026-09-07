@@ -287,9 +287,11 @@ The rules are pure and live in the core (`VaultReconciler`), where `swift test` 
   names none of them.
 - the registry **is not an object** → the page will rewrite it. Nothing is removed, nothing is marked.
 
-"Names a list" excludes an `archived` entry: *Remove from this device* flags the entry and leaves it
-in `lists`, so reading `lists` naively would leave the phone holding the key to a list it was told to
-forget.
+"Names a list" excludes an `archived` entry. Since the web's 1.12, *Remove from this device* takes the
+entry out of `lists` altogether rather than flagging it, and the reconciler already reads a list the
+registry does not name as *not held* — so nothing here had to change. The `archived` check stays
+anyway: the registry is device-local and a device can open an older page out of its cache, so the
+flag has to go on meaning what it meant. The vault reads both shapes and writes neither.
 
 ## Privacy
 

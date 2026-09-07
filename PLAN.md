@@ -1682,3 +1682,64 @@ later. `switchTo` returns its promise now. **Delete this list everywhere had the
 had it for some time: it promises ten seconds to undo, in the sheet and in How it works, and its Undo
 chip was hidden whenever there was another list to switch to. One word, fixed here rather than left
 alone next to the identical code.
+
+## Before and after
+
+`shots/1.12/before` (1.11, build 151, from a worktree of `main` on its own port) and `shots/1.12/after`,
+both viewports, the same script back to back on the same machine: 82 shots against 92. The ten the
+before set does not have are the surfaces that did not exist — `menu-back`, `menu-back-returned`,
+`theme-day`, `theme-night` and `remove-confirm`, at each viewport. `tools/shots.js` skips a step whose
+surface a build has not got, which is what lets one script take both sets.
+
+The pair to look at first is `desktop-everything-finale`: the same list, every line crossed off, in
+both builds. Before, the footer offers **+ New line** and the keyboard hints. After, it is the theme's
+own finale line and **Bring them all back**.
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 31, crypto 10, sync 14, sound 12, features 28, compat 9 |
+| Swift core | `swift test` — 94 tests in 7 suites |
+| Browser suite, 1440×900 and 390×844 | 169 passed, 0 failed, zero page errors, zero CSP violations, zero third-party requests. Ten of them are this round's, five a side |
+| Real backend | 6 passed, 6 of 6 lists cleaned up. Unchanged poll 29 bytes; a realistic list 6,509 bytes encrypted |
+| The app | builds for the simulator and for a device; `-TFSelfTest` reports `heard=4/4` and `finale pattern ok duration=1.020s` |
+
+### Lighthouse, and what stands in for it
+
+**Lighthouse could not be run this round.** It is not installed in this machine's Node runtime, and
+there is no `npm`, `npx` or `pnpm` here to add it — the pnpm store on disk is content-addressed with
+no client to read it. So there is no score to put beside 1.11's table, and this section is not one.
+
+What was done instead: both builds served locally on their own ports, and first paint measured
+directly through CDP with **Lighthouse's own mobile throttling numbers applied** — 150 ms RTT,
+1.6 Mbps down, 4× CPU. Eight runs a side, **interleaved and with the order flipped every other pass**,
+so neither build owns the warm machine. Medians, with the full range:
+
+| | FCP | LCP | on the wire |
+| --- | --- | --- | --- |
+| desktop 1.11 | 56 ms (44–64) | 56 ms (44–64) | 191.4 KB |
+| desktop 1.12 | 56 ms (44–60) | 56 ms (44–60) | 193.8 KB |
+| mobile 1.11 | 1056 ms (1052–1108) | 1056 ms (1052–1108) | 191.4 KB |
+| mobile 1.12 | **1108 ms** (1088–1116) | **1108 ms** (1088–1116) | 193.8 KB |
+
+**Desktop is unchanged. Mobile is about 50 ms slower, and that is a real number, not noise** — the
+medians are 52 ms apart and the ranges barely touch, on interleaved runs.
+
+### The one thing this round could not hold to
+
+The brief says Today's first paint does not get slower. Under an applied 4× CPU throttle it does, by
+about 50 ms on a 1056 ms baseline — a little under 4 %.
+
+It is bytes, and only bytes. The critical path carries **+1.86 KB gzipped**: `app.js` +1,423,
+`model.js` +356, `styles.css` +91, `index.html` −13. (`panels.js` grew the most of anything, +1,466,
+and does not count: it is fetched lazily and is not on the first paint.) At 1.6 Mbps that is about
+12 ms of transfer, and the 4× CPU throttle turns the rest of it into parse and evaluate time.
+
+**Twenty-two of the seventy-one lines added to `app.js` are comments**, about 2.5 KB before gzip and
+perhaps 900 bytes after — so roughly 60 % of the growth is the explanation rather than the code. They
+could be cut and most of the 50 ms would come back. They were not: this codebase's comments are the
+reason a round like this one can be done at all, 1.11 made the same call in the same words ("about
+half of it comments"), and trading them for a number that only appears under a 4× CPU throttle is
+the wrong way round. Recorded here rather than quietly absorbed, because the brief asked for parity
+and this is not parity.

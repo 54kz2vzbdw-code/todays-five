@@ -1635,8 +1635,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await a.page.waitForFunction(() => /build/.test(document.getElementById("version").textContent), null, { timeout: 5000, polling: 100 });
     const log = await a.page.$$eval("#log .v", els => els.map(e => e.textContent));
     assert.equal(log.join(","), "1.12,1.11,1.10,1.9,1.8,1.7,1.5,1.4,1.3,1.2,1.1,1.0");
-    assert.ok(/A little something for someone in particular\.$/.test((await a.page.textContent("#log > li:nth-child(4) div")).trim()), "the 1.8 headline is the wink (fourth now that 1.11 leads)");
-    const wink = await a.page.$$eval("#log > li:nth-child(4) ul li", els => els.map(e => e.textContent.replace(/^(New|Improved|Fixed)/, "").trim())); // the same 1.8 entry, fourth now that 1.11 leads
+    assert.ok(/A little something for someone in particular\.$/.test((await a.page.textContent("#log > li:nth-child(5) div")).trim()), "the 1.8 headline is the wink (fifth now that 1.12 leads)");
+    const wink = await a.page.$$eval("#log > li:nth-child(5) ul li", els => els.map(e => e.textContent.replace(/^(New|Improved|Fixed)/, "").trim())); // the same 1.8 entry, fifth now that 1.12 leads
     assert.deepEqual(wink, ["If you know, you know."], "one line and a wink");
     const body = await a.page.textContent("body");
     assert.ok(!/Superpink|Birthday/i.test(body) && !/secret (theme|group|pair)|forget the secret/i.test(body), "and nothing else about it on About (the crypto page's own \"secret\" is the one in a link)");

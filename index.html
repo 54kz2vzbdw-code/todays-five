@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-base="dark" data-build="145">
+<html lang="en" data-base="dark" data-build="146">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -17,7 +17,7 @@
   <meta property="og:image:alt" content="Today's Five: a short list in big type, one line crossed off">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-IeIbBrv5kdEExnAhwF6S0+zp2fzA+0MCfHbeFnxJ+b4='; style-src 'self' 'sha256-42Imb/mjd8hy2doal5liLjDuoMQlFgVDzsZs7I3nxbI='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://xyfjxdbwhysbaltcwvcx.supabase.co wss://xyfjxdbwhysbaltcwvcx.supabase.co; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-d+qpzy/Yz/FCuXi+YbFGubF3Mi0prOKgvzWo450e7z8='; style-src 'self' 'sha256-42Imb/mjd8hy2doal5liLjDuoMQlFgVDzsZs7I3nxbI='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://xyfjxdbwhysbaltcwvcx.supabase.co wss://xyfjxdbwhysbaltcwvcx.supabase.co; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
   <meta name="theme-color" content="#070A08">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -55,6 +55,24 @@
       css = localStorage.getItem("tf/v2/themecss");
       meta = JSON.parse(localStorage.getItem("tf/v2/meta") || "{}") || {};
     } catch (e) {}
+    /* 1.11: the default pair's two faces, started early. Without this they are not discovered until
+       styles.css has downloaded and parsed and the first text needs them; this starts them alongside
+       the stylesheet, which is still three lines below. Only for a device that has chosen nothing —
+       a device with cached tokens, or with a slot it picked, is about to paint some other theme, and
+       preloading these would be two files it never uses. Both halves of that test are needed: the
+       token cache can be cleared on a device that still remembers the theme it chose.
+       Keep the names in step with the @font-face rules in styles.css. */
+    if (!css && !(meta.device && (meta.device.day || meta.device.night))) {
+      var faces = (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches)
+        ? ["jetbrains-mono-500-800", "ibm-plex-mono-400"]   /* Terminal, the night default */
+        : ["playfair-display-700-800", "source-serif-4-400-600"]; /* Paper, the day default */
+      for (var fi = 0; fi < faces.length; fi++) {
+        var pl = document.createElement("link");
+        pl.rel = "preload"; pl.as = "font"; pl.type = "font/woff2"; pl.crossOrigin = "anonymous";
+        pl.href = "fonts/" + faces[fi] + ".woff2";
+        document.head.appendChild(pl);
+      }
+    }
     var hash = location.hash || "";
     if (!(meta.lists && meta.lists.length) && hash.indexOf("#/l/") !== 0 && hash.indexOf("#/r/") !== 0) document.documentElement.classList.add("welcome");
     var style = document.getElementById("theme-vars");

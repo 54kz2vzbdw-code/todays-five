@@ -1481,14 +1481,48 @@ pair to a mono pair or a serif pair, and those are bigger files. Nothing else in
 anything: the icons shrank (`apple-touch-icon.png` 3,699 → 1,348 bytes, `icon-512.png` 18,583 →
 3,777), the card is the same size, and no module grew.
 
-The two levers, if this is not acceptable:
-
-1. **Keep Light and Dark as the default pair** and let Paper and Terminal be a tap away. The look is
-   unchanged either way — Dark is recoloured, so a default device still opens in the brand's colours.
-2. **Preload the default slot's task face.** That is a change to the critical path rather than to the
-   look, so it was not made here.
-
 CLS moved the other way and is worth recording: mobile 0.001 → **0**, desktop 0 → 0.002.
+
+### The preload, and what it did and did not buy
+
+The obvious lever was tried: **preload the default pair's two faces.** The boot script injects them,
+not the markup, because it can do something markup cannot — it already reads `tf/v2/themecss` before
+the stylesheet is requested, so it preloads **only for a device that has chosen nothing**. A device
+carrying its own theme is about to paint something else and would be fetching two files it never
+uses. It picks by `prefers-color-scheme`: Playfair + Source Serif for Paper, JetBrains Mono + Plex
+Mono for Terminal. Verified in both schemes: the right two links, every preloaded file used, no
+"preloaded but not used" warning and no CSP violation.
+
+**At the network layer it did exactly what it says.** From the mobile run's own records, the two mono
+files move from discovery-after-CSS to alongside it:
+
+| | starts | ends |
+|---|---|---|
+| before: `jetbrains-mono-500-800` | 35 ms | 37 ms |
+| after: `jetbrains-mono-500-800` | **7 ms** | 13 ms |
+| (`styles.css`, for scale) | 8 ms | 11 ms |
+
+**And it did not recover the mobile number**, because the mobile number was never about discovery.
+Four runs of each, and the within-build spread is small enough to trust the difference:
+
+| mobile | runs | FCP | LCP |
+|---|---|---|---|
+| 1.10 | 4 | 1590–1777 | **1977–2002** |
+| 1.11, no preload | 2 | 1810–1811 | 2130–2132 |
+| 1.11, preloaded | 5 | **1782–1798** | 2157–2173 |
+
+Lighthouse's mobile score throttles *bandwidth*, and the bytes still have to cross it. Fetching them
+earlier puts them in contention with the render-blocking CSS instead of after it, which is why FCP
+improves by ~24 ms and LCP gets ~30 ms worse — a trade, not a win. Both deltas sit inside 1.10's own
+25 ms run-to-run spread on LCP, so neither is worth much on its own.
+
+**Desktop, which is not throttled, is where the preload pays.** FCP 428 → **367–396**, LCP 494 →
+**456–491**: back to 1.10's numbers (370–414 / 454–457) after having been behind them.
+
+It stays in. It is the right thing on any connection where discovery is the constraint rather than
+throughput, it makes desktop whole again, and it costs nothing to the devices it skips. The mobile
+LCP gap is unrecovered and is the round's one broken promise; the only lever that would close it is
+keeping Light and Dark as the default pair, which is a look decision rather than a performance one.
 
 ## Before and after
 

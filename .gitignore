@@ -3,3 +3,8 @@
 # A list id *is* its secret, so those ledgers never belong in the repository.
 tools/.realsync-created.txt
 apple/tools/.interop-created.txt
+
+# The App Store Connect API key. It lives outside the repository (`~/.private_keys/`) and uploads
+# read it from there; these patterns are here so a stray copy can never be committed by accident.
+*.p8
+AuthKey_*.p8

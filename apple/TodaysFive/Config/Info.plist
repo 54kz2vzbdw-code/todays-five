@@ -23,6 +23,11 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 
+	<!-- The only encryption in the app is the list's own: CryptoKit's AES-GCM over the person's
+	     document, and HTTPS. Both are exempt, so this is NO and the upload never asks. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
 	<!-- A service worker does not run in a WKWebView unless its domain is app-bound, and the
 	     offline story is the service worker. Declaring this also means a web view configured
 	     without limitsNavigationsToAppBoundDomains loses script injection entirely, which is why

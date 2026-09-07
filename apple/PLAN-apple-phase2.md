@@ -632,3 +632,88 @@ list id is its secret.** None of the eight was ever a live row (the ledger recor
 push, and every create in those runs was refused by the limit), and all eight were deleted from the
 server anyway; the two commits were rewritten and both ledgers are now in `.gitignore`. Had the
 timing been different they would have been real links to real lists.
+
+---
+
+## §5 Universal links — the results (1.11 round)
+
+The paid team exists now, so §5 came off the shelf and got turned on. Everything below was run, not
+read.
+
+### The Team ID, checked rather than taken on trust
+
+`T7GTZC5US9`, and I did not take it from the prompt or from the dead certificate §5a warned about. The
+Apple Development certificate now in the login keychain carries it in the **OU** of its subject:
+
+```
+subject= /UID=MP29NR59LP/CN=Apple Development: Hampton Brannen (YAC4Y2Y5M8)/OU=T7GTZC5US9/O=Hampton Brannen/C=US
+issuer=  /CN=Apple Worldwide Developer Relations Certification Authority/OU=G3/O=Apple Inc./C=US
+```
+
+The parenthetical in the common name (`YAC4Y2Y5M8`) is **not** the team — it is the certificate's own
+identifier, and reading it as the team is the easy mistake here. `DEVELOPMENT_TEAM = T7GTZC5US9` is
+set on both configurations.
+
+### The two entitlement files
+
+Debug signs against `Config/TodaysFive.debug.entitlements` (`applinks:54kz2vzbdw-code.github.io?mode=developer`),
+Release against `Config/TodaysFive.entitlements` (the plain domain), exactly as §5c asked.
+
+Adding the second file to the project introduced a bug worth writing down: the new file reference was
+given `TF0000000000000000000009`, which the app product already owned — one id across three objects and
+five uses. Xcode would have resolved it arbitrarily. It is `TF0000000000000000000054` now, and
+`plutil -lint` passes on the project and on both entitlement files.
+
+**A simulator build does not put entitlements in the code signature.** `codesign -d --entitlements`
+returns an empty dict and looks like a failure; the build settings say
+`ENTITLEMENTS_DESTINATION = __entitlements`, and the real proof is the Mach-O section:
+
+```
+otool -X -s __TEXT __entitlements TodaysFive.app/TodaysFive
+```
+
+which contains `com.apple.developer.associated-domains` → `applinks:54kz2vzbdw-code.github.io?mode=developer`.
+
+### The association file
+
+`54kz2vzbdw-code.github.io` holds `.nojekyll` and `.well-known/apple-app-site-association` (no
+extension), naming `T7GTZC5US9.com.pricebrannen.todaysfive` and `/todays-five/*`. Pages publishes it
+from `main` without being asked — no toggle was needed.
+
+- `https://54kz2vzbdw-code.github.io/.well-known/apple-app-site-association` → **200**, the file.
+- `https://app-site-association.cdn-apple.com/a/v1/54kz2vzbdw-code.github.io` → **the file**. Apple's
+  CDN has it, so Release does not need `?mode=developer`.
+
+### Both simulators, and the fragment
+
+`xcrun simctl openurl <udid> https://54kz2vzbdw-code.github.io/todays-five/#/l/ABCDEFGHIJKLMNOPQRSTUV`
+
+| | opened | what the page did |
+|---|---|---|
+| iPhone 17 Pro, iOS 26.5 | the app, straight after install | **Whose list is this?** — Mine, from another device / Someone else's |
+| iPhone 16 Pro, iOS 18.1 | the app, *after one manual launch* | the same panel |
+
+That panel is the proof §5d asked for and it is better proof than a log line would have been. The
+page only asks *whose list is this?* when it is handed an **edit link for a list this device does not
+hold** — so the fragment did not merely survive `webpageURL`, it reached the page and the page acted
+on it. Nothing had to print a URL to show it.
+
+**The one difference between the runtimes, and it matters for the phone.** On 26.5 the link opened
+the app on the first try after `simctl install`. On 18.1 the same call fell through to Safari until
+the app had been launched once by hand; after that first launch it opened the app every time. So on
+18.1 the association is fetched at first launch rather than at install. A tester who installs a build
+and immediately taps a link on an older device will think universal links are broken. They are not —
+they need one launch.
+
+`#/l/…/add?text=Milk%20and%20bread` lands in the app too: matching is by path (`/todays-five/*`), and
+the whole `/add` form lives in the fragment, so it never enters into the match and arrives untouched.
+That is the iOS Shortcut's path.
+
+### Still owed, and it is the checkpoint
+
+The phone: the icon on a real Home Screen in light and dark, a tap from Notes, the **silent switch**
+and a **real haptic** — the two Phase 2 unknowns a simulator cannot answer. Held until the mark is
+chosen, since installing on the phone is also how the icon gets looked at.
+
+There is **no XCTest target** in the project, so "a test asserts exactly that" from §5d is not yet
+true; what exists is the simulator run above. Worth a unit target in a later round.

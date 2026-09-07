@@ -2057,7 +2057,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(await t.page.locator("#lists-menu .group-h").count(), 0, "no groups once nothing is shared");
     await t.esc(); // 1.12: and out of the menu under it
     await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); assert.ok(!(await t.page.$eval("#menu-delete", e => e.hidden)), "Delete everywhere is back");
-    await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); assert.ok(!(await t.page.$eval("#share-keys", e => e.hidden)), "New keys is back"); await t.page.keyboard.press("Escape"); await wait(250);
+    await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); assert.ok(!(await t.page.$eval("#share-keys", e => e.hidden)), "New keys is back"); await t.esc(); // 1.12: Share sits on the menu, so one Escape lands on it
     // a list made on this device has no switch; one from a link can go the other way
     await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); await t.page.click("#lists-menu .row:first-child .more"); await t.page.waitForSelector("#p-list[open]"); await wait(200);
     assert.ok(await t.page.$eval("#list-detail-whose", e => e.hidden), "a list made on this device is mine, not asked"); assert.equal((await t.page.textContent("#list-detail-sub")).trim(), "Made on this device");

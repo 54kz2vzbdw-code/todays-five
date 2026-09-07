@@ -1701,7 +1701,7 @@ own finale line and **Bring them all back**.
 | --- | --- |
 | Node suites | model 28, theme 31, crypto 10, sync 14, sound 12, features 28, compat 9 |
 | Swift core | `swift test` — 94 tests in 7 suites |
-| Browser suite, 1440×900 and 390×844 | 169 passed, 0 failed, zero page errors, zero CSP violations, zero third-party requests. Ten of them are this round's, five a side |
+| Browser suite, 1440×900 and 390×844 | 169 tests, ten of them this round's, five a side. The last full run was 168 passing and one failing — a test of a shared list whose Share sheet was closed with a single Escape, which now lands on the ⋯ menu underneath instead of closing; fixed and re-run green on both viewports on its own, and the merge went ahead on that rather than on a fifth twenty-minute full pass. Zero page errors, zero CSP violations, zero third-party requests in every run |
 | Real backend | 6 passed, 6 of 6 lists cleaned up. Unchanged poll 29 bytes; a realistic list 6,509 bytes encrypted |
 | The app | builds for the simulator and for a device; `-TFSelfTest` reports `heard=4/4` and `finale pattern ok duration=1.020s` |
 

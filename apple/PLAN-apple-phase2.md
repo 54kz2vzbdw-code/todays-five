@@ -560,6 +560,7 @@ generator was called.
 | The save sheet | leads with the link and offers no Add-to-Home-Screen hint: §3a's `STANDALONE` line, seen from the other side |
 | The vault, wiped store | wipe `WKWebsiteDataStore`, relaunch → `vault: restoring a list the web store had lost`, zero removals, and the list back on screen. The page asks *whose list is this?* on the way in, because from its side the link genuinely is new |
 | The vault, removal | *Remove from this device* → `vault: +0 −1` on the next read. The list moves to Lists' **Removed from this device** section, where Restore still brings it back |
+| The vault, deletion | *Delete this list everywhere* → `read: registry=0 list(s) mark=there`, then `vault: +0 −1`. This is checkpoint 1's requirement on the phone: an empty registry with the mark still there is a removal, and the list does not come back on the next launch |
 | Paste a link | pasted into Lists and opened; the app vaulted what it saw go by |
 | Off the site | About's **on GitHub** link left the app and opened Safari, with the *◀ Today's Five* chip to come back. Everything on the host stays inside |
 | About, on the phone | **VERSION 1.10 (BUILD 139)** — the deployed build, read off the screen |
@@ -600,6 +601,11 @@ shell simply stopped being told it was Safari.
 
 ### What could not be run, and why
 
+- **Three test lists are left on the server.** The simulator round made four; the last was deleted
+  everywhere at the end, and the other three were orphaned by the vault experiments themselves —
+  their links were vaulted and then wiped, which is what the experiment was. Each holds the three
+  demo lines and nothing else, and a list nobody opens for twelve months is deleted from the server
+  (`about.html`). The suites keep a ledger for this; a session driving the app by hand does not.
 - **The create limit got in the way for about two hours.** The server allows twelve new lists an hour
   per address, and the bucket looks shared rather than per-address — a single create was refused when
   I had made one that hour. `tools/realsync4.js` ran clean once it cleared. The simulator passes were

@@ -411,3 +411,41 @@ URL wins.
 
 Whatever that is, it is the harness rather than the app, and nothing was concluded from it either
 way. The check that counts is a real tap from Messages and from Notes, which is what §5 records.
+
+## The distribution certificate is not this key's to make
+
+`xcodebuild archive` works on the App Manager key. `-exportArchive` for the App Store does not:
+
+```
+403 FORBIDDEN_ERROR — You haven't been given access to cloud-managed distribution certificates.
+Please contact your team's Account Holder or an Admin to give you access.
+```
+
+That is a permission on the key's **role**, not a mistake in the export options, and no amount of
+`-allowProvisioningUpdates` argues with it. An **Admin** key lifts it. The alternatives were to cut
+one, or to hand the archive to Xcode's Organizer and press the button — and the call was Organizer
+for this build, so the round ends with the archive staged in
+`~/Library/Developer/Xcode/Archives/` rather than with a build number in App Store Connect.
+
+Worth being precise about what that costs: everything up to the archive is reproducible from the
+shell, and only the last step is a hand on a button. A second Admin key would make the whole of it
+one command, and that stays available whenever it is wanted.
+
+## TestFlight's app-level information can be set before a build exists
+
+The feedback email, the privacy-policy URL (About's own page) and the app description are
+`betaAppLocalizations` and belong to the **app**, so they were set over the API with no build
+uploaded. The internal group **Family** is a `betaGroups` record and likewise. What could *not* be
+set is **What to Test**: that is a `betaBuildLocalizations` record, it hangs off a build, and there is
+no build until the upload happens. The three lines are written and waiting rather than invented later.
+
+## The Messages half was not run, and is recorded as not run
+
+The §5 check asks for a tap from Messages as well as from Notes. A tappable link in Messages requires
+*sending* a message, which is not something to do on someone's behalf uninvited even when the only
+recipient is themselves. Asked at the checkpoint, the answer was to skip it.
+
+Notes exercises the identical path — the same `NSUserActivityTypeBrowsingWeb`, the same `webpageURL`,
+the same `open(_:)` — so what is untested is iOS's routing from one particular app, not anything here.
+It is written down as unrun rather than folded into the passing checks, because a checklist that
+quietly absorbs what it skipped is worth nothing the next time it is read.

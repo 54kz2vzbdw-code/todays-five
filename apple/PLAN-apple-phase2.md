@@ -361,51 +361,74 @@ the app would ship with an Add-to-Home-Screen hint inside itself.
 
 ---
 
-## 5. Universal links — blocked, and the exact steps
+## 5. Universal links — done
 
-Needs the paid program. Here is everything, in order, so none of it is a surprise.
+Everything below was written while the paid programme was still pending. It is kept as it was, with
+what actually happened written under each step, because the gap between the two is the useful part.
 
-**a. The Team ID.** developer.apple.com → account → Membership details. Ten characters. *Not* from
-App Store Connect. (The expired certificate says `T7GTZC5US9`; if the same account is renewed that is
-probably still it, but read it from the page rather than trusting a dead certificate.)
+**a. The Team ID.** `T7GTZC5US9` — the dead certificate was right. Confirmed not by reading the
+membership page but by the signed binary: `codesign -d --entitlements` on the device build says
+`application-identifier T7GTZC5US9.com.pricebrannen.todaysfive`.
 
-**b. The user-site repo.** The association file must be served from the **domain root**, which the
-project repo cannot do — `54kz2vzbdw-code.github.io/todays-five/` is a project page. Create a repo
-named exactly `54kz2vzbdw-code.github.io`, public, containing:
+**b. The user-site repo.** Created, public, holding exactly `.nojekyll` and
+`.well-known/apple-app-site-association` and nothing else. `gh` is still not installed here; the repo
+was made and is pushed with plain `git` over the osxkeychain credential helper, which is all it ever
+needed.
 
-- `.nojekyll` (empty) — otherwise Jekyll drops the dot-directory.
-- `.well-known/apple-app-site-association`, **no extension**, served as JSON:
+The file had one component, `/todays-five/*`. That was wrong, or at least unnecessarily brave. Every
+Today's Five URL — Private, View, `/add?text=`, `/mine`, `/shared` — has the path `/todays-five/` and
+nothing else, because the id and the whole grammar live in the **fragment**, and Apple matches on the
+path with the fragment stripped. So the pattern that has to match is the bare `/todays-five/`, and
+whether `*` matches an empty string is not a thing to leave to a reading of Apple's matcher. Both are
+named now:
 
 ```json
-{
-  "applinks": {
-    "details": [
-      { "appIDs": ["TEAMID.com.pricebrannen.todaysfive"], "components": [ { "/": "/todays-five/*" } ] }
-    ]
-  }
-}
+{ "applinks": { "details": [
+  { "appIDs": ["T7GTZC5US9.com.pricebrannen.todaysfive"],
+    "components": [ { "/": "/todays-five/" }, { "/": "/todays-five/*" } ] } ] } }
 ```
 
-`gh` is not installed here, so I cannot create it. Either install `gh` and sign in, or make the repo
-in the browser and I will write the file into a checkout.
+Nothing else on the origin is claimed. `astraeus` is a separate project page under the same host and
+no rule here touches it.
 
-**c. The entitlement.** `applinks:54kz2vzbdw-code.github.io`, plus
-`?mode=developer` in debug so Apple's CDN cache is not a wait.
+**c. The entitlement.** `applinks:54kz2vzbdw-code.github.io`, and it is in the signed app:
+
+```
+com.apple.developer.associated-domains  →  applinks:54kz2vzbdw-code.github.io
+```
+
+`?mode=developer` was **not** needed and is not there. It exists to skip Apple's CDN cache while
+iterating, and the CDN turned the edit around inside the time it took to register the phone — so the
+release entitlement is the one that was tested, which is better than testing a debug variant of it.
 
 **d. Verification.** `https://app-site-association.cdn-apple.com/a/v1/54kz2vzbdw-code.github.io`
-returns the file; `xcrun simctl openurl booted <link>` on both simulators; a tap from Notes on your
-phone at checkpoint 3. Matching is by **path**: the fragment is not matched but does arrive in
-`webpageURL`, and a test asserts exactly that, because the fragment *is* the list.
+returns the file with both components. **GitHub serves it as `application/octet-stream` and Apple's
+CDN does not care** — that was the one thing that could have made a user-site repo the wrong answer,
+and it is closed.
 
-**e. On open:** parse with the core, vault it, hand the URL to the page. `/add?text=`, `/mine` and
-`/shared` pass through untouched — the page handles them, and the iOS Shortcut lands in the app.
+**e. On open.** Proven on the phone, not on a simulator. A View link tapped in **Notes** left Notes
+and opened the app — no Safari chrome, and terminating the app over the cable dropped the screen to
+the Home Screen, which is what says it was *this* app and not the Home Screen web clip that carries
+the same mark. The app came up on that list, in view mode, with the fragment intact. A long press on
+the same link offers **Open in "Today's Five"** above Open in Safari.
+
+An add-from-anywhere URL, `#/l/<W>/add?text=…`, opened the app the same way and **the line landed**:
+the page took the add, and `tfive show` against the real backend independently read the list back at
+`rev 2` with the new line on Today. And with the app already running in the background on the edit
+link, a tap on the View link brought it forward and switched it to that list in view mode — the
+background case, which is the one the scene delegate's `continue userActivity` exists for.
+
+**What was not run: the Messages half.** The brief asks for the same tap from Messages as from Notes.
+Getting a tappable link into Messages means *sending* a message, and that was not something to do on
+someone's behalf without asking; asked, the answer was to skip it. It is recorded here as not run
+rather than quietly dropped. Notes exercises the identical path — the same `NSUserActivityTypeBrowsingWeb`,
+the same `webpageURL`, the same `open(_:)` — so what is untested is iOS's decision to route from
+Messages specifically, not anything in this app.
 
 **The known trade, stated plainly:** with the app installed, every tap on a Today's Five link on that
 phone opens the app — **View links included**. Safari's banner and a long-press still give the web.
 `about.html` does not change this round: nothing new is stored, and nothing about the privacy
 promise changes.
-
----
 
 ## Privacy
 
@@ -632,3 +655,77 @@ list id is its secret.** None of the eight was ever a live row (the ledger recor
 push, and every create in those runs was refused by the limit), and all eight were deleted from the
 server anyway; the two commits were rewritten and both ledgers are now in `.gitignore`. Had the
 timing been different they would have been real links to real lists.
+
+---
+
+## Phase 2b: what the real device showed
+
+The simulator round left four things that "want the phone" (above). Three of them are now answered,
+and the phone turned up four things a simulator could not have.
+
+**Answered.** A View link vaulted as a View link: opening the View link of a list the device already
+held under its *edit* link vaulted a second entry, `mode=view`, alongside it. A real haptic: the
+`-TFSelfTest` tally is `heard=4/4` on hardware with a Taptic Engine rather than on a stub. The
+service worker runs in the web view on the device (`serviceWorker=true`), so §6's whole story holds
+in the app. Still unrun: the offline open, for the same reason as before — the machine cannot take
+the phone off the network without taking itself off it.
+
+**1. Developer Mode is a wall you meet before signing.** Until it is on, `xcodebuild -showdestinations`
+lists only *Any iOS Device* — `devicectl` sees the phone and the build system does not, which reads
+like a signing problem and is not one. Worse, the toggle only appears in Settings once a Mac has
+tried to install a development build, so the order is: attempt the install, fail, turn it on, restart.
+
+**2. A team with no devices cannot be signed for, and a generic destination cannot fix it.**
+`-destination 'generic/platform=iOS'` names no device to register, so `-allowProvisioningUpdates`
+has nothing to offer Apple and the answer is *"Your team has no devices from which to generate a
+provisioning profile."* Registering the phone with `POST /v1/devices` fixes it in one call, and then
+the generic destination builds and signs — which is the check §1 actually wanted.
+
+**3. The app icon and the Home Screen web clip are indistinguishable.** Both are the same mark on the
+same ground, because that is the design: one script draws the site's icons and the app's. On a phone
+that has both — and this one does, the web clip predating the app — there are two identical
+*Today's Five* icons on the Home Screen, and tapping the wrong one opens a page that looks almost
+like the app. It cost real time here: the first "the app loads the site" screenshot was the web clip
+showing a personal list, and only launching over the cable settled it.
+
+The **tinted** appearance tells them apart: the app declares light, dark and tinted in its
+`AppIcon.appiconset`, so it renders as the mark alone on the system's tint, and a web clip does not
+participate. That is worth knowing but it is not a fix; if this ever matters to a person rather than
+to a check, the answer is a distinguishable icon or removing the clip, and neither is this round's
+business. The three appearances are in `shots/device/home-icon-{default,dark,tinted}-1.10.png`.
+
+**4. One list, two vault entries — and that is correct.** After opening both the Private and the View
+link of the same list, the dump reads:
+
+```
+vault: 2 links
+  · mode=edit origin=mine seen=true id=22 chars
+  · mode=view origin=mine seen=true id=22 chars
+```
+
+`#/l/<W>` and `#/r/<R>` are different ids by construction (§1: `R` is derived from `W`, never the
+reverse), so the registry holds two entries and the vault follows it. The web does exactly this. It
+is only startling on a phone, where "my list" feels like one thing.
+
+**The vault, on hardware.** The wiped-store half ran on the device and behaved as designed:
+
+```
+debug: web store wiped
+read: registry=absent mark=gone
+vault: +1 −0
+vault: restoring a list the web store had lost
+```
+
+and the race the mark exists to survive showed itself too: a link handed to the app is vaulted before
+the page has registered it, so the first reconcile sees `registry=0 list(s)` against a vault holding
+one link. Nothing was removed, because a link the page has never named is exempt until it has been
+named once. That rule was written from a simulator finding; the phone is where it earned its keep.
+
+### The screenshots
+
+`shots/device/` — the shell on the live site, the three Home Screen appearances, a View link opened
+from Notes, the long-press menu offering *Open in "Today's Five"*, an add-from-anywhere URL landing
+its line, and the background-to-foreground case. The long-press shot is redacted: Notes and Safari's
+link preview both spell the list's read secret out in full, and the menu is the only part of that
+frame worth keeping. The list those shots were taken against was made for this round and deleted at
+the end of it.

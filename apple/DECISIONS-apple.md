@@ -283,3 +283,17 @@ paint is invisible, which is what a launch screen should be.
 The page already carries a one-time hint that the ring/silent switch mutes its sounds. `.playback`
 would play over the switch and make that hint a lie. `.mixWithOthers` because a check-off should not
 stop someone's music.
+
+## Lighthouse ran after all, from where 1.9 left it
+
+The first pass of this round recorded the ≥ 95 gate as unverified: there is no `npm` on this Mac and
+nothing in the repo installs Lighthouse. It was there all along — 12.8.2 in an earlier session's
+scratchpad, with 1.1's `run.sh` beside it, which is the harness every round since v4 has used. Same
+tool, same flags, same machine, so the numbers are comparable rather than merely present.
+
+The result is worth writing down precisely, because a single pass would have read as a regression:
+1.10's first mobile-warm run scored 98 against 1.9's 99. Ten runs each say otherwise. Every mobile
+run lands in one of two clusters — FCP ≈ 1584 ms, which scores 99, or FCP ≈ 1776 ms, which scores 98
+— and which one it lands in is a coin flip that has nothing to do with the build: **1.9 and 1.10 both
+came out six 98s and four 99s.** Desktop is 100 / 100 / 100 on both. The lesson is the harness's
+spread has to be measured before a one-point difference is allowed to mean anything.

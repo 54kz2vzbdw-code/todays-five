@@ -20,6 +20,7 @@ phase adds an app target beside it and one small, dormant web change.
 | git | clean on `main`, 1.9 build 119, 128 commits |
 | `brew` | **not installed** — so no XcodeGen. The `.xcodeproj` is written by hand and committed; there is no `project.yml`. |
 | `gh` | **not installed** — so the user-site repo for §5 cannot be created from here. |
+| Lighthouse | **12.8.2**, the same copy 1.9 used, still in an earlier session's scratchpad — no download, no `npm`. The harness (`run.sh`) is 1.1's, unchanged, so the numbers compare to every round back to v4. |
 
 ### The signing team: there isn't one
 
@@ -514,14 +515,12 @@ shellToken=true serviceWorker=true standaloneSeenByPage=false
 | Swift (`swift test`) | **88 tests in 7 suites** — the 72 from Phase 1 plus 16 for the vault |
 | Node | model 27, theme 30, crypto 10, sync 14, sound 11, features 28, compat 9 — all green |
 | Real backend (`tools/realsync4.js`) | **6 of 6**, six lists created and all six deleted. Unchanged poll **29 bytes**; a realistic list (40 lines, 90 days of history) **6,553 bytes encrypted** against 69,636 plain, well under the 20 KB budget and the 96 KB cap |
+| Browser (`tools/e2e4.js`) | **159 of 159** at 1440×900 and 390×844, zero page errors, zero CSP violations, zero third-party requests — including the new test that the four moments fire once each and show nothing on the web |
 | First paint | 1.9 and 1.10 measured back to back on the same local server, five runs each at 390×844: **FCP 52 ms both**, DCL 36/37 ms, load 39 ms. `app.js` grows 1,126 bytes (0.7 %), all of it comment |
+| Lighthouse 12.8 (Chrome, the same harness and machine as 1.1–1.9, gzip like Pages) | **desktop 100 / 100 / 100 on both**, three runs each (FCP 364–414 ms either way). **Mobile: the same distribution on both** — ten runs each, six scoring 98 and four scoring 99, a11y and best practices 100 throughout, CLS 0.001, TBT 0. The spread is the harness's, not the build's: every mobile run lands in one of two clusters (FCP ≈ 1584 ms → 99, FCP ≈ 1776 ms → 98) and which one it lands in is a coin flip on both 1.9 and 1.10. Installability errors: `in-incognito` and nothing else, on both — the harness's own, as in every previous round |
 
 ### What could not be run, and why
 
-- **Lighthouse.** There is no `npm` on this machine (only a `node` binary in a runtime cache) and no
-  Lighthouse in the repo, so the ≥ 95 gate is **unverified this round**. What I could measure instead
-  is above: first paint is identical, and the change adds no file, no request and no byte to the
-  critical path. Installing Node properly would fix this for good.
 - **The create limit got in the way for about two hours.** The server allows twelve new lists an hour
   per address, and the bucket looks shared rather than per-address — a single create was refused when
   I had made one that hour. `tools/realsync4.js` ran clean once it cleared. The simulator passes were

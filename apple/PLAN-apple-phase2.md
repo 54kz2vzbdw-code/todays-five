@@ -688,11 +688,21 @@ that has both — and this one does, the web clip predating the app — there ar
 like the app. It cost real time here: the first "the app loads the site" screenshot was the web clip
 showing a personal list, and only launching over the cable settled it.
 
-The **tinted** appearance tells them apart: the app declares light, dark and tinted in its
-`AppIcon.appiconset`, so it renders as the mark alone on the system's tint, and a web clip does not
-participate. That is worth knowing but it is not a fix; if this ever matters to a person rather than
-to a check, the answer is a distinguishable icon or removing the clip, and neither is this round's
-business. The three appearances are in `shots/device/home-icon-{default,dark,tinted}-1.10.png`.
+The **tinted** appearance tells them apart, because a web clip does not participate in the Home
+Screen's appearances at all and an app icon does. That is worth knowing but it is not a fix; if this
+ever matters to a person rather than to a check, the answer is a distinguishable icon or removing the
+clip, and neither is this round's business. The three appearances are in
+`shots/device/home-icon-{default,dark,tinted}-1.10.png`.
+
+**A correction to what those shots show.** They were written up as proof that the app's own declared
+dark and tinted assets render. They are not. On `main` at the time, `AppIcon.appiconset` held exactly
+one image — `icon-1024.png` — and the dark and tinted variants iOS put on screen were **derived by
+iOS from that single light icon**, which is what it does when an app declares no variants. The
+three-appearance set (`icon-1024-dark.png`, `icon-1024-tinted.png`, and the `appearances` keys that
+declare them) was sitting on the unmerged `1.11` branch the whole time and landed with it at build
+151. So: the shots prove the icon is an app's and not a web clip's, and they prove iOS's derivation
+looks right; they do not prove the artwork. The first upload built from 151 or later is the one that
+carries the real thing, and it is worth a second look at the tinted appearance then.
 
 **4. One list, two vault entries — and that is correct.** After opening both the Private and the View
 link of the same list, the dump reads:

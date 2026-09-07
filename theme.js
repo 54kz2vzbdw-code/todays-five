@@ -104,6 +104,43 @@ export function pairFamilies(pairId) {
   return p.ui[0] === p.task[0] ? [p.task[0]] : [p.task[0], p.ui[0]];
 }
 
+/* ---------------- the brand (1.11) ----------------
+   Until 1.11 the mark and the default dark palette were borrowed from a law firm's logo: a charcoal
+   tile (#1A1D21) with an orange check (#D26128). Neither was ever designed for this product, and it
+   is going to the App Store, so 1.11 gives it a palette of its own. The brand grows out of **Paper**:
+   Paper's own `--ink` is the brand's paper and Paper's own `--text` is the brand's ink, so the mark
+   is literally the product's day theme with something drawn on it. BRAND below derives both from the
+   kit rather than repeating the hexes, and `test/theme.test.js` holds them to it.
+
+   The accent is the one new colour, and it has one hard job: to read on Paper **and** on Terminal,
+   which are the two default slots from 1.11 on. That job has a limit worth writing down, because it
+   is arithmetic and not taste. 4.5:1 against Paper's #F7F2E8 needs a relative luminance of at most
+   0.159; 4.5:1 against Terminal's #070A08 needs at least 0.188. **No single colour can be text on
+   both.** So the accent is one hex used as a *UI* colour — the strike, the filled box, the mark —
+   held to the 3:1 floor WCAG asks of non-text, on four grounds (each theme's `--ink` and its
+   elevated `--ink-3`); and each theme carries its own `accentText` at 4.5:1, exactly as every kit
+   here has always done. Balanced that way the blue-violets clear the floor by about 16 % while
+   keeping nearly all their chroma; a cyan at the same luminance falls to C=0.03, a grey. That is why
+   the brand is in this part of the wheel and not in the cooler part.                              */
+export const BRAND_ACCENTS = [
+  { id: "indigo", name: "Indigo", hex: "#6158FF" },  // h 278 — the pen: blue-violet, C .238, min contrast 3.48
+  { id: "iris",   name: "Iris",   hex: "#9938FE" }   // h 300 — unmistakably violet, C .268, min contrast 3.48
+];
+/** The chosen one. */
+export const BRAND_ACCENT = BRAND_ACCENTS[0].hex;
+export function brandAccents() { return BRAND_ACCENTS.slice(); }
+
+/** The mark itself does not change in 1.11 — same tile, same check, same proportions — so the only
+    question the drawing asks is which two colours it is made of. `tile` and `mark` name tokens, not
+    hexes, so a colourway cannot drift from the palette. `paper`/`ink` are the brand's (Paper's own);
+    `terminal` is Terminal's `--ink`, which is also what the brand's dark is built from. */
+export const BRAND_COLOURWAYS = [
+  { id: "paper-ink", name: "Paper tile, ink check", tile: "paper", mark: "ink" },
+  { id: "paper-accent", name: "Paper tile, accent check", tile: "paper", mark: "accent" },
+  { id: "terminal-accent", name: "Terminal tile, accent check", tile: "terminal", mark: "accent" }
+];
+export function brandColourways() { return BRAND_COLOURWAYS.slice(); }
+
 /* ---------------- curated kits ----------------
    Sound packs (v4): knock, bell, blip, typewriter, marble, pop — see packs.js. Paper types, Forest drops marbles,
    Harbor pops; the rest keep their v3 engines. A device can override the pack in Settings → Sound.
@@ -347,6 +384,55 @@ export const CURATED_NIGHT = CURATED_DAY.map(t => curated(t.partner));
 export const PACK_BEFORE_19 = { harbor: "pop", sunset: "bell", ember: "knock", cocoa: "knock", blush: "bell" };
 export function packBefore19(code) { const t = parseCode(code); return t && t.kind === "curated" && PACK_BEFORE_19[t.id] ? PACK_BEFORE_19[t.id] : ""; }
 export function partnerOf(t) { return t && t.kind === "curated" && t.partner ? curated(t.partner) || null : null; }
+
+/** The brand palette, derived from the two default kits so it can never drift from them.
+    `mark` names which icons/mark-*.svg is the chosen drawing; tools/mark.mjs renders every raster
+    in the project from it. */
+export const BRAND = {
+  colourway: "paper-accent",
+  accent: BRAND_ACCENT,
+  accents: BRAND_ACCENTS,
+  colourways: BRAND_COLOURWAYS,
+  get paper() { return curated("paper").colors.ink; },
+  get ink() { return curated("paper").colors.text; },
+  get terminal() { return curated("terminal").colors.ink; },
+  get dark() { return curated("dark").colors; }
+};
+/** The brand's dark.
+
+    "Built from Terminal's tokens" means its *grounds*: #070A08 / #0E140F / #152017, the deepest in
+    the set, which is why Terminal is the night default. It does not mean Terminal's phosphor green
+    text — that is Terminal's identity, not the brand's, and against the brand accent it clashes
+    outright (the first render of the 1.11 card showed it). The brand's dark carries the brand's own
+    **paper** as its ink instead, so Paper by day and this by night are one pair inverted: cream on
+    near-black is the same two colours as near-black on cream. The secondary greys are derived, not
+    picked, and every one of them is nudged until it clears 4.5:1 on `--ink-3`, the lightest surface
+    they ever sit on. */
+export function brandDark(accent = BRAND.accent) {
+  const t = curated("terminal").colors, paper = BRAND.paper;
+  const g = hexToOklch(paper), a = hexToOklch(accent);
+  const grey = (L, target, bg) => ensure(L, Math.min(g.C, 0.012), g.h, bg, target, 1);
+  const c = {
+    ink: t.ink, ink2: t.ink2, ink3: t.ink3,
+    text: paper,
+    muted: grey(0.72, 4.5, t.ink), dim: grey(0.64, 4.5, t.ink), done: grey(0.64, 4.5, t.ink),
+    accent: ensure(a.L, a.C, a.h, t.ink3, 3, 1),
+    accentHi: oklch(Math.min(0.86, a.L + 0.16), a.C * 0.8, a.h),
+    accentDeep: oklch(Math.max(0.30, a.L - 0.15), a.C * 0.92, a.h),
+    accentText: ensure(a.L, Math.min(a.C, 0.20), a.h, t.ink3, 4.5, 1),
+    danger: ensure(0.62, 0.16, 25, t.ink3, 4.5, 1),
+    hair: rgba(paper, .10), hairHi: rgba(paper, .30),
+    glow: V1_GLOW(accent, .10), strikeShadow: `0 0 10px ${rgba(accent, .38)}`
+  };
+  return c;
+}
+
+/** A colourway plus an accent resolved to the two hexes the drawing actually needs. */
+export function brandTiles(colourwayId = BRAND.colourway, accent = BRAND.accent) {
+  const cw = BRAND_COLOURWAYS.find(c => c.id === colourwayId) || BRAND_COLOURWAYS[0];
+  const token = t => t === "accent" ? accent : t === "terminal" ? BRAND.terminal : t === "ink" ? BRAND.ink : BRAND.paper;
+  return { id: cw.id, name: cw.name, usesAccent: cw.tile === "accent" || cw.mark === "accent", paper: token(cw.tile), mark: token(cw.mark) };
+}
 
 /* ---------------- the Secret group (1.6) ----------------
    Two kits the picker shows only on a device that has been given the key, and a key that is not a theme code:

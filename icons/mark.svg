@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Today's Five">
+  <title>Today's Five</title>
+  <rect id="ground" x="0" y="0" width="1024" height="1024" fill="var(--brand-paper, #F7F2E8)"/>
+  <g id="mark">
+    <!--
+      The mark, unchanged. 1.11 recolours it and nothing else: same geometry, same proportions,
+      same full-bleed tile with no padding and no pre-rounded corners (iOS and Android round it
+      themselves).
+
+      This is a TRACE, not a redrawing. The numbers come from `apple/TodaysFive/tools/make-icon.mjs`,
+      where the two arms were fitted by least squares over the skeleton of
+      `icons/apple-touch-icon.png` and the ends taken from the ink's bounding box less the cap
+      radius. That script expressed them as fractions of the side so they draw at any size; here
+      they are the same fractions times 1024:
+
+        stroke  0.0906 -> 92.77
+        left    (0.2897, 0.5017) -> (296.65, 513.74)
+        vertex  (0.4244, 0.6658) -> (434.59, 681.78)
+        tip     (0.7139, 0.3342) -> (731.03, 342.22)
+
+      `node tools/mark.mjs --trace` renders this file in the old colours (#1A1D21 ground, #D26128
+      check) at 180 and diffs it against `icons/apple-touch-icon.png`, which is the check that the
+      trace still is the icon. It is the same test the Phase 2 script ran, kept because it is the
+      only thing that says the drawing has not drifted from the artwork it came from.
+
+      One colour token, not two: the check is `--brand-mark`, which the pipeline sets to the ink or
+      to the accent depending on the colourway. The ground is `--brand-paper`.
+    -->
+    <path id="check"
+          d="M296.65 513.74 L434.59 681.78 L731.03 342.22"
+          fill="none"
+          stroke="var(--brand-mark, #1F1B16)"
+          stroke-width="92.77"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+  </g>
+</svg>

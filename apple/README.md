@@ -181,15 +181,26 @@ xcrun simctl launch --console-pty "$SIM" com.pricebrannen.todaysfive -TFSelfTest
 
 ## The icon
 
-The site's own mark, redrawn as vector at 1024 — opaque and full-bleed, because iOS rounds the
-corners itself and refuses transparency. Nothing in `icons/` is touched.
+`icons/mark.svg` is the drawing — the mark itself, traced from the geometry this file's own
+`make-icon.mjs` had fitted off `icons/apple-touch-icon.png`. That script is gone, and so is
+`tools/og.mjs`: since 1.11 the site's icons, the card and the app's three appearances all come out
+of **one** script, so the app's icon cannot drift from the site's because there is only one of them.
 
 ```bash
-node apple/TodaysFive/tools/make-icon.mjs --check
+node tools/serve.js 8791 . &          # the card wants the stylesheet's @font-face rules
+node tools/mark.mjs                   # every raster, in the chosen colourway
+node tools/mark.mjs --trace           # prove the drawing is still the icon that shipped
 ```
 
-`--check` renders the same geometry at 180 and diffs it against `icons/apple-touch-icon.png`, and
-fails if more than 2 % of pixels differ — so the app's icon cannot quietly drift from the site's.
+`--trace` renders `icons/mark.svg` in the **old** colours (`#1A1D21` ground, `#D26128` check) at 180
+and diffs it against `icons/apple-touch-icon.png`, failing over 2 % — the same guard the old script
+had, kept because it is the only thing that says the trace has not drifted from the artwork. It
+currently reports 1.60 %.
+
+The app icon is written at 1024 in iOS 18's three appearances — light, dark (the mark on Terminal's
+ground) and tinted (the mark alone, on transparency, for the system to tint) — with the
+`AppIcon.appiconset/Contents.json` that declares them. The light and dark ones are opaque, because
+iOS refuses transparency there; the script counts the transparent pixels and fails if there are any.
 
 ## What crosses the bridge
 

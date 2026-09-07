@@ -21,14 +21,14 @@ const STEP = 1024;
 const SECTIONS = ["Calls", "Writing", "Errands", "Money", "House", "Someday"];
 const LINES = {
   "": ["Reply to Dana about the closing date", "Book the dentist", "Return the library books", "Find the warranty for the dishwasher", "Cancel the trial before Friday", "Pick a date for the reunion"],
-  Calls: ["Call the bank before noon", "Call Mom", "Ring the plumber about the drip", "Call the school office", "Chase the insurance adjuster", "Call Sam back", "Phone the vet for Biscuit's shots", "Call the county about the permit", "Confirm the caterer", "Check in with Luis", "Call the landlord", "Ring the pharmacy", "Ask Priya about the deck"],
-  Writing: ["Draft the memo on the lease", "Outline the talk for Thursday", "Edit chapter three", "Write the thank-you notes", "Send the draft to Sam", "Notes from the site visit", "Update the résumé", "Finish the grant paragraph", "Reply to the reviewer", "Write up the interview", "Fix the footnotes", "Blog post: the porch", "Journal"],
+  Calls: ["Call the bank before noon", "Call Mom", "Ring the plumber about the drip", "Call the school office", "Chase the insurance adjuster", "Call Tatianna back", "Phone the vet for Biscuit's shots", "Call the county about the permit", "Confirm the caterer", "Check in with Luis", "Call the landlord", "Ring the pharmacy", "Ask Priya about the deck"],
+  Writing: ["Draft the memo on the lease", "Outline the talk for Thursday", "Edit chapter three", "Write the thank-you notes", "Send the draft to Tatianna", "Notes from the site visit", "Update the résumé", "Finish the grant paragraph", "Reply to the reviewer", "Write up the interview", "Fix the footnotes", "Blog post: the porch", "Journal"],
   Errands: ["Groceries", "Drop off the dry cleaning", "Post the package to Erin", "Hardware store: hinges", "Refill the prescription", "Pick up the frames", "Get stamps", "Oil change", "Buy a birthday card for Tom", "Return the shoes", "Farmers market", "Batteries for the smoke alarm", "Take the recycling"],
   Money: ["Pay the water bill", "Move money to savings", "File the expense report", "Check the credit card statement", "Renew the car registration", "Set up the 529", "Pay the property tax", "Cancel the unused subscription", "Update the budget sheet", "Call about the refund", "Pay Marta", "Order checks", "Review the retirement mix"],
   House: ["Water the plants", "Fix the gate latch", "Clean the gutters", "Change the furnace filter", "Vacuum upstairs", "Wash the windows", "Sort the garage", "Hang the mirror", "Patch the wall by the stairs", "Replace the porch bulb", "Mow", "Descale the kettle", "Flip the mattress"],
   Someday: ["Learn to make bread", "Plan the Utah trip", "Read the Didion collection", "Try the new Thai place", "Build a workbench", "Go see the meteor shower", "Sort the photos from 2019", "Take a pottery class", "Visit Aunt June", "Kayak the lake", "Repaint the bedroom", "Start a garden journal", "Look into solar"]
 };
-const NOTES = ["Ask for Maria in accounts", "Before 5, they close early on Fridays", "The blue folder on the desk", "Second try; first one bounced", "Use the code from the email", "Take the receipt", "Their number is on the fridge", "Sam prefers the morning"];
+const NOTES = ["Ask for Maria in accounts", "Before 5, they close early on Fridays", "The blue folder on the desk", "Second try; first one bounced", "Use the code from the email", "Take the receipt", "Their number is on the fridge", "Tatianna prefers the morning"];
 
 function doc(W, name, spec) {
   const d = M.emptyDoc(W, name); d.nameAt = NOW - 120 * D; d.updatedAt = NOW - H;
@@ -64,9 +64,9 @@ function doc(W, name, spec) {
 const W = { work: id(22), home: id(22), trip: id(22), old: id(22) };
 const work = doc(W.work, "Work", {
   sections: SECTIONS, lines: LINES,
-  today: ["Call the bank before noon", "Send the draft to Sam", "Groceries", "Pay the water bill", "Water the plants", "Journal", "Reply to Dana about the closing date"],
+  today: ["Call the bank before noon", "Send the draft to Tatianna", "Groceries", "Pay the water bill", "Water the plants", "Journal", "Reply to Dana about the closing date"],
   doneToday: ["Call the bank before noon", "Water the plants"],
-  notes: ["Call the bank before noon", "Draft the memo on the lease", "Send the draft to Sam", "Post the package to Erin", "Refill the prescription", "File the expense report", "Renew the car registration", "Fix the gate latch", "Clean the gutters", "Plan the Utah trip", "Reply to Dana about the closing date", "Confirm the caterer", "Hang the mirror", "Pay Marta", "Kayak the lake"],
+  notes: ["Call the bank before noon", "Draft the memo on the lease", "Send the draft to Tatianna", "Post the package to Erin", "Refill the prescription", "File the expense report", "Renew the car registration", "Fix the gate latch", "Clean the gutters", "Plan the Utah trip", "Reply to Dana about the closing date", "Confirm the caterer", "Hang the mirror", "Pay Marta", "Kayak the lake"],
   rules: [["Journal", "daily"], ["Water the plants", "daily"], ["Groceries", "weekly", [6]], ["Check in with Luis", "weekdays"], ["Vacuum upstairs", "weekly", [1, 4]], ["Pay the water bill", "monthly"]],
   notToday: ["Book the dentist", "Fix the gate latch"],
   template: "Errands", themes: true, historyDays: 90
@@ -80,7 +80,7 @@ const meta = {
   lists: [
     { id: W.work, mode: "edit", name: "Work", addedAt: NOW - 120 * D, fresh: false, origin: "mine", created: true, linkSaved: true },
     { id: W.home, mode: "edit", name: "Home", addedAt: NOW - 90 * D, fresh: false, origin: "mine", created: true, linkSaved: true },
-    { id: W.trip, mode: "edit", name: "Trip", addedAt: NOW - 10 * D, fresh: false, origin: "shared", nickname: "Sam's trip", created: true, linkSaved: true },
+    { id: W.trip, mode: "edit", name: "Trip", addedAt: NOW - 10 * D, fresh: false, origin: "shared", nickname: "Tatianna's trip", created: true, linkSaved: true },
     { id: W.old, mode: "edit", name: "Old", addedAt: NOW - 200 * D, fresh: false, origin: "mine", created: true, linkSaved: true, archived: true }
   ],
   current: W.work, currentMode: "edit", migrations: [], pendingKill: [], dead: []

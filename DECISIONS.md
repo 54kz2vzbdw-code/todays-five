@@ -650,3 +650,50 @@ Calls made where the 1.9 brief — the 1.7 audit's proposals 1–31 and its open
 ## The first paint's bytes
 
 - **The first paint carries 9.3 KB more, gzipped, and Lighthouse notices.** The request graph is the same eighteen requests, the unthrottled first paint the same 40 ms, the scores the same; the simulated network charges the bytes — +50 ms desktop FCP, +60–150 ms mobile, inside the spread the same build shows between two of its own runs. About half the growth is comments in the house style (the rationale sits in the code as well as here); the rest is the two kits, the zone, the choreography and the Sound sheet's markup. The call was to ship and say so rather than strip the comments or defer panel markup out of index.html, a structural change no proposal asked for. If Price wants the bytes back, that is the lever: index.html holds every panel's markup and could hand the lazy ones to panels.js.
+
+## 1.11 — a look of its own
+
+- **The brand is Paper's two colours.** `BRAND.paper` and `BRAND.ink` are getters onto
+  `curated("paper")`, not copies of `#F7F2E8` and `#1F1B16`, so the brand cannot drift from the kit
+  it grew out of. The old mark's charcoal and orange came from a law firm's logo and were never
+  designed for this.
+- **No single colour can be 4.5:1 text on both Paper and Terminal, and this is arithmetic, not
+  taste.** 4.5:1 against Paper's `#F7F2E8` needs a relative luminance of at most **0.159**; 4.5:1
+  against Terminal's `#070A08` needs at least **0.188**. The interval is empty. So the brief's "passes
+  4.5:1 as text and 3:1 as a UI colour on both" is met the way this codebase has always met it: **one**
+  accent hex used as a *UI* colour, held to WCAG's 3:1 non-text floor on four grounds (each theme's
+  `--ink` and its elevated `--ink-3`), and **per-theme** `accentText` at 4.5:1, which every curated kit
+  already carries. Recorded here rather than quietly satisfied, because the difference matters.
+- **The accent is in the blue-violets because that is the only band where chroma and headroom
+  coexist.** Balancing for the best *weakest* contrast pins the accent near L 0.57 in OKLCH. At that
+  lightness a blue-violet keeps C ≈ 0.24 and clears the 3:1 floor by 16 % (min 3.48); a cyan at the
+  same lightness collapses to **C = 0.032**, which is a grey. The hue was picked by eye from a
+  rendered study, but the *band* was not a preference.
+- **The brand's dark is Terminal's grounds carrying Paper's cream, not Terminal's green.** "Built
+  from Terminal's tokens" is taken to mean its inks — `#070A08 / #0E140F / #152017`, the deepest in
+  the set, which is why Terminal is the night default. Its phosphor `#D8FFD8` is Terminal's identity,
+  not the brand's, and against the accent it clashes outright: the first render of the 1.11 card had
+  green type under a violet strike and it was ugly. Cream on near-black makes Paper and the brand's
+  dark the *same two colours inverted*, which is what a pair should be. `brandDark()` derives the
+  secondary greys and nudges each until it clears 4.5:1 on `--ink-3`.
+- **The mark is traced, not redrawn.** 1.11 keeps the tile and the check exactly as they are and
+  changes only the two colours. `icons/mark.svg` carries the geometry that
+  `apple/TodaysFive/tools/make-icon.mjs` had fitted by least squares off `icons/apple-touch-icon.png`,
+  as fractions of the side times 1024. `node tools/mark.mjs --trace` renders it in the **old** colours
+  and diffs it against the icon that shipped — 1.60 % of pixels differ, inside the 2 % that script
+  allowed. That test is the only thing that says the drawing has not drifted from the artwork.
+- **One script, two retired.** `tools/mark.mjs` writes the favicon and the manifest set, the maskable
+  variant, the apple-touch-icon, the card, and the app icon in iOS 18's three appearances.
+  `tools/og.mjs`, `tools/og.html` and `apple/TodaysFive/tools/make-icon.mjs` are deleted. The old
+  arrangement had two raster paths and neither started from a drawing, which is why the app icon
+  needed a `--check` flag to stop two copies of one mark drifting apart. There is one copy now.
+- **The mark is not scaled per surface, and the maskable variant is the same picture.** The check's
+  worst painted radius is **0.316** of the tile against the **0.400** a maskable icon allows, so one
+  geometry serves the favicon, the maskable icon and the app icon alike. Making the unmasked ones
+  bigger would have been a change to the mark's proportions, which 1.11 does not make.
+- **The card is rendered by navigating to a file, never by `setContent`.** The page's own CSP — the
+  `<meta>` in `index.html` — survives a `setContent` on the same document and silently blocks the
+  card's inline `<style>`, which renders it as unstyled black-on-white. The card is written to
+  `tools/.og-render.html`, served, screenshotted and deleted.
+- **The card does not carry the mark.** 1.11 puts the mark where the old one was and nowhere new,
+  and the old card never carried one. It is the Today screen on the new palette, as it always was.

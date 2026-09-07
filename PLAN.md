@@ -1743,3 +1743,29 @@ reason a round like this one can be done at all, 1.11 made the same call in the 
 half of it comments"), and trading them for a number that only appears under a 4× CPU throttle is
 the wrong way round. Recorded here rather than quietly absorbed, because the brief asked for parity
 and this is not parity.
+
+## Live checks (1.12)
+
+Build 158 on Pages, then both halves against the deployed site, with the one list created for them
+deleted from the real backend afterwards.
+
+**A fresh device.** Welcome → Keep → a list made and `synced`, the page marked build 158 and the app
+reporting 1.12, no what's-new toast (a fresh device has nothing to be told). The round's own surfaces,
+live: ‹ Back on a panel opened from ⋯, and Back returning the menu as the popover under the button; no
+Removed group in the markup at all; ⋯ → Theme opening on **Day theme**, and a chosen Paper stepping
+straight to **Night theme** with *Use Midnight for Night* offered first; Everything carrying its own
+count. Zero page errors, zero CSP violations, and no request to any host but Pages and Supabase.
+
+**A device that last saw 1.11.** It opened the list for real first, so its registry and its local copy
+are a device's rather than a fixture's, then its `seenVersion` was set back to 1.11 and the site opened
+the way a person opens it. The list is intact (three lines, `synced`), the theme it had chosen is still
+on, and **the toast is the only new thing**: *New in 1.12: Easier to get back where you were.* No tour,
+no sheet, no just-in-time hint. What's new opens About's log with 1.12 at the top. Zero errors, zero
+CSP violations.
+
+The first attempt at this half was wrong and is worth writing down: a device was hand-seeded with
+`seenVersion: "1.11"` and an empty registry, which reports no toast — `whatsNewDue` reads `hasLists`,
+and the decision is made at boot, before a link in the address bar has registered anything. A seeded
+registry with the list in it did not open either; the device that holds a list is the one that made or
+opened it. Opening the list for real and then ageing the device is the only version of this check that
+tests what it says.

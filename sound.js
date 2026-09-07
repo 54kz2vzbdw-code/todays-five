@@ -13,6 +13,10 @@ import { BUILD } from "./version.js"; // 1.4: the packs a page loads later come 
 /** The engines that live in packs-secret.js rather than packs.js (1.6). */
 export const SECRET_ENGINES = new Set(["sparkle", "party"]);
 
+/* 1.12: the finale's vibration, on the volley's own rhythm (fx.js `volley()`): seven bursts at i × 65 ms, the
+   centre burst at 210 ms inside the fourth, and the chord at 700 ms. navigator.vibrate alternates on/off, so each
+   pair below is a buzz and the gap to the next burst. test/sound.test.js derives the same numbers from fx.js. */
+export const FINALE_BUZZ = [14, 51, 14, 51, 14, 51, 30, 35, 14, 51, 14, 51, 14, 296, 60];
 export function createSound(opts) {
   const get = k => (typeof opts[k] === "function" ? opts[k]() : opts[k]);
   const AC = () => (typeof window !== "undefined" && (window.AudioContext || window.webkitAudioContext)) || opts.AudioContext || null;
@@ -96,7 +100,10 @@ export function createSound(opts) {
   return {
     check(step) { const ok = play("check", step); buzz(8); return ok; },
     uncheck() { return play("uncheck"); },
-    finish() { const ok = play("finish"); buzz([12, 40, 12, 40, 24]); return ok; },
+    // 1.12: the finale follows the volley in fx.js rather than being three anonymous buzzes — seven bursts 65 ms
+    // apart (0…390), the centre burst landing inside the fourth (210), and one longer one on the chord at 700.
+    // Change fx.js's volley() and this changes with it; test/sound.test.js holds the two together.
+    finish() { const ok = play("finish"); buzz(FINALE_BUZZ); return ok; },
     tick() { return play("uncheck"); },
     /** Warm the context up inside a user gesture and start loading the engines, so the first real sound is not swallowed. */
     prime() { ctx(); loadPacks(); warm(kit().engine); },

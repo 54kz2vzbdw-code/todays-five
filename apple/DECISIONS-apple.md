@@ -449,3 +449,62 @@ Notes exercises the identical path — the same `NSUserActivityTypeBrowsingWeb`,
 the same `open(_:)` — so what is untested is iOS's routing from one particular app, not anything here.
 It is written down as unrun rather than folded into the passing checks, because a checklist that
 quietly absorbs what it skipped is worth nothing the next time it is read.
+
+---
+
+# 1.12 — a finale you can feel
+
+## The pattern, and where its numbers come from
+
+`tf:finale` was one `UINotificationFeedbackGenerator(.success)`. The page is throwing confetti in a
+shape at that moment, and a single tap said none of it. The pattern is the volley, in the hand:
+
+| at | event | intensity | sharpness | what it is |
+| --- | --- | --- | --- | --- |
+| 0.000, 0.065, 0.130, 0.195, 0.260, 0.325, 0.390 | transient ×7 | 0.55 | 0.45 | the run along the bottom — `fx.js`: `for (let i = 0; i < 7; i++) … i * 65` |
+| 0.210 | transient | 0.80 | 0.30 | the burst through the middle — forty pieces to the run's twenty-six, so fuller and rounder |
+| 0.700 | transient | 1.00 | 0.25 | the chord — `packs.js`, `t0 + 0.7` |
+| 0.700 – 1.020 | continuous | 0.45 | 0.15 | the ring-down under it |
+
+Total duration 1.020 s, which `-TFSelfTest` prints back so the arithmetic is checked rather than
+asserted. **None of these numbers is invented**: seven, sixty-five and two hundred and ten are read
+out of `fx.js`, and seven hundred out of `packs.js`. If the volley is ever re-choreographed, this
+table is wrong and the feeling stops matching the picture — `test/sound.test.js` holds the web half
+to the same source, and this file is the note for the Swift half.
+
+The web's Android vibration follows the same rhythm: `FINALE_BUZZ` in `sound.js`, buzz/gap pairs
+whose onsets are those same seven, with the centre burst inside the fourth (`navigator.vibrate`
+cannot overlap two buzzes, and a longer fourth is the honest way to say "and one more here") and a
+long one on the chord.
+
+## CoreHaptics needed nothing from the project file
+
+`import CoreHaptics` is the whole of it. The project links no system framework explicitly — UIKit,
+WebKit, AVFoundation and Security are all already used and none appears in the `.pbxproj`; Swift
+autolinking with `CLANG_ENABLE_MODULES` brings them in. The deployment target is iOS 17 and Core
+Haptics is iOS 13, so there is no availability guard either. Worth writing down because the project
+file is hand-edited here (no XcodeGen), and the instinct is to reach for it.
+
+## No stopped or reset handler
+
+`CHHapticEngine` offers `stoppedHandler` and `resetHandler`, and under Swift 6's complete concurrency
+both are closures that would have to hop back to the main actor to touch anything on this class. They
+buy nothing on the path that matters: `startEngine()` is idempotent and called on every touch-down,
+so an engine the system shut down is started again before the next finale, and one that will not
+start at all is dropped so the next attempt builds a fresh one. A finale that still cannot play falls
+back to 1.10's `.success` tap rather than going silent.
+
+## What the simulator can and cannot say
+
+A simulator reports `supportsHaptics == false`, so `playFinale()` returns false there and the
+fallback runs — which means nothing would ever have touched the pattern until it reached a phone.
+`-TFSelfTest` therefore **builds** the pattern whatever the hardware says and prints the result:
+
+```
+selftest: bridge=ready heard=4/4 check=1 uncheck=1 finale=1 shuffle=1
+selftest: finale pattern ok duration=1.020s hardware=no
+```
+
+That is the whole of what a simulator can prove: the four moments arrive, and the pattern is
+well-formed and the length it should be. **Whether it feels like the confetti looks is a question
+only a phone can answer**, and this round did not get to ask it — see PLAN.md's verification notes.

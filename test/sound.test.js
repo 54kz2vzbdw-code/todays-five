@@ -2,7 +2,9 @@
 // A fake AudioContext models what iOS does: a fresh context starts suspended, the app goes to the background
 // (suspended, resume works), a call or Siri interrupts it (resume never lands), and closed contexts.
 import assert from "node:assert/strict";
-import { createSound, SECRET_ENGINES } from "../sound.js";
+import { createSound, SECRET_ENGINES, FINALE_BUZZ } from "../sound.js";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import { PACKS, PACK_ORDER, PACK_NAMES, HELPERS } from "../packs.js";
 import * as SECRET from "../packs-secret.js";
 
@@ -151,6 +153,34 @@ await test("1.8: the Secret pair's two engines live in a module of their own, fe
 await test("an unknown engine name falls back to the knock", async () => {
   const s = make({ kit: () => ({ engine: "kazoo" }) }); s.prime(); await tick();
   assert.equal(s.check(0), true);
+});
+
+await test("the finale's vibration keeps the volley's rhythm — read out of fx.js, not copied from it", async () => {
+  // fx.js is where the confetti's timing lives; this reads the schedule back out of it so that changing the
+  // volley and leaving the vibration behind is a red suite rather than a thing nobody notices on an Android.
+  const fx = fs.readFileSync(fileURLToPath(new URL("../fx.js", import.meta.url)), "utf8");
+  const run = /for \(let i = 0; i < (\d+); i\+\+\) setTimeout\([^;]*?, i \* (\d+)\);/.exec(fx);
+  const centre = /setTimeout\(\(\) => burst\([^;]*?\), (\d+)\);/.exec(fx);
+  assert.ok(run && centre, "fx.js still schedules a run of bursts and a centre burst");
+  const count = +run[1], step = +run[2], centreAt = +centre[3 - 2];
+  const bursts = Array.from({ length: count }, (_, i) => i * step);
+
+  // navigator.vibrate alternates buzz, gap, buzz, gap… so a buzz starts at the sum of everything before it
+  const onsets = [], lengths = [];
+  let t = 0;
+  for (let i = 0; i < FINALE_BUZZ.length; i++) { if (i % 2 === 0) { onsets.push(t); lengths.push(FINALE_BUZZ[i]); } t += FINALE_BUZZ[i]; }
+
+  assert.equal(onsets.length, count + 1, "one buzz per burst, and one more for the chord");
+  for (let i = 0; i < count; i++) assert.equal(onsets[i], bursts[i], `buzz ${i} lands on burst ${i}`);
+
+  // the centre burst has no buzz of its own; the buzz it falls inside is longer for it
+  const inside = onsets.findIndex((o, i) => centreAt >= o && centreAt < o + lengths[i]);
+  assert.ok(inside >= 0, "the centre burst falls inside one of the buzzes");
+  assert.ok(lengths[inside] > lengths[0], "and that buzz is the longer one");
+
+  const chord = onsets[onsets.length - 1];
+  assert.ok(chord > bursts[count - 1], "the last buzz comes after the run, with the chord");
+  assert.ok(lengths[lengths.length - 1] > lengths[0], "and it is the strongest of them");
 });
 
 console.log(`\n${passed} sound tests passed`);

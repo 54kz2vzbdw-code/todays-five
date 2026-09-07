@@ -302,6 +302,7 @@ final class WebViewController: UIViewController {
         try? await Task.sleep(for: .milliseconds(400))
         let fired = Haptics.Moment.allCases.filter { (haptics.counts[$0] ?? 0) > (before[$0] ?? 0) }
         log("selftest: bridge=\(bridgeReady ? "ready" : "SILENT") heard=\(fired.count)/4 \(haptics.tally)")
+        log("selftest: finale pattern \(haptics.finaleSelfCheck())") // 1.12: the volley's rhythm, built even where it cannot be felt
 
         // and what the page will key on in 1.10
         let ua = (try? await webView.evaluateJavaScript(

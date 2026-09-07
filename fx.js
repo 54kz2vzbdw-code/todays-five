@@ -63,7 +63,7 @@ export function createFx(canvas, opts) {
       theme that is on — the sparkle the Secret group answers with. */
   function burst(x, y, n, power, spread, over) {
     if (get("reduced")) return;
-    const pal = (over && over.palette) || get("palette") || ["#D26128"], sh = (over && over.shapes) || get("shapes") || 1;
+    const pal = (over && over.palette) || get("palette") || ["#A86014"], sh = (over && over.shapes) || get("shapes") || 1;
     for (let k = 0; k < n; k++) {
       const a = -Math.PI / 2 + (Math.random() - 0.5) * (spread || 2.0);
       const sp = power * (0.55 + Math.random() * 0.8);

@@ -84,6 +84,12 @@ invariants, and the checklist to run before anything reaches `main`. Read this b
   decrypted copy with `rev`, `dirty`, `created`, `mode`), `tf/v2/themecss` (the token CSS the boot
   script re-applies), `tf/v2/localserver/<id>` (the test transport). The keys never change; the boot
   script in `index.html` reads two of them before any module loads.
+- **`tf/app/seen` is the iPhone shell's, and the web must never touch it.** The app writes it into
+  this same store so it can tell "the person removed their last list" from "the web store was
+  cleared" — two states the registry alone cannot separate (§8). Its whole job is to be destroyed
+  along with everything else, so the web may not write it, read it, or clear it, and must go on
+  clearing only its own keys rather than the whole store. The `tf/app/` prefix belongs to the
+  clients.
 - A missing setting gets its default when it is read. An unknown entry in the registry is kept.
   Nothing is deleted except by an explicit user action (Remove from this device, Delete this list)
   and the legacy plaintext copy a migration has already replaced on the server.

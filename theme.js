@@ -107,10 +107,13 @@ export function pairFamilies(pairId) {
 /* ---------------- the brand (1.11) ----------------
    Until 1.11 the mark and the default dark palette were borrowed from a law firm's logo: a charcoal
    tile (#1A1D21) with an orange check (#D26128). Neither was ever designed for this product, and it
-   is going to the App Store, so 1.11 gives it a palette of its own. The brand grows out of **Paper**:
-   Paper's own `--ink` is the brand's paper and Paper's own `--text` is the brand's ink, so the mark
-   is literally the product's day theme with something drawn on it. BRAND below derives both from the
-   kit rather than repeating the hexes, and `test/theme.test.js` holds them to it.
+   is going to the App Store, so 1.11 gives it a palette of its own. The mark itself does not change
+   — same tile, same check, same proportions (`icons/mark.svg`) — only its two colours do.
+
+   The brand grows out of **Paper**: Paper's own `--ink` is the brand's paper and Paper's own `--text`
+   is the brand's ink, so the mark is the product's day theme with something drawn on it. The grounds
+   below are named constants rather than repeated hexes, because Paper's kit, Terminal's kit, the
+   brand and the brand's dark all have to be the same colours or none of it means anything.
 
    The accent is the one new colour, and it has one hard job: to read on Paper **and** on Terminal,
    which are the two default slots from 1.11 on. That job has a limit worth writing down, because it
@@ -119,21 +122,21 @@ export function pairFamilies(pairId) {
    both.** So the accent is one hex used as a *UI* colour — the strike, the filled box, the mark —
    held to the 3:1 floor WCAG asks of non-text, on four grounds (each theme's `--ink` and its
    elevated `--ink-3`); and each theme carries its own `accentText` at 4.5:1, exactly as every kit
-   here has always done. Balanced that way the blue-violets clear the floor by about 16 % while
-   keeping nearly all their chroma; a cyan at the same luminance falls to C=0.03, a grey. That is why
-   the brand is in this part of the wheel and not in the cooler part.                              */
-export const BRAND_ACCENTS = [
-  { id: "indigo", name: "Indigo", hex: "#6158FF" },  // h 278 — the pen: blue-violet, C .238, min contrast 3.48
-  { id: "iris",   name: "Iris",   hex: "#9938FE" }   // h 300 — unmistakably violet, C .268, min contrast 3.48
-];
-/** The chosen one. */
-export const BRAND_ACCENT = BRAND_ACCENTS[0].hex;
-export function brandAccents() { return BRAND_ACCENTS.slice(); }
+   here has always done. `test/theme.test.js` holds all of it to those floors.                    */
+export const PAPER_GROUND = { ink: "#F7F2E8", ink2: "#EFE8DA", ink3: "#E3DAC8" };
+export const PAPER_TEXT = "#1F1B16";
+export const TERMINAL_GROUND = { ink: "#070A08", ink2: "#0E140F", ink3: "#152017" };
 
-/** The mark itself does not change in 1.11 — same tile, same check, same proportions — so the only
-    question the drawing asks is which two colours it is made of. `tile` and `mark` name tokens, not
-    hexes, so a colourway cannot drift from the palette. `paper`/`ink` are the brand's (Paper's own);
-    `terminal` is Terminal's `--ink`, which is also what the brand's dark is built from. */
+/** #A86014 — hue 60, the balanced warm. Balancing for the best *weakest* contrast pins any accent
+    near L 0.57 in OKLCH; there it clears the 3:1 floor on all four grounds by 16 % (min 3.48) while
+    keeping C 0.124, which is as much chroma as a warm hue has at that lightness. Cocoa's own
+    #D9A066 was the other contender and cannot do this job: it is 2.05:1 on Paper. It survives in
+    the app icon's dark appearance, where its ground is Cocoa's and not Paper's. */
+export const BRAND_ACCENT = "#A86014";
+
+/** The two colours the drawing is made of. `tile` and `mark` name tokens, never hexes, so a
+    colourway cannot drift from the palette. The chosen one is `paper-accent`; the other two are
+    kept because they are what the choice was made against, and `--sheet` still renders them. */
 export const BRAND_COLOURWAYS = [
   { id: "paper-ink", name: "Paper tile, ink check", tile: "paper", mark: "ink" },
   { id: "paper-accent", name: "Paper tile, accent check", tile: "paper", mark: "accent" },
@@ -163,14 +166,55 @@ function kit(id, name, base, pair, colors, sound, confetti, extra = {}) {
   return { id, name, base, kind: "curated", pair, colors, sound, confetti, shapes: extra.shapes || 1, ...extra };
 }
 
+/** The brand's dark, and since 1.11 the Dark kit's own colours.
+
+    "Built from Terminal's tokens" means its *grounds* — the deepest in the set, which is why
+    Terminal is the night default. It does not mean Terminal's phosphor green text: that is
+    Terminal's identity, not the brand's, and against the accent it clashes outright. The brand's
+    dark carries the brand's own **paper** as its ink instead, so Paper by day and this by night are
+    the same two colours inverted. The secondary greys are derived, not picked, and every one is
+    nudged until it clears 4.5:1 on `--ink-3`, the lightest surface it ever sits on. */
+function brandDarkColors(accent) {
+  const paper = PAPER_GROUND.ink, T = TERMINAL_GROUND;
+  const g = hexToOklch(paper), a = hexToOklch(accent);
+  const grey = L => ensure(L, Math.min(g.C, 0.012), g.h, T.ink, 4.5, 1);
+  return {
+    ink: T.ink, ink2: T.ink2, ink3: T.ink3,
+    text: paper,
+    muted: grey(0.72), dim: grey(0.64), done: grey(0.64),
+    accent: ensure(a.L, a.C, a.h, T.ink3, 3, 1),
+    accentHi: oklch(Math.min(0.86, a.L + 0.16), a.C * 0.8, a.h),
+    accentDeep: oklch(Math.max(0.30, a.L - 0.15), a.C * 0.92, a.h),
+    accentText: ensure(a.L, Math.min(a.C, 0.20), a.h, T.ink3, 4.5, 1),
+    danger: ensure(0.62, 0.16, 25, T.ink3, 4.5, 1),
+    hair: rgba(paper, .10), hairHi: rgba(paper, .30),
+    glow: V1_GLOW(accent, .10), strikeShadow: `0 0 10px ${rgba(accent, .38)}`
+  };
+}
+/** The accent family for a kit that carries the brand accent. `finalize()` enforces the floors
+    afterwards (3:1 for `accent`, 4.5:1 for `accentText`, both against `--ink-3`); this just puts the
+    tones in the right places so a kit reads as one colour rather than four. */
+function brandAccentSet(base) {
+  const a = hexToOklch(BRAND_ACCENT), dark = base === "dark";
+  return {
+    accent: BRAND_ACCENT,
+    accentHi: oklch(Math.min(0.86, a.L + (dark ? 0.16 : 0.13)), a.C * 0.85, a.h),
+    accentDeep: oklch(Math.max(0.30, a.L - 0.15), a.C * 0.92, a.h),
+    accentText: BRAND_ACCENT,          // finalize() nudges this to 4.5:1 on the kit's own --ink-3
+    glow: V1_GLOW(BRAND_ACCENT, dark ? .08 : .06, dark ? 34 : 30, dark ? 62 : 60),
+    strikeShadow: dark ? `0 0 14px ${rgba(BRAND_ACCENT, .55)}` : "none"
+  };
+}
+const BRAND_DARK = brandDarkColors(BRAND_ACCENT);
+
 const RAW = [
-  kit("dark", "Dark", "dark", "lato", {
-    ink: "#1A1D21", ink2: "#23272C", ink3: "#2E343A",
-    text: "#F5F1EA", muted: "#9AA0A8", dim: "#7F858C", done: "#7F858C",
-    accent: "#D26128", accentHi: "#E8814A", accentDeep: "#A34A1C", accentText: "#E8814A", danger: "#E0745A",
-    hair: "rgba(245,241,234,.10)", hairHi: "rgba(245,241,234,.30)",
-    glow: V1_GLOW("#D26128", .10), strikeShadow: "0 0 10px rgba(210,97,40,.38)"
-  }, { engine: "knock" }, ["#D26128", "#E8814A", "#F5F1EA", "#A34A1C", "#7D8288"], { lean: "night", partner: "light" }),
+  /* 1.11: recoloured in place, not replaced. The id and the name are unchanged, so a device that
+     chose Dark explicitly is not moved off it — it wakes up to the same theme in the brand's
+     colours. Its font pair, its knock and its confetti shapes are untouched; only colour moved. */
+  kit("dark", "Dark", "dark", "lato", BRAND_DARK,
+    { engine: "knock" },
+    [BRAND_DARK.accent, BRAND_DARK.accentHi, BRAND_DARK.text, BRAND_DARK.accentDeep, "#8A8781"],
+    { lean: "night", partner: "light" }),
 
   kit("light", "Light", "light", "lato", {
     ink: "#FAF8F4", ink2: "#F1ECE3", ink3: "#E4DED2",
@@ -207,18 +251,19 @@ const RAW = [
   }, { engine: "marble", pitch: 0.82, decay: 1.3 }, ["#8BD17A", "#B8E6A6", "#F2E9B8", "#4E9A45", "#EAF2E6"], { lean: "night", partner: "harbor" }),
 
   kit("paper", "Paper", "light", "playfair", {
-    ink: "#F7F2E8", ink2: "#EFE8DA", ink3: "#E3DAC8",
-    text: "#1F1B16", muted: "#5E5749", dim: "#6C6559", done: "#6C6559",
-    accent: "#C8321F", accentHi: "#E0563F", accentDeep: "#8E2214", accentText: "#9E2717", danger: "#B02A1A",
-    glow: V1_GLOW("#C8321F", .06, 30, 60), strikeShadow: "none"
-  }, { engine: "typewriter", pitch: 1, decay: 1, noise: 1 }, ["#C8321F", "#1F1B16", "#E0563F", "#D9C9A8", "#F7F2E8"], { lean: "day", partner: "midnight" }),
+    ...PAPER_GROUND,                       // 1.11: the brand's paper is this, by definition
+    text: PAPER_TEXT, muted: "#5E5749", dim: "#6C6559", done: "#6C6559",
+    ...brandAccentSet("light"), danger: "#B02A1A"      // 1.11: the day default carries the brand accent
+  }, { engine: "typewriter", pitch: 1, decay: 1, noise: 1 },
+    [BRAND_ACCENT, PAPER_TEXT, "#D08A3E", "#D9C9A8", PAPER_GROUND.ink], { lean: "day", partner: "midnight" }),
 
   kit("terminal", "Terminal", "dark", "mono", {
-    ink: "#070A08", ink2: "#0E140F", ink3: "#152017",
+    ...TERMINAL_GROUND,                    // 1.11: the brand's dark is built on these
+
     text: "#D8FFD8", muted: "#7FCB86", dim: "#67A96E", done: "#67A96E",
-    accent: "#4AF07A", accentHi: "#9CFFB5", accentDeep: "#21A64F", accentText: "#5DF58A", danger: "#FF6B57",
-    glow: V1_GLOW("#4AF07A", .08), strikeShadow: "0 0 14px rgba(74,240,122,.55)"
-  }, { engine: "blip" }, ["#4AF07A", "#9CFFB5", "#FFFFFF", "#21A64F", "#D8FFD8"], { lean: "night", partner: "teletype" }),
+    ...brandAccentSet("dark"), danger: "#FF6B57"       // 1.11: the night default carries it too
+  }, { engine: "blip" },
+    [BRAND_ACCENT, "#D9A45E", "#FFFFFF", "#6F3B00", "#D8FFD8"], { lean: "night", partner: "teletype" }),
 
   kit("sunset", "Sunset", "dark", "dmserif", {
     ink: "#2A1622", ink2: "#3A1F2E", ink3: "#4C2A3C",
@@ -329,7 +374,9 @@ const RAW = [
     { shapes: [4], lean: "day", partner: "superpink", secret: true, finale: "cake", finaleText: "Make a wish. The list can wait." })
 ];
 
-const ORIGINAL = new Set(["dark", "light", "pink"]);
+// 1.11: Dark left this set when it was recoloured — it no longer carries v1's tokens, so it is
+// held to the same floors as every other kit rather than grandfathered past them.
+const ORIGINAL = new Set(["light", "pink"]);
 /** The progress bar every kit gets unless it names its own: the accent's own three tones, so it crossfades with them
     (styles.css repeats it as the fallback the first frame paints with, before theme.js has run). */
 const BAR_BG = "linear-gradient(90deg,var(--accent-deep),var(--accent) 55%,var(--accent-hi))";
@@ -385,49 +432,28 @@ export const PACK_BEFORE_19 = { harbor: "pop", sunset: "bell", ember: "knock", c
 export function packBefore19(code) { const t = parseCode(code); return t && t.kind === "curated" && PACK_BEFORE_19[t.id] ? PACK_BEFORE_19[t.id] : ""; }
 export function partnerOf(t) { return t && t.kind === "curated" && t.partner ? curated(t.partner) || null : null; }
 
-/** The brand palette, derived from the two default kits so it can never drift from them.
-    `mark` names which icons/mark-*.svg is the chosen drawing; tools/mark.mjs renders every raster
-    in the project from it. */
+/** The brand palette. Everything here is a getter onto the kits, so it cannot drift from them;
+    `test/theme.test.js` also asserts the constants and the kits agree. */
 export const BRAND = {
-  colourway: "paper-accent",
+  colourway: "paper-accent",              // Paper tile, accent check
   accent: BRAND_ACCENT,
-  accents: BRAND_ACCENTS,
   colourways: BRAND_COLOURWAYS,
   get paper() { return curated("paper").colors.ink; },
   get ink() { return curated("paper").colors.text; },
   get terminal() { return curated("terminal").colors.ink; },
-  get dark() { return curated("dark").colors; }
+  get dark() { return curated("dark").colors; },
+  /* The app icon's dark appearance is **Cocoa's** ground and accent, not the brand's dark.
+     iOS composites the dark variant on its own dark surround, and Cocoa's #D9A066 on #2A1F1A is
+     7.00:1 — the strongest tile of everything drawn this round. It cannot be the UI accent
+     (2.05:1 on Paper), but nothing asks it to be: it is the icon's dark half and nothing else.
+     The UI accent stays #A86014 on both themes. */
+  get darkTile() { const c = curated("cocoa").colors; return { tile: c.ink, mark: c.accent }; }
 };
-/** The brand's dark.
 
-    "Built from Terminal's tokens" means its *grounds*: #070A08 / #0E140F / #152017, the deepest in
-    the set, which is why Terminal is the night default. It does not mean Terminal's phosphor green
-    text — that is Terminal's identity, not the brand's, and against the brand accent it clashes
-    outright (the first render of the 1.11 card showed it). The brand's dark carries the brand's own
-    **paper** as its ink instead, so Paper by day and this by night are one pair inverted: cream on
-    near-black is the same two colours as near-black on cream. The secondary greys are derived, not
-    picked, and every one of them is nudged until it clears 4.5:1 on `--ink-3`, the lightest surface
-    they ever sit on. */
-export function brandDark(accent = BRAND.accent) {
-  const t = curated("terminal").colors, paper = BRAND.paper;
-  const g = hexToOklch(paper), a = hexToOklch(accent);
-  const grey = (L, target, bg) => ensure(L, Math.min(g.C, 0.012), g.h, bg, target, 1);
-  const c = {
-    ink: t.ink, ink2: t.ink2, ink3: t.ink3,
-    text: paper,
-    muted: grey(0.72, 4.5, t.ink), dim: grey(0.64, 4.5, t.ink), done: grey(0.64, 4.5, t.ink),
-    accent: ensure(a.L, a.C, a.h, t.ink3, 3, 1),
-    accentHi: oklch(Math.min(0.86, a.L + 0.16), a.C * 0.8, a.h),
-    accentDeep: oklch(Math.max(0.30, a.L - 0.15), a.C * 0.92, a.h),
-    accentText: ensure(a.L, Math.min(a.C, 0.20), a.h, t.ink3, 4.5, 1),
-    danger: ensure(0.62, 0.16, 25, t.ink3, 4.5, 1),
-    hair: rgba(paper, .10), hairHi: rgba(paper, .30),
-    glow: V1_GLOW(accent, .10), strikeShadow: `0 0 10px ${rgba(accent, .38)}`
-  };
-  return c;
-}
+/** The brand's dark — which since 1.11 *is* the Dark kit, recoloured in place. */
+export function brandDark() { return curated("dark").colors; }
 
-/** A colourway plus an accent resolved to the two hexes the drawing actually needs. */
+/** A colourway resolved to the two hexes the drawing actually needs. */
 export function brandTiles(colourwayId = BRAND.colourway, accent = BRAND.accent) {
   const cw = BRAND_COLOURWAYS.find(c => c.id === colourwayId) || BRAND_COLOURWAYS[0];
   const token = t => t === "accent" ? accent : t === "terminal" ? BRAND.terminal : t === "ink" ? BRAND.ink : BRAND.paper;
@@ -477,7 +503,7 @@ export function packOf(id) { return PACK_IDS.includes(id) ? id : ""; }
 /** Every token from an accent + base. Backgrounds are tinted toward the accent hue at low chroma. A `pack` names the
     sound (1.1); without one the hue rule picks: pinks, purples and blues ring a bell, everything else knocks. */
 export function derive({ accent, base = "dark", pair, name = "", id, pack }) {
-  accent = normalizeHex(accent) || "#D26128";
+  accent = normalizeHex(accent) || BRAND_ACCENT;
   const a = hexToOklch(accent);
   const h = a.h, dark = base === "dark";
   const dir = dark ? 1 : -1;
@@ -602,7 +628,9 @@ export function parseCode(code) {
    once, and app.js keeps `theme` mirrored to the active code so a device that ever ran the old code again would
    still open on the theme it last saw.                                                                       */
 
-export const SLOT_DEFAULT = { day: "T1:curated:light", night: "T1:curated:dark" };
+/** 1.11: Paper and Terminal. A device that has chosen a slot keeps it — every read of these is
+    `dev[slot] || SLOT_DEFAULT[slot]`, so only a device that never chose is moved. */
+export const SLOT_DEFAULT = { day: "T1:curated:paper", night: "T1:curated:terminal" };
 export const SWITCH_MODES = ["hand", "system", "schedule"];
 const otherSlot = s => (s === "day" ? "night" : "day");
 

@@ -1,6 +1,24 @@
 {
-  "build": 139,
+  "build": 145,
   "versions": [
+    {
+      "version": "1.11",
+      "headline": "A look of its own.",
+      "items": [
+        {
+          "tag": "New",
+          "text": "The same check, in colours of its own instead of borrowed ones."
+        },
+        {
+          "tag": "New",
+          "text": "New devices start on Paper by day, Terminal by night."
+        },
+        {
+          "tag": "Improved",
+          "text": "Dark is still Dark, and whatever theme you picked is still yours."
+        }
+      ]
+    },
     {
       "version": "1.10",
       "headline": "Now there's an iPhone app.",

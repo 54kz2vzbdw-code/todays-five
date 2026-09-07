@@ -192,7 +192,7 @@ function setSoundPack(slot, id) {
   saveDevice();
 }
 const sound = { ...rawSound, check: s => { stats.check++; return rawSound.check(s); }, uncheck: () => { stats.uncheck++; return rawSound.uncheck(); }, finish: () => { stats.finish++; return rawSound.finish(); }, tick: () => { stats.tick++; return rawSound.tick(); } };
-const rawFx = createFx($("#fx"), { palette: () => theme ? theme.confetti : ["#D26128"], shapes: () => theme ? theme.shapes : 1, reduced: () => RM.matches });
+const rawFx = createFx($("#fx"), { palette: () => theme ? theme.confetti : ["#A86014"], shapes: () => theme ? theme.shapes : 1, reduced: () => RM.matches });
 const fx = { burst: (...a) => { stats.burst++; return rawFx.burst(...a); }, volley: () => { stats.volley++; return rawFx.volley(); } };
 /** The finale's confetti: the volley every kit throws, or the bloom or the cake a Secret kit names (1.6). That
     module is fetched the first time one of those two finales runs — never on a device that has not unlocked them. */
@@ -2197,7 +2197,7 @@ function wireUi() {
   $("#toast-undo").addEventListener("click", () => { const a = toastAction; hideToast(); if (a) a(); else undo(); });
   $("#toast-undo-key").textContent = UNDO_HINT; // 1.9 (proposal 28)
   $("#install-x").addEventListener("click", () => { $("#install").hidden = true; document.body.classList.remove("install-on"); dev.installHint = true; saveDevice(); });
-  if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc && !demo && !openPanel) { $("#install").hidden = false; document.body.classList.add("install-on"); } }, 2500);
+  if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc && !demo && !openPanel) { $("#install").hidden = false; document.body.classList.add("install-on"); document.body.style.setProperty("--install-h", $("#install").offsetHeight + "px"); } }, 2500); // 1.11: its real height, like --shake-h — the stack above it is no longer tuned to one font's metrics
   document.addEventListener("pointerdown", () => { sound.prime(); setTimeout(() => panels(), 300); }, { once: true, capture: true }); // 1.7: the panels warm on the first gesture
   document.body.classList.toggle("one", !!dev.oneThing);
 }

@@ -653,47 +653,74 @@ Calls made where the 1.9 brief — the 1.7 audit's proposals 1–31 and its open
 
 ## 1.11 — a look of its own
 
+- **The mark does not change.** The first pass drew three new marks — five lines struck, the numeral,
+  a tally — on the brief's "no checkmark, draw five lines and a strike". That was reversed: the tile
+  and the check stay exactly as they are, same geometry and same proportions, and only the two
+  colours move. `icons/mark.svg` is therefore a **trace**, not a redrawing: the numbers are the ones
+  `apple/TodaysFive/tools/make-icon.mjs` had fitted by least squares off `icons/apple-touch-icon.png`,
+  as fractions of the side times 1024. `node tools/mark.mjs --trace` renders it in the *old* colours
+  and diffs it against the icon that shipped — **1.60 %** of pixels differ, inside the 2 % that
+  script allowed. That test is the only thing that says the drawing has not drifted from the artwork.
 - **The brand is Paper's two colours.** `BRAND.paper` and `BRAND.ink` are getters onto
-  `curated("paper")`, not copies of `#F7F2E8` and `#1F1B16`, so the brand cannot drift from the kit
-  it grew out of. The old mark's charcoal and orange came from a law firm's logo and were never
-  designed for this.
+  `curated("paper")`; `PAPER_GROUND`, `PAPER_TEXT` and `TERMINAL_GROUND` are shared by the kits and
+  the brand so neither can drift, and `test/theme.test.js` asserts they agree. The old pair —
+  `#D26128` on `#1A1D21` — came from a law firm's logo and was never designed for this.
 - **No single colour can be 4.5:1 text on both Paper and Terminal, and this is arithmetic, not
   taste.** 4.5:1 against Paper's `#F7F2E8` needs a relative luminance of at most **0.159**; 4.5:1
-  against Terminal's `#070A08` needs at least **0.188**. The interval is empty. So the brief's "passes
-  4.5:1 as text and 3:1 as a UI colour on both" is met the way this codebase has always met it: **one**
-  accent hex used as a *UI* colour, held to WCAG's 3:1 non-text floor on four grounds (each theme's
-  `--ink` and its elevated `--ink-3`), and **per-theme** `accentText` at 4.5:1, which every curated kit
-  already carries. Recorded here rather than quietly satisfied, because the difference matters.
-- **The accent is in the blue-violets because that is the only band where chroma and headroom
-  coexist.** Balancing for the best *weakest* contrast pins the accent near L 0.57 in OKLCH. At that
-  lightness a blue-violet keeps C ≈ 0.24 and clears the 3:1 floor by 16 % (min 3.48); a cyan at the
-  same lightness collapses to **C = 0.032**, which is a grey. The hue was picked by eye from a
-  rendered study, but the *band* was not a preference.
-- **The brand's dark is Terminal's grounds carrying Paper's cream, not Terminal's green.** "Built
-  from Terminal's tokens" is taken to mean its inks — `#070A08 / #0E140F / #152017`, the deepest in
-  the set, which is why Terminal is the night default. Its phosphor `#D8FFD8` is Terminal's identity,
-  not the brand's, and against the accent it clashes outright: the first render of the 1.11 card had
-  green type under a violet strike and it was ugly. Cream on near-black makes Paper and the brand's
-  dark the *same two colours inverted*, which is what a pair should be. `brandDark()` derives the
-  secondary greys and nudges each until it clears 4.5:1 on `--ink-3`.
-- **The mark is traced, not redrawn.** 1.11 keeps the tile and the check exactly as they are and
-  changes only the two colours. `icons/mark.svg` carries the geometry that
-  `apple/TodaysFive/tools/make-icon.mjs` had fitted by least squares off `icons/apple-touch-icon.png`,
-  as fractions of the side times 1024. `node tools/mark.mjs --trace` renders it in the **old** colours
-  and diffs it against the icon that shipped — 1.60 % of pixels differ, inside the 2 % that script
-  allowed. That test is the only thing that says the drawing has not drifted from the artwork.
-- **One script, two retired.** `tools/mark.mjs` writes the favicon and the manifest set, the maskable
-  variant, the apple-touch-icon, the card, and the app icon in iOS 18's three appearances.
+  against Terminal's `#070A08` needs at least **0.188**. The interval is empty. So the brief's
+  "passes 4.5:1 as text and 3:1 as a UI colour on both" is met the way this codebase has always met
+  it: **one** accent hex used as a *UI* colour, held to WCAG's 3:1 non-text floor on four grounds
+  (each theme's `--ink` and its elevated `--ink-3`), and **per-theme** `accentText` at 4.5:1, which
+  every curated kit already carries. Written down rather than quietly satisfied.
+- **The accent is `#A86014`.** Hue 60. Balancing for the best *weakest* contrast pins any accent near
+  L 0.57 in OKLCH; there it clears the floor on all four grounds by 16 % (min **3.48**) while holding
+  C 0.124, which is as much chroma as a warm hue has at that lightness. The round began in the
+  blue-violets, which hold about twice that chroma (C 0.24) — the "not orange" line in the brief was
+  later withdrawn, leaving only "not the law firm's pair", and the warm direction won on taste with
+  the contrast cost stated: a warm brand accent is quieter than a violet one would have been.
+- **Cocoa's own tones cannot do the UI job.** `#D9A066` is **2.05:1 on Paper**, `#F0C48A` 1.45:1,
+  `#E4AE76` 1.77:1 — they are built for a dark ground only. `#A66A34` (accent-deep) is the single
+  Cocoa tone that passes, at 3.20:1 on Paper's `--ink-3`, 0.20 above the floor. `#A86014` was chosen
+  over it for the 0.48 of headroom.
+- **The app icon's dark appearance is Cocoa's, and it is a deliberate exception.** Tile `#2A1F1A`,
+  check `#D9A066` — **7.00:1**, the strongest tile drawn in either round. iOS composites the dark
+  variant on its own dark surround, so the check's contrast there is against Cocoa's ground and not
+  against Paper's, and the 2.05:1 that disqualifies `#D9A066` from the UI never comes into it. The
+  icon's dark half is the only place this colour appears. **The UI accent is `#A86014` on both
+  themes regardless**, so nothing in the app follows the icon here.
+- **Dark is recoloured in place, not replaced.** It keeps its id and its name, so a device that chose
+  Dark explicitly is not moved off it; it keeps its Lato pair, its knock and its confetti shapes.
+  Only colour moved: Terminal's grounds, the brand's paper as ink, the brand accent. Terminal's
+  phosphor `#D8FFD8` was *not* carried over — that is Terminal's identity, not the brand's, and
+  against the accent it clashed outright (the first render of the 1.11 card had green type under a
+  warm strike and it was ugly). Cream on near-black makes Paper and Dark the same two colours
+  inverted, which is what a pair should be.
+- **Dark left the `ORIGINAL` set.** That set exempts v1's three kits from the contrast enforcement in
+  `finalize()`. Dark no longer carries v1's tokens, so it is held to the same floors as every other
+  kit rather than grandfathered past them. Light and Pink are untouched, as is every other theme.
+- **The default pair is Paper and Terminal, and only for a device that never chose.** Every read is
+  `dev[slot] || SLOT_DEFAULT[slot]`, so an explicit choice wins; `test/theme.test.js` asserts both
+  halves — a fresh device gets Paper/Terminal, and a device holding Light/Dark keeps them.
+- **The first-paint block changed, so its CSP hash did.** `index.html`'s inline `<style
+  id="theme-vars">` is pinned by a sha256 in the meta CSP, and so is the boot script (which carries
+  the `#1A1D21` fallback). Both were re-hashed with `node tools/csp-hash.js index.html about.html
+  --write`. The block keeps the exact shape it shipped with — the same variables in the same order,
+  minus `--done-2` and `--bar-bg`, which it never carried — so the diff is colour and nothing else.
+- **One script, three retired.** `tools/mark.mjs` writes the favicon and the manifest set, the
+  maskable variant, the apple-touch-icon, the card, and the app icon in iOS 18's three appearances.
   `tools/og.mjs`, `tools/og.html` and `apple/TodaysFive/tools/make-icon.mjs` are deleted. The old
   arrangement had two raster paths and neither started from a drawing, which is why the app icon
   needed a `--check` flag to stop two copies of one mark drifting apart. There is one copy now.
 - **The mark is not scaled per surface, and the maskable variant is the same picture.** The check's
   worst painted radius is **0.316** of the tile against the **0.400** a maskable icon allows, so one
-  geometry serves the favicon, the maskable icon and the app icon alike. Making the unmasked ones
-  bigger would have been a change to the mark's proportions, which 1.11 does not make.
+  geometry serves the favicon, the maskable icon and the app icon alike. `icon-512.png` and
+  `icon-512-maskable.png` are byte-identical by construction, and that is correct rather than lazy:
+  making the unmasked one bigger would change the mark's proportions, which this round does not do.
 - **The card is rendered by navigating to a file, never by `setContent`.** The page's own CSP — the
   `<meta>` in `index.html` — survives a `setContent` on the same document and silently blocks the
-  card's inline `<style>`, which renders it as unstyled black-on-white. The card is written to
-  `tools/.og-render.html`, served, screenshotted and deleted.
+  card's inline `<style>`, which renders it unstyled black-on-white. The card is written to
+  `tools/.og-render.html`, served, screenshotted and deleted. The same wall is why the finalists
+  sheet applied its accents through `sheet.insertRule` on the existing `theme-vars` stylesheet — the
+  route `theme.js`'s own `setTokenCss` already uses.
 - **The card does not carry the mark.** 1.11 puts the mark where the old one was and nowhere new,
   and the old card never carried one. It is the Today screen on the new palette, as it always was.

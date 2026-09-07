@@ -1317,3 +1317,220 @@ The 1.8 clone on 8792 and the working copy on 8791, two rounds each in sequence 
 
 Scores are the same (the mobile 98 shows up in 1.8's runs too, in an earlier pair). The request graph is identical — eighteen requests in the same order — and the unthrottled first paint is the same 40 ms on both; what moved is bytes: the first paint carries 9.3 KB more gzipped (index.html +1.2, styles.css +1.0, app.js +3.0, model.js +2.4, theme.js +1.1: the two kits, the zone, the choreography, the sheet, and about half of it comments), 168.5 → 177.8 KB, and Lighthouse's simulated network puts that at +50 ms on the desktop and 60–150 ms on mobile, inside the 190 ms the same build varies between two of its own runs (1.9's cold 1585 beats 1.8's 1699). Recorded in DECISIONS.md as the one thing this round could not hold to the byte.
 
+
+
+---
+
+# Today's Five 1.11 — a look of its own
+
+The mark and the default dark palette were borrowed from a law firm's logo when this was a toy: a
+charcoal tile (`#1A1D21`) with an orange check (`#D26128`). It is going to the App Store, so this
+round gives it colours of its own. Nothing else: no features, no copy beyond what the look forces.
+
+## What the mark is, and what it is not
+
+**The mark does not change.** Same tile, same check, same proportions. The first pass drew three new
+marks on the brief's "no checkmark — the product is five lines and a strike"; that was reversed, and
+`icons/mark.svg` is a **trace** of the artwork rather than a redrawing. Its numbers are the ones
+`apple/TodaysFive/tools/make-icon.mjs` had fitted by least squares off `icons/apple-touch-icon.png`,
+expressed as fractions of the side times 1024.
+
+```bash
+node tools/mark.mjs --trace   # renders it in the OLD colours and diffs it against the shipped icon
+```
+
+**1.60 % of pixels differ**, inside the 2 % that script allowed. That is the only thing that says the
+drawing has not drifted from the artwork, and it is why the old script's `--check` flag survived the
+rewrite in a new form.
+
+## The colourway, and how it was chosen
+
+Two contact sheets, both committed beside the screenshots:
+
+- `shots/1.11-contact-sheet.png` — the first round: three colourways × two accents, at 1024 / 180 /
+  circular mask / 32, on a real 26.5 Home Screen, and the card.
+- `shots/1.11-finalists.png` — the second: four finalists in context, each with its Home Screen tile,
+  its card, and Today's screen on Paper and on Terminal with that colourway's accent doing the work.
+
+The pick is **Paper tile `#F7F2E8`, check `#A86014`**, with the accent carried into the app.
+
+## The accent, and the limit that is arithmetic
+
+The accent has one hard job: read on **Paper** and on **Terminal**, the two default slots from 1.11
+on. That job has a limit worth stating plainly, because it is not a matter of taste:
+
+| | needs relative luminance |
+|---|---|
+| 4.5:1 against Paper's `#F7F2E8` | **≤ 0.159** |
+| 4.5:1 against Terminal's `#070A08` | **≥ 0.188** |
+
+The interval is empty. **No single colour is 4.5:1 text on both.** So the brief's "passes 4.5:1 as
+text and 3:1 as a UI colour on both" is met the way this codebase has always met it: one accent hex
+used as a *UI* colour at WCAG's 3:1 non-text floor, and a **per-theme** `accentText` at 4.5:1, which
+every curated kit already carries. `#A86014` has luminance 0.1674 — between the two bounds, as any
+colour that reads on both must be.
+
+Balancing for the best *weakest* contrast pins any accent near L 0.57 in OKLCH. There `#A86014`
+clears the 3:1 floor on all four grounds by 16 % (**min 3.48**) while holding C 0.124 — as much
+chroma as a warm hue has at that lightness. The round began in the blue-violets, which hold about
+twice that (C 0.24); the "not orange" line was withdrawn mid-round, and warm won on taste with that
+cost stated.
+
+## Contrast, measured
+
+Every token against the surface it is actually painted on — `theme.js` fixes `text`/`muted`/`dim`/
+`done` against `--ink` and `accent`/`accentText`/`danger` and the `-2` greys against `--ink-3`, the
+elevated surface (panels, filled chips, a lifted row). **Nothing here is eyeballed.**
+
+| theme | token | hex | measured on | ratio | floor |
+|---|---|---|---|---|---|
+| paper | `text` | `#1F1B16` | `--ink` | **15.34** | 7:1 |
+| paper | `muted` | `#5E5749` | `--ink` | **6.41** | 4.5:1 |
+| paper | `dim` | `#6C6559` | `--ink` | **5.17** | 4.5:1 |
+| paper | `done` | `#6C6559` | `--ink` | **5.17** | 4.5:1 |
+| paper | `hairSolid` | `#8E8980` | `--ink` | **3.12** | 3:1 |
+| paper | `accent` | `#A86014` | `--ink-3` | **3.48** | 3:1 |
+| paper | `accentText` | `#8F4D00` | `--ink-3` | **4.68** | 4.5:1 |
+| paper | `danger` | `#B02A1A` | `--ink-3` | **4.74** | 4.5:1 |
+| paper | `muted2` | `#5E5749` | `--ink-3` | **5.15** | 4.5:1 |
+| paper | `dim2` | `#665F53` | `--ink-3` | **4.55** | 4.5:1 |
+| paper | `done2` | `#665F53` | `--ink-3` | **4.55** | 4.5:1 |
+| terminal | `text` | `#D8FFD8` | `--ink` | **18.20** | 7:1 |
+| terminal | `muted` | `#7FCB86` | `--ink` | **10.22** | 4.5:1 |
+| terminal | `dim` | `#67A96E` | `--ink` | **7.08** | 4.5:1 |
+| terminal | `done` | `#67A96E` | `--ink` | **7.08** | 4.5:1 |
+| terminal | `hairSolid` | `#5A5F5C` | `--ink` | **3.06** | 3:1 |
+| terminal | `accent` | `#A86014` | `--ink-3` | **3.48** | 3:1 |
+| terminal | `accentText` | `#BF7530` | `--ink-3` | **4.64** | 4.5:1 |
+| terminal | `danger` | `#FF6B57` | `--ink-3` | **5.99** | 4.5:1 |
+| terminal | `muted2` | `#7FCB86` | `--ink-3` | **8.63** | 4.5:1 |
+| terminal | `dim2` | `#67A96E` | `--ink-3` | **5.98** | 4.5:1 |
+| terminal | `done2` | `#67A96E` | `--ink-3` | **5.98** | 4.5:1 |
+| dark | `text` | `#F7F2E8` | `--ink` | **17.82** | 7:1 |
+| dark | `muted` | `#A8A49C` | `--ink` | **8.01** | 4.5:1 |
+| dark | `dim` | `#8F8C84` | `--ink` | **5.92** | 4.5:1 |
+| dark | `done` | `#8F8C84` | `--ink` | **5.92** | 4.5:1 |
+| dark | `hairSolid` | `#5A5F5C` | `--ink` | **3.06** | 3:1 |
+| dark | `accent` | `#A86014` | `--ink-3` | **3.48** | 3:1 |
+| dark | `accentText` | `#BF7530` | `--ink-3` | **4.64** | 4.5:1 |
+| dark | `danger` | `#DC5E59` | `--ink-3` | **4.63** | 4.5:1 |
+| dark | `muted2` | `#A8A49C` | `--ink-3` | **6.76** | 4.5:1 |
+| dark | `dim2` | `#8F8C84` | `--ink-3` | **5.00** | 4.5:1 |
+| dark | `done2` | `#8F8C84` | `--ink-3` | **5.00** | 4.5:1 |
+
+Zero below floor. Reproduce with the snippet in `test/theme.test.js`, which asserts the same floors
+on every kit as part of the suite.
+
+## What changed in the themes, and what did not
+
+- **Dark is recoloured in place.** Same id, same name, same Lato pair, same knock, same confetti
+  shapes — a device that chose Dark is not moved off it. Only colour moved: Terminal's grounds, the
+  brand's paper as ink, the brand accent. It also left the `ORIGINAL` set, so it is now held to the
+  same contrast floors as every other kit instead of being grandfathered past them.
+- **Paper and Terminal carry the brand accent**, so the app's default look is the brand's. Their
+  inks, their type, their sounds and Terminal's phosphor text are untouched.
+- **Every other theme is untouched**, Superpink and Birthday included.
+- **The default pair is Paper by day and Terminal by night**, and only for a device that never chose:
+  every read is `dev[slot] || SLOT_DEFAULT[slot]`.
+
+## One thing this round could not hold to
+
+**The first paint pulls different fonts now**, because the default pair changed and the faces come
+with the kit:
+
+| a fresh device's first paint | faces | bytes |
+|---|---|---|
+| 1.10, either system (Lato + PT Sans) | `lato-900`, `pt-sans-400`, `pt-sans-700` | 36,812 |
+| 1.11, dark system (Terminal, mono) | `jetbrains-mono-500-800`, `ibm-plex-mono-400/600`, `pt-sans-700` | 63,136 |
+| 1.11, light system (Paper, serif) | `playfair-display-700-800`, `source-serif-4-400-600`, `pt-sans-700` | 101,008 |
+
+Woff2 is already compressed, so those are close to wire bytes. This is the direct cost of making the
+typographic kits the defaults, and it is recorded here rather than buried. The Lighthouse numbers
+below are what it actually came to.
+
+## Lighthouse, and the one number that went the wrong way
+
+Lighthouse 13.4.1, headless Chrome, twice per form factor, against a local server: 1.10 from a
+worktree of `main` on one port, 1.11 from the working tree on another, back to back on the same
+machine.
+
+| | 1.10 run 1 | 1.10 run 2 | 1.11 run 1 | 1.11 run 2 |
+|---|---|---|---|---|
+| desktop perf / a11y / BP / SEO | 100 / 100 / 100 / 100 | 100 / 100 / 100 / 100 | 100 / 100 / 100 / 100 | 100 / 100 / 100 / 100 |
+| desktop FCP / LCP / TBT / CLS | 368 / 452 / 0 / 0 | 414 / 454 / 0 / 0 | 428 / 494 / 0 / 0.002 | 428 / 495 / 0 / 0.002 |
+| mobile perf / a11y / BP / SEO | 98 / 100 / 100 / 100 | 99 / 100 / 100 / 100 | 98 / 100 / 100 / 100 | 98 / 100 / 100 / 100 |
+| mobile FCP / LCP / TBT / CLS | 1777 / 2002 / 0 / 0.001 | 1588 / 1973 / 0 / 0.001 | 1810 / 2130 / 0 / **0** | 1811 / 2132 / 0 / **0** |
+| total byte weight | 174 KB | 174 KB | 192 KB | 192 KB |
+
+**Mobile is slower, and this is the round's one broken promise.** LCP goes from 1973–2002 ms to
+2130–2132 ms (+130 to +160), and the best mobile score drops from 99 to 98 — 98 appears in 1.10's own
+runs, so the *score* is inside its usual spread, but the LCP is not: 1.11's two runs are tighter than
+1.10's and both sit above 1.10's worse one.
+
+**The cause is exactly one thing, and it is measured, not guessed.** From the runs' own network
+records:
+
+| | font files on first paint | transferred |
+|---|---|---|
+| 1.10 (Lato + PT Sans, whatever the system) | `lato-900`, `pt-sans-400`, `pt-sans-700` | **37 KB** |
+| 1.11 (Terminal's mono, on a dark system) | `jetbrains-mono-500-800`, `ibm-plex-mono-400`, `ibm-plex-mono-600`, `pt-sans-700` | **62 KB** |
+| 1.11 (Paper's serifs, on a light system) | `playfair-display-700-800`, `source-serif-4-400-600`, `pt-sans-700` | 101 KB on disk |
+
+Moving the default pair from Light/Dark to Paper/Terminal moves the default *typeface* from one sans
+pair to a mono pair or a serif pair, and those are bigger files. Nothing else in the round costs
+anything: the icons shrank (`apple-touch-icon.png` 3,699 → 1,348 bytes, `icon-512.png` 18,583 →
+3,777), the card is the same size, and no module grew.
+
+The two levers, if this is not acceptable:
+
+1. **Keep Light and Dark as the default pair** and let Paper and Terminal be a tap away. The look is
+   unchanged either way — Dark is recoloured, so a default device still opens in the brand's colours.
+2. **Preload the default slot's task face.** That is a change to the critical path rather than to the
+   look, so it was not made here.
+
+CLS moved the other way and is worth recording: mobile 0.001 → **0**, desktop 0 → 0.002.
+
+## Before and after
+
+`shots/1.11/before` is 1.10 from a worktree of `main`; `shots/1.11/after` is this branch. Eighty
+surfaces each, at 1440×900 and 390×844, shot by `tools/shots.js` against a local server.
+
+The pairs that carry the round:
+
+| | before (1.10) | after (1.11) |
+|---|---|---|
+| Today, phone | `phone-today.png` — charcoal `#1A1D21`, orange strike | `phone-today.png` — Terminal, `#A86014` strike and box |
+| Today, desktop | `desktop-today.png` | `desktop-today.png` |
+| The welcome | `desktop-welcome.png`, `phone-welcome.png` | the same, in the new pair |
+| Day and night | `desktop-flip-day.png` | Paper, not Light |
+| The card | `icons/og.png` in the tree | regenerated by `tools/mark.mjs` |
+
+The two contact sheets the choice was made from are `shots/1.11-contact-sheet.png` (three colourways
+× two accents) and `shots/1.11-finalists.png` (four finalists, each with its Home Screen tile, its
+card, and Today on Paper and on Terminal).
+
+## Verification results
+
+| | |
+|---|---|
+| `test/model.test.js` | 27 passed |
+| `test/theme.test.js` | 31 passed (2 new: the brand's invariants, and Dark recoloured in place) |
+| `test/crypto.test.js` | 10 passed — the pinned vectors, untouched |
+| `test/sync.test.js` | 14 passed |
+| `test/sound.test.js` | 11 passed |
+| `test/features.test.js` | 28 passed |
+| `test/compat.test.js` | 9 passed |
+| `apple/TodaysFiveCore` `swift test` | **94 passed** in 7 suites |
+| `tools/e2e4.js` 1440×900 + 390×844 | **159 passed, 0 failed**, zero page errors, zero CSP violations, zero third-party requests |
+| `tools/realsync4.js` (live backend, once) | 6 passed, 6 of 6 lists cleaned up |
+| Lighthouse desktop / mobile | above |
+
+Two things the browser suite caught that reading would not have:
+
+- **`--done` and `--done-2` are the same colour in the recoloured Dark**, because its grey already
+  clears 4.5:1 on `--ink-3`. The test that proves a lifted line reads in `--done-2` was pointed at
+  Pink, a night kit where the two genuinely differ, so it still proves something.
+- **The shake hint landed on top of the install hint on a phone**, by ten pixels. The stack used a
+  96 px constant that was right for Lato at 13 px; Terminal's mono sets that hint taller. It stacks
+  on the install hint's *measured* height now (`--install-h`, set by `app.js`), the way the toast has
+  stacked on `--shake-h` since 1.9. A real collision, found because the default pair changed.

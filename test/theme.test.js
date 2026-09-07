@@ -5,7 +5,8 @@ import {
   hexToOklch, oklch, contrast, cssText, normalizeHex, pickPair, PACK_IDS, hueSound,
   CURATED_DAY, CURATED_NIGHT, curated, partnerOf, makePartner, SLOT_DEFAULT, scheduledSlot, autoSlot, activeSlot, slotCode,
   flipSlot, settleHold, setSwitchMode, migrateSlots, mixHex, cssTextBetween,
-  SECRET, SECRET_IDS, isSecretTheme, isSecretCode, isSecretKey, PACK_BEFORE_19, packBefore19
+  SECRET, SECRET_IDS, isSecretTheme, isSecretCode, isSecretKey, PACK_BEFORE_19, packBefore19,
+  BRAND, BRAND_ACCENT, brandColourways, brandTiles, brandDark, luminance
 } from "../theme.js";
 import fs from "node:fs";
 
@@ -50,15 +51,54 @@ test("18 curated themes, each a complete kit (the sixteen on offer and the Secre
   }
 });
 
-test("dark, light, pink keep v1's primary tokens exactly", () => {
+test("1.11: light and pink keep v1's primary tokens exactly; Dark is recoloured in place", () => {
   const d = CURATED.find(t => t.id === "dark").colors, l = CURATED.find(t => t.id === "light").colors, p = CURATED.find(t => t.id === "pink").colors;
-  assert.deepEqual([d.ink, d.ink2, d.ink3, d.text, d.muted, d.accent, d.accentHi, d.accentDeep, d.accentText, d.danger], ["#1A1D21", "#23272C", "#2E343A", "#F5F1EA", "#9AA0A8", "#D26128", "#E8814A", "#A34A1C", "#E8814A", "#E0745A"]);
+  // Dark stopped carrying v1's tokens in 1.11. Its id and name did not change — a device that chose
+  // it explicitly is not moved — but its colours are the brand's now: Terminal's grounds, the
+  // brand's paper as ink, the brand accent. The pinned values are here so a drift is a red test.
+  assert.deepEqual([d.ink, d.ink2, d.ink3, d.text, d.accent], ["#070A08", "#0E140F", "#152017", "#F7F2E8", "#A86014"]);
+  assert.equal(CURATED.find(t => t.id === "dark").name, "Dark", "the name a device chose does not change");
+  assert.equal(CURATED.find(t => t.id === "dark").pair, "lato", "only colour moved: the font pair is v1's");
+  assert.equal(CURATED.find(t => t.id === "dark").sound.engine, "knock", "and so is the sound");
   assert.deepEqual([l.ink, l.ink2, l.ink3, l.text, l.accent, l.accentHi, l.accentDeep, l.accentText, l.danger], ["#FAF8F4", "#F1ECE3", "#E4DED2", "#494F55", "#CB6015", "#E07B33", "#9E4A10", "#9E4A10", "#B8402A"]);
   assert.deepEqual([p.ink, p.ink2, p.ink3, p.text, p.muted, p.dim, p.done, p.accent, p.accentHi, p.accentDeep, p.accentText, p.danger], ["#2E0A1C", "#421029", "#58163A", "#FFF0F6", "#F2A8C8", "#C97A9E", "#C97A9E", "#FF3D9A", "#FFD36E", "#C2185B", "#FF58A2", "#FF6B8A"]); // 1.9: accentText nudged from #FF3D9A to 4.5:1 on ink-3, the one change to Pink (proposal 29)
   assert.equal(p.strikeAnim, "shimmer 3.4s linear infinite");
   assert.equal(p.boxDoneBg, "linear-gradient(135deg,#FF3D9A,#FFD36E)");
   assert.equal(CURATED.find(t => t.id === "pink").shapes, 3);
   assert.deepEqual(CURATED.find(t => t.id === "pink").confetti, ["#FF3D9A", "#FF8FBE", "#FFD36E", "#FFFFFF", "#FF6FAF", "#FFB8D9"]);
+});
+
+test("1.11: the brand palette is the kits', and the accent clears its floors on both defaults", () => {
+  const paper = CURATED.find(t => t.id === "paper").colors, term = CURATED.find(t => t.id === "terminal").colors;
+  // the brand cannot drift from the kit it grew out of
+  assert.equal(BRAND.paper, paper.ink, "the brand's paper is Paper's --ink");
+  assert.equal(BRAND.ink, paper.text, "the brand's ink is Paper's --text");
+  assert.equal(BRAND.terminal, term.ink, "the brand's dark ground is Terminal's --ink");
+  assert.equal(BRAND.accent, "#A86014");
+
+  // the accent is a UI colour: 3:1 on each default theme's --ink and its elevated --ink-3
+  for (const [name, g] of [["Paper", paper.ink], ["Paper ink-3", paper.ink3], ["Terminal", term.ink], ["Terminal ink-3", term.ink3]])
+    assert.ok(contrast(BRAND.accent, g) >= 3, `accent on ${name}: ${contrast(BRAND.accent, g).toFixed(2)}`);
+
+  // and each theme carries its own accentText at 4.5:1 — no single hex can be text on both
+  // (4.5:1 on Paper needs luminance <= 0.159, on Terminal >= 0.188: the interval is empty)
+  for (const t of [paper, term]) {
+    assert.ok(contrast(t.accentText, t.ink) >= 4.5, "accentText on ink");
+    assert.ok(contrast(t.accentText, t.ink3) >= 4.5, "accentText on ink-3");
+  }
+  assert.ok(luminance(BRAND.accent) > 0.159 || luminance(BRAND.accent) < 0.188, "the impossibility is why accentText is per-theme");
+
+  // the default pair is Paper and Terminal, and a device that chose keeps its choice
+  assert.equal(SLOT_DEFAULT.day, "T1:curated:paper");
+  assert.equal(SLOT_DEFAULT.night, "T1:curated:terminal");
+  const lightNow = { systemDark: false, now: new Date("2026-09-05T15:00:00") };
+  assert.equal(slotCode({ day: "T1:curated:cocoa", follow: true }, lightNow), "T1:curated:cocoa", "an explicit slot wins over the new default");
+  assert.equal(slotCode({ follow: true }, lightNow), SLOT_DEFAULT.day, "a device that never chose gets Paper");
+
+  // the app icon's dark appearance is Cocoa's ground and accent, not the brand's dark
+  const cocoa = CURATED.find(t => t.id === "cocoa").colors;
+  assert.deepEqual(BRAND.darkTile, { tile: cocoa.ink, mark: cocoa.accent });
+  assert.ok(contrast(cocoa.accent, cocoa.ink) >= 3, "the dark tile's own check reads on it");
 });
 
 test("1.9: --done-2 clears 4.5:1 on --ink-3 in every kit and in a theme you make, styles.css lifts a dragged line into it, and Pink's accent text clears the same bar (proposal 29)", () => {
@@ -342,11 +382,16 @@ test("migration: the schedule becomes On a schedule with its themes and times; t
   assert.equal(scheduledSlot({ dayAt: "x", nightAt: "06:00" }), "day", "junk times mean day");
 });
 
-test("a fresh device: Light by day, Dark by night, with the system, so the first open matches the device", () => {
+test("1.11: a fresh device gets Paper by day and Terminal by night, with the system", () => {
   const dev = {}; assert.equal(migrateSlots(dev, { returning: false, env: DARK }), true);
-  assert.equal(dev.switch.mode, "system"); assert.equal(dev.day, "T1:curated:light"); assert.equal(dev.night, "T1:curated:dark");
-  assert.equal(slotCode(dev, DARK), "T1:curated:dark"); assert.equal(slotCode(dev, LIGHT), "T1:curated:light");
+  assert.equal(dev.switch.mode, "system"); assert.equal(dev.day, "T1:curated:paper"); assert.equal(dev.night, "T1:curated:terminal");
+  assert.equal(slotCode(dev, DARK), "T1:curated:terminal"); assert.equal(slotCode(dev, LIGHT), "T1:curated:paper");
   const d2 = { theme: "T1:curated:dark" }; migrateSlots(d2, { returning: false, env: LIGHT }); assert.equal(d2.switch.mode, "system", "the default theme key 1.1 wrote on first load does not make a device a returning one");
+  // and the thing that must not happen: a device that chose is not moved to the new pair
+  const chose = { day: "T1:curated:light", night: "T1:curated:dark", switch: { mode: "system" } };
+  migrateSlots(chose, { returning: true, env: DARK });
+  assert.equal(chose.day, "T1:curated:light"); assert.equal(chose.night, "T1:curated:dark");
+  assert.equal(slotCode(chose, DARK), "T1:curated:dark", "Dark is still Dark to a device that picked it — recoloured, not replaced");
 });
 
 test("the hold rule: a manual flip under an automation holds until the automation next switches, then it resumes", () => {

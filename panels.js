@@ -3,7 +3,7 @@
 // repeat picker, templates, move-to-list, delete everywhere with its undo, export/import, the ? reference, and How it
 // works. Loaded by app.js on first use; `A` is its api.
 let A = null, $ = null, $$ = null, M = null, T = null, C = null;
-const PANELS_BUILD = 139; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
+const PANELS_BUILD = 145; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
 export const RELOADING = "Today's Five updated: reloading";
 /** The shell, as sw.js lists it (minus the icons): refreshed past the HTTP cache before the one reload the guard below may do. */
 const SHELL_FILES = ["./", "./index.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js", "./sound.js", "./packs.js", "./packs-secret.js", "./secretfx.js", "./secretfx.css", "./fx.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json", "./manifest.webmanifest", "./vendor/realtime.js"];
@@ -46,7 +46,7 @@ const dev = () => A.dev, meta = () => A.meta;
    Opened from Settings → Appearance's Day theme or Night theme row (or ⋯ → Theme → Appearance). Every theme is on
    offer for either slot: the curated kits grouped by their lean, then the list's saved ones; picking one names its
    partner for the other slot as a one-tap chip. The builder below fills the same slot, and can make a partner. */
-let custom = { accent: "#D26128", base: "dark", pair: "", name: "", pack: "" };
+let custom = { accent: "#A86014", base: "dark", pair: "", name: "", pack: "" };
 let keepPreview = false;
 let pickSlot = "day"; // the slot the picker fills
 let offer = null;     // { code, name, slot }: the partner on offer for the other slot after a choice, if any

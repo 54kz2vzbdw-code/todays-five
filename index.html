@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-base="dark" data-build="139">
+<html lang="en" data-base="dark" data-build="145">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -17,8 +17,8 @@
   <meta property="og:image:alt" content="Today's Five: a short list in big type, one line crossed off">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-t4fWp0Y6FJ1dqzfULHrK8BQ8EmxhaMK+LgCngPNzRgI='; style-src 'self' 'sha256-oE1HVK8YytWGTI+f5YZEZpzJkHu5EBNa0YFHsWkjQgQ='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://xyfjxdbwhysbaltcwvcx.supabase.co wss://xyfjxdbwhysbaltcwvcx.supabase.co; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
-  <meta name="theme-color" content="#1A1D21">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-IeIbBrv5kdEExnAhwF6S0+zp2fzA+0MCfHbeFnxJ+b4='; style-src 'self' 'sha256-42Imb/mjd8hy2doal5liLjDuoMQlFgVDzsZs7I3nxbI='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://xyfjxdbwhysbaltcwvcx.supabase.co wss://xyfjxdbwhysbaltcwvcx.supabase.co; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta name="theme-color" content="#070A08">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -37,8 +37,7 @@
   <!-- the tokens below paint the first frame: a returning device swaps in its cached theme through the boot script;
        a fresh device gets Dark on a dark system and Light on a light one, which is what 1.2's default switch
        (With the system) picks a moment later. Both rules are replaced by theme.js as soon as it runs. -->
-  <style id="theme-vars">:root{--ink:#1A1D21;--ink-2:#23272C;--ink-3:#2E343A;--text:#F5F1EA;--muted:#9AA0A8;--dim:#7F858C;--done:#7F858C;--muted-2:#9AA0A8;--dim-2:#979DA4;--accent:#D26128;--accent-hi:#E8814A;--accent-deep:#A34A1C;--accent-text:#E8814A;--danger:#E0745A;--hair:rgba(245,241,234,.10);--hair-hi:rgba(245,241,234,.30);--hair-solid:#65696E;--glow:radial-gradient(125% 78% at 50% 34%, rgba(210,97,40,.10), rgba(210,97,40,0) 62%);--strike-shadow:0 0 10px rgba(210,97,40,.38);--box-done-bg:#D26128;--strike-bg:#D26128;--strike-size:auto;--strike-anim:none;--finale-style:normal;--font-task:"Lato","Helvetica Neue",Helvetica,Arial,sans-serif;--font-ui:"PT Sans","Helvetica Neue",Helvetica,Arial,sans-serif;--task-w:900;--task-ls:-.025em;--task-lh:1.14;color-scheme:dark}
-@media (prefers-color-scheme:light){:root{--ink:#FAF8F4;--ink-2:#F1ECE3;--ink-3:#E4DED2;--text:#494F55;--muted:#707174;--dim:#6F7378;--done:#6E7278;--muted-2:#5F6063;--dim-2:#5E6267;--accent:#CB6015;--accent-hi:#E07B33;--accent-deep:#9E4A10;--accent-text:#9E4A10;--danger:#B8402A;--hair:rgba(73,79,85,.16);--hair-hi:rgba(73,79,85,.42);--hair-solid:#918F8B;--glow:radial-gradient(125% 78% at 50% 30%, rgba(210,97,40,0.07), rgba(210,97,40,0) 60%);--strike-shadow:none;--box-done-bg:#CB6015;--strike-bg:#CB6015;--strike-size:auto;--strike-anim:none;--finale-style:normal;--font-task:"Lato","Helvetica Neue",Helvetica,Arial,sans-serif;--font-ui:"PT Sans","Helvetica Neue",Helvetica,Arial,sans-serif;--task-w:900;--task-ls:-.025em;--task-lh:1.14;color-scheme:light}}</style>
+  <style id="theme-vars">:root{--ink:#070A08;--ink-2:#0E140F;--ink-3:#152017;--text:#F7F2E8;--muted:#A8A49C;--dim:#8F8C84;--done:#8F8C84;--muted-2:#A8A49C;--dim-2:#8F8C84;--accent:#A86014;--accent-hi:#D29663;--accent-deep:#6F3B00;--accent-text:#BF7530;--danger:#DC5E59;--hair:rgba(247,242,232,0.1);--hair-hi:rgba(247,242,232,0.3);--hair-solid:#5A5F5C;--glow:radial-gradient(125% 78% at 50% 34%, rgba(168,96,20,0.1), rgba(168,96,20,0) 62%);--strike-shadow:0 0 10px rgba(168,96,20,0.38);--box-done-bg:#A86014;--strike-bg:#A86014;--strike-size:auto;--strike-anim:none;--finale-style:normal;--font-task:"Lato","Helvetica Neue",Helvetica,Arial,sans-serif;--font-ui:"PT Sans","Helvetica Neue",Helvetica,Arial,sans-serif;--task-w:900;--task-ls:-.025em;--task-lh:1.14;color-scheme:dark}</style>
   <script>
   /* Boot, before first paint. This script is hashed in the CSP above: change it and re-run tools/csp-hash.
      1. re-apply the cached theme tokens through the CSSOM (the inline stylesheet's text is hashed too, so it
@@ -75,7 +74,7 @@
     var base = location.origin + location.pathname.replace(/[^/]*$/, "");
     var manifestLink = null, currentFrag = null;
     function build(frag) {
-      var inkColor = document.querySelector('meta[name="theme-color"]').getAttribute("content") || "#1A1D21";
+      var inkColor = document.querySelector('meta[name="theme-color"]').getAttribute("content") || "#070A08";
       var man = {
         id: base,
         name: "Today's Five",
@@ -312,8 +311,8 @@
   <div class="field">
     <label for="c-hex">Accent</label>
     <div class="inline">
-      <input type="color" id="c-color" value="#D26128" aria-label="Accent colour picker">
-      <input type="text" id="c-hex" value="#D26128" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Accent hex">
+      <input type="color" id="c-color" value="#A86014" aria-label="Accent colour picker">
+      <input type="text" id="c-hex" value="#A86014" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Accent hex">
       <div class="seg2" role="group" aria-label="Base">
         <button type="button" id="c-dark" aria-pressed="true">Dark</button>
         <button type="button" id="c-light" aria-pressed="false">Light</button>

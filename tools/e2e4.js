@@ -32,12 +32,23 @@ const assert = { ok(v, m) { if (!v) throw new Error(m || "expected truthy"); }, 
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
 const VIEWPORTS = [["desktop 1440×900", { viewport: { width: 1440, height: 900 } }, false], ["phone 390×844", { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }, true]];
-async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: shared = null, scheme = "dark", clock = null, reducedMotion = "no-preference", init = "" } = {}) {
+async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: shared = null, scheme = "dark", clock = null, reducedMotion = "no-preference", init = "", pinSlots = true } = {}) {
   // a second "device" on the local transport is a second tab of the same context: the local server lives in localStorage.
   // The system is dark unless a test says otherwise (1.2 starts a fresh device With the system); `clock` installs a fake one.
   const ctx = shared || await browser.newContext({ ...opts, colorScheme: scheme, reducedMotion });
   open.add(ctx);
-  if (init && !shared) await ctx.addInitScript(init);
+  /* 1.11 moved the default pair from Light/Dark to Paper/Terminal. Most of what follows is about the
+     *switch* — the crossfade, With the system, the schedule, the hold, the picker, the sound row —
+     and not about which pair a brand-new device is handed, so `fresh()` pins the pair those tests
+     were written against and they go on testing what they were written to test. It only seeds a
+     context that has no meta of its own, so a test that writes its own device (the migrations, the
+     1.3/1.9 devices) is untouched, on its first load and on every reload. The two places that *are*
+     about the default pass `pinSlots: false` and assert SLOT_DEFAULT itself. */
+  // `switch` has to be in there too: migrateSlots() only leaves the slots alone when the device
+  // already carries a valid switch, and a fresh one without it is rewritten to SLOT_DEFAULT. And the
+  // pin stands down whenever a test seeds its own device through `init`, so it can never clobber one.
+  const pin = (pinSlots && !init) ? `try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: { day: "T1:curated:light", night: "T1:curated:dark", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" } } })); } catch (e) {}\n` : "";
+  if ((init || pin) && !shared) await ctx.addInitScript(pin + init);
   const page = await ctx.newPage(); page.setDefaultTimeout(6000);
   if (clock) await page.clock.install({ time: clock });
   const errors = [], csp = [], thirdParty = [], consoleErrors = [];
@@ -583,6 +594,11 @@ for (const [label, opts, touch] of VIEWPORTS) {
 
   await test(label + ": 1.9: a done line while lifted reads in --done-2 (29), the ⋯ menu is two columns in phone landscape and one otherwise (31)", async () => {
     const t = await fresh(opts);
+    // 1.11: the recoloured Dark derives --done from a grey that already clears 4.5:1 on --ink-3, so
+    // --done and --done-2 are the same colour there and the check below would prove nothing. Pink is
+    // a night kit where the two genuinely differ, which is what this test needs to be about.
+    await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device.night = "T1:curated:pink"; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
+    await t.reload(); await t.page.waitForSelector("#list .row"); await wait(400);
     const hex = c => { const m = c.match(/\d+/g); return m ? "#" + m.slice(0, 3).map(n => (+n).toString(16).padStart(2, "0")).join("").toUpperCase() : c; };
     await t.press("#list .row:first-child .check"); await wait(700);
     const c = await t.page.evaluate(() => { const r = document.querySelector("#list .row.done"); const rest = getComputedStyle(r).color; r.classList.add("dragging"); const lifted = getComputedStyle(r).color; r.classList.remove("dragging"); const cs = getComputedStyle(document.documentElement); return { rest, lifted, done: cs.getPropertyValue("--done").trim(), done2: cs.getPropertyValue("--done-2").trim() }; });
@@ -1225,7 +1241,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
     assert.ok(await t.page.locator("#whatsnew").isVisible(), "what's-new toast");
     const msg = await t.page.textContent("#wn-msg");
-    assert.ok(new RegExp("New in " + VERSION.replace(".", "\\.")).test(msg), msg); assert.ok(!/4\.0\.0|renumber|1\.1\b|1\.2\b|1\.3\b/.test(msg), "nothing about version numbers: " + msg); assert.ok(/Now there's an iPhone app\./.test(msg), "the headline is 1.10's, and names the app: " + msg); assert.equal((await t.page.textContent("#wn-more")).trim(), "What's new");
+    assert.ok(new RegExp("New in " + VERSION.replace(".", "\\.")).test(msg), msg); assert.ok(!/4\.0\.0|renumber|1\.1\b|1\.2\b|1\.3\b/.test(msg), "nothing about version numbers: " + msg); assert.ok(/A look of its own\./.test(msg), "the headline is 1.11's, and names the app: " + msg); assert.equal((await t.page.textContent("#wn-more")).trim(), "What's new");
     assert.equal(await t.page.locator("#tour").count(), 0, "no tour"); assert.equal(await t.page.locator("dialog[open]").count(), 0, "no sheet"); assert.ok(await t.page.locator("#mark").isHidden(), "no hint");
     assert.equal((await t.s()).stats.check + (await t.s()).stats.finish, 0, "no sound");
     assert.equal(await t.page.locator("#list .row").count(), 3); assert.equal((await t.s()).listId, listId);
@@ -1242,8 +1258,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.waitForFunction(() => /build/.test(document.getElementById("version").textContent), null, { timeout: 5000, polling: 100 });
     assert.equal(await t.page.textContent("#version"), "Version " + VERSION_LABEL);
     const log = await t.page.$$eval("#log .v", els => els.map(e => e.textContent));
-    assert.equal(log.join(","), "1.10,1.9,1.8,1.7,1.5,1.4,1.3,1.2,1.1,1.0", "1.0 and later; the pre-releases never render");
-    assert.ok(/Now there's an iPhone app\./.test(await t.page.textContent("#log > li:first-child div")), "a headline per version"); assert.ok(/Easier all over\./.test(await t.page.textContent("#log > li:nth-child(2) div")), "and the one before it");
+    assert.equal(log.join(","), "1.11,1.10,1.9,1.8,1.7,1.5,1.4,1.3,1.2,1.1,1.0", "1.0 and later; the pre-releases never render");
+    assert.ok(/A look of its own\./.test(await t.page.textContent("#log > li:first-child div")), "a headline per version"); assert.ok(/Now there's an iPhone app\./.test(await t.page.textContent("#log > li:nth-child(2) div")), "and the one before it");
     const tags = await t.page.$$eval("#log .tag", els => els.map(e => e.textContent)); assert.ok(tags.length >= 6 && tags.every(x => ["New", "Improved", "Fixed"].includes(x)), "tagged items: " + tags);
     assert.ok(await t.page.$$eval("#log > li", els => els.every(li => li.querySelectorAll("ul li").length <= 3)), "three items at most");
     assert.equal(await t.page.$eval("#version", e => getComputedStyle(e).textTransform), "uppercase", "the version line is styled on About (its rules live in styles.css now)");
@@ -1273,7 +1289,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
 
   /* ---------------- 1.2: Day and Night ---------------- */
   const inkOf = page => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--ink").trim().toUpperCase());
-  const INK = { dark: "#1A1D21", light: "#FAF8F4", midnight: "#0E1424", paper: "#F7F2E8", harbor: "#EEF5F4", forest: "#10201A" };
+  const INK = { dark: "#070A08", terminal: "#070A08", light: "#FAF8F4", midnight: "#0E1424", paper: "#F7F2E8", harbor: "#EEF5F4", forest: "#10201A" };  // 1.11: Dark was recoloured onto Terminal's grounds, so the two share an ink
 
   await test(label + ": the flip — " + (touch ? "a tap on the sun/moon" : "T, or a click on the sun/moon") + " crossfades the whole palette (~400 ms, tokens interpolated) with the incoming theme's tick; instant under reduced motion", async () => {
     const t = await fresh(opts);
@@ -1473,7 +1489,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     // Forget: the group goes, and any slot holding one of them goes back to its default
     await t.press("#sw-forget"); await wait(900);
     st = await t.s();
-    assert.equal(st.secret, false, "forgotten"); assert.equal(st.day, "T1:curated:light"); assert.equal(st.night, "T1:curated:dark");
+    assert.equal(st.secret, false, "forgotten"); assert.equal(st.day, "T1:curated:paper"); assert.equal(st.night, "T1:curated:terminal");
     assert.equal(st.field, false, "the field went with it");
     assert.ok(await t.page.locator("#sw-secret").isHidden(), "and the group");
     assert.equal(await t.page.textContent("#toast .msg"), "Forgotten on this device. The word still works.");
@@ -1614,9 +1630,9 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const a = await fresh(opts, { url: BASE + "about.html", list: false });
     await a.page.waitForFunction(() => /build/.test(document.getElementById("version").textContent), null, { timeout: 5000, polling: 100 });
     const log = await a.page.$$eval("#log .v", els => els.map(e => e.textContent));
-    assert.equal(log.join(","), "1.10,1.9,1.8,1.7,1.5,1.4,1.3,1.2,1.1,1.0");
-    assert.ok(/A little something for someone in particular\.$/.test((await a.page.textContent("#log > li:nth-child(3) div")).trim()), "the 1.8 headline is the wink (third now that 1.10 leads)");
-    const wink = await a.page.$$eval("#log > li:nth-child(3) ul li", els => els.map(e => e.textContent.replace(/^(New|Improved|Fixed)/, "").trim())); // the same 1.8 entry, third now that 1.10 leads
+    assert.equal(log.join(","), "1.11,1.10,1.9,1.8,1.7,1.5,1.4,1.3,1.2,1.1,1.0");
+    assert.ok(/A little something for someone in particular\.$/.test((await a.page.textContent("#log > li:nth-child(4) div")).trim()), "the 1.8 headline is the wink (fourth now that 1.11 leads)");
+    const wink = await a.page.$$eval("#log > li:nth-child(4) ul li", els => els.map(e => e.textContent.replace(/^(New|Improved|Fixed)/, "").trim())); // the same 1.8 entry, fourth now that 1.11 leads
     assert.deepEqual(wink, ["If you know, you know."], "one line and a wink");
     const body = await a.page.textContent("body");
     assert.ok(!/Superpink|Birthday/i.test(body) && !/secret (theme|group|pair)|forget the secret/i.test(body), "and nothing else about it on About (the crypto page's own \"secret\" is the one in a link)");
@@ -1650,7 +1666,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
     let st = await t.s();
     assert.equal(st.theme, "midnight", "a dark system: Midnight, as Follow system showed"); assert.equal(st.switchMode, "system"); assert.equal(st.day, "T1:curated:harbor"); assert.equal(st.night, "T1:curated:midnight"); assert.equal(st.hold, null);
-    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.10: Now there's an iPhone app\./.test(await t.page.textContent("#wn-msg")), "the headline only: " + await t.page.textContent("#wn-msg"));
+    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.11: A look of its own\./.test(await t.page.textContent("#wn-msg")), "the headline only: " + await t.page.textContent("#wn-msg"));
     assert.equal(await t.page.locator("dialog[open]").count(), 0, "no sheet"); assert.ok(await t.page.locator("#mark").isHidden(), "no hint"); assert.equal(st.stats.check + st.stats.finish + st.stats.tick, 0, "no sound");
     assert.equal(await t.page.locator("#list .row").count(), 3); assert.equal(st.listId, listId, "the list is intact");
     assert.ok(await t.page.locator("#daynight").isVisible(), "the sun/moon is there");
@@ -1676,10 +1692,13 @@ for (const [label, opts, touch] of VIEWPORTS) {
   });
 
   await test(label + ": a fresh device on a light system paints Light from the first frame and starts With the system", async () => {
-    const t = await fresh(opts, { scheme: "light", list: false });
-    assert.equal(await inkOf(t.page), INK.light, "the inline tokens follow prefers-color-scheme before any module ran");
+    const t = await fresh(opts, { scheme: "light", list: false, pinSlots: false });
+    assert.equal(await inkOf(t.page), INK.paper, "1.11: a device that never chose gets Paper by day");
+    await t.page.evaluate(() => document.fonts.ready); await wait(300);
+    const faces = await t.page.evaluate(() => performance.getEntriesByType("resource").map(r => r.name).filter(n => /fonts\//.test(n)).map(n => n.replace(/.*fonts\//, "")).sort());
+    assert.equal(faces.join(" "), "playfair-display-700-800.woff2 pt-sans-700.woff2 source-serif-4-400-600.woff2", "and Paper's faces, not Lato's: " + faces);
     await t.page.click("#w-skip"); await t.page.waitForSelector("#p-save[open]"); await t.page.click("#save-done"); await wait(500);
-    const st = await t.s(); assert.equal(st.theme, "light"); assert.equal(st.switchMode, "system"); assert.equal(st.day, "T1:curated:light"); assert.equal(st.night, "T1:curated:dark");
+    const st = await t.s(); assert.equal(st.theme, "paper"); assert.equal(st.switchMode, "system"); assert.equal(st.day, "T1:curated:paper"); assert.equal(st.night, "T1:curated:terminal");
     assert.equal(await t.page.$eval("#daynight", e => e.dataset.next), "night");
     await t.close();
   });
@@ -2147,7 +2166,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.reload(); await t.page.waitForFunction(() => window.__tf && window.__tf().listId); await wait(1800);
     assert.ok(!(await whoseOpen(t.page)), "no question"); assert.equal((await t.s()).origin, "mine");
     assert.deepEqual(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).lists.map(l => l.origin)), ["mine", "mine"], "every existing list is mine");
-    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.10: Now there's an iPhone app\./.test(await t.page.textContent("#wn-msg")), await t.page.textContent("#wn-msg"));
+    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.11: A look of its own\./.test(await t.page.textContent("#wn-msg")), await t.page.textContent("#wn-msg"));
     assert.ok(await t.page.$eval("#shared", e => e.hidden)); assert.equal(await t.page.locator("dialog[open]").count(), 0, "nothing else");
     await t.page.click("#wn-x"); await wait(200); await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); assert.equal(await t.page.locator("#lists-menu .group-h").count(), 0, "no groups until something is shared");
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();

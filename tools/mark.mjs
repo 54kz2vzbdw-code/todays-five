@@ -33,7 +33,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import path from "node:path";
-import { BRAND, brandAccents, brandColourways, brandTiles, brandDark } from "../theme.js";
+import { BRAND, brandColourways, brandTiles, brandDark } from "../theme.js";
 
 const NM = process.env.NODE_PATH || (process.env.HOME + "/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules");
 const require = createRequire(NM + "/");
@@ -152,8 +152,8 @@ function ogHtml({ ink, ink2, text, muted, dim, accent, accentHi, hair, hairSolid
 // page's own CSP (the <meta> in index.html) survives a setContent on the same document and blocks
 // the inline <style>, which renders the card as unstyled black-on-white. It also has to be served
 // rather than opened from disk, because it wants the @font-face rules in styles.css.
-async function ogPng(browser, accent) {
-  const t = brandDark(accent);
+async function ogPng(browser) {
+  const t = brandDark();
   const base = process.env.BASE || "http://127.0.0.1:8791/";
   const tmp = path.join(repo, "tools/.og-render.html");
   fs.writeFileSync(tmp, ogHtml(t));
@@ -172,6 +172,7 @@ async function ogPng(browser, accent) {
 /* ---------------- the run ---------------- */
 const accent = arg("--accent", BRAND.accent);
 const tiles = brandTiles(arg("--colourway", BRAND.colourway), accent);
+const darkTile = BRAND.darkTile;
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 let bad = 0;
 try {
@@ -198,12 +199,13 @@ try {
       }
       const appdir = path.join(repo, "apple/TodaysFive/TodaysFive/Assets.xcassets/AppIcon.appiconset");
       fs.mkdirSync(appdir, { recursive: true });
-      // the dark appearance is the same mark on Terminal's ink; if the colourway's check is the
-      // brand ink it would vanish there, so that one case inverts to the brand's paper.
-      const darkMark = tiles.mark === BRAND.ink ? BRAND.paper : tiles.mark;
+      // The dark appearance is Cocoa's ground and accent (BRAND.darkTile), not a darkened version of
+      // the light one. iOS composites this variant on its own dark surround, and #D9A066 on #2A1F1A
+      // is 7.00:1 — the strongest tile drawn this round. It is the icon's dark half and nothing
+      // else: the UI accent is #A86014 on both themes regardless.
       for (const [name, opts, opaque] of [
         ["icon-1024.png", { ...tiles, size: 1024 }, true],
-        ["icon-1024-dark.png", { paper: BRAND.terminal, mark: darkMark, size: 1024 }, true],
+        ["icon-1024-dark.png", { paper: darkTile.tile, mark: darkTile.mark, size: 1024 }, true],
         ["icon-1024-tinted.png", { paper: "transparent", mark: "#FFFFFF", size: 1024 }, false],
       ]) {
         const buf = await render(browser, opts);
@@ -220,7 +222,7 @@ try {
         ], info: { author: "xcode", version: 1 },
       }, null, 2) + "\n");
       const out = path.join(repo, "icons/og.png");
-      await sharp(await ogPng(browser, accent)).png({ palette: true, quality: 90, colours: 128, compressionLevel: 9 }).toFile(out);
+      await sharp(await ogPng(browser)).png({ palette: true, quality: 90, colours: 128, compressionLevel: 9 }).toFile(out);
       const kb = Math.round(fs.statSync(out).size / 1024);
       console.log(`  icons/og.png 1200×630, ${kb} KB${kb > 150 ? " — OVER 150 KB" : ""}`);
       if (kb > 150) bad++;
@@ -240,59 +242,48 @@ async function sheet(out) {
     return f && fs.existsSync(f) ? dataUri(fs.readFileSync(f)) : "";
   };
   const cells = [];
-  for (const cw of brandColourways()) for (const a of brandAccents()) {
-    const t = brandTiles(cw.id, a.hex);
-    if (!t.usesAccent && a.hex !== brandAccents()[0].hex) continue;   // ink check: one cell, not two
+  for (const cw of brandColourways()) {
+    const t = brandTiles(cw.id, accent);
     const shots = {};
     for (const size of [1024, 180, 32]) shots[size] = dataUri(await render(browser, { ...t, size }));
-    cells.push({ t, accent: t.usesAccent ? a : null, shots });
+    cells.push({ t, chosen: cw.id === BRAND.colourway, shots });
   }
-  const cards = [];
-  for (const a of brandAccents()) cards.push({ a, png: dataUri(await ogPng(browser, a.hex)) });
+  const darkShot = dataUri(await render(browser, { paper: darkTile.tile, mark: darkTile.mark, size: 1024 }));
+  const card = dataUri(await ogPng(browser));
 
-  const cell = c => `<div class="cell">
+  const cell = c => `<div class="cell${c.chosen ? " on" : ""}">
     <img class="big" src="${c.shots[1024]}" alt="">
     <div class="row"><img class="mid" src="${c.shots[180]}" alt=""><img class="msk" src="${c.shots[180]}" alt=""><img class="sml" src="${c.shots[32]}" alt=""><span class="cap">180 · circle · 32</span></div>
-    <div class="lab"><b>${c.t.name}</b><br>${c.accent ? `${c.accent.name} ${c.accent.hex}` : "no accent — ink on paper"}</div></div>`;
-  const homes = brandColourways().map(cw => ["light", "dark"].map(m => {
-    const src = home(cw.id, m);
-    return src ? `<div class="hcell"><img src="${src}" alt=""><div class="lab">${cw.name} · Home Screen, ${m}</div></div>` : "";
-  }).join("")).join("");
+    <div class="lab"><b>${c.t.name}</b>${c.chosen ? " — chosen" : ""}<br>tile <code>${c.t.paper}</code> · check <code>${c.t.mark}</code></div>
+    ${["light", "dark"].map(m => home(c.t.id, m) ? `<img class="home" src="${home(c.t.id, m)}" alt=""><div class="cap">Home Screen, ${m}</div>` : "").join("")}</div>`;
 
   const html = `<style>
-    body{margin:0;background:#6E6E72;font:12px/1.4 -apple-system,Helvetica,Arial;padding:20px;color:#fff}
-    h1{font-size:17px;margin:0 0 4px} h2{font-size:13px;font-weight:400;opacity:.85;margin:0 0 16px;max-width:1100px}
-    h3{font-size:14px;margin:28px 0 4px} h4{font-size:12px;font-weight:400;opacity:.8;margin:0 0 12px}
-    .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;align-items:start}
+    body{margin:0;background:#6E6E72;font:12px/1.45 -apple-system,Helvetica,Arial;padding:20px;color:#fff}
+    h1{font-size:17px;margin:0 0 4px} h2{font-size:13px;font-weight:400;opacity:.86;margin:0 0 16px;max-width:1150px}
+    h3{font-size:14px;margin:26px 0 10px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start}
     .cell{background:#4A4A4E;border-radius:10px;padding:10px}
+    .cell.on{outline:2px solid #A86014}
     .big{width:100%;display:block;border-radius:16px}
     .row{display:flex;align-items:center;gap:10px;margin-top:10px}
-    .mid{width:56px;height:56px;border-radius:12px}
-    .msk{width:44px;height:44px;border-radius:50%}
-    .sml{width:32px;height:32px;border-radius:6px}
-    .cap{font-size:10px;opacity:.6}
-    .lab{margin-top:8px;font-size:11px;line-height:1.45}
-    .homes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-    .hcell{background:#4A4A4E;border-radius:10px;padding:8px}
-    .hcell img{width:100%;border-radius:6px;display:block}
-    .cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    .cards figure{margin:0}
-    .cards img{width:100%;border-radius:8px;display:block}
+    .mid{width:56px;height:56px;border-radius:12px}.msk{width:44px;height:44px;border-radius:50%}.sml{width:32px;height:32px;border-radius:6px}
+    .cap{font-size:10px;opacity:.6;margin:4px 0 8px}
+    .lab{margin-top:8px;font-size:11px;line-height:1.5}
+    .home{width:100%;border-radius:6px;display:block;margin-top:10px}
+    .pair{display:grid;grid-template-columns:1fr 2fr;gap:14px;align-items:start}
+    .pair img{width:100%;border-radius:10px;display:block}
+    code{font-size:10.5px;background:rgba(0,0,0,.25);padding:1px 3px;border-radius:3px}
   </style>
-  <h1>Today's Five 1.11 — the mark unchanged, in three colourways</h1>
-  <h2>Same tile, same check, same proportions; only the two colours change. The drawing is a trace of the shipped icon — <code>node tools/mark.mjs --trace</code> renders it in the old colours and diffs it against <code>icons/apple-touch-icon.png</code>: 1.60 % of pixels differ, inside the 2 % the Phase 2 script allowed. Big tile is 1024 (the App Store); then 180 (a Home Screen), the same 180 under a circular Android mask, and 32 (a browser tab).</h2>
+  <h1>Today's Five 1.11 — the mark, recoloured</h1>
+  <h2>Same tile, same check, same proportions. <code>node tools/mark.mjs --trace</code> renders the drawing in the old colours and diffs it against the icon that shipped. Big tile is 1024; then 180 (a Home Screen), the same 180 under a circular Android mask, and 32 (a browser tab).</h2>
   <div class="grid">${cells.map(cell).join("")}</div>
-  <h3>On a real Home Screen, iOS 26.5, beside system icons</h3>
-  <h4>Captured with Indigo. iOS 26 puts its own Liquid Glass treatment over the tile, so the check reads a shade lighter on the device than in the flat render above. The dark column is iOS choosing the icon's dark appearance — Terminal's ground, same check.</h4>
-  <div class="homes">${homes}</div>
-  <h3>The card a texted link shows</h3>
-  <h4>The Today screen on the brand's dark, which is Terminal's grounds carrying Paper's cream as its ink. The mark is not on the card: 1.11 puts it where the old one was and nowhere new, and the old card never carried one.</h4>
-  <div class="cards">${cards.map(c => `<figure><img src="${c.png}" alt=""><div class="lab">${c.a.name} ${c.a.hex}</div></figure>`).join("")}</div>`;
-  const p = await browser.newPage({ viewport: { width: 1500, height: 1000 }, deviceScaleFactor: 2 });
+  <h3>The app icon's dark appearance, and the card</h3>
+  <div class="pair"><img src="${darkShot}" alt=""><img src="${card}" alt=""></div>`;
+  const p = await browser.newPage({ viewport: { width: 1400, height: 1000 }, deviceScaleFactor: 2 });
   await p.setContent(html);
   const dest = abs(out);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   await p.screenshot({ path: dest, fullPage: true });
   await p.close();
-  console.log(`wrote ${out} — ${cells.length} tiles, ${cards.length} cards`);
+  console.log(`wrote ${out} — ${cells.length} colourways`);
 }

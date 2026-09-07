@@ -726,8 +726,12 @@ body.one #list .row.one-now.wobble{animation:wobble .36s ease}
 /* the hints stack instead of overlapping: install hint at the bottom, the shake hint above it, the toast above both */
 /* 1.9: the shake hint names itself and wraps to two lines on a phone, so the toast sits above its measured height (--shake-h, set by app.js) */
 body.shake-on #toast,body.shake-on #whatsnew{bottom:calc(24px + var(--shake-h,72px) + env(safe-area-inset-bottom,0px))}
-body.install-on #shake-ask{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
-body.install-on.shake-on #toast,body.install-on.shake-on #whatsnew{bottom:calc(106px + var(--shake-h,72px) + env(safe-area-inset-bottom,0px))}
+/* 1.11: on the install hint's *measured* height (--install-h, set by app.js), not a constant. The
+   constant was 96px, right for Lato at 13px; the default pair moved to Paper and Terminal, whose
+   faces set that hint two pixels taller a line, and the shake hint landed on top of it. 14px of
+   bottom inset + the hint + a 10px gap. */
+body.install-on #shake-ask{bottom:calc(24px + var(--install-h,82px) + env(safe-area-inset-bottom,0px))}
+body.install-on.shake-on #toast,body.install-on.shake-on #whatsnew{bottom:calc(34px + var(--install-h,82px) + var(--shake-h,72px) + env(safe-area-inset-bottom,0px))}
 
 /* 1.4: the Shared pill sits beside the view-only pill when both apply */
 #shared{margin-left:.35rem}

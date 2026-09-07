@@ -565,6 +565,25 @@ generator was called.
 | About, on the phone | **VERSION 1.10 (BUILD 139)** — the deployed build, read off the screen |
 | Privacy | one `print` in the app, `#if DEBUG`, every call site a fixed string with counts or a length. No analytics, no crash reporting, and the four `NSUserActivity` mentions all *receive* a universal link; the app creates none |
 
+### The live check, both halves
+
+**A fresh device** is the simulator run above: welcome → Keep this list → an encrypted row on the
+real backend, on the deployed 1.10.
+
+**A device that already holds a 1.9 list** was done on one origin rather than two, because storage
+does not cross ports: a 1.9 clone served on 8793, a list made and crossed off there, then the same
+origin swapped to 1.10 under it and the URL opened fresh — not refreshed.
+
+```
+1.9  build  : 1.9 (build 119)      1.9  count : 3/3 done      1.9  lists : 1
+swapped     : the origin now serves 1.10
+1.10 build  : 1.10 (build 139)     1.10 count : 3/3 done      1.10 lists : 1
+toast       : New in 1.10: Now there's an iPhone app.
+page errors : none
+```
+
+The list is intact and the toast is the only new thing it sees, which is what §7 step 8 asks for.
+
 ### Before and after
 
 `apple/shots/` holds them; the shell's are the 26.5 simulator, the web's is Chrome at 390×844 with an

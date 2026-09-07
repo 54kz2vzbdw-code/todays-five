@@ -1837,7 +1837,12 @@ function popPanel() {
   if (!panelStack.length) { closeAll({ unwind: false }); return; }
   const frame = panelStack.pop();
   const cur = openPanel; openPanel = null;
-  if (cur && cur.open) { panelSwitching = true; cur.close(); panelSwitching = false; }
+  // 1.12: a panel that is a flow of steps (⋯ → Theme) has itself as the frame below, so stepping back lands on the
+  // dialog that is already open. Do not close it: `close` is dispatched asynchronously, so the event from a close
+  // here arrives *after* panelSwitching has gone back to false and after the reopen has set openPanel to this same
+  // dialog — and the listener reads that as a close from somewhere else and takes the whole stack with it.
+  const stepping = !!cur && cur.id === frame.id;
+  if (cur && cur.open && !stepping) { panelSwitching = true; cur.close(); panelSwitching = false; }
   panelRestoring = true;
   try { if (openers[frame.id]) openers[frame.id](); else showPanel(frame.id); } finally { panelRestoring = false; }
   const restore = () => { const body = openPanel && openPanel.querySelector(".body"); if (body && body.scrollTop !== frame.scroll) body.scrollTop = frame.scroll; };

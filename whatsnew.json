@@ -2,6 +2,24 @@
   "build": 151,
   "versions": [
     {
+      "version": "1.12",
+      "headline": "Easier to get back where you were.",
+      "items": [
+        {
+          "tag": "New",
+          "text": "Back on every panel the ⋯ menu opens."
+        },
+        {
+          "tag": "New",
+          "text": "Theme asks for your Day theme, then your Night one."
+        },
+        {
+          "tag": "Improved",
+          "text": "Everything has its own bar, count and finale."
+        }
+      ]
+    },
+    {
       "version": "1.11",
       "headline": "A look of its own.",
       "items": [

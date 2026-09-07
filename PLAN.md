@@ -1568,3 +1568,117 @@ Two things the browser suite caught that reading would not have:
   96 px constant that was right for Lato at 13 px; Terminal's mono sets that hint taller. It stacks
   on the install hint's *measured* height now (`--install-h`, set by `app.js`), the way the toast has
   stacked on `--shake-h` since 1.9. A real collision, found because the default pair changed.
+
+---
+
+# Today's Five 1.12 — a walk-through's worth of fixes
+
+Five things from a day of using the app, and nothing else. Four of them are the same complaint in
+different clothes: the app knew where you were and would not take you back there.
+
+## 1. Back, from everything ⋯ opens
+
+**What was wrong.** A panel opened from ⋯ — How it works, Theme, Lists, Settings — had only a ×.
+Tapping outside closed everything, which is right and stays; but there was no way *back* to the menu,
+so a wrong turn meant starting over. Panels opened from inside Settings have had ‹ Back since 1.4.
+
+**What it turned out to be.** Not a missing feature. `showPanel` renders ‹ Back for any panel with a
+frame below it, and the ⋯ menu is a panel. Everything opened from it had no Back because the menu's
+click handler called `closeForSwitch()` first, which emptied the stack on the way out. Deleting that
+line is the change; `closeForSwitch` had no other caller and went with it.
+
+The one real gap was smaller and was hiding behind a comment. `openers` — panel id → how to repaint
+it when Back lands there — has claimed since 1.4 that "the ⋯ menu's is in this file". It never was.
+Without it, Back reopened the menu unpainted and unanchored: on a desktop, a sheet in the middle of
+the screen instead of the popover under the button it left from.
+
+**Where it stops.** Full screen opens no panel. Delete this list everywhere opens a confirmation, and
+a confirmation is a decision rather than a place to go back from — Back there would mean "no", which
+Cancel already says. About & privacy is an `<a href>` to a page: its Back is the browser's, and
+turning it into a panel to give it an in-app one is more than this round.
+
+## 2. Picking themes: Day, then Night
+
+⋯ → Theme opened the picker for whichever slot was on, so choosing a night theme began with switching
+to night. The slot is about *when*, not *what*, and in practice the two are set together.
+
+It asks for Day, then Night. Step two offers the day theme's partner at the top as one tap — Paper's
+is Midnight, which is what a new device starts on. ‹ Back walks between the steps, because a step is a
+frame in the same stack: `showPanel` grew `restack`, which lets a panel that is a flow of steps push
+the step it is leaving without closing itself. One idea of Back, not a private one for the picker.
+Settings → Appearance is untouched: each slot row still opens its own single-slot picker with ‹ Back
+to Appearance.
+
+**The one judgement call.** "The slot that is on updates live as each step is chosen" could have meant
+moving `dev.slot` to the slot being picked. It does not. That would leave someone who opened ⋯ → Theme
+at two in the afternoon sitting in their night theme, and under an automation the flip would set
+`holdAuto` as a side effect of *looking*. The picker previews instead — the theme being chosen is on
+screen either way, the slot is not moved, and the picker's own close handler puts the real one back.
+
+## 3. Everything's progress bar is Everything's
+
+`paint()` read `todayList()` whatever view was on screen, so Everything showed Today's bar and Today's
+count under Everything's lines, and crossing off the last line in Everything did nothing at all. Both
+views read `viewList()` now — Today's starred lines, or every live line — and so does the finale, and
+Start again, which on Everything brings everything back.
+
+The review card does not follow. A streak, this week and today's lines are a *day's*; Everything's
+finale is a list's.
+
+**The artifact that had to be handled.** `#fill` has a half-second ease on `width`, and the two views
+have unrelated numbers, so switching read as progress being made or lost. The bar lands instead, and
+animates only when something is actually crossed off — one frame of `transition:none`, dropped on the
+frame after.
+
+Two consequences of the finale no longer being Today's alone: it fires 300 ms after the last
+check-off, so it remembers **which view** it fired in and cancels if the view changed in between; and
+every `wasAll` — open, remote, undo, rollover, Start again, the test hook — is now about the view on
+screen, or the first check-off after a switch would read as a finale that had already happened.
+
+## 4. A finale you can feel
+
+The confetti goes up in a shape: seven bursts along the bottom 65 ms apart, a fuller one through the
+middle at 210 ms, and the chord at 700 ms. Both haptics said one anonymous thing at that moment.
+
+The iPhone plays a Core Haptics pattern on those onsets — light transients for the run, a rounder one
+for the centre burst, and the chord as the strongest tap with a short continuous roll under it for the
+ring-down, 1.020 s end to end. The web's `navigator.vibrate` follows the same rhythm; the centre burst
+has no buzz of its own, because vibrate cannot overlap two, so the fourth buzz is longer instead.
+
+**Neither half owns the numbers.** `test/sound.test.js` reads the volley's schedule back out of
+`fx.js` and asserts the vibration still lands on it, so re-choreographing the confetti and leaving the
+feeling behind is a red suite rather than something only an Android owner ever notices. The Swift
+half's table is in `apple/DECISIONS-apple.md`, against the same two sources. **This ships with the
+next app upload, not on its own.**
+
+## 5. Removed means removed
+
+*Remove from this device* parked a list in a Removed group with a Restore row — a second place a list
+could be, and a second thing to know. It removes now. The way back is the link, like any other list.
+
+Because that can genuinely lose a list, the sheet says so before it asks and puts the link within
+reach: **Copy link** beside Remove. For a list made here whose link was never saved — the one that can
+actually be lost — the warning is stronger and Copy link comes first. Then ten seconds of Undo.
+`ask()` grew one optional button for it rather than the Remove sheet growing a dialog of its own.
+
+An entry an older build left flagged is finished on read, once, without a toast: the person asked for
+it when they pressed Remove. `COMPATIBILITY.md` §8 said a release expressing "removed here" some other
+way had to announce it there first, so it does.
+
+## Two bugs the work turned up
+
+Neither was on the list; both are in the same few lines as things that were.
+
+**A second tab could hand back a list this one had just removed.** `saveDevice()` unions the registry
+with another tab's stored copy — that is what makes two tabs safe — so taking an entry out and saving
+put it straight back. *That is why the old code used a flag rather than removing anything*, and it
+would have shipped looking fine and failing quietly on a second tab. Removal is named now, the way
+Delete everywhere names a dead id, and `registerList` clears the mark because pasting the link again
+is the way back.
+
+**The ten-second Undo was invisible — here and next door.** Opening a list clears the toast on screen;
+`openList` is async; `switchTo` did not return it. So a toast raised beside a switch was wiped a moment
+later. `switchTo` returns its promise now. **Delete this list everywhere had the same bug**, and has
+had it for some time: it promises ten seconds to undo, in the sheet and in How it works, and its Undo
+chip was hidden whenever there was another list to switch to. One word, fixed here rather than left
+alone next to the identical code.

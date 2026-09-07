@@ -2,7 +2,7 @@
 // Writes test/fixtures/longtime.json: the device meta (registry of four lists, hints seen, version seen, a theme of
 // its own in the Day slot) and four documents — Work (80 lines in 6 sections, notes, six repeating lines, two Not
 // today, 90 days of history, two saved themes that are partners, a template), Home (12 lines), Trip (shared with this
-// device, nicknamed), Old (archived). Timestamps are stored relative to `generatedAt`; tools/audit/harness.mjs shifts
+// device, nicknamed), Old (left `archived` by a build before 1.12, so the registry finishes it on read). Timestamps are stored relative to `generatedAt`; tools/audit/harness.mjs shifts
 // them to the moment the fixture is loaded, so "done today" is today and the history ends yesterday whenever it runs.
 // Run: node tools/fixture.js   (deterministic: a seeded generator, so the file only changes when this script does)
 import fs from "node:fs";

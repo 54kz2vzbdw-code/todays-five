@@ -8,7 +8,7 @@
 // by construction: a new build gets a new number and a new cache), the network only when the cache has nothing; and the
 // cache holds one copy of each file — the navigation is keyed as index.html whatever the address, a module by its plain
 // name — instead of the same bytes under "./" and "./index.html", under a plain and a `?v=` name (COMPATIBILITY.md §6).
-const VERSION = "tf-v1.11"; // = "tf-v" + version.js's marketing version
+const VERSION = "tf-v1.12"; // = "tf-v" + version.js's marketing version
 const BUILD = 151;          // = version.js's BUILD
 const CACHE = VERSION + "-b" + BUILD;
 const SHELL = [

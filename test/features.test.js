@@ -222,8 +222,9 @@ test("what's new fires on a changed version string, never on its order: a 1.3 de
   const wn = JSON.parse(fs.readFileSync(new URL("../whatsnew.json", import.meta.url), "utf8"));
   const toast = wn.versions[0].headline;
   assert.doesNotMatch(toast, /4\.0\.0|renumber|1\.0\b|1\.1\b|1\.2\b|1\.3\b/, "the headline says nothing about version numbers");
-  assert.match(toast, /^A look of its own\.$/, "1.11: the headline is about the look, not the palette maths under it");
+  assert.match(toast, /^Easier to get back where you were\.$/, "1.12: the headline is about getting around, not about what was wrong");
   assert.doesNotMatch(toast, /event|haptic|bridge|WKWebView|user agent|CSP|contrast|OKLCH|hex|accent|luminance/i, "and nothing a person would not say");
+  assert.doesNotMatch(toast, /panel|stack|registry|archived|Restore|undo|bug|fix/i, "1.12: and not the names of the things that were wrong with it");
   // 1.10's line promised an iPhone app nobody can install yet; 1.11 does not repeat it
   assert.doesNotMatch(toast, /iPhone|App Store/i, "1.11: the app is still not something a person can get, so the toast does not say it again");
   assert.match(wn.versions.find(v => v.version === "1.10").headline, /^Now there's an iPhone app\.$/, "1.10 keeps its own line");
@@ -238,7 +239,7 @@ test("what's new fires on a changed version string, never on its order: a 1.3 de
 test("the changelog (1.2): 1.0 and later only, a one-sentence headline of 12 words or fewer, up to three tagged items of 14 words or fewer, nothing about the plumbing", () => {
   const wn = JSON.parse(fs.readFileSync(new URL("../whatsnew.json", import.meta.url), "utf8"));
   const words = s => s.trim().split(/\s+/).length;
-  assert.deepEqual(wn.versions.map(v => v.version), ["1.11", "1.10", "1.9", "1.8", "1.7", "1.5", "1.4", "1.3", "1.2", "1.1", "1.0"], "the 0.x entries are in CHANGELOG.md, never rendered");
+  assert.deepEqual(wn.versions.map(v => v.version), ["1.12", "1.11", "1.10", "1.9", "1.8", "1.7", "1.5", "1.4", "1.3", "1.2", "1.1", "1.0"], "the 0.x entries are in CHANGELOG.md, never rendered");
   const never = /\bfonts?\b|\bCDN\b|service worker|\btests?\b|Lighthouse|renumber|migrat|\bmerge/i;
   for (const v of wn.versions) {
     assert.match(v.headline, /^[^.!?]+[.!?]$/, v.version + ": a headline that is one sentence: " + v.headline);
@@ -291,7 +292,7 @@ test("the version is one number in three places, the build in four, and there ar
   const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8"), panels = fs.readFileSync(new URL("../panels.js", import.meta.url), "utf8");
   assert.ok(html.includes(`<html lang="en" data-base="dark" data-build="${BUILD}">`), "index.html says which build its markup is");
   assert.ok(panels.includes(`const PANELS_BUILD = ${BUILD};`), "panels.js says which build's markup it wires (a page open across a deploy reloads on the mismatch)");
-  assert.deepEqual(wn.versions.map(v => v.version), ["1.11", "1.10", "1.9", "1.8", "1.7", "1.5", "1.4", "1.3", "1.2", "1.1", "1.0"], "the public history: 1.0 and later (4.0.0 became 1.0; the pre-releases live in CHANGELOG.md)");
+  assert.deepEqual(wn.versions.map(v => v.version), ["1.12", "1.11", "1.10", "1.9", "1.8", "1.7", "1.5", "1.4", "1.3", "1.2", "1.1", "1.0"], "the public history: 1.0 and later (4.0.0 became 1.0; the pre-releases live in CHANGELOG.md)");
   for (const v of wn.versions) { assert.match(v.version, /^\d+\.\d+(\.\d+)?$/); assert.ok(!("date" in v), v.version + ": no date field"); assert.ok(typeof v.headline === "string" && v.items.length >= 1 && v.items.length <= 3, v.version + ": a headline and one to three items"); }
   assert.ok(!/\b20\d\d-\d\d-\d\d\b/.test(fs.readFileSync(new URL("../about.html", import.meta.url), "utf8")), "no dates on the About page");
   for (const f of ["packs.js", "packs-secret.js", "secretfx.js", "secretfx.css", "panels.js", "panels.css", "exporter.js", "version.js", "whatsnew.json"]) assert.ok(sw.includes(`"./${f}"`), "precached: " + f);

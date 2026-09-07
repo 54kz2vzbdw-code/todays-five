@@ -87,6 +87,26 @@ for (const [label, opts, touch] of VIEWPORTS) {
     if (await page.$("#sw-night")) { await page.click('#sw-night .swatch[data-code="T1:curated:dusk"]'); await wait(400); await shot("theme-partner"); }
     if (await page.$("#sw-build")) { await page.click("#sw-build"); await page.waitForSelector("#p-builder[open]"); await wait(400); await shot("theme-builder"); } else { await page.$eval("#p-theme h3", el => el.scrollIntoView({ block: "start" })); await wait(300); await shot("theme-builder"); } await esc(); // 1.9: the builder is a sheet behind one row
   });
+  // 1.12: ‹ Back on a panel the ⋯ menu opened, and the two-step picker it opens for Theme. Both skip on a build
+  // that does not have them, so the same script takes the before set.
+  await step("menu-back", async () => {
+    await openMore("lists"); await page.waitForSelector("#p-lists[open]"); await wait(400);
+    if (!(await page.$("#p-lists h2 .back"))) { await esc(); return; }
+    await shot("menu-back");
+    await page.click("#p-lists h2 .back"); await page.waitForSelector("#p-menu[open]"); await wait(400); await shot("menu-back-returned");
+    await esc();
+  });
+  await step("theme-flow", async () => {
+    if (!(await page.$('#p-menu [data-act="theme"]')) && !(await page.$("#theme:not([hidden])"))) return;
+    await openMore("theme"); await page.waitForSelector("#p-theme[open]"); await wait(400);
+    const head = () => page.textContent("#p-theme-h");
+    if ((await head()) !== "Day theme") { await esc(); return; } // before 1.12 this opened on whichever slot was on
+    await shot("theme-day");
+    await page.click('#sw-day .swatch[data-code="T1:curated:paper"]'); await wait(600);
+    if ((await head()) !== "Night theme") { await esc(); return; }
+    await shot("theme-night");
+    await esc();
+  });
   await step("share", async () => { const chip = await page.$("#share"); if (chip && await chip.isVisible()) await press("#share"); else await openMore("share"); await page.waitForSelector("#p-share[open]"); await wait(500); await shot("share"); if (await page.$("#share-friend")) { await page.$eval("#p-share .body", e => { e.scrollTop = e.scrollHeight; }); await wait(300); await shot("share-bottom"); } await esc(); });
   await step("one-thing", async () => { if (!(await page.$("#shuffle"))) return; if (touch) await page.tap("#count"); else await page.keyboard.press("o"); await wait(500); await shot("one-thing"); if (touch) await page.tap("#count"); else await page.keyboard.press("o"); await wait(300); }); // 1.3: ↻ beside the count
   await step("help", async () => { await openMore("help"); await page.waitForSelector("#p-help[open]"); await wait(400); await shot("help"); await esc(); });
@@ -137,6 +157,25 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await shot("birthday");
     for (let i = 0; i < 6; i++) { if (!(await page.$("#list .row:not(.done) .check"))) break; await press("#list .row:not(.done) .check"); await wait(600); }
     await wait(2600); await shot("finale-birthday");                               // the candles lit, before they go out
+  });
+  // 1.12: Everything finishes on its own, and Remove asks before it takes the list off this device
+  await step("everything-finale", async () => {
+    if (!(await page.$("#v-all"))) return;
+    await press("#v-all"); await wait(500);
+    for (let i = 0; i < 12; i++) { const c = await page.$("#all .row:not(.done) .check"); if (!c) break; await press("#all .row:not(.done) .check"); await wait(420); }
+    await wait(2600); await shot("everything-finale");
+    if (await page.$("#again")) { await press("#again"); await wait(700); }
+    await press("#v-today"); await wait(400);
+  });
+  await step("remove-confirm", async () => {
+    await openMore("lists"); await page.waitForSelector("#p-lists[open]"); await wait(300);
+    const more = await page.$("#lists-menu .row:last-child .more"); if (!more) { await esc(); return; }
+    await more.click(); await page.waitForSelector("#p-list[open]"); await wait(300);
+    const rm = await page.$('#p-list [data-lact="remove"]'); if (!rm) { await esc(); return; }
+    await rm.click(); await wait(600);
+    if (!(await page.$("#ask[open]"))) { await esc(); return; } // before 1.12 Remove just archived, with no question
+    await shot("remove-confirm");
+    await page.click('#ask [data-close]'); await wait(300); await esc();
   });
   await step("about", async () => { await page.goto(BASE + "about.html"); await wait(600); await shot("about"); });
   await ctx.close();

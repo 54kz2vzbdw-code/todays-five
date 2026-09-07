@@ -724,3 +724,94 @@ Calls made where the 1.9 brief — the 1.7 audit's proposals 1–31 and its open
   route `theme.js`'s own `setTokenCss` already uses.
 - **The card does not carry the mark.** 1.11 puts the mark where the old one was and nowhere new,
   and the old card never carried one. It is the Today screen on the new palette, as it always was.
+
+---
+
+# 1.12 decisions
+
+## Back from ⋯ was a deletion, not an addition
+
+The ⋯ menu has been a panel since 1.4, and `showPanel` renders ‹ Back for any panel with a frame
+below it. Everything opened from ⋯ had no Back for one reason: the menu's click handler called
+`closeForSwitch()` first, which emptied the stack on the way out. Removing that line is the feature.
+`closeForSwitch` had no other caller and went with it.
+
+What *was* missing is smaller and was hiding behind a comment. `openers` — panel id → how to repaint
+it when Back lands there — has said since 1.4 that "the ⋯ menu's is in this file", and it never was.
+Without it Back reopened the menu unpainted and unanchored: a sheet in the middle of a desktop screen
+instead of a popover under the button.
+
+Two rows still close the menu. **Full screen** opens no panel at all. **Delete this list everywhere**
+opens a confirmation, and a confirmation is a decision rather than a place worth stepping back from —
+Back there would read as "no", which Cancel already says. **About & privacy** is an `<a href>` to a
+page, not a panel; its Back is the browser's, and making it a panel to give it an in-app one is a
+larger change than this round is.
+
+## The picker asks Day before Night, and previews rather than moves the slot
+
+⋯ → Theme opened the picker for whichever slot was on, so choosing a night theme began by switching
+to night. The slot is about *when*, not *what*, and the two slots are set together or not at all.
+
+The step is a frame in the same stack, which is why `showPanel` grew `restack`: a panel that is a
+flow of steps can push the step it is leaving without closing itself. That keeps one idea of Back
+rather than giving the picker a private one. Settings → Appearance is untouched and still fills one
+slot at a time.
+
+"The slot that is on updates live as each step is chosen" could have meant moving `dev.slot` to the
+slot being picked. It does not. Someone who opens ⋯ → Theme at two in the afternoon would have been
+left sitting in their night theme, and under an automation the flip would have set `holdAuto` as a
+side effect of *looking*. The picker previews instead — the theme being chosen is on screen, the
+slot is not moved, and the picker's own close handler puts the real one back. The purpose the brief
+gives for the rule ("so the person sees what they're picking") is met either way; only one of them
+also changes a setting nobody asked to change.
+
+## Each view finishes on its own
+
+`paint()` read `todayList()` whatever was on screen, so Everything showed Today's numbers under
+Everything's lines. Both views now read `viewList()`. The finale follows, and so does Start again,
+which on Everything brings everything back.
+
+The review card does not. A streak, this week and today's lines are a *day's*, and Everything's
+finale is about a list.
+
+The bar's width has a half-second ease, so switching views slid between two unrelated percentages
+and read as progress being made or lost. It lands instead, and animates only when something is
+actually crossed off. One frame of `transition:none`, dropped on the frame after.
+
+Two consequences that had to be handled rather than noticed later: the finale fires 300 ms after the
+last check-off, so it now remembers **which view** it fired in and cancels if the view changed in
+between; and every `wasAll` — open, remote, undo, rollover, Start again, the test hook — is about
+the view on screen, or the first check-off after a switch would read as a finale that already
+happened.
+
+## Removal had to be named, not just done
+
+`saveDevice()` unions the registry with another tab's stored copy — that is what makes two tabs
+safe — so taking an entry out of `meta.lists` and saving handed it straight back. **That is why the
+old code used a flag rather than removing anything**, and it is the thing that would have shipped
+looking fine and quietly failing on a second tab.
+
+Removal is named the way Delete everywhere names a dead id: a `removed` set the merge honours. It is
+deliberately *not* `dead` — that list is gone from the server and this one is not — and
+`registerList` clears it, because pasting the link again is the way back and `registerList` is the
+one door into the registry. The migration for an older build's `archived` entry does the same rather
+than only filtering, or the union would restore what it had just finished.
+
+## The ten-second Undo was invisible, here and next door
+
+Opening a list clears the toast on screen; `openList` is async; `switchTo` did not return it. So a
+toast raised beside a switch was wiped a moment later. `switchTo` returns its promise now and Remove
+waits for it.
+
+**Delete this list everywhere had the same bug and has had it for some time.** It promises ten
+seconds to undo, in the sheet and in How it works, and its Undo chip was hidden whenever there was
+another list to switch to. Found by writing the same code next to it. Fixed here rather than left
+alone on the grounds that it was not this round's five things — a promise the app makes and does not
+keep is worth one word.
+
+## The finale's two haptics read the same source
+
+The pattern is in `apple/DECISIONS-apple.md`; what belongs here is that neither half invents numbers.
+`test/sound.test.js` reads the volley's schedule back out of `fx.js` with a regex and asserts the
+vibration still lands on it, so re-choreographing the confetti and leaving the feeling behind is a
+red suite rather than something only an Android owner ever notices.

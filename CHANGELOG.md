@@ -5,6 +5,37 @@ items per version, rendered on the About page and in the what's-new toast); the 
 render. No dates anywhere, by design: versions are the marketing version plus a build number (About shows
 `1.4 (build N)`), and what shipped as 4.0.0 is 1.0.
 
+## 1.12 — Easier to get back where you were.
+
+- **New** — Back on every panel the ⋯ menu opens.
+- **New** — Theme asks for your Day theme, then your Night one.
+- **Improved** — Everything has its own bar, count and finale.
+
+A day of using the app, and five things it kept getting wrong. Panels opened from ⋯ had only a ×, so
+the only way back was to start over — they get the same ‹ Back that panels opened from Settings have
+had since 1.4, and the menu is waiting underneath where it was left. ⋯ → Theme opened the picker for
+whichever slot happened to be on, so choosing a night theme began by switching to night; it asks for
+Day and then Night, with the day theme's partner offered first. Everything showed Today's bar and
+Today's count under its own lines, and never finished: it has its own now, finale and all, and Start
+again there brings everything back. The finale's haptics follow the confetti's rhythm instead of one
+anonymous buzz — seven along the bottom, one through the middle, and the chord — on the iPhone and on
+Android. And *Remove from this device* removes: no Removed group, no Restore, a sheet that says
+you'll need the link and offers to copy it first, and ten seconds to change your mind.
+
+Two bugs turned up while building it. A second tab could hand back a list this one had just removed,
+because the registry merges rather than replaces. And *Delete this list everywhere* has been
+promising ten seconds to undo with an invisible Undo chip whenever there was another list to open.
+
+## 1.11 — A look of its own.
+
+- **New** — The same check, in colours of its own instead of borrowed ones.
+- **New** — New devices start on Paper by day, Terminal by night.
+- **Improved** — Dark is still Dark, and whatever theme you picked is still yours.
+
+The mark stopped borrowing Terminal's palette and got one of its own, drawn once and used everywhere:
+the site's icons, the card a texted link shows, and the app's icon in all three of its appearances now
+come out of a single script, so they cannot drift apart. A device that had chosen a theme keeps it.
+
 ## 1.10 — Now there's an iPhone app.
 
 - **New** — The same list on the iPhone, with a check-off you can feel.

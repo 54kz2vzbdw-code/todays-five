@@ -74,6 +74,19 @@ public protocol LinkVault: Sendable {
     func remove(id: String) throws
 }
 
+/// What came back from reading `tf/v2/meta`. Three states, not two: a read that *failed* is not a
+/// read that found nothing, and treating it as one makes the app navigate away from whatever the
+/// person was looking at. `localStorage` throws a SecurityError on a document that has no real
+/// origin yet — which is exactly what the first load looks like for a moment.
+public enum RegistryRead: Sendable, Equatable {
+    /// The read itself failed. Decide nothing.
+    case unreadable
+    /// The read worked and the key is not there: the store was wiped, or this is a fresh install.
+    case absent
+    /// The key's value, whatever it holds.
+    case present(String)
+}
+
 /// What to do after reading the page's registry.
 public struct VaultPlan: Sendable, Equatable {
     /// Links to write (new ones, and ones whose registry details moved).
@@ -82,28 +95,38 @@ public struct VaultPlan: Sendable, Equatable {
     public var remove: [String] = []
     /// The link to open because the page's store is gone and the vault is not.
     public var restore: VaultedLink?
-    /// True when the registry key was absent or unreadable — the wiped-storage case.
+    /// True when the registry key was read and was not there — the wiped-storage case.
     public var registryMissing = false
+    /// True when the read failed. Nothing in this plan means anything; try again later.
+    public var unreadable = false
 }
 
 public enum VaultReconciler {
 
-    /// `registryJSON` is exactly what `localStorage.getItem("tf/v2/meta")` returned: nil when the
-    /// key is absent.
-    ///
     /// The rule keys on **whether the registry exists**, never on whether it holds any lists:
     ///
-    ///   * missing or unreadable → the store was wiped (or this is a fresh install over a vault).
-    ///     Nothing is removed, and the most recently seen link is offered back.
+    ///   * unreadable → nothing is decided at all. A failed read says nothing about the store.
+    ///   * absent, or present but not JSON → the store was wiped (or this is a fresh install over a
+    ///     vault). Nothing is removed, and the most recently seen link is offered back.
     ///   * parses → the page is speaking for itself, `lists: []` included. Every entry is written,
     ///     and every vaulted link the registry does not name is dropped: that is *Remove from this
     ///     device* and *Delete this list*, observed rather than relayed.
     ///
     /// Keying on `lists` being non-empty instead would be a bug — removing the only list leaves
     /// `lists: []`, restore would fire on the next launch, and the list would come back.
-    public static func reconcile(registryJSON: String?, vault: [VaultedLink],
+    public static func reconcile(registry: RegistryRead, vault: [VaultedLink],
                                  now: Double = CalendarDates.now()) -> VaultPlan {
         var plan = VaultPlan()
+
+        // A read that failed is not a store that is empty. Decide nothing and wait for a read that
+        // worked: acting here would navigate away from whatever the person is looking at.
+        if registry == .unreadable {
+            plan.unreadable = true
+            return plan
+        }
+
+        var registryJSON: String? = nil
+        if case let .present(value) = registry { registryJSON = value }
 
         guard let registryJSON,
               let parsed = try? JSONReader.parse(registryJSON),
@@ -116,6 +139,17 @@ public enum VaultReconciler {
                 if a.addedAt != b.addedAt { return a.addedAt > b.addedAt }
                 return JSString(a.id) < JSString(b.id)
             }.first
+            // Every link has to earn its place again. Opening the restored link gives the page a
+            // registry of its own, and the *next* reconcile reads it — but the page registers a list
+            // asynchronously (it derives keys and fetches before it writes), so that read can land
+            // first and name nothing. Without this, the vault deletes the list it has just restored,
+            // one reconcile after restoring it. Clearing the flag makes each link wait to be named
+            // again before its absence is allowed to mean anything.
+            plan.upsert = vault.filter(\.seenInRegistry).map {
+                var link = $0
+                link.seenInRegistry = false
+                return link
+            }
             return plan
         }
 

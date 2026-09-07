@@ -1225,7 +1225,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
     assert.ok(await t.page.locator("#whatsnew").isVisible(), "what's-new toast");
     const msg = await t.page.textContent("#wn-msg");
-    assert.ok(new RegExp("New in " + VERSION.replace(".", "\\.")).test(msg), msg); assert.ok(!/4\.0\.0|renumber|1\.1\b|1\.2\b|1\.3\b/.test(msg), "nothing about version numbers: " + msg); assert.ok(/Easier all over\./.test(msg), "the headline is 1.9's, and says the app got easier: " + msg); assert.equal((await t.page.textContent("#wn-more")).trim(), "What's new");
+    assert.ok(new RegExp("New in " + VERSION.replace(".", "\\.")).test(msg), msg); assert.ok(!/4\.0\.0|renumber|1\.1\b|1\.2\b|1\.3\b/.test(msg), "nothing about version numbers: " + msg); assert.ok(/Now there's an iPhone app\./.test(msg), "the headline is 1.10's, and names the app: " + msg); assert.equal((await t.page.textContent("#wn-more")).trim(), "What's new");
     assert.equal(await t.page.locator("#tour").count(), 0, "no tour"); assert.equal(await t.page.locator("dialog[open]").count(), 0, "no sheet"); assert.ok(await t.page.locator("#mark").isHidden(), "no hint");
     assert.equal((await t.s()).stats.check + (await t.s()).stats.finish, 0, "no sound");
     assert.equal(await t.page.locator("#list .row").count(), 3); assert.equal((await t.s()).listId, listId);
@@ -1242,8 +1242,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.waitForFunction(() => /build/.test(document.getElementById("version").textContent), null, { timeout: 5000, polling: 100 });
     assert.equal(await t.page.textContent("#version"), "Version " + VERSION_LABEL);
     const log = await t.page.$$eval("#log .v", els => els.map(e => e.textContent));
-    assert.equal(log.join(","), "1.9,1.8,1.7,1.5,1.4,1.3,1.2,1.1,1.0", "1.0 and later; the pre-releases never render");
-    assert.ok(/Easier all over\./.test(await t.page.textContent("#log > li:first-child div")), "a headline per version"); assert.ok(/A little something for someone in particular\./.test(await t.page.textContent("#log > li:nth-child(2) div")), "and the one before it");
+    assert.equal(log.join(","), "1.10,1.9,1.8,1.7,1.5,1.4,1.3,1.2,1.1,1.0", "1.0 and later; the pre-releases never render");
+    assert.ok(/Now there's an iPhone app\./.test(await t.page.textContent("#log > li:first-child div")), "a headline per version"); assert.ok(/Easier all over\./.test(await t.page.textContent("#log > li:nth-child(2) div")), "and the one before it");
     const tags = await t.page.$$eval("#log .tag", els => els.map(e => e.textContent)); assert.ok(tags.length >= 6 && tags.every(x => ["New", "Improved", "Fixed"].includes(x)), "tagged items: " + tags);
     assert.ok(await t.page.$$eval("#log > li", els => els.every(li => li.querySelectorAll("ul li").length <= 3)), "three items at most");
     assert.equal(await t.page.$eval("#version", e => getComputedStyle(e).textTransform), "uppercase", "the version line is styled on About (its rules live in styles.css now)");
@@ -1614,7 +1614,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const a = await fresh(opts, { url: BASE + "about.html", list: false });
     await a.page.waitForFunction(() => /build/.test(document.getElementById("version").textContent), null, { timeout: 5000, polling: 100 });
     const log = await a.page.$$eval("#log .v", els => els.map(e => e.textContent));
-    assert.equal(log.join(","), "1.9,1.8,1.7,1.5,1.4,1.3,1.2,1.1,1.0");
+    assert.equal(log.join(","), "1.10,1.9,1.8,1.7,1.5,1.4,1.3,1.2,1.1,1.0");
     assert.ok(/A little something for someone in particular\.$/.test((await a.page.textContent("#log > li:nth-child(2) div")).trim()), "the 1.8 headline is the wink");
     const first = await a.page.$$eval("#log > li:nth-child(2) ul li", els => els.map(e => e.textContent.replace(/^(New|Improved|Fixed)/, "").trim())); // 1.9: the 1.8 entry is the second
     assert.deepEqual(first, ["If you know, you know."], "one line and a wink");
@@ -1650,7 +1650,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.reload(); await t.page.waitForSelector("#list .row"); await wait(1800);
     let st = await t.s();
     assert.equal(st.theme, "midnight", "a dark system: Midnight, as Follow system showed"); assert.equal(st.switchMode, "system"); assert.equal(st.day, "T1:curated:harbor"); assert.equal(st.night, "T1:curated:midnight"); assert.equal(st.hold, null);
-    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.9: Easier all over\./.test(await t.page.textContent("#wn-msg")), "the headline only: " + await t.page.textContent("#wn-msg"));
+    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.10: Now there's an iPhone app\./.test(await t.page.textContent("#wn-msg")), "the headline only: " + await t.page.textContent("#wn-msg"));
     assert.equal(await t.page.locator("dialog[open]").count(), 0, "no sheet"); assert.ok(await t.page.locator("#mark").isHidden(), "no hint"); assert.equal(st.stats.check + st.stats.finish + st.stats.tick, 0, "no sound");
     assert.equal(await t.page.locator("#list .row").count(), 3); assert.equal(st.listId, listId, "the list is intact");
     assert.ok(await t.page.locator("#daynight").isVisible(), "the sun/moon is there");
@@ -2147,7 +2147,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.reload(); await t.page.waitForFunction(() => window.__tf && window.__tf().listId); await wait(1800);
     assert.ok(!(await whoseOpen(t.page)), "no question"); assert.equal((await t.s()).origin, "mine");
     assert.deepEqual(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).lists.map(l => l.origin)), ["mine", "mine"], "every existing list is mine");
-    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.9: Easier all over\./.test(await t.page.textContent("#wn-msg")), await t.page.textContent("#wn-msg"));
+    assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast"); assert.ok(/New in 1\.10: Now there's an iPhone app\./.test(await t.page.textContent("#wn-msg")), await t.page.textContent("#wn-msg"));
     assert.ok(await t.page.$eval("#shared", e => e.hidden)); assert.equal(await t.page.locator("dialog[open]").count(), 0, "nothing else");
     await t.page.click("#wn-x"); await wait(200); await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); assert.equal(await t.page.locator("#lists-menu .group-h").count(), 0, "no groups until something is shared");
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();

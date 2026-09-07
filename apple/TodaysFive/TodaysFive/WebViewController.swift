@@ -20,6 +20,22 @@ final class WebViewController: UIViewController {
     /// world it would have to be injected into never come into it.
     static let userAgentToken = "TodaysFive/1"
 
+    /// Where the first load goes. Always the site in a release build. `-TFQuery <query>` in a debug
+    /// build appends a query to it — `?transport=local` puts the page on its own localStorage-backed
+    /// test server, which is how the simulator checks run without spending from the real backend's
+    /// create limit (twelve new lists an hour per address, shared with every other suite).
+    /// Same host either way, so app-bound domains is untouched.
+    static var startURL: URL {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if let i = args.firstIndex(of: "-TFQuery"), i + 1 < args.count,
+           let url = URL(string: siteURL.absoluteString + "?" + args[i + 1]) {
+            return url
+        }
+        #endif
+        return siteURL
+    }
+
     private var webView: WKWebView!
     private let haptics = Haptics()
     private let vault: any LinkVault = KeychainLinkVault()
@@ -29,6 +45,8 @@ final class WebViewController: UIViewController {
     private var statusBarStyle: UIStatusBarStyle = .lightContent
     private var restoreAttempted = false
     private var bridgeReady = false
+    /// A read can land before the document has an origin; one retry covers it without a loop.
+    private var retriesLeft = 2
 
     override var preferredStatusBarStyle: UIStatusBarStyle { statusBarStyle }
 
@@ -64,11 +82,11 @@ final class WebViewController: UIViewController {
         Audio.begin()
 
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("-TFWipeWebStore") { wipeWebStoreThenLoad(); return }
         if ProcessInfo.processInfo.arguments.contains("-TFWipeVault") { try? (vault as? KeychainLinkVault)?.removeAll() }
+        if ProcessInfo.processInfo.arguments.contains("-TFWipeWebStore") { wipeWebStoreThenLoad(); return }
         #endif
 
-        webView.load(URLRequest(url: Self.siteURL))
+        webView.load(URLRequest(url: Self.startURL))
     }
 
     private func makeConfiguration() -> WKWebViewConfiguration {
@@ -184,24 +202,34 @@ final class WebViewController: UIViewController {
     /// bridge message, no web change, no new contract: the page's *Remove from this device* and
     /// *Delete this list* are observed rather than relayed.
     private func reconcileVault() async {
-        // The async evaluateJavaScript returns a non-optional Any and *throws* when the script
-        // evaluates to null — which is exactly what getItem returns on a device that has never held
-        // a list. So the script always answers with a string, and "" is the absent case.
+        // Three answers, not two. `localStorage` throws a SecurityError on a document that has no
+        // real origin yet — which is what the first load looks like for a moment — and reading that
+        // as "the store is gone" would make the app navigate away from the page the person is on.
+        // The async evaluateJavaScript also throws when the script evaluates to null, so the script
+        // never returns one: "e" it threw, "a" the key is absent, "p…" the value.
         let js = "(function(){try{var v=localStorage.getItem('tf/v2/meta');"
-               + "return typeof v==='string'?v:'';}catch(e){return '';}})()"
-        let registry: String?
-        do {
-            let value = try await webView.evaluateJavaScript(js, in: nil, contentWorld: .defaultClient)
-            let text = (value as? String) ?? ""
-            registry = text.isEmpty ? nil : text
-        } catch {
-            log("registry: unreadable")
-            return
+               + "return typeof v==='string'?'p'+v:'a';}catch(e){return 'e';}})()"
+        var registry: RegistryRead = .unreadable
+        if let answer = (try? await webView.evaluateJavaScript(js, in: nil, contentWorld: .defaultClient)) as? String {
+            if answer == "a" { registry = .absent }
+            else if answer.hasPrefix("p") { registry = .present(String(answer.dropFirst())) }
         }
 
         do {
             let current = try vault.all()
-            let plan = VaultReconciler.reconcile(registryJSON: registry, vault: current)
+            let plan = VaultReconciler.reconcile(registry: registry, vault: current)
+            if plan.unreadable {
+                // Not a decision, just a moment too early. One retry, then leave it to the next
+                // navigation or the next time the app comes forward.
+                log("registry: unreadable")
+                if retriesLeft > 0 {
+                    retriesLeft -= 1
+                    try? await Task.sleep(for: .milliseconds(700))
+                    await reconcileVault()
+                }
+                return
+            }
+            retriesLeft = 2
             for link in plan.upsert { try vault.put(link) }
             for id in plan.remove { try vault.remove(id: id) }
             if !plan.upsert.isEmpty || !plan.remove.isEmpty {
@@ -212,7 +240,9 @@ final class WebViewController: UIViewController {
             if plan.registryMissing, let restore = plan.restore, !restoreAttempted {
                 restoreAttempted = true
                 log("vault: restoring a list the web store had lost")
-                let url = Self.siteURL.absoluteString + Links.fragment(id: restore.id, mode: restore.mode)
+                // startURL, not siteURL: a debug run pointed at ?transport=local must stay there,
+                // or the restore quietly moves the page to the real backend
+                let url = Self.startURL.absoluteString + Links.fragment(id: restore.id, mode: restore.mode)
                 if let target = URL(string: url) { webView.load(URLRequest(url: target)) }
             }
         } catch {
@@ -263,7 +293,7 @@ final class WebViewController: UIViewController {
         WKWebsiteDataStore.default().removeData(ofTypes: types, modifiedSince: .distantPast) { [weak self] in
             guard let self else { return }
             log("debug: web store wiped")
-            webView.load(URLRequest(url: Self.siteURL))
+            webView.load(URLRequest(url: Self.startURL))
         }
     }
     #endif

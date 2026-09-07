@@ -42,18 +42,31 @@ struct VaultTests {
     @Test("a missing registry is the wiped store: restore, and remove nothing")
     func missingRegistryRestores() {
         let vault = [Self.vaulted(Self.W, lastSeenAt: 50), Self.vaulted(Self.R, mode: .view, lastSeenAt: 900)]
-        let plan = VaultReconciler.reconcile(registryJSON: nil, vault: vault, now: 5000)
+        let plan = VaultReconciler.reconcile(registry: .absent, vault: vault, now: 5000)
         #expect(plan.registryMissing)
         #expect(plan.remove.isEmpty, "a wiped store never deletes anything")
-        #expect(plan.upsert.isEmpty)
+        #expect(plan.upsert.allSatisfy { !$0.seenInRegistry }, "and every link has to be named again")
         #expect(plan.restore?.id == Self.R, "the most recently seen link comes back")
         #expect(plan.restore?.mode == .view)
     }
 
-    @Test("an unreadable registry is treated as missing, not as empty")
+    @Test("a read that fails decides nothing at all")
+    func unreadableDecidesNothing() {
+        // localStorage throws a SecurityError on a document with no real origin yet, which is what
+        // the first load looks like for a moment. Caught on a simulator: reading that as "the store
+        // is gone" made the app navigate away from the page the person was on.
+        let vault = [Self.vaulted(Self.W), Self.vaulted(Self.other)]
+        let plan = VaultReconciler.reconcile(registry: .unreadable, vault: vault, now: 5000)
+        #expect(plan.unreadable)
+        #expect(!plan.registryMissing, "a failed read is not an empty store")
+        #expect(plan.restore == nil, "so nothing is opened")
+        #expect(plan.remove.isEmpty && plan.upsert.isEmpty, "and nothing is written or dropped")
+    }
+
+    @Test("a value that is not JSON is treated as missing, not as empty")
     func junkRegistryRestores() {
         for junk in ["", "not json", "[]", "null", "7", "\"a string\""] {
-            let plan = VaultReconciler.reconcile(registryJSON: junk, vault: [Self.vaulted(Self.W)], now: 5000)
+            let plan = VaultReconciler.reconcile(registry: .present(junk), vault: [Self.vaulted(Self.W)], now: 5000)
             #expect(plan.registryMissing, "junk: \(junk)")
             #expect(plan.remove.isEmpty, "junk: \(junk)")
             #expect(plan.restore?.id == Self.W, "junk: \(junk)")
@@ -62,10 +75,38 @@ struct VaultTests {
 
     @Test("a missing registry with an empty vault asks for nothing")
     func missingRegistryEmptyVault() {
-        let plan = VaultReconciler.reconcile(registryJSON: nil, vault: [], now: 5000)
+        let plan = VaultReconciler.reconcile(registry: .absent, vault: [], now: 5000)
         #expect(plan.registryMissing)
         #expect(plan.restore == nil)
         #expect(plan.remove.isEmpty && plan.upsert.isEmpty)
+    }
+
+    @Test("a restore makes every link earn its place again, so the next read cannot delete it")
+    func restoreClearsSeen() throws {
+        // The sequence that caught this on a simulator: wipe the web store, the app restores the
+        // vaulted link, the page starts opening it — and the reconcile on didFinish lands before the
+        // page has registered anything. Without clearing the flag the vault deletes what it just
+        // restored, one reconcile later.
+        let vault = [Self.vaulted(Self.W, seen: true), Self.vaulted(Self.R, mode: .view, seen: true)]
+        let wiped = VaultReconciler.reconcile(registry: .absent, vault: vault, now: 5000)
+        #expect(wiped.registryMissing)
+        #expect(wiped.remove.isEmpty)
+        #expect(wiped.upsert.count == 2, "both are written back")
+        #expect(wiped.upsert.allSatisfy { !$0.seenInRegistry }, "and neither counts as named any more")
+
+        // the very next read, before the page has written its registry: nothing is dropped
+        let afterWipe = wiped.upsert
+        let racing = VaultReconciler.reconcile(registry: .present(Self.registry([])), vault: afterWipe, now: 5100)
+        #expect(racing.remove.isEmpty, "the page has not named anything yet, so nothing goes")
+
+        // once the page names the restored list, the ordinary rules resume
+        let named = VaultReconciler.reconcile(registry: .present(Self.registry([(Self.W, "edit", "mine", "")])),
+                                              vault: afterWipe, now: 5200)
+        #expect(named.upsert.first(where: { $0.id == Self.W })?.seenInRegistry == true)
+        #expect(named.remove.isEmpty, "the one it did not name has still never been named")
+        let settled = [Self.vaulted(Self.W, seen: true)]
+        #expect(VaultReconciler.reconcile(registry: .present(Self.registry([])), vault: settled, now: 5300).remove == [Self.W],
+                "and from then on its absence means what it says")
     }
 
     // ---------------------------------------------------------------- reconcile
@@ -73,7 +114,7 @@ struct VaultTests {
     @Test("a registry that parses writes what it names")
     func registryUpserts() throws {
         let json = Self.registry([(Self.W, "edit", "mine", "Work"), (Self.R, "view", "shared", "Sarah's")])
-        let plan = VaultReconciler.reconcile(registryJSON: json, vault: [], now: 5000)
+        let plan = VaultReconciler.reconcile(registry: .present(json), vault: [], now: 5000)
         #expect(!plan.registryMissing)
         #expect(plan.restore == nil, "a registry that speaks for itself is never restored over")
         #expect(plan.remove.isEmpty)
@@ -90,7 +131,7 @@ struct VaultTests {
     func registryRemoves() {
         let json = Self.registry([(Self.W, "edit", "mine", "Work")])
         let vault = [Self.vaulted(Self.W, name: "Work"), Self.vaulted(Self.other)]
-        let plan = VaultReconciler.reconcile(registryJSON: json, vault: vault, now: 5000)
+        let plan = VaultReconciler.reconcile(registry: .present(json), vault: vault, now: 5000)
         #expect(plan.remove == [Self.other])
         #expect(plan.restore == nil)
     }
@@ -101,7 +142,7 @@ struct VaultTests {
         // not the page gone
         let json = Self.registry([])
         let vault = [Self.vaulted(Self.W)]
-        let plan = VaultReconciler.reconcile(registryJSON: json, vault: vault, now: 5000)
+        let plan = VaultReconciler.reconcile(registry: .present(json), vault: vault, now: 5000)
         #expect(!plan.registryMissing)
         #expect(plan.remove == [Self.W], "the page removed it, so the vault does too")
         #expect(plan.restore == nil, "and nothing is offered back on the next launch")
@@ -109,7 +150,7 @@ struct VaultTests {
 
     @Test("a registry with no lists key at all is still the page speaking")
     func metaWithoutListsReconciles() {
-        let plan = VaultReconciler.reconcile(registryJSON: #"{"device":{"muted":false}}"#,
+        let plan = VaultReconciler.reconcile(registry: .present(#"{"device":{"muted":false}}"#),
                                              vault: [Self.vaulted(Self.W)], now: 5000)
         #expect(!plan.registryMissing)
         #expect(plan.remove == [Self.W])
@@ -121,13 +162,13 @@ struct VaultTests {
         // a link tapped from Notes is vaulted before the page finishes opening it
         let json = Self.registry([])
         let vault = [Self.vaulted(Self.W, seen: false)]
-        let plan = VaultReconciler.reconcile(registryJSON: json, vault: vault, now: 5000)
+        let plan = VaultReconciler.reconcile(registry: .present(json), vault: vault, now: 5000)
         #expect(plan.remove.isEmpty)
         // and once the page names it, its absence means what it says
-        let after = VaultReconciler.reconcile(registryJSON: Self.registry([(Self.W, "edit", "mine", "")]),
+        let after = VaultReconciler.reconcile(registry: .present(Self.registry([(Self.W, "edit", "mine", "")])),
                                               vault: vault, now: 6000)
         #expect(after.upsert.first?.seenInRegistry == true)
-        let later = VaultReconciler.reconcile(registryJSON: json, vault: [Self.vaulted(Self.W, seen: true)], now: 7000)
+        let later = VaultReconciler.reconcile(registry: .present(json), vault: [Self.vaulted(Self.W, seen: true)], now: 7000)
         #expect(later.remove == [Self.W])
     }
 
@@ -135,7 +176,7 @@ struct VaultTests {
     func noChurn() {
         let json = Self.registry([(Self.W, "edit", "mine", "Work")])
         let vault = [Self.vaulted(Self.W, name: "Work")]
-        let plan = VaultReconciler.reconcile(registryJSON: json, vault: vault, now: 5000)
+        let plan = VaultReconciler.reconcile(registry: .present(json), vault: vault, now: 5000)
         #expect(plan.upsert.isEmpty, "an unchanged entry is not rewritten on every read")
         #expect(plan.remove.isEmpty)
     }
@@ -144,7 +185,7 @@ struct VaultTests {
     func detailsFollow() throws {
         let json = Self.registry([(Self.W, "edit", "shared", "Renamed")])
         let vault = [Self.vaulted(Self.W, origin: "mine", name: "Work")]
-        let plan = VaultReconciler.reconcile(registryJSON: json, vault: vault, now: 5000)
+        let plan = VaultReconciler.reconcile(registry: .present(json), vault: vault, now: 5000)
         let w = try #require(plan.upsert.first)
         #expect(w.origin == "shared" && w.name == "Renamed")
         #expect(w.addedAt == 1, "the vault's own addedAt is not overwritten")
@@ -158,7 +199,7 @@ struct VaultTests {
         bad.set("mode", "edit")
         var meta = JSONObject()
         meta["lists"] = .array([.object(bad)])
-        let plan = VaultReconciler.reconcile(registryJSON: JSONWriter.stringify(.object(meta)),
+        let plan = VaultReconciler.reconcile(registry: .present(JSONWriter.stringify(.object(meta))),
                                              vault: [Self.vaulted(Self.W, seen: false)], now: 5000)
         #expect(plan.upsert.isEmpty)
         #expect(plan.remove.isEmpty)

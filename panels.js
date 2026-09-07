@@ -34,7 +34,9 @@ export function init(api) {
   wireTheme(); wireShare(); wireSave(); wireLists(); wireSettings(); wireSound(); wireSection(); wireLine(); wireRepeat(); wireKeys(); wireMisc();
   // 1.4: how each panel repaints itself when ‹ Back lands on it (one primitive in app.js, no per-panel buttons)
   if (A.registerOpeners) A.registerOpeners({
-    "p-theme": () => openTheme(pickSlot, { keepOffer: true }), "p-builder": openBuilder, "p-settings": openSettings, "p-sound": openSound, "p-lists": () => openLists(), "p-list": () => { if (detailId) openListDetail(detailId); },
+    // 1.12: Back on step two of ⋯ → Theme is step one again, with the day theme it kept
+    "p-theme": () => { if (flow) { flow.step = 1; return openTheme("day", { inFlow: true }); } return openTheme(pickSlot, { keepOffer: true }); },
+    "p-builder": openBuilder, "p-settings": openSettings, "p-sound": openSound, "p-lists": () => openLists(), "p-list": () => { if (detailId) openListDetail(detailId); },
     "p-share": () => { openShare(); }, "p-save": () => showSaveLink(), "p-help": () => openHelp(lastHelp), "p-keys": openKeys, "p-export": openExport, "p-history": () => openHistory(historyOf ? historyOf.doc : undefined, historyOf ? historyOf.title : undefined),
     "p-pick": () => { if (lastPick) openPick(lastPick); }, "p-line": () => { if (lineId) openLineMenu(lineId); }, "p-sec": () => { if (secMenuId !== null && secMenuId !== undefined) openSectionMenu(secMenuId); }, "p-repeat": () => { if (lineId) openRepeat(lineId); }
   });
@@ -50,17 +52,32 @@ let custom = { accent: "#A86014", base: "dark", pair: "", name: "", pack: "" };
 let keepPreview = false;
 let pickSlot = "day"; // the slot the picker fills
 let offer = null;     // { code, name, slot }: the partner on offer for the other slot after a choice, if any
+// 1.12: ⋯ → Theme is two steps, Day then Night. Null when the picker was opened from Settings → Appearance for one
+// slot, which is unchanged. The step is a frame in the 1.4 stack (showPanel's `restack`), so ‹ Back walks it.
+let flow = null;      // { step: 1 | 2 }
 const cap = s => (s === "day" ? "Day" : "Night");
 const otherSlot = s => (s === "day" ? "night" : "day");
-export function openTheme(slot, { keepOffer = false } = {}) {
+export function openTheme(slot, { keepOffer = false, restack = false, inFlow = false } = {}) {
+  if (!inFlow) flow = null; // opened for one slot (Settings → Appearance, a resume, the builder stepping back): not the two-step flow
   pickSlot = slot === "night" ? "night" : slot === "day" ? "day" : A.activeSlot();
   if (!keepOffer) offer = null; // 1.9: Back from the builder repaints the picker and keeps the partner it offered
   const t = T.parseCode(A.slotCode(pickSlot));
   if (t && t.kind === "custom") custom = { accent: t.accent, base: t.base, pair: t.pair, name: t.name, pack: t.pack || "" };
   $("#p-theme-h").textContent = cap(pickSlot) + " theme";
   renderSwatches();
-  A.showPanel("p-theme");
+  A.showPanel("p-theme", { restack });
 }
+/** ⋯ → Theme: Day first, then Night. Opening the picker for "whichever slot is on" meant that choosing a night
+    theme started with switching to night, which is the wrong way round — the slot is about when, not what. */
+export function openThemeFlow() {
+  flow = { step: 1 };
+  offer = null;
+  openTheme("day", { inFlow: true });
+}
+/** What the person is picking, on screen, whichever slot is actually on — without moving the slot itself, which
+    would leave someone who opened this at two in the afternoon sitting in their night theme. The picker's own
+    close handler puts the real one back. */
+function previewSlot(code) { const t = T.parseCode(code); if (t) T.applyTheme(t, document, { persist: false }); }
 /** 1.9: the builder, a sheet of its own under the picker's Make your own row (proposal 7); Back lands on the picker, repainted, so a theme saved here shows under Yours. */
 export function openBuilder() {
   $("#c-use").textContent = "Use for " + cap(pickSlot);
@@ -118,8 +135,16 @@ function renderSwatches() {
 function choose(code, name, partner, swatch) {
   const group = swatch && swatch.parentNode; // read before the re-render detaches the swatch
   A.setSlotTheme(pickSlot, code);
+  previewSlot(code); // setSlotTheme only paints when this slot is the one that is on; the picker shows it either way
   const other = otherSlot(pickSlot);
   offer = partner && A.slotCode(other) !== partner.code ? { ...partner, slot: other } : null;
+  if (flow && flow.step === 1) { // Day is chosen: on to Night, with this theme's partner at the top
+    flow.step = 2;
+    openTheme("night", { keepOffer: true, restack: true, inFlow: true });
+    A.toast(`${name} for Day`);
+    return;
+  }
+  if (flow && flow.step === 2) { flow = null; A.closePanel(); A.toast(`${name} for Night`); return; } // both slots set
   renderSwatches();
   if (group) group.after($("#partner-offer")); // the chip sits under the group the choice came from
   if (offer) { try { $("#partner-offer").scrollIntoView({ block: "nearest" }); } catch (e) { /* ignore */ } } // and on screen, on a phone too
@@ -144,6 +169,9 @@ function unlock() {
 }
 function paintOffer() {
   const box = $("#partner-offer");
+  // 1.12: on step two the partner of the day theme just chosen is the likeliest answer, so it goes above the
+  // groups rather than under whichever one the last choice came from.
+  if (flow && flow.step === 2) { const msg = $("#theme-msg"); if (box.previousElementSibling !== msg) msg.after(box); }
   if (!offer) { box.hidden = true; return; }
   $("#partner-use").textContent = `Use ${offer.name} for ${cap(offer.slot)}`;
   box.hidden = false;
@@ -189,7 +217,12 @@ function saveCustom() {
 function wireTheme() {
   const pairSel = $("#c-pair");
   T.CUSTOM_PAIRS.forEach(id => { const o = document.createElement("option"); o.value = id; o.textContent = T.PAIRS[id].name; pairSel.appendChild(o); });
-  $("#partner-use").addEventListener("click", () => { if (!offer) return; const o = offer; offer = null; A.setSlotTheme(o.slot, o.code); renderSwatches(); A.toast(`${o.name} for ${cap(o.slot)}`); });
+  $("#partner-use").addEventListener("click", () => {
+    if (!offer) return; const o = offer; offer = null;
+    A.setSlotTheme(o.slot, o.code); previewSlot(o.code);
+    if (flow && flow.step === 2) { flow = null; A.closePanel(); A.toast(`${o.name} for ${cap(o.slot)}`); return; } // the one tap that finishes ⋯ → Theme
+    renderSwatches(); A.toast(`${o.name} for ${cap(o.slot)}`);
+  });
   $("#c-color").addEventListener("input", e => setCustom({ accent: T.normalizeHex(e.target.value) || custom.accent }));
   $("#c-hex").addEventListener("input", e => { const v = e.target.value.trim(); if (/^#?[0-9a-f]{6}$/i.test(v)) setCustom({ accent: T.normalizeHex(v) }); });
   $("#c-hex").addEventListener("change", e => { const h = T.normalizeHex(e.target.value); if (h) setCustom({ accent: h }); else e.target.value = custom.accent; });

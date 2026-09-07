@@ -1776,14 +1776,18 @@ const backBtn = document.createElement("button"); backBtn.type = "button"; backB
 backBtn.addEventListener("click", () => goBack());
 function registerOpeners(map) { Object.assign(openers, map); }
 function panelStackIds() { return [...panelStack.map(f => f.id), openPanel ? openPanel.id : null].filter(Boolean); }
-function showPanel(id, { anchor = null } = {}) {
-  if (!panelCssReady) { panelCss.then(() => showPanel(id, { anchor })); return; } // never paint a dialog before its stylesheet
+function showPanel(id, { anchor = null, restack = false } = {}) {
+  if (!panelCssReady) { panelCss.then(() => showPanel(id, { anchor, restack })); return; } // never paint a dialog before its stylesheet
   const d = document.getElementById(id);
   hideMark();
-  const parent = openPanel && openPanel !== d ? openPanel : null;
+  // 1.12: `restack` is a panel that is a flow of steps (⋯ → Theme is Day, then Night) asking for the step it is
+  // leaving to become the frame below it, so ‹ Back walks the steps with the one primitive rather than a second
+  // idea of "back". The dialog is the one already open, so it is pushed as a frame and never closed.
+  const same = openPanel === d;
+  const parent = openPanel && (!same || restack) ? openPanel : null;
   if (parent) {
     if (!panelRestoring) { const pb = parent.querySelector(".body"); panelStack.push({ id: parent.id, scroll: pb ? pb.scrollTop : 0 }); }
-    panelSwitching = true; parent.close(); panelSwitching = false;
+    if (!same) { panelSwitching = true; parent.close(); panelSwitching = false; }
   }
   openPanel = d;
   d.classList.remove("closing"); d.style.transform = ""; d.removeAttribute("data-drag");
@@ -1831,13 +1835,6 @@ function closeAll({ unwind = true } = {}) {
   panelDepth = 0;
 }
 function closePanel() { closeAll(); } // forget it now, not when the close event lands: what follows may need the panel gone
-/** The ⋯ menu handing over to a panel (or to the About page): the menu closes, its history entry stays and becomes the new
-    root's, so no traversal runs while the next panel opens or a navigation starts. */
-function closeForSwitch() {
-  const cur = openPanel; openPanel = null; panelStack.length = 0;
-  if (cur && cur.open) { panelSwitching = true; cur.close(); panelSwitching = false; }
-  if (backBtn.parentNode) backBtn.remove();
-}
 /** The app's own place, written back over whatever URL a history traversal brought up. */
 function fixUrl() { history.replaceState(null, "", BASE + SEARCH + (listId && !demo ? frag({ id: listId, mode: listMode }) : "")); }
 /** Resolves once a pending history unwind has landed (at once when none is pending): a reload must not race it. */
@@ -1921,6 +1918,10 @@ function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger =
 /* the ⋯ menu: Share · Theme · Sound · Full screen · How it works · Lists · Settings · About · Delete (nine rows is the ceiling);
    1.3: a Save your link row stands above them, with a dot, only until this device's list has its link saved */
 $("#more").addEventListener("click", () => { paintMenu(); showPanel("p-menu", { anchor: $("#more") }); });
+// 1.12: how the ⋯ menu repaints itself when ‹ Back lands on it — repainted (the theme name, Sound, the Save row)
+// and back under the button, so a popover returns as a popover rather than as a sheet. `openers` claimed to have
+// this since 1.4 and never did, which is why nothing above the menu could step back to it.
+registerOpeners({ "p-menu": () => { paintMenu(); showPanel("p-menu", { anchor: $("#more") }); } });
 /** The registry entry of the open list when its link has not been saved yet (a list this device made). */
 function unsavedEntry() { const e = listId && meta.lists.find(l => l.id === listId); return e && e.created && e.linkSaved === false && e.origin !== "shared" && listMode === "edit" ? e : null; }
 function paintMenu() {
@@ -1938,10 +1939,13 @@ $("#p-menu").addEventListener("click", e => {
   const act = b.dataset.act;
   askedPanel = act; // what to reopen if loading the panels means reloading the page
   if (act === "sound") { toggleMute(); return; } // a toggle row: the menu stays, the state flips
-  if (act === "full" || act === "delete") closePanel(); else closeForSwitch(); // a panel or the About page follows: the menu's entry carries over, no traversal in between
+  // 1.12: a panel follows, so the menu stays open underneath it and becomes the frame below in the 1.4 stack —
+  // which is the whole of ‹ Back from ⋯ (showPanel renders it whenever there is a frame below). Full screen opens
+  // no panel, and Delete everywhere is a decision rather than a place worth going back from, so those two still close.
+  if (act === "full" || act === "delete") closePanel();
   if (act === "save") panels().then(p => p.showSaveLink());
   else if (act === "share") panels().then(p => p.openShare());
-  else if (act === "theme") panels().then(p => p.openTheme()); // 1.9: the picker for the slot that is on — the row names the theme, so it opens the theme (proposal 19); Appearance keeps both slots
+  else if (act === "theme") panels().then(p => p.openThemeFlow()); // 1.12: Day, then Night — picking a theme for "whichever slot is on" meant switching to night to choose a night theme
   else if (act === "full") toggleFullscreen();
   else if (act === "help") panels().then(p => p.openHelp());
   else if (act === "lists") panels().then(p => p.openLists());

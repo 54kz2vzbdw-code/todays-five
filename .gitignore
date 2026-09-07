@@ -1,0 +1,5 @@
+# The interop and real-backend suites write down every list they create, the instant the row
+# exists, so a crashed run leaves a list that can be named and deleted rather than an orphan.
+# A list id *is* its secret, so those ledgers never belong in the repository.
+tools/.realsync-created.txt
+apple/tools/.interop-created.txt

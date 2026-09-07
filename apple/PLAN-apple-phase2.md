@@ -565,6 +565,20 @@ generator was called.
 | About, on the phone | **VERSION 1.10 (BUILD 139)** — the deployed build, read off the screen |
 | Privacy | one `print` in the app, `#if DEBUG`, every call site a fixed string with counts or a length. No analytics, no crash reporting, and the four `NSUserActivity` mentions all *receive* a universal link; the app creates none |
 
+### Before and after
+
+`apple/shots/` holds them; the shell's are the 26.5 simulator, the web's is Chrome at 390×844 with an
+iPhone user agent.
+
+| | before — 1.9 in the shell | after — 1.10 in the shell |
+| --- | --- | --- |
+| Saving a new list | `before-save-sheet-1.9.png` — **"Add it to your Home Screen: 1. Tap Share… 2. Scroll down. 3. Add to Home Screen."** Instructions for a browser, given inside an app that has no Share button and is already on the Home Screen | `after-save-sheet-1.10.png` — **"Saved—this icon holds your link. Copy it too, as a backup."** and Copy link beside it |
+| A list, open | `before-install-hint-1.9.png` — the same advice again as a toast at the bottom, and `before-list-1.9.png` | `after-list-1.10.png` — no hint, at any point |
+
+And the third panel, which is the one that matters most: `web-save-sheet-1.10.png` is **1.10 in a
+mobile browser**, still saying *Add it to your Home Screen*. The copy did not change for anybody; the
+shell simply stopped being told it was Safari.
+
 ### What could not be run, and why
 
 - **The create limit got in the way for about two hours.** The server allows twelve new lists an hour

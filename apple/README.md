@@ -172,6 +172,7 @@ Each is `#if DEBUG` only and takes no argument.
 | `-TFSelfTest` | dispatches the four events in the page world and reports whether the bridge heard them, plus the service worker, the shell token and what the page thinks `standalone` is |
 | `-TFWipeWebStore` | clears `WKWebsiteDataStore` before the first load — the wiped-store half of the vault check |
 | `-TFWipeVault` | empties the Keychain items, for a clean run |
+| `-TFQuery <query>` | appends a query to the start URL. `-TFQuery transport=local` puts the page on its own localStorage-backed test server, so a simulator pass spends nothing from the real backend's create limit (twelve an hour per address, shared with every other suite). Same host, so app-bound domains is untouched. |
 
 ```bash
 xcrun simctl launch --console-pty "$SIM" com.pricebrannen.todaysfive -TFSelfTest
@@ -217,8 +218,12 @@ Keychain would put list secrets on Apple's servers and change what `about.html` 
 
 The rules are pure and live in the core (`VaultReconciler`), where `swift test` covers them:
 
-- `tf/v2/meta` **missing or unreadable** → the store was wiped. Nothing is removed, and the most
-  recently seen link is offered back.
+- the read **failed** → nothing is decided at all, and it retries after a beat. `localStorage` throws
+  a `SecurityError` on a document with no origin yet, and reading that as "the store is gone" made
+  the app navigate away from the page the person was on.
+- `tf/v2/meta` **absent** → the store was wiped. Nothing is removed, and the most recently seen link
+  is offered back — with every link's "has been named" flag cleared, so the next read cannot delete
+  what was just restored.
 - `tf/v2/meta` **parses**, `lists: []` included → the page is speaking for itself. Every entry is
   written and every vaulted link it does not name is dropped.
 

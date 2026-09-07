@@ -175,27 +175,40 @@ vault's payload.
 
 ### How the two stay agreed
 
-The rule keys on **whether `tf/v2/meta` exists**, never on whether it holds any lists:
+The rule keys on **whether `tf/v2/meta` exists**, never on whether it holds any lists — and, after
+running it, on a third state that reading the code had not suggested:
 
-- **Restore** only when `localStorage.getItem("tf/v2/meta")` is **null** (or does not parse) and the
-  vault is not empty — the store was wiped, or this is a fresh install over a vault. The app opens
-  the most recently seen vaulted link instead of the bare site URL, and a wiped web store loses
-  nothing.
-- **Reconcile removals** whenever the registry **parses at all — `lists: []` included**. An entry
-  goes from the vault when a parsed registry no longer names it. That is the page's *Remove from
-  this device* and *Delete this list*, observed rather than relayed.
+| the read | what it means | what the vault does |
+| --- | --- | --- |
+| **unreadable** (`localStorage` threw) | nothing at all | nothing at all, and retry after a beat |
+| **absent** (read fine, no key) | the store was wiped, or a fresh install over a vault | offer the most recently seen link back; remove nothing |
+| **present** (parses, `lists: []` included) | the page is speaking for itself | write what it names, drop what it does not |
 
 Keying on `lists` being non-empty instead would be a bug: removing the **only** list leaves
 `lists: []`, restore would fire on the next launch, and the list you just removed would come back.
-Existence of the key is the signal that the page's store is intact and speaking for itself; its
-contents are the answer. Restore is eager, removal is exact, and the two never both fire.
+
+**The third row is the one that only a simulator could have found.** `localStorage` throws a
+`SecurityError` on a document that has no real origin yet, which is what the first load looks like
+for a moment — and the first version wrapped the read in a `try/catch` returning `""`, which the app
+then read as *absent*, and so navigated away from whatever the person was on. Every launch, on every
+device. `RegistryRead` is now `.unreadable | .absent | .present`, and the conflation cannot be
+written down any more.
+
+Two further rules keep a race from eating a list:
+
+- A link the app has vaulted but the page has **never named** is exempt from removal. A link tapped
+  from Notes is vaulted before the page finishes opening it, and must not be dropped in that window.
+- **A restore clears that flag on every link.** Opening the restored link gives the page a registry
+  of its own, and the next reconcile reads it — but the page registers a list asynchronously, so
+  that read can land first and name nothing. Without this the vault deletes the list it has just
+  restored, one reconcile later. Caught on a simulator; now a test.
 
 Reconciling instead of relaying needs no web change, no new bridge message and no new contract, and
 it survives any future removal path the page grows.
 
-The rules are a pure function — registry JSON in, vault actions out — so they live in
-`TodaysFiveCore` (`VaultReconciler`) and are covered by the existing Swift suite. Only the Keychain
-I/O lives in the app, where a simulator run is the proof.
+The rules are a pure function — a registry read in, vault actions out — so they live in
+`TodaysFiveCore` (`VaultReconciler`) and are covered by the Swift suite. Only the Keychain I/O lives
+in the app, where a simulator run is the proof.
 
 ---
 
@@ -454,4 +467,74 @@ simulator at 26.5, the web at 390×844).
 
 ## Results
 
-_(filled in at the end of the round)_
+### What running it found that reading it had not
+
+Three bugs, all in the app, all caught by putting it on a simulator rather than by reading the code.
+
+1. **The async `evaluateJavaScript` throws when the script evaluates to `null`** — which is exactly
+   what `localStorage.getItem("tf/v2/meta")` returns on a device that has never held a list. The
+   `catch` logged and returned, so **a fresh install never reconciled its vault at all**: the one
+   case the vault exists for.
+2. **A restore deleted what it had just restored.** Opening the restored link gives the page a
+   registry of its own and the next reconcile reads it — but the page registers a list
+   asynchronously, so that read lands first and names nothing. A restore now clears every link's
+   "has been named" flag, so each has to be named again before its absence means anything.
+3. **`localStorage` throws a `SecurityError` on a document with no origin yet**, which is what the
+   first load looks like for a moment. The read was wrapped in a `try/catch` returning `""`, which
+   the app read as *absent* — the wiped-store case — and so **navigated away from the page the person
+   was on, on every launch**. A read now has three answers rather than two (`.unreadable`, `.absent`,
+   `.present`), the reconciler decides nothing on `.unreadable`, and the conflation cannot be written
+   down any more.
+
+The third is the one worth remembering: the first two were races, but that one was a plain confusion
+between *"I could not read"* and *"there is nothing there"*, and it was in the design, not the code.
+
+### The bridge, measured rather than assumed
+
+Three things about the design could not be settled by reading, so the app carries a `-TFSelfTest`
+that dispatches the four events **in the page world** — exactly as `app.js` does from 1.10 — and
+counts what the listener **in the client world** heard:
+
+```
+bridge=ready heard=4/4  registryReadableFromClientWorld=string
+shellToken=true serviceWorker=true standaloneSeenByPage=false
+```
+
+- a user script in a client content world **is not** refused by `script-src 'self' 'sha256-…'`;
+- a `window` event dispatched by the page **does** cross into that world (the DOM is shared, the JS
+  globals are not — which is why the shell flag is a user-agent token and not an injected variable);
+- `localStorage` is reachable from the client world;
+- **app-bound domains really does buy the service worker** inside a `WKWebView`;
+- and `standaloneSeenByPage=false` is §3a, measured: the page did think it was Safari.
+
+### The suites
+
+| | |
+| --- | --- |
+| Swift (`swift test`) | **88 tests in 7 suites** — the 72 from Phase 1 plus 16 for the vault |
+| Node | model 27, theme 30, crypto 10, sync 14, sound 11, features 28, compat 9 — all green |
+| Real backend (`tools/realsync4.js`) | **6 of 6**, six lists created and all six deleted. Unchanged poll **29 bytes**; a realistic list (40 lines, 90 days of history) **6,553 bytes encrypted** against 69,636 plain, well under the 20 KB budget and the 96 KB cap |
+| First paint | 1.9 and 1.10 measured back to back on the same local server, five runs each at 390×844: **FCP 52 ms both**, DCL 36/37 ms, load 39 ms. `app.js` grows 1,126 bytes (0.7 %), all of it comment |
+
+### What could not be run, and why
+
+- **Lighthouse.** There is no `npm` on this machine (only a `node` binary in a runtime cache) and no
+  Lighthouse in the repo, so the ≥ 95 gate is **unverified this round**. What I could measure instead
+  is above: first paint is identical, and the change adds no file, no request and no byte to the
+  critical path. Installing Node properly would fix this for good.
+- **The create limit got in the way for about two hours.** The server allows twelve new lists an hour
+  per address, and the bucket looks shared rather than per-address — a single create was refused when
+  I had made one that hour. `tools/realsync4.js` ran clean once it cleared. The simulator passes were
+  moved onto the page's own local transport (`-TFQuery transport=local`) so they spend nothing.
+- **The interop script was not run.** My own amendment to §7 step 5 says it goes with a change that
+  touched §1–§4; 1.10 touched none of them, and the core change (the vault) is not something it
+  exercises.
+
+### One thing I got wrong, and what came of it
+
+A `git add -A` swept `tools/.realsync-created.txt` — the ledger the real-backend suite writes so a
+crashed run can name what it created — into a commit, and I pushed it to a public repository. **A
+list id is its secret.** None of the eight was ever a live row (the ledger records the id before the
+push, and every create in those runs was refused by the limit), and all eight were deleted from the
+server anyway; the two commits were rewritten and both ledgers are now in `.gitignore`. Had the
+timing been different they would have been real links to real lists.

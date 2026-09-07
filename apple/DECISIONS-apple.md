@@ -342,3 +342,110 @@ run lands in one of two clusters — FCP ≈ 1584 ms, which scores 99, or FCP �
 — and which one it lands in is a coin flip that has nothing to do with the build: **1.9 and 1.10 both
 came out six 98s and four 99s.** Desktop is 100 / 100 / 100 on both. The lesson is the harness's
 spread has to be measured before a one-point difference is allowed to mean anything.
+
+---
+
+# Phase 2b — signed, linked, on TestFlight
+
+## The app's version is the web's version, not one of its own
+
+`MARKETING_VERSION` is `1.10` and `CURRENT_PROJECT_VERSION` is `139` because that is what
+`version.js` says is deployed. The app is the live page, so About is the *page's* About: it reads
+"1.10 (build 139)" because the page is 1.10 build 139, and App Store Connect now says the same.
+
+An app version counting on its own would give two answers to "what am I running" and only one of them
+would be true. The cost is that the app's build number has to be bumped with the web's on any round
+that ships both, and that a build already uploaded to TestFlight pins that number — App Store Connect
+refuses a second build 139 for version 1.10. If a phase ever needs a second upload against an
+unchanged web version, the app's build number is the one that has to move, and it stops being the
+web's. That would be worth a line here when it happens.
+
+## The device was registered through the API, not by Xcode
+
+Automatic signing with `-allowProvisioningUpdates` and the App Store Connect key gets exactly one
+error from a team with no devices: *"Your team has no devices from which to generate a provisioning
+profile."* `generic/platform=iOS` cannot fix it, because a generic destination names no device to
+register — and `xcodebuild` never saw the phone as a destination at all until Developer Mode was on,
+which is a switch only a hand on the phone can throw.
+
+So the phone was registered with `POST /v1/devices` and the build went through unchanged. That keeps
+the whole of §1 in the shell, which is the point: no Organizer, no Accounts pane, nothing that has to
+be described in prose instead of run.
+
+## A token that expires in exactly twenty minutes is refused
+
+Apple's limit on an App Store Connect JWT is twenty minutes, and `exp = iat + 20 * 60` is over it
+once the two clocks disagree by a second — the answer is `401 NOT_AUTHORIZED`, which reads exactly
+like a malformed key and sent the first attempt looking in the wrong place. Ten minutes works and
+there is no reason to want more. Written down because the next person to sign a token here will
+reach for twenty.
+
+## The association file names the bare path as well as the wildcard
+
+The file had one component, `/todays-five/*`. Every Today's Five URL — Private, View, `/add?text=`,
+`/mine`, `/shared` — has the path `/todays-five/` and *nothing else*: the id and the entire grammar
+live in the fragment (`model.js`'s `parseHash` matches on `#/…`), and Apple matches on the path with
+the fragment stripped. So the pattern that has to match is the bare `/todays-five/`, and whether `*`
+matches an empty string is not a thing to leave to a reading of Apple's matcher when naming both
+costs a line.
+
+Nothing else on the origin is claimed. `astraeus` is a separate project page under the same host, and
+no rule here touches it.
+
+## GitHub's content type is not refused by Apple's CDN
+
+Pages serves `.well-known/apple-app-site-association` as `application/octet-stream`, which is the one
+thing that could have made a user-site repo the wrong answer. It is not: Apple's CDN had already
+fetched and parsed the file, and picked up an edit to it within minutes. No redirect, no worker, no
+second host — the plain file at the origin root is enough.
+
+## `--payload-url` is not a stand-in for a universal-link tap
+
+`devicectl device process launch --payload-url` hands the app a URL at launch and is tempting as a way
+to test link handling without a hand on the phone. It is a fair test of *the app's* half — the URL is
+parsed and vaulted every time, which is `open(_:)` doing its job — and it is not a fair test of the
+whole: across otherwise identical runs the page opened the list once and then stopped doing so, with
+no difference in the app's own log. `-TFWipeWebStore` also fights it outright, because the wipe's
+completion handler loads the start URL *after* the scene delegate has loaded the link, and the start
+URL wins.
+
+Whatever that is, it is the harness rather than the app, and nothing was concluded from it either
+way. The check that counts is a real tap from Messages and from Notes, which is what §5 records.
+
+## The distribution certificate is not this key's to make
+
+`xcodebuild archive` works on the App Manager key. `-exportArchive` for the App Store does not:
+
+```
+403 FORBIDDEN_ERROR — You haven't been given access to cloud-managed distribution certificates.
+Please contact your team's Account Holder or an Admin to give you access.
+```
+
+That is a permission on the key's **role**, not a mistake in the export options, and no amount of
+`-allowProvisioningUpdates` argues with it. An **Admin** key lifts it. The alternatives were to cut
+one, or to hand the archive to Xcode's Organizer and press the button — and the call was Organizer
+for this build, so the round ends with the archive staged in
+`~/Library/Developer/Xcode/Archives/` rather than with a build number in App Store Connect.
+
+Worth being precise about what that costs: everything up to the archive is reproducible from the
+shell, and only the last step is a hand on a button. A second Admin key would make the whole of it
+one command, and that stays available whenever it is wanted.
+
+## TestFlight's app-level information can be set before a build exists
+
+The feedback email, the privacy-policy URL (About's own page) and the app description are
+`betaAppLocalizations` and belong to the **app**, so they were set over the API with no build
+uploaded. The internal group **Family** is a `betaGroups` record and likewise. What could *not* be
+set is **What to Test**: that is a `betaBuildLocalizations` record, it hangs off a build, and there is
+no build until the upload happens. The three lines are written and waiting rather than invented later.
+
+## The Messages half was not run, and is recorded as not run
+
+The §5 check asks for a tap from Messages as well as from Notes. A tappable link in Messages requires
+*sending* a message, which is not something to do on someone's behalf uninvited even when the only
+recipient is themselves. Asked at the checkpoint, the answer was to skip it.
+
+Notes exercises the identical path — the same `NSUserActivityTypeBrowsingWeb`, the same `webpageURL`,
+the same `open(_:)` — so what is untested is iOS's routing from one particular app, not anything here.
+It is written down as unrun rather than folded into the passing checks, because a checklist that
+quietly absorbs what it skipped is worth nothing the next time it is read.

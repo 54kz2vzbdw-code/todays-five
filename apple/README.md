@@ -159,6 +159,47 @@ xcrun simctl install "$SIM" /tmp/tf-app/Build/Products/Debug-iphonesimulator/Tod
 xcrun simctl launch --console-pty "$SIM" com.pricebrannen.todaysfive
 ```
 
+## Putting it on a phone
+
+`DEVELOPMENT_TEAM` is `T7GTZC5US9` and signing is automatic, so the whole of this runs from the
+shell — no Organizer, no Accounts pane. What it needs is an App Store Connect API key; the one in use
+is App Manager, and where that is not enough is said plainly below.
+
+```bash
+KEY=(-allowProvisioningUpdates
+     -authenticationKeyPath "$HOME/.private_keys/AuthKey_X5KNTWX8HB.p8"
+     -authenticationKeyID X5KNTWX8HB
+     -authenticationKeyIssuerID c94024f5-fd77-46d3-a9f2-1f8404bcd542)
+
+cd apple/TodaysFive
+xcodebuild -scheme TodaysFive -destination 'generic/platform=iOS' -derivedDataPath /tmp/tf-dev "${KEY[@]}" build
+xcrun devicectl device install app --device <udid> /tmp/tf-dev/Build/Products/Debug-iphoneos/TodaysFive.app
+xcrun devicectl device process launch --console --device <udid> com.pricebrannen.todaysfive -- -TFSelfTest
+```
+
+The `.p8` lives outside the repository and is read from there. `.gitignore` carries `*.p8` and
+`AuthKey_*.p8` so a stray copy cannot be committed; nothing in the tree should ever hold one.
+
+Three things will stop you, in the order you will meet them:
+
+- **Developer Mode.** iOS will not run a development build without it, and until it is on
+  `xcodebuild -showdestinations` lists only *Any iOS Device* — the phone is simply not there. It is
+  Settings → Privacy & Security → Developer Mode on the phone, and it wants a restart. The toggle
+  only appears once a Mac has tried to install a development build, so try the install first.
+- **A team with no devices.** Automatic signing answers *"Your team has no devices from which to
+  generate a provisioning profile"*, and a generic destination cannot fix it because it names no
+  device to register. Register the phone once — `POST /v1/devices` with its UDID
+  (`xcrun devicectl device info details --device <udid>`) — and every build after that is ordinary.
+- **Cloud-managed distribution certificates.** `-exportArchive` for the App Store needs one, and an
+  **App Manager** key is refused: `403 FORBIDDEN_ERROR`, *"You haven't been given access to
+  cloud-managed distribution certificates."* An **Admin** key is what lifts it. Everything up to and
+  including `xcodebuild archive` works on the App Manager key; only the export does not.
+
+Note the launch arguments go after a `--`, or `devicectl` reads `-TFSelfTest` as its own flag.
+
+Debug launch arguments are listed below; `-TFSelfTest` is the one to reach for first, because it is
+the whole bridge end to end on the real page under its real CSP.
+
 **On your iPhone** you need an Apple ID in Xcode → Settings → Accounts (a free one is enough for a
 device install; §5's universal links need the paid program). Set `DEVELOPMENT_TEAM` in the target's
 build settings, plug the phone in, trust it, and Run.

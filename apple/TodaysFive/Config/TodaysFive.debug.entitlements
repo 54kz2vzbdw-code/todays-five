@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- §5. The Debug half of the pair. `?mode=developer` tells the device to fetch the association
+	     file from the site itself instead of Apple's CDN, so a change to it is live immediately
+	     rather than after the CDN's wait. Release must never carry it: it costs the CDN's caching
+	     and asks every launch to reach the site.
+	     Keep this file and TodaysFive.entitlements in step — same domain, same everything else. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:54kz2vzbdw-code.github.io?mode=developer</string>
+	</array>
+</dict>
+</plist>

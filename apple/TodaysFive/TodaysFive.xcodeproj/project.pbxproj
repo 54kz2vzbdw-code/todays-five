@@ -25,6 +25,7 @@
 		TF0000000000000000000006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		TF0000000000000000000007 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		TF0000000000000000000008 /* TodaysFive.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TodaysFive.entitlements; sourceTree = "<group>"; };
+		TF0000000000000000000054 /* TodaysFive.debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TodaysFive.debug.entitlements; sourceTree = "<group>"; };
 		TF0000000000000000000009 /* TodaysFive.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TodaysFive.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -75,6 +76,7 @@
 			children = (
 				TF0000000000000000000007 /* Info.plist */,
 				TF0000000000000000000008 /* TodaysFive.entitlements */,
+				TF0000000000000000000054 /* TodaysFive.debug.entitlements */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -221,10 +223,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = Config/TodaysFive.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Config/TodaysFive.debug.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = T7GTZC5US9;
 				ENABLE_PREVIEWS = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Config/Info.plist;
@@ -247,7 +249,7 @@
 				CODE_SIGN_ENTITLEMENTS = Config/TodaysFive.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = T7GTZC5US9;
 				ENABLE_PREVIEWS = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Config/Info.plist;

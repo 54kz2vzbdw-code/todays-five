@@ -502,7 +502,7 @@ async function openList(r) {
   $("#ro").hidden = mode !== "view";
   paintOrigin();
   rows.clear(); $("#list").innerHTML = ""; clearAll();
-  wasAll = allDoneToday();
+  wasAll = allDoneInView();
   paintWho(0);
   try { setView(view, { force: true }); } catch (e) { console.error("render at open", e); } // 1.7: a bad row must not stop the engine
   paintListName();
@@ -739,6 +739,10 @@ function paintDate() {
   $("#date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }).replace(", ", " · ");
 }
 function todayList() { return M.todayItems(doc); }
+/** 1.12: the lines the view on screen is about — Today's starred ones, or every live line in Everything. The bar,
+    the count and the finale are each a statement about the view you are looking at, so they all read this. */
+function viewList() { return view === "today" ? todayList() : M.liveItems(doc); }
+function allDoneInView() { const t = viewList(); return t.length > 0 && t.every(i => i.done); }
 function doneCountToday() { return todayList().filter(i => i.done).length; }
 function allDoneToday() { const t = todayList(); return t.length > 0 && t.every(i => i.done); }
 /** Everything's DOM apart from its header: sections, the add button, the deleted shelf. */
@@ -752,12 +756,16 @@ function setView(v, { force } = {}) {
   hideMark();
   if (v !== view || force) { rows.clear(); $("#list").innerHTML = ""; clearAll(); }
   view = v;
+  // 1.12: the two views have their own numbers, so a switch is a different bar rather than progress being made —
+  // it lands at its width with no slide. One frame is enough: paint() runs inside render() below.
+  const fill = $("#fill"); fill.classList.add("nofade"); requestAnimationFrame(() => requestAnimationFrame(() => fill.classList.remove("nofade")));
   $("#v-today").setAttribute("aria-selected", v === "today" ? "true" : "false");
   $("#v-all").setAttribute("aria-selected", v === "all" ? "true" : "false");
   $("#today").hidden = v !== "today";
   $("#all").hidden = v !== "all";
   $("#welcome").hidden = !demo; if (demo) $("#shared").hidden = true; // the welcome's title and sentence sit above the live list
   render({ animate: false });
+  wasAll = allDoneInView(); // the view that just came up is either already finished or not; either way it is not news
   if (v === "all") hintToday();
 }
 
@@ -1067,7 +1075,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => layo
 if (document.fonts) document.fonts.addEventListener("loadingdone", () => layoutAll());
 
 function paint() {
-  const t = todayList(), n = t.length, d = t.filter(i => i.done).length;
+  const t = viewList(), n = t.length, d = t.filter(i => i.done).length;
   const countHtml = `<b>${d}</b>/${n}<span class="sr-only"> done</span>`;
   if ($("#count").innerHTML !== countHtml) $("#count").innerHTML = countHtml;
   $("#count").setAttribute("aria-pressed", dev.oneThing && listMode === "edit" ? "true" : "false");
@@ -1079,11 +1087,11 @@ function paint() {
     ? `<em>${n > 1 ? "1–" + Math.min(n, 9) : "1"}</em> check off &nbsp;·&nbsp; <em>N</em> new &nbsp;·&nbsp; <em>E</em> edit &nbsp;·&nbsp; <em>?</em> help`
     : `<em>A</em> today &nbsp;·&nbsp; <em>N</em> new &nbsp;·&nbsp; <em>/</em> search &nbsp;·&nbsp; <em>?</em> help`;
   const fin = $("#finale"), hint = $("#hint");
-  const finale = view === "today" && allDoneToday() && !editing && !finaleHold; // 1.9: the card waits for the chord
+  const finale = allDoneInView() && !editing && !finaleHold; // 1.9: the card waits for the chord; 1.12: each view finishes on its own
   if (finale) { fin.classList.add("on"); hint.classList.add("off"); }
   else { fin.classList.remove("on"); hint.classList.remove("off"); }
   if (finale !== finaleOn) { finaleOn = finale; idleReset(); } // the controls never fade during the finale
-  paintReview(finale);
+  paintReview(finale && view === "today"); // the review is a day's — a streak, this week, today's lines — so Everything's finale does not carry it
 }
 /** Day review: a quiet card under "That's the list", only when the setting is on, dismissed by any tap or key. */
 function paintReview(finale) {
@@ -1151,9 +1159,9 @@ function afterChange({ animate = true, delay = 0 } = {}) {
 function applyRemote(prev) {
   if (drag && (drag.moved || !drag.li.isConnected)) abortDrag(); // a moved drag or a lost row: abort; 1.7: an unmoved hold rides the render
   const before = wasAll;
-  const nowAll = allDoneToday();
+  const nowAll = allDoneToday();            // the remote celebration is about the day, as it has always been
   render({ animate: true, quiet: true });
-  wasAll = nowAll;
+  wasAll = allDoneInView();
   paintListName();
   if (editing && !doc.items[editing.id]) cancelEdit(true);
   if (prev && (listMode === "view" || dev.celebrateRemote)) celebrateRemote(prev, before, nowAll);
@@ -1224,12 +1232,12 @@ function toggle(id, px, py, fromPointer) {
   }
   // 1.9: the sink starts as the last of the ink lands (320 after a check-off, 160 after an uncheck; it was 520 and 200, with dead air between the strike and the move)
   afterChange({ animate: true, delay: it.done ? 320 : 160 });
-  if (view === "today") {
-    const now = allDoneToday();
+  {
+    const now = allDoneInView();
     // 1.9: the chord and the volley at 300 ms, as the ink lands, with the card fading in under them (it was fully on screen 110 ms before the sound)
-    if (now && !wasAll) { finaleHold = true; const gen = openGen; setTimeout(() => {
+    if (now && !wasAll) { finaleHold = true; const gen = openGen, viewAtCheck = view; setTimeout(() => {
       finaleHold = false;
-      if (gen !== openGen || !doc || !allDoneToday() || view !== "today") { paint(); return; } // taken back, or another list opened, in the meantime: no chord for a finale that is not there
+      if (gen !== openGen || !doc || !allDoneInView() || view !== viewAtCheck) { paint(); return; } // taken back, another list opened, or the view changed in the meantime: no chord for a finale that is not there
       if (dev.oneThing) setOneThing(false, { silent: true }); // the finale shows the whole list
       paint(); // the card starts its fade now, under the chord
       sound.finish(); moment("tf:finale"); finaleFx();
@@ -1405,7 +1413,7 @@ function undo() {
   sound.uncheck();
   moment("tf:uncheck");
   afterChange();
-  wasAll = allDoneToday();
+  wasAll = allDoneInView();
   toast("Undone");
   // 1.7: focus to the line the undo touched
   const firstId = u.items && u.items[0] && u.items[0][0];
@@ -1994,7 +2002,7 @@ function tickDay() {
   tickTheme();
   if (!doc || listMode !== "edit" || demo) return;
   const r = M.rollover(doc);
-  if (r.doc !== doc) { if (drag) abortDrag(); doc = r.doc; afterChange({ animate: true }); wasAll = allDoneToday(); }
+  if (r.doc !== doc) { if (drag) abortDrag(); doc = r.doc; afterChange({ animate: true }); wasAll = allDoneInView(); }
 }
 setInterval(() => { tickDay(); retryPendingKills(); settleMigrations(); }, 60000);
 
@@ -2213,7 +2221,7 @@ function toggleFullscreen() {
 }
 function startAgain() {
   if (!canEdit()) return;
-  const ids = todayList().filter(i => i.done).map(i => i.id);
+  const ids = viewList().filter(i => i.done).map(i => i.id); // 1.12: on Everything it brings back everything
   if (!ids.length) return;
   pushUndo("Start again", ids);
   for (const id of ids) { const it = doc.items[id]; it.done = false; it.doneAt = 0; it.updatedAt = M.now(); }
@@ -2221,7 +2229,7 @@ function startAgain() {
   sound.uncheck();
   moment("tf:uncheck");
   afterChange();
-  const first = todayList()[0]; if (first) focusRow(first.id);
+  const first = viewList()[0]; if (first) focusRow(first.id);
 }
 
 /* ---------------- keyboard ---------------- */
@@ -2321,7 +2329,7 @@ const api = {
   get listId() { return listId; }, get listMode() { return listMode; }, get ref() { return ref; }, get sync() { return sync; }, get transport() { return transport; },
   get theme() { return theme; }, get view() { return view; }, get syncStatus() { return syncStatus; }, get editing() { return editing; }, get openPanel() { return openPanel; },
   get whoCount() { return whoCount; },
-  todayList, allDoneToday, setWasAll: () => { wasAll = allDoneToday(); },
+  todayList, allDoneToday, setWasAll: () => { wasAll = allDoneInView(); },
   afterChange, applyRemote, render, setView, paint, paintListName, paintMute, paintStatus, paintMenu, paintWho, toast, hideToast, ask, showPanel, closePanel, goBack, registerOpeners,
   focusRow, newItem, startEdit, commitEdit, deleteItem, toggle, toggleToday, notToday, pushUndo, undo, restoreItem,
   saveDevice, registerList, switchTo, openList, showWelcome, createList, parseLink, flushQuick, flushOthers, killRemote, queueKill, retryPendingKills,
@@ -2337,7 +2345,7 @@ const api = {
 // 1.7: the secrets only on the local transport
 window.__tf = () => ({ stats: { ...stats }, view, listId: TRANSPORT_KIND === "local" ? listId : (listId ? "held" : null), mode: listMode, lookupId: TRANSPORT_KIND === "local" && ref ? ref.lookupId : null, R: TRANSPORT_KIND === "local" && ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, secret: !!dev.secret, field: !!field, demo, soundPacks: { ...(dev.soundPacks || {}) }, soundPins: { ...(dev.soundPins || {}) }, shuffled: shuffledId, zone: doc && doc.zone ? doc.zone : null, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry(), origin: (entryOf(listId) || {}).origin || null, nickname: (entryOf(listId) || {}).nickname || null, whose: $("#whose").open, panels: panelStackIds() });
 // test-only controls, on the local transport: simulate what iOS does to the audio context
-if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneToday(); } }, presence: n => paintWho(n) };
+if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneInView(); } }, presence: n => paintWho(n) };
 
 /* debug badge (?debug=1): the audio state machine, readable from a simulator screenshot */
 if (new URLSearchParams(SEARCH).get("debug") === "1") {

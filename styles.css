@@ -394,6 +394,9 @@ dialog.panel #toast{z-index:60} /* 1.7: a toast raised while a sheet is open mov
 #bar{position:fixed;left:0;right:0;bottom:env(safe-area-inset-bottom,0px);height:3px;background:transparent;z-index:40;pointer-events:none}
 #fill{height:100%;width:0%;background:var(--bar-bg,linear-gradient(90deg,var(--accent-deep),var(--accent) 55%,var(--accent-hi)));transition:width .5s cubic-bezier(.22,1,.36,1),box-shadow .4s ease} /* the fallback is the token's own default (theme.js), for the first frame */
 #fill.full{box-shadow:0 0 24px 2px var(--accent)}
+/* 1.12: Today and Everything each have their own numbers, so switching views is not progress — the bar lands at the
+   new width instead of sliding to it (app.js drops the class on the frame after the swap) */
+#fill.nofade{transition:none}
 
 /* ---------------- welcome ---------------- */
 #welcome{align-items:center;justify-content:center;text-align:center;gap:1.2rem;padding:1rem 0}

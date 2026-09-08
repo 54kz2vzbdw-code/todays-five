@@ -691,3 +691,64 @@ un-done every done line in the view, each with its own fresh `updatedAt`, and th
 
 Worth writing down because it is the one place the Watch's gesture vocabulary and the web's part
 company, and someone reading the two side by side deserves to know it was a choice.
+
+## The theme the Watch cannot have this round, said out loud
+
+The brief asks the Watch to follow the phone's day/night slot accent when it knows it. The payload in
+§2 carries links and nothing else — no slot, no accent, no `dev.switch` — so there is no channel for
+it, and building the codec from §2 and then discovering that at integration would have let the
+promise degrade to the fallback with nobody noticing it had been dropped.
+
+So it is written down as not built, and the fallback is chosen rather than defaulted into:
+**`#A86014`**, the brand accent that Dark, Paper *and* Terminal all carry — the day default since
+1.11, the night default, and the app's own. The three likeliest themes are already right; only a
+person on Pink or Ocean sees a Watch that does not match their phone.
+
+Adding `slot` and `accent` to the payload later costs nothing, because the codec keeps keys it does
+not understand — which is `COMPATIBILITY.md` §3 applied to a channel instead of a document, and this
+is the first time that rule has paid for itself here.
+
+## A minute timer is not a beat on a watch
+
+The web rolls a list over in two places, and one of them is `setInterval(…, 60000)`. Copying that to
+the Watch would produce a timer that is suspended seconds after the wrist drops and **fails
+silently** — no log, no crash, just yesterday's finished lines still on Today at nine in the morning,
+which is the exact bug the second call site exists to prevent.
+
+So the Watch's recurring rollover is a list of moments rather than a clock: the scene becoming
+active, a sync completing, and a background refresh. Between them they cover a Watch left on a wrist
+across midnight without pretending anything runs while the screen is off.
+
+**How to apply:** when porting a periodic task to a platform that suspends, port the *occasions*, not
+the interval.
+
+## The complication holds a snapshot, not a list
+
+The obvious design — link `TodaysFiveCore` into the widget extension and read the store's own record
+out of the App Group — was rejected. A widget has a small memory budget and no business holding
+somebody's list, and the narrower the thing in the shared container the less there is to leak. So the
+Watch app writes a `WatchSnapshot`: the list's name, the done count, the total, the next undone line,
+a stamp. Foundation only, no package dependency, and the extension cannot reach the Keychain where
+the secrets are.
+
+The other half is that the **Watch app's own store** has to live in the App Group for any of this to
+work — `ListStore` already takes a directory, so the Watch passes the group container instead of
+Application Support. `containerURL(forSecurityApplicationGroupIdentifier:)` returns nil *silently*
+whenever the entitlement is not in the running binary, and a complication reading an empty directory
+looks exactly like a list with nothing on it, so the fallback to Application Support says so in a
+debug line rather than pretending.
+
+And a complication only reloaded by a running app shows yesterday's count all morning. The timeline
+carries an entry for now **and one for the list's next midnight in its home zone**, where rollover
+empties Today — so the face is right through the night with nothing running at all.
+
+## The web's two add paths disagree, so the reference is named
+
+`newItem()` — a person typing a line — filters to the **undone** lines before taking the last order.
+`applyPendingAdd()` — a URL landing several lines at once — does not. They have disagreed for
+releases and it has never mattered, because the orders they produce are both past everything.
+
+It matters here because the core is about to have exactly one add. The rule is `newItem()`'s
+undone-only filter, because a line added by voice is a line a person is adding now; `applyPendingAdd()`
+is the reference only for the *shape*, being the path that writes the text and the record in one pass.
+Worth a line because "match the web" was not a well-formed instruction until one of the two was named.

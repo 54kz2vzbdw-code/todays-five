@@ -226,16 +226,40 @@ there are exactly four accessory families, and every `system*` family is explici
 - **An Add complication** opens the app straight into dictation (§3), through `.widgetURL`.
   `WKApplicationDelegate` has **no** URL callback — the whole optional list was read, and the only
   `openURL` in WatchKit sends a URL *out* — so the app receives it with SwiftUI's `onOpenURL`.
-- The extension reads the list from the **App Group container**, never the Keychain: what it needs is
-  the count and one line, which live in the decrypted document the store already writes to disk. The
-  secrets stay in the watch app's Keychain, which the extension has no access to and no reason to.
-- The app reloads timelines with `WidgetCenter.shared.reloadAllTimelines()` after any change.
+- **The extension does not link `TodaysFiveCore` and does not read the document.** It reads one small
+  file the Watch app leaves in the App Group — `WatchSnapshot`: the list's name, the done count, the
+  total, the next undone line, and a stamp. Foundation only. A widget has a small memory budget and
+  no business holding a list, and the narrower the thing in the shared container, the less there is
+  to leak. The secrets stay in the Watch app's Keychain, which the extension cannot reach and has no
+  reason to.
+- **The Watch app's store lives in the App Group too.** `ListStore` already takes a directory, so the
+  Watch passes `containerURL(forSecurityApplicationGroupIdentifier: "group.com.pricebrannen.todaysfive")`
+  rather than Application Support. When that returns nil — which it does silently whenever the
+  entitlement is not in the running binary — the Watch falls back to Application Support and **says so
+  in a debug line**, because a complication reading an empty directory is otherwise indistinguishable
+  from a list with nothing on it.
+- **Staying fresh while the app is not running** is the complication's whole problem, and
+  `reloadAllTimelines()` after a change does not solve it: it needs a running app. So the timeline is
+  not a single entry. It carries an entry for **now** and one for the list's **next midnight in its
+  home zone**, where rollover empties Today — so the count on the face is right through the night
+  without anything running. Beyond that: `.backgroundTask(.watchConnectivity)` wakes the app when the
+  phone sends links, and a scheduled background refresh asks for one more reload a day. A face showing
+  yesterday's count all morning is the failure this paragraph exists to prevent.
 
 ### 5. What the Watch does not get
 
-No settings screen. **Theme follows the phone's day/night slot accent when the phone has told us,
-else the app's Dark accent — which is `#A86014`,** the brand accent that Dark, Paper and Terminal all
-carry, so the fallback and the common case agree. Haptics only: no sound, no confetti.
+No settings screen.
+
+**On the theme, plainly: this round the Watch always uses `#A86014`.** The brief asks for the phone's
+day/night slot accent when it is known, and the payload in §2 carries no theme — no slot, no accent,
+nothing the phone could put a colour in. Rather than let the promise degrade silently at integration
+and have nobody notice it was dropped, it is written down as not built. The fallback is a good one:
+`#A86014` is the brand accent that **Dark, Paper and Terminal all carry**, which is the day default,
+the night default and the app's own — so the three likeliest themes are already right, and only a
+person on Pink or Ocean sees a Watch that does not match their phone. Adding `slot` and `accent` to
+the payload later costs nothing, because the codec keeps keys it does not know (§2).
+
+Haptics only: no sound, no confetti.
 
 ---
 
@@ -259,10 +283,13 @@ The payload is a codec in the core (Track A), not a dictionary assembled at two 
 { v: 1, at: <ms>, links: [ { id, mode, origin, nickname, name }, … ] }
 ```
 
-- `v` and `at` are the whole of the idempotence story. The probe showed the delivery callback firing
-  **twice per send**, and an application context is a last-value-wins slot that is also replayed to a
-  watch app on launch — so **a payload is applied only when its `at` is newer than the last applied
-  `at`**. Repeat delivery is then free, and out-of-order delivery is safe.
+- `v` and `at` are the whole of the idempotence story. **A payload is applied only when its `at` is
+  newer than the last applied `at`**, so repeat delivery is free and out-of-order delivery is safe.
+  The stamp is there because a channel whose delivery you do not control should not be trusted to
+  deliver exactly once — not because anything here proved it delivers twice. What a cold-launched
+  watch app is told is genuinely contested on this machine: one run found `receivedApplicationContext`
+  empty with the callback firing, another found it populated with the callback silent. That is why
+  the receiver reads **both**, and why the stamp makes reading both harmless.
 - An **empty `links` array is a real state** and means the phone holds no lists. This is the same
   shape of trap as the vault's `lists: []` (§8, and Phase 2's fourth bug), and it is answered the
   same way rather than by guessing: the phone always sends a stamped payload, so "no links" is
@@ -291,8 +318,14 @@ watchOS provides.
 Rollover runs on the Watch too — the core's pure function, in the list's home zone.
 
 The web runs it in **two** places and the Watch needs both: on opening a list (edit links only — a
-view link never rolls), and inside a once-a-minute tick. A Watch that only rolled on open would show
-yesterday's finished lines to anyone who left the app on their wrist across midnight.
+view link never rolls), and on a recurring beat.
+
+**The recurring beat cannot be the web's `setInterval(…, 60000)`.** A watchOS app is suspended
+seconds after the wrist drops, so a minute timer copied across never fires — and it fails *silently*,
+which is the worst way for this to be wrong. The Watch's beat is a list of moments rather than a
+clock: every time the scene becomes active (a wrist raise that shows the app), every time a sync
+completes, and every background refresh. Between them they cover the case the minute tick exists for
+— a Watch left on a wrist across midnight — without pretending a timer runs while the screen is off.
 
 The test that matters is not that rollover runs but that **a Watch and a phone rolling the same list
 produce identical documents**, which is what `+1 / +2` stamping is for. That is a core test.
@@ -340,8 +373,14 @@ uses it, which is the brief's rule that the core is the only data path.
 
 The core call also fixes three ways `tfive add` quietly differs from the web, all caught by reading
 the two side by side: it does not strip bidi overrides from entered text, it computes `order` and
-`todayOrder` over *all* items rather than the undone ones, and it hard-codes the section. The web's
-own bulk add path is the reference, because it writes the whole record in one pass.
+`todayOrder` over *all* items rather than the undone ones, and it hard-codes the section.
+
+The web has **two** add paths and they do not agree with each other, so the reference has to be named
+rather than gestured at: `newItem()` — the interactive one, a person typing a line — filters to the
+**undone** lines before taking the last order, and `applyPendingAdd()` — the bulk one, a URL landing
+several lines at once — does not. **`newItem()`'s undone-only filter is the rule**, because a line
+added by voice is a line a person is adding now; `applyPendingAdd()` is the reference only for the
+*shape*, because it is the path that writes the text and the record together in one pass.
 
 1. **Siri, hands-free.** An `AppIntent` — *Add to Today's Five* — with a text parameter, registered
    as an App Shortcut. App Intents live in the **app target** on watchOS; no extension is required

@@ -510,11 +510,38 @@ intent's add path.
 - offline edits on the Watch converge after reconnect against a change made with `tfive`;
 - an unchanged poll's byte count.
 
-Two things about that list are known to be harder than they read, and are written down now rather
-than discovered later: **`simctl` cannot tap a watch simulator** — it lists and screenshots and
-nothing else — so driving the Watch needs the Simulator app itself; and **Keychain entitlements are
-enforced on the watch simulator**, so the vault can only be exercised from a properly signed target,
-which is what the project builds.
+Two things about that list are harder than they read, and one of them changes how the round is
+verified at all.
+
+**`simctl` cannot tap a watch simulator.** It lists and screenshots and nothing else. Driving the
+Watch by hand needs the Simulator app, and in this session the Simulator's device windows sit on
+another desktop Space where they cannot be reached. That leaves nine of the bullets above — the tap,
+the finale, one thing and shuffle, the four ways in, the view-only refusal, the Add complication —
+with no driver.
+
+Phase 2 met the same wall on the phone and answered it with `-TFSelfTest`: a debug launch argument
+that performs the moments itself and prints a tally, because a simulator with no motor can still
+prove the generator was *called*. The Watch gets the same answer, and it is better here than it was
+there, because more of what has to be checked is a **rule** rather than a feeling:
+
+* **`-TFWatchDemo`** seeds a local demo list over `MemoryTransport`, so nothing spends from the
+  server's create limit and the self-test needs no phone and no network.
+* **`-TFWatchSelfTest`** crosses a line off and back, finishes the list and reports whether the finale
+  fired and after how long, runs Start again, **shuffles ten times and reports how many distinct lines
+  came up and whether the same line ever came up twice in a row** — which is the web's shuffle rule,
+  machine-checked rather than watched — shuffles with one line left and reports that nothing moved,
+  and prints the haptic tally, the finale run's duration, whether the store landed in the App Group,
+  and the snapshot's counts.
+* **`-TFAddSelfTest`** runs the add path with a canned string, with an empty one, against a view-only
+  list and with no list selected, exercises Undo, and reports whether
+  `WKApplication.shared().visibleInterfaceController` was non-nil — which is what decides the
+  dictation path a wrist will take.
+
+Everything they print is a count or a fixed string. A screenshot then says what is on screen and the
+tally says what happened, which is the same division of labour Phase 2 settled on.
+
+The second thing: **Keychain entitlements are enforced on the watch simulator**, so the vault can only
+be exercised from a properly signed target — which is what the project builds.
 
 **Screenshots** of every Watch screen and every complication family in `apple/shots/watch/`.
 

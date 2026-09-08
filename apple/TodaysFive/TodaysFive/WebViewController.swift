@@ -47,6 +47,10 @@ final class WebViewController: UIViewController {
     private var bridgeReady = false
     /// A read can land before the document has an origin; one retry covers it without a loop.
     private var retriesLeft = 2
+    /// The two Secret kits, once this page has been asked for them. Held for the life of the web
+    /// view rather than re-read on every reconcile: the palettes cannot change while a page is open,
+    /// and the import is a page's own module either way.
+    private var secretKits: [Kit] = []
 
     override var preferredStatusBarStyle: UIStatusBarStyle { statusBarStyle }
 
@@ -262,6 +266,15 @@ final class WebViewController: UIViewController {
                 return
             }
             retriesLeft = 2
+            // The Secret latch is `meta.device.secret`, a sibling key in the JSON this method
+            // already holds in hand (COMPATIBILITY.md §5: a device setting is a key inside
+            // `meta.device`). No new bridge, no message handler, and nothing for the web to add.
+            var unlocked = false
+            if case let .present(json) = registry,
+               let meta = (try? JSONReader.parse(Data(json.utf8)))?.objectValue {
+                unlocked = meta.obj("device").truthy("secret")
+            }
+
             for link in plan.upsert { try vault.put(link) }
             for id in plan.remove { try vault.remove(id: id) }
             if !plan.upsert.isEmpty || !plan.remove.isEmpty {
@@ -270,6 +283,9 @@ final class WebViewController: UIViewController {
                 // this device* reaches the wrist through here and nowhere else.
                 WatchLinkSender.shared.sendVaultNow()
             }
+            // After the vault is written, so the send this may trigger carries the vault as it now
+            // is rather than as it was a line ago.
+            await updateSecretKits(unlocked: unlocked)
             // The mark is written *after* the plan is applied, so a crash in between leaves the
             // cautious answer (an unmarked store removes nothing) rather than the destructive one.
             if plan.markStore {
@@ -290,6 +306,49 @@ final class WebViewController: UIViewController {
         } catch {
             log("vault: could not reconcile")
         }
+    }
+
+    // ---------------------------------------------------------------- the Secret kits
+
+    /// Hand the two Secret kits to the Watch, or take them away.
+    ///
+    /// **They are in no binary**, and this is why: they are read out of the page's own `theme.js`,
+    /// which every browser in the world already has, by a phone whose person has unlocked them. The
+    /// generated table is the 16 open kits and nothing here changes that. A Watch that has not been
+    /// given them by an unlocked phone does not carry them — a stricter rule than the web's own, and
+    /// the one that was asked for.
+    ///
+    /// The specifier carries the page's own build (`<html data-build>`), which is the one app.js
+    /// used, so this is a hit in the module map and not a second fetch. It runs in the **page**
+    /// world rather than the bridge's client world: a dynamic `import()` needs a module loader and a
+    /// base URL, and the page world is where the page's own modules already live. `evaluateJavaScript`
+    /// is a host call and is not subject to the page's CSP; the module it pulls is `'self'`, which
+    /// the CSP allows anyway.
+    ///
+    /// Every failure is the same answer — no kits — and that is the safe direction: the wrist simply
+    /// does not offer them.
+    private func updateSecretKits(unlocked: Bool) async {
+        guard unlocked else {
+            if !secretKits.isEmpty { log("secret: relocked") }
+            secretKits = []
+            WatchLinkSender.shared.setSecretKits([])
+            return
+        }
+        if secretKits.isEmpty {
+            let js = """
+            var b = document.documentElement.dataset.build || "";
+            var T = await import("./theme.js" + (b ? "?v=" + b : ""));
+            return JSON.stringify(T.SECRET || []);
+            """
+            let answer = try? await webView.callAsyncJavaScript(js, arguments: [:], in: nil,
+                                                                contentWorld: .page)
+            if let text = answer as? String,
+               let list = (try? JSONReader.parse(Data(text.utf8)))?.arrayValue {
+                secretKits = list.compactMap(Kit.init(json:))
+            }
+            log("secret: unlocked, read \(secretKits.count) kit(s) from the page")
+        }
+        WatchLinkSender.shared.setSecretKits(secretKits)
     }
 
     // ---------------------------------------------------------------- debug helpers

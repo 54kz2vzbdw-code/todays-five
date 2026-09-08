@@ -26,7 +26,7 @@ cd apple/TodaysFiveCore
 swift test
 ```
 
-72 tests in six suites, about eight seconds. They read fixtures from the repo, not from a resource
+126 tests in ten suites, about nine seconds. They read fixtures from the repo, not from a resource
 bundle, because the fixtures are the shared contract:
 
 | what | where | written by |
@@ -34,10 +34,22 @@ bundle, because the fixtures are the shared contract:
 | the pinned key vectors, envelopes, links, dates, the zone | `test/fixtures/vectors.json` | `test/tools/gen-vectors.mjs` |
 | golden merge / normalize / rollover cases | `test/fixtures/merge/*.json` | `tools/merge-fixtures.js` |
 | ~1,200 random document pairs and ~900 operation sequences | `test/fixtures/merge-cases.json.deflate` | `test/tools/gen-merge-cases.mjs` |
+| the 18 kits and the 13 font pairs (1.13) | `test/fixtures/kits.json` | `test/tools/gen-kits.mjs` |
+| the Watch's real family and PostScript names (1.13) | `test/fixtures/watch-fonts.json` + `apple/TodaysFive/Fonts/*.ttf` | `apple/tools/gen-watch-fonts.py` |
 
-`test/fixtures/merge/` and `test/fixtures/vectors.json` are read by the **Node** suites too
-(`test/compat.test.js`, `test/crypto.test.js`), so neither implementation can drift from the other
-without a suite going red on both sides.
+`test/fixtures/merge/`, `test/fixtures/vectors.json` and `test/fixtures/kits.json` are read by the
+**Node** suites too (`test/compat.test.js`, `test/crypto.test.js`, `test/theme.test.js`), so neither
+implementation can drift from the other without a suite going red on both sides.
+
+The last two are the palette's road into Swift, and they are a fixture rather than a build step for
+one reason: **a build-time generator cannot parse `theme.js`.** 62 of the 314 hex tokens in the
+finished table appear nowhere in its source — every kit has at least one — because they come out of
+`finalize()` → `ensure()` → `oklch()`, and `node` is unreachable from an Xcode build. So the
+`KitsGen` plugin reads the fixtures and never `theme.js`, and `KitFixtureTests` closes the hole a
+fixture leaves: it evaluates **live `theme.js`** in a `JSContext` (JavaScriptCore is in the macOS and
+iOS SDKs and absent from watchOS, so that check can never ship to a wrist) and asserts it still
+produces the fixture. `test/theme.test.js` asserts the same thing from the JavaScript side, so the
+web author sees the drift where they work.
 
 Regenerating them (only needed when the web's own behaviour changes, which
 `COMPATIBILITY.md` says must be additive):
@@ -46,10 +58,14 @@ Regenerating them (only needed when the web's own behaviour changes, which
 TZ=America/Chicago node test/tools/gen-vectors.mjs
 TZ=America/Chicago node test/tools/gen-merge-cases.mjs
 node tools/merge-fixtures.js
+node test/tools/gen-kits.mjs                 # after any colour, font pair or kit moves in theme.js
+python3 apple/tools/gen-watch-fonts.py       # after fonts/ or a pair's weights move; needs fontTools + brotli
 ```
 
 `gen-vectors.mjs` refuses to write if `crypto.js` no longer reproduces the pinned derivation values.
-The zone is pinned because rollover is a function of the local calendar.
+`gen-kits.mjs` refuses on the same principle: 18 kits, exactly 2 secret, and 234 contrast assertions
+against each kit's **own** grounds. The zone is pinned because rollover is a function of the local
+calendar.
 
 When a differential case fails, the Swift test names it; to see the web's answer in full:
 
@@ -129,6 +145,8 @@ a list that can be named and cleaned up rather than an orphan nobody can.
 | `Document.swift`, `Merge.swift`, `Rollover.swift`, `Ops.swift`, `Queries.swift`, `Dates.swift` | the document |
 | `Transport.swift`, `SupabaseTransport.swift`, `MemoryTransport.swift` | the three RPCs, and a server for tests |
 | `Store.swift`, `SyncEngine.swift` | one file per list, and pull / merge / push |
+| `Kits.swift` | the kit table's accessors — **no palette data**: that is `Kits.generated.swift`, written at build time by `Plugins/KitsGen` from the two fixtures |
+| `Vault.swift`, `WatchLink.swift` | what the phone holds, and what crosses to the wrist (links, and since 1.13 the two Secret kits) |
 
 Read `PLAN-apple.md` before changing any of it, and `DECISIONS-apple.md` for why the JS layer exists.
 

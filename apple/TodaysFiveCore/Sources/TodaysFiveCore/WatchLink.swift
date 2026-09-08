@@ -6,6 +6,11 @@
 // part of the receiving that can be wrong in a way a test catches — the same division of labour as
 // Vault.swift, for the same reason. The WatchConnectivity I/O lives in the two app targets.
 //
+// 1.13 adds one thing to that, and it is a palette rather than a list: the two **Secret kits**, which
+// are in no binary and reach a Watch only from a phone whose person has unlocked them. They ride in
+// `extra` under `kits`, which is the key an older build already passes through untouched, so `v`
+// stays 1 — COMPATIBILITY.md §3's additive rule applied to a wire shape rather than a document.
+//
 // Two measured facts shape everything below. `session(_:didReceiveApplicationContext:)` fires
 // **twice** for every send, reproducibly; and an application context is a last-value-wins slot that
 // is also replayed to a watch app on launch. So the channel's delivery cannot be trusted to happen
@@ -97,6 +102,50 @@ public struct WatchLinkPayload: Sendable, Equatable {
     }
 
     static let knownKeys: Set<String> = ["v", "at", "links"]
+
+    // ---------------------------------------------------------------- the Secret kits (1.13)
+
+    /// The key the two Secret kits ride under. It is deliberately in `extra` and not a field of its
+    /// own: a build that predates 1.13 keeps unknown keys and hands them back, so a Watch on an
+    /// older build passes them through untouched instead of choking, and `v` stays 1.
+    public static let kitsKey = "kits"
+
+    /// The Secret kits this payload carries — none unless the phone's person has unlocked them.
+    ///
+    /// **They are not in any binary.** The generated table is the 16 open kits; these two are read
+    /// out of the phone's own page (`theme.js` is right there, and every browser has it) and put on
+    /// the wire only by a phone whose `meta.device.secret` is set. "A Watch that has not unlocked
+    /// them does not carry them" is a stricter rule than the web's own — the palettes are not
+    /// cryptographically secret — and it is kept because it was asked for.
+    ///
+    /// Reading is by id, in sorted order, whatever order they went in.
+    public var secretKits: [Kit] {
+        get {
+            guard let o = extra[Self.kitsKey]?.objectValue else { return [] }
+            return o.keys.sorted(by: { $0 < $1 }).compactMap { o[$0].flatMap(Kit.init(json:)) }
+        }
+        set {
+            guard !newValue.isEmpty else { return setExtra(Self.kitsKey, nil) }
+            var kits = JSONObject()
+            for kit in newValue.sorted(by: { $0.id < $1.id }) { kits[kit.id] = kit.json }
+            setExtra(Self.kitsKey, .object(kits))
+        }
+    }
+
+    /// Put a key in `extra`, **rebuilding it in sorted order**. That is not tidiness. `decode` sorts
+    /// what it keeps and `JSONObject` remembers insertion order and compares it, so a payload whose
+    /// extra was appended to rather than re-sorted decodes unequal to itself and the round-trip test
+    /// fails in a way that looks like the codec and is not. Passing nil removes the key.
+    public mutating func setExtra(_ key: String, _ value: JSONValue?) {
+        var pairs: [(JSString, JSONValue)] = []
+        for k in extra.keys where k.string != key {
+            if let v = extra[k] { pairs.append((k, v)) }
+        }
+        if let value { pairs.append((JSString(key), value)) }
+        var next = JSONObject()
+        for (k, v) in pairs.sorted(by: { $0.0 < $1.0 }) { next[k] = v }
+        extra = next
+    }
 
     /// A property-list dictionary, ready for `WCSession.updateApplicationContext`. An application
     /// context takes property-list types only and throws `WCErrorCodePayloadUnsupportedTypes`
@@ -214,6 +263,11 @@ public struct WatchLinkPlan: Sendable, Equatable {
     public var upsert: [VaultedLink] = []
     /// Ids to drop, because the phone no longer names them.
     public var remove: [String] = []
+    /// The Secret kits the Watch should hold once the plan is applied, by id. **Empty means hold
+    /// none**, which is the same authority rule the links get: the phone is the only thing that
+    /// says what this Watch has, so re-locking on the phone reaches the wrist by this line and no
+    /// other. It only means anything when `applied` is true.
+    public var kits: [Kit] = []
     /// The id the Watch should be showing once the plan is applied, nil when there is nothing to show.
     public var select: String? = nil
     /// false = the payload was stale, unreadable or absent. Nothing else in the plan means anything.
@@ -247,6 +301,10 @@ public enum WatchLinkReconciler {
 
         plan.applied = true
         plan.appliedAt = payload.at
+        // The Secret kits, under exactly the links' rule: what the phone names is what this Watch
+        // holds, and a payload that names none takes away the ones it holds. A phone that never
+        // unlocked them has never sent the key, so this is empty and stays empty.
+        plan.kits = payload.secretKits
 
         var byId: [String: VaultedLink] = [:]
         for link in vault { byId[link.id] = link }

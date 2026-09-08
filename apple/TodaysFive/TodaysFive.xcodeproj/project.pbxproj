@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		TF0000000000000000000201 /* WatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000210 /* WatchApp.swift */; };
+		TF0000000000000000000202 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000211 /* Assets.xcassets */; };
+		TF0000000000000000000203 /* TodaysFiveCore in Frameworks */ = {isa = PBXBuildFile; productRef = TF0000000000000000000231 /* TodaysFiveCore */; };
+		TF0000000000000000000204 /* TodaysFiveWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000213 /* TodaysFiveWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		TF0000000000000000000101 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000001 /* App.swift */; };
 		TF0000000000000000000102 /* WebViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000002 /* WebViewController.swift */; };
 		TF0000000000000000000103 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000003 /* Haptics.swift */; };
@@ -16,7 +20,25 @@
 		TF0000000000000000000107 /* TodaysFiveCore in Frameworks */ = {isa = PBXBuildFile; productRef = TF0000000000000000000032 /* TodaysFiveCore */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		TF0000000000000000000224 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				TF0000000000000000000204 /* TodaysFiveWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		TF0000000000000000000210 /* WatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchApp.swift; sourceTree = "<group>"; };
+		TF0000000000000000000211 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		TF0000000000000000000212 /* WatchInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = WatchInfo.plist; sourceTree = "<group>"; };
+		TF0000000000000000000213 /* TodaysFiveWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TodaysFiveWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		TF0000000000000000000001 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		TF0000000000000000000002 /* WebViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewController.swift; sourceTree = "<group>"; };
 		TF0000000000000000000003 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
@@ -29,6 +51,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		TF0000000000000000000222 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				TF0000000000000000000203 /* TodaysFiveCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		TF0000000000000000000020 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -40,10 +70,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		TF0000000000000000000220 /* TodaysFiveWatch */ = {
+			isa = PBXGroup;
+			children = (
+				TF0000000000000000000210 /* WatchApp.swift */,
+				TF0000000000000000000211 /* Assets.xcassets */,
+			);
+			path = TodaysFiveWatch;
+			sourceTree = "<group>";
+		};
 		TF0000000000000000000010 = {
 			isa = PBXGroup;
 			children = (
 				TF0000000000000000000012 /* TodaysFive */,
+				TF0000000000000000000220 /* TodaysFiveWatch */,
 				TF0000000000000000000013 /* Config */,
 				TF0000000000000000000011 /* Products */,
 			);
@@ -53,6 +93,7 @@
 			isa = PBXGroup;
 			children = (
 				TF0000000000000000000009 /* TodaysFive.app */,
+				TF0000000000000000000213 /* TodaysFiveWatch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -74,6 +115,7 @@
 			isa = PBXGroup;
 			children = (
 				TF0000000000000000000007 /* Info.plist */,
+				TF0000000000000000000212 /* WatchInfo.plist */,
 				TF0000000000000000000008 /* TodaysFive.entitlements */,
 			);
 			path = Config;
@@ -82,6 +124,26 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		TF0000000000000000000230 /* TodaysFiveWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = TF0000000000000000000240 /* Build configuration list for PBXNativeTarget "TodaysFiveWatch" */;
+			buildPhases = (
+				TF0000000000000000000221 /* Sources */,
+				TF0000000000000000000222 /* Frameworks */,
+				TF0000000000000000000223 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TodaysFiveWatch;
+			packageProductDependencies = (
+				TF0000000000000000000231 /* TodaysFiveCore */,
+			);
+			productName = TodaysFiveWatch;
+			productReference = TF0000000000000000000213 /* TodaysFiveWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
 		TF0000000000000000000030 /* TodaysFive */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = TF0000000000000000000042 /* Build configuration list for PBXNativeTarget "TodaysFive" */;
@@ -89,10 +151,12 @@
 				TF0000000000000000000021 /* Sources */,
 				TF0000000000000000000020 /* Frameworks */,
 				TF0000000000000000000022 /* Resources */,
+				TF0000000000000000000224 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				TF0000000000000000000232 /* PBXTargetDependency */,
 			);
 			name = TodaysFive;
 			packageProductDependencies = (
@@ -115,6 +179,9 @@
 					TF0000000000000000000030 = {
 						CreatedOnToolsVersion = 26.6;
 					};
+					TF0000000000000000000230 = {
+						CreatedOnToolsVersion = 26.6;
+					};
 				};
 			};
 			buildConfigurationList = TF0000000000000000000041 /* Build configuration list for PBXProject "TodaysFive" */;
@@ -134,11 +201,38 @@
 			projectRoot = "";
 			targets = (
 				TF0000000000000000000030 /* TodaysFive */,
+				TF0000000000000000000230 /* TodaysFiveWatch */,
 			);
 		};
 /* End PBXProject section */
 
+/* Begin PBXContainerItemProxy section */
+		TF0000000000000000000233 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = TF0000000000000000000040 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = TF0000000000000000000230;
+			remoteInfo = TodaysFiveWatch;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		TF0000000000000000000232 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = TF0000000000000000000230 /* TodaysFiveWatch */;
+			targetProxy = TF0000000000000000000233 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin PBXResourcesBuildPhase section */
+		TF0000000000000000000223 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				TF0000000000000000000202 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		TF0000000000000000000022 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -150,6 +244,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		TF0000000000000000000221 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				TF0000000000000000000201 /* WatchApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		TF0000000000000000000021 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -165,6 +267,60 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		TF0000000000000000000241 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Config/TodaysFiveWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 158;
+				DEVELOPMENT_TEAM = T7GTZC5US9;
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Config/WatchInfo.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.12;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Debug;
+		};
+		TF0000000000000000000242 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Config/TodaysFiveWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 158;
+				DEVELOPMENT_TEAM = T7GTZC5US9;
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Config/WatchInfo.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.12;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Release;
+		};
 		TF0000000000000000000050 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -223,7 +379,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Config/TodaysFive.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 139;
+				CURRENT_PROJECT_VERSION = 158;
 				DEVELOPMENT_TEAM = T7GTZC5US9;
 				ENABLE_PREVIEWS = NO;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -232,7 +388,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.10;
+				MARKETING_VERSION = 1.12;
 				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -246,7 +402,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Config/TodaysFive.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 139;
+				CURRENT_PROJECT_VERSION = 158;
 				DEVELOPMENT_TEAM = T7GTZC5US9;
 				ENABLE_PREVIEWS = NO;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -255,7 +411,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.10;
+				MARKETING_VERSION = 1.12;
 				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -266,6 +422,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		TF0000000000000000000240 /* Build configuration list for PBXNativeTarget "TodaysFiveWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				TF0000000000000000000241 /* Debug */,
+				TF0000000000000000000242 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		TF0000000000000000000041 /* Build configuration list for PBXProject "TodaysFive" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -294,6 +459,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		TF0000000000000000000231 /* TodaysFiveCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TodaysFiveCore;
+		};
 		TF0000000000000000000032 /* TodaysFiveCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TodaysFiveCore;

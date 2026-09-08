@@ -508,3 +508,146 @@ selftest: finale pattern ok duration=1.020s hardware=no
 That is the whole of what a simulator can prove: the four moments arrive, and the pattern is
 well-formed and the length it should be. **Whether it feels like the confetti looks is a question
 only a phone can answer**, and this round did not get to ask it — see PLAN.md's verification notes.
+
+---
+
+# Phase 3 — the Watch
+
+## The plugin became a prebuild command, and `tfconfiggen` is gone
+
+A build-tool plugin's work directory is keyed by package, target and plugin — **not by platform**. So
+the moment a second target in the same project depends on `TodaysFiveCore` (the Watch app does, and
+the iPhone app already did), one build plans the `ConfigGen` command twice, once per platform, both
+declaring the same output file, and the build system refuses:
+
+```
+error: Multiple commands produce '…/BuildToolPluginIntermediates/todaysfivecore.output/TodaysFiveCore/ConfigGen/Config.generated.swift'
+    note: Target 'TodaysFiveCore': CustomTask Reading config.js e35cce56…
+    note: Target 'TodaysFiveCore': CustomTask Reading config.js 21f1759e…
+```
+
+Nothing available to the plugin distinguishes the two invocations. `PluginContext` has the package
+and the target and no platform, and the plugin *process* — dumped, not assumed — inherits the login
+environment and sees no build settings at all: no `PLATFORM_NAME`, no `SDKROOT`, nothing. So the
+output path cannot be made unique, and a build command cannot be used.
+
+A **prebuild** command hands the build system a *directory* to glob rather than a file it promises to
+produce, and the collision cannot arise. That forced the second half: *"a prebuild command cannot use
+executables built from source, including executable target 'tfconfiggen'"* — the build system's own
+sentence. So the writer is `/bin/sh` with the three values passed as **arguments** rather than
+interpolated into the script (a value can then never become shell), and the `tfconfiggen` target is
+deleted. `config.js` is still read at build time and neither value is ever typed into Swift, which is
+the whole reason the plugin exists.
+
+The cost is that a prebuild command runs on every build. It writes about two hundred bytes.
+
+**How to apply:** a build-tool plugin that generates source is fine until a second platform wants the
+same package. If a package will ever be linked by two targets, its plugins must not declare a fixed
+output path.
+
+## The App Store Connect key can use a capability and cannot add one
+
+Registering the Watch app's App ID with `-allowProvisioningUpdates` and the App Manager key worked
+first time. Adding **App Groups** to that App ID failed twice, identically:
+
+```
+error: Authentication failed: Make sure a bearer token was provided, it is properly configured and signed, and it has not expired.
+error: Provisioning profile "iOS Team Provisioning Profile: *" doesn't include the App Groups capability.
+```
+
+The first line reads like a broken key and is not one — the same key had just registered an App ID.
+It is Phase 2b's wall one level along: an **App Manager** key may consume a capability and may not
+create one, exactly as it may use a distribution certificate and not make one.
+
+What lifts it is the Apple ID now signed into Xcode. `-allowProvisioningUpdates` with **no**
+`-authenticationKey*` flags at all uses the account rather than the key, and it created the group:
+`group.com.pricebrannen.todaysfive` is in the Watch app's signed entitlements.
+
+So the recipe splits, and `README.md` says so: **the key for ordinary builds, the account for any
+build that changes a capability.**
+
+## The Watch's finale is an approximation, and says so
+
+`CoreHaptics.framework` is not in the watchOS SDK. 1.12's finale — seven transients 65 ms apart, a
+fuller one at 210, the chord at 700 with a 320 ms roll under it — is a `CHHapticPattern` and cannot
+be played on a wrist. `WKInterfaceDevice.play(_:)` takes a type and nothing else: no time, no
+intensity, no sharpness, and watchOS coalesces haptics that arrive too close together.
+
+So the Watch plays the volley's *rhythm* — seven `.click` on the same onsets, `.success` on the chord
+— and the plan calls it an approximation rather than claiming the pattern. The numbers are still read
+out of `fx.js` and `packs.js`, so if the volley is re-choreographed every client is wrong together
+and `test/sound.test.js` says so.
+
+The Watch also answers an **uncheck** with `.click` where the web's `sound.js` gives an uncheck no
+buzz at all. Deliberate: a wrist that answers a tap with nothing reads as a tap that missed.
+
+## The application context is delivered more than once, so the payload is stamped
+
+Measured on the paired simulators, in every run: one `updateApplicationContext` produced **two**
+`session(_:didReceiveApplicationContext:)` callbacks. `receivedApplicationContext` was also empty at
+activation while a context was pending, so the property is not the delivery path — the callback is.
+
+The cause was not isolated and does not need to be, because the fix is the same either way: the
+payload carries `v` and `at`, and **is applied only when `at` is newer than the last applied `at`**.
+Repeat delivery is then free and out-of-order delivery is safe. A context is a last-value-wins slot
+that is *also* replayed to a watch app on launch, so this was going to be needed regardless.
+
+**How to apply:** a channel whose delivery you do not control needs a stamp, not a promise.
+
+## An empty `links` array is a state the phone said, not one the Watch inferred
+
+The trap that cost Phase 2 its worst bug — reading "the registry is empty" as "the store is gone" —
+has an exact analogue here: a payload with no links, and a Watch that has heard nothing, look the
+same if you let them. They are separated the same way, and the separation is cheaper here than it was
+on the phone: the phone always sends a **stamped** payload, so "no links" is something it said. A
+Watch that has heard nothing has no stamp and changes nothing.
+
+## The simulator does not install the watch app for you
+
+`simctl install` of the iPhone app onto a paired phone simulator leaves the watch untouched, so
+`isWatchAppInstalled` is false and every `updateApplicationContext` throws
+`WCErrorCodeWatchAppNotInstalled` (7006). This looks exactly like WatchConnectivity being broken in
+the simulator, which it is not. The watch app must be installed onto the watch simulator explicitly,
+and `apple/README.md`'s Watch section leads with it.
+
+Two more harness facts from the same afternoon: **`simctl` cannot tap a watch simulator** (it lists
+and screenshots and nothing else), and **Keychain entitlements are enforced on the watch simulator**,
+so the vault can only be exercised from a properly signed target rather than a hand-assembled bundle.
+
+## No API forces dictation, and the simulator cannot settle what happens instead
+
+`TextFieldLink` has four initializers and none takes an input mode. `WKTextInputMode` has three cases
+and none of them means "dictation only" — the mode widens what characters may come back, it never
+picks the input method. The one lever is WatchKit's
+`presentTextInputController(withSuggestions:allowedInputMode:completion:)`, where a **nil**
+suggestions array skips the chooser screen; in both the watchOS 11.1 and the watchOS 26.5 simulator
+that landed on the QWERTY keyboard.
+
+That is not the answer to the question, because **a simulator has no microphone**. So the app
+presents the WatchKit controller (reached from the SwiftUI app through
+`WKApplication.shared().visibleInterfaceController`, which is public API and non-nil from a pure
+`WindowGroup` — measured), falls back to `TextFieldLink` if that is ever nil, and the round records
+what a real wrist shows rather than claiming it.
+
+**No custom speech recognition was attempted**: `Speech.framework` is not in the watchOS SDK, checked
+on disk. A phone-relay version — record on the wrist, transcribe on the phone — is possible and was
+not built: it is slow, it needs the phone awake and in range, and it turns the Watch back into a
+terminal for the phone, which is the thing the data path spends its whole design avoiding. Worth
+revisiting only if the wrist says dictation is genuinely out of reach.
+
+## There is no Action button API to write against
+
+Nothing developer-facing for the Ultra's Action button exists anywhere in the watchOS 26.5 SDK, and
+the simulator runtimes ship no Ultra hardware support. So there is nothing to implement and nothing
+to verify: an App Shortcut is what makes an intent assignable, and the assignment is two taps in
+Settings that only the owner of the watch can make. `README.md` carries the two lines.
+
+## The long press on the count is a Watch idiom, and the web has no such thing
+
+On the web a plain tap on the count toggles one-thing mode, and Start again is a button under the
+finale card reading *Bring them all back*. The Watch has no room for a second button, so Start again
+lives behind a long press on the count — but the *action* is the web's `startAgain()` exactly:
+un-done every done line in the view, each with its own fresh `updatedAt`, and the uncheck moment.
+
+Worth writing down because it is the one place the Watch's gesture vocabulary and the web's part
+company, and someone reading the two side by side deserves to know it was a choice.

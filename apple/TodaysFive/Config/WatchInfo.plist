@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>Today's Five</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+
+	<!-- The single-target watchOS app shape: WKApplication says this bundle *is* the app rather
+	     than a WatchKit stub with an extension beside it. -->
+	<key>WKApplication</key>
+	<true/>
+	<key>WKCompanionAppBundleIdentifier</key>
+	<string>com.pricebrannen.todaysfive</string>
+	<!-- The Watch talks to the server itself (PLAN-apple-phase3.md §2): it needs the phone to hand
+	     it a link, and nothing after that. -->
+	<key>WKRunsIndependentlyOfCompanionApp</key>
+	<true/>
+
+	<!-- The only encryption is the list's own: AES-GCM over the person's document, and HTTPS. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<!-- No analytics, no crash reporting, no tracking, and nothing collected. -->
+	<key>NSPrivacyTracking</key>
+	<false/>
+</dict>
+</plist>

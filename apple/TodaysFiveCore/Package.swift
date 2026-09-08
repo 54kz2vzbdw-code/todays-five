@@ -22,8 +22,7 @@ let package = Package(
         // config.js is the single source of the project URL and the publishable key: the plugin reads
         // the repo's own file at build time and emits Config.generated.swift, so neither value is ever
         // copied by hand into Swift and neither can drift.
-        .plugin(name: "ConfigGen", capability: .buildTool(), dependencies: ["tfconfiggen"]),
-        .executableTarget(name: "tfconfiggen")
+        .plugin(name: "ConfigGen", capability: .buildTool())
     ],
     swiftLanguageModes: [.v6]
 )

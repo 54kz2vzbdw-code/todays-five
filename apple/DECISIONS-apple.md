@@ -581,18 +581,58 @@ and `test/sound.test.js` says so.
 The Watch also answers an **uncheck** with `.click` where the web's `sound.js` gives an uncheck no
 buzz at all. Deliberate: a wrist that answers a tap with nothing reads as a tap that missed.
 
-## The application context is delivered more than once, so the payload is stamped
+## The payload is stamped, and the stamp is not justified by a claim about WatchConnectivity
 
-Measured on the paired simulators, in every run: one `updateApplicationContext` produced **two**
-`session(_:didReceiveApplicationContext:)` callbacks. `receivedApplicationContext` was also empty at
-activation while a context was pending, so the property is not the delivery path — the callback is.
+The first measurement said one `updateApplicationContext` produced **two**
+`session(_:didReceiveApplicationContext:)` callbacks on a cold-launched watch, and that
+`receivedApplicationContext` was empty at activation with a context pending. A second, independent
+measurement said the opposite in both halves: eleven updates produced exactly eleven callbacks in
+order against an already-running watch app, and on a **cold launch** the property read after
+activation was the only reliable source of an already-delivered context.
 
-The cause was not isolated and does not need to be, because the fix is the same either way: the
-payload carries `v` and `at`, and **is applied only when `at` is newer than the last applied `at`**.
-Repeat delivery is then free and out-of-order delivery is safe. A context is a last-value-wins slot
-that is *also* replayed to a watch app on launch, so this was going to be needed regardless.
+Both are probably true of different moments, and the useful thing is that **the design does not
+depend on knowing which**. The receiver reads `receivedApplicationContext` after activation *and*
+handles the callback, and the payload carries `v` and `at` so it is applied only when `at` is newer
+than the last applied `at`. Applying the same payload twice is then free, and out-of-order delivery
+is safe.
 
-**How to apply:** a channel whose delivery you do not control needs a stamp, not a promise.
+The first version of this note asserted the doubling as a fact about the framework and used it to
+justify the stamp. That was the wrong shape of argument even while the observation stood: a stamp is
+right because a channel whose delivery you do not control should not be trusted to deliver once, not
+because you have proved it delivers twice.
+
+**How to apply:** justify defensive design by what you are not entitled to assume, never by a
+measurement that a second run can take away from you.
+
+## Three more numbers, and one gate never to write
+
+* `WCPayloadSizeLimitApplicationContext` is **262144** (256 KiB), against 65536 for `sendMessage` and
+  for `transferUserInfo` — on disk in both the iOS and the watchOS runtimes, and identical in both. A
+  vault of links is a few hundred bytes, so there is nothing to manage; it is a number to know.
+* `transferUserInfo` **did not deliver at all** on this simulator pair, at any size, while
+  `updateApplicationContext` was demonstrably arriving. Not used here, and now there is a reason
+  written down rather than a preference.
+* **`isReachable` is asymmetric.** At the same instant the phone logged `reachable=true`, the watch
+  logged `reachable=false`. `updateApplicationContext` does not consult it — which is exactly why it
+  is the channel this design uses — but a reachability gate on either side would have failed
+  silently and intermittently. Do not write one.
+
+## An App Shortcut phrase cannot carry a line of someone's list
+
+The brief asked for *"Add ⟨text⟩ to Today's Five"* and that phrase cannot be built. An App Shortcut
+phrase may only interpolate a parameter whose type is an `AppEntity` or an `AppEnum`; a free-text
+`String` parameter inside a phrase is a **halting build error** — *"Invalid parameter type. AppEntity
+and AppEnum are the only allowed types"* — not a warning to be lived with. Modelling a line of
+someone's to-do list as an enumeration is not a design, it is a workaround with no set to enumerate.
+
+So the phrases are parameterless — *"Add to Today's Five"* — and Siri asks for the line afterwards,
+with the prompt coming from the parameter's `requestValueDialog`. It is two beats where the brief
+wanted one, and it is the closest thing watchOS allows.
+
+Two neighbouring rules found the same way, both build failures rather than warnings: every phrase
+must contain `\(.applicationName)`, and the intent and its `AppShortcutsProvider` must be in the same
+target (compiling the shared file into both targets satisfies that). An app may register at most ten
+App Shortcuts.
 
 ## An empty `links` array is a state the phone said, not one the Watch inferred
 

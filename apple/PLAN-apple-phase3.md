@@ -42,10 +42,25 @@ needed. Three things the probe turned up that the design has to carry:
   on the phone leaves `isWatchAppInstalled == false` and every `updateApplicationContext` throws
   `WCErrorCodeWatchAppNotInstalled` (7006). The watch app must be installed onto the watch simulator
   explicitly. This is the failure that looks exactly like "WatchConnectivity is broken in the sim".
-- **`receivedApplicationContext` was empty at activation** even with a context pending; delivery came
-  through `session(_:didReceiveApplicationContext:)`. The Watch reads the callback, not the property.
-- **The callback fired twice for every send.** Reproduced across separate runs. Whatever the cause,
-  **the receiver must be idempotent**, and §2's payload carries a stamp so that it is.
+- **Read both the property and the callback, because neither is reliable alone.** On the cold-launched
+  watch here, `receivedApplicationContext` was **empty at activation** while a context was pending and
+  the delivery arrived through `session(_:didReceiveApplicationContext:)`. A second, independent
+  measurement found the opposite risk: with the watch app already running, the callback is the live
+  path, but on a cold launch the property read *after activation completes* is the only thing that
+  reliably holds an already-delivered context. Both can be true — they are different moments — and a
+  Watch that trusts one of them shows stale or empty state in the other. So the receiver does both,
+  and §2's stamp makes applying the same payload twice free.
+- **How many times the callback fires is not settled, and the design does not depend on it.** One send
+  to a cold-launched watch here produced **two** callbacks; a separate run against an already-running
+  watch app produced exactly one callback per update, eleven for eleven, in order. The stamp covers
+  either. It is defensive design, not a claim about WatchConnectivity.
+- **The ceiling is on disk after all**: `WCPayloadSizeLimitApplicationContext = 262144` (256 KiB),
+  against 65,536 for `sendMessage` and `transferUserInfo`, identical in the iOS and watchOS runtimes.
+  A vault of links is a few hundred bytes; there is nothing to manage here, only a number to know.
+- **`isReachable` is asymmetric and must never gate anything.** At the same instant the phone logged
+  `reachable=true`, the watch logged `reachable=false`. `updateApplicationContext` does not care —
+  which is exactly why it is the channel this design uses — but a reachability check on either side
+  would have failed silently and intermittently.
 
 **2. The `ConfigGen` build-tool plugin could not survive a second target.** The moment the Watch app
 also depends on `TodaysFiveCore`, one build plans the plugin twice — once per platform — and the
@@ -329,11 +344,22 @@ the two side by side: it does not strip bidi overrides from entered text, it com
 own bulk add path is the reference, because it writes the whole record in one pass.
 
 1. **Siri, hands-free.** An `AppIntent` — *Add to Today's Five* — with a text parameter, registered
-   as an App Shortcut with natural phrases (*"Add ⟨text⟩ to Today's Five"*, *"Put ⟨text⟩ on my
-   five"*). App Intents live in the **app target** on watchOS; no extension is required and on
-   watchOS 11 none is even possible. The same Swift file compiles unchanged into the iOS and the
-   watchOS target — the two module interfaces differ by one declaration this file does not use.
-   Every phrase carries `\(.applicationName)`, which is the toolchain's rule.
+   as an App Shortcut. App Intents live in the **app target** on watchOS; no extension is required
+   and on watchOS 11 none is even possible. The same Swift file compiles unchanged into the iOS and
+   the watchOS target — the two module interfaces differ by one declaration this file does not use —
+   and the intent and its `AppShortcutsProvider` must sit in the same target, which compiling both
+   files into both targets satisfies.
+
+   **The phrase cannot carry the text, and this is the round's one real disappointment.** An App
+   Shortcut phrase may only interpolate a parameter whose type is an `AppEntity` or an `AppEnum`; a
+   free-text `String` parameter in a phrase is a **halting build error**, not a warning
+   (*"Invalid parameter type. AppEntity and AppEnum are the only allowed types"*). Modelling a line
+   of someone's to-do list as an enumeration is absurd, so the phrases are parameterless —
+   *"Add to Today's Five"*, *"Put something on my five"* — and Siri then asks for the line, with the
+   prompt coming from the parameter's `requestValueDialog`. Two beats instead of one. The phrases
+   still each carry `\(.applicationName)`, which the toolchain enforces as a build failure too, and
+   an app may register at most ten App Shortcuts.
+
    It handles **"no list yet"** and **view-only** by saying so, with a dialog, rather than by
    failing silently.
 2. **The + in the app**, which opens dictation as above. Empty input adds nothing.

@@ -5,7 +5,7 @@
 // PostgREST resolves overloads by the JSON keys of the call, so the name is part of the contract.
 import Foundation
 
-public struct SupabaseTransport: Transport {
+public struct SupabaseTransport: Transport, DoorbellTransport {
     public let kind = "supabase"
     private let base: String
     private let key: String
@@ -83,7 +83,67 @@ public struct SupabaseTransport: Transport {
         return answer?.isTruthy ?? false
     }
 
+    // ---------------------------------------------------------------- the doorbell
+
+    /// The request body `sync.js:121` builds, key for key and in its order — the whole cost of a
+    /// doorbell, and separate from `ring` so a test can weigh it without a network.
+    static func doorbellBody(_ id: String, _ payload: JSONObject) -> String {
+        var message = JSONObject()
+        message.set("topic", "list:" + id)
+        message.set("event", "change")
+        message["payload"] = .object(payload)
+        message.set("private", false)
+        var body = JSONObject()
+        body["messages"] = .array([.object(message)])
+        return JSONWriter.stringify(.object(body))
+    }
+
+    /// Ring `list:<id>` so a device watching this list pulls now instead of at its next poll.
+    ///
+    /// This is `sync.js:121`'s REST fallback, header for header: `{ apikey, Content-Type }` and
+    /// **no `Authorization: Bearer`**, which the endpoint accepts (measured: HTTP 202, with the
+    /// bearer header and without it). REST rather than a socket because there is nothing to keep
+    /// open — this side never listens, and a `tfive add` or an App Intent is a process that writes
+    /// once and goes away. The body is 138 bytes (measured, and pinned in the suite), one of them per
+    /// successful write and not one byte at idle.
+    ///
+    /// Unlike `sync.js`, the status code is logged in a debug build. The web's version ends in
+    /// `.catch(() => {})` and had therefore never been exercised in its life: nobody could have told
+    /// you whether that request had ever been answered, because nothing anywhere wrote the answer
+    /// down. One `print` is the whole cost of not being in that position again.
+    public func ring(_ id: String, _ payload: JSONObject) async {
+        guard let url = URL(string: base + "/realtime/v1/api/broadcast") else { return }
+        let body = Self.doorbellBody(id, payload)
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(key, forHTTPHeaderField: "apikey")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = Data(body.utf8)
+        do {
+            let (_, response) = try await session.data(for: request)
+            #if DEBUG
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            // the id is a channel name derived from a link and never goes in a log — the bytes and
+            // the status are the whole diagnosis
+            print("[doorbell] \(status), \(request.httpBody?.count ?? 0) bytes")
+            #else
+            _ = response
+            #endif
+        } catch {
+            #if DEBUG
+            // the URLError code and nothing else: an error object printed whole carries its failing
+            // URL, and no address of ours belongs in a log even when it names no list
+            print("[doorbell] not sent, URLError \((error as? URLError)?.code.rawValue ?? 0)")
+            #endif
+        }
+    }
+
     /// The bytes an unchanged poll costs, for the interop record. Returns the raw response text too.
+    ///
+    /// Nothing above touches this: a doorbell is a POST to `/realtime/v1/api/broadcast`, a poll is a
+    /// POST to `/rest/v1/rpc/get_list_v3` with `p_rev`, and the 29 bytes an unchanged poll answers
+    /// are the migration's `jsonb_build_object`, which this round does not go near.
     public func rawGet(_ id: String, knownRev: Int?) async throws -> (status: Int, text: String, bytes: Int) {
         guard let url = URL(string: base + "/rest/v1/rpc/get_list_v3") else {
             throw SyncError("bad project URL", kind: .badRequest)

@@ -359,6 +359,126 @@ struct SyncTests {
         #expect(back.origin == "mine")
         #expect(back.doc.id == W)
     }
+
+    // ---------------------------------------------------------------- the doorbell
+
+    @Test("a put the server accepted rings the list's channel once, with the rev it wrote and nothing else")
+    func aSuccessfulPutRingsOnce() async throws {
+        let server = DoorbellRecorder(MemoryTransport())
+        let W = Model.newId()
+        let keys = try Keys.fromWrite(W)
+        let engine = SyncEngine(transport: server, store: try Self.tempStore(), deviceId: "device-under-test")
+
+        await engine.open(keys, ListRecord(doc: Doc.seed(id: W), rev: 0, dirty: true, created: true))
+        await engine.sync()
+        #expect(await engine.status == .synced)
+
+        var rings = await server.rings
+        #expect(rings.count == 1, "one write, one bell")
+        let first = try #require(rings.first)
+        #expect(first.id == keys.lookupId, "the bell names the row, and the transport adds the list: prefix")
+        #expect(first.payload.keys.map(\.string) == ["rev", "from"], "a doorbell, not a document")
+        #expect(first.payload.num("rev") == 1)
+        #expect(first.payload.str("from").string == "device-under-test")
+        let wire = JSONWriter.stringify(.object(first.payload))
+        #expect(!wire.contains(W) && !wire.contains(keys.R) && !wire.contains("Tap or click"),
+                "no secret, no line of anybody's list")
+
+        // a second write rings a second time, carrying the revision it produced
+        var doc = await engine.document()
+        doc.items["milk"] = .object(ModelTests.item("milk", [("text", .string("Milk"))]))
+        await engine.update(doc)
+        await engine.sync()
+        rings = await server.rings
+        #expect(rings.count == 2)
+        #expect(rings[1].payload.num("rev") == 2)
+    }
+
+    @Test("a put the server refused rings nothing at all")
+    func aRefusedPutRingsNothing() async throws {
+        let W = Model.newId()
+        let keys = try Keys.fromWrite(W)
+
+        // 413: the list is over the cap, so the write never landed and nobody is told to come and look
+        let inner = MemoryTransport()
+        await inner.setRefusal(.tooLarge)
+        let server = DoorbellRecorder(inner)
+        let engine = SyncEngine(transport: server, store: try Self.tempStore())
+        await engine.open(keys, ListRecord(doc: Doc.seed(id: W), rev: 0, dirty: true, created: true))
+        await engine.sync()
+        #expect(await engine.status == .toolarge)
+        #expect(await server.rings.isEmpty, "a refusal is not a change")
+
+        // and a view ref, which never puts at all, never rings either
+        let view = try Keys.fromRead(keys.R)
+        let viewer = DoorbellRecorder(MemoryTransport())
+        let viewing = SyncEngine(transport: viewer, store: try Self.tempStore())
+        await viewing.open(view, ListRecord(doc: Model.normalize(nil, keys.R), mode: .view))
+        var doc = await viewing.document()
+        doc.items["nope"] = .object(ModelTests.item("nope", [("text", .string("not mine to write"))]))
+        await viewing.update(doc)
+        await viewing.push()
+        #expect(await viewer.rings.isEmpty, "a view ref pushes nothing, so it rings nothing")
+    }
+
+    @Test("a doorbell is the bytes sync.js builds, and there are 138 of them")
+    func theDoorbellBodyIsTheWebs() throws {
+        var payload = JSONObject()
+        payload.set("rev", Double(7))
+        payload.set("from", "abcdefghij")
+        let body = SupabaseTransport.doorbellBody(String(repeating: "L", count: 32), payload)
+
+        // what `JSON.stringify` gives for the object sync.js:121 builds, with the same values
+        #expect(body == #"{"messages":[{"topic":"list:LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL","event":"change","payload":{"rev":7,"from":"abcdefghij"},"private":false}]}"#)
+        #expect(body.utf8.count == 137, "a one-digit revision")
+
+        payload.set("rev", Double(12))
+        let two = SupabaseTransport.doorbellBody(String(repeating: "L", count: 32), payload)
+        #expect(two.utf8.count == 138, "the number this round costs a write, and idle costs nothing")
+        #expect(!two.contains("items") && !two.contains("doc"), "a doorbell, never the document")
+    }
+
+    @Test("a transport with no doorbell pushes exactly as it did before there was one")
+    func aTransportWithoutADoorbellIsFine() async throws {
+        let plain: any Transport = MemoryTransport()
+        #expect((plain as? any DoorbellTransport) == nil,
+                "MemoryTransport has no doorbell, which is how every test in this package stays offline")
+
+        let server = MemoryTransport()
+        let W = Model.newId()
+        let keys = try Keys.fromWrite(W)
+        let engine = SyncEngine(transport: server, store: try Self.tempStore())
+        await engine.open(keys, ListRecord(doc: Doc.seed(id: W), rev: 0, dirty: true, created: true))
+        await engine.sync()
+        #expect(await engine.status == .synced)
+        #expect(await server.row(keys.lookupId)?.rev == 1)
+        #expect(await server.calls() == ["get \(keys.lookupId) nil", "put \(keys.lookupId) 0"],
+                "the doorbell added no call of its own to a transport that cannot ring")
+    }
+}
+
+/// `MemoryTransport` with a bell on it, for the three tests above and nowhere else. The real
+/// transport is left alone deliberately: the moment a test double can broadcast, a test can reach the
+/// network by forgetting a flag, and this package's whole test story is that it cannot.
+actor DoorbellRecorder: DoorbellTransport {
+    struct Ring: Sendable {
+        let id: String
+        let payload: JSONObject
+    }
+
+    public nonisolated let kind = "memory+doorbell"
+    private let inner: MemoryTransport
+    private(set) var rings: [Ring] = []
+
+    init(_ inner: MemoryTransport) { self.inner = inner }
+
+    func get(_ id: String, knownRev: Int?) async throws -> GetResult? { try await inner.get(id, knownRev: knownRev) }
+    func put(_ id: String, envelope: JSONObject, baseRev: Int, token: String?) async throws -> PutResult {
+        try await inner.put(id, envelope: envelope, baseRev: baseRev, token: token)
+    }
+    func delete(_ id: String, token: String?) async throws -> Bool { try await inner.delete(id, token: token) }
+    func ring(_ id: String, _ payload: JSONObject) async { rings.append(Ring(id: id, payload: payload)) }
+    func row(_ id: String) async -> MemoryTransport.Row? { await inner.row(id) }
 }
 
 private extension ListRecord {

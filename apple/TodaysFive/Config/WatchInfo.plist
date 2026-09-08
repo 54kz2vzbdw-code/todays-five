@@ -51,6 +51,50 @@
 		</dict>
 	</array>
 
+	<!-- The kits' type, bundled. Every face is the repo's own latin subset from fonts/*.woff2,
+	     converted and instanced to the weights theme.js asks for by apple/tools/gen-watch-fonts.py.
+	     watchOS reads this key at process start and registers each file; no registration code runs.
+	     The family names to ask Font.custom for are NOT the names in theme.js — those are the fiction
+	     styles.css's @font-face rules invent, and ten of them resolve to Helvetica here. The real ones
+	     are in test/fixtures/watch-fonts.json, read out of these very files, and -TFFontSelfTest is
+	     what says every one of them resolved rather than falling back in silence. -->
+	<key>UIAppFonts</key>
+	<array>
+		<string>archivo-500.ttf</string>
+		<string>archivo-800.ttf</string>
+		<string>baloo-2-700.ttf</string>
+		<string>cormorant-garamond-700.ttf</string>
+		<string>dm-sans-400.ttf</string>
+		<string>dm-sans-700.ttf</string>
+		<string>dm-serif-display-400.ttf</string>
+		<string>fraunces-600.ttf</string>
+		<string>fredoka-600.ttf</string>
+		<string>ibm-plex-mono-400.ttf</string>
+		<string>ibm-plex-mono-600.ttf</string>
+		<string>ibm-plex-sans-400.ttf</string>
+		<string>ibm-plex-sans-600.ttf</string>
+		<string>jetbrains-mono-800.ttf</string>
+		<string>josefin-sans-400.ttf</string>
+		<string>josefin-sans-700.ttf</string>
+		<string>karla-400.ttf</string>
+		<string>karla-700.ttf</string>
+		<string>lato-900.ttf</string>
+		<string>lora-700.ttf</string>
+		<string>manrope-500.ttf</string>
+		<string>manrope-800.ttf</string>
+		<string>nunito-sans-400.ttf</string>
+		<string>nunito-sans-700.ttf</string>
+		<string>outfit-800.ttf</string>
+		<string>playfair-display-800.ttf</string>
+		<string>pt-sans-400.ttf</string>
+		<string>pt-sans-700.ttf</string>
+		<string>quicksand-500.ttf</string>
+		<string>quicksand-700.ttf</string>
+		<string>source-serif-4-400.ttf</string>
+		<string>source-serif-4-600.ttf</string>
+		<string>space-grotesk-700.ttf</string>
+	</array>
+
 	<!-- The only encryption is the list's own: AES-GCM over the person's document, and HTTPS. -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>

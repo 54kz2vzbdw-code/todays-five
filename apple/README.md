@@ -252,9 +252,17 @@ node tools/mark.mjs --trace           # prove the drawing is still the icon that
 ```
 
 `--trace` renders `icons/mark.svg` in the **old** colours (`#1A1D21` ground, `#D26128` check) at 180
-and diffs it against `icons/apple-touch-icon.png`, failing over 2 % — the same guard the old script
+and compares it with `icons/apple-touch-icon.png`, failing over 2 % — the same guard the old script
 had, kept because it is the only thing that says the trace has not drifted from the artwork. It
-currently reports 1.60 %.
+currently reports **0.30 %**.
+
+Since 1.13 that comparison is **geometry**, which is what it always claimed to be: both images are
+reduced to an ink mask — nearer the mark's colour or the tile's, per pixel — so the two colourways
+divide out. Before, it diffed raw colour; and since 1.11 recoloured `apple-touch-icon.png` with this
+same script, it had been comparing a charcoal tile with an orange check against a cream tile with an
+amber check and reporting **93.84 %** for two files whose drawing is identical. The 1.60 % this
+paragraph used to quote was the last number the tool produced before 1.11 broke it. The 0.30 % that
+remains is antialiasing at the check's edges.
 
 The app icon is written at 1024 in iOS 18's three appearances — light, dark (the mark on Terminal's
 ground) and tinted (the mark alone, on transparency, for the system to tint) — with the

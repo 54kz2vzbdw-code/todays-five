@@ -88,7 +88,7 @@ public protocol Transport: Sendable {
     func delete(_ id: String, token: String?) async throws -> Bool
 }
 
-/// Not used in this phase. The channel is `list:<lookupId>` and a broadcast is a doorbell
+/// Still with no conformer. The channel is `list:<lookupId>` and a broadcast is a doorbell
 /// (`{rev, from}`, optionally `gone`), never the document — COMPATIBILITY.md §4.
 public protocol RealtimeTransport: Transport {
     func subscribe(_ id: String,
@@ -99,4 +99,20 @@ public protocol RealtimeTransport: Transport {
 public protocol TransportSubscription: Sendable {
     func send(_ payload: JSONObject)
     func close()
+}
+
+/// A transport that can ring a list's channel after a write of its own succeeded.
+///
+/// Narrow on purpose. Conforming `SupabaseTransport` to `RealtimeTransport` above would have looked
+/// tidier and would have been a lie: nothing on this side intends to implement `subscribe`, and a
+/// protocol one of whose two halves throws or returns a stub is worse than a small new one that is
+/// true. `ring` is the whole surface, because the writer is the half of realtime the Apple clients
+/// are — the Watch, the CLI and the App Intent all push and none of them listens.
+///
+/// The payload is a doorbell (`{ rev, from }`, optionally `gone`), never the document
+/// (COMPATIBILITY.md §4). The caller passes a lookup id; the `list:` prefix is the transport's.
+/// `ring` never throws: the write already reached the server, so a bell that did not ring costs
+/// somebody else's screen a poll interval and takes nothing away from what was stored.
+public protocol DoorbellTransport: Transport {
+    func ring(_ id: String, _ payload: JSONObject) async
 }

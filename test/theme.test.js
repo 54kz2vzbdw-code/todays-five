@@ -68,25 +68,47 @@ test("1.11: light and pink keep v1's primary tokens exactly; Dark is recoloured 
   assert.deepEqual(CURATED.find(t => t.id === "pink").confetti, ["#FF3D9A", "#FF8FBE", "#FFD36E", "#FFFFFF", "#FF6FAF", "#FFB8D9"]);
 });
 
-test("1.11: the brand palette is the kits', and the accent clears its floors on both defaults", () => {
-  const paper = CURATED.find(t => t.id === "paper").colors, term = CURATED.find(t => t.id === "terminal").colors;
-  // the brand cannot drift from the kit it grew out of
+test("1.13: the brand constants are still the kits', the mark still carries #A86014, and Paper and Terminal carry their own accents again", () => {
+  const paper = CURATED.find(t => t.id === "paper").colors, term = CURATED.find(t => t.id === "terminal").colors, dark = curated("dark").colors;
+  // unchanged by 1.13: the brand cannot drift from the kit it grew out of
   assert.equal(BRAND.paper, paper.ink, "the brand's paper is Paper's --ink");
   assert.equal(BRAND.ink, paper.text, "the brand's ink is Paper's --text");
   assert.equal(BRAND.terminal, term.ink, "the brand's dark ground is Terminal's --ink");
-  assert.equal(BRAND.accent, "#A86014");
 
-  // the accent is a UI colour: 3:1 on each default theme's --ink and its elevated --ink-3
-  for (const [name, g] of [["Paper", paper.ink], ["Paper ink-3", paper.ink3], ["Terminal", term.ink], ["Terminal ink-3", term.ink3]])
-    assert.ok(contrast(BRAND.accent, g) >= 3, `accent on ${name}: ${contrast(BRAND.accent, g).toFixed(2)}`);
+  // the mark does not move. 1.13 unpins the *UI* accent; BRAND_ACCENT, the colourways and the
+  // drawing they resolve to are exactly what 1.11 made them.
+  assert.equal(BRAND_ACCENT, "#A86014");
+  assert.equal(BRAND.accent, "#A86014", "the mark's accent does not move");
+  assert.equal(BRAND.colourway, "paper-accent");
+  assert.deepEqual(brandColourways().map(c => c.id), ["paper-ink", "paper-accent", "terminal-accent"]);
+  assert.deepEqual(brandTiles(), { id: "paper-accent", name: "Paper tile, accent check", usesAccent: true, paper: "#F7F2E8", mark: "#A86014" }, "the tile is Paper's paper and the check is still the brand accent");
+  assert.equal(brandTiles("terminal-accent").mark, "#A86014");
+  const svg = fs.readFileSync(new URL("../icons/mark.svg", import.meta.url), "utf8");
+  assert.ok(!/#(?:A86014|C8321F|4AF07A)/i.test(svg), "the mark takes its two colours from brandTiles(), so no kit's hex is written into it");
 
-  // and each theme carries its own accentText at 4.5:1 — no single hex can be text on both
-  // (4.5:1 on Paper needs luminance <= 0.159, on Terminal >= 0.188: the interval is empty)
+  // 1.13: the pin is gone. Paper and Terminal carry the accent families they had before 1.11, byte
+  // for byte — finalize() returns all of them unchanged, so the revert cost nothing in contrast.
+  assert.deepEqual([paper.accent, paper.accentHi, paper.accentDeep, paper.accentText, paper.danger], ["#C8321F", "#E0563F", "#8E2214", "#9E2717", "#B02A1A"]);
+  assert.deepEqual([term.accent, term.accentHi, term.accentDeep, term.accentText, term.danger], ["#4AF07A", "#9CFFB5", "#21A64F", "#5DF58A", "#FF6B57"]);
+  assert.equal(paper.strikeShadow, "none"); assert.equal(term.strikeShadow, "0 0 14px rgba(74,240,122,.55)");
+  assert.ok(paper.glow.includes("200,50,31"), "Paper's glow is Paper's red"); assert.ok(term.glow.includes("74,240,122"), "Terminal's glow is Terminal's green");
+  assert.deepEqual(curated("paper").confetti, ["#C8321F", "#1F1B16", "#E0563F", "#D9C9A8", "#F7F2E8"]);
+  assert.deepEqual(curated("terminal").confetti, ["#4AF07A", "#9CFFB5", "#FFFFFF", "#21A64F", "#D8FFD8"]);
+  // Dark keeps it, and that is the decision: since 1.11 Dark *is* the brand's dark, and reverting
+  // it would mean going back to #D26128, the borrowed orange 1.11 removed.
+  assert.equal(dark.accent, "#A86014", "one kit still carries the brand accent, as its own colour");
+  assert.equal(new Set([paper.accent, term.accent, dark.accent]).size, 3, "three defaults, three accents");
+
+  // the arithmetic 1.11 rested on is still true, and is still why accentText is per-kit: the
+  // luminance a hex needs to be 4.5:1 text on Paper is below the one it needs on Terminal, so the
+  // interval is empty and no single hex is text on both.
+  const capOnPaper = (luminance(paper.ink) + 0.05) / 4.5 - 0.05;
+  const floorOnTerminal = 4.5 * (luminance(term.ink) + 0.05) - 0.05;
+  assert.ok(capOnPaper < floorOnTerminal, `no hex is text on both: at most ${capOnPaper.toFixed(3)} on Paper, at least ${floorOnTerminal.toFixed(3)} on Terminal`);
   for (const t of [paper, term]) {
     assert.ok(contrast(t.accentText, t.ink) >= 4.5, "accentText on ink");
     assert.ok(contrast(t.accentText, t.ink3) >= 4.5, "accentText on ink-3");
   }
-  assert.ok(luminance(BRAND.accent) > 0.159 || luminance(BRAND.accent) < 0.188, "the impossibility is why accentText is per-theme");
 
   // the default pair is Paper and Terminal, and a device that chose keeps its choice
   assert.equal(SLOT_DEFAULT.day, "T1:curated:paper");
@@ -99,6 +121,29 @@ test("1.11: the brand palette is the kits', and the accent clears its floors on 
   const cocoa = CURATED.find(t => t.id === "cocoa").colors;
   assert.deepEqual(BRAND.darkTile, { tile: cocoa.ink, mark: cocoa.accent });
   assert.ok(contrast(cocoa.accent, cocoa.ink) >= 3, "the dark tile's own check reads on it");
+});
+
+test("1.13: every kit measured against its OWN grounds — accent 3:1 and accent text 4.5:1 on --ink and on --ink-3, printed", () => {
+  const rows = CURATED.map(t => { const r = report(t); return { id: t.id, hex: t.colors.accent, a: r.accent, a3: r.accent3, at: r.accentText, at3: r.accentText2, d3: contrast(t.colors.danger, t.colors.ink3) }; });
+  const pad = (s, n) => String(s).padStart(n);
+  console.log("\n     kit         accent    a/ink  a/ink-3   aT/ink  aT/ink-3  danger/ink-3");
+  for (const r of rows) console.log("     " + r.id.padEnd(11) + r.hex + " " + pad(r.a.toFixed(2), 8) + pad(r.a3.toFixed(2), 8) + pad(r.at.toFixed(2), 9) + pad(r.at3.toFixed(2), 10) + pad(r.d3.toFixed(2), 14));
+  console.log("");
+  // Every kit. The ORIGINAL exemption (light, pink) is an exemption from finalize()'s *nudging*,
+  // never from being measured — both pass as written, light's accent on --ink-3 by 0.0016 and
+  // Pink's accent text on --ink-3 by 0.0069, and those margins are exactly why they are asserted.
+  for (const r of rows) {
+    assert.ok(r.a >= 3 - 1e-9, `${r.id}: accent ${r.a.toFixed(4)} on --ink`);
+    assert.ok(r.a3 >= 3 - 1e-9, `${r.id}: accent ${r.a3.toFixed(4)} on --ink-3`);
+    assert.ok(r.at >= 4.5 - 1e-9, `${r.id}: accent text ${r.at.toFixed(4)} on --ink`);
+    assert.ok(r.at3 >= 4.5 - 1e-9, `${r.id}: accent text ${r.at3.toFixed(4)} on --ink-3`);
+  }
+  const light = rows.find(r => r.id === "light"), pink = rows.find(r => r.id === "pink");
+  assert.ok(light.a3 > 3 && light.a3 < 3.01, "light's accent on --ink-3 clears the floor by 0.0016: " + light.a3.toFixed(4));
+  assert.ok(pink.at3 > 4.5 && pink.at3 < 4.51, "Pink's accent text on --ink-3 clears it by 0.0069: " + pink.at3.toFixed(4));
+  // the Secret pair is measured with the rest, not skipped for being behind a key
+  for (const id of SECRET_IDS) assert.ok(rows.some(r => r.id === id), id + " is in the table");
+  assert.equal(rows.length, 18);
 });
 
 test("1.9: --done-2 clears 4.5:1 on --ink-3 in every kit and in a theme you make, styles.css lifts a dragged line into it, and Pink's accent text clears the same bar (proposal 29)", () => {

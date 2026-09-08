@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import * as M from "../model.js";
+import * as T from "../theme.js";
 import { VERSION, BUILD, VERSION_LABEL } from "../version.js";
 
 let passed = 0;
@@ -322,6 +323,35 @@ test("1.8: the Secret pair is nowhere anyone reading the app can find it — not
   const html = read("index.html");
   assert.ok(html.includes('id="sw-secret"') && html.includes('id="sw-forget"'), "the group has a home in the markup");
   assert.doesNotMatch(html, NAMES, "and the markup names neither theme");
+});
+
+test("1.13: the Secret group's third door — a saved theme whose code names a secret kit is not rendered on a device without the key", () => {
+  const src = fs.readFileSync(new URL("../panels.js", import.meta.url), "utf8");
+
+  // the hole was real: a themes record is just { id, name, code, updatedAt }, the code is a theme
+  // code like any other, and the model carries it through both directions untouched — which it must
+  // (COMPATIBILITY.md §3), so nothing here can be fixed in model.js.
+  const rec = { id: "r1", name: "Mine", code: "T1:curated:superpink", updatedAt: 1000 };
+  const doc = M.normalize({ themes: { r1: { ...rec }, r2: { id: "r2", name: "Blue", code: "T2:d:3366FF:grotesk::Blue", updatedAt: 1000 } } }, "L");
+  assert.deepEqual(doc.themes.r1, rec, "normalize() keeps the record verbatim");
+  assert.deepEqual(M.merge(doc, M.emptyDoc("L")).themes.r1, rec, "and so does a merge");
+  assert.ok(T.isSecretCode(rec.code), "and the code does name one of them");
+
+  // the gate: run panels.js's own savedThemes() expression, lifted out of the file, on that document
+  const m = /function savedThemes\(\) \{ return ([^\n]+); \}/.exec(src);
+  assert.ok(m, "savedThemes() is still the one expression this test runs");
+  const savedThemes = new Function("A", "T", "dev", "return " + m[1] + ";");
+  const A = { doc };
+  const locked = savedThemes(A, T, () => ({})).map(s => s.id);
+  const unlocked = savedThemes(A, T, () => ({ secret: true })).map(s => s.id);
+  assert.deepEqual(locked, ["r2"], "without the key the secret record is not among the swatches");
+  assert.deepEqual(unlocked.sort(), ["r1", "r2"], "with it, it is — and it was never deleted, only unshown");
+  assert.deepEqual(doc.themes.r1, rec, "showing or not showing it does not touch the record");
+
+  // and all three doors name the same guard, so a fourth cannot be added without one
+  assert.ok(/dev\(\)\.secret \|\| !T\.isSecretTheme\(/.test(src), "Yours");
+  assert.ok(src.includes("const secret = !!dev().secret;") && src.includes('fill("#sw-secret", secret ? T.SECRET.map(t => mk(t)) : []);'), "the group");
+  assert.ok(/T\.isSecretTheme\(t\) && !dev\(\)\.secret/.test(src), "the import field");
 });
 
 test("no class or id the common content-blocker lists hide everywhere (build 69: .share-block hid the whole Share sheet on a phone with a blocker)", () => {

@@ -84,14 +84,24 @@ export function openBuilder() {
   paintCustom();
   A.showPanel("p-builder");
 }
-function savedThemes() { return Object.values(A.doc ? A.doc.themes : {}).filter(t => !t.deleted).map(t => ({ ...t, theme: T.parseCode(t.code) })).filter(t => t.theme); }
+/** The saved themes this device may see. 1.13: a themes record's `code` is a theme code like any
+    other and normalize() carries "T1:curated:superpink" through untouched, so Yours was a third door
+    into the Secret group — and the only one of the three with no guard on it, where the group in
+    renderSwatches() and the import field in wireTheme() both have one. Unreachable through this UI,
+    because saveCustom() only ever writes a T2 code; a hole in a gate is still a hole in a gate.
+    Gated here rather than at the fill so every reader is covered: the swatches, their hidden
+    headers, and the partner lookup behind Make its partner. The record itself is untouched — a
+    device without the key does not show it and never deletes it, so the device that saved it still
+    has it, and a device given the key later gets it back. */
+function savedThemes() { return Object.values(A.doc ? A.doc.themes : {}).filter(t => !t.deleted).map(t => ({ ...t, theme: T.parseCode(t.code) })).filter(t => t.theme && (dev().secret || !T.isSecretTheme(t.theme))); }
 /** A saved theme's partner: the live saved record its `partner` field names (or the one naming it back). */
 function savedPartner(saved, rec) {
   return saved.find(s => s.id !== rec.id && ((rec.partner && s.id === rec.partner) || (s.partner && s.partner === rec.id))) || null;
 }
 function renderSwatches() {
   const cur = A.slotCode(pickSlot);
-  const saved = savedThemes();
+  const secret = !!dev().secret;
+  const saved = savedThemes();   // 1.13: already gated — see savedThemes()
   const mk = (t, rec) => {
     const b = document.createElement("button"); b.type = "button"; b.className = "swatch";
     b.style.background = t.colors.ink; b.style.color = t.colors.text; b.style.borderColor = t.colors.hairSolid;
@@ -126,7 +136,6 @@ function renderSwatches() {
   fill("#sw-yours", saved.map(s => mk(s.theme, s)));
   $("#sw-yours-h").hidden = !saved.length; $("#sw-yours").hidden = !saved.length;
   // the Secret group (1.6): only on a device that has been given the key, and then like any other group
-  const secret = !!dev().secret;
   fill("#sw-secret", secret ? T.SECRET.map(t => mk(t)) : []);
   $("#sw-secret-h").hidden = !secret; $("#sw-secret").hidden = !secret; $("#sw-secret-actions").hidden = !secret;
   paintOffer();

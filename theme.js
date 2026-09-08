@@ -104,25 +104,42 @@ export function pairFamilies(pairId) {
   return p.ui[0] === p.task[0] ? [p.task[0]] : [p.task[0], p.ui[0]];
 }
 
-/* ---------------- the brand (1.11) ----------------
+/* ---------------- the brand (1.11), and the accent unpinned from it (1.13) ----------------
    Until 1.11 the mark and the default dark palette were borrowed from a law firm's logo: a charcoal
    tile (#1A1D21) with an orange check (#D26128). Neither was ever designed for this product, and it
    is going to the App Store, so 1.11 gives it a palette of its own. The mark itself does not change
-   — same tile, same check, same proportions (`icons/mark.svg`) — only its two colours do.
+   — same tile, same check, same proportions (`icons/mark.svg`) — only its two colours do. That part
+   stands, and nothing below takes it back.
 
    The brand grows out of **Paper**: Paper's own `--ink` is the brand's paper and Paper's own `--text`
    is the brand's ink, so the mark is the product's day theme with something drawn on it. The grounds
    below are named constants rather than repeated hexes, because Paper's kit, Terminal's kit, the
    brand and the brand's dark all have to be the same colours or none of it means anything.
 
-   The accent is the one new colour, and it has one hard job: to read on Paper **and** on Terminal,
-   which are the two default slots from 1.11 on. That job has a limit worth writing down, because it
-   is arithmetic and not taste. 4.5:1 against Paper's #F7F2E8 needs a relative luminance of at most
-   0.159; 4.5:1 against Terminal's #070A08 needs at least 0.188. **No single colour can be text on
-   both.** So the accent is one hex used as a *UI* colour — the strike, the filled box, the mark —
-   held to the 3:1 floor WCAG asks of non-text, on four grounds (each theme's `--ink` and its
-   elevated `--ink-3`); and each theme carries its own `accentText` at 4.5:1, exactly as every kit
-   here has always done. `test/theme.test.js` holds all of it to those floors.                    */
+   1.11 then took one step past the mark, and 1.13 takes that step back. Having found a hex that
+   reads on Paper **and** on Terminal, it made that hex the in-app accent of both kits — the strike,
+   the filled box, the focus ring — so the app would echo its own icon. The arithmetic behind that is
+   sound, and it is still here, because it is what `accentText` is per-kit for: 4.5:1 against Paper's
+   #F7F2E8 needs a relative luminance of at most 0.159, and 4.5:1 against Terminal's #070A08 needs at
+   least 0.188, so **no single colour can be text on both**, and a shared accent has to be a *UI*
+   colour held to the 3:1 floor WCAG asks of non-text.
+
+   **The premise was wrong, not the sum.** Nothing ever required the two default kits to share an
+   accent. Fifteen of the eighteen were never pinned and went on being themselves; the pin only ever
+   reached dark, paper and terminal — and on Terminal, a green-on-black terminal, it drew an amber
+   check. Rendered beside the other seventeen (`tools/kitshots.js`) that reads as a foreign object,
+   not as a brand. So since 1.13 **every kit carries its own accent family**: Paper's #C8321F and
+   Terminal's #4AF07A are back, byte for byte the hexes they had before 1.11, and each kit is held to
+   3:1 on its own `--ink` and its own `--ink-3` and carries its own `accentText` at 4.5:1 — which is
+   what every other kit here has always done. `test/theme.test.js` measures all eighteen against
+   their own grounds and prints every ratio.
+
+   **The mark does not move.** `BRAND_ACCENT` is still #A86014, and so are `icons/mark.svg`,
+   `BRAND_COLOURWAYS`, `BRAND`, the app icon and its three appearances. The in-app echo of the icon
+   is what 1.13 trades away, knowingly. One kit still carries #A86014 — Dark, where it is that kit's
+   own colour rather than a pin over somebody else's. Dark is not reverted with the other two:
+   since 1.11 Dark *is* the brand's dark, and reverting it would mean going back to #D26128, the
+   borrowed orange 1.11 deliberately removed.                                                     */
 export const PAPER_GROUND = { ink: "#F7F2E8", ink2: "#EFE8DA", ink3: "#E3DAC8" };
 export const PAPER_TEXT = "#1F1B16";
 export const TERMINAL_GROUND = { ink: "#070A08", ink2: "#0E140F", ink3: "#152017" };
@@ -131,7 +148,13 @@ export const TERMINAL_GROUND = { ink: "#070A08", ink2: "#0E140F", ink3: "#152017
     near L 0.57 in OKLCH; there it clears the 3:1 floor on all four grounds by 16 % (min 3.48) while
     keeping C 0.124, which is as much chroma as a warm hue has at that lightness. Cocoa's own
     #D9A066 was the other contender and cannot do this job: it is 2.05:1 on Paper. It survives in
-    the app icon's dark appearance, where its ground is Cocoa's and not Paper's. */
+    the app icon's dark appearance, where its ground is Cocoa's and not Paper's.
+
+    Since 1.13 this is the mark's colour and Dark's, and no longer Paper's or Terminal's UI accent
+    (see above). The four-ground balancing is still what it was chosen for and still holds — the
+    mark is drawn on the paper tile, on the terminal tile and on Cocoa's, and Dark's grounds are
+    Terminal's — so the hex does not change and neither does the reasoning for it. What changed is
+    how many kits are asked to wear it. */
 export const BRAND_ACCENT = "#A86014";
 
 /** The two colours the drawing is made of. `tile` and `mark` name tokens, never hexes, so a
@@ -191,20 +214,11 @@ function brandDarkColors(accent) {
     glow: V1_GLOW(accent, .10), strikeShadow: `0 0 10px ${rgba(accent, .38)}`
   };
 }
-/** The accent family for a kit that carries the brand accent. `finalize()` enforces the floors
-    afterwards (3:1 for `accent`, 4.5:1 for `accentText`, both against `--ink-3`); this just puts the
-    tones in the right places so a kit reads as one colour rather than four. */
-function brandAccentSet(base) {
-  const a = hexToOklch(BRAND_ACCENT), dark = base === "dark";
-  return {
-    accent: BRAND_ACCENT,
-    accentHi: oklch(Math.min(0.86, a.L + (dark ? 0.16 : 0.13)), a.C * 0.85, a.h),
-    accentDeep: oklch(Math.max(0.30, a.L - 0.15), a.C * 0.92, a.h),
-    accentText: BRAND_ACCENT,          // finalize() nudges this to 4.5:1 on the kit's own --ink-3
-    glow: V1_GLOW(BRAND_ACCENT, dark ? .08 : .06, dark ? 34 : 30, dark ? 62 : 60),
-    strikeShadow: dark ? `0 0 14px ${rgba(BRAND_ACCENT, .55)}` : "none"
-  };
-}
+/* 1.13: `brandAccentSet(base)` stood here — the accent family 1.11 spread over Paper and Terminal.
+   Both of its two call sites are gone with the pin, nothing else ever called it, and it was never
+   exported, so it is deleted rather than left as a function that describes a rule the file no longer
+   follows. Dark does not need it: `brandDarkColors()` above derives Dark's whole family from the
+   accent it is handed, which is how Dark got its own tones in the first place. */
 const BRAND_DARK = brandDarkColors(BRAND_ACCENT);
 
 const RAW = [
@@ -219,7 +233,12 @@ const RAW = [
   kit("light", "Light", "light", "lato", {
     ink: "#FAF8F4", ink2: "#F1ECE3", ink3: "#E4DED2",
     text: "#494F55", muted: "#707174", dim: "#6F7378", done: "#6E7278",
-    accent: "#CB6015", accentHi: "#E07B33", accentDeep: "#9E4A10", accentText: "#9E4A10", danger: "#B8402A",
+    // 1.13: danger was #B8402A, which is 4.12:1 on this kit's --ink-3 — under 4.5. Light is exempt
+    // from finalize()'s nudge (it keeps v1's tokens) and report() measured danger against --ink only,
+    // so the shortfall was invisible on both paths. #B13924 is that nudge run by hand: two steps of
+    // L −0.01, the smallest move that clears the floor, and the hex Teletype's own #B8402A already
+    // finalizes to. 4.1205 → 4.5050 on --ink-3, 5.2034 → 5.6889 on --ink.
+    accent: "#CB6015", accentHi: "#E07B33", accentDeep: "#9E4A10", accentText: "#9E4A10", danger: "#B13924",
     hair: "rgba(73,79,85,.16)", hairHi: "rgba(73,79,85,.42)",
     glow: V1_GLOW("#D26128", .07, 30, 60), strikeShadow: "none"
   }, { engine: "knock" }, ["#D26128", "#E8814A", "#A34A1C", "#4B4F54", "#A4BCC4"], { lean: "day", partner: "dark" }),
@@ -251,19 +270,22 @@ const RAW = [
   }, { engine: "marble", pitch: 0.82, decay: 1.3 }, ["#8BD17A", "#B8E6A6", "#F2E9B8", "#4E9A45", "#EAF2E6"], { lean: "night", partner: "harbor" }),
 
   kit("paper", "Paper", "light", "playfair", {
-    ...PAPER_GROUND,                       // 1.11: the brand's paper is this, by definition
+    ...PAPER_GROUND,                       // 1.11: the brand's paper is this, by definition — and still is
     text: PAPER_TEXT, muted: "#5E5749", dim: "#6C6559", done: "#6C6559",
-    ...brandAccentSet("light"), danger: "#B02A1A"      // 1.11: the day default carries the brand accent
+    // 1.13: the red pencil is Paper's own again, byte for byte the family it carried before 1.11
+    accent: "#C8321F", accentHi: "#E0563F", accentDeep: "#8E2214", accentText: "#9E2717", danger: "#B02A1A",
+    glow: V1_GLOW("#C8321F", .06, 30, 60), strikeShadow: "none"
   }, { engine: "typewriter", pitch: 1, decay: 1, noise: 1 },
-    [BRAND_ACCENT, PAPER_TEXT, "#D08A3E", "#D9C9A8", PAPER_GROUND.ink], { lean: "day", partner: "midnight" }),
+    ["#C8321F", PAPER_TEXT, "#E0563F", "#D9C9A8", PAPER_GROUND.ink], { lean: "day", partner: "midnight" }),
 
   kit("terminal", "Terminal", "dark", "mono", {
-    ...TERMINAL_GROUND,                    // 1.11: the brand's dark is built on these
-
+    ...TERMINAL_GROUND,                    // 1.11: the brand's dark is built on these grounds — and still is
     text: "#D8FFD8", muted: "#7FCB86", dim: "#67A96E", done: "#67A96E",
-    ...brandAccentSet("dark"), danger: "#FF6B57"       // 1.11: the night default carries it too
+    // 1.13: the phosphor green is Terminal's own again, byte for byte the family it carried before 1.11
+    accent: "#4AF07A", accentHi: "#9CFFB5", accentDeep: "#21A64F", accentText: "#5DF58A", danger: "#FF6B57",
+    glow: V1_GLOW("#4AF07A", .08), strikeShadow: "0 0 14px rgba(74,240,122,.55)"
   }, { engine: "blip" },
-    [BRAND_ACCENT, "#D9A45E", "#FFFFFF", "#6F3B00", "#D8FFD8"], { lean: "night", partner: "teletype" }),
+    ["#4AF07A", "#9CFFB5", "#FFFFFF", "#21A64F", "#D8FFD8"], { lean: "night", partner: "teletype" }),
 
   kit("sunset", "Sunset", "dark", "dmserif", {
     ink: "#2A1622", ink2: "#3A1F2E", ink3: "#4C2A3C",
@@ -501,7 +523,16 @@ export const PACK_NAMES = { knock: "Knock", bell: "Bell", blip: "Blip", typewrit
 export function packOf(id) { return PACK_IDS.includes(id) ? id : ""; }
 
 /** Every token from an accent + base. Backgrounds are tinted toward the accent hue at low chroma. A `pack` names the
-    sound (1.1); without one the hue rule picks: pinks, purples and blues ring a bell, everything else knocks. */
+    sound (1.1); without one the hue rule picks: pinks, purples and blues ring a bell, everything else knocks.
+
+    1.13: `accent` is nudged against `--ink-3`, not `--ink`. Every other token here has been derived
+    against `--ink-3` since it was written, because that is the lightest (dark) / darkest (light)
+    surface the token ever sits on — a panel, a filled chip, a hovered swatch — and the curated path
+    has nudged its accent there since 1.7. This one line was still measuring against `--ink`, so the
+    guarantee a theme you make carried was the wrong guarantee: over 3,000 seeded accents per base
+    the worst `accent` against `--ink-3` was 2.18:1 on dark and 2.45:1 on light, and 1,139 / 1,690 of
+    3,000 were under the 3:1 floor. Since `--ink-3` is the harder ground on both bases, ensuring
+    there implies the old guarantee and never weakens it. */
 export function derive({ accent, base = "dark", pair, name = "", id, pack }) {
   accent = normalizeHex(accent) || BRAND_ACCENT;
   const a = hexToOklch(accent);
@@ -514,12 +545,12 @@ export function derive({ accent, base = "dark", pair, name = "", id, pack }) {
     c.text = ensure(0.955, Math.min(0.012, a.C * 0.1), h, c.ink3, 7, 1);
     c.muted = ensure(0.75, Math.min(0.05, a.C * 0.35), h, c.ink3, 4.5, 1);
     c.dim = ensure(0.64, Math.min(0.04, a.C * 0.3), h, c.ink3, 4.5, 1);
-    c.accent = ensure(a.L, a.C, h, c.ink, 3, 1);
+    c.accent = ensure(a.L, a.C, h, c.ink3, 3, 1);       // 1.13: --ink-3, the surface a focus ring and a filled chip sit on
     c.accentText = ensure(hexToOklch(c.accent).L, Math.min(a.C, 0.2), h, c.ink3, 4.5, 1);
     const aL = hexToOklch(c.accent).L;
     c.accentHi = oklch(Math.min(0.92, aL + 0.12), a.C * 0.8, h + 8);
     c.accentDeep = oklch(Math.max(0.3, aL - 0.15), a.C, h - 4);
-    c.danger = ensure(0.7, 0.16, 25, c.ink, 4.5, 1);
+    c.danger = ensure(0.7, 0.16, 25, c.ink3, 4.5, 1);   // 1.13: --ink-3, where a panel's danger row is
     c.glow = V1_GLOW(c.accent, .11);
     c.strikeShadow = `0 0 10px ${rgba(c.accent, .38)}`;
   } else {
@@ -528,12 +559,12 @@ export function derive({ accent, base = "dark", pair, name = "", id, pack }) {
     c.text = ensure(0.32, Math.min(0.03, a.C * 0.2), h, c.ink3, 7, -1);
     c.muted = ensure(0.5, Math.min(0.05, a.C * 0.3), h, c.ink3, 4.5, -1);
     c.dim = ensure(0.56, Math.min(0.04, a.C * 0.25), h, c.ink3, 4.5, -1);
-    c.accent = ensure(a.L, a.C, h, c.ink, 3, -1);
+    c.accent = ensure(a.L, a.C, h, c.ink3, 3, -1);      // 1.13: likewise
     c.accentText = ensure(hexToOklch(c.accent).L, a.C, h, c.ink3, 4.5, -1);
     const aL = hexToOklch(c.accent).L;
     c.accentHi = oklch(Math.min(0.85, aL + 0.1), a.C * 0.9, h + 6);
     c.accentDeep = oklch(Math.max(0.25, aL - 0.15), a.C, h - 4);
-    c.danger = ensure(0.5, 0.17, 28, c.ink, 4.5, -1);
+    c.danger = ensure(0.5, 0.17, 28, c.ink3, 4.5, -1);  // 1.13: likewise
     c.glow = V1_GLOW(c.accent, .07, 30, 60);
     c.strikeShadow = "none";
   }
@@ -739,13 +770,20 @@ export function cssText(t) {
     `--font-task:${p.task[2]};--font-ui:${p.ui[2]};--task-w:${p.w};--task-ls:${p.ls};--task-lh:${p.lh};color-scheme:${t.base}}`;
 }
 
-/** Contrast report used by tests and the picker's preview. */
+/** Contrast report used by tests and the picker's preview.
+    1.13: `accent3` and `danger3` join it — the accent and the danger colour against `--ink-3`, the
+    elevated surface they sit on as a focus ring, a filled chip, a swatch bar, a panel's danger row.
+    `finalize()` has nudged both there since 1.7 and `derive()` did neither, so the floors were
+    enforced in one test that skipped three kits and absent from the shared threshold table; a token
+    nothing reports is a token nothing can hold to a floor, which is how `light.danger` sat at 4.12
+    for two releases. */
 export function report(t) {
   const c = t.colors;
   return {
     text: contrast(c.text, c.ink), muted: contrast(c.muted, c.ink), dim: contrast(c.dim, c.ink),
     accentText: contrast(c.accentText, c.ink), accent: contrast(c.accent, c.ink), hairSolid: contrast(c.hairSolid, c.ink), danger: contrast(c.danger, c.ink),
-    muted2: contrast(c.muted2, c.ink3), dim2: contrast(c.dim2, c.ink3), done2: contrast(c.done2, c.ink3), accentText2: contrast(c.accentText, c.ink3)
+    muted2: contrast(c.muted2, c.ink3), dim2: contrast(c.dim2, c.ink3), done2: contrast(c.done2, c.ink3), accentText2: contrast(c.accentText, c.ink3),
+    accent3: contrast(c.accent, c.ink3), danger3: contrast(c.danger, c.ink3)
   };
 }
 

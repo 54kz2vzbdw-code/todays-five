@@ -564,4 +564,140 @@ Written here in advance so the results cannot quietly absorb them:
 
 ## Results
 
-*(written when the round is run)*
+### What running it found that reading it had not
+
+**The codec disagreed with itself, about a third of the time.** `WatchLinkPayload.init?(dictionary:)`
+built the map of keys a later build might send — the pass-through `COMPATIBILITY.md` §3 requires — by
+iterating a Swift `Dictionary`. That order varies per process, `JSONObject` remembers insertion order,
+and its `==` compares it. Two decodes of the same bytes were unequal, and `swift test` failed three
+runs in eight. It is Phase 1's canonical-JSON problem arriving from a direction nobody was watching:
+not the document but a **channel**, and not two clients disagreeing but **one client disagreeing with
+itself**. The nested helper in the same file already sorted. The top level did not.
+
+**A failed Keychain read was about to be sent as an authoritative "this phone holds no lists".**
+`sendVault()` was `send((try? vault.all()) ?? [])`. `SecItemCopyMatching` refuses before the first
+unlock after a reboot, and iOS launches this app in the background for a universal link or for its
+counterpart on the wrist — so a stamped, empty payload would have told the Watch to drop every link
+it had. Phase 2's fourth bug, wearing different clothes: there the app inferred an event from a
+state; here it was about to assert a state it had not read. It refuses to speak now.
+
+**The receiver wrote its high-water mark over writes that had thrown.** Ordering covers a crash. Only
+checking covers a failure, and a mark written over failed writes records a payload the Watch did not
+keep and will never be sent again.
+
+**A pull overwrote an edit made while it was in flight.** `WatchStore.sync()` read the engine's
+document back after an `await` and assigned it over whatever was on screen, so a line crossed off
+during the pull was wiped by a document that predated it. The engine merges; the screen must not
+un-merge.
+
+**The finale fired on a completion that happened somewhere else.** `app.js` renders a remote change
+quietly and then *re-baselines* its edge detector, precisely so the chord belongs to whoever crossed
+the last line off. The Watch did not, until it did.
+
+**The Add complication could never have worked.** `.widgetURL(todaysfive://add)` with no
+`CFBundleURLTypes` is inert, and nothing anywhere says so.
+
+**A self-test inside a sheet nobody opens proves nothing.** `-TFAddSelfTest` was hosted in
+`AddFlowView`'s `.task`, which only exists inside a sheet that nothing opened on launch. The argument
+ran, the app started, and the log was two lines long. The failure mode of a check that does not run is
+silence, and silence looks like a pass.
+
+**And one scare that was not a bug, which is the entry worth reading.** The complication had twenty-four
+identical crash reports, trapping inside ExtensionFoundation before any of our code. The unified log
+named a cause, an ExtensionKit key fixed it, and the crashes stopped — and then the control run put
+the original plist back and *they stopped anyway*. They were an artefact of two tracks installing the
+watch app repeatedly from different derived-data paths. `DECISIONS-apple.md` has the whole of it,
+including the build warning and the install failure that between them prove the "fix" could never have
+shipped.
+
+### The suites
+
+| | |
+| --- | --- |
+| `swift test` | **116 tests in 9 suites** — the 94 from Phases 1–2 plus 22 for the codec, the Watch store rules, the Today ops and the rollover agreement |
+| Node | model 28, theme 31, crypto 10, sync 14, sound 12, features 28, compat 9 — all green, and the web is untouched |
+| destinations | iOS Simulator, iOS device, watchOS Simulator (Debug **and** Release), `generic/platform=watchOS`, and the archive |
+| warnings | zero Swift warnings in either configuration; every `print` behind `#if DEBUG` |
+
+### On the paired simulators — iPhone 17 (iOS 26.5) and Apple Watch Series 11 46mm (watchOS 26.5)
+
+The self-tests exist because `simctl` cannot tap a watch simulator. What they say:
+
+```
+watch: store=appGroup
+watch selftest: list=open editable=true lines=5
+  1 check: modelDone=true done=1/5          2 uncheck: modelUndone=true done=0/5
+  3 finale: fired=yes after=0.333s          4 startAgain: done=0/5 finaleCard=false
+  5 shuffle x10: distinct=5 sameTwiceInARow=0 undone=5
+  6 wobble: undone=1 moved=false changed=false wobbled=true
+  7 haptics: check=10 uncheck=2 finale=1 shuffle=10
+  7 finale run: taps=8/8 duration=0.707s (approximation: no CoreHaptics on watchOS)
+  8 appGroup=true
+  9 snapshot: hasList=true done=4/5 nextLine=19 chars viewOnly=false rollsAt=set
+
+add self-test: added / nothing-said / view-only / no-list / undo — 5 of 5
+add self-test: visibleInterfaceController=present so the wrist takes the WatchKit path
+```
+
+Line 5 is the one to read twice: over ten shuffles on five undone lines every line came up and **the
+same line never came up twice in a row**, which is `app.js`'s shuffle rule checked by machine rather
+than watched. Line 3 is the web's 300 ms hold plus the waiter's own granularity. Line 7's 0.707 s is
+`fx.js`'s 0.700 target, and it is an approximation because `CoreHaptics` is not on watchOS.
+
+**The hand-off, end to end:**
+
+```
+phone   vault: 1 link · mode=edit origin=mine seen=false id=22 chars
+phone   watch: sent v=1 links=1 edit=1 view=0 shared=0 nicknamed=0 keys=at,links,v
+watch   watch: store=appGroup
+watch   watch: heard v=1 links=1 applied=true +1 −0 holds=1 showing=one
+```
+
+and the removal, which is 1.12's *Remove from this device* reaching the wrist: the phone sent
+`links=0`, then `links=1` for a different list, and the Watch went to `holds=1` — the old link gone,
+the new one held and selected. A second delivery of the same payload answered `applied=false +0 −0`,
+which is the stamp doing its job.
+
+Neither log carries a secret: the phone prints an id's *length* and the Watch prints counts.
+
+### The live run — one list created, one deleted
+
+Against the real Supabase project, with `tfive` on the other side.
+
+| | |
+| --- | --- |
+| `tfive new` | created **Watch round** on the real backend |
+| the link to the wrist | opened on the phone, vaulted, sent — and the Watch derived the keys, pulled, and showed the list with a **synced** mark |
+| the Mac → the wrist | `tfive add "Milk from the Mac"` and the line was on the Watch |
+| the wrist → the Mac | the Watch's self-test ran against the live list — check, uncheck, the finale, Start again, ten shuffles — and every one of them was pushed: **rev 6 → 13**, and `tfive show` read them all back |
+| they agree line for line | the Watch showed `1 /4` with three undone lines and one crossed off; `tfive show` reported the same four in the same order with the same one done |
+| the unchanged poll | **29 bytes** against **621** for the document — the same number Phases 1 and 2 recorded |
+| the pills | the **Shared** pill rendered beside the count |
+| cleanup | the list was deleted from the server and confirmed *gone* |
+
+### Screenshots
+
+`apple/shots/watch/` — `today.png` (the list, the count, the accent), `today-after-selftest.png`
+(a line struck through behind a filled accent checkmark, sunk below the undone one, which is
+`sortSink`), `empty.png` (no list yet), `from-the-phone.png` (a link the phone handed over, and the
+error mark telling the truth about a list the real backend does not have), and `live-backend.png`
+(the live list, in agreement with `tfive`).
+
+**One-thing, the picker and the complication faces are not here**, and the reason is in the plan:
+`simctl` cannot tap a watch simulator and this session could not reach the Simulator app's windows.
+The self-test proves the *rules* behind those screens — the shuffle pick, the wobble, the finale's
+edge — and a screenshot of them wants a wrist or a granted simulator.
+
+### What only a wrist can answer
+
+Written in the plan before the round and unchanged by it:
+
+- whether the `+` opens **dictation** or a keyboard. The simulator says
+  `visibleInterfaceController=present`, so the WatchKit path is the one that will run; what that
+  controller shows on a device with a microphone is the question, and a simulator has none.
+- whether **Double Tap** fires. There is no way to inject the gesture here.
+- whether the **Action button** takes the intent. There is no developer-facing API for it in the SDK
+  at all, so there was never anything to test — only an App Shortcut to exist, and it does.
+- whether **Siri** hears the phrases, and whether the intent's dialog is spoken or only shown.
+- whether the finale run **feels** like the volley looks. A simulator has no motor: the tally proves
+  eight calls in 0.707 s, not eight taps in the hand.

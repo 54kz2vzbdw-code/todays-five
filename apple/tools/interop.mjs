@@ -19,6 +19,9 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import * as C from "../../crypto.js";
 import config from "../../config.js";
+// the two poll intervals, read from the web rather than repeated here: step 5b's whole argument is
+// that the window it waits in is shorter than either of them
+import { POLL_MS, POLL_LIVE_MS } from "../../sync.js";
 
 const require = createRequire((process.env.NODE_PATH || (process.env.HOME + "/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules")) + "/");
 const { chromium } = require("playwright");
@@ -33,6 +36,8 @@ if (!fs.existsSync(TFIVE)) {
   process.exit(2);
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
+/** How long step 5b gives a doorbell. A quarter of the *shorter* poll, so no timer can reach it. */
+const DOORBELL_MS = POLL_MS / 4;
 
 let passed = 0, failed = 0;
 const results = [];
@@ -267,6 +272,48 @@ try {
          `crypto.js opened the Swift envelope (${raw.bytes} bytes, z=${row.doc.z}); the web is at rev ${st.cur.rev}, zone ${st.zone}${asked ? "; it asked whose list it was, once" : ""}`);
     await second.close();
   } catch (e) { bad("tfive made a list and the web opened it", e); }
+
+  // ---------------------------------------------------------------- 5b. a Swift put rings the bell
+
+  // THE COVERAGE THAT HAS NEVER EXISTED. Until this round nothing on the Apple side broadcast:
+  // sync.js:331 was the only line in the system that did, put_list_v3 ends at an `update` with no
+  // trigger, and RealtimeTransport had no conformer. So a web client with the list open learned of a
+  // Swift write at its next safety-net poll — and, having joined the channel successfully, that poll
+  // was POLL_LIVE_MS. This step is the only thing in any suite that goes red if SyncEngine.push()
+  // ever stops ringing.
+  //
+  // Two things make it a witness rather than a coincidence. The client must be **live**: one that
+  // never joined the channel cannot observe a broadcast at all, so `live` is asserted before the
+  // write rather than hoped for after it. And nothing here wakes the page — no focus(), no
+  // visibilitychange, no reload, no new tab — because every one of those calls wake() → pull() and
+  // would rescue the line by the very path this check exists to prove is not needed. The window is
+  // well under POLL_MS as well as POLL_LIVE_MS, so a line that arrives inside it did not arrive on a
+  // timer.
+  //
+  // No create: it opens list B, which step 5 has already made.
+  try {
+    const watcher = await device(browser, SITE + "#/l/" + W_B);
+    await watcher.answerWhose("mine");
+    await watcher.page.waitForSelector("#list .row", { timeout: 40000 });
+    await watcher.until(async () => (await watcher.state()).status === "synced", 40000, "the watching client to sync");
+    await watcher.until(async () => (await watcher.state()).live === true, 30000,
+                        "the watching client to join the list's channel — without one this check has no witness");
+    const before = (await watcher.state()).cur.rev;
+
+    const line = "Rung from the Mac";
+    const t0 = Date.now();
+    const out = tfive("add", W_B, line);
+    assert.ok(out.includes("Added: " + line), out);
+    await watcher.until(async () => (await watcher.rows()).some(r => r.text === line),
+                        DOORBELL_MS, "the doorbell to reach a subscribed web client");
+    const seconds = (Date.now() - t0) / 1000;
+    const st = await watcher.state();
+    assert.ok(st.live, "the client was still live when the line arrived, so it was told rather than polling");
+    step("a Swift put rings the list's channel and a subscribed web client sees it at once",
+         `tfive add → the line was on the web in ${seconds.toFixed(1)} s, rev ${before} → ${st.cur.rev}; ` +
+         `the client was live, so its own next poll was up to ${POLL_LIVE_MS / 1000} s away`);
+    await watcher.close();
+  } catch (e) { bad("a Swift put rings the list's channel", e); }
 
   // ---------------------------------------------------------------- 6. a view link reads and cannot write
 

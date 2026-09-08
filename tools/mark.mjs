@@ -103,6 +103,31 @@ function diff(aBuf, bBuf) {
   }
   return off / (a.width * a.height);
 }
+/** The drawing with its palette divided out: for each pixel, is it nearer the mark's colour or the
+    tile's? That boolean image is the *shape*, and comparing two of them is what "geometry only" has
+    to mean once the render and the shipped icon are in different colourways — which they have been
+    since 1.11 recoloured the icon with this very script. Before this, `--trace` diffed raw colour
+    under a comment promising geometry, and reported 93.84 % of pixels differing for two files whose
+    drawing is identical. A guard that cannot pass is not a guard. */
+function inkMask(buf, tile, mark) {
+  const png = PNG.sync.read(buf);
+  const rgb = h => { const c = h.replace("#", ""); return [0, 2, 4].map(i => parseInt(c.substr(i, 2), 16)); };
+  const t = rgb(tile), m = rgb(mark), sq = x => x * x;
+  const bits = new Uint8Array(png.width * png.height);
+  for (let i = 0, p = 0; i < png.data.length; i += 4, p++) {
+    const dt = sq(png.data[i] - t[0]) + sq(png.data[i + 1] - t[1]) + sq(png.data[i + 2] - t[2]);
+    const dm = sq(png.data[i] - m[0]) + sq(png.data[i + 1] - m[1]) + sq(png.data[i + 2] - m[2]);
+    bits[p] = dm < dt ? 1 : 0;
+  }
+  return { bits, width: png.width, height: png.height };
+}
+/** Share of pixels where two ink masks disagree about being mark or tile. */
+function maskDiff(a, b) {
+  if (a.width !== b.width || a.height !== b.height) throw new Error("size mismatch");
+  let off = 0;
+  for (let i = 0; i < a.bits.length; i++) if (a.bits[i] !== b.bits[i]) off++;
+  return off / a.bits.length;
+}
 
 /* ---------------- the OG card ----------------
    The card is the Today screen, not the mark: what the old card was, on the new palette. The mark
@@ -178,10 +203,13 @@ let bad = 0;
 try {
   if (has("--trace")) {
     // The one test that says the drawing is still the artwork: render it in the OLD colours and
-    // diff it against the icon that shipped. Geometry only — the colours are the point of 1.11.
+    // compare it with the icon that shipped. **Geometry only**, and since 1.13 that is what it
+    // actually does: both images are reduced to an ink mask — mark or tile, per pixel — so the two
+    // colourways divide out and what is left is the shape. Rendering in the old colours is now
+    // arbitrary rather than load-bearing; it is kept because it proves the mask is doing the work.
     const mine = await render(browser, { paper: "#1A1D21", mark: "#D26128", size: 180 });
     const theirs = fs.readFileSync(path.join(repo, "icons/apple-touch-icon.png"));
-    const share = diff(mine, theirs);
+    const share = maskDiff(inkMask(mine, "#1A1D21", "#D26128"), inkMask(theirs, tiles.paper, tiles.mark));
     console.log(`trace vs the icon that shipped: ${(share * 100).toFixed(2)} % of pixels differ`);
     if (share > 0.02) { fs.writeFileSync("/tmp/mark-trace-180.png", mine); console.error("over 2 % — the trace has drifted; /tmp/mark-trace-180.png is the render"); bad++; }
   } else if (has("--sheet")) {

@@ -233,7 +233,12 @@ const RAW = [
   kit("light", "Light", "light", "lato", {
     ink: "#FAF8F4", ink2: "#F1ECE3", ink3: "#E4DED2",
     text: "#494F55", muted: "#707174", dim: "#6F7378", done: "#6E7278",
-    accent: "#CB6015", accentHi: "#E07B33", accentDeep: "#9E4A10", accentText: "#9E4A10", danger: "#B8402A",
+    // 1.13: danger was #B8402A, which is 4.12:1 on this kit's --ink-3 — under 4.5. Light is exempt
+    // from finalize()'s nudge (it keeps v1's tokens) and report() measured danger against --ink only,
+    // so the shortfall was invisible on both paths. #B13924 is that nudge run by hand: two steps of
+    // L −0.01, the smallest move that clears the floor, and the hex Teletype's own #B8402A already
+    // finalizes to. 4.1205 → 4.5050 on --ink-3, 5.2034 → 5.6889 on --ink.
+    accent: "#CB6015", accentHi: "#E07B33", accentDeep: "#9E4A10", accentText: "#9E4A10", danger: "#B13924",
     hair: "rgba(73,79,85,.16)", hairHi: "rgba(73,79,85,.42)",
     glow: V1_GLOW("#D26128", .07, 30, 60), strikeShadow: "none"
   }, { engine: "knock" }, ["#D26128", "#E8814A", "#A34A1C", "#4B4F54", "#A4BCC4"], { lean: "day", partner: "dark" }),
@@ -545,7 +550,7 @@ export function derive({ accent, base = "dark", pair, name = "", id, pack }) {
     const aL = hexToOklch(c.accent).L;
     c.accentHi = oklch(Math.min(0.92, aL + 0.12), a.C * 0.8, h + 8);
     c.accentDeep = oklch(Math.max(0.3, aL - 0.15), a.C, h - 4);
-    c.danger = ensure(0.7, 0.16, 25, c.ink, 4.5, 1);
+    c.danger = ensure(0.7, 0.16, 25, c.ink3, 4.5, 1);   // 1.13: --ink-3, where a panel's danger row is
     c.glow = V1_GLOW(c.accent, .11);
     c.strikeShadow = `0 0 10px ${rgba(c.accent, .38)}`;
   } else {
@@ -559,7 +564,7 @@ export function derive({ accent, base = "dark", pair, name = "", id, pack }) {
     const aL = hexToOklch(c.accent).L;
     c.accentHi = oklch(Math.min(0.85, aL + 0.1), a.C * 0.9, h + 6);
     c.accentDeep = oklch(Math.max(0.25, aL - 0.15), a.C, h - 4);
-    c.danger = ensure(0.5, 0.17, 28, c.ink, 4.5, -1);
+    c.danger = ensure(0.5, 0.17, 28, c.ink3, 4.5, -1);  // 1.13: likewise
     c.glow = V1_GLOW(c.accent, .07, 30, 60);
     c.strikeShadow = "none";
   }
@@ -766,17 +771,19 @@ export function cssText(t) {
 }
 
 /** Contrast report used by tests and the picker's preview.
-    1.13: `accent3` joins it — the accent against `--ink-3`, the elevated surface it sits on as a
-    focus ring, a filled chip or a swatch bar. `finalize()` has nudged against `--ink-3` since 1.7
-    and `derive()` has not, so the floor was enforced in one test and missing from the shared
-    threshold table; a token nothing reports is a token nothing can hold to a floor. */
+    1.13: `accent3` and `danger3` join it — the accent and the danger colour against `--ink-3`, the
+    elevated surface they sit on as a focus ring, a filled chip, a swatch bar, a panel's danger row.
+    `finalize()` has nudged both there since 1.7 and `derive()` did neither, so the floors were
+    enforced in one test that skipped three kits and absent from the shared threshold table; a token
+    nothing reports is a token nothing can hold to a floor, which is how `light.danger` sat at 4.12
+    for two releases. */
 export function report(t) {
   const c = t.colors;
   return {
     text: contrast(c.text, c.ink), muted: contrast(c.muted, c.ink), dim: contrast(c.dim, c.ink),
     accentText: contrast(c.accentText, c.ink), accent: contrast(c.accent, c.ink), hairSolid: contrast(c.hairSolid, c.ink), danger: contrast(c.danger, c.ink),
     muted2: contrast(c.muted2, c.ink3), dim2: contrast(c.dim2, c.ink3), done2: contrast(c.done2, c.ink3), accentText2: contrast(c.accentText, c.ink3),
-    accent3: contrast(c.accent, c.ink3)
+    accent3: contrast(c.accent, c.ink3), danger3: contrast(c.danger, c.ink3)
   };
 }
 

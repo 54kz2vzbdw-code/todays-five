@@ -221,6 +221,7 @@ try {
   for (const cond of wanted) {
     const draw = rng(seedFor(cond.id));
     const got = [], never = [];
+    let broke = 0;
     process.stdout.write(cond.id.padEnd(9) + " ");
     for (let i = 0; i < TRIALS; i++) {
       const phase = Math.floor(draw() * cond.period / STEP_MS) * STEP_MS;
@@ -228,6 +229,8 @@ try {
       try {
         out = await trial(browser, cond, phase);
       } catch (e) {
+        broke++;
+        process.stdout.write("x");
         console.log("\n  trial " + (i + 1) + " could not be measured: " + (e.message || e).split("\n")[0]);
         continue;
       }
@@ -236,7 +239,7 @@ try {
       if (out.ms == null) { never.push(cond.horizon); process.stdout.write("·"); }
       else { got.push(out.ms / 1000); process.stdout.write("."); }
     }
-    const line = { id: cond.id, label: cond.label, seen: got.slice().sort((a, b) => a - b), never: never.length, horizonS: cond.horizon / 1000, medianS: median(got), maxS: got.length ? Math.max(...got) : null };
+    const line = { id: cond.id, label: cond.label, seen: got.slice().sort((a, b) => a - b), never: never.length, broke, horizonS: cond.horizon / 1000, medianS: median(got), maxS: got.length ? Math.max(...got) : null };
     report.conditions.push(line);
     process.stdout.write("\n");
   }
@@ -247,11 +250,20 @@ try {
 console.log("\n| condition | trials (s) | median |");
 console.log("| --- | --- | --- |");
 for (const c of report.conditions) {
-  const trials = c.seen.length
-    ? c.seen.join(", ") + (c.never ? `, and ${c.never} never` : "")
-    : `never, ${c.never}/${c.never} in ${c.horizonS} s`;
+  // A trial that threw is NOT a trial that saw nothing, and the two must never print alike: the
+  // first run of this file after the static server had quietly died reported "never, 0/0" for every
+  // condition and exited 0, which reads exactly like the finding it was measuring. Silence looks
+  // like a pass unless you make it say so.
+  const trials = c.seen.length ? c.seen.join(", ") + (c.never ? `, and ${c.never} never` : "")
+    : c.never ? `never, ${c.never}/${c.never} in ${c.horizonS} s`
+    : "NOT MEASURED";
   const med = c.medianS == null ? "—" : `${c.medianS} (max ${c.maxS})`;
-  console.log(`| ${c.label} | ${trials} | ${med} |`);
+  console.log(`| ${c.label} | ${trials}${c.broke ? ` (${c.broke} trial(s) could not run)` : ""} | ${med} |`);
 }
+const broken = report.conditions.reduce((n, c) => n + c.broke, 0);
 console.log(`\npage errors: ${pageErrors}`);
 if (OUT) { fs.writeFileSync(OUT, JSON.stringify(report, null, 2)); console.log("wrote " + OUT); }
+if (broken) {
+  console.log(`\n${broken} trial(s) could not run — is \`node tools/serve.js 8791 .\` up? These numbers are not a measurement.`);
+  process.exit(1);
+}

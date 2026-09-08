@@ -38,12 +38,22 @@ final class WatchLinkReceiver {
     /// empty state: there is nothing to add a line to until a phone says otherwise.
     private(set) var selected: String?
 
+    /// The two Secret kits, when a phone that has unlocked them has said so — and none otherwise.
+    /// **They are in no binary**: the generated table is the 16 open kits, and these arrive over the
+    /// pairing from a phone that read them out of its own page. The picker offers them only while
+    /// this is non-empty, so re-locking on the phone takes them off the wrist.
+    private(set) var secretKits: [Kit] = []
+
+    /// Every kit this Watch may offer: the table, plus whatever the phone has unlocked.
+    var availableKits: [Kit] { Kits.open + secretKits }
+
     /// Something changed because the phone said so. Track B's model hangs its pull off this; SwiftUI
     /// does not need it, since `links` and `selected` are observed.
     var onChange: (@MainActor () -> Void)?
 
     private let vault: LinkVault
     private let defaults: UserDefaults
+    private let shared: UserDefaults
     private var delegate: Delegate?
     private var started = false
 
@@ -54,10 +64,20 @@ final class WatchLinkReceiver {
     /// own container, which is where the decrypted documents live too, under a name only this app
     /// reads. It is never in an App Group, never synchronised, and never printed.
     private static let selectedKey = "tf/app/watch/selected"
+    /// The unlocked palettes. **Not** in `.standard` beside the selection, and deliberately so: a
+    /// kit id is not a secret and the complication has to be able to see the theme, so this goes in
+    /// the App Group the snapshot already uses. It is written as JSON rather than as an archive
+    /// because the shape is the one `Kit(json:)` reads everywhere else.
+    private static let kitsKey = "tf/app/watch/kits"
 
-    init(vault: LinkVault = KeychainLinkVault(), defaults: UserDefaults = .standard) {
+    init(vault: LinkVault = KeychainLinkVault(), defaults: UserDefaults = .standard,
+         shared: UserDefaults? = UserDefaults(suiteName: WatchGroup.identifier)) {
         self.vault = vault
         self.defaults = defaults
+        // nil when the entitlement is missing from the running binary, which is the same silent
+        // answer `containerURL(forSecurityApplicationGroupIdentifier:)` gives — so fall back to the
+        // app's own defaults and carry on rather than dropping the palettes on the floor.
+        self.shared = shared ?? defaults
     }
 
     // ---------------------------------------------------------------- lifecycle
@@ -68,6 +88,7 @@ final class WatchLinkReceiver {
         // the same fallback the reconciler applies when the phone stops naming the list on screen.
         let stored = defaults.string(forKey: Self.selectedKey)
         selected = links.contains(where: { $0.id == stored }) ? stored : links.first?.id
+        secretKits = Self.readKits(from: shared)
 
         guard WCSession.isSupported(), !started else { return }
         started = true
@@ -125,6 +146,12 @@ final class WatchLinkReceiver {
         // cautious answer — the payload arrives again and is applied again — rather than a vault that
         // was half written and a stamp that says it was not.
         defaults.set(plan.appliedAt, forKey: Self.appliedAtKey)
+        // The palettes travel with the payload and under the payload's rule: what the phone names is
+        // what this Watch holds, so an empty list is a phone that has re-locked and the kits go. They
+        // are written beside the vault rather than inside it — a palette is not a secret to keep, it
+        // is a permission to render.
+        secretKits = plan.kits
+        Self.writeKits(plan.kits, to: shared)
         links = (try? vault.all()) ?? []
         selected = plan.select
         if let id = plan.select { defaults.set(id, forKey: Self.selectedKey) }
@@ -141,8 +168,23 @@ final class WatchLinkReceiver {
         print("[tfive] watch: heard v=\(payload.map { String($0.v) } ?? "-") "
             + "links=\(payload?.links.count ?? -1) applied=\(plan.applied) "
             + "+\(plan.upsert.count) −\(plan.remove.count) holds=\(links.count) "
-            + "showing=\(selected == nil ? "none" : "one")")
+            + "showing=\(selected == nil ? "none" : "one") kits=\(secretKits.count)")
         #endif
+    }
+
+    // ---------------------------------------------------------------- the unlocked palettes
+
+    /// JSON in, kits out. A value this build cannot read is no kits, which is the safe answer: the
+    /// picker offers the 16 and says nothing about the two.
+    private static func readKits(from store: UserDefaults) -> [Kit] {
+        guard let text = store.string(forKey: kitsKey),
+              let list = (try? JSONReader.parse(Data(text.utf8)))?.arrayValue else { return [] }
+        return list.compactMap(Kit.init(json:))
+    }
+
+    private static func writeKits(_ kits: [Kit], to store: UserDefaults) {
+        guard !kits.isEmpty else { return store.removeObject(forKey: kitsKey) }
+        store.set(JSONWriter.stringify(.array(kits.map(\.json))), forKey: kitsKey)
     }
 
     // ---------------------------------------------------------------- the delegate

@@ -271,4 +271,87 @@ struct WatchLinkTests {
         #expect(plan.upsert.count == 1)
         #expect(plan.upsert.first?.name == "First")
     }
+
+    // ---------------------------------------------------------------- the Secret kits (1.13)
+
+    /// The two kits as they leave theme.js — read from the fixture, because they are in no binary
+    /// and this test is not about to be the place that puts them in one. A phone reads exactly this
+    /// shape out of its own page.
+    static let secretKits: [Kit] = Fixtures.kits.arr("kits")
+        .compactMap(\.objectValue).filter { $0.truthy("secret") }
+        .compactMap { Kit(json: .object($0)) }
+
+    @Test("a payload with no kits leaves nothing behind")
+    func noKitsMeansNoKits() {
+        var payload = WatchLinkPayload(links: [Self.link(Self.W)], at: 2000)
+        #expect(payload.secretKits.isEmpty)
+        #expect(payload.dictionary[WatchLinkPayload.kitsKey] == nil, "no key at all, not an empty one")
+
+        let plan = WatchLinkReconciler.reconcile(payload: payload, lastAppliedAt: 0,
+                                                 vault: [], selected: nil, now: 5000)
+        #expect(plan.applied)
+        #expect(plan.kits.isEmpty, "and that is what takes them away again when a phone re-locks")
+
+        // Setting them and then setting none removes the key rather than leaving an empty object.
+        payload.secretKits = Self.secretKits
+        #expect(payload.secretKits.count == 2)
+        payload.secretKits = []
+        #expect(payload.dictionary[WatchLinkPayload.kitsKey] == nil)
+    }
+
+    @Test("a payload with them round-trips, palette for palette")
+    func kitsRoundTripOverTheWire() throws {
+        #expect(Self.secretKits.count == 2, "the fixture still has the pair")
+        var sent = WatchLinkPayload(links: [Self.link(Self.W, name: "Home")], at: 1_700_000_000_000)
+        sent.secretKits = Self.secretKits
+
+        let wire = sent.dictionary
+        #expect(PropertyListSerialization.propertyList(wire, isValidFor: .binary),
+                "an application context takes property-list types only")
+        let bytes = try PropertyListSerialization.data(fromPropertyList: wire, format: .binary,
+                                                       options: 0).count
+
+        let back = try #require(WatchLinkPayload(dictionary: wire))
+        #expect(back == sent, "the whole payload, extra included — which is where the sorting matters")
+        #expect(back.secretKits == Self.secretKits.sorted { $0.id < $1.id })
+        for kit in back.secretKits {
+            #expect(kit.secret, "a Secret kit knows it is one on the other side")
+            #expect(Kits.byId(kit.id) == nil, "and it is still not in the table")
+            #expect(kit.type != nil, "but it can still find its faces — a font pair is not a secret")
+        }
+        let ids = back.secretKits.map(\.id).joined(separator: ", ")
+        print("secret kits: \(ids) in a \(bytes)-byte application context")
+    }
+
+    @Test("the kits go in sorted, whatever order they arrive in and whatever else is already there")
+    func insertionIsSorted() throws {
+        var payload = WatchLinkPayload(links: [], at: 1)
+        payload.setExtra("zebra", .string("last"))
+        payload.setExtra("alpha", .string("first"))
+        payload.secretKits = Self.secretKits.reversed()
+        payload.setExtra("middle", .number(1))
+        #expect(payload.extra.keys.map(\.string) == ["alpha", "kits", "middle", "zebra"])
+        #expect(payload.extra.obj("kits").keys.map(\.string) == ["birthday", "superpink"])
+        // The point of all that sorting: decode rebuilds `extra` in sorted order and JSONObject's
+        // == compares insertion order, so an unsorted set here would make this fail about a third
+        // of the time and look like the codec's fault.
+        #expect(WatchLinkPayload(dictionary: payload.dictionary) == payload)
+    }
+
+    @Test("an older build keeps the key it does not understand and hands it back")
+    func anOlderBuildPassesTheKitsThrough() throws {
+        var fromNewPhone = WatchLinkPayload(links: [Self.link(Self.W)], at: 3000)
+        fromNewPhone.secretKits = Self.secretKits
+
+        // What a build with no idea what `kits` is does with it: `extra` keeps every key outside
+        // v/at/links, and `dictionary` puts them all back. Nothing in this path reads `secretKits`,
+        // which is exactly what an older build does not have.
+        let older = try #require(WatchLinkPayload(dictionary: fromNewPhone.dictionary))
+        let handedBack = older.dictionary
+        let kits = try #require(handedBack[WatchLinkPayload.kitsKey] as? [String: Any])
+        #expect(kits.keys.sorted() == ["birthday", "superpink"])
+        let again = try #require(WatchLinkPayload(dictionary: handedBack))
+        #expect(again.secretKits == fromNewPhone.secretKits,
+                "two passes through a build that does not know the key, and the palettes are intact")
+    }
 }

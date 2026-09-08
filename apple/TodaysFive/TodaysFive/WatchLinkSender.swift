@@ -35,6 +35,11 @@ final class WatchLinkSender: NSObject {
     /// rather than dropping it.
     private var pending: WatchLinkPayload?
 
+    /// The two Secret kits, when this phone's person has unlocked them — read out of the page's own
+    /// theme.js by `WebViewController`, never compiled in. Empty is the ordinary state and is also
+    /// what a phone that has *re-locked* says, which is how the wrist lets go of them again.
+    private var secretKits: [Kit] = []
+
     /// The last stamp put on the wire by this process. Two sends inside one millisecond would carry
     /// the same `at`, and the Watch applies a payload only when its `at` is strictly newer than the
     /// last one it applied — so the second would look exactly like the doubled delivery and be
@@ -64,8 +69,23 @@ final class WatchLinkSender: NSObject {
     func send(_ links: [VaultedLink]) {
         let at = max(CalendarDates.now(), lastSentAt + 1)
         lastSentAt = at
-        pending = WatchLinkPayload(links: links.map(WatchLink.init), at: at)
+        var payload = WatchLinkPayload(links: links.map(WatchLink.init), at: at)
+        // Under `kits` in `extra`, sorted, so a Watch on an older build passes the key through
+        // untouched and `v` stays 1. Setting none removes the key, which is the message a re-locked
+        // phone has to be able to send.
+        payload.secretKits = secretKits
+        pending = payload
         flush()
+    }
+
+    /// The Secret kits this phone may hand over, or none. Called by `WebViewController` after every
+    /// reconcile: the latch is `meta.device.secret` in the page's own registry, and the palettes are
+    /// read out of the page's own theme.js. A change re-sends, because "the phone has re-locked" has
+    /// to reach the wrist as surely as *Remove from this device* does.
+    func setSecretKits(_ kits: [Kit]) {
+        guard kits.map(\.id) != secretKits.map(\.id) else { return }
+        secretKits = kits
+        sendVault()
     }
 
     /// Send whatever the vault holds now, for the two moments that have no caller with a list in hand.
@@ -127,6 +147,7 @@ final class WatchLinkSender: NSObject {
         let named = payload.links.filter { !$0.nickname.isEmpty }.count
         print("[tfive] watch: \(what) v=\(payload.v) links=\(payload.links.count) "
             + "edit=\(edit) view=\(payload.links.count - edit) shared=\(shared) nicknamed=\(named) "
+            + "kits=\(payload.secretKits.count) "
             + "keys=\(payload.dictionary.keys.sorted().joined(separator: ","))")
         #endif
     }

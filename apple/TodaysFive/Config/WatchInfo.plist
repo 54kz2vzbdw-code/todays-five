@@ -32,6 +32,25 @@
 	<key>WKRunsIndependentlyOfCompanionApp</key>
 	<true/>
 
+	<!-- The Add complication's `.widgetURL` is `todaysfive://add`, and WKApplicationDelegate has no
+	     url-opening callback at all — the whole optional list was read — so SwiftUI's `onOpenURL` is
+	     the door and this is what makes the scheme reach it. Without it the complication is inert and
+	     nothing says so. The scheme carries no list and never will: it means "add a line", and which
+	     list that is, is the Watch's own selection. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.pricebrannen.todaysfive.watchkitapp</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>todaysfive</string>
+			</array>
+		</dict>
+	</array>
+
 	<!-- The only encryption is the list's own: AES-GCM over the person's document, and HTTPS. -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>

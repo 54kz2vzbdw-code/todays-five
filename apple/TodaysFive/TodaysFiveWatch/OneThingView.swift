@@ -1,2 +1,80 @@
-// OneThingView.swift — the top undone line, huge, and shuffle.
-// Track B fills this in; the project already registers the path so the tracks never touch project.pbxproj.
+// OneThingView.swift — the second page: one line, huge, and shuffle.
+//
+// The shown line is `undone.first(where: { $0.id == shuffled }) ?? undone.first`, computed at render
+// time, which is `renderToday`'s own expression. The footer is the web's words. **Nothing on this
+// page writes to the document except the check-off** — shuffle is pure view state and always has
+// been, which is why a shuffle on the Watch and a shuffle on a laptop cannot disagree about a list.
+import SwiftUI
+import TodaysFiveCore
+
+struct OneThingView: View {
+    @Environment(WatchStore.self) private var store
+
+    /// The wobble: 0 or 1 undone line means a shuffle changes nothing, and the web answers that with
+    /// a small movement rather than with silence.
+    @State private var nudge: CGFloat = 0
+
+    var body: some View {
+        VStack(spacing: 8) {
+            if let line = store.oneThingLine {
+                Text(line.text)
+                    .font(.system(.title2, design: .rounded, weight: .semibold))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(5)
+                    .minimumScaleFactor(0.55)
+                    .frame(maxWidth: .infinity)
+                    .offset(x: nudge)
+
+                Text(store.oneThingFooter)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 18) {
+                    Button {
+                        store.setDone(line.id, true)
+                    } label: {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 17, weight: .semibold))
+                            .frame(width: 44, height: 34)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(WatchTheme.accent)
+
+                    Button {
+                        store.shuffle()
+                    } label: {
+                        Image(systemName: "shuffle")
+                            .font(.system(size: 15, weight: .semibold))
+                            .frame(width: 44, height: 34)
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .disabled(!store.canEdit)
+            } else {
+                Text(store.totalCount == 0 ? "Nothing on Today" : "That's the list.")
+                    .font(.system(.headline, design: .rounded))
+                    .foregroundStyle(store.totalCount == 0 ? Color.secondary : WatchTheme.accent)
+            }
+        }
+        .padding(.horizontal, 6)
+        .frame(maxHeight: .infinity)
+        .contentShape(Rectangle())
+        // The firm swipe. Horizontal only, and deliberately so: the vertical pager owns the other
+        // axis, and a gesture that fought it would cost the page rather than buy the shuffle.
+        .gesture(
+            DragGesture(minimumDistance: 32)
+                .onEnded { value in
+                    guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                    store.shuffle()
+                }
+        )
+        // `shuffled` is not observed — it is cleared lazily inside the read, the way `renderToday`
+        // clears it — so this is the dependency that tells SwiftUI a shuffle gesture happened. Read
+        // it here or the page will not move.
+        .animation(.easeOut(duration: 0.16), value: store.shuffleTick)
+        .onChange(of: store.wobbleTick) { _, _ in
+            withAnimation(.easeOut(duration: 0.08)) { nudge = 9 }
+            withAnimation(.easeOut(duration: 0.12).delay(0.08)) { nudge = 0 }
+        }
+    }
+}

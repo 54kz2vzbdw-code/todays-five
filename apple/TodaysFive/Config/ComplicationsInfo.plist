@@ -20,8 +20,7 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<!-- The one key a watchOS widget extension needs beyond the boilerplate. There is no
-	     NSExtensionPrincipalClass and no NSExtensionMainStoryboard: WidgetKit finds the bundle. -->
+	<!-- ARM A of an A/B: NSExtension alone, the shape every source names. -->
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>

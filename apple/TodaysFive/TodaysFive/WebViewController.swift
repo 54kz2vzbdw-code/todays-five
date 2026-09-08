@@ -80,6 +80,7 @@ final class WebViewController: UIViewController {
         observeWebView()
         prepareHapticsOnTouchDown()
         Audio.begin()
+        WatchLinkSender.shared.start()
 
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-TFWipeVault") { try? (vault as? KeychainLinkVault)?.removeAll() }
@@ -182,11 +183,17 @@ final class WebViewController: UIViewController {
     /// Learn a link the app saw go by. Parsed with the core's own parser — the same one the web uses.
     private func noticeLink(_ url: URL) {
         guard url.host == Self.host, let parsed = Links.parseLink(url.absoluteString) else { return }
+        // Which list is on screen. The vault's own order cannot answer this — `VaultReconciler`
+        // stamps every held link with the same `lastSeenAt` on each reconcile — so the app writes it
+        // down here, where it genuinely knows, and the App Intent reads it back (§3). The key holds
+        // an id, so it lives in the app's own defaults and never in the page's storage.
+        UserDefaults.standard.set(parsed.id, forKey: AddService.openListKey)
         do {
             let current = try vault.all()
             if let write = VaultReconciler.seen(parsed, vault: current) {
                 try vault.put(write)
                 log("vault: kept a link")
+                WatchLinkSender.shared.sendVaultNow()
             }
         } catch {
             log("vault: could not write")
@@ -259,6 +266,9 @@ final class WebViewController: UIViewController {
             for id in plan.remove { try vault.remove(id: id) }
             if !plan.upsert.isEmpty || !plan.remove.isEmpty {
                 log("vault: +\(plan.upsert.count) −\(plan.remove.count)")
+                // The vault moved, which is the only moment §2 says the phone speaks. *Remove from
+                // this device* reaches the wrist through here and nowhere else.
+                WatchLinkSender.shared.sendVaultNow()
             }
             // The mark is written *after* the plan is applied, so a crash in between leaves the
             // cautious answer (an unmarked store removes nothing) rather than the destructive one.

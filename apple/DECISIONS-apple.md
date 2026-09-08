@@ -817,3 +817,68 @@ character to the cut.
 The core's order is the better one — stripping first means the cut counts characters a person can see
 — and it is the order the web's own `+` uses, which is the path this round sided with everywhere else.
 Written down as deliberate so that the next person to diff the two does not "fix" it.
+
+## The complication's twenty-four crashes, and the fix that was not one
+
+Track B's review found twenty-four crash reports for `TodaysFiveComplications`, all identical, all
+before a line of our code runs:
+
+```
+EXC_BREAKPOINT (SIGTRAP) in -[_EXConnectionHandlerExtension willFinishLaunching]
+   ← _EXRunningExtension.resume() ← EXExtensionMain ← NSExtensionMain
+```
+
+The crash report names no cause — the whole backtrace is above us. The unified log on the watch
+simulator does:
+
+```
+E  TodaysFiveComplications: EXExtensionContextClass not defined or invalid type
+E  TodaysFiveComplications: Connection handler class unspecified.
+```
+
+Read together those say the bundle was claimed by ExtensionKit's *generic* host instead of by
+WidgetKit, so the obvious fix was to declare the extension point in ExtensionKit's own vocabulary:
+`EXAppExtensionAttributes` → `EXExtensionPointIdentifier`. Adding it alongside `NSExtension` stopped
+the crashes — twenty-four before, twenty-four after — and the extension got as far as running its
+configuration intent and asking for a display.
+
+**It was not the fix.** Three measurements say so, in the order they arrived:
+
+1. Declaring **both** keys earns a build warning that reads like an instruction: *"Application
+   extensions cannot contain both the NSExtension and EXAppExtensionAttributes top-level Info.plist
+   keys."*
+2. Declaring **`EXAppExtensionAttributes` alone** will not install at all: *"Invalid placeholder
+   attributes … Failed to create app extension placeholder."*
+3. So the control that should have been run first: back to **`NSExtension` alone**, clean build,
+   uninstall, install, launch — and **no new crash either**, with `com.apple.chrono:widget` archiving
+   views and `Request ended for TodaysFiveNextLine:accessoryRectangular - success` in the log.
+
+The twenty-four crashes were an artefact of the round itself. Track B and Track C each installed the
+watch app repeatedly from *different* derived-data paths while working, and the log shows the system
+launching the extension for placeholder and icon work against bundles being replaced underneath it.
+They stopped when the installs stopped, not when the plist changed.
+
+`NSExtension` alone is the shape — what every source said, and what the installer requires.
+
+**How to apply:** a change that coincides with a symptom disappearing has not been shown to have
+caused it. The cheap control here — put the original back and measure again — took four minutes, and
+it is the only reason this file does not now contain a confident paragraph about a key that would
+have broken the build.
+
+
+## A self-test inside a sheet nobody opens proves nothing
+
+`-TFAddSelfTest` was wired to `AddFlowView`'s `.task`, which is correct-looking and useless:
+`AddFlowView` only ever exists inside a sheet, and nothing opens that sheet on launch. The argument
+ran, the app started, and the log was two lines long — the seed and nothing else.
+
+It was caught by running it at integration rather than by reading it, which is the same lesson Phase 2
+wrote down about a `catch` that logs and returns: **the failure mode of a check that does not run is
+silence, and silence looks like a pass.** The self-test now hangs off the app's root view, where the
+app always is.
+
+Worth pairing with what it then reported, because the five answers are the ones a person actually
+meets: `added`, `nothing-said` for an empty string, `view-only`, `no-list`, and an Undo that
+tombstones rather than rewrites. And one line that only a device can confirm but which the simulator
+could at least ask: `visibleInterfaceController=present`, so the wrist takes the WatchKit dictation
+path rather than the `TextFieldLink` fallback.

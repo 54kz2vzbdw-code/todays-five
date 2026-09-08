@@ -77,6 +77,11 @@ final class WatchLinkSender: NSObject {
     /// would put a stamped, authoritative "this phone holds no lists" in the slot and the Watch,
     /// believing it, would drop every link it has. Refuse to speak instead: the next real send says
     /// the true thing, and silence changes nothing on the other side.
+    /// The vault moved. This is the only moment §2 says the phone speaks, and `WebViewController`
+    /// is the only thing that knows it happened — a link went by, or a reconcile added or dropped
+    /// one. Public so that it can be called from there and nowhere else.
+    func sendVaultNow() { sendVault() }
+
     private func sendVault() {
         guard let links = try? vault.all() else {
             #if DEBUG

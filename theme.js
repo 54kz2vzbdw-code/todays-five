@@ -518,7 +518,16 @@ export const PACK_NAMES = { knock: "Knock", bell: "Bell", blip: "Blip", typewrit
 export function packOf(id) { return PACK_IDS.includes(id) ? id : ""; }
 
 /** Every token from an accent + base. Backgrounds are tinted toward the accent hue at low chroma. A `pack` names the
-    sound (1.1); without one the hue rule picks: pinks, purples and blues ring a bell, everything else knocks. */
+    sound (1.1); without one the hue rule picks: pinks, purples and blues ring a bell, everything else knocks.
+
+    1.13: `accent` is nudged against `--ink-3`, not `--ink`. Every other token here has been derived
+    against `--ink-3` since it was written, because that is the lightest (dark) / darkest (light)
+    surface the token ever sits on — a panel, a filled chip, a hovered swatch — and the curated path
+    has nudged its accent there since 1.7. This one line was still measuring against `--ink`, so the
+    guarantee a theme you make carried was the wrong guarantee: over 3,000 seeded accents per base
+    the worst `accent` against `--ink-3` was 2.18:1 on dark and 2.45:1 on light, and 1,139 / 1,690 of
+    3,000 were under the 3:1 floor. Since `--ink-3` is the harder ground on both bases, ensuring
+    there implies the old guarantee and never weakens it. */
 export function derive({ accent, base = "dark", pair, name = "", id, pack }) {
   accent = normalizeHex(accent) || BRAND_ACCENT;
   const a = hexToOklch(accent);
@@ -531,7 +540,7 @@ export function derive({ accent, base = "dark", pair, name = "", id, pack }) {
     c.text = ensure(0.955, Math.min(0.012, a.C * 0.1), h, c.ink3, 7, 1);
     c.muted = ensure(0.75, Math.min(0.05, a.C * 0.35), h, c.ink3, 4.5, 1);
     c.dim = ensure(0.64, Math.min(0.04, a.C * 0.3), h, c.ink3, 4.5, 1);
-    c.accent = ensure(a.L, a.C, h, c.ink, 3, 1);
+    c.accent = ensure(a.L, a.C, h, c.ink3, 3, 1);       // 1.13: --ink-3, the surface a focus ring and a filled chip sit on
     c.accentText = ensure(hexToOklch(c.accent).L, Math.min(a.C, 0.2), h, c.ink3, 4.5, 1);
     const aL = hexToOklch(c.accent).L;
     c.accentHi = oklch(Math.min(0.92, aL + 0.12), a.C * 0.8, h + 8);
@@ -545,7 +554,7 @@ export function derive({ accent, base = "dark", pair, name = "", id, pack }) {
     c.text = ensure(0.32, Math.min(0.03, a.C * 0.2), h, c.ink3, 7, -1);
     c.muted = ensure(0.5, Math.min(0.05, a.C * 0.3), h, c.ink3, 4.5, -1);
     c.dim = ensure(0.56, Math.min(0.04, a.C * 0.25), h, c.ink3, 4.5, -1);
-    c.accent = ensure(a.L, a.C, h, c.ink, 3, -1);
+    c.accent = ensure(a.L, a.C, h, c.ink3, 3, -1);      // 1.13: likewise
     c.accentText = ensure(hexToOklch(c.accent).L, a.C, h, c.ink3, 4.5, -1);
     const aL = hexToOklch(c.accent).L;
     c.accentHi = oklch(Math.min(0.85, aL + 0.1), a.C * 0.9, h + 6);

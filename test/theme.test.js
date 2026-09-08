@@ -16,7 +16,10 @@ function test(name, fn) { fn(); passed++; console.log("ok -", name); }
 let seed = 4242;
 function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
 
-const THRESH = { text: 7, muted: 4.5, dim: 4.5, accentText: 4.5, accent: 3, hairSolid: 3, danger: 4.5, muted2: 4.5, dim2: 4.5 };
+// 1.13: accent3 joins the table. The accent's floor was enforced against --ink here and against
+// --ink-3 in one 1.7 test that skipped the originals and never saw a theme you make; the shared
+// table is where a floor cannot be forgotten, so that is where the elevated one now lives.
+const THRESH = { text: 7, muted: 4.5, dim: 4.5, accentText: 4.5, accent: 3, accent3: 3, hairSolid: 3, danger: 4.5, muted2: 4.5, dim2: 4.5 };
 function check(t, label) {
   const r = report(t);
   for (const k of Object.keys(THRESH)) assert.ok(r[k] >= THRESH[k] - 1e-9, `${label}: ${k} ${r[k].toFixed(2)} < ${THRESH[k]}`);
@@ -208,6 +211,32 @@ test("custom derivation meets the floors for 2000 random accents on both bases",
     const ink = hexToOklch(t.colors.ink), acc = hexToOklch(hex);
     if (acc.C > 0.05) assert.ok(ink.C > (base === "dark" ? 0.011 : 0.0075), `${hex}/${base} ink is flat grey (C=${ink.C.toFixed(4)})`);
   }
+});
+
+test("1.13: a theme you make guarantees its accent against --ink-3, the surface it sits on — 3,000 seeded accents per base, and the worst one printed", () => {
+  // Until 1.13, derive() nudged `accent` against --ink while every other token here was already
+  // nudged against --ink-3. The floor a saved theme code carried was therefore the wrong floor.
+  // These are the same 3,000 accents per base the fix was measured on, and the whole point is that
+  // the worst one is now at the floor rather than well under it.
+  for (const base of ["dark", "light"]) {
+    let s = 4242; const next = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+    let worst = Infinity, worstHex = "", below = 0;
+    for (let i = 0; i < 3000; i++) {
+      const hex = "#" + Math.floor(next() * 0xffffff).toString(16).padStart(6, "0");
+      const c = derive({ accent: hex, base }).colors;
+      const r = contrast(c.accent, c.ink3);
+      if (r < worst) { worst = r; worstHex = hex; }
+      if (r < 3 - 1e-9) below++;
+      assert.ok(contrast(c.accent, c.ink) >= 3 - 1e-9, `${hex}/${base}: --ink-3 is the harder ground, so --ink must come free`);
+    }
+    console.log(`     derived ${base}: worst accent on --ink-3 ${worst.toFixed(4)} (${worstHex}), ${below} of 3000 below 3:1`);
+    assert.equal(below, 0, `${base}: ${below} of 3000 derived accents under 3:1 on --ink-3 (worst ${worst.toFixed(2)} at ${worstHex})`);
+  }
+  // and a saved code still rebuilds exactly what the builder showed, which is what makes this safe
+  // to land on the themes collection: the change is in the derivation, not in the code grammar.
+  const code = "T2:d:11735B:grotesk:marble:Teal";
+  assert.equal(themeCode(parseCode(code)), code);
+  assert.equal(cssText(parseCode(code)), cssText(derive({ accent: "#11735B", base: "dark", pair: "grotesk", pack: "marble", name: "Teal" })));
 });
 
 test("surprise me always passes and stays inside the tasteful ranges", () => {

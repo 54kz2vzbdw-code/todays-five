@@ -752,3 +752,68 @@ It matters here because the core is about to have exactly one add. The rule is `
 undone-only filter, because a line added by voice is a line a person is adding now; `applyPendingAdd()`
 is the reference only for the *shape*, being the path that writes the text and the record in one pass.
 Worth a line because "match the web" was not a well-formed instruction until one of the two was named.
+
+## An unordered dictionary made the codec nondeterministic, and a suite caught it
+
+`WatchLinkPayload.init?(dictionary:)` built its `extra` — the keys a later build might send that this
+one keeps, per `COMPATIBILITY.md` §3 — by iterating a Swift `Dictionary`. That iteration order varies
+per process; `JSONObject` remembers insertion order and its `==` compares it. So two decodes of the
+same bytes were unequal about a third of the time, and `swift test` failed three runs in eight.
+
+It is the same family as the bug Phase 1 spent its whole design avoiding — canonical JSON differing
+between two implementations that both look right — arriving from a direction nobody was watching: not
+the document, a *channel*, and not two clients disagreeing, one client disagreeing with itself. The
+nested helper in the same file already sorted, for exactly this reason. The top-level loop did not.
+
+**How to apply:** the moment a type's equality depends on order, every loop that builds one sorts.
+And a test that fails one run in three is worth more than a test that passes: this one was written by
+the track that wrote the bug, and it still caught it.
+
+## A failed Keychain read is not an empty vault, one channel further along
+
+`WatchLinkSender.sendVault()` was `send((try? vault.all()) ?? [])`. `SecItemCopyMatching` answers
+`errSecInteractionNotAllowed` before the first unlock after a reboot, and iOS launches this app in the
+background for a universal link or for its counterpart on the wrist — so that line would have put a
+**stamped, authoritative** "this phone holds no lists" in the slot, and the Watch, believing it,
+would have dropped every link it had.
+
+This is Phase 2's fourth bug wearing different clothes, and it is worth noticing how the shape
+survived a change of medium: there the app inferred an event from a state (`lists: []`) and the answer
+was a mark; here the app was about to *assert* a state it had not read, and the answer is to say
+nothing. Silence changes nothing on the other side — that is what the stamp buys.
+
+The receiver had the mirror image: it wrote its high-water mark unconditionally while every vault
+write above it was `try?`. Ordering covers a *crash*; only checking covers a *failure*, and a mark
+written over failed writes records a payload the Watch did not keep and will never be sent again.
+
+## The clock is the channel's weakest part, and nothing here fixes it
+
+The sender's stamp is `max(now, lastSentAt + 1)`, which is monotonic **per process**. The Watch's
+high-water mark is **persistent**. The two do not have the same lifetime, so a phone clock that ever
+runs ahead — a manual date change, a bad correction — poisons the channel for as long as it takes
+real time to catch up: the Watch records a stamp from next year and ignores every honest payload
+until then.
+
+Nothing in this round fixes it, and it is written down rather than left to be discovered. The cheap
+answer when it is wanted is a counter rather than a clock, or a sender-identity plus a sequence, and
+either is an additive change the codec already tolerates.
+
+## `tfive check` did the thing the Watch is forbidden to do
+
+`add` has refused a View link since Phase 1. `check` never did — it relied on `SyncEngine` refusing to
+push a view ref, so a check-off on a View link was written locally, never sent, and replaced by the
+next pull. Silently losing an edit is worse than refusing one, and this round makes
+refuse-before-the-document-is-touched a rule for the Watch. The CLI should not be the client that
+breaks it, so it has the guard now — one line, and the same sentence `add` says.
+
+## The cleaning pipeline's order differs from the web's URL path, deliberately
+
+`addToToday` does stripBidi → trim → collapse → cut at 200. The web's `/add?text=` path trims,
+collapses and cuts in `parseHash`, and strips bidi *afterwards* in `applyPendingAdd`. The difference
+shows on two inputs: a line with an override between two words keeps a double space on the web and a
+single one here, and a 205-character line with an override inside the first 200 loses a different
+character to the cut.
+
+The core's order is the better one — stripping first means the cut counts characters a person can see
+— and it is the order the web's own `+` uses, which is the path this round sided with everywhere else.
+Written down as deliberate so that the next person to diff the two does not "fix" it.

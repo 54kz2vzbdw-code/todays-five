@@ -447,7 +447,7 @@ rules of its own.
 | what | why it is in the core |
 | --- | --- |
 | `WatchLinkPayload` — encode / decode, `v`, `at`, unknown-key pass-through | a codec that two processes read is a contract, and a contract is testable |
-| `WatchLinkStore` rules — payload + current vault → a plan (upsert / remove / select) | the same shape as `VaultReconciler`, for the same reason: the part that can be wrong in a way a test catches |
+| `WatchLinkReconciler` + `WatchLinkPlan` — payload + current vault → a plan (upsert / remove / select) | the same shape as `VaultReconciler`, for the same reason: the part that can be wrong in a way a test catches |
 | `Model.addToToday(_:text:at:)` | four ways in, one path out — and it is the only add in Swift after this round |
 | `Model.setDone(_:id:done:at:)` | the check-off's three fields, in one place, so the Watch cannot invent a fourth |
 | the rollover agreement test | a Watch and a phone rolling the same list produce identical documents |

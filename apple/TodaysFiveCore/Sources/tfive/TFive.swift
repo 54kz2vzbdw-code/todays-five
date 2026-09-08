@@ -107,51 +107,43 @@ struct TFive {
 
     static func check(_ target: (id: String, mode: LinkMode, origin: String?), _ n: Int) async throws {
         let (keys, engine, _) = try await openList(target)
+        // A View link has no token, so the engine refuses to push it — and without this guard the
+        // check-off is written locally, never sent, and replaced by the next pull. Silently losing an
+        // edit is worse than refusing one, and Phase 3 makes refusing before the document is touched
+        // a rule for the Watch; the CLI should not be the client that breaks it. `add` has said this
+        // since Phase 1; `check` never did.
+        guard keys.mode == .edit else {
+            throw CLIError("a View link only shows the list — open the Private link to cross a line off")
+        }
         await engine.sync()
-        var doc = await engine.document()
+        let doc = await engine.document()
         let today = doc.todayItems
         guard n >= 1, n <= today.count else {
             throw CLIError("there \(today.count == 1 ? "is" : "are") \(today.count) line\(today.count == 1 ? "" : "s") on Today; ask for 1 to \(today.count)")
         }
         let it = today[n - 1]
-        var record = try require(doc.items[it.idJS]?.objectValue, "that line")
-        let now = CalendarDates.now()
         let wasDone = it.done
-        record.set("done", !wasDone)
-        record.set("doneAt", wasDone ? 0 : now)
-        record.set("updatedAt", now)
-        doc.items[it.idJS] = .object(record)
-        doc.updatedAt = max(doc.updatedAt, now)
-        await engine.update(doc)
+        // The three fields a check-off writes live in the core now, so the CLI, the Watch and the
+        // intent cannot invent a fourth between them.
+        await engine.update(Model.setDone(doc, it.id, !wasDone))
         await engine.sync()
         print((wasDone ? "Back on: " : "Crossed off: ") + it.text)
         print(render(await engine.document(), keys: keys, snapshot: await engine.current()))
     }
 
     static func add(_ target: (id: String, mode: LinkMode, origin: String?), _ text: String) async throws {
-        let clean = JSText.collapseSpaces(JSText.trim(JSString(text))).prefix(Model.textMax)
-        guard !clean.isEmpty else { throw CLIError("nothing to add") }
         let (keys, engine, _) = try await openList(target)
         guard keys.mode == .edit else { throw CLIError("a View link only shows the list — open the Private link to add a line") }
         await engine.sync()
-        var doc = await engine.document()
-        let now = CalendarDates.now()
-        let id = Model.shortId()
-        var r = JSONObject()
-        r.set("id", id)
-        r.set("sectionId", "")
-        r["text"] = .string(clean)
-        r.set("note", "")
-        r.set("done", false)
-        r.set("doneAt", 0)
-        r.set("today", true)
-        r.set("order", Model.lastOrder(doc.itemsInSection("")) { $0.order })
-        r.set("todayOrder", Model.lastOrder(doc.todayItems) { $0.todayOrder })
-        r.set("updatedAt", now)
-        doc.items[id] = .object(r)
-        doc.updatedAt = max(doc.updatedAt, now)
-        await engine.update(doc)
+        let doc = await engine.document()
+        // `addToToday` is the one add in Swift. What the CLI had here was almost it and differed in
+        // three ways that all showed as a record the web would have written differently: no bidi
+        // strip on the way in, order and todayOrder counted over the done lines as well as the
+        // undone, and the section hard-coded rather than defaulted.
+        guard let added = Model.addToToday(doc, text: text) else { throw CLIError("nothing to add") }
+        await engine.update(added.doc)
         await engine.sync()
+        let clean = added.doc.items[added.id]?.objectValue?.str("text") ?? JSString("")
         print("Added: " + clean.string)
         print(render(await engine.document(), keys: keys, snapshot: await engine.current()))
     }

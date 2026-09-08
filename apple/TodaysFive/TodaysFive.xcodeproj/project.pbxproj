@@ -7,6 +7,28 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		TF0000000000000000000401 /* WatchLinkReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000250 /* WatchLinkReceiver.swift */; };
+		TF0000000000000000000402 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000251 /* TodayView.swift */; };
+		TF0000000000000000000403 /* OneThingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000252 /* OneThingView.swift */; };
+		TF0000000000000000000404 /* ListPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000253 /* ListPickerView.swift */; };
+		TF0000000000000000000405 /* WatchStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000254 /* WatchStore.swift */; };
+		TF0000000000000000000406 /* WatchHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000255 /* WatchHaptics.swift */; };
+		TF0000000000000000000407 /* WatchTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000256 /* WatchTheme.swift */; };
+		TF0000000000000000000408 /* WatchDictation.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000257 /* WatchDictation.swift */; };
+		TF0000000000000000000409 /* AddFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000258 /* AddFlowView.swift */; };
+		TF0000000000000000000410 /* WatchSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000259 /* WatchSnapshot.swift */; };
+		TF0000000000000000000411 /* AddToTodaysFive.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000260 /* AddToTodaysFive.swift */; };
+		TF0000000000000000000412 /* TodaysFiveShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000261 /* TodaysFiveShortcuts.swift */; };
+		TF0000000000000000000413 /* KeychainLinkVault.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000005 /* KeychainLinkVault.swift */; };
+		TF0000000000000000000420 /* WatchLinkSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000262 /* WatchLinkSender.swift */; };
+		TF0000000000000000000421 /* AddToTodaysFive.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000260 /* AddToTodaysFive.swift */; };
+		TF0000000000000000000422 /* TodaysFiveShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000261 /* TodaysFiveShortcuts.swift */; };
+		TF0000000000000000000430 /* Complications.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000300 /* Complications.swift */; };
+		TF0000000000000000000431 /* ComplicationsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000301 /* ComplicationsProvider.swift */; };
+		TF0000000000000000000432 /* ComplicationsIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000302 /* ComplicationsIntent.swift */; };
+		TF0000000000000000000433 /* WatchSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000259 /* WatchSnapshot.swift */; };
+		TF0000000000000000000434 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000303 /* Assets.xcassets */; };
+		TF0000000000000000000435 /* TodaysFiveComplications.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000306 /* TodaysFiveComplications.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		TF0000000000000000000201 /* WatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000210 /* WatchApp.swift */; };
 		TF0000000000000000000202 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000211 /* Assets.xcassets */; };
 		TF0000000000000000000203 /* TodaysFiveCore in Frameworks */ = {isa = PBXBuildFile; productRef = TF0000000000000000000231 /* TodaysFiveCore */; };
@@ -21,6 +43,17 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		TF0000000000000000000323 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				TF0000000000000000000435 /* TodaysFiveComplications.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		TF0000000000000000000224 /* Embed Watch Content */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -35,6 +68,27 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		TF0000000000000000000250 /* WatchLinkReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchLinkReceiver.swift; sourceTree = "<group>"; };
+		TF0000000000000000000251 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		TF0000000000000000000252 /* OneThingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneThingView.swift; sourceTree = "<group>"; };
+		TF0000000000000000000253 /* ListPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListPickerView.swift; sourceTree = "<group>"; };
+		TF0000000000000000000254 /* WatchStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchStore.swift; sourceTree = "<group>"; };
+		TF0000000000000000000255 /* WatchHaptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHaptics.swift; sourceTree = "<group>"; };
+		TF0000000000000000000256 /* WatchTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchTheme.swift; sourceTree = "<group>"; };
+		TF0000000000000000000257 /* WatchDictation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDictation.swift; sourceTree = "<group>"; };
+		TF0000000000000000000258 /* AddFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFlowView.swift; sourceTree = "<group>"; };
+		TF0000000000000000000259 /* WatchSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSnapshot.swift; sourceTree = "<group>"; };
+		TF0000000000000000000260 /* AddToTodaysFive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddToTodaysFive.swift; sourceTree = "<group>"; };
+		TF0000000000000000000261 /* TodaysFiveShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodaysFiveShortcuts.swift; sourceTree = "<group>"; };
+		TF0000000000000000000262 /* WatchLinkSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchLinkSender.swift; sourceTree = "<group>"; };
+		TF0000000000000000000300 /* Complications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Complications.swift; sourceTree = "<group>"; };
+		TF0000000000000000000301 /* ComplicationsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComplicationsProvider.swift; sourceTree = "<group>"; };
+		TF0000000000000000000302 /* ComplicationsIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComplicationsIntent.swift; sourceTree = "<group>"; };
+		TF0000000000000000000303 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		TF0000000000000000000304 /* ComplicationsInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = ComplicationsInfo.plist; sourceTree = "<group>"; };
+		TF0000000000000000000305 /* TodaysFiveComplications.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TodaysFiveComplications.entitlements; sourceTree = "<group>"; };
+		TF0000000000000000000263 /* TodaysFiveWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TodaysFiveWatch.entitlements; sourceTree = "<group>"; };
+		TF0000000000000000000306 /* TodaysFiveComplications.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TodaysFiveComplications.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		TF0000000000000000000210 /* WatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchApp.swift; sourceTree = "<group>"; };
 		TF0000000000000000000211 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		TF0000000000000000000212 /* WatchInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = WatchInfo.plist; sourceTree = "<group>"; };
@@ -51,6 +105,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		TF0000000000000000000321 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		TF0000000000000000000222 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -70,10 +131,40 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		TF0000000000000000000310 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				TF0000000000000000000260 /* AddToTodaysFive.swift */,
+				TF0000000000000000000261 /* TodaysFiveShortcuts.swift */,
+				TF0000000000000000000259 /* WatchSnapshot.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		TF0000000000000000000311 /* TodaysFiveComplications */ = {
+			isa = PBXGroup;
+			children = (
+				TF0000000000000000000300 /* Complications.swift */,
+				TF0000000000000000000301 /* ComplicationsProvider.swift */,
+				TF0000000000000000000302 /* ComplicationsIntent.swift */,
+				TF0000000000000000000303 /* Assets.xcassets */,
+			);
+			path = TodaysFiveComplications;
+			sourceTree = "<group>";
+		};
 		TF0000000000000000000220 /* TodaysFiveWatch */ = {
 			isa = PBXGroup;
 			children = (
 				TF0000000000000000000210 /* WatchApp.swift */,
+				TF0000000000000000000250 /* WatchLinkReceiver.swift */,
+				TF0000000000000000000254 /* WatchStore.swift */,
+				TF0000000000000000000251 /* TodayView.swift */,
+				TF0000000000000000000252 /* OneThingView.swift */,
+				TF0000000000000000000253 /* ListPickerView.swift */,
+				TF0000000000000000000258 /* AddFlowView.swift */,
+				TF0000000000000000000257 /* WatchDictation.swift */,
+				TF0000000000000000000255 /* WatchHaptics.swift */,
+				TF0000000000000000000256 /* WatchTheme.swift */,
 				TF0000000000000000000211 /* Assets.xcassets */,
 			);
 			path = TodaysFiveWatch;
@@ -84,6 +175,8 @@
 			children = (
 				TF0000000000000000000012 /* TodaysFive */,
 				TF0000000000000000000220 /* TodaysFiveWatch */,
+				TF0000000000000000000311 /* TodaysFiveComplications */,
+				TF0000000000000000000310 /* Shared */,
 				TF0000000000000000000013 /* Config */,
 				TF0000000000000000000011 /* Products */,
 			);
@@ -94,6 +187,7 @@
 			children = (
 				TF0000000000000000000009 /* TodaysFive.app */,
 				TF0000000000000000000213 /* TodaysFiveWatch.app */,
+				TF0000000000000000000306 /* TodaysFiveComplications.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -106,6 +200,7 @@
 				TF0000000000000000000003 /* Haptics.swift */,
 				TF0000000000000000000004 /* Audio.swift */,
 				TF0000000000000000000005 /* KeychainLinkVault.swift */,
+				TF0000000000000000000262 /* WatchLinkSender.swift */,
 				TF0000000000000000000006 /* Assets.xcassets */,
 			);
 			path = TodaysFive;
@@ -116,7 +211,10 @@
 			children = (
 				TF0000000000000000000007 /* Info.plist */,
 				TF0000000000000000000212 /* WatchInfo.plist */,
+				TF0000000000000000000304 /* ComplicationsInfo.plist */,
 				TF0000000000000000000008 /* TodaysFive.entitlements */,
+				TF0000000000000000000263 /* TodaysFiveWatch.entitlements */,
+				TF0000000000000000000305 /* TodaysFiveComplications.entitlements */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -124,6 +222,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		TF0000000000000000000330 /* TodaysFiveComplications */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = TF0000000000000000000340 /* Build configuration list for PBXNativeTarget "TodaysFiveComplications" */;
+			buildPhases = (
+				TF0000000000000000000320 /* Sources */,
+				TF0000000000000000000321 /* Frameworks */,
+				TF0000000000000000000322 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TodaysFiveComplications;
+			productName = TodaysFiveComplications;
+			productReference = TF0000000000000000000306 /* TodaysFiveComplications.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		TF0000000000000000000230 /* TodaysFiveWatch */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = TF0000000000000000000240 /* Build configuration list for PBXNativeTarget "TodaysFiveWatch" */;
@@ -131,10 +246,12 @@
 				TF0000000000000000000221 /* Sources */,
 				TF0000000000000000000222 /* Frameworks */,
 				TF0000000000000000000223 /* Resources */,
+				TF0000000000000000000323 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				TF0000000000000000000332 /* PBXTargetDependency */,
 			);
 			name = TodaysFiveWatch;
 			packageProductDependencies = (
@@ -182,6 +299,9 @@
 					TF0000000000000000000230 = {
 						CreatedOnToolsVersion = 26.6;
 					};
+					TF0000000000000000000330 = {
+						CreatedOnToolsVersion = 26.6;
+					};
 				};
 			};
 			buildConfigurationList = TF0000000000000000000041 /* Build configuration list for PBXProject "TodaysFive" */;
@@ -202,11 +322,19 @@
 			targets = (
 				TF0000000000000000000030 /* TodaysFive */,
 				TF0000000000000000000230 /* TodaysFiveWatch */,
+				TF0000000000000000000330 /* TodaysFiveComplications */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXContainerItemProxy section */
+		TF0000000000000000000333 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = TF0000000000000000000040 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = TF0000000000000000000330;
+			remoteInfo = TodaysFiveComplications;
+		};
 		TF0000000000000000000233 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = TF0000000000000000000040 /* Project object */;
@@ -217,6 +345,11 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXTargetDependency section */
+		TF0000000000000000000332 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = TF0000000000000000000330 /* TodaysFiveComplications */;
+			targetProxy = TF0000000000000000000333 /* PBXContainerItemProxy */;
+		};
 		TF0000000000000000000232 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = TF0000000000000000000230 /* TodaysFiveWatch */;
@@ -225,6 +358,14 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXResourcesBuildPhase section */
+		TF0000000000000000000322 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				TF0000000000000000000434 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		TF0000000000000000000223 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -244,11 +385,35 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		TF0000000000000000000320 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				TF0000000000000000000430 /* Complications.swift in Sources */,
+				TF0000000000000000000431 /* ComplicationsProvider.swift in Sources */,
+				TF0000000000000000000432 /* ComplicationsIntent.swift in Sources */,
+				TF0000000000000000000433 /* WatchSnapshot.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		TF0000000000000000000221 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				TF0000000000000000000201 /* WatchApp.swift in Sources */,
+				TF0000000000000000000401 /* WatchLinkReceiver.swift in Sources */,
+				TF0000000000000000000402 /* TodayView.swift in Sources */,
+				TF0000000000000000000403 /* OneThingView.swift in Sources */,
+				TF0000000000000000000404 /* ListPickerView.swift in Sources */,
+				TF0000000000000000000405 /* WatchStore.swift in Sources */,
+				TF0000000000000000000406 /* WatchHaptics.swift in Sources */,
+				TF0000000000000000000407 /* WatchTheme.swift in Sources */,
+				TF0000000000000000000408 /* WatchDictation.swift in Sources */,
+				TF0000000000000000000409 /* AddFlowView.swift in Sources */,
+				TF0000000000000000000410 /* WatchSnapshot.swift in Sources */,
+				TF0000000000000000000411 /* AddToTodaysFive.swift in Sources */,
+				TF0000000000000000000412 /* TodaysFiveShortcuts.swift in Sources */,
+				TF0000000000000000000413 /* KeychainLinkVault.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,12 +426,73 @@
 				TF0000000000000000000103 /* Haptics.swift in Sources */,
 				TF0000000000000000000104 /* Audio.swift in Sources */,
 				TF0000000000000000000105 /* KeychainLinkVault.swift in Sources */,
+				TF0000000000000000000420 /* WatchLinkSender.swift in Sources */,
+				TF0000000000000000000421 /* AddToTodaysFive.swift in Sources */,
+				TF0000000000000000000422 /* TodaysFiveShortcuts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		TF0000000000000000000341 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = Config/TodaysFiveComplications.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 158;
+				DEVELOPMENT_TEAM = T7GTZC5US9;
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Config/ComplicationsInfo.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.12;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive.watchkitapp.complications;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Debug;
+		};
+		TF0000000000000000000342 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = Config/TodaysFiveComplications.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 158;
+				DEVELOPMENT_TEAM = T7GTZC5US9;
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Config/ComplicationsInfo.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.12;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive.watchkitapp.complications;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Release;
+		};
 		TF0000000000000000000241 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -422,6 +648,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		TF0000000000000000000340 /* Build configuration list for PBXNativeTarget "TodaysFiveComplications" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				TF0000000000000000000341 /* Debug */,
+				TF0000000000000000000342 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		TF0000000000000000000240 /* Build configuration list for PBXNativeTarget "TodaysFiveWatch" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

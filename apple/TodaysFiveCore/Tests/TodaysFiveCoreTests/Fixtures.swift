@@ -25,6 +25,12 @@ enum Fixtures {
 
     static let vectors: JSONObject = load("test/fixtures/vectors.json")
 
+    /// The kit table and the Watch's font map — the two the KitsGen plugin reads at build time, read
+    /// here again so a test can hold the generated Swift against them. Regenerate with
+    /// `node test/tools/gen-kits.mjs` and `python3 apple/tools/gen-watch-fonts.py`.
+    static let kits: JSONObject = load("test/fixtures/kits.json")
+    static let watchFonts: JSONObject = load("test/fixtures/watch-fonts.json")
+
     /// Where the Swift suite leaves artefacts for a Node script to check (the other direction of the
     /// envelope round trip). Git-ignored; created on demand.
     static let artifacts: URL = {

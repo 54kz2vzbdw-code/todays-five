@@ -14,7 +14,7 @@ let package = Package(
     targets: [
         .target(
             name: "TodaysFiveCore",
-            plugins: [.plugin(name: "ConfigGen")]
+            plugins: [.plugin(name: "ConfigGen"), .plugin(name: "KitsGen")]
         ),
         .executableTarget(name: "tfive", dependencies: ["TodaysFiveCore"]),
         .testTarget(name: "TodaysFiveCoreTests", dependencies: ["TodaysFiveCore"]),
@@ -22,7 +22,15 @@ let package = Package(
         // config.js is the single source of the project URL and the publishable key: the plugin reads
         // the repo's own file at build time and emits Config.generated.swift, so neither value is ever
         // copied by hand into Swift and neither can drift.
-        .plugin(name: "ConfigGen", capability: .buildTool())
+        .plugin(name: "ConfigGen", capability: .buildTool()),
+
+        // The same arrangement for the kit table: test/fixtures/kits.json and
+        // test/fixtures/watch-fonts.json in, Kits.generated.swift out, the two Secret kits dropped on
+        // the way. Both plugins are prebuild commands, which is what lets two of them sit on one
+        // target — a prebuild hands over a directory to glob rather than promising a file, so the
+        // "Multiple commands produce…" collision that forced the first one cannot arise for the
+        // second either. Verified against both an iOS and a watchOS build, not assumed.
+        .plugin(name: "KitsGen", capability: .buildTool())
     ],
     swiftLanguageModes: [.v6]
 )

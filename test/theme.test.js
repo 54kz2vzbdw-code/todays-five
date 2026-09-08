@@ -438,4 +438,17 @@ test("the crossfade: colours interpolate in OKLab, the rest swaps at the midpoin
   for (const t of [0.1, 0.5, 0.9]) assert.equal((cssTextBetween(a, b, t).match(/--ink:/g) || []).length, 1);
 });
 
+test("1.13: the kit fixture the Swift core and the Watch read still is theme.js", () => {
+  const fx = JSON.parse(fs.readFileSync(new URL("./fixtures/kits.json", import.meta.url), "utf8"));
+  // The mapping that turned CURATED into the fixture lives *in* the fixture, as `expr`, so the
+  // generator, this test and the Swift drift test all run one definition of it rather than three
+  // copies that can disagree. A build-time generator cannot parse theme.js — 62 of the 314 hex
+  // tokens come out of finalize()/ensure()/oklch() and appear nowhere in the source — so a fixture
+  // is the only way the palette reaches Swift, and this is what stops it going stale.
+  const live = new Function("CURATED", "PAIRS", "return " + fx.expr)(CURATED, PAIRS);
+  assert.equal(JSON.stringify(live), JSON.stringify({ kits: fx.kits, pairs: fx.pairs }),
+    "theme.js and test/fixtures/kits.json have parted company — run `node test/tools/gen-kits.mjs`");
+  assert.equal(fx.kits.length, 18); assert.equal(fx.openIds.length, 16); assert.equal(fx.secretIds.length, 2);
+});
+
 console.log(`\n${passed} theme tests passed`);

@@ -298,3 +298,108 @@ flag has to go on meaning what it meant. The vault reads both shapes and writes 
 No URL, fragment or secret is ever printed — the one `print` in the app is `#if DEBUG` and every call
 site passes a fixed string with counts. No analytics, no crash reporting, no `NSUserActivity`, and no
 network request of the app's own beyond the web view's.
+
+---
+
+# The Watch app
+
+`apple/TodaysFive/TodaysFiveWatch` is Today on your wrist: the lines, the checkbox, the count, one
+thing at a time, and four ways to put a line on the list by speaking.
+`apple/TodaysFive/TodaysFiveComplications` is the four accessory families on the face.
+
+**The phone hands over links and never data.** The Watch is a client of the server in its own right —
+it derives the keys, opens the envelope and merges with the same `TodaysFiveCore` the phone and the
+CLI use. That is the whole reason the core is a library. Read `PLAN-apple-phase3.md` before changing
+any of it.
+
+## Running it on paired simulators
+
+`apple/tools/watchsim.mjs` is the harness. Node is not on `PATH`; it lives at
+`~/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node`.
+
+```bash
+node apple/tools/watchsim.mjs doctor     # what is booted, paired, installed and connected
+node apple/tools/watchsim.mjs all        # pair → build → install → launch
+node apple/tools/watchsim.mjs shot --name today
+```
+
+**`simctl install` of the phone app does not install the watch app.** The watch app must be installed
+onto the watch simulator explicitly, and until it is, `isWatchAppInstalled` is false and every
+`updateApplicationContext` throws `WCErrorCodeWatchAppNotInstalled` (7006) — which looks exactly like
+WatchConnectivity being broken in the simulator and is not. `watchsim.mjs install` does both halves,
+and `doctor` names that state when it finds it.
+
+Two more things the harness knows so you do not have to: **`simctl` cannot tap a watch simulator**
+(it lists and screenshots and nothing else), and **Keychain entitlements are enforced on the watch
+simulator**, so the vault only works from a properly signed target.
+
+### The debug launch arguments
+
+Each is `#if DEBUG` only. They exist because the Watch cannot be driven by hand here.
+
+| | |
+| --- | --- |
+| `-TFWatchDemo` | seeds a local demo list over `MemoryTransport` — no phone, no network, and nothing spent from the server's create limit |
+| `-TFWatchSelfTest` | crosses a line off and back, finishes the list and reports whether the finale fired and after how long, runs Start again, **shuffles ten times and reports how many distinct lines came up and whether one ever came up twice in a row**, shuffles with one line left and reports that nothing moved, then prints the haptic tally, the finale run's duration, whether the store landed in the App Group, and the snapshot's counts |
+| `-TFAddSelfTest` | the add path with a canned string, with an empty one, against a view-only list, with no list selected, and Undo — and whether `visibleInterfaceController` is present, which is what decides the dictation path a wrist will take |
+
+```bash
+xcrun simctl launch --console-pty "$WATCH" com.pricebrannen.todaysfive.watchkitapp -TFWatchDemo -TFWatchSelfTest
+```
+
+Everything they print is a count or a fixed string. A screenshot says what is on screen; the tally
+says what happened.
+
+## Putting it on a real Watch
+
+Build and run the **TodaysFive** scheme from Xcode with the phone connected and the Watch paired to
+it; the watch app is embedded in the phone app and installs with it. From the shell, the phone build
+carries it too:
+
+```bash
+cd apple/TodaysFive
+xcodebuild -scheme TodaysFive -destination 'generic/platform=iOS' -allowProvisioningUpdates build
+```
+
+**Which credential you pass matters, and this is the one thing that will stop you.** The App Store
+Connect key registers an App ID and **cannot add a capability**: adding App Groups to the Watch app
+answers `Authentication failed … bearer token`, which reads like a broken key and is not — it is the
+same wall Phase 2b hit on cloud-managed distribution certificates. The Apple ID signed into Xcode can
+do it. So: **the key for ordinary builds, and no `-authenticationKey*` flags at all for any build that
+changes a capability.**
+
+## Siri, and the Action button
+
+Both are two lines you have to do yourself, and neither can be set for you.
+
+**Siri.** Say any of these, on the Watch or the phone:
+
+> "Add to Today's Five"  ·  "Put something on my five"  ·  "Add a line to Today's Five"
+
+Siri then asks what the line is. **The phrase cannot carry the text** — an App Shortcut phrase may
+only interpolate an `AppEntity` or an `AppEnum`, and a free-text parameter inside one is a halting
+build error, not a warning. Two beats instead of one, and it is the closest thing watchOS allows.
+
+**The Action button** (Ultra only): Settings → Action Button → Shortcut → *Add to Today's Five*. There
+is no developer-facing Action button API anywhere in the watchOS SDK, so an App Shortcut existing is
+the whole of what an app can do; the assignment is yours.
+
+**Double Tap** (Series 9 / Ultra 2 and later, watchOS 11+) starts the add flow while the app is open,
+because the `+` is the primary action.
+
+## What the Watch does not have
+
+No Everything, no sections, no History, no rules, no templates, no themes, no settings screen. Those
+need a phone-sized screen. The Watch shows Today, crosses lines off, and takes a new one.
+
+**The accent is `#A86014`** — the brand accent Dark, Paper and Terminal all carry — and this round it
+does not follow the phone's theme, because the link payload carries no colour. Written up in
+`DECISIONS-apple.md` rather than left to be noticed.
+
+## Privacy, on a smaller screen
+
+The Watch's Keychain items are `kSecAttrAccessibleAfterFirstUnlock` and **not synchronizable**,
+exactly like the phone's. The App Group holds a `WatchSnapshot` — a name, two counts, one line and a
+stamp — and **never a link**; the complication cannot reach the Keychain and has no reason to. No
+analytics, no crash reporting, no `NSUserActivity`. Every `print` is `#if DEBUG` and passes counts or
+a length, never an id, a URL, a fragment or a line of anyone's list.

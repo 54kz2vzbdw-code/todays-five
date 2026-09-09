@@ -142,7 +142,16 @@ struct WatchSnapshot: Sendable, Equatable {
 
     // ---------------------------------------------------------------- reading it
 
-    /// `3/5` — the inline complication, whole.
+    /// `3/5` — the inline complication, whole; and since Phase 5 the **corner** one too, where it
+    /// replaced a bare `done` that read as "a 1 and a dot on a line" on a real wrist.
+    ///
+    /// **Phase 5 added no field to this file, and that is a finding rather than an omission.**
+    /// Everything the corner's redesign needed — the fraction, the finished check, the `2 to go` on
+    /// the bezel, the em dash when no phone has named a list — is a function of `hasList`, `done` and
+    /// `total`, which have been here since Phase 3. A field is a thing two builds have to agree about
+    /// forever (`COMPATIBILITY.md` §3, and the note at the top of this file about why `v` stayed at
+    /// 1); one that only ever holds a value the reader could have computed is a promise made for
+    /// nothing.
     var fraction: String { "\(done)/\(total)" }
 
     /// What Today looks like after the list's next midnight, worked out rather than stored.

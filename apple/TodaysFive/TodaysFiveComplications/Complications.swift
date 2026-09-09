@@ -8,8 +8,58 @@
 // | family        | what it shows                                                        |
 // | circular      | the count, with the accent ring                                       |
 // | rectangular   | the next unfinished line — **opt-in**, off by default                 |
-// | corner        | the count again, with `.widgetLabel` along the bezel                  |
+// | corner        | the **fraction**, with a curved **text** label along the bezel        |
 // | inline        | `3/5` and nothing else                                                |
+//
+// ============================================================================================
+// PHASE 5: WHAT A REAL WRIST SAID, AND WHAT THE CODE SAID BACK
+// ============================================================================================
+//
+// The finding, off a real Apple Watch, bottom-left corner slot: the complication reads as **"a 1 and
+// a dot on a line"**. That is not a mystery, it is a reading. The `.accessoryCorner` arm was
+// `Text("\(snapshot.done)")` — the **done count alone, no denominator** — with a `Gauge` in
+// `.widgetLabel`, which the host draws as a thin arc along the bezel. A bare digit and a three-point
+// arc is exactly what "a 1 and a dot on a line" describes, so this one was diagnosable by reading and
+// only the replacement needs a face.
+//
+// **What replaced it, and the numbers the choice rests on.**
+//
+//   * the content slot gets the **fraction**. `3/5` is three characters where `3` was one, and the
+//     three carry the whole glance: a bare `1` on a corner says nothing at all, because the corner —
+//     unlike the circular family — has no ring around it to be the denominator;
+//   * the bezel label becomes **`Text`** rather than a `Gauge`. A curved word is legible at that
+//     size; a three-point arc is a mark, not a reading;
+//   * the finished-list **check** is kept, and is the one case where a glyph replaces the fraction
+//     rather than sitting beside it. There is no room for both — see the widths below.
+//
+// Measured on this machine with `fontTools` over the thirteen **ui-bold** faces the snapshot can name
+// (`kit.type?.uiBold`, which is what `WatchApp.swift` publishes as `face`): every one of the thirteen
+// carries the ten digits, `U+002F` and `U+2014`, so neither the fraction nor the no-list em dash can
+// tofu on any kit. Advance widths, in ems:
+//
+// | | narrowest | widest |
+// | `3` | 0.527 (JosefinSans-Thin-700) | 0.625 (ArchivoSemiBold-Regular-800) |
+// | `3/5` | 1.458 (SourceSerif4-Regular-600) | **1.800** (IBMPlexMono-SemiBold) |
+// | `12/15` | 2.210 | **3.000** |
+//
+// So `3/5` costs about 2.7× the width of the bare digit it replaces, and at **17 pt** the widest face
+// draws it in **30.6 pt** — which is why 17 is the number in the code rather than the 22 that was
+// there. `minimumScaleFactor(0.5)` covers the two-digit list: `12/15` at 17 pt wants 51 pt, scales
+// into a 32 pt square, and was rendered and looked at rather than assumed to be legible there.
+//
+// **The instrument, and what it cannot see.** Those renderings are `ImageRenderer` on macOS over a
+// *transcription* of these view bodies, in a throwaway package under `/tmp`, outside the repository —
+// the only way to look at pixels this round had, since `simctl` cannot tap a watch simulator, driving
+// the Simulator app was requested and declined, and no real Watch is reachable from this machine. It
+// shows what **the app's own layer** draws: how many characters fit, where a line truncates, when
+// `minimumScaleFactor` starts eating the type. It shows **nothing** the widget host does — not the
+// bezel label, not `.accented` flattening, not the real slot rectangle, and not whether the host
+// permits a custom face at render time. Two further blind spots, named because they shaped what was
+// looked at: an accessory `Gauge` style **draws nothing at all** outside a widget context (the note
+// below records the Watch app finding the same thing in Phase 3), so the ring is in none of this
+// round's pictures; and `Font.TextStyle` resolves to different points on macOS than on watchOS, which
+// is why the sizes that decide fit are written as explicit points below rather than as `.body` and
+// `.caption2`.
 //
 // **On the gauge style.** `.accessoryCircularCapacity` draws a *ring* around a value in the middle;
 // `.accessoryCircular` draws a dial with a needle and tick marks, which is a speedometer and not a
@@ -83,6 +133,23 @@ import WidgetKit
 /// the widget host actually permitting this at render time — could not be observed on a simulator
 /// that cannot be tapped, so the failure mode had to be a complication that looks the way it did in
 /// Phase 3 rather than one that does not draw.
+///
+/// **Phase 5 did not settle it either, and here is how a wrist can, by looking.** Put the count
+/// complication on a face with the Watch on the **Terminal** kit. Terminal's ui-bold face is
+/// `IBMPlexMono-SemiBold`: squared-off, monospaced, `3` and `5` the same width, a straight-cut
+/// terminal on every stroke.
+///
+///   * **pass** — the fraction is set in that face: the two digits are the same width and the shapes
+///     are mechanical;
+///   * **fail** — the fraction is set in the system's rounded face: the `3` is visibly narrower than
+///     the `5` and the strokes end round.
+///
+/// The two are told apart at a glance and neither is a crash, which is the point of the fallback: if
+/// the host refuses the face, the complication still draws, in the face Phase 3 shipped.
+///
+/// Nothing in this extension traces. `WatchDiagnostics` lives in the Watch app's target and a widget
+/// rendering is a different process with a different lifetime, so a failure here leaves no line
+/// anywhere — a face is the only instrument, and it is the wearer's eyes.
 enum FaceType {
     /// Once per process. A widget rendering is short; a `static let` is exactly its lifetime.
     private static let registered = WatchFaceType.register()
@@ -148,57 +215,114 @@ struct CountView: View {
         case .accessoryInline:
             // `3/5` and nothing else. Inline is one line of text beside the time; anything more is
             // truncated by the face, not by us. Inline ignores fonts as well as colours — it is the
-            // one family the kit cannot reach at all.
+            // one family the kit cannot reach at all, and that is the SDK's doing, not ours. No font
+            // is asked for here on purpose: asking and being ignored is worse than not asking,
+            // because it reads like a bug in this file rather than a limit of the platform.
             Text(snapshot.hasList ? snapshot.fraction : "—")
 
         case .accessoryCorner:
-            Text("\(snapshot.done)")
-                .font(FaceType.count(snapshot, size: 22, relativeTo: .title2))
-                .widgetAccentable()
-                .widgetLabel {
-                    // Along the bezel: the ring is the label's own, drawn by the face.
-                    Gauge(value: fraction) {
-                        Text(snapshot.fraction)
-                    }
-                }
+            corner
 
         default:
-            if FaceType.prefersNumbers(snapshot) {
-                // The mono kits: the numbers, in their own face, and no ring. See
-                // `FaceType.prefersNumbers`.
-                VStack(spacing: -2) {
-                    Text("\(snapshot.done)")
-                        .font(FaceType.count(snapshot, size: 20, relativeTo: .title2))
-                        .widgetAccentable()
+            circular
+        }
+    }
+
+    // ---------------------------------------------------------------- the corner
+
+    /// A tiny content area plus a curved bezel label, and the two carry different things: the
+    /// **numbers** go in the content slot, where they are read up close, and **words** go on the
+    /// curve, where they are read at a glance.
+    @ViewBuilder
+    private var corner: some View {
+        Group {
+            if finished {
+                // The one case where a glyph replaces the fraction instead of joining it. `5/5` and
+                // a check say the same thing twice and the corner has room for one of them; the
+                // check is the one that reads without being read.
+                Image(systemName: "checkmark")
+                    .font(.system(size: 15, weight: .semibold))
+            } else {
+                Text(snapshot.hasList ? snapshot.fraction : "—")
+                    .font(FaceType.count(snapshot, size: 17, relativeTo: .title3))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .widgetAccentable()
+        .widgetLabel { Text(verbatim: cornerLabel) }
+    }
+
+    /// **What the bezel says, and why it is never the list's name.**
+    ///
+    /// The corner label is drawn along the outside of the watch face. It is on screen whenever the
+    /// face is, at the largest type of anything this extension draws, and it is read by whoever is
+    /// standing next to the wearer. The rectangular family puts a line of somebody's list on a face
+    /// only behind an explicit opt-in, for exactly that reason (`ComplicationsIntent.swift`) — and a
+    /// label with **no** opt-in at all should therefore hold strictly less, not more.
+    ///
+    /// So: counts, in this file's own words, and nothing that came off anybody's list. Not the
+    /// nickname, not the document's name, not a line. The phrases are short because the label is a
+    /// curve — `NextLineView` keeps the longer form of the same sentence, where there is room for it.
+    private var cornerLabel: String {
+        guard snapshot.hasList else { return "Today's Five" }
+        guard snapshot.total > 0 else { return "Nothing today" }
+        guard snapshot.done < snapshot.total else { return "All done" }
+        return "\(snapshot.total - snapshot.done) to go"
+    }
+
+    // ---------------------------------------------------------------- the circular one
+
+    /// A round slot: a ring, and about two characters inside it. Unchanged in shape from Phase 4 —
+    /// the ring **is** the denominator here, which is why a bare `done` is right in the middle of it
+    /// and wrong in a corner. The one thing that moved is the no-list reading: see below.
+    @ViewBuilder
+    private var circular: some View {
+        if FaceType.prefersNumbers(snapshot) {
+            // The mono kits: the numbers, in their own face, and no ring. See
+            // `FaceType.prefersNumbers`.
+            VStack(spacing: -2) {
+                Text(count)
+                    .font(FaceType.count(snapshot, size: 20, relativeTo: .title2))
+                    .widgetAccentable()
+                if snapshot.hasList {
                     Text("\(snapshot.total)")
                         .font(FaceType.count(snapshot, size: 13, relativeTo: .caption))
                         .opacity(0.7)
                 }
-                .minimumScaleFactor(0.6)
-                .lineLimit(1)
-            } else {
-                Gauge(value: fraction) {
-                    Text("Today")
-                } currentValueLabel: {
-                    // The glyph, and the one place it changes: a finished list puts a check in the
-                    // middle of a full ring rather than the number the ring is already saying. Not
-                    // per-kit — see the note about the rejected id-to-symbol table at the top — but
-                    // the count beside it is, because it is set in the kit's face.
-                    Group {
-                        if finished {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 15, weight: .semibold))
-                        } else {
-                            Text("\(snapshot.done)")
-                                .font(FaceType.count(snapshot, size: 17, relativeTo: .title3))
-                        }
-                    }
-                    .widgetAccentable()
-                }
-                .gaugeStyle(.accessoryCircularCapacity)
             }
+            .minimumScaleFactor(0.6)
+            .lineLimit(1)
+        } else {
+            Gauge(value: fraction) {
+                Text("Today")
+            } currentValueLabel: {
+                // The glyph, and the one place it changes: a finished list puts a check in the
+                // middle of a full ring rather than the number the ring is already saying. Not
+                // per-kit — see the note about the rejected id-to-symbol table at the top — but
+                // the count beside it is, because it is set in the kit's face.
+                Group {
+                    if finished {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 15, weight: .semibold))
+                    } else {
+                        Text(count)
+                            .font(FaceType.count(snapshot, size: 17, relativeTo: .title3))
+                    }
+                }
+                .widgetAccentable()
+            }
+            .gaugeStyle(.accessoryCircularCapacity)
         }
     }
+
+    /// **`0` and `—` are different sentences and the face used to say the first when it meant the
+    /// second.** With no list the snapshot's `done` is 0, so an empty ring around a `0` read as
+    /// "you have finished none of today" when what it actually meant was "no phone has named a list
+    /// yet". `WatchSnapshot` keeps `hasList` separate from an empty list precisely so the two can be
+    /// told apart, and until now only the inline family used it. The em dash is in all thirteen
+    /// ui-bold faces — measured, not assumed.
+    private var count: String { snapshot.hasList ? "\(snapshot.done)" : "—" }
 
     /// Finished, and not merely empty. `total == 0` is a day with nothing on it, which is not the
     /// same thing and does not get the check.
@@ -233,14 +357,36 @@ struct NextLineView: View {
 
     private var snapshot: WatchSnapshot { entry.snapshot }
 
+    /// **The two-line allowance was nominal, and the probe caught it.** This view asked for
+    /// `lineLimit(2)` at `.body`, which on a 45/46 mm watch is about 16 pt — under a 16 pt count row,
+    /// in a slot a few tens of points tall, that is one line of room, not two. Rendered at three
+    /// plausible content sizes (140×38, 160×44, 176×50 pt), a 34-character line came out truncated to
+    /// **17, 19 and 21 characters** — one line, at every one of the three: `Call the pharmacy a…`.
+    /// The line the wearer had to go into the face editor and switch on was arriving as a fragment.
+    ///
+    /// Three changes, and each is there because a picture showed it:
+    ///
+    ///   * the line is set at an explicit **13 pt** instead of `.body`. At 160×44 the whole
+    ///     34-character line now fits on one line; at 176×50 it wraps to two and is shown whole; at
+    ///     140×38 it truncates at 27 characters rather than 17;
+    ///   * **`fixedSize` is gone.** With it, two lines of 13 pt plus the count row overflowed the
+    ///     frame at the smallest size — drawn outside the rectangle, which on a face is drawn nowhere.
+    ///     Without it the text takes the height it is given and truncates inside the slot, which is
+    ///     the failure that can be read;
+    ///   * the sizes are **explicit points**, not `.body` and `.caption2`, because `Font.TextStyle`
+    ///     resolves differently on macOS than on watchOS and a number that decides whether a line
+    ///     survives should not change between the machine that measured it and the wrist that shows
+    ///     it. The count keeps `relativeTo:` — it is the one thing here small enough to grow.
     var body: some View {
-        VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 4) {
                 Text(snapshot.hasList ? snapshot.fraction : "—")
                     .font(FaceType.count(snapshot, size: 16, relativeTo: .headline))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                     .widgetAccentable()
                 Text(title)
-                    .font(.caption2)
+                    .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
@@ -248,10 +394,12 @@ struct NextLineView: View {
             // line, which is the whole reason the switch exists. It is **not** `.widgetAccentable()`
             // — see the note at `CountView.body`.
             Text(second)
-                .font(.system(.body, design: .rounded))
+                .font(.system(size: 13, design: .rounded))
                 .lineLimit(2)
+                .minimumScaleFactor(0.75)
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var title: String {

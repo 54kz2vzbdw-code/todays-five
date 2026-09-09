@@ -15,6 +15,7 @@
 // The mapping the drift test runs is not written here. It is `expr` in the fixture — the source of
 // the function `gen-kits.mjs` used — so there is one definition of "what the fixture is" rather than
 // a copy in a Swift string that would have to be edited in step.
+import CoreText
 import Foundation
 import Testing
 @testable import TodaysFiveCore
@@ -329,5 +330,55 @@ struct KitFixtureTests {
                 "the CSS name is a fiction — if this ever passes, the map stopped being read from the files")
         #expect(Kits.byId("forest")?.type?.task.postScriptName == outfit.task.postScriptName,
                 "Forest is set in the Outfit pair")
+    }
+
+    // ---------------------------------------------------------------- the glyphs a face has to have
+
+    /// **A watch face has no tofu, it has a blank.** The corner complication sets the fraction —
+    /// `3/5` — in the kit's ui-bold face, and shows `—` when no phone has named a list. Those are
+    /// three kinds of character the app never asked a Watch face for before Phase 5: the solidus and
+    /// the em dash are not letters, and the repo's faces are **latin subsets** cut for the web by
+    /// `gen-watch-fonts.py` out of `fonts/*.woff2`. A subset that dropped `U+002F` would put a
+    /// missing-glyph box on somebody's watch face, silently, on one kit only, and the first person to
+    /// find out would be wearing it.
+    ///
+    /// So the coverage is asserted rather than assumed, and it is read **out of the files** with
+    /// `CTFontManagerCreateFontDescriptorsFromURL` — the same call `WatchFaceType.facesOnDisk` uses,
+    /// and deliberately not `CTFontCreateWithName`, which would answer from whatever the host machine
+    /// has registered rather than from the bytes that ship.
+    ///
+    /// All 33 faces, not only the 13 the corner can name today: which face a kit hands the
+    /// complication is a decision that has already moved once (Phase 4 chose `uiBold`), and a test
+    /// that pins the answer to today's choice would go quiet exactly when the choice changes.
+    @Test("every face in the repo can draw a fraction and an em dash")
+    func everyFaceHasTheComplicationsGlyphs() throws {
+        let dir = Fixtures.repoRoot.appendingPathComponent("apple/TodaysFive/Fonts")
+        let files = try FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension.lowercased() == "ttf" }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+        #expect(files.count == Kits.fontFiles.count, "\(files.count) .ttf on disk")
+
+        // `3/5`, `12/15`, `—`: the ten digits, the solidus, the em dash. Written out rather than
+        // derived, because this list is the contract and a derivation would hide what is being
+        // promised.
+        let required = Array("0123456789/—")
+
+        for url in files {
+            let descriptors = CTFontManagerCreateFontDescriptorsFromURL(url as CFURL) as? [CTFontDescriptor]
+            let list = try #require(descriptors, "\(url.lastPathComponent) has no descriptors")
+            #expect(!list.isEmpty, "\(url.lastPathComponent) has no faces in it")
+            for descriptor in list {
+                let set = CTFontDescriptorCopyAttribute(descriptor, kCTFontCharacterSetAttribute)
+                let characters = try #require(set as? NSCharacterSet,
+                                              "\(url.lastPathComponent) declares no character set")
+                let missing = required.filter { c in
+                    guard let unit = c.utf16.first, c.utf16.count == 1 else { return true }
+                    return !characters.characterIsMember(unit)
+                }
+                #expect(missing.isEmpty,
+                        "\(url.lastPathComponent) is missing \(String(missing)) — the corner complication would draw a blank box on that kit")
+            }
+        }
+        print("type: \(files.count) faces, all of them carry 0-9, U+002F and U+2014")
     }
 }

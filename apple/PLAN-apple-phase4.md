@@ -316,6 +316,54 @@ two hours, with no backend and no creates.
 
 ---
 
+## §5. This ships as a build of 1.12, not as 1.13
+
+Decided mid-round, and it changes the release step more than it looks like it should.
+
+**The marketing version stays `1.12`. Only `BUILD` moves.** From here on that is the standing rule:
+increment the build, leave the version alone until something genuinely warrants a new one.
+
+What that buys, measured against `test/features.test.js` and `tools/e2e4.js`:
+
+- `whatsnew.json`'s `versions` array is **untouched**, so `features.test.js:243` and `:296` — the two
+  copies of the public history — need no edit, and neither do `e2e4.js:1265`/`:1637`.
+- **No headline moves**, so `features.test.js:225` and `e2e4.js:1248`/`:1674`/`:2175` stand.
+- **No `nth-child` renumbering.** Leading with a new version would have pushed the 1.8 wink from
+  `nth-child(5)` to `(6)` in two assertions 370 lines apart, and shifted what `nth-child(2)` must
+  match — a silent renumbering that no grep for "1.12" would have found. That whole trap is simply
+  not entered.
+- `about.html`'s static `Version 1.12` line stands.
+- **The what's-new toast does not fire**, because it keys on the version string *changing*. That is
+  the right answer for a build: nobody is told "what's new" about a round whose user-visible change
+  is that their theme's accent is their theme's again.
+
+So the release step is four build homes — `version.js`, `sw.js`, `whatsnew.json`'s `build`,
+`index.html`'s `data-build`, `panels.js`'s `PANELS_BUILD` — plus the sixth home no suite checks:
+`project.pbxproj`'s **six** `CURRENT_PROJECT_VERSION` lines (three targets × two configurations).
+`MARKETING_VERSION` stays `1.12` on all six. The cache name still changes, because
+`sw.js`'s `CACHE` is `VERSION + "-b" + BUILD`, so the deploy still lands on the next open exactly as
+§6 describes.
+
+**The narrative tags.** Tracks A, B and D wrote `1.13` into about thirty code comments — the repo's
+habit of tagging a change with the release it landed in. Those resolve to **`1.12 b<N>`** at
+stamping, which is unambiguous against what shipped as 1.12 build 158 and matches the unit that is
+actually incrementing.
+
+**If a new version number is ever needed**, the public history has a gap to close first: the array
+runs `1.12, 1.11, 1.10, 1.9, 1.8, 1.7, 1.5, …` — **there is no 1.6**, in `whatsnew.json` or in
+`CHANGELOG.md`. It was not skipped; it was vacated. The Secret pair went out as 1.6 (`12e62e3`,
+`version.js` reading `1.6` at build 76) with the entry *"A little something for someone in
+particular. — If you know, you know."*, and that entry now sits at **1.8**, which is what
+`test/features.test.js:233` pins as "the wink". The number was spent and then the round it named
+moved.
+
+So the instruction for that day is: **cycle the later numbers down to fill 1.6** rather than
+appending a new one on the end. Both pinned copies of the array move together
+(`features.test.js:243` and `:296`), and so do `e2e4.js:1265`/`:1637`, the `nth-child` positions at
+`e2e4.js:1638`/`:1639`, and every `wn.versions.find(v => v.version === …)` lookup in the suite.
+
+---
+
 ## The tracks
 
 Four, in worktrees, each with a written contract and a budget. **Sub-agents never merge**; I do,

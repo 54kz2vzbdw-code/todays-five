@@ -218,14 +218,21 @@ enum WatchFaceType {
                                                                   includingPropertiesForKeys: nil))?
             .filter { $0.pathExtension.lowercased() == "ttf" } ?? []
         guard !files.isEmpty else { return 0 }
-        // The array call takes the whole set at once and hands back the ones it could not take.
-        // Files already registered — which is every one of them inside the app itself, where
-        // `UIAppFonts` got there first — come back as errors, and that is not a failure: the count
-        // returned is how many faces are on disk at the path the extension computed, which is the
-        // only number this can honestly report from either process.
-        var errors: Unmanaged<CFArray>?
-        CTFontManagerRegisterFontsForURLs(files as CFArray, .process, &errors)
-        errors?.release()
+        // One file at a time, through the **singular** call. The plural `…ForURLs` is deprecated on
+        // watchOS (2.0 → 6.0) and its replacement `CTFontManagerRegisterFontURLs` is asynchronous,
+        // with a completion handler — the wrong shape for a function whose whole job is to have
+        // finished before the first glyph is drawn. `CTFontManagerRegisterFontsForURL` is deprecated
+        // nowhere, is synchronous, and is the one this round measured taking all 33 faces.
+        //
+        // A file already registered answers `false` with `kCTFontManagerErrorAlreadyRegistered`,
+        // which is every one of them inside the app itself, where `UIAppFonts` got there first. That
+        // is not a failure, so the count returned is how many faces are on disk at the path the
+        // extension computed — the only number this can honestly report from either process.
+        for url in files {
+            var error: Unmanaged<CFError>?
+            CTFontManagerRegisterFontsForURL(url as CFURL, .process, &error)
+            error?.release()
+        }
         return files.count
     }
 

@@ -203,7 +203,7 @@ let bad = 0;
 try {
   if (has("--trace")) {
     // The one test that says the drawing is still the artwork: render it in the OLD colours and
-    // compare it with the icon that shipped. **Geometry only**, and since 1.12 b212 that is what it
+    // compare it with the icon that shipped. **Geometry only**, and since 1.12 b216 that is what it
     // actually does: both images are reduced to an ink mask — mark or tile, per pixel — so the two
     // colourways divide out and what is left is the shape. Rendering in the old colours is now
     // arbitrary rather than load-bearing; it is kept because it proves the mask is doing the work.

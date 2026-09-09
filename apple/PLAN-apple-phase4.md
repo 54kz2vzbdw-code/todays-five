@@ -316,7 +316,7 @@ two hours, with no backend and no creates.
 
 ---
 
-## §5. This ships as a build of 1.12, not as 1.12 b212
+## §5. This ships as a build of 1.12, not as 1.12 b216
 
 Decided mid-round, and it changes the release step more than it looks like it should.
 
@@ -344,7 +344,7 @@ So the release step is four build homes — `version.js`, `sw.js`, `whatsnew.jso
 `sw.js`'s `CACHE` is `VERSION + "-b" + BUILD`, so the deploy still lands on the next open exactly as
 §6 describes.
 
-**The narrative tags.** Tracks A, B and D wrote `1.12 b212` into about thirty code comments — the repo's
+**The narrative tags.** Tracks A, B and D wrote `1.12 b216` into about thirty code comments — the repo's
 habit of tagging a change with the release it landed in. Those resolve to **`1.12 b<N>`** at
 stamping, which is unambiguous against what shipped as 1.12 build 158 and matches the unit that is
 actually incrementing.

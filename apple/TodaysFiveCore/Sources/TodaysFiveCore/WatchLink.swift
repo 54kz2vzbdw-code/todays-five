@@ -6,7 +6,7 @@
 // part of the receiving that can be wrong in a way a test catches — the same division of labour as
 // Vault.swift, for the same reason. The WatchConnectivity I/O lives in the two app targets.
 //
-// 1.12 b212 adds one thing to that, and it is a palette rather than a list: the two **Secret kits**, which
+// 1.12 b216 adds one thing to that, and it is a palette rather than a list: the two **Secret kits**, which
 // are in no binary and reach a Watch only from a phone whose person has unlocked them. They ride in
 // `extra` under `kits`, which is the key an older build already passes through untouched, so `v`
 // stays 1 — COMPATIBILITY.md §3's additive rule applied to a wire shape rather than a document.
@@ -103,10 +103,10 @@ public struct WatchLinkPayload: Sendable, Equatable {
 
     static let knownKeys: Set<String> = ["v", "at", "links"]
 
-    // ---------------------------------------------------------------- the Secret kits (1.12 b212)
+    // ---------------------------------------------------------------- the Secret kits (1.12 b216)
 
     /// The key the two Secret kits ride under. It is deliberately in `extra` and not a field of its
-    /// own: a build that predates 1.12 b212 keeps unknown keys and hands them back, so a Watch on an
+    /// own: a build that predates 1.12 b216 keeps unknown keys and hands them back, so a Watch on an
     /// older build passes them through untouched instead of choking, and `v` stays 1.
     public static let kitsKey = "kits"
 

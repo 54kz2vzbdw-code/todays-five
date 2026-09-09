@@ -292,7 +292,7 @@ test("the version is one number in three places, the build in four, and there ar
   assert.equal(wn.build, BUILD, "whatsnew.json carries the build number the About page shows");
   const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8"), panels = fs.readFileSync(new URL("../panels.js", import.meta.url), "utf8");
   // matched attribute by attribute rather than as one literal tag: <html> gained data-tokens-rev in
-  // 1.12 b212, and a whole-tag string match turns every future attribute into a false failure here
+  // 1.12 b216, and a whole-tag string match turns every future attribute into a false failure here
   assert.match(html, /<html\b[^>]*\slang="en"[^>]*>/, "index.html declares its language");
   assert.match(html, /<html\b[^>]*\sdata-base="dark"[^>]*>/, "index.html paints a dark ground before anything runs");
   assert.match(html, new RegExp(`<html\\b[^>]*\\sdata-build="${BUILD}"[^>]*>`), "index.html says which build its markup is");
@@ -329,7 +329,7 @@ test("1.8: the Secret pair is nowhere anyone reading the app can find it — not
   assert.doesNotMatch(html, NAMES, "and the markup names neither theme");
 });
 
-test("1.12 b212: the cached token CSS is stamped with the palette it was computed from, and both pages agree", () => {
+test("1.12 b216: the cached token CSS is stamped with the palette it was computed from, and both pages agree", () => {
   // tf/v2/themecss is a CACHE OF A COMPUTED VALUE. Until this build nothing recorded which palette it
   // had been computed from, so when a built-in kit's colours moved underneath it — which is exactly
   // what this round did to Paper and Terminal — the cached tokens were still a valid :root{…} rule and
@@ -356,7 +356,7 @@ test("1.12 b212: the cached token CSS is stamped with the palette it was compute
   assert.notEqual(fnv(other, 2166136261).toString(36), T.PALETTE_REV, "moving one kit's accent moves the stamp");
 });
 
-test("1.12 b212: the Secret group's third door — a saved theme whose code names a secret kit is not rendered on a device without the key", () => {
+test("1.12 b216: the Secret group's third door — a saved theme whose code names a secret kit is not rendered on a device without the key", () => {
   const src = fs.readFileSync(new URL("../panels.js", import.meta.url), "utf8");
 
   // the hole was real: a themes record is just { id, name, code, updatedAt }, the code is a theme

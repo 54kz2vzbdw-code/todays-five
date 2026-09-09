@@ -26,7 +26,7 @@ cd apple/TodaysFiveCore
 swift test
 ```
 
-126 tests in ten suites, about nine seconds. They read fixtures from the repo, not from a resource
+130 tests in ten suites, about nine seconds. They read fixtures from the repo, not from a resource
 bundle, because the fixtures are the shared contract:
 
 | what | where | written by |
@@ -34,8 +34,8 @@ bundle, because the fixtures are the shared contract:
 | the pinned key vectors, envelopes, links, dates, the zone | `test/fixtures/vectors.json` | `test/tools/gen-vectors.mjs` |
 | golden merge / normalize / rollover cases | `test/fixtures/merge/*.json` | `tools/merge-fixtures.js` |
 | ~1,200 random document pairs and ~900 operation sequences | `test/fixtures/merge-cases.json.deflate` | `test/tools/gen-merge-cases.mjs` |
-| the 18 kits and the 13 font pairs (1.12 b202) | `test/fixtures/kits.json` | `test/tools/gen-kits.mjs` |
-| the Watch's real family and PostScript names (1.12 b202) | `test/fixtures/watch-fonts.json` + `apple/TodaysFive/Fonts/*.ttf` | `apple/tools/gen-watch-fonts.py` |
+| the 18 kits and the 13 font pairs (1.12 b207) | `test/fixtures/kits.json` | `test/tools/gen-kits.mjs` |
+| the Watch's real family and PostScript names (1.12 b207) | `test/fixtures/watch-fonts.json` + `apple/TodaysFive/Fonts/*.ttf` | `apple/tools/gen-watch-fonts.py` |
 
 `test/fixtures/merge/`, `test/fixtures/vectors.json` and `test/fixtures/kits.json` are read by the
 **Node** suites too (`test/compat.test.js`, `test/crypto.test.js`, `test/theme.test.js`), so neither
@@ -158,7 +158,7 @@ a list that can be named and cleaned up rather than an orphan nobody can.
 | `Transport.swift`, `SupabaseTransport.swift`, `MemoryTransport.swift` | the three RPCs, and a server for tests |
 | `Store.swift`, `SyncEngine.swift` | one file per list, and pull / merge / push |
 | `Kits.swift` | the kit table's accessors — **no palette data**: that is `Kits.generated.swift`, written at build time by `Plugins/KitsGen` from the two fixtures |
-| `Vault.swift`, `WatchLink.swift` | what the phone holds, and what crosses to the wrist (links, and since 1.12 b202 the two Secret kits) |
+| `Vault.swift`, `WatchLink.swift` | what the phone holds, and what crosses to the wrist (links, and since 1.12 b207 the two Secret kits) |
 
 Read `PLAN-apple.md` before changing any of it, and `DECISIONS-apple.md` for why the JS layer exists.
 
@@ -268,7 +268,7 @@ and compares it with `icons/apple-touch-icon.png`, failing over 2 % — the same
 had, kept because it is the only thing that says the trace has not drifted from the artwork. It
 currently reports **0.30 %**.
 
-Since 1.12 b202 that comparison is **geometry**, which is what it always claimed to be: both images are
+Since 1.12 b207 that comparison is **geometry**, which is what it always claimed to be: both images are
 reduced to an ink mask — nearer the mark's colour or the tile's, per pixel — so the two colourways
 divide out. Before, it diffed raw colour; and since 1.11 recoloured `apple-touch-icon.png` with this
 same script, it had been comparing a charcoal tile with an orange check against a cream tile with an

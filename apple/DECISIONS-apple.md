@@ -1803,6 +1803,38 @@ evidence and turned out to be a test.
 * **`Kit.shapes` is still a flattened union.** Read correctly here, by a rule with an argument behind
   it; not fixed at the source, which is Track B's fixture and Track B's generator.
 
+## Integration — what only the device build could say
+
+### A watchOS device has a 32-bit `Int`, and the archive is the only thing that knows
+
+The confetti's seed mixed the run index with Knuth's golden-ratio constant:
+
+```swift
+UInt64(bitPattern: Int64(run &* 2_654_435_761))       // run is Int
+```
+
+Every simulator in this project is 64-bit, so `swift test`, both `xcodebuild` simulator builds and
+four self-tests on a booted watch all took it without a murmur. `xcodebuild archive` for
+`generic/platform=iOS` — which builds the embedded watch app for a real device — refused it outright:
+
+```
+error: integer literal '2654435761' overflows when stored into 'Int'
+```
+
+**A watchOS device is `arm64_32`: 64-bit registers, 32-bit pointers, and therefore a 32-bit `Int`.**
+`0x9E3779B1` is larger than `Int32.max`, so the expression is not a runtime overflow that a test
+might miss — it does not compile for the target at all. Fixed by doing the multiply in `UInt64`
+explicitly.
+
+The whole of `apple/` was then swept for integer literals above `Int32.max`, and the other five are
+all safe for a reason rather than by luck: `9007199254740992.0` is a `Double` literal, `Document.swift`'s
+three are `Double` arithmetic inside `toInt32()`, and `JSONValue.swift`'s is compared against a
+`UInt64`.
+
+**How to apply:** a green simulator run says nothing about `Int` width on a watch. The device
+archive is not just the last step before Organizer — for a watchOS target it is a *compiler* pass
+that nothing else in the loop performs, so run it before believing a round is finished.
+
 ## Track D — the poll papercut
 
 ### A narrow `DoorbellTransport`, because the protocol already there would have lied

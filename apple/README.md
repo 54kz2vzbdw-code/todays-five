@@ -62,8 +62,20 @@ node test/tools/gen-kits.mjs                 # after any colour, font pair or ki
 python3 apple/tools/gen-watch-fonts.py       # after fonts/ or a pair's weights move; needs fontTools + brotli
 ```
 
+`gen-watch-fonts.py` is the one generator with a dependency outside the toolchain, and the only thing
+in this repository that has one. On a clean machine:
+
+```bash
+python3 -m pip install --user fonttools brotli     # built with fontTools 4.60.2
+```
+
+`brotli` is not optional — a `.woff2` is brotli-compressed, and without it `TTFont(…)` raises on the
+first file. Neither package is needed to **build** anything: the 33 `.ttf` are committed, so a build,
+a test and an archive all work with no Python at all. They are needed only to regenerate, which is
+why they are named here rather than in a lockfile this project does not have.
+
 `gen-vectors.mjs` refuses to write if `crypto.js` no longer reproduces the pinned derivation values.
-`gen-kits.mjs` refuses on the same principle: 18 kits, exactly 2 secret, and 234 contrast assertions
+`gen-kits.mjs` refuses on the same principle: 18 kits, exactly 2 secret, and 252 contrast assertions
 against each kit's **own** grounds. The zone is pinned because rollover is a function of the local
 calendar.
 

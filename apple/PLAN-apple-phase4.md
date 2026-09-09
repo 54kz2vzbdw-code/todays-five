@@ -509,3 +509,31 @@ the repo moved 0. The ~47 % figure came from uniform-random hex, which is the wr
 And the plain answer to whether the contract would have caught it: **no.** `COMPATIBILITY.md` never
 mentions theme codes or what one renders to — §5 pins the shape of `tf/v2/themecss`, §3 passes the
 `themes` collection through untouched. That is transport and shape; rendering is neither.
+
+### The live run — one list created, one deleted
+
+Against the real Supabase project, with `tfive` on one side and the **deployed** site on the other,
+which is exactly the shape this fix ships into: the new Swift rings the bell, the page that hears it
+is the one already in the world.
+
+| | |
+| --- | --- |
+| `tfive new` | created one list on the real backend |
+| the deployed site | opened it, asked whose list it was once, answered — then **`status=synced`, `live=true`** |
+| `tfive add` | the put returned in **0.52 s** |
+| the line on the page | **0.63 s** after the write began — against **240 s** before, under identical conditions |
+| the unchanged poll | **29 bytes** (`{"rev": 2, "unchanged": true}`) against 593 for the document; the envelope is 565 stored, v3 A256GCM, `z=deflate-raw` |
+| page errors | 0 |
+| cleanup | deleted, and a read afterwards says *gone* |
+
+`live=true` is asserted **before** the write on purpose: a page that never joined the channel cannot
+observe a broadcast at all, so without it the check would have had no witness and would have passed
+on a poll instead.
+
+**The create budget, honestly.** Three lists were created in total and all three are confirmed gone.
+Only the third produced the numbers above; the first two were spent on a harness that could not
+launch a browser — `playwright` resolved through `createRequire` rather than an ESM import, and the
+system Chrome channel rather than the missing headless shell — and then on the "whose list is this?"
+dialog, which a bare private link raises and which blocks the list until it is answered.
+`apple/tools/interop.mjs` already knew that and this script did not. Two creates for harness
+mistakes is two more than it should have cost.

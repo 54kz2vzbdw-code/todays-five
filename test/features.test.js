@@ -325,7 +325,7 @@ test("1.8: the Secret pair is nowhere anyone reading the app can find it — not
   assert.doesNotMatch(html, NAMES, "and the markup names neither theme");
 });
 
-test("1.12 b207: the Secret group's third door — a saved theme whose code names a secret kit is not rendered on a device without the key", () => {
+test("1.12 b212: the Secret group's third door — a saved theme whose code names a secret kit is not rendered on a device without the key", () => {
   const src = fs.readFileSync(new URL("../panels.js", import.meta.url), "utf8");
 
   // the hole was real: a themes record is just { id, name, code, updatedAt }, the code is a theme

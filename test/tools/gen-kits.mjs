@@ -57,7 +57,7 @@ const kits = CURATED.map(normalizeKit);
 const HEX_TOKENS = ["ink", "ink2", "ink3", "text", "muted", "dim", "done", "accent", "accentHi",
   "accentDeep", "accentText", "danger", "hairSolid", "muted2", "dim2", "done2"];
 
-/** The floors every kit clears **on its own grounds** — which is the point of the round: until 1.12 b207
+/** The floors every kit clears **on its own grounds** — which is the point of the round: until 1.12 b212
     the accent was one brand hex measured against four fixed grounds, and now each kit answers for
     itself. `--ink` is the page and `--ink-3` the elevated surface (panels, filled chips, a hovered
     star), and text that clears the floor on only one of them disappears on the other. These are the
@@ -79,7 +79,7 @@ const FLOORS = [
   ["dim2",       "ink3", 4.5],
   ["done2",      "ink3", 4.5],
   ["accent",     "ink",  3],
-  ["accent",     "ink3", 3],     // 1.7 added this to finalize(); 1.12 b207 makes every reader check it
+  ["accent",     "ink3", 3],     // 1.7 added this to finalize(); 1.12 b212 makes every reader check it
   ["accentText", "ink",  4.5],
   ["accentText", "ink3", 4.5],
   ["hairSolid",  "ink",  3],

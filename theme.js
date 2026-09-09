@@ -811,6 +811,34 @@ export function report(t) {
 /* ---------------- DOM ---------------- */
 
 const CSS_KEY = "tf/v2/themecss";
+const REV_KEY = "tf/v2/themerev";
+
+/** A stamp over every curated kit's tokens, so it changes exactly when a palette does.
+
+    `tf/v2/themecss` is a **cache of a computed value**, and until 1.12 b212 nothing recorded which
+    palette it had been computed from. That is harmless while a theme *code* is the only thing that can
+    change what a kit renders — the code changes, `applyTheme` runs, the cache is rewritten. It stops
+    being harmless the moment a built-in kit's own colours move underneath it, which is exactly what
+    this round did to Paper and Terminal: the cached tokens are still a valid `:root{…}` rule, they are
+    simply the old palette's, and nothing in the key says so.
+
+    In practice the page corrects itself, because `app.js` applies the active theme on boot and
+    `setTokenCss` sees a different string — measured on the deployed site with a stale cache seeded,
+    and locally across a 158 → 212 deploy both without a service worker and with a build-158 worker
+    controlling the page. But "in practice" is resting on a module running to completion. This makes it
+    structural instead: the boot script, which paints *before* any module loads, refuses a cache it
+    cannot prove was computed from this palette and falls back to the inline default tokens for the one
+    frame until `theme.js` arrives.
+
+    Migrated on read (a cache with no stamp is stale by definition), never wiped, and the shape of
+    `tf/v2/themecss` is untouched — the stamp is its own key, which is the additive shape
+    COMPATIBILITY.md §5 asks for. `index.html` and `about.html` carry the expected value as
+    `data-tokens-rev`, and `test/features.test.js` keeps the three in step the way it does the build. */
+export const PALETTE_REV = (() => {
+  let s = "";
+  for (const t of CURATED) s += t.id + "=" + Object.keys(t.colors).sort().map(k => k + ":" + t.colors[k]).join(",") + ";";
+  return fnv(s, 2166136261).toString(36);
+})();
 
 /** Replace the token rule through the CSSOM. The inline <style> is hashed by the CSP, so its text must never
     be rewritten; insertRule/deleteRule are not subject to style-src. */
@@ -841,5 +869,6 @@ export function applyTheme(t, doc = document, { persist = true } = {}) {
   if (meta) meta.setAttribute("content", t.colors.ink);
   const bar = doc.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
   if (bar) bar.setAttribute("content", t.base === "light" ? "default" : "black-translucent");
-  if (persist) { try { localStorage.setItem(CSS_KEY, css); localStorage.removeItem("tf/v2/fontsurl"); } catch (e) { /* private mode */ } }
+  // The stamp is written in the same breath as the cache it describes, so the two cannot drift.
+  if (persist) { try { localStorage.setItem(CSS_KEY, css); localStorage.setItem(REV_KEY, PALETTE_REV); localStorage.removeItem("tf/v2/fontsurl"); } catch (e) { /* private mode */ } }
 }

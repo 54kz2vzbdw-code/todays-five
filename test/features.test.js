@@ -291,7 +291,11 @@ test("the version is one number in three places, the build in four, and there ar
   assert.equal(wn.versions[0].version, VERSION, "whatsnew.json leads with the current version");
   assert.equal(wn.build, BUILD, "whatsnew.json carries the build number the About page shows");
   const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8"), panels = fs.readFileSync(new URL("../panels.js", import.meta.url), "utf8");
-  assert.ok(html.includes(`<html lang="en" data-base="dark" data-build="${BUILD}">`), "index.html says which build its markup is");
+  // matched attribute by attribute rather than as one literal tag: <html> gained data-tokens-rev in
+  // 1.12 b212, and a whole-tag string match turns every future attribute into a false failure here
+  assert.match(html, /<html\b[^>]*\slang="en"[^>]*>/, "index.html declares its language");
+  assert.match(html, /<html\b[^>]*\sdata-base="dark"[^>]*>/, "index.html paints a dark ground before anything runs");
+  assert.match(html, new RegExp(`<html\\b[^>]*\\sdata-build="${BUILD}"[^>]*>`), "index.html says which build its markup is");
   assert.ok(panels.includes(`const PANELS_BUILD = ${BUILD};`), "panels.js says which build's markup it wires (a page open across a deploy reloads on the mismatch)");
   assert.deepEqual(wn.versions.map(v => v.version), ["1.12", "1.11", "1.10", "1.9", "1.8", "1.7", "1.5", "1.4", "1.3", "1.2", "1.1", "1.0"], "the public history: 1.0 and later (4.0.0 became 1.0; the pre-releases live in CHANGELOG.md)");
   for (const v of wn.versions) { assert.match(v.version, /^\d+\.\d+(\.\d+)?$/); assert.ok(!("date" in v), v.version + ": no date field"); assert.ok(typeof v.headline === "string" && v.items.length >= 1 && v.items.length <= 3, v.version + ": a headline and one to three items"); }
@@ -323,6 +327,33 @@ test("1.8: the Secret pair is nowhere anyone reading the app can find it — not
   const html = read("index.html");
   assert.ok(html.includes('id="sw-secret"') && html.includes('id="sw-forget"'), "the group has a home in the markup");
   assert.doesNotMatch(html, NAMES, "and the markup names neither theme");
+});
+
+test("1.12 b212: the cached token CSS is stamped with the palette it was computed from, and both pages agree", () => {
+  // tf/v2/themecss is a CACHE OF A COMPUTED VALUE. Until this build nothing recorded which palette it
+  // had been computed from, so when a built-in kit's colours moved underneath it — which is exactly
+  // what this round did to Paper and Terminal — the cached tokens were still a valid :root{…} rule and
+  // simply the old palette's. The page corrected itself because app.js applies the theme on boot, but
+  // that rests on a module running to completion; the stamp makes it structural, at first paint.
+  const idx = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const abt = fs.readFileSync(new URL("../about.html", import.meta.url), "utf8");
+
+  assert.match(T.PALETTE_REV, /^[0-9a-z]+$/, "the stamp is a short base-36 hash");
+  for (const [name, html] of [["index.html", idx], ["about.html", abt]]) {
+    const m = /<html[^>]*\sdata-tokens-rev="([^"]+)"/.exec(html);
+    assert.ok(m, name + " carries data-tokens-rev on <html>");
+    assert.equal(m[1], T.PALETTE_REV, name + "'s stamp is theme.js's PALETTE_REV — regenerate it when a palette moves");
+    assert.ok(html.includes('localStorage.getItem("tf/v2/themerev") !== document.documentElement.getAttribute("data-tokens-rev")'),
+      name + "'s boot script refuses a cache it cannot prove was computed from this palette");
+  }
+
+  // it must actually change when a palette does, or it is decoration
+  const seen = new Set();
+  for (const t of T.CURATED) seen.add(t.colors.accent);
+  assert.ok(seen.size >= 16, "the stamp is over a table with real variety in it");
+  const other = T.CURATED.map(t => t.id + "=" + Object.keys(t.colors).sort().map(k => k + ":" + (t.id === "paper" && k === "accent" ? "#A86014" : t.colors[k])).join(",") + ";").join("");
+  const fnv = (str, off) => { let x = off >>> 0; for (let i = 0; i < str.length; i++) { x ^= str.charCodeAt(i); x = Math.imul(x, 16777619) >>> 0; } return x; };
+  assert.notEqual(fnv(other, 2166136261).toString(36), T.PALETTE_REV, "moving one kit's accent moves the stamp");
 });
 
 test("1.12 b212: the Secret group's third door — a saved theme whose code names a secret kit is not rendered on a device without the key", () => {

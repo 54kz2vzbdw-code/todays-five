@@ -82,8 +82,19 @@ invariants, and the checklist to run before anything reaches `main`. Read this b
 
 - Keys: `tf/v2/meta` (device settings and the list registry), `tf/v3/list/<link>` (each list's
   decrypted copy with `rev`, `dirty`, `created`, `mode`), `tf/v2/themecss` (the token CSS the boot
-  script re-applies), `tf/v2/localserver/<id>` (the test transport). The keys never change; the boot
-  script in `index.html` reads two of them before any module loads.
+  script re-applies), `tf/v2/themerev` (which palette that CSS was computed from),
+  `tf/v2/localserver/<id>` (the test transport). The keys never change; the boot script in
+  `index.html` reads three of them before any module loads.
+- **`tf/v2/themecss` is a cache of a computed value, and `tf/v2/themerev` is what makes it safe to
+  trust.** A theme *code* changing rewrites the cache, because `applyTheme` runs — but a **built-in
+  kit's own colours moving** does not, and the cached tokens are then still a valid `:root{…}` rule
+  that simply belongs to a palette which no longer exists. So `theme.js` stamps `PALETTE_REV`, a hash
+  over every curated kit's tokens, beside the CSS in the same write, and both boot scripts refuse a
+  cache whose stamp is not the one the page carries in `<html data-tokens-rev>`. A missing stamp is an
+  older build's cache and is stale by definition — migrated on read, never wiped, and the shape of
+  `tf/v2/themecss` itself is untouched. `test/features.test.js` keeps `theme.js`, `index.html` and
+  `about.html` in step the way it does the build number, so **a round that moves a curated kit's
+  palette must re-stamp `data-tokens-rev` in both pages**, and the suite fails if it does not.
 - **`tf/app/seen` is the iPhone shell's, and the web must never touch it.** The app writes it into
   this same store so it can tell "the person removed their last list" from "the web store was
   cleared" — two states the registry alone cannot separate (§8). Its whole job is to be destroyed

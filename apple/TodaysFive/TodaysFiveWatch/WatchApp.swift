@@ -5,6 +5,12 @@
 // sections, no History, no rules, no templates and no themes: those live on a phone-sized screen
 // because they need one.
 //
+// **The kit.** `WatchThemeStore` resolves one kit for this device — see `WatchTheme.swift`, which
+// also says why the phone's theme is deliberately not followed — and it is put in the environment
+// here beside the store. Every colour and every face on every screen comes from there; nothing on
+// the Watch may use `.primary`, `.secondary` or a system colour, because watchOS has no light
+// appearance and those are only ever right by accident.
+//
 // **The three background doors.** A complication that only refreshes while the app is running shows
 // yesterday's count all morning, so: `.backgroundTask(.watchConnectivity)` wakes the app when the
 // phone sends links, `.backgroundTask(.appRefresh)` is the one refresh a day the store asks for at
@@ -18,13 +24,19 @@ import WatchKit
 @main
 struct TodaysFiveWatchApp: App {
     @State private var store = WatchStore()
+    @State private var theme = WatchThemeStore()
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(store)
+                .environment(theme)
+                .watchGround(theme.theme)
                 .task {
+                    // Before the first sync, because a silent Helvetica is a thing you want told
+                    // about whether or not there is a list to render in it.
+                    await FontSelfTest.runIfAsked(theme.available)
                     await store.start()
                     store.scheduleNextRefresh()
                     #if DEBUG
@@ -36,7 +48,13 @@ struct TodaysFiveWatchApp: App {
                 }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { store.sceneBecameActive() }
+            if phase == .active {
+                store.sceneBecameActive()
+                // A phone that unlocked or re-locked the Secret pair while we were away wrote the
+                // App Group key; this is the occasion that reads it. Same rule as the rest of this
+                // app: the occasions, never a timer.
+                theme.refresh()
+            }
         }
         // A phone send wakes us; the receiver is already listening, so being awake is the whole job.
         // Rolling over and refreshing the face while we are up is free.
@@ -53,6 +71,7 @@ struct TodaysFiveWatchApp: App {
 
 struct RootView: View {
     @Environment(WatchStore.self) private var store
+    @Environment(\.watchTheme) private var theme
     /// The Always-On display. A five-line list lives on a wrist all day, so the dimmed frame gets a
     /// calm rendering of its own rather than the live one with its accent, its buttons and its
     /// animations — none of which mean anything on a screen nobody is looking at.
@@ -70,16 +89,17 @@ struct RootView: View {
     var body: some View {
         NavigationStack {
             content
+                .watchGround(theme)
                 .navigationTitle { titleButton }
                 .sheet(isPresented: $showPicker) {
-                    NavigationStack { ListPickerView() }
+                    NavigationStack { ListPickerView() }.watchGround(theme)
                 }
                 .sheet(isPresented: $showAdd) {
                     // Track C's. This file never opens it any other way and never looks inside it.
                     // `openedFromFace` is the difference between the person tapping + on Today (where
                     // the + is the thing they aimed at) and the Add complication or Double Tap, which
                     // already said "add a line" — those land straight on dictation.
-                    AddFlowView(beginImmediately: openedFromFace)
+                    AddFlowView(beginImmediately: openedFromFace).watchGround(theme)
                 }
                 .onChange(of: showAdd) { _, open in if !open { openedFromFace = false } }
         }
@@ -125,13 +145,14 @@ struct RootView: View {
         } label: {
             HStack(spacing: 3) {
                 Text(store.title)
+                    .font(theme.ui(15, .headline, bold: true))
                     .lineLimit(1)
                     .truncationMode(.tail)
                 if store.links.count > 1 {
                     Image(systemName: "chevron.down").font(.system(size: 8, weight: .semibold))
                 }
             }
-            .foregroundStyle(WatchTheme.accent)
+            .foregroundStyle(theme.accent)
         }
         .buttonStyle(.plain)
         .disabled(store.links.count < 2)
@@ -141,18 +162,23 @@ struct RootView: View {
 // ---------------------------------------------------------------- nothing to show yet
 
 struct EmptyStateView: View {
+    @Environment(\.watchTheme) private var theme
+
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: "iphone.gen3")
                 .font(.title3)
-                .foregroundStyle(WatchTheme.accent)
+                .foregroundStyle(theme.accent)
             Text("No list yet")
-                .font(.system(.headline, design: .rounded))
+                .font(theme.ui(16, .headline, bold: true))
+                .foregroundStyle(theme.text)
             Text("Open a list in Today's Five on your iPhone and it will arrive here.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .font(theme.ui(13, .footnote))
+                .foregroundStyle(theme.muted)
                 .multilineTextAlignment(.center)
         }
         .padding(.horizontal, 6)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(theme.ink)
     }
 }

@@ -15,14 +15,16 @@ import TodaysFiveCore
 
 struct ListPickerView: View {
     @Environment(WatchStore.self) private var store
+    @Environment(\.watchTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         List {
             if store.links.isEmpty {
                 Text("No lists yet")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .font(theme.ui(13, .footnote))
+                    .foregroundStyle(theme.muted)
+                    .listRowBackground(Color.clear)
             }
             ForEach(store.links, id: \.id) { link in
                 Button {
@@ -32,16 +34,25 @@ struct ListPickerView: View {
                     row(link)
                 }
                 .buttonStyle(.plain)
+                .listRowBackground(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous).fill(theme.ink2)
+                )
             }
         }
-        .navigationTitle("Lists")
+        .scrollContentBackground(.hidden)
+        .background(theme.ink)
+        // The view-taking overload, the same one the title button uses in `WatchApp.swift`. The
+        // string overload is drawn by the system in the system's colour, which on a light kit is
+        // white on cream — the same failure as the clock, but this one has a door out of it.
+        .navigationTitle { Text("Lists").foregroundStyle(theme.accent) }
     }
 
     private func row(_ link: VaultedLink) -> some View {
         HStack(alignment: .top, spacing: 6) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(name(of: link))
-                    .font(.system(.body, design: .rounded, weight: .medium))
+                    .font(theme.ui(15, .body, bold: true))
+                    .foregroundStyle(theme.text)
                     .lineLimit(2)
                 HStack(spacing: 4) {
                     // The rail's order (index.html:142-143) and Today's: view only first, then
@@ -55,7 +66,7 @@ struct ListPickerView: View {
             if link.id == store.selected {
                 Image(systemName: "checkmark")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(WatchTheme.accent)
+                    .foregroundStyle(theme.accent)
             }
         }
         .padding(.vertical, 2)

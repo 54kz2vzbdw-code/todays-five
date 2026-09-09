@@ -105,6 +105,10 @@ struct AddFlowView: View {
     /// on a dimmed screen, and an Undo nobody can reach is chrome.
     @Environment(\.isLuminanceReduced) private var dimmed
 
+    /// The kit. This view is presented in a sheet, which is its own hosting context — the ground is
+    /// applied at the call site in `WatchApp.swift` (`.watchGround`), and the tokens are read here.
+    @Environment(\.watchTheme) private var theme
+
     @State private var working = false
 
     private var coordinator: AddCoordinator { AddCoordinator.shared }
@@ -117,6 +121,8 @@ struct AddFlowView: View {
                     .transition(dimmed ? .identity : .opacity)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(theme.ink)
         .animation(dimmed ? nil : .easeOut(duration: 0.16), value: coordinator.pending)
         // `AddSelfTest` is NOT run from here. This view only exists inside a sheet, and a sheet
         // nobody opens is a self-test that never runs — which is exactly what `-TFAddSelfTest` did
@@ -131,6 +137,7 @@ struct AddFlowView: View {
         if WatchDictation.canPresentController {
             Button(action: begin) { plusLabel }
                 .buttonStyle(.bordered)
+                .tint(theme.ink3)
                 .disabled(working)
                 // Double Tap: on a Series 9 or an Ultra 2 this is what a pinch reaches. There is no
                 // way to inject the gesture on a simulator, so it is written and left unverified.
@@ -145,6 +152,7 @@ struct AddFlowView: View {
                 submit(text)
             }
             .buttonStyle(.bordered)
+            .tint(theme.ink3)
             .handGestureShortcut(.primaryAction, isEnabled: !working)
         }
     }
@@ -155,7 +163,8 @@ struct AddFlowView: View {
         } icon: {
             Image(systemName: "plus")
         }
-        .font(.body)
+        .font(theme.ui(15, .body))
+        .foregroundStyle(theme.text)
     }
 
     // ---------------------------------------------------------------- what happened
@@ -164,17 +173,20 @@ struct AddFlowView: View {
     private func confirmation(_ pending: AddCoordinator.Pending) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(pending.outcome.sentence)
-                .font(.footnote)
-                .foregroundStyle(pending.outcome.landed == nil ? .secondary : .primary)
+                .font(theme.ui(13, .footnote))
+                .foregroundStyle(pending.outcome.landed == nil ? theme.muted : theme.text)
                 .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let line = pending.outcome.landed, !dimmed {
                 Button(role: .destructive) { undo(line) } label: {
                     Text(verbatim: "Undo")
+                        // `role: .destructive` paints the label the system's red, which is a colour
+                        // no kit names. The kit's own `danger` is what the web draws here.
+                        .foregroundStyle(theme.danger)
                 }
                 .buttonStyle(.borderless)
-                .font(.footnote)
+                .font(theme.ui(13, .footnote, bold: true))
             }
         }
         // The window is keyed on the serial, so a second add restarts it rather than inheriting the

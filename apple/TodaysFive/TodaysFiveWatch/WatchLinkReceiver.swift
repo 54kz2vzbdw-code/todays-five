@@ -88,7 +88,7 @@ final class WatchLinkReceiver {
         // the same fallback the reconciler applies when the phone stops naming the list on screen.
         let stored = defaults.string(forKey: Self.selectedKey)
         selected = links.contains(where: { $0.id == stored }) ? stored : links.first?.id
-        secretKits = Self.readKits(from: shared)
+        secretKits = Self.storedKits(in: shared)
 
         guard WCSession.isSupported(), !started else { return }
         started = true
@@ -176,7 +176,11 @@ final class WatchLinkReceiver {
 
     /// JSON in, kits out. A value this build cannot read is no kits, which is the safe answer: the
     /// picker offers the 16 and says nothing about the two.
-    private static func readKits(from store: UserDefaults) -> [Kit] {
+    ///
+    /// Not private, because `WatchThemeStore` reads the same key rather than reading this object: a
+    /// theme has to resolve on a launch that never starts a `WCSession` at all (`-TFWatchDemo`), and
+    /// one reader of one key is a smaller thing to keep true than two objects agreeing.
+    static func storedKits(in store: UserDefaults) -> [Kit] {
         guard let text = store.string(forKey: kitsKey),
               let list = (try? JSONReader.parse(Data(text.utf8)))?.arrayValue else { return [] }
         return list.compactMap(Kit.init(json:))

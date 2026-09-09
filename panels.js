@@ -202,7 +202,15 @@ function paintCustom() {
   pv.querySelector(".pt.done").style.color = c.done;
   const pm = pv.querySelector(".pm"); pm.style.fontFamily = p.ui[2]; pm.style.color = c.dim; pm.querySelector("b").style.color = c.accentText;
   const r = T.report(t);
-  $("#c-contrast").textContent = `Contrast — text ${r.text.toFixed(1)}:1 · muted ${r.muted.toFixed(1)}:1 · accent ${r.accentText.toFixed(1)}:1 · fonts ${p.name}`;
+  // The row used to print `accentText` under the label "accent", which is the one number a person
+  // picking a colour by eye does NOT need: accentText is nudged to 4.5:1 by construction, so it
+  // always looked fine. What can actually fail is `accent` on --ink-3 — the elevated surface a focus
+  // ring and a filled chip sit on, including the ring on a Delete confirm — so that is what is shown,
+  // and it is shown as the pair, because the two grounds can disagree. Pick a deep teal and the old
+  // row said 4.6:1 while the accent was really at 2.2:1.
+  $("#c-contrast").textContent = `Contrast — text ${r.text.toFixed(1)}:1 · muted ${r.muted.toFixed(1)}:1`
+    + ` · accent ${r.accent.toFixed(1)}:1 on the page, ${r.accent3.toFixed(1)}:1 on a panel`
+    + ` · accent text ${r.accentText.toFixed(1)}:1 · fonts ${p.name}`;
 }
 function previewCustom() { T.applyTheme(customTheme(), document, { persist: false }); }
 function setCustom(patch) { Object.assign(custom, patch); paintCustom(); previewCustom(); }

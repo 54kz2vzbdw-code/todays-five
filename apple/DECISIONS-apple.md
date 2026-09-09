@@ -882,3 +882,475 @@ meets: `added`, `nothing-said` for an empty string, `view-only`, `no-list`, and 
 tombstones rather than rewrites. And one line that only a device can confirm but which the simulator
 could at least ask: `visibleInterfaceController=present`, so the wrist takes the WatchKit dictation
 path rather than the `TextFieldLink` fallback.
+
+
+---
+
+# Phase 4 — the kits on the wrist, and an accent that isn't locked in
+
+Phase 3 shipped mechanism and deferred appearance. This round is the bill: the web's UI accent, which
+1.11 pinned to the brand, and the Watch, which shipped one hex and the system font.
+
+Four tracks in worktrees. What follows is each track's own entries, in the order they were written.
+
+
+## Track A — the web accent, unpinned from the brand
+
+### The render pass came before the test file, and it is what settled the change
+
+Contrast arithmetic can say `#C8321F` is 3.85:1 on Paper's `#E3DAC8`. It cannot say whether the app
+still looks like this product. `tools/shots.js` walks the surfaces in one theme and nothing in the
+repo walked the themes on one surface, so `tools/kitshots.js` was written first: one screenshot per
+kit, the list on screen with one line struck so the strike, the filled box, the progress bar and the
+count all carry the accent, `applyTheme` in a loop over `CURATED` with `persist: false`. 18 kits in
+9.4 s, no network, no list creations, zero page errors. It runs before and after and the two sets are
+read side by side.
+
+What it showed, which no number in the plan did: on Terminal the amber check does not read as a
+brand at all, it reads as a **foreign object** — a rust-orange block dropped into a green-on-black
+terminal where every other pixel, the date, the header, the type, the hairlines, is phosphor. On
+Paper the amber was defensible, and the change there is a matter of taste rather than of correction.
+That asymmetry is the whole finding, and it is why the round is worth doing even though the
+arithmetic was never wrong.
+
+**How to apply:** when a change is about how something looks, build the picture before the assertion.
+A round justified only by contrast ratios will happily ship a colour that clears every floor and
+belongs to nothing.
+
+### The premise, not the arithmetic, and the comment block says so now
+
+1.11's reasoning is sound and still in the file: 4.5:1 on Paper's `#F7F2E8` needs luminance ≤ 0.159
+and on Terminal's `#070A08` needs ≥ 0.188, so no single hex is text on both, so a shared accent has
+to be a UI colour at 3:1. What was wrong is the sentence before it — that the two default kits should
+share an accent at all. Fifteen of the eighteen kits never did.
+
+So the accent is the kit's again: Paper's `#C8321F` and Terminal's `#4AF07A`, byte for byte the
+families they carried before 1.11, `accentHi`, `accentDeep`, `accentText`, `glow`, `strikeShadow` and
+confetti with them. `finalize()`'s `fix3` nudge was run on each of the six and every one returned
+itself, so the revert cost nothing in contrast. Terminal's accent goes 4.12 → 13.29 on `--ink` and
+3.48 → 11.22 on `--ink-3`; Paper's 4.33 → 4.79 and 3.48 → 3.85. `cssText()` moved on exactly two of
+the eighteen kits.
+
+**Dark keeps `#A86014`, and that is a decision.** Since 1.11 Dark *is* the brand's dark — Terminal's
+grounds, Paper's paper as its ink, the brand accent — and reverting it would mean going back to
+`#D26128`, the borrowed law-firm orange 1.11 deliberately removed. The hex survives in exactly one
+kit, where it is that kit's own colour rather than a pin over somebody else's.
+
+**The mark does not move**: `BRAND_ACCENT`, `BRAND_COLOURWAYS`, `BRAND`, `brandTiles()`,
+`brandDark()` and `icons/mark.svg` are untouched, and the suite now asserts that no kit's hex is
+written into the SVG at all. The in-app echo of the icon is what is traded away, knowingly.
+
+The long 1.11 comment block is rewritten rather than annotated. It now says what 1.11 solved, why the
+premise was wrong, what the accent is now, and that the mark keeps `#A86014` — and the
+`BRAND_ACCENT` doc comment says that its four-ground balancing is still what it was chosen for,
+because the mark is still drawn on all four grounds; only the number of kits asked to wear it
+changed. `brandAccentSet()` lost both its call sites, had no others and was never exported, so it is
+deleted rather than left describing a rule the file no longer follows.
+
+**How to apply:** when a change reverses a decision, rewrite the paragraph that argued for it. A
+stale block beside correct code is worse than no block, because the next reader trusts it.
+
+### `derive()` was measuring one token against the wrong ground, and half the accents were under the floor
+
+Everything `derive()` builds is nudged against `--ink-3` — the lightest (dark) or darkest (light)
+surface a token ever sits on, a panel, a filled chip, a hovered swatch — except `accent`, which was
+nudged against `--ink`. The curated path has nudged there since 1.7; this line never caught up. Over
+3,000 seeded accents per base:
+
+| | worst `accent` vs `--ink-3` | under 3:1 |
+| --- | --- | --- |
+| dark, before | **2.18** (`#11735B`) | 1,139 / 3,000 |
+| light, before | **2.45** (`#DA6D7F`) | 1,690 / 3,000 |
+| both, after | **3.00** | 0 / 3,000 |
+
+`--ink-3` is the harder ground on both bases, so ensuring there implies the old guarantee and can
+never weaken it — asserted on all 6,000. Exactly the accents that were under the floor moved, and no
+others: 1,139 dark by a mean 0.0594 in OKLCH L (worst 0.082) and 1,690 light by a mean 0.0449 (worst
+0.060). The family follows the accent, so `accentHi`, `accentDeep`, `accentText`, the glow and the
+strike shadow move on those and only those.
+
+**It is its own commit because saved theme codes live in the encrypted document** (`model.js`, the
+`themes` collection), so this changes what another person's device renders on a shared list. Nothing
+about the code grammar moves — a `T2` code round-trips byte for byte and still rebuilds exactly what
+the builder showed — so an old client reads a new client's code and renders it its old way, a new one
+renders it the new way, and neither can fail to parse the other's. The floor is the only thing that
+changed hands, which is why this is not a `COMPATIBILITY.md` §3 event: the shape did not move, the
+derivation did.
+
+**How to apply:** when two code paths implement the same rule, the shared test table is the only
+place the rule can live. A floor enforced in one path's own test is a floor the other path does not
+have.
+
+### A token nothing reports is a token nothing holds to a floor
+
+Re-pointing the floors found one kit that could not meet them, and it is neither of the two that
+moved. `light.danger` `#B8402A` on `light.ink3` `#E4DED2` is **4.12:1**, short of 4.5, and has been
+since v1. It hid behind three things at once: `report()` measured `danger` against `--ink` alone
+(5.20, comfortably clear), light is in `ORIGINAL` so `finalize()` never nudged it, and the one test
+that did check danger on `--ink-3` skipped dark, light and pink by name.
+
+Fixed minimally to `#B13924` — `finalize()`'s own `fix3` nudge run by hand, two steps of L −0.01, the
+smallest move that clears the floor, and already the hex Teletype's identical `#B8402A` finalizes to.
+4.1205 → 4.5050 on `--ink-3`, 4.6907 → 5.1284 on `--ink-2`, 5.2034 → 5.6889 on `--ink`. It is the one
+v1 token that has moved, and the pinned list in the suite says so where a reader will find it.
+
+`danger3` joins `report()` and `THRESH` so it cannot come back — and adding it turned up the same
+wrong ground in `derive()`, whose danger was 4.38 at worst on dark with 1,222 of 3,000 under 4.5:1.
+Pointed at `--ink-3` with the accent: 0 of 3,000, worst 4.5001 dark and 4.9517 light. The threshold
+and every fix it needs are in one commit, so reverting one never leaves the table asserting a floor
+nothing holds.
+
+**The `ORIGINAL` exemption is an exemption from being nudged, never from being measured.** Both
+originals pass the accent floors as written, and by margins worth pinning rather than assuming:
+light's accent is 3.0016 on `--ink-3` and Pink's accent text is 4.5069. The suite asserts those
+numbers now, and prints all eighteen kits' four ratios every run.
+
+**How to apply:** add the token to the report before you add the floor. A contrast function that only
+measures against the easy ground will report a healthy number for a colour nobody can read.
+
+### The Secret group had three doors, and the third had no guard
+
+The group is gated on `dev().secret` and so is the import field. `savedThemes()` was not, and the
+picker fills **Yours** straight from it. A `themes` record is `{ id, name, code, updatedAt }`; its
+`code` is a theme code like any other, and `T1:curated:superpink` parses to a complete kit.
+`normalize()` and `merge()` carry such a record through verbatim — measured, and they **must**,
+because `COMPATIBILITY.md` §3 says a client never drops what it does not understand. So nothing about
+this is fixable in the model; it is a rendering guard or nothing.
+
+Measured in a browser on the local transport, a document carrying one T2 record and one whose code
+names a secret kit: **before**, a device without the key rendered 2 swatches in Yours; **after**, 1,
+and 2 with the key beside the group's own 2.
+
+Gated inside `savedThemes()` rather than at the `#sw-yours` fill, so every reader is covered at once:
+the swatches, the hidden flag on their header, and the partner lookup behind *Make its partner*. The
+record is never touched — a device without the key does not show it and does not delete it, so the
+device that saved it still has it and a device given the key later gets it back.
+
+The test runs `panels.js`'s own `savedThemes()` expression, lifted out of the file by regex, against
+a real normalized document, so it fails if the guard is removed *or* if the function is restructured
+past the lift; then it asserts all three doors name the same predicate, so a fourth cannot be opened
+without one.
+
+**How to apply:** when a feature is gated in more than one place, the test should enumerate the
+places, not check the one you were thinking about. This hole was unreachable through today's UI and
+would have stayed invisible until the day it wasn't.
+
+### `tools/mark.mjs --trace` has been broken since 1.11, and it is not this round's doing
+
+`--trace` renders `icons/mark.svg` in hard-coded `#1A1D21` / `#D26128` and pixel-diffs it against
+`icons/apple-touch-icon.png` with a **colour** threshold (`d > 90`), under a comment saying "Geometry
+only". 1.11 regenerated `apple-touch-icon.png` in the new colours — with this same script — so the
+diff has compared a charcoal tile with an orange check against a cream tile with an amber check ever
+since. It reports **93.84 %**, and it reports the identical 93.84 % on the untouched Phase 4 base
+commit, so nothing this round touched it.
+
+The drawing has **not** drifted, which is what `--trace` exists to say. Rendering the same SVG in the
+colours the shipped file actually carries gives **0.00 %** of pixels different, and a real
+geometry-only comparison — ink mask against ink mask, colour ignored entirely — is **0.00 %** either
+way. `node tools/mark.mjs --check` is byte-for-byte identical on the base and on this branch: safe
+zone clear, worst painted radius 0.316 of 0.400, ink 6.6 %.
+
+Not fixed here, deliberately: `tools/mark.mjs` is outside this track's surface and the fix is a
+choice between two different tools (diff the ink masks, or render in `brandTiles()`'s colours), which
+is the orchestrator's call.
+
+**How to apply:** a regression check whose reference file is regenerated by the same script it checks
+will pass until the day the script changes the reference, and then fail forever without anyone
+reading the number.
+
+### The Secret key is in plaintext in the repo, and it is not in `theme.js`
+
+`theme.js` says of the key that "The word is not written down here — a casual reader of this file
+should not trip over it", and that is true of `theme.js`. It is not true of the repo:
+`tools/shots.js` types the word into `#c-import` in plain text to take the Secret group's shots.
+`tools/kitshots.js` deliberately does not need it — `CURATED` already holds both kits and
+`applyTheme` does not ask — which is why the new tool takes every kit's picture without going near
+the key. `tools/shots.js` is left alone: changing it would break the shots tool, and whether the key
+should live there at all is the orchestrator's call, not this track's.
+
+## Track B — the kit table reaches the core
+
+### A build-time generator cannot parse `theme.js`, and the reason is arithmetic
+
+The obvious shape was ConfigGen's: a plugin that reads the repo's own file at build time, so no
+value is ever typed into Swift. It cannot work here, and not for a plumbing reason.
+
+**62 of the 314 hex colour tokens in the finished kit table appear nowhere in `theme.js`'s source,
+and all 18 of 18 kits have at least one.** Every `hairSolid` is computed. So are Harbor's
+`accentText` `#046D6D`, Teletype's accent `#119449`, Sketch's `#9D7700`, and every one of Dark's
+greys. They come out of `finalize()` → `elevated()` → `hairSolidFor()` → `ensure()` → `oklch()`:
+sRGB→linear→OKLab with cube roots, a 14-iteration binary-search gamut clamp, WCAG contrast, and a
+60-step lightness nudge loop.
+
+A Swift plugin would have to reimplement all of that and match JavaScript doubles bit for bit. It
+would *look* like it worked — sixteen kits' worth of literals extract cleanly with a regex — and be
+silently wrong on exactly the derived greys that carry the contrast floors. That is the forbidden
+second copy of the palette in its worst possible form: one that passes its own tests.
+
+And `node` is genuinely out of reach: `/usr/bin/env -i /bin/sh -c 'command -v node'` exits 1 on the
+`PATH` a build sees.
+
+**How to apply:** before writing a generator, count how much of the output is *computed* rather than
+*written*. A generator can extract literals; it cannot re-derive a pipeline. If the fraction is not
+zero, generate from a fixture the owning language wrote.
+
+### JavaScriptCore is what keeps the fixture honest
+
+A fixture alone does not satisfy "one source of truth". There is no `package.json`, no CI, and every
+generator in this repo is run by hand — so a committed `kits.json` would drift the first time
+somebody edited a colour and did not regenerate, which is precisely the failure Track B exists to
+prevent.
+
+`theme.js` has no imports and touches `localStorage` only inside `applyTheme`, so it is
+self-contained. Stripping the `export ` keyword and evaluating it in a Swift `JSContext` reproduces
+`CURATED` exactly — byte-identical to Node, 17,674 bytes, about 6 ms. So `KitFixtureTests` asserts
+the fixture still equals **live `theme.js`**, not a snapshot of it.
+
+The platform split is the part that makes this safe rather than clever: **`JavaScriptCore.framework`
+is present in the macOS and iPhoneOS SDKs and absent from the watchOS SDK.** The check can never
+ship to a wrist. It is guarded `#if canImport(JavaScriptCore)` regardless, so a test target built
+for watchOS would drop it rather than fail to link.
+
+The mapping from `CURATED` to the fixture lives *in* the fixture, as `expr`, so the generator, the
+Node test and the Swift drift test run one definition of it instead of three that can disagree.
+
+**How to apply:** a fixture pins a value; it does not pin the *relationship* between two
+implementations. If nothing re-derives the fixture on every run, add the thing that does.
+
+### A second prebuild plugin on one target does not collide
+
+Phase 3 discovered that a build-tool plugin's work directory is keyed by package, target and plugin
+and **not by platform**, so two targets linking one package planned the same producer twice and the
+build refused: *"Multiple commands produce …/ConfigGen/Config.generated.swift"*. The fix was a
+prebuild command, which hands the build system a *directory to glob* rather than a file it promises
+to produce.
+
+The open question this round was whether adding `KitsGen` beside `ConfigGen` would bring the
+collision back. It does not. Measured, on the condition that produced the original failure — both
+platforms, both targets:
+
+```
+xcodebuild -scheme TodaysFive      -destination 'generic/platform=iOS Simulator'      ** BUILD SUCCEEDED **
+xcodebuild -scheme TodaysFiveWatch -destination 'generic/platform=watchOS Simulator'  ** BUILD SUCCEEDED **
+```
+
+The reason is the same one that fixed Phase 3: each plugin gets its own
+`pluginWorkDirectoryURL`, and a prebuild command declares no output *path* to collide on. Two
+plugins are two globbed directories, and the build system is content with both.
+
+**How to apply:** the Phase 3 lesson generalises further than it was written. A prebuild command is
+not merely a workaround for two platforms — it is what makes plugins on a shared package compose at
+all.
+
+### The font names in `theme.js` are a fiction `styles.css` invents
+
+`PAIRS` names CSS families — "Outfit", "Manrope", "DM Sans" — and those names exist only because
+`styles.css` declares them in 26 `@font-face` rules. **No Apple API does that rename.** Registering
+all 26 files and asking `CTFontCreateWithName` for each of the 22 families `theme.js` records
+resolves **10 of 22 to Helvetica**: Quicksand, Space Grotesk, Manrope, DM Sans, Outfit, Nunito Sans,
+Cormorant Garamond, Josefin Sans, Archivo and Fredoka. Those are the *task* faces of midnight,
+harbor, forest, sketch, arcade, dusk, ember and superpink — the list text of eight kits, in the
+system font, with **no log and no error**.
+
+The real names are inside the binaries: `outfit-500-800.woff2` is family "Outfit Thin",
+`manrope-500-800` is "Manrope ExtraLight", `nunito-sans-400-700` is "Nunito Sans 12pt ExtraLight
+12pt".
+
+So `gen-watch-fonts.py` writes the TTFs and then **reads the family and PostScript name back out of
+the file it just produced**, into `test/fixtures/watch-fonts.json`. Nothing is derived from
+`theme.js` and nothing is guessed. Renaming the families to match the CSS names was considered and
+rejected: these are OFL 1.1 faces and rewriting a name table to impersonate the upstream name is the
+one thing that licence is careful about. Generating the map costs a fixture; renaming would cost a
+licensing argument.
+
+The variable faces are instanced to the weights `theme.js` actually asks for
+(`fontTools.varLib.instancer`), because `.weight()` is a measured no-op on a variable file with no
+`fvar` named instances — which is exactly what `fraunces-500-700` and `source-serif-4-400-600` are,
+and Fraunces is Pink's and Blush's task face. 33 static faces, 1.3 MB, from 732 KB of woff2.
+`updateFontNames=True` raises `ValueError: Cannot find Axis Values` on a face whose STAT table lacks
+the weight, so the naming is done by hand and read back.
+
+**How to apply:** when a name crosses from CSS into a native toolkit, check that the name is a
+property of the file and not of the stylesheet. A wrong font name does not fail; it falls back.
+
+### The Secret pair reaches a wrist without ever being in a binary
+
+The generated table holds **16** kits. `superpink` and `birthday` are in the fixture — the tests
+measure all 18 — and in no shipped binary at all, which `KitFixtureTests` asserts directly so it
+cannot regress quietly.
+
+They arrive over the channel instead. The phone's `WebViewController.reconcileVault()` already pulls
+the whole `tf/v2/meta` string and parses it; `meta.device.secret` is a sibling key in the JSON it
+already has in hand, so reading it is two lines and no new bridge and no web change. When it is set,
+`WatchLinkSender` puts the two kits' tokens into `WatchLinkPayload.extra`, which has passed unknown
+keys through since Phase 3 — `COMPATIBILITY.md` §3's rule applied to a channel, paying for itself a
+second time. Absent means remove, the same authority rule links already follow, so re-locking on the
+phone reaches the wrist.
+
+**The trap:** `WatchLinkPayload`'s decode sorts its keys and its encode preserves insertion order,
+and `JSONObject`'s `==` compares order. Inserting the new keys unsorted silently breaks round-trip
+equality — the same class of bug as Phase 3's nondeterministic codec, arriving at the same file from
+the other direction. The keys are inserted sorted, and a test says so.
+
+Worth writing down plainly: **the Secret palettes are not cryptographically secret.** `theme.js`
+ships to every browser and the gate is an FNV-hashed passphrase. "A Watch that has not unlocked them
+does not carry them" is a stricter product rule than the web's own model. It is kept because it was
+asked for, not because the data would otherwise leak.
+
+## Track D — the poll papercut
+
+### A narrow `DoorbellTransport`, because the protocol already there would have lied
+
+`RealtimeTransport` has been declared in `Transport.swift` since Phase 1 with zero conformers, and
+conforming `SupabaseTransport` to it would have been the tidier-looking move. It promises `subscribe`,
+and nothing on the Apple side intends to write one: the Watch, `tfive` and the App Intent are the
+*writing* half of realtime and never the listening half. A conformer whose `subscribe` returned a
+stub would have type-checked, read as complete to anybody grepping for conformances, and been false.
+
+So `DoorbellTransport` is one method wide — `func ring(_ id: String, _ payload: JSONObject) async` —
+and `RealtimeTransport` keeps its no-conformer comment, now saying so out loud. The cost is a second
+protocol in a file that already had one, which is the smaller ugliness.
+
+`ring` cannot throw. The write already reached the server; a bell that did not ring costs somebody
+else's screen a poll interval and takes nothing away from what was stored, so a caller has nothing to
+decide and `push()` has no new failure to map.
+
+**How to apply:** when an existing protocol covers half of what you need, ask whether you will really
+implement the other half. A protocol whose conformer stubs a method is worse than a new protocol
+narrow enough to be true, because the stub is invisible at every call site.
+
+### The ring is awaited, where `sync.js`'s is deliberately not
+
+`sync.js:331` is `try { me.channel.send(...) } catch {}` — fire and forget, which is right for a page
+that stays alive. The Swift callers are not pages. `tfive add` is a process that writes once and
+returns, and an App Intent is a process iOS may suspend the moment it answers; an unawaited task in
+either is a request that dies before the socket is written.
+
+So `ringDoorbell()` is awaited inside `push()`. It costs one round trip on a write and nothing at all
+at idle. It also means a slow broadcast endpoint slows a write — accepted, because the alternative is
+a fix that works on the web's lifetime model and silently does not work on any of the three clients
+it was written for.
+
+**How to apply:** fire-and-forget is a property of the *host*, not of the call. The same line is
+correct in a long-lived page and a no-op in a CLI.
+
+### The fix went into the writer, and `POLL_LIVE_MS` did not move
+
+The measurement said the phone was slow, and the cheap reading of that is "poll more often". Rejected,
+on three numbers:
+
+* shortening `POLL_LIVE_MS` costs 4× the polls at idle **forever, on every device**, including every
+  web device that has no Watch and no Mac and will never receive a Swift write;
+* it does nothing for a backgrounded page. Measured 20/20 "never" in 600 s of virtual time at *either*
+  interval, because `schedulePoll`'s `visible()` gate is upstream of the timer — no interval reaches
+  a hidden page. What rescues one is the `visibilitychange` or `focus` that comes with looking at it
+  (`wake()` → `subscribe()` → `pull()`), so a person sees a fresh list when they look and never
+  before, which is the design and not a bug;
+* the writer's fix costs **zero requests at idle** and one 138-byte body per successful write.
+
+A database-side broadcast — a trigger, or a `put_list_v4` beside the frozen RPC — is parked. It would
+mean turning on a realtime feature the project does not configure at all, on a schema whose entire
+security story is that the table is unreachable except through three `SECURITY DEFINER` functions.
+
+**How to apply:** when a latency number points at a poller, check whether it is really pointing at the
+writer. Making the reader work harder taxes every device; making the writer speak taxes the one that
+had something to say.
+
+### The 29-byte poll could not have moved, and here is why that is checkable
+
+`realsync4.js` and `apple/tools/interop.mjs` both weigh the unchanged poll and both assert it stays
+under 60 bytes; the number this project has defended across three phases is 29. A doorbell is a POST
+to `/realtime/v1/api/broadcast`; a poll is a POST to `/rest/v1/rpc/get_list_v3` with `p_rev`, answered
+by the migration's `jsonb_build_object`. Different service, different function, and `rawGet` — the
+method both suites weigh — is untouched. The doc comment on `rawGet` now says so, so the next person
+reading the two together does not have to re-derive it.
+
+The doorbell body has its own pinned number instead: 137 bytes at a one-digit revision, 138 at two,
+asserted in `SyncTests` against the exact string `JSON.stringify` produces for the object
+`sync.js:121` builds. `SupabaseTransport.doorbellBody` exists as a separate `static` for exactly that
+reason — a cost you can weigh without a network is a cost that stays weighed.
+
+### The status code is written down, because the web's never was
+
+`sync.js`'s REST fallback ends in `.catch(() => {})`. Nothing in the repo has ever exercised it, and
+because the answer was thrown away, nobody could have said whether that endpoint had ever replied to
+this project in its life. It does: **HTTP 202**, with `{ apikey, Content-Type }` and no
+`Authorization: Bearer`, and 202 with the bearer header too.
+
+The Swift version logs the status behind `#if DEBUG`. What it logs is the status and the body length
+and nothing else — not the id, which is a channel name derived from a link — and a failure logs the
+`URLError` code rather than the error object, because an error object printed whole carries its
+failing URL.
+
+**How to apply:** `.catch(() => {})` on a request is not error handling, it is deleting the only
+evidence that the request exists. One line that records the answer is the difference between a
+mechanism and a hope.
+
+### The median was not the finding
+
+The checkpoint recorded medians of 54 s (realtime connected) and 32 s (not connected). Three runs of
+`tools/polld.js` on this machine gave 132 s and 16 s, and 144 s and 12 s on a second seed. None of the
+three is wrong and none of them is the result: ten draws from a uniform distribution have a sampling
+error of tens of seconds, and the median is the statistic most exposed to it.
+
+What reproduces exactly, every time, is the shape. The latency of a write nobody rang the bell for is
+uniform on (0, the poll period], so it is bounded by the period, averages half of it, and the ratio
+between the two foreground conditions is `POLL_LIVE_MS / POLL_MS` — arithmetic, not a sample. The
+maxima land where they must: 238 s against a 240 s period, 60 s against 60. "A phone whose realtime
+is working is four times slower to see a wrist tap than one whose realtime is dead" survives all
+three runs; "54 seconds" survives none of them.
+
+**How to apply:** report the distribution and the mechanism that produces it. A median quoted from ten
+samples of a wide distribution is a number the next run will take away from you.
+
+### A harness that reported nothing, and looked like it had reported something
+
+Between the before run and the after run the static server died. `polld.js` answered with a clean
+table — "never, 0/0" in every condition, zero page errors, exit 0 — which is very nearly what the bug
+being measured looks like when the harness *works*. Every trial had thrown `ERR_CONNECTION_REFUSED`.
+
+This is Phase 3's `-TFAddSelfTest` lesson arriving from a new direction: the failure mode of a check
+that does not run is silence, and silence looks like a pass. The fix is to make the two states print
+differently and never alike — a thrown trial is counted and marked `x`, a condition with no measured
+trials prints `NOT MEASURED` rather than `never, 0/0`, and the run exits 1 naming the likely cause.
+
+**How to apply:** any harness that can report "nothing happened" as a *result* must be unable to report
+"nothing ran" the same way. If the two render alike, the harness will one day tell you the answer you
+were hoping for and be describing its own absence.
+
+### What the local transport proves, and what it cannot
+
+`tools/polld.js` runs against `?transport=local` with `page.clock.install`, so it models the app's
+timer arithmetic **exactly** — `POLL_MS`, `POLL_LIVE_MS`, `setLive`, the `visible()` gate, the phase of
+a sawtooth — and the network **not at all**. There are no round trips in it, no radio wake, no
+`WKWebView` suspend and resume.
+
+So the "after" it can show is not a network measurement. It is the `doorbell` condition: a writer that
+rings `list:<lookupId>` the way `sync.js:331` does, and a subscribed page that pulls on it — 0.1 s in
+all ten trials, which is the harness's finest slice and contains the local transport's simulated 15 ms
+lag. It proves the arrival path (a broadcast reaching a live page turns into a pull immediately) and
+says nothing about what a real socket costs to carry it. `apple/tools/interop.mjs` step 5b is where
+that is asserted against the real backend, and whether the win survives a real suspend/resume cycle is
+on the plan's list of things only a wrist can answer.
+
+The write in the harness is done the way `SupabaseTransport.put` does it — import the app's own
+`crypto.js`, decrypt the `tf/v2/localserver/<lookupId>` row, add a line, re-seal, write it back at
+`rev + 1`. A `BroadcastChannel.postMessage` would have been three lines and would have simulated away
+the exact bug.
+
+**How to apply:** a harness for a missing notification must not be allowed to send the notification.
+Write the state the way the real writer writes it, and let the reader find out however it finds out.
+
+### What was left alone
+
+* **`announceGone` has no Swift mirror.** `sync.js` broadcasts `{ rev: 0, from, gone: true }` after a
+  rotate, and nothing on the Apple side rotates a link. `removeRemote()` could ring the same bell and
+  does not; other devices find out on their next poll, exactly as they did before this round. Adding
+  it later is one call in one place and no contract change.
+* **`MemoryTransport` is untouched and does not conform**, so every test in the package is still
+  offline with no flag to set and no stub to remember. The three behavioural tests use a
+  `DoorbellRecorder` that wraps it. Deliberate: the moment the shared test double can broadcast, a
+  test can reach the network by forgetting something.
+* **`SyncEngine` still has no timer.** The caller drives, which is what a CLI, a background refresh
+  and a widget all want, and `pollDelay(live:)` still only *says* what the web would wait.
+

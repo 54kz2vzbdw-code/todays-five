@@ -316,7 +316,7 @@ two hours, with no backend and no creates.
 
 ---
 
-## §5. This ships as a build of 1.12, not as 1.12 b202
+## §5. This ships as a build of 1.12, not as 1.12 b212
 
 Decided mid-round, and it changes the release step more than it looks like it should.
 
@@ -344,7 +344,7 @@ So the release step is four build homes — `version.js`, `sw.js`, `whatsnew.jso
 `sw.js`'s `CACHE` is `VERSION + "-b" + BUILD`, so the deploy still lands on the next open exactly as
 §6 describes.
 
-**The narrative tags.** Tracks A, B and D wrote `1.12 b202` into about thirty code comments — the repo's
+**The narrative tags.** Tracks A, B and D wrote `1.12 b212` into about thirty code comments — the repo's
 habit of tagging a change with the release it landed in. Those resolve to **`1.12 b<N>`** at
 stamping, which is unambiguous against what shipped as 1.12 build 158 and matches the unit that is
 actually incrementing.
@@ -409,3 +409,178 @@ Written here in advance so the results cannot quietly absorb them:
 - whether 180 particles hold 60 fps on real watch silicon;
 - whether the doorbell's latency win survives a real WKWebView suspend/resume cycle;
 - whether bundled fonts survive App Store review.
+
+---
+
+## Results
+
+### The suites
+
+| | |
+| --- | --- |
+| Node | **136 tests** — model 28, theme 33, crypto 10, sync 14, sound 12, features 29, compat 9 |
+| `swift test` | **130 tests in 10 suites**, 8.3 s (116 before the round) |
+| `tools/e2e4.js` | **169 passed, 0 failed** at 1440×900 and 390×844, with zero page errors, zero CSP violations and zero third-party requests |
+| builds | iOS Simulator and watchOS Simulator, `BUILD SUCCEEDED`, **zero warnings** in either |
+| the Watch | `-TFFontSelfTest` **98/98**, `-TFConfettiSelfTest` **108/108**, `-TFWatchSelfTest` and `-TFAddSelfTest` green |
+
+### §1 — the accent is the kit's again
+
+Only three kits ever carried `#A86014`, so this was a three-kit change and fifteen kits are
+byte-identical before and after. The `cssText()` diff over all eighteen confirms it: two kits moved.
+
+| | accent on `--ink` | on `--ink-3` |
+| --- | --- | --- |
+| **terminal** `#A86014` → `#4AF07A` | 4.12 → **13.29** | 3.48 → **11.22** |
+| **paper** `#A86014` → `#C8321F` | 4.33 → **4.79** | 3.48 → **3.85** |
+| **dark** — unchanged, and that is the decision | 4.12 | 3.48 |
+
+`finalize()` returns all six reverted hexes unchanged — verified by running its own `fix3` nudge on
+each rather than assuming — so this is a restoration, not a re-derivation, and the hexes people knew
+before 1.11 are the hexes that ship.
+
+**The mark did not move.** `BRAND_ACCENT`, `BRAND_COLOURWAYS`, `BRAND`, `brandTiles()`, `brandDark()`
+and `icons/mark.svg` are all untouched, and `tools/mark.mjs --trace` confirms the drawing is the one
+that shipped.
+
+**Every kit is now measured against its own grounds**, printed on every run, and the `ORIGINAL`
+exemption exempts light and pink from *nudging* rather than from being *measured*: light's accent
+clears by 0.0016 and pink's accent text by 0.0069, asserted rather than assumed.
+
+### §2 — the kit table in the core
+
+18 kits and 13 pairs into `test/fixtures/kits.json`; **16** into `Kits.generated.swift`, the Secret
+pair into no binary at all and a compiled assertion saying so. The drift test evaluates **live
+`theme.js`** in a `JSContext` and compares — which is what caught the fixture going stale at
+integration the moment Track A's palette met Track B's table, exactly the failure a snapshot alone
+would have shipped.
+
+The type: **33 static faces, 1.3 MB**, converted from the repo's own woff2 latin subsets and
+instanced to the weights `theme.js` records. The family names are read back out of the produced
+files, never from `theme.js`, because ten of the twenty-two CSS names resolve to Helvetica on Apple
+platforms — silently.
+
+### §3 — the Watch
+
+Kit-driven accent, ground and type; a Day/Night picker behind the long press on the count, stored in
+the App Group and **verified to persist across a cold launch**; the confetti as a `Canvas` in a
+`TimelineView(.animation)`, `fx.js` port for port at **222 particles holding ~52 fps**; and all
+**eighteen** kits screenshotted.
+
+**Paper's cream ground, measured rather than assumed:** mean linear drive at γ 2.2, same layout to
+the pixel, 416×496 native — dark **0.0285**, cream **0.7868**, a ratio of **27.5–27.6×** across four
+channel weightings. It is **not a battery number**: no panel calibration, no static panel/SoC floor,
+no duty cycle. And the system clock over Paper's cream measures **1.12:1**, which no API can change.
+
+**The complication takes the kit's type and can never take its accent.** Observed, not merely read:
+rendering the views under `.accented` and under `fullColor` came back **byte-identical**, which
+proves SwiftUI passes the colours through untouched and the flattening is the widget host's at
+composite time. There is no app-side compensation, so none was attempted.
+
+### §4 — the papercut
+
+Confirmed, and the mechanism is worse than "the Watch does not ring the bell": `sync.js:331` is the
+only line in the system that broadcasts, `SyncEngine.push()` is that block with the line absent, and
+`put_list_v3` does not broadcast either. So joining the realtime channel moved the poll from 60 s to
+240 s and nobody rang the bell it assumed.
+
+**The median was not the finding.** Three runs of the same condition gave 54 s, 132 s and 144 s.
+What reproduces is the shape — the wait is uniform on (0, the poll period], bounded by it and
+averaging half of it — so the number to quote is the **4× ratio** between realtime-connected and
+realtime-dead, and the backgrounded answer, which is **never, 10/10**, because `schedulePoll`'s
+`visible()` gate sits upstream of the interval.
+
+The fix is in the writer, not the poller: a narrow `DoorbellTransport` on `SupabaseTransport` and the
+mirror of `sync.js:331` in `SyncEngine.push()`, so the Watch, the Mac CLI and the App Intent all get
+it at once. **138 bytes per successful write, zero at idle**, and the 29-byte unchanged poll does not
+move.
+
+### What was pulled from this build
+
+**`derive()`'s `--ink-3` fix**, onto `derive-ink3-next`. It is right and measured, but it is the only
+change in the round that reaches another person's screen without any action of theirs — saved theme
+codes live in the encrypted document — and it should be attributable to one commit rather than to a
+round that also moved Paper, Terminal, the type and the sync path.
+
+Measured against realistic codes rather than synthetic ones, which moved the risk a long way down:
+the builder's own **Surprise me over 2,000 themes moved 0**, and the four real-shaped `T2:` codes in
+the repo moved 0. The ~47 % figure came from uniform-random hex, which is the wrong denominator.
+
+And the plain answer to whether the contract would have caught it: **no.** `COMPATIBILITY.md` never
+mentions theme codes or what one renders to — §5 pins the shape of `tf/v2/themecss`, §3 passes the
+`themes` collection through untouched. That is transport and shape; rendering is neither.
+
+### The live run — one list created, one deleted
+
+Against the real Supabase project, with `tfive` on one side and the **deployed** site on the other,
+which is exactly the shape this fix ships into: the new Swift rings the bell, the page that hears it
+is the one already in the world.
+
+| | |
+| --- | --- |
+| `tfive new` | created one list on the real backend |
+| the deployed site | opened it, asked whose list it was once, answered — then **`status=synced`, `live=true`** |
+| `tfive add` | the put returned in **0.52 s** |
+| the line on the page | **0.63 s** after the write began — against **240 s** before, under identical conditions |
+| the unchanged poll | **29 bytes** (`{"rev": 2, "unchanged": true}`) against 593 for the document; the envelope is 565 stored, v3 A256GCM, `z=deflate-raw` |
+| page errors | 0 |
+| cleanup | deleted, and a read afterwards says *gone* |
+
+`live=true` is asserted **before** the write on purpose: a page that never joined the channel cannot
+observe a broadcast at all, so without it the check would have had no witness and would have passed
+on a poll instead.
+
+**The create budget, honestly.** Three lists were created in total and all three are confirmed gone.
+Only the third produced the numbers above; the first two were spent on a harness that could not
+launch a browser — `playwright` resolved through `createRequire` rather than an ESM import, and the
+system Chrome channel rather than the missing headless shell — and then on the "whose list is this?"
+dialog, which a bare private link raises and which blocks the list until it is answered.
+`apple/tools/interop.mjs` already knew that and this script did not. Two creates for harness
+mistakes is two more than it should have cost.
+
+---
+
+## What a person using this app sees change tomorrow, without touching anything
+
+This is a live app other people use, so the risk statement is its own section rather than a line in
+a summary.
+
+**Almost everyone sees nothing at all.** Fifteen of the eighteen kits are byte-identical before and
+after — the `cssText()` diff over the whole table moves exactly two of them. If a person's Day and
+Night slots are anything other than Paper or Terminal, their app looks precisely as it did.
+
+**If a slot is Paper or Terminal, the accent changes**, and only the accent: the strike through a
+finished line, the fill in a checked box, the progress bar, the count and the confetti. Paper goes
+from amber `#A86014` to its own red `#C8321F`; Terminal from the same amber to its own phosphor
+green `#4AF07A`. **The grounds and the text do not move**, so the app is the same colour it was
+except for the things the accent draws — and on Terminal in particular the check stops being the one
+foreign object on a green-on-black screen. Contrast improves in both cases, sharply on Terminal.
+
+**If a slot is Light**, one token moves that nobody is likely to see: `--danger`, `#B8402A` →
+`#B13924`, at most 7/255 on any channel, on delete confirmations and the Share warning. It exists to
+take that token from 4.12:1 to 4.51:1 on the panel surface it sits on, which is a floor it has been
+under since v1.
+
+**One frame, once per device.** A returning device paints its cached `tf/v2/themecss` before any
+module loads, so the first frame after the update shows the *old* accent and the next shows the new
+one. On Paper and Terminal only; nothing else in the cached CSS moved, so the ground and the status
+bar are unaffected.
+
+**Nobody is told anything**, because the what's-new toast keys on the version string and the version
+is still 1.12. That is deliberate: this is a build, and "your theme's accent is your theme's again"
+is not an announcement.
+
+**Nothing crosses between people.** Theme is a per-device preference in `meta.device`, never in the
+document, so a shared list carries no theme and one person's slots cannot move another's. **No
+document, key, link, RPC or registry shape changed in this round** — the merge fixtures, the frozen-v3
+compatibility replay and the pinned crypto vectors are all untouched and green, so a device on an
+older build and a device on this one hold exactly the same conversation they held yesterday.
+
+**And the one thing that would have crossed between people was pulled.** `derive()`'s floor fix
+changes what a *saved* theme code renders to, and saved codes do live in the encrypted document — so
+a `T2:` code on a shared list would have rendered differently on someone else's phone, in the
+morning, with no action of theirs. It ships alone, afterwards, so that if anyone says their list
+looks different there is one commit to point at.
+
+**What genuinely improves without anyone asking:** a line crossed off on a Watch, in Shortcuts, from
+Siri or from `tfive` now reaches an open phone in **under a second** instead of up to four minutes.

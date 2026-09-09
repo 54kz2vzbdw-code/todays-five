@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-base="dark" data-build="202">
+<html lang="en" data-base="dark" data-build="212" data-tokens-rev="1ptwfkh">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -17,7 +17,7 @@
   <meta property="og:image:alt" content="Today's Five: a short list in big type, one line crossed off">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-d+qpzy/Yz/FCuXi+YbFGubF3Mi0prOKgvzWo450e7z8='; style-src 'self' 'sha256-42Imb/mjd8hy2doal5liLjDuoMQlFgVDzsZs7I3nxbI='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://xyfjxdbwhysbaltcwvcx.supabase.co wss://xyfjxdbwhysbaltcwvcx.supabase.co; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qsJZKnL4d03c+n6v9plo8VA7MFCddfN+1V29dJZf1pw='; style-src 'self' 'sha256-42Imb/mjd8hy2doal5liLjDuoMQlFgVDzsZs7I3nxbI='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://xyfjxdbwhysbaltcwvcx.supabase.co wss://xyfjxdbwhysbaltcwvcx.supabase.co; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
   <meta name="theme-color" content="#070A08">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -54,6 +54,13 @@
     try {
       css = localStorage.getItem("tf/v2/themecss");
       meta = JSON.parse(localStorage.getItem("tf/v2/meta") || "{}") || {};
+      /* The cache is a computed value, so it is usable only if it was computed from THIS palette.
+         tf/v2/themerev is theme.js's stamp over every kit's tokens, written in the same breath as the
+         CSS; data-tokens-rev is what this build expects. A missing stamp is an older build's cache and
+         is stale by definition. On a mismatch the inline default tokens paint for the one frame until
+         theme.js applies the real theme — a flash of the default rather than a frame of a palette that
+         no longer exists. */
+      if (localStorage.getItem("tf/v2/themerev") !== document.documentElement.getAttribute("data-tokens-rev")) css = null;
     } catch (e) {}
     /* 1.11: the default pair's two faces, started early. Without this they are not discovered until
        styles.css has downloaded and parsed and the first text needs them; this starts them alongside

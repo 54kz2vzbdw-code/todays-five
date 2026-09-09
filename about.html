@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-base="dark">
+<html lang="en" data-base="dark" data-tokens-rev="1ptwfkh">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -16,7 +16,7 @@
   <meta property="og:image:alt" content="Today's Five: a short list in big type, one line crossed off">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-QTscGs0BUxGAh12afKI4KnPv42l7EyMlfWQNvnha/ww='; style-src 'self' 'sha256-42Imb/mjd8hy2doal5liLjDuoMQlFgVDzsZs7I3nxbI='; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-fB4H4dbLvW5k+iUF9UzSHTbZ/QTZqz1Xhzks1eI5RWU='; style-src 'self' 'sha256-42Imb/mjd8hy2doal5liLjDuoMQlFgVDzsZs7I3nxbI='; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
   <meta name="theme-color" content="#070A08">
   <link rel="icon" href="icons/icon-192.png">
   <style id="theme-vars">:root{--ink:#070A08;--ink-2:#0E140F;--ink-3:#152017;--text:#F7F2E8;--muted:#A8A49C;--dim:#8F8C84;--done:#8F8C84;--muted-2:#A8A49C;--dim-2:#8F8C84;--accent:#A86014;--accent-hi:#D29663;--accent-deep:#6F3B00;--accent-text:#BF7530;--danger:#DC5E59;--hair:rgba(247,242,232,0.1);--hair-hi:rgba(247,242,232,0.3);--hair-solid:#5A5F5C;--glow:radial-gradient(125% 78% at 50% 34%, rgba(168,96,20,0.1), rgba(168,96,20,0) 62%);--strike-shadow:0 0 10px rgba(168,96,20,0.38);--box-done-bg:#A86014;--strike-bg:#A86014;--strike-size:auto;--strike-anim:none;--finale-style:normal;--font-task:"Lato","Helvetica Neue",Helvetica,Arial,sans-serif;--font-ui:"PT Sans","Helvetica Neue",Helvetica,Arial,sans-serif;--task-w:900;--task-ls:-.025em;--task-lh:1.14;color-scheme:dark}</style>
@@ -25,7 +25,12 @@
      read from whatsnew.json once the page has loaded. */
   (function () {
     var css = null;
-    try { css = localStorage.getItem("tf/v2/themecss"); } catch (e) {}
+    /* Only a cache computed from THIS palette is usable — see index.html's boot script and theme.js's
+       PALETTE_REV. A missing stamp is an older build's cache and is stale by definition. */
+    try {
+      css = localStorage.getItem("tf/v2/themecss");
+      if (localStorage.getItem("tf/v2/themerev") !== document.documentElement.getAttribute("data-tokens-rev")) css = null;
+    } catch (e) {}
     var style = document.getElementById("theme-vars");
     if (css && css.indexOf(":root{") === 0 && style && style.sheet) {
       try { while (style.sheet.cssRules.length) style.sheet.deleteRule(0); style.sheet.insertRule(css, 0); } catch (e) {}
@@ -103,6 +108,10 @@
 
   <h2>Limits</h2>
   <p>This is a small free service. Each list is capped at 96 KB encrypted (a year of daily history fits many times over), the service holds a few thousand lists in total, and a single network address can only create a handful of lists per hour. Hit a limit and the app says so and keeps working on your device.</p>
+
+  <h2>Typefaces</h2>
+  <p>The themes set text in 22 families from Google Fonts: Archivo, Baloo&nbsp;2, Cormorant Garamond, DM Sans, DM Serif Display, Fraunces, Fredoka, IBM Plex Mono, IBM Plex Sans, JetBrains Mono, Josefin Sans, Karla, Lato, Lora, Manrope, Nunito Sans, Outfit, Playfair Display, PT Sans, Quicksand, Source Serif&nbsp;4 and Space Grotesk. Every one is licensed under the <a href="https://openfontlicense.org">SIL Open Font License 1.1</a>, which is what allows them to be bundled with an app rather than fetched from someone else's server.</p>
+  <p>Each family's copyright line, its reserved font name where it declares one, and the full licence text are in <a href="fonts/OFL.txt">fonts/OFL.txt</a>. The Apple app carries the same notice beside the same faces inside its own bundle.</p>
 
   <h2 id="whats-new">What's new</h2>
   <ul class="log" id="log"><li>The changelog lives in <code>whatsnew.json</code>.</li></ul>

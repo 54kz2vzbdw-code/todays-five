@@ -1,0 +1,294 @@
+Today's Five - font licences
+============================
+
+Today's Five sets text in 22 typeface families. Every one of them comes from
+Google Fonts and every one is licensed under the SIL Open Font License,
+Version 1.1. This file is the notice the licence asks to travel with them: the
+copyright statement for each family, its Reserved Font Name where it declares
+one, and the full text of the licence, once, at the end.
+
+None of the files shipped here is an original release. Each is the latin
+subset that Google Fonts serves, which is already a subset of the designer's
+release with most of its name records stripped - the licence description (name
+ID 13) and the trademark record (name ID 7) are gone from all 33 faces before
+this project ever downloaded them, which is why this file exists. The copies
+in the Apple app bundle are converted from woff2 to TrueType, and where the
+source is a variable font they are instanced to a single static weight and
+renamed with that weight. Under OFL 1.1 all of that makes them Modified
+Versions - "by changing formats", in the licence's own words. They are
+redistributed under this same licence and no other, and none of them is sold
+on its own.
+
+The web build carries these families as fonts/*.woff2 (27 files); the Apple
+app bundles the same faces as TTF (33 files).
+
+Each copyright statement below is quoted from that family's OFL.txt in
+google/fonts (github.com/google/fonts, ofl/<slug>/OFL.txt), which is the
+upstream of record. Where the copyright baked into the shipped binaries' own
+name table (name ID 0) says something different, both are given and labelled.
+
+
+The families
+------------
+
+Archivo
+  Copyright 2020 The Archivo Project Authors
+  (https://github.com/Omnibus-Type/Archivo)
+  No Reserved Font Name.
+
+Baloo 2
+  Copyright 2019 The Baloo 2 Project Authors
+  (https://github.com/EkType/Baloo2)
+  No Reserved Font Name.
+
+Cormorant Garamond
+  Copyright 2015 the Cormorant Project Authors
+  (github.com/CatharsisFonts/Cormorant)
+  No Reserved Font Name.
+
+DM Sans
+  Copyright 2014 The DM Sans Project Authors
+  (https://github.com/googlefonts/dm-fonts)
+  No Reserved Font Name.
+
+DM Serif Display
+  Copyright 2014-2018 Adobe (http://www.adobe.com/), with Reserved Font Name
+  'Source'. All Rights Reserved. Source is a trademark of Adobe in the United
+  States and/or other countries. Copyright 2019 Google LLC.
+  Reserved Font Name: "Source".
+  The shipped files say (name ID 0): Copyright 2014 - 2017 Adobe Systems
+  Incorporated (http://www.adobe.com/), with Reserved Font Name 'Source'.
+  Copyright 2019 Google LLC.
+
+Fraunces
+  Copyright 2018 The Fraunces Project Authors
+  (https://github.com/undercasetype/Fraunces)
+  No Reserved Font Name.
+  The shipped files say (name ID 0): Copyright 2020 The Fraunces Project
+  Authors (github.com/undercasetype/Fraunces)
+
+Fredoka
+  Copyright 2016 The Fredoka Project Authors
+  (https://github.com/hafontia/Fredoka-One)
+  No Reserved Font Name.
+
+IBM Plex Mono
+  Copyright © 2017 IBM Corp. with Reserved Font Name "Plex"
+  Reserved Font Name: "Plex".
+  The shipped files say (name ID 0): Copyright 2017 IBM Corp. All rights
+  reserved.
+
+IBM Plex Sans
+  Copyright © 2017 IBM Corp. with Reserved Font Name "Plex"
+  Reserved Font Name: "Plex".
+  The shipped files say (name ID 0): Copyright 2019 IBM Corp. All rights
+  reserved.
+
+JetBrains Mono
+  Copyright 2020 The JetBrains Mono Project Authors
+  (https://github.com/JetBrains/JetBrainsMono)
+  No Reserved Font Name.
+
+Josefin Sans
+  Copyright 2010 The Josefin Sans Project Authors
+  (https://github.com/ThomasJockin/JosefinSansFont-master), with Reserved Font
+  Name "Josefin Sans".
+  Reserved Font Name: "Josefin Sans".
+
+Karla
+  Copyright 2019 The Karla Project Authors
+  (https://github.com/googlefonts/karla)
+  No Reserved Font Name.
+
+Lato
+  Copyright (c) 2010-2014 by tyPoland Lukasz Dziedzic (team@latofonts.com)
+  with Reserved Font Name "Lato"
+  Reserved Font Name: "Lato".
+  The shipped files say (name ID 0): Copyright (c) 2010-2011 by tyPoland
+  Lukasz Dziedzic with Reserved Font Name "Lato". Licensed under the SIL Open
+  Font License, Version 1.1.
+
+Lora
+  Copyright 2011 The Lora Project Authors
+  (https://github.com/cyrealtype/Lora-Cyrillic), with Reserved Font Name
+  "Lora".
+  Reserved Font Name: "Lora".
+
+Manrope
+  Copyright 2018 The Manrope Project Authors
+  (https://github.com/sharanda/manrope)
+  No Reserved Font Name.
+  The shipped files say (name ID 0): Copyright 2019 The Manrope Project
+  Authors (https://github.com/sharanda/manrope)
+
+Nunito Sans
+  Copyright 2016 The Nunito Sans Project Authors
+  (https://github.com/Fonthausen/NunitoSans)
+  No Reserved Font Name.
+
+Outfit
+  Copyright 2021 The Outfit Project Authors
+  (https://github.com/Outfitio/Outfit-Fonts)
+  No Reserved Font Name.
+
+Playfair Display
+  Copyright 2017 The Playfair Display Project Authors
+  (https://github.com/clauseggers/Playfair-Display), with Reserved Font Name
+  "Playfair Display"
+  Reserved Font Name: "Playfair Display".
+
+PT Sans
+  Copyright (c) 2010, ParaType Ltd. (http://www.paratype.com/public), with
+  Reserved Font Names "PT Sans" and "ParaType".
+  Reserved Font Names: "PT Sans", "ParaType".
+  The shipped files say (name ID 0): Copyright © 2009 ParaType Ltd. All rights
+  reserved.
+  Note: the two shipped PT Sans faces carry neither the OFL statement nor the
+  Reserved Font Names in their name table, and their licence URL (name ID 14)
+  points at http://scripts.sil.org/OFL_web, which no longer resolves. The
+  ParaType copyright and reserved names above, and the licence text below, are
+  the notice for those two files.
+
+Quicksand
+  Copyright 2011 The Quicksand Project Authors
+  (https://github.com/andrew-paglinawan/QuicksandFamily), with Reserved Font
+  Name “Quicksand”.
+  Reserved Font Name: "Quicksand".
+  The shipped files say (name ID 0): Copyright 2019 The Quicksand Project
+  Authors (https://github.com/andrew-paglinawan/QuicksandFamily.git), with
+  Reserved Font Name "Quicksand"
+
+Source Serif 4
+  Copyright 2014 The Source Serif 4 Project Authors
+  (https://github.com/adobe-fonts/source-serif)
+  Reserved Font Name: "Source" - declared in the shipped files' own copyright
+  notice. The current upstream OFL.txt for this family declares none.
+  The shipped files say (name ID 0): © 2014 - 2021 Adobe Systems Incorporated
+  (http://www.adobe.com/), with Reserved Font Name ‘Source’.
+
+Space Grotesk
+  Copyright 2020 The Space Grotesk Project Authors
+  (https://github.com/floriankarsten/space-grotesk)
+  No Reserved Font Name.
+
+
+A note on the reserved names
+----------------------------
+
+Nine of the 22 families declare a Reserved Font Name that the shipped faces
+still carry in their primary font name: IBM Plex Mono, IBM Plex Sans, Josefin
+Sans, Lato, Lora, Playfair Display, PT Sans, Quicksand and Source Serif 4 - 15
+of the 33 faces in the app bundle. OFL 1.1 asks a Modified Version not to do
+that. These files inherit the names from the subsets Google Fonts itself
+serves under those same names, and the format conversion done here did not
+change them. The point is recorded rather than argued: if a copyright holder
+asks, the names change and this file changes with them.
+
+DM Serif Display declares the reserved name "Source" and does not use it in
+its font name. Source Serif 4 is the reverse: its current upstream OFL.txt
+declares no reserved name at all, while the 4.004 binaries shipped here still
+assert "with Reserved Font Name 'Source'" in their copyright notice. It is
+counted above on the strength of what the shipped bytes say.
+
+
+SIL Open Font License, Version 1.1
+----------------------------------
+
+Reproduced verbatim from https://openfontlicense.org (documents/OFL.txt), with
+the licence's example copyright header omitted - the real copyright statements
+are the ones above. From the rule below onward this is byte-for-byte the text
+carried in all 22 upstream OFL.txt files, once line endings and trailing
+whitespace are normalised; the three intro lines differ between them only in
+line wrapping and in whether the FAQ URL is written http or https.
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+https://openfontlicense.org
+
+
+-----------------------------------------------------------
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+-----------------------------------------------------------
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The
+fonts, including any derivative works, can be bundled, embedded,
+redistributed and/or sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply
+to any document created using the fonts or their derivatives.
+
+DEFINITIONS
+"Font Software" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may
+include source files, build scripts and documentation.
+
+"Reserved Font Name" refers to any names specified as such after the
+copyright statement(s).
+
+"Original Version" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+"Modified Version" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+"Author" refers to any designer, engineer, programmer, technical
+writer or other person who contributed to the Font Software.
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of the Font Software, to use, study, copy, merge, embed, modify,
+redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the following conditions:
+
+1) Neither the Font Software nor any of its individual components,
+in Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy
+contains the above copyright notice and this license. These can be
+included either as stand-alone text files, human-readable headers or
+in the appropriate machine-readable metadata fields within text or
+binary files as long as those fields can be easily viewed by the user.
+
+3) No Modified Version of the Font Software may use the Reserved Font
+Name(s) unless explicit written permission is granted by the corresponding
+Copyright Holder. This restriction only applies to the primary font name as
+presented to the users.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
+Software shall not be used to promote, endorse or advertise any
+Modified Version, except to acknowledge the contribution(s) of the
+Copyright Holder(s) and the Author(s) or with their explicit written
+permission.
+
+5) The Font Software, modified or unmodified, in part or in whole,
+must be distributed entirely under this license, and must not be
+distributed under any other license. The requirement for fonts to
+remain under this license does not apply to any document created
+using the Font Software.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are
+not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
+DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
+OTHER DEALINGS IN THE FONT SOFTWARE.

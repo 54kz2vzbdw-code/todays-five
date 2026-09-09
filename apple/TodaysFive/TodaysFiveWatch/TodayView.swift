@@ -518,8 +518,16 @@ struct ConfettiView: View {
     /// date twice. Cheap: 222 particles over at most 240 steps is arithmetic, and it is the same
     /// arithmetic `fx.js` does per frame anyway — the difference is only that this one starts over.
     /// The seed is the run and the size, so a resize is a new field rather than a jump.
+    ///
+    /// The multiply is done in `UInt64` on purpose, and it is not a matter of style. **A watchOS
+    /// device is `arm64_32`: 64-bit registers, 32-bit pointers — and therefore a 32-bit `Int`.**
+    /// Knuth's golden-ratio constant 2_654_435_761 (`0x9E3779B1`) is larger than `Int32.max`, so
+    /// `run &* 2_654_435_761` does not compile there at all. Every simulator in this project is
+    /// 64-bit and took it happily; the only thing that ever said otherwise was `xcodebuild archive`
+    /// for a real device.
     private func seed(_ size: CGSize) -> UInt64 {
-        UInt64(bitPattern: Int64(run &* 2_654_435_761)) ^ UInt64(size.width.bitPattern &+ size.height.bitPattern)
+        let mixed = UInt64(bitPattern: Int64(run)) &* 0x9E37_79B1
+        return mixed ^ UInt64(size.width.bitPattern &+ size.height.bitPattern)
     }
 
     private func path(_ p: ConfettiParticle) -> Path {

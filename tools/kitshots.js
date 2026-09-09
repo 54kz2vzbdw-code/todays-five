@@ -3,7 +3,7 @@
 //
 // tools/shots.js walks the surfaces in one theme; this walks the themes on one surface. It exists because the only
 // question an accent change actually raises — does this colour still read as this product on this ground — is not a
-// number, and nothing in the repo could answer it before 1.12 b202. The accent is what the shot is of, so the list is left
+// number, and nothing in the repo could answer it before 1.12 b212. The accent is what the shot is of, so the list is left
 // with one line struck and one line not: the strike, the filled box, the progress bar and the count all carry it.
 //
 // Secret kits are included (they are two more kits, and this runs on a developer's machine off a local transport);

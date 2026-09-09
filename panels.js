@@ -3,7 +3,7 @@
 // repeat picker, templates, move-to-list, delete everywhere with its undo, export/import, the ? reference, and How it
 // works. Loaded by app.js on first use; `A` is its api.
 let A = null, $ = null, $$ = null, M = null, T = null, C = null;
-const PANELS_BUILD = 202; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
+const PANELS_BUILD = 212; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
 export const RELOADING = "Today's Five updated: reloading";
 /** The shell, as sw.js lists it (minus the icons): refreshed past the HTTP cache before the one reload the guard below may do. */
 const SHELL_FILES = ["./", "./index.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js", "./sound.js", "./packs.js", "./packs-secret.js", "./secretfx.js", "./secretfx.css", "./fx.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json", "./manifest.webmanifest", "./vendor/realtime.js"];
@@ -84,7 +84,7 @@ export function openBuilder() {
   paintCustom();
   A.showPanel("p-builder");
 }
-/** The saved themes this device may see. 1.12 b202: a themes record's `code` is a theme code like any
+/** The saved themes this device may see. 1.12 b212: a themes record's `code` is a theme code like any
     other and normalize() carries "T1:curated:superpink" through untouched, so Yours was a third door
     into the Secret group — and the only one of the three with no guard on it, where the group in
     renderSwatches() and the import field in wireTheme() both have one. Unreachable through this UI,
@@ -101,7 +101,7 @@ function savedPartner(saved, rec) {
 function renderSwatches() {
   const cur = A.slotCode(pickSlot);
   const secret = !!dev().secret;
-  const saved = savedThemes();   // 1.12 b202: already gated — see savedThemes()
+  const saved = savedThemes();   // 1.12 b212: already gated — see savedThemes()
   const mk = (t, rec) => {
     const b = document.createElement("button"); b.type = "button"; b.className = "swatch";
     b.style.background = t.colors.ink; b.style.color = t.colors.text; b.style.borderColor = t.colors.hairSolid;

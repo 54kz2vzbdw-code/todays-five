@@ -217,7 +217,7 @@ struct KitFixtureTests {
         // 3:1 is WCAG's floor for a colour that is not text (the strike, the filled box, the mark);
         // 4.5:1 is the floor for text. `--ink` is the page and `--ink-3` the elevated surface a
         // panel or a hovered star sits on, and a colour that only clears one of them disappears on
-        // the other. Until 1.12 b202 the accent was one brand hex against four fixed grounds; now each
+        // the other. Until 1.12 b212 the accent was one brand hex against four fixed grounds; now each
         // kit answers for itself, which is what this test is.
         let kits = Self.fixtureKits
         #expect(kits.count == 18, "all 18, secret included")

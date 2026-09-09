@@ -537,3 +537,50 @@ system Chrome channel rather than the missing headless shell — and then on the
 dialog, which a bare private link raises and which blocks the list until it is answered.
 `apple/tools/interop.mjs` already knew that and this script did not. Two creates for harness
 mistakes is two more than it should have cost.
+
+---
+
+## What a person using this app sees change tomorrow, without touching anything
+
+This is a live app other people use, so the risk statement is its own section rather than a line in
+a summary.
+
+**Almost everyone sees nothing at all.** Fifteen of the eighteen kits are byte-identical before and
+after — the `cssText()` diff over the whole table moves exactly two of them. If a person's Day and
+Night slots are anything other than Paper or Terminal, their app looks precisely as it did.
+
+**If a slot is Paper or Terminal, the accent changes**, and only the accent: the strike through a
+finished line, the fill in a checked box, the progress bar, the count and the confetti. Paper goes
+from amber `#A86014` to its own red `#C8321F`; Terminal from the same amber to its own phosphor
+green `#4AF07A`. **The grounds and the text do not move**, so the app is the same colour it was
+except for the things the accent draws — and on Terminal in particular the check stops being the one
+foreign object on a green-on-black screen. Contrast improves in both cases, sharply on Terminal.
+
+**If a slot is Light**, one token moves that nobody is likely to see: `--danger`, `#B8402A` →
+`#B13924`, at most 7/255 on any channel, on delete confirmations and the Share warning. It exists to
+take that token from 4.12:1 to 4.51:1 on the panel surface it sits on, which is a floor it has been
+under since v1.
+
+**One frame, once per device.** A returning device paints its cached `tf/v2/themecss` before any
+module loads, so the first frame after the update shows the *old* accent and the next shows the new
+one. On Paper and Terminal only; nothing else in the cached CSS moved, so the ground and the status
+bar are unaffected.
+
+**Nobody is told anything**, because the what's-new toast keys on the version string and the version
+is still 1.12. That is deliberate: this is a build, and "your theme's accent is your theme's again"
+is not an announcement.
+
+**Nothing crosses between people.** Theme is a per-device preference in `meta.device`, never in the
+document, so a shared list carries no theme and one person's slots cannot move another's. **No
+document, key, link, RPC or registry shape changed in this round** — the merge fixtures, the frozen-v3
+compatibility replay and the pinned crypto vectors are all untouched and green, so a device on an
+older build and a device on this one hold exactly the same conversation they held yesterday.
+
+**And the one thing that would have crossed between people was pulled.** `derive()`'s floor fix
+changes what a *saved* theme code renders to, and saved codes do live in the encrypted document — so
+a `T2:` code on a shared list would have rendered differently on someone else's phone, in the
+morning, with no action of theirs. It ships alone, afterwards, so that if anyone says their list
+looks different there is one commit to point at.
+
+**What genuinely improves without anyone asking:** a line crossed off on a Watch, in Shortcuts, from
+Siri or from `tfive` now reaches an open phone in **under a second** instead of up to four minutes.

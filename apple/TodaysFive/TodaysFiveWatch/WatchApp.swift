@@ -145,7 +145,6 @@ struct RootView: View {
     @Environment(\.isLuminanceReduced) private var dimmed
 
     @State private var showPicker = false
-    @State private var showAdd = false
     /// The long press on the count. Start again and the theme, behind one hold.
     @State private var showActions = false
     /// The volley on screen, and which one. `run` is `store.finaleTick`, so a second finale is a
@@ -159,9 +158,6 @@ struct RootView: View {
     /// `-TFShow diagnostics`: the trace screen, for a simulator screenshot of it. On a wrist it is
     /// reached the way a person reaches it — the long press, then the last row.
     @State private var showDiagnosticsDirect = false
-    /// Whether the sheet was opened by the Add complication rather than by the + on Today. Cleared
-    /// when the sheet closes, so the next + is an ordinary +.
-    @State private var openedFromFace = false
     @State private var page = Page.today
 
     enum Page: Hashable { case today, oneThing }
@@ -209,14 +205,13 @@ struct RootView: View {
                 .sheet(isPresented: $showDiagnosticsDirect) {
                     NavigationStack { DiagnosticsView() }.watchGround(theme)
                 }
-                .sheet(isPresented: $showAdd) {
-                    // Track C's. This file never opens it any other way and never looks inside it.
-                    // `openedFromFace` is the difference between the person tapping + on Today (where
-                    // the + is the thing they aimed at) and the Add complication or Double Tap, which
-                    // already said "add a line" — those land straight on dictation.
-                    AddFlowView(beginImmediately: openedFromFace).watchGround(theme)
-                }
-                .onChange(of: showAdd) { _, open in if !open { openedFromFace = false } }
+                // **There is no add sheet any more, and that is Phase 5 §1.** Phase 3 raised one here
+                // and presented a WatchKit text-input controller from inside it, during its entry
+                // animation when the Add complication was the opener — a modal across a presentation,
+                // which is what a wrist saw as a microphone lighting up and a screen not changing. The
+                // add control is now a row in Today's own list (`TodayView.addRow` → `AddFlowView`),
+                // and this file no longer has an opinion about it.
+                //
                 // The volley sits over everything and takes no taps. It is added on the finale's
                 // **edge** and removed by the field itself when the last piece has gone — a
                 // `TimelineView` has no "stop" of its own, and one left mounted holds a redraw
@@ -250,9 +245,19 @@ struct RootView: View {
             #endif
         }
         .onOpenURL { url in
-            // `todaysfive://add`, from the Add complication. `WKApplicationDelegate` has no
-            // url-opening callback at all — the whole optional list was read — so this is the door.
-            if store.wantsAddFlow(url) { openedFromFace = true; showAdd = true }
+            // `todaysfive://add`, from the Add complication. `WKApplicationDelegate` has no url-opening
+            // callback at all — the whole optional list was read — so this is the door.
+            //
+            // **It no longer presents anything, and that is deliberate.** Phase 3 opened the add sheet
+            // here and let its `.task` fire the dictation controller during the sheet's entry
+            // animation, which is the textbook swallowed presentation. And a `TextFieldLink` cannot be
+            // triggered from code at all — it is a button a person presses. So the honest design is the
+            // cheap one: make sure Today is the page in front, where the add control is the row under
+            // the count, already on screen. **From the face the cost is one tap**, and the trace says
+            // whether the app was opened this way so that tap can be told apart from a cold launch.
+            guard store.wantsAddFlow(url) else { return }
+            WatchDiagnostics.shared.record(WatchDiagnostics.Code.addFromFace)
+            page = .today
         }
     }
 
@@ -264,12 +269,18 @@ struct RootView: View {
             AlwaysOnTodayView()
         } else {
             TabView(selection: $page) {
-                TodayView(showAdd: $showAdd, showActions: $showActions).tag(Page.today)
+                TodayView(showActions: $showActions).tag(Page.today)
                 OneThingView().tag(Page.oneThing)
             }
             .tabViewStyle(.verticalPage)
-            // Double Tap should activate the `+` rather than scroll the page under it: the primary
-            // action is the point of the gesture here, and `.scrollInputBehavior` is the arbiter.
+            // Double Tap should activate the add control rather than scroll the page under it: the
+            // primary action is the point of the gesture here, and `.scrollInputBehavior` is the
+            // arbiter. It configures the scroll views *within* the view it is applied to, which is
+            // still the right place — the add control is a row in Today's `List`, inside this `TabView`,
+            // and since Phase 5 there is exactly **one** `.handGestureShortcut(.primaryAction)` on
+            // screen for it to point at. (`AddFlowView.addControl` writes it twice, but they are the
+            // two arms of one `switch` and only ever one of them is in the view tree.) Phase 3 had two
+            // live at once — Today's `+` and the button inside the sheet it opened.
             .scrollInputBehavior(.disabled, for: .handGestureShortcut)
             .onChange(of: page) { _, _ in
                 // Entering or leaving one-thing mode clears the shuffle pick eagerly, as the web does.

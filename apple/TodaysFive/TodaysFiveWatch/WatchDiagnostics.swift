@@ -115,6 +115,13 @@ final class WatchDiagnostics: @unchecked Sendable {
         static let addUndone: StaticString = "add.undone"
         /// The App Intent ran — Siri, the Action button, or Shortcuts.
         static let intentRan: StaticString = "intent.ran"
+        /// The Add complication's `todaysfive://add` arrived: the app was opened *asking* for an add.
+        ///
+        /// Since Phase 5 that opens the app on Today and presents nothing — a `TextFieldLink` cannot be
+        /// triggered from code, and a presentation fired during a transition is what a wrist saw fail.
+        /// So this row followed by an `add.tap` is the face path working, and this row **alone** is the
+        /// person arriving and not finding the control.
+        static let addFromFace: StaticString = "add.face"
 
         // the picker — §2
         /// The title was pressed. **Its absence after a press is the finding.**

@@ -1,62 +1,219 @@
-// WatchDictation.swift — the closest watchOS gets to hold-to-talk.
+// WatchDictation.swift — the WatchKit input controller, demoted to a seam, and the gate that stops a
+// presentation from taking the screen with it.
 //
-// What was wanted: press, speak, and the line lands. What watchOS allows is narrower, and the
-// narrowing was measured rather than assumed (DECISIONS-apple.md, "No API forces dictation"):
+// ============================================================================================
+// WHAT PHASE 5 LEARNED FROM A WRIST, AND WHAT IT CHANGED HERE
+// ============================================================================================
 //
-//   * `Speech.framework` is **not in the watchOS SDK**, so our own transcription cannot be built;
-//   * `TextFieldLink` has four initializers and none of them takes an input mode;
-//   * `WKTextInputMode` has three cases — `.plain`, `.allowEmoji`, `.allowAnimatedEmoji` — and none
-//     of them means "dictation only". The mode widens which characters may come back; it never picks
-//     the input method.
+// Phase 3 made this file the add path: the `+` presented WatchKit's
+// `presentTextInputController(withSuggestions:allowedInputMode:completion:)` from
+// `WKApplication.shared().visibleInterfaceController`, and `TextFieldLink` was the fallback for the
+// case that controller was ever nil. On a real Apple Watch running 1.12 (216) from TestFlight that
+// produced: a haptic, **the system microphone indicator lighting up**, and *no change to the screen at
+// all* — no input UI, no line, no error, no confirmation.
 //
-// The one lever that exists is WatchKit's `presentTextInputController(withSuggestions:allowedInputMode:
-// completion:)`, where a **nil** suggestions array skips the chooser screen and goes straight to an
-// input method. In both the watchOS 11.1 and the watchOS 26.5 simulator that landed on the QWERTY
-// keyboard — and **a simulator has no microphone**, so that is not an answer to the question that was
-// asked. What a real wrist shows is written down as unresolved.
+// Two things about that were settled by reading rather than by the wrist, and they are why this file
+// was demoted rather than debugged. `Config/WatchInfo.plist` declares **no
+// `NSMicrophoneUsageDescription`** and the watch target links no audio framework, so the microphone
+// that lit was **the system's own**, inside its own dictation, reached through the controller this file
+// presents. So "an App Intent or a Siri path took the microphone" is not what happened. What is left is
+// "it was presented and renders nowhere a person can see it" or "it was presented and the completion
+// never came" — and **in both of those the controller is the thing that failed**.
 //
-// **Reaching WatchKit from SwiftUI.** `WKApplication.shared().visibleInterfaceController` is public
-// API and was measured non-nil from a pure SwiftUI `WindowGroup`. It is still an optional, so there
-// is a sanctioned fallback: `TextFieldLink`, which `AddFlowView` shows instead when this returns nil.
-// `-TFAddSelfTest` prints which of the two a wrist would take, because that is the one thing about
-// this file a simulator *can* settle.
+// So Phase 5 reverses the precedence. `TextFieldLink` — the SwiftUI-sanctioned input on watchOS, whose
+// screen the system presents from the app's own presentation hierarchy rather than across it — is the
+// path, and this is the seam behind it. `AddFlowView` chooses between them on `preferred`.
 //
-// **Isolation.** The whole enum is on the main actor: `WKInterfaceController` is UIKit-shaped and
-// its completion comes back on the main thread, and the only caller is a SwiftUI view.
+// **What neither can do, still.** Nothing on watchOS forces dictation. `TextFieldLink` has four
+// initializers and none takes an input mode; `WKTextInputMode` has three cases and none of them means
+// "dictation only" — the mode widens which characters may come back, it never picks the method; and
+// `Speech.framework` is not in the watchOS SDK at all, so our own transcription cannot be built. That
+// was true in Phase 3 and it is true now. What changed is the *other* half of the requirement: a
+// `TextFieldLink`'s screen cannot be invisible, and invisible is the failure being fixed.
+//
+// **What reversing the precedence widens, and it is worth knowing.** `allowedInputMode: .plain` kept
+// emoji and stickers out of a line. The system's own input screen has no such restriction, so a line
+// from a wrist may now carry an emoji — which is exactly what a line typed into the web already may
+// carry, so the Watch stops being the one client with a narrower alphabet than the document. The one
+// rule that widening touches is the 200-UTF-16-code-unit cut, which `Model.addToToday` performs as
+// `String.prototype.slice(0, 200)` does, lone surrogate and all; `TodayOpsTests` pins it.
+//
+// ============================================================================================
+// THE GATE, WHICH IS THE ACTUAL BUG FIX IN THIS FILE
+// ============================================================================================
+//
+// `AddFlowView.begin()` used to set `working = true` before presenting and clear it only *inside* the
+// completion handler. A completion that never arrives therefore disabled the add control for the life
+// of the screen, with no sentence and no way back. One failure cost the feature rather than one
+// attempt — and that is a defect independent of whichever hypothesis about the presentation is true.
+//
+// `Gate` answers exactly once, whichever happens first: the controller's completion, or a deadline.
+// A late completion after a timeout is dropped rather than delivered, because the caller has already
+// released its control and told the person so, and a line appearing two minutes after a sentence
+// saying nothing was added is worse than either.
+//
+// **No epoch reaches an `Int` here.** Phase 4's integration found a watchOS device is `arm64_32` and
+// its `Int` is 32 bits; the gate reports an *elapsed* millisecond count, clamped to a day, which is
+// the same fence `WatchDiagnostics` puts on its offsets.
+//
+// **Isolation.** The whole enum and the gate are on the main actor: `WKInterfaceController` is
+// UIKit-shaped, its completion comes back on the main thread, and the only caller is a SwiftUI view.
 import Foundation
 import WatchKit
+
+/// Which control the add row *is*. Not "which input method" — no API on watchOS chooses that.
+enum AddInput: String {
+    /// `TextFieldLink`: the system presents its own input screen from the app's own hierarchy. The
+    /// default since Phase 5, and where dictation lives on a real device.
+    case fieldLink
+    /// WatchKit's `presentTextInputController`. What Phase 3 shipped and what a wrist could not see.
+    case watchKit
+}
 
 @MainActor
 enum WatchDictation {
 
-    /// Whether the WatchKit path is available at all. `AddFlowView` chooses the control on this, and
-    /// the self-test prints it, because it decides which of the two input paths a wrist takes.
+    /// Every way a request for input can end. One value, delivered once.
+    enum Answer: Equatable {
+        /// Something came back. May be empty — a confirmation that said nothing is not the same as
+        /// backing out, and the core is the one place that decides an empty line is not a line.
+        case text(String)
+        /// The person backed out. Answered with silence.
+        case cancelled
+        /// `visibleInterfaceController` was nil, so there was nothing to present from.
+        case noPresenter
+        /// Nothing came back inside the window. `afterMs` is how long was waited.
+        case timedOut(afterMs: Int)
+    }
+
+    // ---------------------------------------------------------------- which control
+
+    /// Where a future round flips the default without a rebuild. `tf/app/watch/…`, the clients' prefix
+    /// (COMPATIBILITY.md §5), in the App Group so an App Intent could read it too.
+    static let inputKey = "tf/app/watch/addinput"
+
+    /// The control `AddFlowView` offers.
+    ///
+    /// **Said plainly, because it is the opposite of what it looks like:** nothing in the shipping app
+    /// writes `inputKey`, so on a Release wrist this is always `.fieldLink` and the WatchKit path is
+    /// **not reachable by any tap**. It is a seam, not a fallback — a fallback nobody can reach is how
+    /// Phase 3 shipped a path nobody could see, and calling this one a fallback would repeat that.
+    /// What it buys is a one-line flip (`prefer(.watchKit)`, or `-TFAddWatchKit` in Debug) if the wrist
+    /// reports that `TextFieldLink`'s screen will not offer the microphone.
+    static var preferred: AddInput {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-TFAddWatchKit") { return .watchKit }
+        #endif
+        if let raw = UserDefaults(suiteName: AddService.appGroup)?.string(forKey: inputKey),
+           let stored = AddInput(rawValue: raw) {
+            return stored
+        }
+        return .fieldLink
+    }
+
+    static func prefer(_ input: AddInput) {
+        UserDefaults(suiteName: AddService.appGroup)?.set(input.rawValue, forKey: inputKey)
+    }
+
+    /// Whether the WatchKit path has anything to present from.
+    ///
+    /// **It says a branch would be taken and it has never said more than that.** Phase 3's results
+    /// quoted `visibleInterfaceController=present` as evidence the feature worked; it was measured on a
+    /// machine with no microphone and it was evidence of nothing except that the `guard` below would
+    /// pass. It is still printed by `-TFAddSelfTest`, now with that sentence beside it.
     static var canPresentController: Bool {
         WKApplication.shared().visibleInterfaceController != nil
     }
 
-    /// Present the input controller and hand back what came out of it.
+    // ---------------------------------------------------------------- presenting
+
+    /// Long enough that a person typing a line on a watch keyboard is never cut off, short enough that
+    /// a presentation which never comes back costs one attempt instead of the session. It is a fence
+    /// around a failure, not a pace for a feature.
+    static let defaultTimeout: Duration = .seconds(60)
+
+    /// Present the WatchKit input controller and answer exactly once.
     ///
     /// `withSuggestions: nil` is the whole trick: an empty array shows the chooser screen with no
-    /// suggestions on it, and nil skips the chooser. `allowedInputMode: .plain` keeps emoji and
-    /// stickers out of a to-do line — a line is text, and the document's `text` field is text.
+    /// suggestions on it, and nil skips the chooser. `allowedInputMode: .plain` is kept for this path
+    /// only — it is what Phase 3 chose, and changing it here would change the one thing this seam
+    /// exists to reproduce.
     ///
-    /// nil means the person **backed out**, and backing out is answered with silence. A confirmation
-    /// that said nothing is a different thing — it comes back as an empty string, goes to the core
-    /// like any other text, and gets the core's own answer, which is that an empty line is not a
-    /// line. The two are worth telling apart: one is "never mind" and the other is "it didn't hear
-    /// me", and only the second deserves a sentence.
-    static func present(_ completion: @escaping @MainActor (String?) -> Void) {
+    /// The three trace rows this writes are the three hypotheses, separated: no `add.present` is "it
+    /// was never reached", `add.nopresenter` is "there was nothing to present from", and `add.presented`
+    /// with no `add.heard` after it is "it went up and nothing came back".
+    static func present(timeout: Duration = defaultTimeout,
+                        _ completion: @escaping @MainActor (Answer) -> Void) {
+        let gate = Gate(timeout: timeout, completion)
         guard let controller = WKApplication.shared().visibleInterfaceController else {
-            completion(nil)
+            WatchDiagnostics.shared.record(WatchDiagnostics.Code.addNoPresenter)
+            gate.finish(.noPresenter)
             return
         }
+        WatchDiagnostics.shared.record(WatchDiagnostics.Code.addPresent, 1)
         controller.presentTextInputController(withSuggestions: nil, allowedInputMode: .plain) { results in
             // The array is `[Any]?` because the same API returns `NSData` for an animated emoji.
-            // `.plain` cannot produce one, so the first `String` is the answer — a defensive read of
-            // a loosely typed callback rather than a case we expect.
-            guard let results else { return completion(nil) }
-            completion(results.compactMap { $0 as? String }.first ?? "")
+            // `.plain` cannot produce one, so the first `String` is the answer — a defensive read of a
+            // loosely typed callback rather than a case we expect.
+            guard let results else { return gate.finish(.cancelled) }
+            gate.finish(.text(results.compactMap { $0 as? String }.first ?? ""))
+        }
+        // After the call, because "returned without throwing" is not knowable before it. If a
+        // completion ever fired synchronously this row would land after `add.heard`, which is worth
+        // knowing when reading a trace and is not worth a flag to prevent.
+        WatchDiagnostics.shared.record(WatchDiagnostics.Code.addPresented)
+        gate.arm()
+    }
+
+    // ---------------------------------------------------------------- the gate
+
+    /// One answer, once, from whichever of two sources arrives first.
+    ///
+    /// It is a class because the controller's completion and the deadline are two references to the
+    /// same decision, and it is `internal` because `-TFAddSelfTest` exercises it: the unlatching is the
+    /// one half of this file a simulator can settle, and it settles it **without presenting anything**,
+    /// which matters because a watch simulator cannot be tapped and a keyboard raised on one would sit
+    /// there until the process died.
+    @MainActor
+    final class Gate {
+        private var completion: (@MainActor (Answer) -> Void)?
+        private let timeout: Duration
+        private let started = Date()
+        private var deadline: Task<Void, Never>?
+
+        init(timeout: Duration, _ completion: @escaping @MainActor (Answer) -> Void) {
+            self.timeout = timeout
+            self.completion = completion
+        }
+
+        /// How long the gate has been open, in milliseconds, clamped to a day so a 32-bit `Int` is
+        /// never walked anywhere interesting.
+        var elapsedMs: Int {
+            let raw = Int((Date().timeIntervalSince(started) * 1000).rounded())
+            return min(max(raw, 0), 86_400_000)
+        }
+
+        /// True once an answer has been delivered. What makes a late completion a no-op.
+        var isClosed: Bool { completion == nil }
+
+        /// Start the clock. Called after the presentation, so a presentation that threw never arms a
+        /// timer nobody is waiting on.
+        func arm() {
+            guard !isClosed, deadline == nil else { return }
+            deadline = Task { [timeout] in
+                try? await Task.sleep(for: timeout)
+                guard !Task.isCancelled else { return }
+                finish(.timedOut(afterMs: elapsedMs))
+            }
+        }
+
+        /// Deliver, once. Every later call is dropped.
+        func finish(_ answer: Answer) {
+            guard let hand = completion else { return }
+            completion = nil
+            deadline?.cancel()
+            deadline = nil
+            hand(answer)
         }
     }
 }

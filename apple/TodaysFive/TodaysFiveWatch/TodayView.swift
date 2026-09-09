@@ -18,7 +18,6 @@ import TodaysFiveCore
 struct TodayView: View {
     @Environment(WatchStore.self) private var store
     @Environment(\.watchTheme) private var theme
-    @Binding var showAdd: Bool
     /// The long press on the count. It used to *be* Start again; it now opens the two things a hold
     /// on the count can mean — see `CountActionsView`.
     @Binding var showActions: Bool
@@ -27,10 +26,10 @@ struct TodayView: View {
         List {
             countRow
             if store.finaleShowing { finaleCard }
+            addRow
             ForEach(store.rows) { row in
                 TodayRow(row: row)
             }
-            addRow
         }
         .listStyle(.carousel)
         .scrollContentBackground(.hidden)
@@ -106,26 +105,28 @@ struct TodayView: View {
         .transition(.opacity)
     }
 
-    // ---------------------------------------------------------------- the +
+    // ---------------------------------------------------------------- the add
 
-    /// The `+`. Track C's `AddFlowView` is what opens; this view never adds anything itself.
-    /// `.handGestureShortcut(.primaryAction)` makes a Double Tap start it while the app is open.
+    /// **The add control itself, not a button that opens one.** This is Phase 5's §1 in one line.
+    ///
+    /// Phase 3's version was a `Button` that set `showAdd = true`, which raised a `.sheet` carrying
+    /// `AddFlowView`, which held a *second* button, and only that one asked for input: three taps for
+    /// "tap, speak, done", and a WatchKit modal presented from underneath a SwiftUI sheet. On a real
+    /// wrist the microphone lit and the screen never changed. `AddFlowView` is now this row, the control
+    /// on it is the input, and there is no sheet left to be the suspect.
+    ///
+    /// **It sits above the lines, which is a change worth naming.** On the web the `+` is at the end of
+    /// the list. Here it is directly under the count, because the complication's `todaysfive://add` now
+    /// opens the app on Today rather than presenting anything — so the control has to be *on screen at
+    /// launch* for the face path to cost one tap, and a row below five lines on a 46 mm screen is a
+    /// crown turn away. The cost is that the Watch's vertical order no longer matches the web's.
+    ///
+    /// `canAdd` is the only thing the flow needs from the model: the view deliberately holds no
+    /// reference to `WatchStore`, because the same add has to work from an App Intent that ran while the
+    /// app was closed.
     private var addRow: some View {
-        Button {
-            showAdd = true
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "plus.circle.fill").foregroundStyle(theme.accent)
-                Text("Add")
-                    .font(theme.ui(15, .body))
-                    .foregroundStyle(theme.text)
-                Spacer(minLength: 0)
-            }
-        }
-        .buttonStyle(.plain)
-        .disabled(!store.canEdit)
-        .handGestureShortcut(.primaryAction, isEnabled: store.canEdit)
-        .listRowBackground(rowPlatter)
+        AddFlowView(canAdd: store.canEdit)
+            .listRowBackground(rowPlatter)
     }
 }
 

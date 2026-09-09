@@ -39,6 +39,12 @@ struct TodaysFiveWatchApp: App {
                 .environment(theme)
                 .watchGround(theme.theme)
                 .task {
+                    // First line of the trace, in every build, so a reader of `Diagnostics` can tell
+                    // a launch that did nothing from a launch that never happened — and so the build
+                    // number is on the screen beside what it did, which is the one thing a report
+                    // from a wrist otherwise has to be asked for twice.
+                    WatchDiagnostics.shared.record(WatchDiagnostics.Code.launched,
+                                                   Int(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "") ?? 0)
                     // Before the first sync, because a silent Helvetica is a thing you want told
                     // about whether or not there is a list to render in it.
                     #if DEBUG
@@ -150,6 +156,9 @@ struct RootView: View {
     /// `-TFShow actions|theme`: open one of the two screens the long press leads to. The only way a
     /// screenshot of either exists at all — see `WatchThemeStore.applyDebugArguments`.
     @State private var showThemeDirect = false
+    /// `-TFShow diagnostics`: the trace screen, for a simulator screenshot of it. On a wrist it is
+    /// reached the way a person reaches it — the long press, then the last row.
+    @State private var showDiagnosticsDirect = false
     /// Whether the sheet was opened by the Add complication rather than by the + on Today. Cleared
     /// when the sheet closes, so the next + is an ordinary +.
     @State private var openedFromFace = false
@@ -197,6 +206,9 @@ struct RootView: View {
                 .sheet(isPresented: $showThemeDirect) {
                     NavigationStack { KitPickerView() }.watchGround(theme)
                 }
+                .sheet(isPresented: $showDiagnosticsDirect) {
+                    NavigationStack { DiagnosticsView() }.watchGround(theme)
+                }
                 .sheet(isPresented: $showAdd) {
                     // Track C's. This file never opens it any other way and never looks inside it.
                     // `openedFromFace` is the difference between the person tapping + on Today (where
@@ -232,6 +244,7 @@ struct RootView: View {
             switch RootView.debugShow {
             case "actions": showActions = true
             case "theme": showThemeDirect = true
+            case "diagnostics": showDiagnosticsDirect = true
             default: break
             }
             #endif

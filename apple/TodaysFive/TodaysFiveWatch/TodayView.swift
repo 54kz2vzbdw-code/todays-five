@@ -632,6 +632,26 @@ struct CountActionsView: View {
                 }
             }
             .listRowBackground(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(theme.ink2))
+
+            // **In every build, not only in Debug**, and that is the whole point of it. Every other
+            // instrument this project has is `#if DEBUG` behind a launch argument, so not one of them
+            // exists on the device where Phase 5's four findings were found — which is how a feature
+            // was able to look present and do nothing for a round with nothing going red.
+            // `WatchDiagnostics` has the argument; this row is the door.
+            //
+            // Last, quiet, and in the muted token rather than the accent: it is not a thing anybody
+            // needs. Nothing on that screen can carry a secret — every string there is written in this
+            // repository and everything else is a number — so a photograph of it is safe to send.
+            NavigationLink {
+                DiagnosticsView().watchGround(theme)
+            } label: {
+                Label {
+                    Text("Diagnostics").font(theme.ui(15, .body)).foregroundStyle(theme.muted)
+                } icon: {
+                    Image(systemName: "waveform.path.ecg").foregroundStyle(theme.muted)
+                }
+            }
+            .listRowBackground(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(theme.ink2))
         }
         .scrollContentBackground(.hidden)
         .background(theme.ink)

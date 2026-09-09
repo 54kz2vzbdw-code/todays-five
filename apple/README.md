@@ -370,6 +370,12 @@ Each is `#if DEBUG` only. They exist because the Watch cannot be driven by hand 
 | `-TFAddSelfTest` | the add path with a canned string, with an empty one, against a view-only list, with no list selected, and Undo — and whether `visibleInterfaceController` is present, which is what decides the dictation path a wrist will take |
 | `-TFFontSelfTest` | every one of the 13 font pairs: is each family on the device, does `CTFontCreateWithName` hand back the face it was asked for rather than Helvetica, and do the pair's two ui weights actually render differently. **A wrong font name renders Helvetica with no log and no error**, so this is the only thing that turns a silent fallback into a failure. Prints a tally |
 | `-TFKit <id>` | render one kit for this launch, whichever slot is stored. `simctl` cannot tap a watch simulator, so this is the only way a screenshot of a given kit exists |
+| `-TFConfettiSelfTest` | steps the finale's particle field off-screen for every kit: does the whole volley arrive and arrive staggered, is more than half of it still on screen at its most spread out, does the field **end** (it does, at frame 147), and are the shapes the ones the kit asks for. Prints how each kit's `shapes` was read — see below |
+| `-TFFaceProbe` | the two things about the complication that could not be settled by reading a doc comment: whether the extension can reach the app's fonts without a copy of them, and what `WidgetRenderingMode.accented` does to a custom accent (nothing, in SwiftUI — it is the widget host's) |
+| `-TFThemeSet <slot>:<id>` | calls the theme picker's own two store methods from a launch argument, so persistence across a cold launch can be verified at all |
+| `-TFShow actions\|theme` | opens one of the two screens behind the long press on the count. The only way a screenshot of either exists |
+| `-TFFinale` | crosses the demo list off and **leaves** it crossed off, so there is a finale to photograph |
+| `-TFFinaleHold <seconds>` | freezes the confetti at one instant instead of running it. A screenshot of an animation is otherwise a coin toss, and the field is deterministic, so every kit is photographed at the same moment of the same volley |
 
 ```bash
 xcrun simctl launch --console-pty "$WATCH" com.pricebrannen.todaysfive.watchkitapp -TFWatchDemo -TFWatchSelfTest
@@ -430,10 +436,29 @@ is a decision**: theme is a per-device preference in this app and a Watch is a d
 nobody can fix — the system clock stays white on a light kit's ground, and a light ground drives the
 panel about 17× harder than a dark one.
 
+It is chosen on the Watch, behind the **long press on the count**, which also still holds Start
+again. Two slots and a hand switch: `theme.js`'s shape without `system` (watchOS has no light
+appearance, so a mode that followed it would pin every Watch to its night slot forever) and without
+`schedule` (two time pickers and a `holdAuto` on a screen two inches across). `DECISIONS-phase4-C2.md`
+has that argument, along with the finale's confetti — `fx.js` port for port, with every *length*
+scaled by `height / 800` and no *time* touched, because `WatchHaptics` is already playing the
+volley's rhythm and the two must not drift apart.
+
+**The complication follows the kit's type and cannot follow its accent.** That is not an omission:
+`WidgetRenderingMode.accented` replaces a view's colour with the wearer's face palette and
+`WidgetAccentedRenderingMode.fullColor` "only applies to iOS". Observed rather than trusted — see
+`-TFFaceProbe`. The kit reaches the face through `WatchSnapshot`'s `kit`, `pair` and `face`, added
+with `v` left at 1, and the extension reads the app's fonts out of its own containing bundle rather
+than carrying a second copy of them.
+
 ## What the Watch does not have
 
-No Everything, no sections, no History, no rules, no templates, no settings screen. Those need a
-phone-sized screen. The Watch shows Today, crosses lines off, and takes a new one.
+No Everything, no sections, no History, no rules, no templates. Those need a phone-sized screen. The
+Watch shows Today, crosses lines off, and takes a new one.
+
+There is **one** settings screen and it is the theme, behind the long press on the count. Phase 3
+said there would be none; the exception is for the one item on that list which is a property of the
+*device* rather than of a list or an account, and a wrist is a device.
 
 ## Privacy, on a smaller screen
 

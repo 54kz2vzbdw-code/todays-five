@@ -58,6 +58,24 @@ struct WatchTheme: Equatable, Sendable {
 
     let kit: Kit
 
+    /// Whether the white system clock needs a patch behind it on this kit's ground — see `ClockScrim`.
+    ///
+    /// Computed from the kit's own `ink` rather than switched on `base == .light`, so a kit whose
+    /// ground moves gets the right answer without anybody remembering this exists. The threshold is
+    /// WCAG's 3:1 for non-text: on the eighteen kits today it selects exactly the seven light-base
+    /// ones (1.06–1.12) and none of the eleven dark ones (16.0–19.9), so there is a factor of fourteen
+    /// between the two groups and nothing sits near the line.
+    var needsClockScrim: Bool { Self.contrastWithWhite(kit.colors.ink) < 3 }
+
+    /// WCAG relative luminance against white, from a `#RRGGBB`. A hex this cannot read answers 21,
+    /// the maximum — an unreadable ground is not a reason to paint a patch nobody asked for.
+    static func contrastWithWhite(_ hex: String) -> Double {
+        guard let c = Kits.rgb(hex) else { return 21 }
+        let lin = { (v: Double) in v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
+        let l = 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b)
+        return 1.05 / (l + 0.05)
+    }
+
     /// The page and the two surfaces above it. `ink` is the ground; `ink3` is the elevated one the
     /// accent's 3:1 floor is measured against, so it is what a platter or a filled chip is drawn on.
     let ink: Color, ink2: Color, ink3: Color
@@ -618,6 +636,54 @@ extension View {
             .tint(theme.accent)
             .background(theme.ink)
             .containerBackground(theme.ink, for: .navigation)
+            .overlay(alignment: .topTrailing) { ClockScrim(theme: theme) }
+    }
+}
+
+/// **The system clock is white, it is not themeable, and on a light kit's ground it disappears.**
+///
+/// Measured on the shipped screenshots: the glyph core is exactly `(255,255,255)` and the ground is
+/// exactly the kit's `ink`, so the contrast is the ratio between them. Seven kits are affected — the
+/// six open light-base ones and `birthday`, which arrives from a phone that has unlocked the Secret
+/// pair — and they are all equally bad: **Light 1.06, blush 1.07, sketch 1.08, birthday 1.08,
+/// teletype 1.09, harbor 1.10, Paper 1.12**. The round framed this as a Paper problem; Paper is in
+/// fact the *best* of the seven, and Light — the web's own partner to Dark — is the worst. The
+/// eleven dark kits sit between 16.0 and 19.9 and need nothing.
+///
+/// Two things were measured before this was written, on a standalone probe app on the watch simulator:
+///
+///   * **the app's paint reaches behind the clock** — the system time composites *above* the app's
+///     layer, so a patch in the corner is enough. Paper goes from **1.12:1 to 17.12:1**;
+///   * it has to be an **overlay**, not part of the container background. In the background it sits
+///     *under* the app's content, and a carousel row's text was measured bleeding through it.
+///
+/// The rejected alternatives, so they are not rediscovered: darkening the light kits' ground is
+/// disqualified by arithmetic rather than taste — the cream is 3× too bright for a white clock, and
+/// the first darkening step that reaches even 3:1 breaks **all five** of Paper's own fixture floors
+/// (text 15.34 → 5.45 against a floor of 7, and so on), because those tokens were computed against
+/// that ground. Dropping the light kits empties the Day slot on the wrist, since six of the eight day
+/// kits are light-base. And `._statusBarHidden(true)` genuinely does hide the clock on watchOS 26.5 —
+/// verified, zero white pixels — but it is underscored SPI on the one screen with no fallback, and it
+/// would cost somebody the time on their watch as the price of choosing Paper.
+private struct ClockScrim: View {
+    let theme: WatchTheme
+
+    var body: some View {
+        // Only where it buys something. On a dark kit the clock already reads at 16:1 or better, and
+        // a patch there would be a smudge in the corner for no reason.
+        if theme.needsClockScrim {
+            // Sized to the measured glyph box with a margin, not guessed: on the 46 mm face the time
+            // occupies pt (151,20)–(191,31), so 76 × 44 anchored at the top-trailing corner covers it
+            // with room for the 41 mm and 49 mm faces, where it sits at the same corner in fewer
+            // points. A first attempt at 62 × 26 left the digits hanging below the patch's lower edge
+            // — visible in a screenshot, which is why this is measured rather than reasoned.
+            theme.text
+                .frame(width: 76, height: 44)
+                .clipShape(.rect(bottomLeadingRadius: 22, bottomTrailingRadius: 0, topTrailingRadius: 0))
+                .ignoresSafeArea(edges: .top)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
     }
 }
 

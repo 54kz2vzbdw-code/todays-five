@@ -16,7 +16,7 @@ function test(name, fn) { fn(); passed++; console.log("ok -", name); }
 let seed = 4242;
 function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
 
-// 1.13: accent3 and danger3 join the table. Both floors were enforced against --ink here and
+// 1.12 b202: accent3 and danger3 join the table. Both floors were enforced against --ink here and
 // against --ink-3 in one 1.7 test that skipped the originals and never saw a theme you make. The
 // shared table is where a floor cannot be forgotten, so that is where the elevated ones now live —
 // light.danger had been 4.12 on --ink-3 since v1 precisely because no table held it.
@@ -64,7 +64,7 @@ test("1.11: light and pink keep v1's primary tokens exactly; Dark is recoloured 
   assert.equal(CURATED.find(t => t.id === "dark").name, "Dark", "the name a device chose does not change");
   assert.equal(CURATED.find(t => t.id === "dark").pair, "lato", "only colour moved: the font pair is v1's");
   assert.equal(CURATED.find(t => t.id === "dark").sound.engine, "knock", "and so is the sound");
-  // 1.13: light's danger moved, and it is the one v1 token that has. #B8402A was 4.12:1 on this
+  // 1.12 b202: light's danger moved, and it is the one v1 token that has. #B8402A was 4.12:1 on this
   // kit's --ink-3 — the ORIGINAL exemption is from being nudged, not from having to read on a panel.
   assert.deepEqual([l.ink, l.ink2, l.ink3, l.text, l.accent, l.accentHi, l.accentDeep, l.accentText, l.danger], ["#FAF8F4", "#F1ECE3", "#E4DED2", "#494F55", "#CB6015", "#E07B33", "#9E4A10", "#9E4A10", "#B13924"]);
   assert.deepEqual([p.ink, p.ink2, p.ink3, p.text, p.muted, p.dim, p.done, p.accent, p.accentHi, p.accentDeep, p.accentText, p.danger], ["#2E0A1C", "#421029", "#58163A", "#FFF0F6", "#F2A8C8", "#C97A9E", "#C97A9E", "#FF3D9A", "#FFD36E", "#C2185B", "#FF58A2", "#FF6B8A"]); // 1.9: accentText nudged from #FF3D9A to 4.5:1 on ink-3, the one change to Pink (proposal 29)
@@ -74,14 +74,14 @@ test("1.11: light and pink keep v1's primary tokens exactly; Dark is recoloured 
   assert.deepEqual(CURATED.find(t => t.id === "pink").confetti, ["#FF3D9A", "#FF8FBE", "#FFD36E", "#FFFFFF", "#FF6FAF", "#FFB8D9"]);
 });
 
-test("1.13: the brand constants are still the kits', the mark still carries #A86014, and Paper and Terminal carry their own accents again", () => {
+test("1.12 b202: the brand constants are still the kits', the mark still carries #A86014, and Paper and Terminal carry their own accents again", () => {
   const paper = CURATED.find(t => t.id === "paper").colors, term = CURATED.find(t => t.id === "terminal").colors, dark = curated("dark").colors;
-  // unchanged by 1.13: the brand cannot drift from the kit it grew out of
+  // unchanged by 1.12 b202: the brand cannot drift from the kit it grew out of
   assert.equal(BRAND.paper, paper.ink, "the brand's paper is Paper's --ink");
   assert.equal(BRAND.ink, paper.text, "the brand's ink is Paper's --text");
   assert.equal(BRAND.terminal, term.ink, "the brand's dark ground is Terminal's --ink");
 
-  // the mark does not move. 1.13 unpins the *UI* accent; BRAND_ACCENT, the colourways and the
+  // the mark does not move. 1.12 b202 unpins the *UI* accent; BRAND_ACCENT, the colourways and the
   // drawing they resolve to are exactly what 1.11 made them.
   assert.equal(BRAND_ACCENT, "#A86014");
   assert.equal(BRAND.accent, "#A86014", "the mark's accent does not move");
@@ -92,7 +92,7 @@ test("1.13: the brand constants are still the kits', the mark still carries #A86
   const svg = fs.readFileSync(new URL("../icons/mark.svg", import.meta.url), "utf8");
   assert.ok(!/#(?:A86014|C8321F|4AF07A)/i.test(svg), "the mark takes its two colours from brandTiles(), so no kit's hex is written into it");
 
-  // 1.13: the pin is gone. Paper and Terminal carry the accent families they had before 1.11, byte
+  // 1.12 b202: the pin is gone. Paper and Terminal carry the accent families they had before 1.11, byte
   // for byte — finalize() returns all of them unchanged, so the revert cost nothing in contrast.
   assert.deepEqual([paper.accent, paper.accentHi, paper.accentDeep, paper.accentText, paper.danger], ["#C8321F", "#E0563F", "#8E2214", "#9E2717", "#B02A1A"]);
   assert.deepEqual([term.accent, term.accentHi, term.accentDeep, term.accentText, term.danger], ["#4AF07A", "#9CFFB5", "#21A64F", "#5DF58A", "#FF6B57"]);
@@ -129,7 +129,7 @@ test("1.13: the brand constants are still the kits', the mark still carries #A86
   assert.ok(contrast(cocoa.accent, cocoa.ink) >= 3, "the dark tile's own check reads on it");
 });
 
-test("1.13: every kit measured against its OWN grounds — accent 3:1 and accent text 4.5:1 on --ink and on --ink-3, printed", () => {
+test("1.12 b202: every kit measured against its OWN grounds — accent 3:1 and accent text 4.5:1 on --ink and on --ink-3, printed", () => {
   const rows = CURATED.map(t => { const r = report(t); return { id: t.id, hex: t.colors.accent, a: r.accent, a3: r.accent3, at: r.accentText, at3: r.accentText2, d3: contrast(t.colors.danger, t.colors.ink3) }; });
   const pad = (s, n) => String(s).padStart(n);
   console.log("\n     kit         accent    a/ink  a/ink-3   aT/ink  aT/ink-3  danger/ink-3");
@@ -147,7 +147,7 @@ test("1.13: every kit measured against its OWN grounds — accent 3:1 and accent
   const light = rows.find(r => r.id === "light"), pink = rows.find(r => r.id === "pink");
   assert.ok(light.a3 > 3 && light.a3 < 3.01, "light's accent on --ink-3 clears the floor by 0.0016: " + light.a3.toFixed(4));
   assert.ok(pink.at3 > 4.5 && pink.at3 < 4.51, "Pink's accent text on --ink-3 clears it by 0.0069: " + pink.at3.toFixed(4));
-  // 1.13: danger on --ink-3 too — the re-pointing is what found light's, at 4.12 with #B8402A
+  // 1.12 b202: danger on --ink-3 too — the re-pointing is what found light's, at 4.12 with #B8402A
   for (const r of rows) assert.ok(r.d3 >= 4.5 - 1e-9, `${r.id}: danger ${r.d3.toFixed(4)} on --ink-3`);
   assert.equal(contrast("#B8402A", curated("light").colors.ink3).toFixed(4), "4.1205", "what light's danger used to measure");
   assert.equal(light.d3.toFixed(4), "4.5050", "and what #B13924 measures instead");
@@ -187,7 +187,7 @@ test("1.9: the twelve packs across the curated kits — every public pack on a k
   assert.equal(CURATED.length, 18, "fourteen public kits, two new, the Secret pair");
 });
 
-test("1.7: every curated kit's accent text and danger clear 4.5:1 and its accent 3:1 on the elevated surface too (1.13: no kit is skipped any more)", () => {
+test("1.7: every curated kit's accent text and danger clear 4.5:1 and its accent 3:1 on the elevated surface too (1.12 b202: no kit is skipped any more)", () => {
   for (const t of CURATED) {
     const c = t.colors;
     assert.ok(contrast(c.accentText, c.ink3) >= 4.5, t.id + " accentText on ink-3: " + contrast(c.accentText, c.ink3).toFixed(2));
@@ -219,8 +219,8 @@ test("custom derivation meets the floors for 2000 random accents on both bases",
   }
 });
 
-test("1.13: a theme you make guarantees its accent and its danger against --ink-3, the surface they sit on — 3,000 seeded accents per base, and the worst one printed", () => {
-  // Until 1.13, derive() nudged `accent` against --ink while every other token here was already
+test("1.12 b202: a theme you make guarantees its accent and its danger against --ink-3, the surface they sit on — 3,000 seeded accents per base, and the worst one printed", () => {
+  // Until 1.12 b202, derive() nudged `accent` against --ink while every other token here was already
   // nudged against --ink-3. The floor a saved theme code carried was therefore the wrong floor.
   // These are the same 3,000 accents per base the fix was measured on, and the whole point is that
   // the worst one is now at the floor rather than well under it.
@@ -233,7 +233,7 @@ test("1.13: a theme you make guarantees its accent and its danger against --ink-
       const r = contrast(c.accent, c.ink3);
       if (r < worst) { worst = r; worstHex = hex; }
       if (r < 3 - 1e-9) below++;
-      const d = contrast(c.danger, c.ink3);          // 1.13: derive()'s danger had the same wrong ground
+      const d = contrast(c.danger, c.ink3);          // 1.12 b202: derive()'s danger had the same wrong ground
       if (d < worstD) worstD = d;
       if (d < 4.5 - 1e-9) belowD++;
       assert.ok(contrast(c.accent, c.ink) >= 3 - 1e-9, `${hex}/${base}: --ink-3 is the harder ground, so --ink must come free`);
@@ -522,7 +522,7 @@ test("the crossfade: colours interpolate in OKLab, the rest swaps at the midpoin
   for (const t of [0.1, 0.5, 0.9]) assert.equal((cssTextBetween(a, b, t).match(/--ink:/g) || []).length, 1);
 });
 
-test("1.13: the kit fixture the Swift core and the Watch read still is theme.js", () => {
+test("1.12 b202: the kit fixture the Swift core and the Watch read still is theme.js", () => {
   const fx = JSON.parse(fs.readFileSync(new URL("./fixtures/kits.json", import.meta.url), "utf8"));
   // The mapping that turned CURATED into the fixture lives *in* the fixture, as `expr`, so the
   // generator, this test and the Swift drift test all run one definition of it rather than three

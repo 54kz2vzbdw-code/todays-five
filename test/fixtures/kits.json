@@ -150,6 +150,11 @@
       "token": "danger",
       "ground": "ink",
       "floor": 4.5
+    },
+    {
+      "token": "danger",
+      "ground": "ink3",
+      "floor": 4.5
     }
   ],
   "ratios": {
@@ -166,7 +171,8 @@
       "accentText/ink": 5.495,
       "accentText/ink3": 4.6388,
       "hairSolid/ink": 3.0552,
-      "danger/ink": 5.4817
+      "danger/ink": 5.4817,
+      "danger/ink3": 4.6276
     },
     "light": {
       "text/ink": 7.8165,
@@ -181,7 +187,8 @@
       "accentText/ink": 5.7539,
       "accentText/ink3": 4.5565,
       "hairSolid/ink": 3.0432,
-      "danger/ink": 5.6889
+      "danger/ink": 5.6889,
+      "danger/ink3": 4.505
     },
     "pink": {
       "text/ink": 16.1914,
@@ -196,7 +203,8 @@
       "accentText/ink": 6.0948,
       "accentText/ink3": 4.5069,
       "hairSolid/ink": 3.1319,
-      "danger/ink": 6.5644
+      "danger/ink": 6.5644,
+      "danger/ink3": 4.8542
     },
     "midnight": {
       "text/ink": 15.7457,
@@ -211,7 +219,8 @@
       "accentText/ink": 9.4434,
       "accentText/ink3": 7.6123,
       "hairSolid/ink": 3.1025,
-      "danger/ink": 7.3869
+      "danger/ink": 7.3869,
+      "danger/ink3": 5.9546
     },
     "forest": {
       "text/ink": 14.7497,
@@ -226,7 +235,8 @@
       "accentText/ink": 10.4354,
       "accentText/ink3": 7.9836,
       "hairSolid/ink": 3.072,
-      "danger/ink": 6.8743
+      "danger/ink": 6.8743,
+      "danger/ink3": 5.2592
     },
     "paper": {
       "text/ink": 15.3437,
@@ -241,7 +251,8 @@
       "accentText/ink": 6.8281,
       "accentText/ink3": 5.4886,
       "hairSolid/ink": 3.116,
-      "danger/ink": 5.8961
+      "danger/ink": 5.8961,
+      "danger/ink3": 4.7394
     },
     "terminal": {
       "text/ink": 18.1971,
@@ -256,7 +267,8 @@
       "accentText/ink": 14.1042,
       "accentText/ink3": 11.9065,
       "hairSolid/ink": 3.0552,
-      "danger/ink": 7.0957
+      "danger/ink": 7.0957,
+      "danger/ink3": 5.99
     },
     "sunset": {
       "text/ink": 15.3495,
@@ -271,7 +283,8 @@
       "accentText/ink": 7.567,
       "accentText/ink3": 5.491,
       "hairSolid/ink": 3.069,
-      "danger/ink": 6.2461
+      "danger/ink": 6.2461,
+      "danger/ink3": 4.5324
     },
     "dusk": {
       "text/ink": 15.5379,
@@ -286,7 +299,8 @@
       "accentText/ink": 9.132,
       "accentText/ink3": 7.2592,
       "hairSolid/ink": 3.0085,
-      "danger/ink": 7.4419
+      "danger/ink": 7.4419,
+      "danger/ink3": 5.9157
     },
     "harbor": {
       "text/ink": 11.1748,
@@ -301,7 +315,8 @@
       "accentText/ink": 5.567,
       "accentText/ink3": 4.5949,
       "hairSolid/ink": 3.0961,
-      "danger/ink": 5.6658
+      "danger/ink": 5.6658,
+      "danger/ink3": 4.6764
     },
     "ember": {
       "text/ink": 16.4944,
@@ -316,7 +331,8 @@
       "accentText/ink": 6.6264,
       "accentText/ink3": 5.581,
       "hairSolid/ink": 3.0043,
-      "danger/ink": 6.8901
+      "danger/ink": 6.8901,
+      "danger/ink3": 5.8032
     },
     "cocoa": {
       "text/ink": 13.6296,
@@ -331,7 +347,8 @@
       "accentText/ink": 8.1069,
       "accentText/ink3": 5.8965,
       "hairSolid/ink": 3.0329,
-      "danger/ink": 6.277
+      "danger/ink": 6.277,
+      "danger/ink3": 4.5656
     },
     "blush": {
       "text/ink": 14.8779,
@@ -346,7 +363,8 @@
       "accentText/ink": 6.2762,
       "accentText/ink3": 5.1077,
       "hairSolid/ink": 3.0609,
-      "danger/ink": 5.5469
+      "danger/ink": 5.5469,
+      "danger/ink3": 4.5142
     },
     "teletype": {
       "text/ink": 14.5445,
@@ -361,7 +379,8 @@
       "accentText/ink": 5.6446,
       "accentText/ink3": 4.7239,
       "hairSolid/ink": 3.083,
-      "danger/ink": 5.5284
+      "danger/ink": 5.5284,
+      "danger/ink3": 4.6266
     },
     "sketch": {
       "text/ink": 13.2353,
@@ -376,7 +395,8 @@
       "accentText/ink": 6.7041,
       "accentText/ink3": 5.3901,
       "hairSolid/ink": 3.07,
-      "danger/ink": 5.8071
+      "danger/ink": 5.8071,
+      "danger/ink3": 4.669
     },
     "arcade": {
       "text/ink": 17.4055,
@@ -391,7 +411,8 @@
       "accentText/ink": 7.9484,
       "accentText/ink3": 6.3272,
       "hairSolid/ink": 3.0033,
-      "danger/ink": 6.4638
+      "danger/ink": 6.4638,
+      "danger/ink3": 5.1455
     },
     "superpink": {
       "text/ink": 15.1795,
@@ -406,7 +427,8 @@
       "accentText/ink": 6.303,
       "accentText/ink3": 4.8558,
       "hairSolid/ink": 3.0661,
-      "danger/ink": 7.3821
+      "danger/ink": 7.3821,
+      "danger/ink3": 5.6871
     },
     "birthday": {
       "text/ink": 14.9824,
@@ -421,7 +443,8 @@
       "accentText/ink": 6.1646,
       "accentText/ink3": 5.1608,
       "hairSolid/ink": 3.0789,
-      "danger/ink": 5.4791
+      "danger/ink": 5.4791,
+      "danger/ink3": 4.5868
     }
   },
   "kits": [

@@ -57,18 +57,19 @@ const kits = CURATED.map(normalizeKit);
 const HEX_TOKENS = ["ink", "ink2", "ink3", "text", "muted", "dim", "done", "accent", "accentHi",
   "accentDeep", "accentText", "danger", "hairSolid", "muted2", "dim2", "done2"];
 
-/** The floors every kit clears **on its own grounds** — which is the point of the round: until 1.13
+/** The floors every kit clears **on its own grounds** — which is the point of the round: until 1.12 b202
     the accent was one brand hex measured against four fixed grounds, and now each kit answers for
     itself. `--ink` is the page and `--ink-3` the elevated surface (panels, filled chips, a hovered
     star), and text that clears the floor on only one of them disappears on the other. These are the
     floors finalize() actually enforces, so a failure here means theme.js moved, not that the table
     needs a new exemption.
 
-    `danger` against `--ink-3` is **not** in this table, and that is a stated gap rather than an
-    oversight: light and pink are exempt from finalize()'s nudging (ORIGINAL in theme.js), and
-    `light.danger` #B8402A measures 4.12 there. Track A of this round raises it. This generator does
-    not gate on another branch's commit; when the fix lands the number simply gets better and the
-    line can be added here in the same breath. */
+    `danger` against `--ink-3` is in this table, and it is the one floor that had to be *earned*
+    rather than assumed. Light and pink are exempt from finalize()'s nudging (ORIGINAL in theme.js),
+    and `light.danger` #B8402A measured **4.12** there — under the floor since v1, invisible because
+    report() only ever measured danger against `--ink`. Track A of this round moved it to #B13924,
+    4.5050, which is now the worst of the eighteen. So the line can be here, and a kit that regresses
+    it fails the generator rather than shipping. */
 const FLOORS = [
   ["text",       "ink",  7],
   ["muted",      "ink",  4.5],
@@ -78,11 +79,12 @@ const FLOORS = [
   ["dim2",       "ink3", 4.5],
   ["done2",      "ink3", 4.5],
   ["accent",     "ink",  3],
-  ["accent",     "ink3", 3],     // 1.7 added this to finalize(); 1.13 makes every reader check it
+  ["accent",     "ink3", 3],     // 1.7 added this to finalize(); 1.12 b202 makes every reader check it
   ["accentText", "ink",  4.5],
   ["accentText", "ink3", 4.5],
   ["hairSolid",  "ink",  3],
-  ["danger",     "ink",  4.5]
+  ["danger",     "ink",  4.5],
+  ["danger",     "ink3", 4.5]    // earned by Track A: light was 4.12 here since v1
 ];
 
 /* ---------------- refuse to write on anything less ---------------- */

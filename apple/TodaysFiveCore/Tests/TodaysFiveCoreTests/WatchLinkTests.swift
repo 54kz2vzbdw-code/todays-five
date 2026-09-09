@@ -272,7 +272,7 @@ struct WatchLinkTests {
         #expect(plan.upsert.first?.name == "First")
     }
 
-    // ---------------------------------------------------------------- the Secret kits (1.13)
+    // ---------------------------------------------------------------- the Secret kits (1.12 b202)
 
     /// The two kits as they leave theme.js — read from the fixture, because they are in no binary
     /// and this test is not about to be the place that puts them in one. A phone reads exactly this

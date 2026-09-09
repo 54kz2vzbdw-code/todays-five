@@ -209,10 +209,56 @@ final class WatchStore {
         }
     }
 
-    /// Show a different list. The picker's one job.
+    /// Show a different list. The picker's one job, and since Phase 5 three controls ask for it: the
+    /// row at the top of Today, the Lists row behind the hold on the count, and the title.
+    ///
+    /// **Two rules it did not have, and both are about a silent no.** The receiver is the authority on
+    /// what this Watch holds — its vault, not this list — and it refuses an id it does not hold by
+    /// returning; so did this method, for a selection that was already open. With three controls aimed
+    /// at it, a refusal that says nothing is indistinguishable from the bug this round was opened for,
+    /// which is a control that looks like it works. So the outcome is recorded: `picker.selected`
+    /// carries **whether the list that is now open can be edited** in `a` and **whether the switch
+    /// actually took** in `b`, and `b` of 0 is a tap that arrived and a list that did not change.
+    ///
+    /// It is recorded here rather than at the three call sites because this is the only place that can
+    /// know either answer — the hand-off below is synchronous (`receiver.select` calls `onChange`,
+    /// which is `linksChanged`, which opens the list), so by the line after it `openId` is the truth.
+    ///
+    /// **What a switch does to a pending edit: nothing, and that is not an accident.** Every local
+    /// change has already gone through `apply(local: true)`, which hands the document to the engine
+    /// and persists it inside the actor before this method can be called; `chain` awaits the *prior*
+    /// task whichever engine it belonged to, so an in-flight push finishes after the switch rather
+    /// than being dropped. What `openList` cancels is the settle — `frozenOrder`, which is the 320 ms
+    /// the view holds a row still so the strike lands on something that is not moving. That is view
+    /// state and it is deliberately not carried across: the order on the other list is the other
+    /// list's. Nothing is re-ordered by a switch either, because `rows` is `doc.todayItems`, which is
+    /// the core's own sink and not a thing this file arranges.
     func select(_ id: String) {
         guard id != openId else { return }
+        // A list this Watch does not hold is not a list it can open.
+        guard links.contains(where: { $0.id == id }) else {
+            WatchDiagnostics.shared.record(WatchDiagnostics.Code.listSelected, 0, 0)
+            return
+        }
+        #if DEBUG
+        if isDemo {
+            // `-TFWatchDemo` has no phone and therefore no vault, so the receiver would refuse every
+            // id — and a self-test that cannot switch lists cannot say anything about what happens
+            // after one. This is the demo's own hand-off and it is the **same two lines**
+            // `linksChanged` performs on the real path, so what the self-test measures afterwards is
+            // the shipping `openList`, `canEdit` and `setDone` rather than a copy of them. The one
+            // step it does not measure is the receiver's, which only a phone can perform.
+            selected = id
+            openList(id)
+            Task { await sync() }
+            WatchDiagnostics.shared.record(WatchDiagnostics.Code.listSelected,
+                                           canEdit ? 1 : 0, openId == id ? 1 : 0)
+            return
+        }
+        #endif
         receiver.select(id)          // the receiver remembers it; `onChange` brings it back here
+        WatchDiagnostics.shared.record(WatchDiagnostics.Code.listSelected,
+                                       canEdit ? 1 : 0, openId == id ? 1 : 0)
     }
 
     /// Open a list: derive its keys, hand the engine what the store holds, roll it over, show it.
@@ -648,11 +694,21 @@ extension WatchStore {
     /// `MemoryTransport`, so nothing is spent from the create limit and no row is ever made.
     private static let demoId = "TFdemoTFdemoTFdemoTFde"
 
+    /// A **second** demo list, and a view-only one, so that `-TFWatchDemo` can be asked the one
+    /// question Phase 5 §2 has to answer about a switch: does the Watch still refuse a write on the
+    /// other side of it. It is also what makes the two new controls exist on a simulator at all — both
+    /// are drawn only when the wrist holds more than one list, so before this there was nothing for a
+    /// screenshot of them to be a screenshot of.
+    ///
+    /// Read, not shared: the pills are independent and this one carries `view only` alone, which is
+    /// also the combination that has to keep the app honest.
+    private static let demoViewId = "TFsharedTFsharedTFshar"
+
     /// Five lines, none of them anybody's. Written through `Model.addToToday` rather than assembled
     /// here, so the demo records are the same shape every other client would write.
-    private static func demoDoc() -> Doc {
+    private static func demoDoc(id: String = demoId, name: String = "Demo") -> Doc {
         let t = CalendarDates.now() - 5_000
-        var doc = CalendarDates.withZone(Doc.empty(id: demoId, name: "Demo", at: t))
+        var doc = CalendarDates.withZone(Doc.empty(id: id, name: name, at: t))
         let lines = ["Ten minutes outside", "Water the plants", "Write it down",
                      "Call back", "Clear the desk"]
         for (i, line) in lines.enumerated() {
@@ -669,8 +725,20 @@ extension WatchStore {
         let link = VaultedLink(id: id, mode: .edit, origin: "mine", nickname: "", name: "Demo",
                                addedAt: CalendarDates.now(), lastSeenAt: CalendarDates.now(),
                                seenInRegistry: true)
-        links = [link]
+        // The second list: a view link, with lines on it. A view list with nothing on it could not
+        // prove a refusal — there would be nothing to refuse — so it is seeded with the same five
+        // lines through the same `Model.addToToday`, under its own id, saved `mode: .view` and never
+        // `created`.
+        let viewLink = VaultedLink(id: Self.demoViewId, mode: .view, origin: "mine",
+                                   nickname: "", name: "Demo (read)",
+                                   addedAt: CalendarDates.now(), lastSeenAt: CalendarDates.now(),
+                                   seenInRegistry: true)
+        links = [link, viewLink]
         selected = id
+        try? store?.save(Self.demoViewId,
+                         ListRecord(doc: Self.demoDoc(id: Self.demoViewId, name: "Demo (read)"),
+                                    rev: 0, dirty: false, created: false,
+                                    mode: .view, origin: "mine"))
         // A fresh document every launch, so the self-test always starts from five undone lines.
         // `created: true` only here, and only because the demo's transport is memory: it is what
         // lets the engine insert the row and gives the sync mark something honest to say. On the real
@@ -771,6 +839,48 @@ extension WatchStore {
         } else {
             say("9 snapshot: UNREADABLE (no App Group container, or nothing written)")
         }
+
+        // 10. **a switch, and whether a view-only list still refuses on the other side of one.**
+        //     Phase 5 §2 gives list switching two new controls, and the thing that must not move is
+        //     the refusal: switching from an edit list to a view list has to leave the Watch refusing
+        //     before the document is touched.
+        //
+        //     It goes through `select` — the identical method all three controls call, not a copy of
+        //     it — and then asks the two questions that matter: is `canEdit` false, and does a
+        //     check-off on a line that is right there change nothing. The document is compared by
+        //     `canon`, so "nothing changed" is the whole document and not a flag about it.
+        //
+        //     When the wrist holds one list this cannot run, and it says so rather than saying
+        //     nothing: a self-test that prints a pass for a case it skipped is the failure this whole
+        //     round is about.
+        guard links.count > 1, let other = links.first(where: { $0.id != link?.id }) else {
+            say("10 switch: links=\(links.count) — NOT RUN (needs a second list on this device)")
+            return
+        }
+        let cameFrom = link?.id
+        let editableBefore = canEdit
+        select(other.id)
+        try? await Task.sleep(for: .milliseconds(300))
+        let took = link?.id == other.id
+        if other.mode == .view {
+            let before = doc.canon
+            if let line = rows.first { setDone(line.id, true) }
+            say("10 switch→view: took=\(took) wasEditable=\(editableBefore) "
+                + "nowEditable=\(canEdit) lines=\(totalCount) "
+                + "writeRefused=\(doc.canon == before)")
+        } else {
+            // **No check-off here.** On the real path the second list is somebody's real list and an
+            // editable one, so crossing a line off it would be this self-test writing to a document
+            // nobody asked it to touch. The switch is reported and the refusal says it did not run.
+            say("10 switch→edit: took=\(took) wasEditable=\(editableBefore) "
+                + "nowEditable=\(canEdit) lines=\(totalCount) "
+                + "writeRefused=NOT RUN (the other list is an edit link)")
+        }
+        // Back where we started, so a screenshot after the self-test is of the list the self-test
+        // described and steps 1–9 are repeatable on a relaunch.
+        if let cameFrom { select(cameFrom) }
+        try? await Task.sleep(for: .milliseconds(300))
+        say("10 switch back: onFirst=\(link?.id == cameFrom) editable=\(canEdit) lines=\(totalCount)")
     }
 }
 #endif

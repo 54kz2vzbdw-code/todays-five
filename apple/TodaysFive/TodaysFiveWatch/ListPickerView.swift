@@ -134,15 +134,24 @@ struct ListPickerView: View {
 /// a push shares nothing with the presentation that is under suspicion, so this control is right
 /// whichever way the title's diagnosis goes.
 ///
-/// **What it costs, and why that was accepted.** One row at the top of a five-line list on a 42 mm
-/// watch is about a third of a screen, and the carousel shows three rows at a time — so a person who
-/// holds more than one list turns the crown once more to reach the fifth line. Three things pay for
-/// it: it is **absent** for everybody who holds one list, which is most people; the two pills move off
-/// the count row onto it, so nothing is drawn twice and the count row does not grow; and it is **one
-/// line**, not two — the name truncates rather than wrapping, because the bar's title is already
-/// saying the name in full and this row's whole job is to be a target. Putting it under the `+`
-/// instead was rejected: a list's identity belongs above the lines it contains, and the bottom of this
-/// screen is where a Double Tap aims.
+/// **What it costs, and why that was accepted.** The carousel shows about three rows at a time, so a
+/// person who holds more than one list turns the crown once more to reach the fifth line. Three things
+/// pay for it: it is **absent** for everybody who holds one list, which is most people; the two pills
+/// move off the count row onto it, so nothing is drawn twice and the count row does not grow; and it
+/// is **one line whenever the list carries no pill**, which is every list a person owns outright.
+/// Putting it under the `+` instead was rejected: a list's identity belongs above the lines it
+/// contains, and the bottom of this screen is where a Double Tap aims.
+///
+/// **The pills go under the name, not beside it, and that is arithmetic rather than taste.** A 42 mm
+/// watch is 187 points wide; the glyph, the chevron and the insets take something like 40 of them, and
+/// *view only* and *Shared* at 10 points with their capsule padding take most of what is left — so a
+/// list that is both, which is exactly what a read-only list somebody shared with you is, would leave
+/// the name about four characters. Under the name they cost a second line **only on a list that has a
+/// pill to draw**, and an empty `HStack` has no height, so the common case is still one line. It is
+/// also the shape `ListPickerView`'s own rows use, two screens away, for the same three fields.
+/// (That is arithmetic on the font sizes in this file, not a rendering: what a screenshot settles is
+/// whether the name truncates anyway, and nothing on this machine can take one of a watch it cannot
+/// tap into this state.)
 struct TodayListRow: View {
     @Environment(WatchStore.self) private var store
     @Environment(\.watchTheme) private var theme
@@ -155,16 +164,20 @@ struct TodayListRow: View {
                 Image(systemName: "list.bullet")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(theme.accent)
-                Text(store.title)
-                    .font(theme.ui(14, .footnote, bold: true))
-                    .foregroundStyle(theme.text)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(store.title)
+                        .font(theme.ui(14, .footnote, bold: true))
+                        .foregroundStyle(theme.text)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    // The same two fields `ListPickerView` reads, in the rail's order
+                    // (index.html:142-143), not a second opinion about them.
+                    HStack(spacing: 4) {
+                        if store.isViewOnly { Pill(text: "view only") }
+                        if store.isShared { Pill(text: "Shared") }
+                    }
+                }
                 Spacer(minLength: 2)
-                // The same two fields `ListPickerView` reads, in the same order, not a second opinion
-                // about them.
-                if store.isViewOnly { Pill(text: "view only") }
-                if store.isShared { Pill(text: "Shared") }
                 Image(systemName: "chevron.right")
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(theme.accent)

@@ -584,3 +584,34 @@ looks different there is one commit to point at.
 
 **What genuinely improves without anyone asking:** a line crossed off on a Watch, in Shortcuts, from
 Siri or from `tfive` now reaches an open phone in **under a second** instead of up to four minutes.
+
+---
+
+## What a returning device sees, measured on the deployed build
+
+Seeded with exactly what a build-158 device leaves behind — its registry, its cached token CSS with
+the old accent, and **no** `tf/v2/themerev`, because b158 never wrote one — then pointed at the live
+site.
+
+| a device that last ran b158 on… | painted | ground | task face | page errors |
+| --- | --- | --- | --- | --- |
+| **Terminal** | `--accent` `#4AF07A`, and the strike and the filled box with it | `#070A08`, unchanged | JetBrains Mono | 0 |
+| **Paper** | `#C8321F` | `#F7F2E8`, unchanged | Playfair Display | 0 |
+
+After the visit both caches hold the new tokens **stamped `1ptwfkh`**, so the next first paint is
+right rather than merely corrected.
+
+**And the honest remainder.** This was reported as a permanent failure on a real device — the cached
+tokens winning across two full loads minutes apart — and it has not been reproduced here in five
+configurations now: a fresh context with a stale cache seeded, a local 158 → 212 deploy with no
+service worker, the same with a **build-158 worker controlling the page** (caches
+`tf-v1.12-b158` → `…-b212`), the first-paint isolation with `app.js` blocked, and this run against
+the live build. In every one the page reaches the new accent on the first load.
+
+The likeliest explanation left is §6's own documented iOS behaviour — a tab re-fronted or reloaded in
+Safari answered from Safari's HTTP cache, so the page still running is b158's `app.js` and
+`theme.js`, which would paint amber, persist amber, and be perfectly consistent with a separately
+fetched `theme.js` containing `#4AF07A`. The datum that settles it is `data-tokens-rev` on that page:
+absent means the page is pre-b216 and §6 is the answer; `1ptwfkh` with an amber accent means a bug
+still unfound. Either way the stamp is the right defence, because it moves the guarantee from "a
+module ran to completion" to "the boot script refused a cache it could not prove".

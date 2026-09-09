@@ -368,6 +368,8 @@ Each is `#if DEBUG` only. They exist because the Watch cannot be driven by hand 
 | `-TFWatchDemo` | seeds a local demo list over `MemoryTransport` — no phone, no network, and nothing spent from the server's create limit |
 | `-TFWatchSelfTest` | crosses a line off and back, finishes the list and reports whether the finale fired and after how long, runs Start again, **shuffles ten times and reports how many distinct lines came up and whether one ever came up twice in a row**, shuffles with one line left and reports that nothing moved, then prints the haptic tally, the finale run's duration, whether the store landed in the App Group, and the snapshot's counts |
 | `-TFAddSelfTest` | the add path with a canned string, with an empty one, against a view-only list, with no list selected, and Undo — and whether `visibleInterfaceController` is present, which is what decides the dictation path a wrist will take |
+| `-TFFontSelfTest` | every one of the 13 font pairs: is each family on the device, does `CTFontCreateWithName` hand back the face it was asked for rather than Helvetica, and do the pair's two ui weights actually render differently. **A wrong font name renders Helvetica with no log and no error**, so this is the only thing that turns a silent fallback into a failure. Prints a tally |
+| `-TFKit <id>` | render one kit for this launch, whichever slot is stored. `simctl` cannot tap a watch simulator, so this is the only way a screenshot of a given kit exists |
 
 ```bash
 xcrun simctl launch --console-pty "$WATCH" com.pricebrannen.todaysfive.watchkitapp -TFWatchDemo -TFWatchSelfTest
@@ -413,14 +415,25 @@ the whole of what an app can do; the assignment is yours.
 **Double Tap** (Series 9 / Ultra 2 and later, watchOS 11+) starts the add flow while the app is open,
 because the `+` is the primary action.
 
+## The kit on the wrist
+
+Every colour and every face on the Watch comes from a **kit** — the same 16 `TodaysFiveCore` carries,
+plus the two Secret kits when a phone that has unlocked them has said so. The accent, the ground, the
+task face and the ui faces all move together; there is no `.primary`, no `.secondary` and no system
+colour left on any Watch screen, because watchOS has no light appearance and those were only ever
+right by accident.
+
+The choice is the **Watch's own**, stored in the App Group so the complication can read it too —
+`tf/app/watch/kit/day`, `…/night`, `…/slot`. **The Watch does not follow the phone's theme, and that
+is a decision**: theme is a per-device preference in this app and a Watch is a device.
+`DECISIONS-phase4-C1.md` has the argument and what it cost, including the two things it cost that
+nobody can fix — the system clock stays white on a light kit's ground, and a light ground drives the
+panel about 17× harder than a dark one.
+
 ## What the Watch does not have
 
-No Everything, no sections, no History, no rules, no templates, no themes, no settings screen. Those
-need a phone-sized screen. The Watch shows Today, crosses lines off, and takes a new one.
-
-**The accent is `#A86014`** — the brand accent Dark, Paper and Terminal all carry — and this round it
-does not follow the phone's theme, because the link payload carries no colour. Written up in
-`DECISIONS-apple.md` rather than left to be noticed.
+No Everything, no sections, no History, no rules, no templates, no settings screen. Those need a
+phone-sized screen. The Watch shows Today, crosses lines off, and takes a new one.
 
 ## Privacy, on a smaller screen
 

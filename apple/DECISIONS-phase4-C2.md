@@ -356,6 +356,41 @@ eighteen tosses. Held, every kit is photographed at the same instant of the same
 
 ---
 
+## What eighteen screenshots found that three could not
+
+Stage 1 photographed dark, paper and terminal, fixed the carousel's row platter to the kit's own
+`ink2`, and moved on. **Eighteen frames show that the platter was only half the problem.**
+
+`.listStyle(.carousel)` composites its own treatment onto a row as that row leaves the focus band,
+*over* whatever `.listRowBackground` put there. Measured at the same three points on six frames:
+
+| kit | ground | platter in focus (kit's `ink2`) | the row leaving focus |
+| --- | --- | --- | --- |
+| sketch | `#F8F6F1` | `#EFECE5` | **`#807F7B`** |
+| paper | `#F7F2E8` | `#EFE8DA` | **`#807C75`** |
+| light | `#FAF8F4` | `#F1ECE3` | **`#817F7A`** |
+| birthday | `#FFF3F8` | `#FDE9F2` | **`#80767B`** |
+| dark | `#070A08` | `#0E140F` | `#080B08` |
+| terminal | `#070A08` | `#0E140F` | `#080B08` |
+
+The in-focus platters are the kit's, exactly — stage 1's fix works. The row on its way out lands at
+**about 50% grey on every light kit**, which is a grey slab across the foot of a cream screen, and on
+a dark kit is indistinguishable from the ground. It is the same failure stage 1 fixed one layer up:
+a system treatment tuned for a platform that is always dark, applied over a kit that is not.
+
+**It is not fixed here and the reason is that the fix is a bigger decision than it looks.**
+`.listStyle(.carousel)` has no API for the out-of-focus treatment — no modifier, no environment
+value, nothing on the row. Escaping it means leaving `.carousel`, which is the scroll behaviour the
+whole Watch app is built around: rows that snap, grow into focus and give the crown something to
+land on. Trading that for a flat list to get rid of a grey band is a product decision and belongs to
+somebody who has held the thing.
+
+What it is worth on its own is the method: **a three-kit smoke test cannot find a bug that only
+light kits have, and six of the eighteen kits are light.** The screenshots were asked for as
+evidence and turned out to be a test.
+
+---
+
 ## What stage 2 did not settle
 
 * **A complication has still never been seen on a face.** Everything about the extension that can be
@@ -370,5 +405,8 @@ eighteen tosses. Held, every kit is photographed at the same instant of the same
   methods and `-TFShow theme` puts the picker on screen to be photographed, but no gesture on this
   machine has ever pressed one of its rows. The crown scroll, the hit targets and whether eighteen
   rows is too many to get through are wrist questions.
+* **The carousel's out-of-focus grey is still there on every light kit.** Measured above, no API to
+  reach it, and the only escape is leaving `.listStyle(.carousel)` — which is a bigger trade than
+  this round should make on its own.
 * **`Kit.shapes` is still a flattened union.** Read correctly here, by a rule with an argument behind
   it; not fixed at the source, which is Track B's fixture and Track B's generator.

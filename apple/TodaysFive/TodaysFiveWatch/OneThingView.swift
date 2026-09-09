@@ -9,6 +9,7 @@ import TodaysFiveCore
 
 struct OneThingView: View {
     @Environment(WatchStore.self) private var store
+    @Environment(\.watchTheme) private var theme
 
     /// The wobble: 0 or 1 undone line means a shuffle changes nothing, and the web answers that with
     /// a small movement rather than with silence.
@@ -18,7 +19,9 @@ struct OneThingView: View {
         VStack(spacing: 8) {
             if let line = store.oneThingLine {
                 Text(line.text)
-                    .font(.system(.title2, design: .rounded, weight: .semibold))
+                    // The other place the kit's task face belongs: this is one list line, large.
+                    .taskType(theme, 20, .title2)
+                    .foregroundStyle(theme.text)
                     .multilineTextAlignment(.center)
                     .lineLimit(5)
                     .minimumScaleFactor(0.55)
@@ -26,8 +29,8 @@ struct OneThingView: View {
                     .offset(x: nudge)
 
                 Text(store.oneThingFooter)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .font(theme.ui(13, .footnote))
+                    .foregroundStyle(theme.muted)
 
                 HStack(spacing: 18) {
                     Button {
@@ -36,9 +39,14 @@ struct OneThingView: View {
                         Image(systemName: "checkmark")
                             .font(.system(size: 17, weight: .semibold))
                             .frame(width: 44, height: 34)
+                            // A prominent button picks its own label colour, and it picks white.
+                            // On Terminal's `#4AF07A` and Sunset's amber that is unreadable, so the
+                            // glyph takes whichever of the kit's own two extremes measures better
+                            // against its accent.
+                            .foregroundStyle(theme.onAccent)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(WatchTheme.accent)
+                    .tint(theme.accent)
 
                     Button {
                         store.shuffle()
@@ -46,18 +54,22 @@ struct OneThingView: View {
                         Image(systemName: "shuffle")
                             .font(.system(size: 15, weight: .semibold))
                             .frame(width: 44, height: 34)
+                            .foregroundStyle(theme.text)
                     }
                     .buttonStyle(.bordered)
+                    .tint(theme.ink3)
                 }
                 .disabled(!store.canEdit)
             } else {
                 Text(store.totalCount == 0 ? "Nothing on Today" : "That's the list.")
-                    .font(.system(.headline, design: .rounded))
-                    .foregroundStyle(store.totalCount == 0 ? Color.secondary : WatchTheme.accent)
+                    .font(theme.ui(16, .headline, bold: true))
+                    .italic(store.totalCount > 0 && theme.kit.finaleItalic)
+                    .foregroundStyle(store.totalCount == 0 ? theme.muted : theme.accent)
             }
         }
         .padding(.horizontal, 6)
-        .frame(maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(theme.ink)
         .contentShape(Rectangle())
         // The firm swipe. Horizontal only, and deliberately so: the vertical pager owns the other
         // axis, and a gesture that fought it would cost the page rather than buy the shuffle.

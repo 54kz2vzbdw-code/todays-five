@@ -67,6 +67,11 @@ final class WatchStore {
     /// The finale card is on screen. It is set 300 ms *after* the check-off that caused it, which is
     /// the web's own hold, so the two feel like one product.
     private(set) var finaleShowing = false
+    /// How many finales have fired this launch. The card is a **state** and the volley is an
+    /// **event**, and one cannot be derived from the other: a second finale in a row leaves
+    /// `finaleShowing` true throughout, so a confetti view watching that flag would never fire
+    /// again. This is the edge the volley hangs off, and it is also what a self-test can count.
+    private(set) var finaleTick = 0
     /// A list has been opened at least once, so an empty screen can say which empty it is.
     private(set) var opened = false
 
@@ -546,6 +551,7 @@ final class WatchStore {
                 try? await Task.sleep(for: .milliseconds(300))
                 guard let self, !Task.isCancelled, self.allDone else { return }
                 self.finaleShowing = true
+                self.finaleTick += 1
                 self.haptics.play(.finale)
             }
         }
@@ -557,6 +563,31 @@ final class WatchStore {
     }
 
     // ---------------------------------------------------------------- the face
+
+    /// What the face should draw the count in: the kit's id, its pair's id, and the PostScript name
+    /// of the face itself. Set by the app whenever the theme resolves — this object deliberately
+    /// does not know `WatchThemeStore` exists, because the theme is a device preference and the
+    /// store is a document.
+    /// (Three declarations rather than one line: `@Observable`'s `ObservationTracked` macro applies
+    /// to a single variable and refuses a comma-separated binding outright.)
+    @ObservationIgnored private var faceKit = ""
+    @ObservationIgnored private var facePair = ""
+    @ObservationIgnored private var faceName = ""
+
+    /// The theme moved. **This is what makes a complication redraw on the change rather than at its
+    /// next reload**: `publish()` writes the snapshot and calls `reloadAllTimelines()` in the same
+    /// breath, so routing a theme change through it is the whole mechanism. There is no second door.
+    func themeChanged(kit: String, pair: String, face: String) {
+        guard kit != faceKit || pair != facePair || face != faceName else { return }
+        faceKit = kit
+        facePair = pair
+        faceName = face
+        publish()
+        #if DEBUG
+        print("[tfive] face: kit=\(kit) pair=\(pair) face=\(face.isEmpty ? "system" : face) "
+              + "→ snapshot written, reloadAllTimelines requested")
+        #endif
+    }
 
     /// Write the snapshot and ask for a reload. Called after every change, which is cheap: the file
     /// is a couple of hundred bytes and `reloadAllTimelines` coalesces.
@@ -570,7 +601,10 @@ final class WatchStore {
             next: items.first { !$0.done }?.text ?? "",
             viewOnly: isViewOnly,
             at: CalendarDates.now(),
-            rollsAt: nextRollover()
+            rollsAt: nextRollover(),
+            kit: faceKit,
+            pair: facePair,
+            face: faceName
         )
         try? snapshot.write()
         WidgetCenter.shared.reloadAllTimelines()
@@ -731,7 +765,9 @@ extension WatchStore {
         if let snap = WatchSnapshot.read() {
             say("9 snapshot: hasList=\(snap.hasList) done=\(snap.done)/\(snap.total) "
                 + "nextLine=\(snap.next.isEmpty ? "none" : "\(snap.next.count) chars") "
-                + "viewOnly=\(snap.viewOnly) rollsAt=\(snap.rollsAt > 0 ? "set" : "unknown")")
+                + "viewOnly=\(snap.viewOnly) rollsAt=\(snap.rollsAt > 0 ? "set" : "unknown") "
+                + "kit=\(snap.kit.isEmpty ? "none" : snap.kit) pair=\(snap.pair.isEmpty ? "none" : snap.pair) "
+                + "face=\(snap.face.isEmpty ? "system" : snap.face)")
         } else {
             say("9 snapshot: UNREADABLE (no App Group container, or nothing written)")
         }

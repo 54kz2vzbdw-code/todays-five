@@ -16,7 +16,16 @@
 // read, and a `v` from a future this build cannot read is refused rather than guessed at. Two
 // processes from the *same* build normally write and read this, but "normally" is doing a lot of
 // work in that sentence — an extension can outlive an app update by a launch.
+//
+// **Phase 4 added `kit`, `pair` and `face` and did not touch `v`.** That is §3's rule applied to a file
+// rather than to the wire, and it is the whole reason the rule exists: `read()` already defaults
+// every field it cannot find, so an extension from build 158 reading a snapshot from build 200 gets
+// `kit: ""` and draws the way it always did, and an extension from build 200 reading build 158's
+// snapshot gets the same. Bumping `version` would have made the first of those two a refusal — the
+// face would have gone to its placeholder — to announce a field that older code does not read.
+// The shape only grows.
 import Foundation
+import CoreText
 
 /// The App Group both the Watch app and the complication are entitled to.
 ///
@@ -54,11 +63,31 @@ struct WatchSnapshot: Sendable, Equatable {
     /// Today. 0 when it could not be worked out. This is what lets the timeline carry a second entry
     /// and be right through the night with nothing running; see `ComplicationsProvider`.
     var rollsAt: Double = 0
+    /// The kit the Watch is showing, by id — `"paper"`, `"terminal"`, and the two Secret ids too,
+    /// which are ids and not the word that unlocks them. "" when the app has never published.
+    ///
+    /// The face cannot use a kit's **colours** (see the paragraph at the top of `Complications.swift`),
+    /// so this is here for what it *can* use: which glyph, which shape, and — with `pair` — which
+    /// face to set the count in.
+    var kit = ""
+    /// The kit's font pair id — `"lato"`, `"mono"`. Sent beside `kit` rather than looked up from it
+    /// because the extension does not link `TodaysFiveCore` and has no table to look it up in.
+    var pair = ""
+    /// The **PostScript name** of the face the count is set in, resolved by the app out of the
+    /// generated table — `"Lato-Black"`, `"IBMPlexMono-SemiBold"`.
+    ///
+    /// It is here because `pair` on its own is *not actionable in the extension*: mapping `"lato"`
+    /// to `"Lato-Black"` needs the generated table, the extension does not link `TodaysFiveCore`,
+    /// and a hand-written copy of that mapping in the appex is precisely the second copy of
+    /// generated data this project spends `KitsGen` to avoid. `pair` still travels — it is what a
+    /// log, a future reader and a person diffing two snapshots want — but `face` is what draws.
+    var face = ""
 
     init() {}
 
     init(hasList: Bool, name: String, done: Int, total: Int, next: String,
-         viewOnly: Bool, at: Double, rollsAt: Double) {
+         viewOnly: Bool, at: Double, rollsAt: Double,
+         kit: String = "", pair: String = "", face: String = "") {
         self.hasList = hasList
         self.name = name
         self.done = done
@@ -67,6 +96,9 @@ struct WatchSnapshot: Sendable, Equatable {
         self.viewOnly = viewOnly
         self.at = at
         self.rollsAt = rollsAt
+        self.kit = kit
+        self.pair = pair
+        self.face = face
     }
 
     // ---------------------------------------------------------------- the file
@@ -89,6 +121,9 @@ struct WatchSnapshot: Sendable, Equatable {
         s.viewOnly = o["viewOnly"] as? Bool ?? false
         s.at = (o["at"] as? NSNumber)?.doubleValue ?? 0
         s.rollsAt = (o["rollsAt"] as? NSNumber)?.doubleValue ?? 0
+        s.kit = o["kit"] as? String ?? ""
+        s.pair = o["pair"] as? String ?? ""
+        s.face = o["face"] as? String ?? ""
         return s
     }
 
@@ -98,7 +133,8 @@ struct WatchSnapshot: Sendable, Equatable {
         guard let url = Self.fileURL else { return }
         let o: [String: Any] = [
             "v": Self.version, "hasList": hasList, "name": name, "done": done, "total": total,
-            "next": next, "viewOnly": viewOnly, "at": at, "rollsAt": rollsAt
+            "next": next, "viewOnly": viewOnly, "at": at, "rollsAt": rollsAt,
+            "kit": kit, "pair": pair, "face": face
         ]
         let data = try JSONSerialization.data(withJSONObject: o, options: [.sortedKeys])
         try data.write(to: url, options: .atomic)
@@ -124,5 +160,107 @@ struct WatchSnapshot: Sendable, Equatable {
         out.at = rollsAt
         out.rollsAt = 0
         return out
+    }
+}
+
+// ---------------------------------------------------------------- the kit's type, on the face
+
+/// **The complication's fonts, without duplicating a single byte of them.**
+///
+/// The stated problem was: "the appex is a separate bundle with its own Info.plist and its own
+/// Resources phase, so the Watch app's fonts are NOT visible to it", and the stated price was 1.5 MB
+/// and 33 more build entries. The first half is true and was verified on the built product — 33
+/// `.ttf` in `TodaysFiveWatch.app`, **zero** in `PlugIns/TodaysFiveComplications.appex`. The second
+/// half does not follow, and this is why:
+///
+/// ```
+/// TodaysFiveWatch.app/                 ← the 33 .ttf are here
+///   PlugIns/
+///     TodaysFiveComplications.appex/   ← Bundle.main, inside the extension
+/// ```
+///
+/// An extension's bundle is *inside* its containing app's bundle. Two `deletingLastPathComponent()`
+/// from `Bundle.main.bundleURL` and the fonts are right there, on the same disk, in the same signed
+/// container, readable — no copy, no `UIAppFonts` entry, no second Resources phase.
+/// `CTFontManagerRegisterFontsForURL(_:.process:_:)` then makes them resolvable for the life of the
+/// process, which is exactly as long as a widget rendering lasts.
+///
+/// **What was actually observed, and what was not.** Everything up to the last link was run on the
+/// simulator, from the Watch app, against the real `.appex` URL — the path resolves, all 33 files
+/// are found, registration returns true, and `CTFontCreateWithName` hands back the PostScript name
+/// it was asked for rather than a fallback's. What could **not** be observed is a complication
+/// actually drawing on a face: that needs the face editor, and `simctl` cannot tap a watch
+/// simulator. So the extension asks for the face and **falls back to the system font when it does
+/// not resolve** — which costs nothing if the last link turns out to be closed, and is the reason
+/// this is shipped rather than deferred.
+///
+/// It lives in the shared file, and not in `Complications.swift`, so that the Watch app can run the
+/// *same* code against the extension's own bundle URL. A probe that tests a second copy of the thing
+/// proves nothing about the first.
+enum WatchFaceType {
+
+    /// The bundle that holds the fonts: this bundle, or — inside an `.appex` — the app two
+    /// directories up. Takes a URL rather than reading `Bundle.main` so the app can hand it the
+    /// extension's own URL and exercise the extension's path exactly.
+    static func fontsBundleURL(for bundleURL: URL) -> URL {
+        guard bundleURL.pathExtension == "appex" else { return bundleURL }
+        // …/TodaysFiveWatch.app/PlugIns/X.appex → …/TodaysFiveWatch.app
+        return bundleURL.deletingLastPathComponent().deletingLastPathComponent()
+    }
+
+    /// Register every `.ttf` beside the app. Returns how many were registered, or were already
+    /// registered — which is not a failure and is the normal answer inside the app itself, where
+    /// `UIAppFonts` got there first.
+    @discardableResult
+    static func register(in bundleURL: URL = Bundle.main.bundleURL) -> Int {
+        let root = fontsBundleURL(for: bundleURL)
+        let files = (try? FileManager.default.contentsOfDirectory(at: root,
+                                                                  includingPropertiesForKeys: nil))?
+            .filter { $0.pathExtension.lowercased() == "ttf" } ?? []
+        guard !files.isEmpty else { return 0 }
+        // The array call takes the whole set at once and hands back the ones it could not take.
+        // Files already registered — which is every one of them inside the app itself, where
+        // `UIAppFonts` got there first — come back as errors, and that is not a failure: the count
+        // returned is how many faces are on disk at the path the extension computed, which is the
+        // only number this can honestly report from either process.
+        var errors: Unmanaged<CFArray>?
+        CTFontManagerRegisterFontsForURLs(files as CFArray, .process, &errors)
+        errors?.release()
+        return files.count
+    }
+
+    /// True when CoreText hands back the name it was asked for. A missing custom font resolves to
+    /// the system face **with no log and no error** — the same silence `-TFFontSelfTest` exists for
+    /// — so this is the only way to tell "the kit's type" from "Helvetica wearing its name".
+    static func resolves(_ postScriptName: String) -> Bool {
+        guard !postScriptName.isEmpty else { return false }
+        let font = CTFontCreateWithName(postScriptName as CFString, 16, nil)
+        return (CTFontCopyPostScriptName(font) as String) == postScriptName
+    }
+
+    /// The PostScript names of the `.ttf` beside the app, read **out of the files themselves**.
+    ///
+    /// This is the check `resolves(_:)` cannot be, and the difference matters inside the app: there
+    /// the 33 faces are already registered by `UIAppFonts`, so `resolves` would answer yes whether
+    /// or not the extension's path to them works. `CTFontManagerCreateFontDescriptorsFromURL` opens
+    /// the file at the URL that was computed and reads its name, which is exactly the question —
+    /// *is the extension's arithmetic pointing at real fonts* — with the app's own registration
+    /// taken out of the answer.
+    static func facesOnDisk(in bundleURL: URL) -> [String] {
+        let root = fontsBundleURL(for: bundleURL)
+        let files = (try? FileManager.default.contentsOfDirectory(at: root,
+                                                                  includingPropertiesForKeys: nil))?
+            .filter { $0.pathExtension.lowercased() == "ttf" }.sorted(by: { $0.path < $1.path }) ?? []
+        var names: [String] = []
+        for file in files {
+            guard let descriptors = CTFontManagerCreateFontDescriptorsFromURL(file as CFURL)
+                    as? [CTFontDescriptor] else { continue }
+            for d in descriptors {
+                if let n = CTFontDescriptorCopyAttribute(d, kCTFontNameAttribute) as? String {
+                    names.append(n)
+                }
+            }
+        }
+        return names
     }
 }

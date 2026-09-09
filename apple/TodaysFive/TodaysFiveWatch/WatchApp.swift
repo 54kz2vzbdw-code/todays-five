@@ -197,8 +197,12 @@ struct RootView: View {
             content
                 .watchGround(theme)
                 .navigationTitle { titleButton }
+                // The title's door, kept exactly as it was so that what the wrist reports about it is
+                // a report about the shipped thing. The two doors that are meant to *work* are pushes
+                // and are not here: `TodayListRow` at the top of Today, and the Lists row behind the
+                // hold on the count.
                 .sheet(isPresented: $showPicker) {
-                    NavigationStack { ListPickerView() }.watchGround(theme)
+                    NavigationStack { ListPickerView(door: .title) }.watchGround(theme)
                 }
                 .sheet(isPresented: $showActions) {
                     NavigationStack { CountActionsView() }.watchGround(theme)
@@ -278,23 +282,39 @@ struct RootView: View {
         }
     }
 
-    /// watchOS has **no SwiftUI `Menu`**, so the picker cannot be a dropdown. The title itself is the
-    /// button, through the watchOS-exclusive `navigationTitle { }` overload that takes a view.
+    /// The title says **which list you are looking at**. Since Phase 5 it promises nothing else.
+    ///
+    /// Phase 3 made the title itself the button, through the watchOS-exclusive `navigationTitle { }`
+    /// overload that takes a view, because watchOS has no SwiftUI `Menu`. That is true about `Menu` and
+    /// says nothing about whether the navigation bar's title area is hit-testable on a real watch — and
+    /// on a real watch, running 1.12 (216) from TestFlight, **the caret was there and the tap did
+    /// nothing**. The caret was drawn only when there was more than one list and the button was
+    /// `.disabled` below two, so the caret being visible proved the button was enabled and that the
+    /// wrist held at least two lists: the disable was never the answer.
+    ///
+    /// **So the caret is gone.** A title that advertises an action it may not perform is worse than no
+    /// control at all, and switching lists now lives on two controls that are hit-testable by
+    /// construction — a `List` row at the top of Today and the Lists row behind the long press on the
+    /// count, both pushes rather than presentations.
+    ///
+    /// **The button and its trace stay, and they are the measurement.** A press writes
+    /// `picker.title.tap` in every build, including Release, so the next report from a wrist settles
+    /// which of two things is true: `picker.title.tap` with no `picker.shown` after it is a tap that
+    /// arrived and a presentation that failed; no `picker.title.tap` at all is a navigation bar that
+    /// never handed the finger on. If it turns out the tap does arrive, a later round can give the
+    /// caret back with evidence behind it. It costs nothing to leave here in the meantime: a person who
+    /// presses a title that no longer looks like a control gets the picker anyway.
     @ViewBuilder
     private var titleButton: some View {
         Button {
+            WatchDiagnostics.shared.record(WatchDiagnostics.Code.titleTap, store.links.count)
             showPicker = true
         } label: {
-            HStack(spacing: 3) {
-                Text(store.title)
-                    .font(theme.ui(15, .headline, bold: true))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                if store.links.count > 1 {
-                    Image(systemName: "chevron.down").font(.system(size: 8, weight: .semibold))
-                }
-            }
-            .foregroundStyle(theme.accent)
+            Text(store.title)
+                .font(theme.ui(15, .headline, bold: true))
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .foregroundStyle(theme.accent)
         }
         .buttonStyle(.plain)
         .disabled(store.links.count < 2)

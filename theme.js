@@ -484,10 +484,19 @@ export function brandTiles(colourwayId = BRAND.colourway, accent = BRAND.accent)
 
 /* ---------------- the Secret group (1.6) ----------------
    Two kits the picker shows only on a device that has been given the key, and a key that is not a theme code:
-   parseCode() has never heard of it. The word is not written down here — a casual reader of this file should not
-   trip over it — so the check is two 32-bit FNV-1a passes with different offset bases over the trimmed, lower-cased
-   input: 64 bits, which nothing anyone could plausibly type collides with. The unlock lives in meta.device
-   (COMPATIBILITY.md §5) and never enters the document, so a shared list gives nothing away.                    */
+   parseCode() has never heard of it. The word is not written down *in this file* — a casual reader of the
+   palette should not trip over it — so the check is two 32-bit FNV-1a passes with different offset bases over
+   the trimmed, lower-cased input: 64 bits, which nothing anyone could plausibly type collides with. The unlock
+   lives in meta.device (COMPATIBILITY.md §5) and never enters the document, so a shared list gives nothing away.
+
+   **It IS written down elsewhere in this repository, in plain text, and this comment used to deny it.**
+   `tools/shots.js` types the word into the import field so the Secret kits can be photographed, and the
+   repository is public. So the hash here keeps the word out of the palette file and does nothing else: it is
+   not a secret against anyone who reads the repo, and it never has been. The sentence that said the word was
+   "not written down" was false, and correcting it is the whole of this build's change here.
+
+   The gate and the word are both unchanged. Rotating the word, or getting it out of `tools/shots.js`, is a
+   product decision and not one to make inside a build about colour.                                          */
 export const SECRET = ["superpink", "birthday"].map(curated);
 export const SECRET_IDS = SECRET.map(t => t.id);
 /** True for a curated kit that only shows once the key has been given. */

@@ -409,3 +409,103 @@ Written here in advance so the results cannot quietly absorb them:
 - whether 180 particles hold 60 fps on real watch silicon;
 - whether the doorbell's latency win survives a real WKWebView suspend/resume cycle;
 - whether bundled fonts survive App Store review.
+
+---
+
+## Results
+
+### The suites
+
+| | |
+| --- | --- |
+| Node | **136 tests** — model 28, theme 33, crypto 10, sync 14, sound 12, features 29, compat 9 |
+| `swift test` | **130 tests in 10 suites**, 8.3 s (116 before the round) |
+| `tools/e2e4.js` | **169 passed, 0 failed** at 1440×900 and 390×844, with zero page errors, zero CSP violations and zero third-party requests |
+| builds | iOS Simulator and watchOS Simulator, `BUILD SUCCEEDED`, **zero warnings** in either |
+| the Watch | `-TFFontSelfTest` **98/98**, `-TFConfettiSelfTest` **108/108**, `-TFWatchSelfTest` and `-TFAddSelfTest` green |
+
+### §1 — the accent is the kit's again
+
+Only three kits ever carried `#A86014`, so this was a three-kit change and fifteen kits are
+byte-identical before and after. The `cssText()` diff over all eighteen confirms it: two kits moved.
+
+| | accent on `--ink` | on `--ink-3` |
+| --- | --- | --- |
+| **terminal** `#A86014` → `#4AF07A` | 4.12 → **13.29** | 3.48 → **11.22** |
+| **paper** `#A86014` → `#C8321F` | 4.33 → **4.79** | 3.48 → **3.85** |
+| **dark** — unchanged, and that is the decision | 4.12 | 3.48 |
+
+`finalize()` returns all six reverted hexes unchanged — verified by running its own `fix3` nudge on
+each rather than assuming — so this is a restoration, not a re-derivation, and the hexes people knew
+before 1.11 are the hexes that ship.
+
+**The mark did not move.** `BRAND_ACCENT`, `BRAND_COLOURWAYS`, `BRAND`, `brandTiles()`, `brandDark()`
+and `icons/mark.svg` are all untouched, and `tools/mark.mjs --trace` confirms the drawing is the one
+that shipped.
+
+**Every kit is now measured against its own grounds**, printed on every run, and the `ORIGINAL`
+exemption exempts light and pink from *nudging* rather than from being *measured*: light's accent
+clears by 0.0016 and pink's accent text by 0.0069, asserted rather than assumed.
+
+### §2 — the kit table in the core
+
+18 kits and 13 pairs into `test/fixtures/kits.json`; **16** into `Kits.generated.swift`, the Secret
+pair into no binary at all and a compiled assertion saying so. The drift test evaluates **live
+`theme.js`** in a `JSContext` and compares — which is what caught the fixture going stale at
+integration the moment Track A's palette met Track B's table, exactly the failure a snapshot alone
+would have shipped.
+
+The type: **33 static faces, 1.3 MB**, converted from the repo's own woff2 latin subsets and
+instanced to the weights `theme.js` records. The family names are read back out of the produced
+files, never from `theme.js`, because ten of the twenty-two CSS names resolve to Helvetica on Apple
+platforms — silently.
+
+### §3 — the Watch
+
+Kit-driven accent, ground and type; a Day/Night picker behind the long press on the count, stored in
+the App Group and **verified to persist across a cold launch**; the confetti as a `Canvas` in a
+`TimelineView(.animation)`, `fx.js` port for port at **222 particles holding ~52 fps**; and all
+**eighteen** kits screenshotted.
+
+**Paper's cream ground, measured rather than assumed:** mean linear drive at γ 2.2, same layout to
+the pixel, 416×496 native — dark **0.0285**, cream **0.7868**, a ratio of **27.5–27.6×** across four
+channel weightings. It is **not a battery number**: no panel calibration, no static panel/SoC floor,
+no duty cycle. And the system clock over Paper's cream measures **1.12:1**, which no API can change.
+
+**The complication takes the kit's type and can never take its accent.** Observed, not merely read:
+rendering the views under `.accented` and under `fullColor` came back **byte-identical**, which
+proves SwiftUI passes the colours through untouched and the flattening is the widget host's at
+composite time. There is no app-side compensation, so none was attempted.
+
+### §4 — the papercut
+
+Confirmed, and the mechanism is worse than "the Watch does not ring the bell": `sync.js:331` is the
+only line in the system that broadcasts, `SyncEngine.push()` is that block with the line absent, and
+`put_list_v3` does not broadcast either. So joining the realtime channel moved the poll from 60 s to
+240 s and nobody rang the bell it assumed.
+
+**The median was not the finding.** Three runs of the same condition gave 54 s, 132 s and 144 s.
+What reproduces is the shape — the wait is uniform on (0, the poll period], bounded by it and
+averaging half of it — so the number to quote is the **4× ratio** between realtime-connected and
+realtime-dead, and the backgrounded answer, which is **never, 10/10**, because `schedulePoll`'s
+`visible()` gate sits upstream of the interval.
+
+The fix is in the writer, not the poller: a narrow `DoorbellTransport` on `SupabaseTransport` and the
+mirror of `sync.js:331` in `SyncEngine.push()`, so the Watch, the Mac CLI and the App Intent all get
+it at once. **138 bytes per successful write, zero at idle**, and the 29-byte unchanged poll does not
+move.
+
+### What was pulled from this build
+
+**`derive()`'s `--ink-3` fix**, onto `derive-ink3-next`. It is right and measured, but it is the only
+change in the round that reaches another person's screen without any action of theirs — saved theme
+codes live in the encrypted document — and it should be attributable to one commit rather than to a
+round that also moved Paper, Terminal, the type and the sync path.
+
+Measured against realistic codes rather than synthetic ones, which moved the risk a long way down:
+the builder's own **Surprise me over 2,000 themes moved 0**, and the four real-shaped `T2:` codes in
+the repo moved 0. The ~47 % figure came from uniform-random hex, which is the wrong denominator.
+
+And the plain answer to whether the contract would have caught it: **no.** `COMPATIBILITY.md` never
+mentions theme codes or what one renders to — §5 pins the shape of `tf/v2/themecss`, §3 passes the
+`themes` collection through untouched. That is transport and shape; rendering is neither.

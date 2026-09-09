@@ -19,6 +19,9 @@ struct TodayView: View {
     @Environment(WatchStore.self) private var store
     @Environment(\.watchTheme) private var theme
     @Binding var showAdd: Bool
+    /// The long press on the count. It used to *be* Start again; it now opens the two things a hold
+    /// on the count can mean — see `CountActionsView`.
+    @Binding var showActions: Bool
 
     var body: some View {
         List {
@@ -39,12 +42,23 @@ struct TodayView: View {
 
     // ---------------------------------------------------------------- the count
 
-    /// Done over total, the sync mark, and — on a **long press** — Start again.
+    /// Done over total, the sync mark, and — on a **long press** — the count's two actions.
     ///
     /// Worth saying plainly: *the web has no long press on the count*. There a plain tap toggles
     /// one-thing mode and Start again is a button under the finale card reading "Bring them all
     /// back". The long press is a Watch idiom for a Watch that has no room for a second button; the
     /// *action* is the web's `startAgain()` exactly.
+    ///
+    /// **Phase 4 put a second thing behind the same hold, and that cost Start again a tap.** The
+    /// count is the Watch's one long-press surface and a third page would cost Today a swipe every
+    /// time somebody scrolls, forever, to reach a screen they will open twice a year — so the hold
+    /// now presents a two-row sheet instead of firing. Named rather than buried: a gesture that used
+    /// to do a thing and now opens a menu is a small regression for the person who had learned it.
+    ///
+    /// It also fixed something. **The old hold was gated on `store.canEdit`**, so a view-only list
+    /// had no long press at all — and once the theme lives behind it, that would have meant a person
+    /// whose only list is shared read-only could never change their Watch's theme. A theme is not a
+    /// property of the list. So the hold is ungated and *Start again* is the row that is disabled.
     private var countRow: some View {
         HStack(spacing: 3) {
             Text("\(store.doneCount)")
@@ -63,10 +77,8 @@ struct TodayView: View {
         }
         .padding(.vertical, 2)
         .contentShape(Rectangle())
-        // Gated the way the + is: a view-only list must not offer a gesture that its own guard
-        // will refuse, and an accessibility hint promising one is worse than no hint at all.
-        .onLongPressGesture(minimumDuration: 0.5) { if store.canEdit { store.startAgain() } }
-        .accessibilityHint(store.canEdit ? Text("Hold to start again") : Text(""))
+        .onLongPressGesture(minimumDuration: 0.5) { showActions = true }
+        .accessibilityHint(Text("Hold for start again and theme"))
         .listRowBackground(Color.clear)
     }
 
@@ -218,3 +230,549 @@ struct AlwaysOnTodayView: View {
         .background(theme.ink)
     }
 }
+
+// ---------------------------------------------------------------- the volley
+
+/// **The finale's confetti, ported from `fx.js` rather than reinvented.** Every number below is that
+/// file's: gravity `0.30`, drag `0.992` on both axes, `life` from 1 decaying `0.0075 + rand*0.008` a
+/// frame, `rib` on 45% of pieces, alpha `life * 1.7` clamped, and the volley itself — seven bursts of
+/// 26 at `w * (0.08 + 0.14i)`, `h * 0.97`, power 19, spread 1.15, fired `i * 65` ms apart, then one
+/// of 40 at `w/2`, `h * 0.6`, power 14, spread 2.6, at 210 ms. 222 particles.
+///
+/// ---------------------------------------------------------------- the one number that had to move
+///
+/// **`fx.js`'s speeds are in browser pixels and a watch is not a browser.** A piece launched at 19
+/// px/frame against 0.30 px/frame² of gravity reaches its apex 601 px up. On a 208×248 pt watch
+/// screen that is two and a half screens: the whole volley would leave through the top on frame one
+/// and the screen would be empty for a second and a half before anything came back.
+///
+/// So the port scales **every length by one factor** — positions, velocities, gravity and particle
+/// sizes alike — and scales *nothing else*. That is the only rescaling that leaves the choreography
+/// alone: an apex is `v² / 2g`, so multiplying `v` and `g` by the same `k` multiplies the apex by
+/// `k` and leaves every **time** exactly where `fx.js` put it. The bursts stay 65 ms apart, the wide
+/// one still lands at 210 ms, and a piece still lives about as long as it did. `k = height / 800`,
+/// 800 being a browser viewport's working height; on this simulator that is **0.31**.
+///
+/// The alternative — keep the speeds and shrink gravity — would have changed the timing, and the
+/// volley's timing is the half of it the haptics are already playing (`WatchHaptics`, seven clicks
+/// 65 ms apart). Those two must not drift apart.
+///
+/// ---------------------------------------------------------------- what `shapes` cannot say
+///
+/// `fx.js` reads a kit's `shapes` as **either** a count (v1's meaning: 1 ribbons, 2 ribbons and
+/// hearts, 3 ribbons hearts and stars) **or**, since 1.6, a list to draw from (0 ribbon, 1 heart,
+/// 2 star, 3 sparkle, 4 sprinkle). Those two readings of the same value disagree completely: as a
+/// count `1` is ribbons only, as a list it is hearts only.
+///
+/// **`Kit.shapes` cannot tell them apart, and this file is the first thing in the project that
+/// needed to.** `test/fixtures/kits.json`'s own mapping expression is
+/// `shapes: Array.isArray(t.shapes) ? t.shapes : [t.shapes]` — a number and a one-element array are
+/// the same value by the time the fixture is written, so `KitsGen` cannot emit the difference and
+/// `Kit(json:)` cannot read it. It is a union type flattened at a boundary, and nothing downstream
+/// says so because nothing downstream had ever drawn a particle.
+///
+/// What is recoverable, and why: **`fx.js`'s count vocabulary stops at 3**. Its own header calls the
+/// count "v1's meaning, unchanged", and v1 had exactly three shapes; indices 3 (sparkle) and 4
+/// (sprinkle) arrived in 1.6 as list-only. So a one-element `[n]` with `n` in 1…3 was a count, and
+/// anything else was already a list. That is right for all eighteen kits in the table today —
+/// fifteen at `[1]`, sunset at `[2]`, pink/dusk/blush at `[3]`, superpink at `[1,2,3]` and birthday
+/// at `[4]` — and it is a rule rather than a coincidence, which is the difference that matters.
+/// The residue is honest and small: a kit that one day writes `shapes: [2]` *as a list* would be
+/// drawn as a count here. The real fix is one line in `test/tools/gen-kits.mjs` and it is not this
+/// track's file.
+
+/// One piece. A struct, in a flat array, stepped by a free function — because the whole field has to
+/// be steppable with no view attached, which is what makes the volley checkable off-screen.
+struct ConfettiParticle {
+    var x: Double, y: Double
+    var vx: Double, vy: Double
+    /// The ribbon's box, and the polygon shapes' radius.
+    var w: Double, h: Double, s: Double
+    var rotation: Double, spin: Double
+    var life: Double, decay: Double
+    /// A ribbon flutters: its drawn height is `h * |cos(r * 1.7)|`, which is `fx.js`'s trick for
+    /// making a flat rectangle read as a twisting strip without a 3-D transform.
+    var ribbon: Bool
+    /// 0 ribbon, 1 heart, 2 star, 3 sparkle, 4 sprinkle.
+    var shape: Int
+    /// An index into the kit's confetti palette rather than a `Color`, so the field stays a plain
+    /// value and a screenshot of it can be compared across kits.
+    var color: Int
+}
+
+/// The field, and `fx.js`'s frame loop.
+///
+/// **Fixed timestep, 60 a second.** `fx.js` steps once per `requestAnimationFrame` and its constants
+/// are per-frame, not per-second; a `dt`-scaled port would drift from the web's arithmetic on every
+/// device whose refresh rate is not 60. So the view converts elapsed seconds into a frame number and
+/// this steps to it. That also makes the whole thing **deterministic given a seed**, which is what
+/// lets eighteen screenshots of the same volley differ only in colour.
+struct ConfettiField {
+    /// `fx.js`, unchanged.
+    static let gravity = 0.30, drag = 0.992
+    static let burstCount = 26, wideCount = 40
+    static let burstPower = 19.0, widePower = 14.0
+    static let burstSpread = 1.15, wideSpread = 2.6
+    static let stepMs = 65.0, wideAtMs = 210.0
+    /// A browser's working viewport height, and the only reason a number like this appears at all.
+    /// See the note above: it scales *lengths*, never times.
+    static let referenceHeight = 800.0
+
+    private(set) var particles: [ConfettiParticle] = []
+    /// The frame the field has been stepped to. `fx.js` has no such thing because a browser hands it
+    /// one; a `TimelineView` hands us a date instead, and this is how the two are reconciled.
+    private(set) var frame = 0
+    /// Bursts that have not fired yet, as (frame, how to fire it). The volley's schedule, resolved
+    /// to frames once, so a dropped frame delays nothing.
+    private var pending: [(frame: Int, x: Double, y: Double, n: Int, power: Double, spread: Double)] = []
+
+    private var rng: SplitMix64
+    private let size: CGSize
+    private let palette: Int
+    private let shapes: [Int]
+    private let listSemantics: Bool
+
+    /// `shapes` as `fx.js` would have read it — see the note above for why this cannot come out of
+    /// `Kit` already decided.
+    static func readsAsList(_ shapes: [Int]) -> Bool {
+        guard shapes.count == 1 else { return true }
+        return !(1...3).contains(shapes[0])
+    }
+
+    init(size: CGSize, kit: Kit, seed: UInt64) {
+        self.size = size
+        self.palette = max(1, kit.confetti.count)
+        self.shapes = kit.shapes
+        self.listSemantics = Self.readsAsList(kit.shapes)
+        self.rng = SplitMix64(seed: seed)
+        schedule()
+    }
+
+    /// `volley()`. Seven along the foot 65 ms apart, one wide one through the middle at 210.
+    private mutating func schedule() {
+        let w = size.width, h = size.height
+        for i in 0..<7 {
+            pending.append((frame: Int((Double(i) * Self.stepMs / 1000 * 60).rounded()),
+                            x: w * (0.08 + 0.14 * Double(i)), y: h * 0.97,
+                            n: Self.burstCount, power: Self.burstPower, spread: Self.burstSpread))
+        }
+        pending.append((frame: Int((Self.wideAtMs / 1000 * 60).rounded()),
+                        x: w * 0.5, y: h * 0.6,
+                        n: Self.wideCount, power: Self.widePower, spread: Self.wideSpread))
+    }
+
+    /// The length scale. Every distance in `fx.js` goes through this and nothing else does.
+    private var k: Double { size.height / Self.referenceHeight }
+
+    /// `burst()`.
+    private mutating func burst(x: Double, y: Double, n: Int, power: Double, spread: Double) {
+        let k = self.k
+        for _ in 0..<n {
+            let a = -Double.pi / 2 + (rng.unit() - 0.5) * spread
+            let sp = power * (0.55 + rng.unit() * 0.8) * k
+            particles.append(ConfettiParticle(
+                x: x, y: y,
+                vx: cos(a) * sp + (rng.unit() - 0.5) * 1.3 * k,
+                vy: sin(a) * sp,
+                w: (3 + rng.unit() * 5) * k,
+                h: (6 + rng.unit() * 11) * k,
+                s: (5 + rng.unit() * 6) * k,
+                rotation: rng.unit() * .pi * 2,
+                spin: (rng.unit() - 0.5) * 0.34,
+                life: 1,
+                decay: 0.0075 + rng.unit() * 0.008,
+                ribbon: rng.unit() < 0.45,
+                shape: shapeOf(),
+                color: Int(rng.unit() * Double(palette)) % palette))
+        }
+    }
+
+    /// `shapeOf()`, with the count/list question already settled by `readsAsList`.
+    private mutating func shapeOf() -> Int {
+        if listSemantics {
+            return shapes.isEmpty ? 0 : shapes[Int(rng.unit() * Double(shapes.count)) % shapes.count]
+        }
+        let n = shapes.first ?? 1
+        if n == 2 { return rng.unit() < 0.5 ? 0 : 1 }
+        return Int(rng.unit() * Double(max(1, n))) % max(1, n)
+    }
+
+    /// Step to `target`, one frame at a time, firing each burst on the frame the volley put it on.
+    ///
+    /// **The frame counter has to move inside the loop**, not before it: the seven bursts are 65 ms
+    /// apart and the whole shape of the volley is that stagger, so a catch-up that set the clock to
+    /// the destination first would fire all eight bursts on one frame and throw the entire 222
+    /// pieces from the floor at once.
+    ///
+    /// The ceiling is a watchOS fact rather than a tidiness one: a watch app is suspended seconds
+    /// after the wrist drops and comes back to a date that can be hours later, and simulating a
+    /// quarter of a million frames to arrive at an empty field is a spin, not a recovery. 600 frames
+    /// is ten seconds and the field is provably empty by 140 (`1 / 0.0075`, the slowest decay).
+    mutating func advance(to target: Int) {
+        let stop = min(target, frame + 600)
+        while frame <= stop {
+            fireDue()
+            if frame >= stop { break }
+            step()
+            frame += 1
+        }
+        if target > frame { frame = target; fireDue() }
+    }
+
+    private mutating func fireDue() {
+        while let next = pending.first, next.frame <= frame {
+            pending.removeFirst()
+            burst(x: next.x, y: next.y, n: next.n, power: next.power, spread: next.spread)
+        }
+    }
+
+    private mutating func step() {
+        let floorY = size.height + 70 * k
+        var kept: [ConfettiParticle] = []
+        kept.reserveCapacity(particles.count)
+        for var p in particles {
+            p.vy += Self.gravity * k
+            p.vx *= Self.drag
+            p.vy *= Self.drag
+            p.x += p.vx
+            p.y += p.vy
+            p.rotation += p.spin
+            p.life -= p.decay
+            if p.life <= 0 || p.y > floorY { continue }
+            kept.append(p)
+        }
+        particles = kept
+    }
+
+    /// **The end.** `fx.js` stops asking for frames when the array empties; a `TimelineView` has no
+    /// such switch and will keep a redraw source alive on a live screen forever, so the view removes
+    /// itself when this goes false. Pending bursts count: the field is not done before it has begun.
+    var isAlive: Bool { !particles.isEmpty || !pending.isEmpty }
+}
+
+/// Deterministic, seedable, and eight bytes of state — so a field can be replayed exactly, which is
+/// what a screenshot of eighteen kits' confetti needs to be worth comparing. `Double.random` is not
+/// seedable without carrying a whole `RandomNumberGenerator` through every call site.
+struct SplitMix64 {
+    private var state: UInt64
+    init(seed: UInt64) { state = seed }
+    mutating func next() -> UInt64 {
+        state &+= 0x9E3779B97F4A7C15
+        var z = state
+        z = (z ^ (z >> 30)) &* 0xBF58476D1CE4E5B9
+        z = (z ^ (z >> 27)) &* 0x94D049BB133111EB
+        return z ^ (z >> 31)
+    }
+    /// 0..<1.
+    mutating func unit() -> Double { Double(next() >> 11) * (1.0 / 9007199254740992.0) }
+}
+
+// ---------------------------------------------------------------- drawing it
+
+/// `Canvas` inside `TimelineView(.animation)`, which is the pair the plan measured: both watchOS
+/// 8.0+, and 180 rotating particles drawn live on a 26.5 simulator.
+///
+/// **Always-On is not gated here and must not be.** `AnimationTimelineSchedule.entries(from:mode:)`
+/// returns **zero entries** in `.lowFrequency`, so `TimelineView(.animation)` parks itself the
+/// moment the wrist drops — measured, on both runtimes. An `isLuminanceReduced` check would be a
+/// second mechanism doing the same job, and the failure mode of two mechanisms is that one of them
+/// is wrong. (A hand-rolled `PeriodicTimelineSchedule` would **not** self-park: it ignores the mode
+/// and keeps ticking. That is the trap, and it is why this is not one.)
+///
+/// **Sound stays out and the haptic half does not change.** `CoreHaptics` is still absent from the
+/// watchOS SDK — `WatchHaptics` says so at length — so the volley's shape is still seven
+/// `WKInterfaceDevice.play(.click)` on the same onsets this draws to, and nothing here plays a note.
+struct ConfettiView: View {
+    let kit: Kit
+    let colors: [Color]
+    /// Changes every time the finale fires; a new value is a new field.
+    let run: Int
+    /// The moment the run began, so the field's frame number is measured from the burst rather than
+    /// from whenever this view happened to be created.
+    let started: Date
+    /// `-TFFinaleHold <seconds>`: freeze the field at one instant so a screenshot of an animation is
+    /// reproducible. nil in every build a person will ever run.
+    let hold: Double?
+
+    /// Removed by the parent when this goes false — see `isAlive`.
+    @Binding var alive: Bool
+
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            Canvas(rendersAsynchronously: false) { context, size in
+                #if DEBUG
+                ConfettiMeter.tick(timeline.date)
+                #endif
+                draw(context: context, size: size, at: seconds(timeline.date))
+            }
+        }
+        .allowsHitTesting(false)
+        .ignoresSafeArea()
+    }
+
+    private func seconds(_ date: Date) -> Double {
+        if let hold { return hold }
+        return max(0, date.timeIntervalSince(started))
+    }
+
+    private func draw(context: GraphicsContext, size: CGSize, at seconds: Double) {
+        guard size.width > 0, size.height > 0 else { return }
+        var field = ConfettiField(size: size, kit: kit, seed: seed(size))
+        field.advance(to: Int(seconds * 60))
+        if !field.isAlive {
+            // The end, reported out of the draw rather than out of a timer: the field itself is the
+            // only thing that knows when the last piece left.
+            if alive { Task { @MainActor in alive = false } }
+            return
+        }
+        for p in field.particles {
+            var c = context
+            c.translateBy(x: p.x, y: p.y)
+            c.rotate(by: .radians(p.rotation))
+            c.opacity = min(1, max(0, p.life * 1.7))
+            let paint = GraphicsContext.Shading.color(colors[p.color % max(1, colors.count)])
+            c.fill(path(p), with: paint)
+        }
+    }
+
+    /// The field is rebuilt from the seed on every frame rather than held in `@State`, because a
+    /// `Canvas` closure is not allowed to mutate view state and a `TimelineView` may draw the same
+    /// date twice. Cheap: 222 particles over at most 240 steps is arithmetic, and it is the same
+    /// arithmetic `fx.js` does per frame anyway — the difference is only that this one starts over.
+    /// The seed is the run and the size, so a resize is a new field rather than a jump.
+    private func seed(_ size: CGSize) -> UInt64 {
+        UInt64(bitPattern: Int64(run &* 2_654_435_761)) ^ UInt64(size.width.bitPattern &+ size.height.bitPattern)
+    }
+
+    private func path(_ p: ConfettiParticle) -> Path {
+        switch p.shape {
+        case 1: return heart(p.s)
+        case 2: return star(p.s)
+        case 3: return sparkle(p.s)
+        case 4: return sprinkle(w: p.w * 1.15, h: p.h * 0.62)
+        default:
+            let hh = p.ribbon ? p.h * abs(cos(p.rotation * 1.7)) : p.h
+            return Path(CGRect(x: -p.w / 2, y: -hh / 2, width: p.w, height: hh))
+        }
+    }
+
+    // `fx.js`'s four shapes, curve for curve.
+
+    private func heart(_ s: Double) -> Path {
+        let t = s * 0.5
+        var path = Path()
+        path.move(to: CGPoint(x: 0, y: t * 0.62))
+        path.addCurve(to: CGPoint(x: 0, y: -t * 0.55),
+                      control1: CGPoint(x: t * 1.25, y: -t * 0.60),
+                      control2: CGPoint(x: t * 0.62, y: -t * 1.52))
+        path.addCurve(to: CGPoint(x: 0, y: t * 0.62),
+                      control1: CGPoint(x: -t * 0.62, y: -t * 1.52),
+                      control2: CGPoint(x: -t * 1.25, y: -t * 0.60))
+        path.closeSubpath()
+        return path
+    }
+
+    private func star(_ s: Double) -> Path {
+        var path = Path()
+        for i in 0..<10 {
+            let r = (i % 2 == 1) ? s * 0.42 : s * 0.95
+            let a = Double.pi / 5 * Double(i) - .pi / 2
+            let point = CGPoint(x: cos(a) * r, y: sin(a) * r)
+            if i == 0 { path.move(to: point) } else { path.addLine(to: point) }
+        }
+        path.closeSubpath()
+        return path
+    }
+
+    private func sparkle(_ s: Double) -> Path {
+        let a = s * 1.15, b = s * 0.20
+        var path = Path()
+        path.move(to: CGPoint(x: 0, y: -a))
+        path.addQuadCurve(to: CGPoint(x: a, y: 0), control: CGPoint(x: b * 0.5, y: -b * 0.5))
+        path.addQuadCurve(to: CGPoint(x: 0, y: a), control: CGPoint(x: b * 0.5, y: b * 0.5))
+        path.addQuadCurve(to: CGPoint(x: -a, y: 0), control: CGPoint(x: -b * 0.5, y: b * 0.5))
+        path.addQuadCurve(to: CGPoint(x: 0, y: -a), control: CGPoint(x: -b * 0.5, y: -b * 0.5))
+        path.closeSubpath()
+        return path
+    }
+
+    private func sprinkle(w: Double, h: Double) -> Path {
+        Path(roundedRect: CGRect(x: -w / 2, y: -h / 2, width: w, height: h), cornerRadius: w / 2)
+    }
+}
+
+// ---------------------------------------------------------------- what a hold on the count means
+
+/// Two rows, and the second one is the reason Phase 3's "no settings screen" has an exception.
+///
+/// `NavigationLink` rather than a second `.sheet`: a sheet from a sheet on watchOS stacks two
+/// dismiss gestures on top of each other, and the crown-and-swipe that gets you out of the inner one
+/// is the same gesture that gets you out of the outer.
+struct CountActionsView: View {
+    @Environment(WatchStore.self) private var store
+    @Environment(WatchThemeStore.self) private var themeStore
+    @Environment(\.watchTheme) private var theme
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        List {
+            Button {
+                store.startAgain()
+                dismiss()
+            } label: {
+                Label {
+                    Text("Start again").font(theme.ui(15, .body)).foregroundStyle(theme.text)
+                } icon: {
+                    Image(systemName: "arrow.counterclockwise").foregroundStyle(theme.accent)
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(!store.canEdit)
+            .listRowBackground(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(theme.ink2))
+
+            NavigationLink {
+                KitPickerView().watchGround(theme)
+            } label: {
+                Label {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Theme").font(theme.ui(15, .body)).foregroundStyle(theme.text)
+                        Text(theme.kit.name).font(theme.ui(11, .caption2)).foregroundStyle(theme.muted)
+                    }
+                } icon: {
+                    // The kit's own two colours, which is the only preview a row this size can hold.
+                    Circle().fill(theme.accent)
+                        .frame(width: 14, height: 14)
+                        .overlay(Circle().strokeBorder(theme.hairSolid, lineWidth: 1))
+                }
+            }
+            .listRowBackground(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(theme.ink2))
+        }
+        .scrollContentBackground(.hidden)
+        .background(theme.ink)
+        .navigationTitle { Text("Today").foregroundStyle(theme.accent) }
+    }
+}
+
+// ---------------------------------------------------------------- -TFConfettiSelfTest
+
+#if DEBUG
+/// **How many frames the volley actually got.** A `Canvas` cannot write to view state, so the count
+/// lives here. It is the only way to say what a watch simulator did with 222 rotating particles
+/// rather than what it ought to have done.
+enum ConfettiMeter {
+    nonisolated(unsafe) static var draws = 0
+    nonisolated(unsafe) static var first: Date?
+    nonisolated(unsafe) static var last: Date?
+
+    static func tick(_ now: Date) {
+        if first == nil { first = now }
+        last = now
+        draws += 1
+    }
+
+    static var report: String {
+        guard let first, let last, draws > 1 else { return "frames=\(draws) (nothing drawn yet)" }
+        let seconds = last.timeIntervalSince(first)
+        guard seconds > 0 else { return "frames=\(draws) over 0s" }
+        return String(format: "frames=%d over %.2fs = %.1f/s", draws, seconds, Double(draws - 1) / seconds)
+    }
+}
+
+/// `-TFConfettiSelfTest`. The volley, walked off-screen for every kit this device can render.
+///
+/// It exists for the same reason `-TFFontSelfTest` does: **the failure is silent.** A field whose
+/// particles all leave on frame one, a `shapes` value read as the wrong kind, a decay that never
+/// reaches zero and keeps a `TimelineView` awake forever — every one of those is a screenshot that
+/// looks like a screenshot of confetti, or of nothing, and neither says which.
+///
+/// Nothing here draws. It steps the same `ConfettiField` the `Canvas` steps, on the same 208×248 the
+/// simulator reports, and asks it four questions per kit.
+@MainActor
+enum ConfettiSelfTest {
+
+    static func runIfAsked(_ kits: [Kit]) async {
+        guard ProcessInfo.processInfo.arguments.contains("-TFConfettiSelfTest") else { return }
+        run(kits)
+    }
+
+    static func run(_ kits: [Kit]) {
+        func say(_ s: String) { print("[tfive] confetti self-test: \(s)") }
+        // The Series 11 46mm, in points. A field is size-relative, so the number that matters is the
+        // ratio it produces, and that is printed.
+        let size = CGSize(width: 208, height: 248)
+        var failures: [String] = []
+        var checked = 0, passed = 0
+        func check(_ ok: Bool, _ what: @autoclosure () -> String) {
+            checked += 1
+            if ok { passed += 1 } else { failures.append(what()) }
+        }
+
+        say("begin kits=\(kits.count) canvas=\(Int(size.width))x\(Int(size.height)) "
+            + String(format: "k=%.3f", size.height / ConfettiField.referenceHeight))
+
+        var shapeTally: [String: [Int: Int]] = [:]
+        var lifetimes: [String: Int] = [:]
+
+        for kit in kits {
+            // 1. the full volley arrives, and arrives staggered.
+            var field = ConfettiField(size: size, kit: kit, seed: 1)
+            field.advance(to: 0)
+            let atFirstFrame = field.particles.count
+            field.advance(to: 12)                       // just before the wide burst at 210 ms
+            let beforeWide = field.particles.count
+            field.advance(to: 14)
+            let afterWide = field.particles.count
+
+            check(atFirstFrame == ConfettiField.burstCount,
+                  "\(kit.id): frame 0 has \(atFirstFrame) particles, not one burst of \(ConfettiField.burstCount)")
+            check(beforeWide > atFirstFrame,
+                  "\(kit.id): the seven bursts did not stagger — \(beforeWide) at frame 12")
+            check(afterWide >= beforeWide,
+                  "\(kit.id): the wide burst did not land by frame 14")
+
+            // 2. it stays on screen. A volley that leaves through the top is the failure the length
+            //    scale exists to prevent, so this asks how much of it is still inside the frame at
+            //    the moment it is most spread out.
+            var peak = ConfettiField(size: size, kit: kit, seed: 1)
+            peak.advance(to: 45)
+            let onScreen = peak.particles.filter { $0.y >= 0 && $0.y <= size.height }.count
+            check(!peak.particles.isEmpty && Double(onScreen) / Double(peak.particles.count) > 0.5,
+                  "\(kit.id): only \(onScreen)/\(peak.particles.count) of the volley is on screen at frame 45")
+
+            // 3. it ends. The whole reason the view removes itself.
+            var end = ConfettiField(size: size, kit: kit, seed: 1)
+            var frame = 0
+            while end.isAlive && frame < 600 { frame += 1; end.advance(to: frame) }
+            check(!end.isAlive, "\(kit.id): the field never emptied — a TimelineView left awake forever")
+            lifetimes[kit.id] = frame
+
+            // 4. the shapes are the kit's. Ten fields, so the tally is of the rule rather than of
+            //    one seed's luck.
+            var tally: [Int: Int] = [:]
+            for seed in 0..<10 {
+                var f = ConfettiField(size: size, kit: kit, seed: UInt64(seed))
+                f.advance(to: 14)
+                for p in f.particles { tally[p.shape, default: 0] += 1 }
+            }
+            shapeTally[kit.id] = tally
+            let list = ConfettiField.readsAsList(kit.shapes)
+            let allowed: Set<Int> = list ? Set(kit.shapes)
+                                         : Set(0..<max(1, kit.shapes.first ?? 1))
+            check(Set(tally.keys).isSubset(of: allowed),
+                  "\(kit.id): drew shapes \(Set(tally.keys).sorted()) outside \(allowed.sorted())")
+        }
+
+        // The count/list question, said out loud for every kit, because it is the one thing about
+        // this port that a reader cannot check by looking at the screen.
+        for kit in kits {
+            let list = ConfettiField.readsAsList(kit.shapes)
+            let shapes = (shapeTally[kit.id] ?? [:]).keys.sorted()
+            say("\(kit.id): shapes=\(kit.shapes) read as \(list ? "LIST" : "count") "
+                + "→ drew \(shapes) · palette=\(kit.confetti.count) · ends at frame \(lifetimes[kit.id] ?? -1)")
+        }
+
+        for f in failures { say("FAIL \(f)") }
+        say("end pass=\(passed)/\(checked)")
+    }
+}
+#endif

@@ -40,6 +40,7 @@
 import CoreText
 import Foundation
 import SwiftUI
+import WidgetKit
 import TodaysFiveCore
 #if canImport(UIKit)
 import UIKit
@@ -335,6 +336,28 @@ final class WatchThemeStore {
     /// Every kit this device may render: the 16 in the binary, plus whatever arrived.
     var available: [Kit] { Kits.open + unlocked }
 
+    /// What the picker lists, for the slot it is editing: the eight kits designed for this slot in
+    /// `theme.js`'s own order, then the eight designed for the other, then whatever a phone has
+    /// unlocked.
+    ///
+    /// **Both leans are offered in both slots and that is the web's rule, not a slip** — "any theme,
+    /// light or dark: the slot is about *when*, not *what*". Somebody who wants Paper at night is
+    /// entitled to it. What the ordering does is make the eight that were drawn for this slot the
+    /// eight you reach first, which on a crown is the whole of the affordance.
+    ///
+    /// The Secret kits are last and are only here when a phone that has unlocked them has said so.
+    /// A phone that re-locks takes them out of this list on the next `refresh()`, and a slot left
+    /// pointing at one falls back to that slot's default — see `resolved()`.
+    var offered: [Kit] {
+        let mine = slot == .day ? Kits.day : Kits.night
+        let theirs = slot == .day ? Kits.night : Kits.day
+        return mine + theirs + unlocked
+    }
+
+    /// The kit id stored in a slot, which is what the picker puts its checkmark against. Not
+    /// `theme.kit.id`: under `-TFKit` those two deliberately disagree.
+    func id(for lean: KitLean) -> String { lean == .day ? dayId : nightId }
+
     private let store: UserDefaults
 
     init(store: UserDefaults? = UserDefaults(suiteName: WatchGroup.identifier)) {
@@ -399,7 +422,171 @@ final class WatchThemeStore {
         guard let i = args.firstIndex(of: "-TFKit"), i + 1 < args.count else { return nil }
         return args[i + 1]
     }
+
+    /// `-TFThemeSet night:forest` — **the picker's own two calls, from a launch argument.**
+    ///
+    /// It is here because the one verification this round could not do by hand is the one that
+    /// matters most: `simctl` cannot tap a watch simulator, so nothing can press a row in
+    /// `KitPickerView` and then relaunch to see whether it stuck. This calls `show(_:)` and
+    /// `choose(_:for:)` — the identical two methods the picker's buttons call, not a copy of them —
+    /// so what a two-launch run proves about this is true of the picker.
+    ///
+    /// It writes to the real App Group, which is the point: the next launch reads it back the same
+    /// way a person's would.
+    func applyDebugArguments() {
+        let args = ProcessInfo.processInfo.arguments
+        if let i = args.firstIndex(of: "-TFThemeSet"), i + 1 < args.count {
+            let parts = args[i + 1].split(separator: ":", maxSplits: 1)
+            if parts.count == 2, let lean = KitLean(rawValue: String(parts[0])) {
+                show(lean)
+                choose(String(parts[1]), for: lean)
+            }
+        }
+        say()
+    }
+
+    /// What is stored and what resolved, printed on every debug launch. Kit ids, slot names and
+    /// counts — a kit id is not a secret (`theme.js` ships all eighteen to every browser) and the
+    /// two Secret ones are named by id here rather than by the word that unlocks them.
+    func say() {
+        print("[tfive] theme: slot=\(slot.rawValue) day=\(dayId) night=\(nightId) "
+              + "→ kit=\(theme.kit.id) pair=\(theme.kit.pair) "
+              + "base=\(theme.kit.base.rawValue) unlocked=\(unlocked.count) offered=\(offered.count)")
+    }
     #endif
+}
+
+// ---------------------------------------------------------------- the picker
+
+/// **The Watch's one settings screen, and the reversal it is.**
+///
+/// Phase 3 wrote: "There is no settings screen, no Everything, no sections, no History, no rules, no
+/// templates and no themes: those live on a phone-sized screen because they need one." That sentence
+/// is still right about all of them except the last, and this screen is the exception, on purpose
+/// and on its own. The reason it is different from the others is not that themes are more important;
+/// it is that **a theme is the only one of that list that is a property of the device you are
+/// looking at**. History, rules and templates are properties of a list, and a list has a phone. The
+/// kit a wrist is drawn in has nowhere else it could be chosen.
+///
+/// **The shape is `theme.js`'s, minus the parts a wrist should not carry.** The web has two slots and
+/// a switch with three modes — by hand, follow the system, and on a schedule with `dayAt`/`nightAt`.
+/// This has the two slots and the hand:
+///
+/// * `system` **cannot exist here**, and that is a platform fact rather than a choice: watchOS has no
+///   light appearance, so `\.colorScheme` reads `.dark` at the root of every app on the device
+///   forever. A mode that followed it would pin every Watch to its night slot and call that a
+///   feature.
+/// * `schedule` was **dropped**, and that is the choice. It would need two time pickers on a screen
+///   two inches across, a stored `holdAuto` so a manual flip survives until the automation next
+///   changes its mind, and `settleHold` run on every occasion the app wakes — for a preference a
+///   person changes by looking at their wrist and deciding they would rather it were dark. The web
+///   has a keyboard and a settings page; this has a crown. If the schedule is ever wanted here the
+///   place to put it is the phone's device record, and that is a different round.
+///
+/// **One control does two jobs, and that is the whole design.** The Day/Night buttons choose which
+/// slot is *on* — the flip — and simultaneously choose which slot the list below is editing. On a
+/// screen this size, showing somebody a kit they are not currently looking at while they choose it
+/// would be the worse trade: here, the row you tap is the thing that happens, immediately, on the
+/// screen you are standing on. Both slots are still reachable, in one extra tap.
+struct KitPickerView: View {
+    @Environment(WatchThemeStore.self) private var store
+    @Environment(\.watchTheme) private var theme
+
+    var body: some View {
+        List {
+            slotRow
+            ForEach(store.offered) { kit in
+                Button {
+                    store.choose(kit.id, for: store.slot)
+                } label: {
+                    row(kit)
+                }
+                .buttonStyle(.plain)
+                .listRowBackground(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous).fill(theme.ink2)
+                )
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background(theme.ink)
+        // The view-taking overload again: the string one is drawn by the system in the system's
+        // colour, which on a light kit is white on cream.
+        .navigationTitle { Text("Theme").foregroundStyle(theme.accent) }
+    }
+
+    /// The flip. Two buttons rather than a `Picker`, because a watchOS segmented `Picker` is a
+    /// crown-driven wheel and this is a two-state switch that wants one tap.
+    private var slotRow: some View {
+        HStack(spacing: 6) {
+            slotButton(.day, "sun.max.fill", "Day")
+            slotButton(.night, "moon.fill", "Night")
+        }
+        .listRowBackground(Color.clear)
+    }
+
+    private func slotButton(_ lean: KitLean, _ symbol: String, _ label: String) -> some View {
+        let on = store.slot == lean
+        return Button {
+            store.show(lean)
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: symbol).font(.system(size: 11, weight: .semibold))
+                Text(label).font(theme.ui(12, .caption, bold: true))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 5)
+            .foregroundStyle(on ? theme.onAccent : theme.muted)
+            .background(
+                Capsule().fill(on ? theme.accent : theme.hairHi)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? [.isSelected] : [])
+    }
+
+    private func row(_ kit: Kit) -> some View {
+        let resolved = WatchTheme(kit: kit)
+        return HStack(spacing: 8) {
+            swatch(resolved)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(kit.name)
+                    .font(theme.ui(14, .body, bold: true))
+                    .foregroundStyle(theme.text)
+                    .lineLimit(1)
+                // The pair's name, because the type is half of what a kit is on this device and the
+                // swatch cannot show it.
+                Text(kit.type?.name ?? kit.pair)
+                    .font(theme.ui(10, .caption2))
+                    .foregroundStyle(theme.dim)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            if store.id(for: store.slot) == kit.id {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(theme.accent)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    /// The kit in miniature: its ground, a rule of its text and a bar of its accent. Three tokens is
+    /// as much as 26 points can carry, and they are the three that change the screen most.
+    private func swatch(_ kit: WatchTheme) -> some View {
+        RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .fill(kit.ink)
+            .frame(width: 26, height: 26)
+            .overlay(
+                VStack(alignment: .leading, spacing: 3) {
+                    Capsule().fill(kit.text).frame(width: 13, height: 2)
+                    Capsule().fill(kit.accent).frame(width: 9, height: 4)
+                }
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(theme.hairSolid, lineWidth: 1)
+            )
+    }
 }
 
 // ---------------------------------------------------------------- down the tree
@@ -607,5 +794,109 @@ enum FontSelfTest {
 @MainActor
 enum FontSelfTest {
     static func runIfAsked(_ kits: [Kit]) async {}
+}
+#endif
+
+// ---------------------------------------------------------------- -TFFaceProbe
+
+#if DEBUG
+/// **The two questions the complication round could not be answered by reading a doc comment.**
+///
+/// 1. Can the extension reach the Watch app's fonts without a second copy of them?
+/// 2. What does `WidgetRenderingMode.accented` actually do to a custom accent?
+///
+/// Both are run *in the Watch app*, because a complication only draws on a watch face and `simctl`
+/// cannot tap a watch simulator. What that costs each answer is different and is stated with each.
+///
+/// It prints file counts, name counts and channel values. No list, no id, no secret.
+@MainActor
+enum FaceProbe {
+
+    static func run(_ theme: WatchTheme) {
+        func say(_ s: String) { print("[tfive] face probe: \(s)") }
+
+        // ------------------------------------------------------------ 1. the fonts
+        //
+        // The URL handed in is the **extension's own**, so the arithmetic under test is the
+        // extension's arithmetic and not a re-derivation of it. What this cannot prove is that the
+        // widget host lets the appex read it at render time; what it does prove is that the path is
+        // right, the files are there, and CoreText can read a face out of them.
+        let appex = Bundle.main.builtInPlugInsURL?
+            .appendingPathComponent("TodaysFiveComplications.appex")
+        if let appex {
+            let root = WatchFaceType.fontsBundleURL(for: appex)
+            let inAppex = ((try? FileManager.default.contentsOfDirectory(at: appex,
+                                                                        includingPropertiesForKeys: nil))
+                           ?? []).filter { $0.pathExtension.lowercased() == "ttf" }.count
+            let names = WatchFaceType.facesOnDisk(in: appex)
+            let registered = WatchFaceType.register(in: appex)
+            let want = theme.kit.type?.uiBold.postScriptName ?? ""
+            say("appex=\(appex.lastPathComponent) ttfInAppex=\(inAppex) "
+                + "fontsRoot=\(root.lastPathComponent) facesOnDisk=\(names.count) "
+                + "registered=\(registered) wantedFaceOnDisk=\(names.contains(want))")
+        } else {
+            say("no PlugIns directory — this build has no extension embedded")
+        }
+
+        // ------------------------------------------------------------ 2. the accent
+        //
+        // `WidgetRenderingMode.accented`'s own words are that the system "treats the widget's views
+        // as if they were template images. It replaces the view's color — rendering the new colors
+        // while preserving the view's alpha channel". If that flattening happened *in SwiftUI*, an
+        // `ImageRenderer` handed the environment value would show it. Whatever this prints is the
+        // observation; the interpretation is in `Complications.swift`.
+        let sample = ZStack {
+            Rectangle().fill(theme.accent)
+            Circle().fill(theme.danger).frame(width: 12, height: 12)
+        }
+        .frame(width: 32, height: 32)
+
+        let full = pixel(sample.environment(\.widgetRenderingMode, .fullColor))
+        let accented = pixel(sample.environment(\.widgetRenderingMode, .accented))
+        say("accent asked for \(theme.kit.colors.accent)")
+        say("fullColor  corner=\(describe(full?.corner)) centre=\(describe(full?.centre))")
+        say("accented   corner=\(describe(accented?.corner)) centre=\(describe(accented?.centre))")
+        let same = describe(full?.corner) == describe(accented?.corner)
+            && describe(full?.centre) == describe(accented?.centre)
+        say("the two renderings are "
+            + (same
+               ? "IDENTICAL — SwiftUI did not flatten anything; the treatment is the widget host's"
+               : "DIFFERENT — SwiftUI itself changed the colours"))
+    }
+
+    private struct Sample { let corner: (UInt8, UInt8, UInt8, UInt8); let centre: (UInt8, UInt8, UInt8, UInt8) }
+
+    /// Two pixels out of a 32×32 render: one inside the accent fill, one in the middle of the mark
+    /// on top of it. Two rather than one because a mode that flattened *everything to one colour*
+    /// and a mode that changed nothing both leave a single pixel looking plausible.
+    private static func pixel<V: View>(_ view: V) -> Sample? {
+        let renderer = ImageRenderer(content: view)
+        renderer.scale = 1
+        guard let cg = renderer.cgImage else { return nil }
+        let w = cg.width, h = cg.height
+        guard w >= 4, h >= 4 else { return nil }
+        var buffer = [UInt8](repeating: 0, count: w * h * 4)
+        guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+              let ctx = CGContext(data: &buffer, width: w, height: h, bitsPerComponent: 8,
+                                  bytesPerRow: w * 4, space: space,
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+        func at(_ x: Int, _ y: Int) -> (UInt8, UInt8, UInt8, UInt8) {
+            let i = (y * w + x) * 4
+            return (buffer[i], buffer[i + 1], buffer[i + 2], buffer[i + 3])
+        }
+        return Sample(corner: at(2, 2), centre: at(w / 2, h / 2))
+    }
+
+    private static func describe(_ p: (UInt8, UInt8, UInt8, UInt8)?) -> String {
+        guard let p else { return "—" }
+        return String(format: "#%02X%02X%02X@%d", p.0, p.1, p.2, Int(p.3))
+    }
+}
+#else
+@MainActor
+enum FaceProbe {
+    static func run(_ theme: WatchTheme) {}
 }
 #endif

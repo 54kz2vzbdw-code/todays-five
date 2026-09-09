@@ -20,17 +20,30 @@ import { CURATED, PAIRS, CURATED_DAY, CURATED_NIGHT, SECRET_IDS, SLOT_DEFAULT, c
 
 /* ---------------- the mapping, written down once ----------------
 
-   The fixture is CURATED with two fields made regular, and nothing else: `shapes` is always an array
-   of ints (kits spell it `1` or `[1,2,3]`) and `secret` is always a bool (open kits omit it). Both
+   The fixture is CURATED with two fields made regular, and nothing else: `shapes` is always the
+   **list of shape indices to draw from**, and `secret` is always a bool (open kits omit it). Both
    are for the readers — a Swift decoder should not have to know that one field is sometimes a
    number, and "is this kit secret" should never be a question about whether a key exists.
+
+   `shapes` is the one that needs the care, and the first version of this file got it wrong in a way
+   nothing could see until something drew a particle. In `theme.js` the field is a **union**: either
+   a count, carrying v1's meaning (1 ribbons, 2 ribbons and hearts, 3 ribbons, hearts and stars), or
+   a list of indices (0 ribbon, 1 heart, 2 star, 3 sparkle, 4 sprinkle) — and the two disagree
+   completely, because as a count `1` is ribbons and as a list `[1]` is hearts. Wrapping a count in
+   an array (`[t.shapes]`) flattens the union and silently reads fifteen of the eighteen kits as
+   hearts-only.
+
+   So a count is **resolved** here rather than wrapped, which is exactly what `fx.js`'s `shapeOf()`
+   does with it: `n` draws uniformly from `0 … n-1`, and its `n === 2` special case (0 or 1, evenly)
+   is that same uniform draw written out. After this the field means one thing, no reader needs to
+   know the union ever existed, and the Watch does not have to guess which spelling it was given.
 
    The source of that mapping goes into the fixture as `expr`, and `KitFixtureTests.swift` evaluates
    **it** against live theme.js in a JSContext rather than a copy of its own. That is deliberate: the
    alternative is three lines of JavaScript duplicated in a Swift test file, where a change here
    would break a test that a person then "fixes" by editing the copy. One definition, carried beside
    the data it produced. */
-const normalizeKit = t => ({ ...t, shapes: Array.isArray(t.shapes) ? t.shapes : [t.shapes], secret: t.secret === true });
+const normalizeKit = t => ({ ...t, shapes: Array.isArray(t.shapes) ? t.shapes : Array.from({ length: t.shapes || 1 }, (_, i) => i), secret: t.secret === true });
 
 /** The whole table as the fixture holds it, as a JavaScript expression over theme.js's own globals.
     Evaluated by the Swift drift test; evaluated here only in the sense that the same function runs. */

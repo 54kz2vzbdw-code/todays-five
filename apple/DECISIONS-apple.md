@@ -1197,6 +1197,612 @@ ships to every browser and the gate is an FNV-hashed passphrase. "A Watch that h
 does not carry them" is a stricter product rule than the web's own model. It is kept because it was
 asked for, not because the data would otherwise leak.
 
+## Track C, stage 1 — the kit reaches the screen
+
+What was decided on the Watch's look, and what each decision cost. Everything with a number in it
+was measured on the Apple Watch Series 11 46mm simulator (watchOS 26.5, `4594CB69`) on this machine,
+against `Kits`' generated table at build 158.
+
+---
+
+### The constant did not merely need replacing; its argument had stopped being true
+
+`WatchTheme.swift` shipped in Phase 3 holding `#A86014`, and it argued for it:
+
+> The fallback is a good one and was chosen, not fallen into: `#A86014` is the brand accent that
+> **Dark, Paper and Terminal all carry** — the day default since 1.11, the night default, and the
+> app's own — so the three likeliest themes are already right.
+
+Track A made that false in the same round. Terminal has its own `#4AF07A` back and Paper its own
+`#C8321F`; **only Dark carries `#A86014` now**, and it carries it as its own colour rather than as a
+pin over somebody else's. The premise of the fallback was that three kits agreed. They no longer do.
+
+So the file holds a resolved `Kit` — palette as `Color`s, font pair as `Font`s — and the constant is
+gone from the Watch entirely. Which is worth saying plainly: a comment that argues for a decision is
+the best kind, and it is also the kind that can go stale in a way a bare constant cannot. **A
+premise written down is a premise something else can invalidate**, and the only defence is to check
+the premises of a file you are about to leave alone.
+
+### The phone-follows channel is still not built, and that is now a decision
+
+Phase 3 recorded "written down as not built" because the payload carried no colour. The payload
+could carry one today — `WatchLinkPayload.extra` passes unknown keys through, which is how the
+Secret kits already cross — so the honest version of this round's answer is not "we cannot" but "we
+will not".
+
+**Theme is a per-device preference in this app, and a Watch is a device.** The web's own model says
+so: two slots and a switch live in `meta.device`, per device, and nothing about them syncs. A Watch
+that inherited a phone's kit would be the one surface in the product where a theme travels.
+
+What *does* cross is narrower and is a permission rather than a preference: the two **Secret** kits'
+palettes, from a phone whose person has unlocked them, so a wrist can render them at all. A phone
+that re-locks takes them off the wrist on the next payload. `WatchThemeStore` reads them from the
+same App Group key `WatchLinkReceiver` writes rather than from the receiver itself, because a theme
+has to resolve on a launch that never starts a `WCSession` (`-TFWatchDemo`), and one reader of one
+key is a smaller thing to keep true than two objects agreeing.
+
+### The type, and the one number that is not the obvious one
+
+`Font.custom(face.postScriptName, size:relativeTo:)` at every call site, so the Watch's own text-size
+setting still moves the type. The name is `KitFace.postScriptName` from the generated table and never
+the family in `theme.js` — those are the fiction `styles.css`'s `@font-face` rules invent, and ten of
+twenty-two resolve to Helvetica.
+
+`tracking` is a multiplication and needs no argument: `theme.js` records em, `.tracking()` takes
+points, so it is `em × size` — except that it must be the **scaled** size, or the letter-spacing
+stays put while the type grows. `UIFontMetrics(forTextStyle:).scaledValue(for:)` is the same
+machinery `relativeTo:` uses, asked directly. Measured on this device at the default watch text size:
+**17pt relative to `.title3` renders at 16.00**, so Lato's `-0.025em` is **−0.400 pt** and not −0.425.
+
+**`lineHeight` is the one that is not obvious, and the naive version is wrong in the same direction on
+every kit.** `theme.js`'s `lh` is a multiple of the point size; SwiftUI's `.lineSpacing` is *extra
+space added to the face's own line height*, which is already 1.2–1.4× the point size. Measured: **Lato
+Black at 16.00pt stands 19.20 points tall** (`CTFontGetAscent + Descent + Leading`) against the lato
+pair's target of `1.14 × 16.00 = 18.24`. So the correct answer is **0.00** extra leading — and
+`(lh − 1) × size` would have added **2.24 points** of air to every line of every list, on a screen
+where five lines is the whole product. The face is therefore measured, and the result floored at
+zero, because SwiftUI will not tighten a line below its face's own metrics.
+
+### `-TFFontSelfTest`, and the two things it found
+
+A missing custom font renders the system face with **no log and no error**. A screenshot of Terminal
+set in Helvetica looks like a screenshot of Terminal. So the self-test is the only mechanism in the
+round that turns a silent fallback into a failure, and it asks three questions per face: is the
+family in `CTFontManagerCopyAvailableFontFamilyNames()`, does `CTFontCreateWithName` hand back the
+PostScript name it was asked for rather than a fallback's, and do the pair's two ui weights actually
+render differently.
+
+**Final tally, on the watch simulator:**
+
+```
+[tfive] font self-test: begin kits=16 pairs=13 files=33 familiesOnDevice=75
+[tfive] font self-test: bundled=33/33
+[tfive] font self-test: weights told apart by advance=12 ink=1
+[tfive] font self-test: faces=33 end pass=96/96
+[tfive] font self-test: at 17pt title3 scales to 16.00, task line height 19.20,
+                        tracking -0.400, extra leading 0.00
+```
+
+**1. Advance width cannot tell two weights apart, and the first run failed because of it.**
+`IBMPlexMono-Regular` and `IBMPlexMono-SemiBold` set the same 21-character ruler to the same
+**214.20** points. That is not a bug in the fonts; that is what monospaced *means*. The check now
+falls back to the **ink** — `CTLineGetImageBounds`, the box the drawn glyphs actually cover, which is
+wider in the heavier face even when the cell it sits in is not — and the tally says which
+discriminator settled each pair, because "told apart by ink" on a pair that is *not* monospaced would
+itself be worth looking at. Twelve by advance, one by ink, and the one is `mono`.
+
+**2. Walking the kits leaves two of the thirty-three bundled faces untested.** The 16 open kits name
+only **11** of the 13 pairs: `baloo` and `fredoka` belong to the two Secret kits and to nothing else.
+A self-test that iterated kits would have covered 31 faces and reported a clean 74/74 while two files
+in the bundle had never been asked to resolve — and the day they are asked is the day somebody
+unlocks a Secret kit, which is precisely when no console is attached. **A font pair is not a secret**
+(all 33 files ship to every wrist; the Secret rule is about palettes), so the test walks all thirteen
+pairs. That took it from 74 checks to **96**.
+
+The first run also printed the `mono` failure twice, once for Terminal and once for Teletype, which
+reads like two bugs. Pairs are deduped now.
+
+### The ground, and the two costs that cannot be paid off
+
+`.preferredColorScheme(.light)` is **inert** on watchOS — measured in the Phase 4 checkpoint, over a
+cream ground, leaving every `.primary` white and invisible. `.environment(\.colorScheme, .light)`
+works. watchOS has no light appearance at all, which is why **every** `.primary`, `.secondary` and
+system colour is gone from every Watch screen: fourteen call sites across five files, each of which
+was right only for as long as nobody chose a light kit.
+
+The ground itself is set three ways, because one is not enough: `.containerBackground(_:for:
+.navigation)` paints the watchOS screen including its corners, `.background` covers the views that
+are not in a navigation container (the sheets, the Always-On frame), and `.listRowBackground` is
+separate again — `.listStyle(.carousel)` draws its own translucent grey platter, which on Paper's
+cream is a grey card on paper. The platters are now the kit's `ink2`. On Dark that is `#0E140F`
+against a `#070A08` ground, which is a quieter separation than the system's and is the intended
+trade: the platter belongs to the kit or it belongs to the system, and it cannot belong to both.
+
+**Cost 1: the system clock stays white, and it is worse than "low contrast".** Measured on the Paper
+screenshot: the glyph core of the time is exactly `(255, 255, 255)` and the ground behind it is
+exactly `(247, 242, 232)` — Paper's `#F7F2E8`, byte for byte. That is **1.12:1**. There is no API for
+it: not `.tint`, not a toolbar item, not an `Info.plist` key; the time is drawn by the system outside
+the app's layer. **A light kit on this device ships with an illegible clock.** Accepted, in writing,
+because the brief asked for Paper's cream and this is what Paper's cream costs.
+
+The one place that *does* have a door out of it is the navigation title, which the string-taking
+`.navigationTitle("Lists")` also draws in the system's colour. The watchOS-exclusive view-taking
+overload takes a `Text` we can colour, and the picker now uses it. Same failure, one of the two has
+a fix, and the difference is worth naming rather than lumping together.
+
+**Cost 2: the ground is the battery.** Below.
+
+### Paper's ground, measured — and it is not a battery number
+
+`simctl` models no OLED power and nothing on this machine produces watts. What a screenshot *can*
+say honestly is how hard the panel is being driven. The same five-line demo Today, rendered under
+three kits, screenshotted at native **416×496**, mean per-channel **linear drive at γ 2.2** as a
+fraction of a full-white panel:
+
+| kit | flat | Rec.709 luma | OLED-weighted | max channel |
+| --- | --- | --- | --- | --- |
+| **dark** (`#070A08`) | 0.0285 | 0.0293 | 0.0281 | 0.0306 |
+| **terminal** (`#070A08`) | 0.0284 | 0.0323 | 0.0276 | 0.0352 |
+| **paper** (`#F7F2E8`) | **0.7868** | **0.8033** | **0.7755** | **0.8450** |
+
+**Paper ÷ dark: 27.6, 27.5, 27.6, 27.6 — 27.5–27.6× across all four weightings.**
+Paper ÷ terminal: 27.7, 24.9, 28.1, 24.0 — 24–28×, the spread being Terminal's green text, which the
+luma and max weightings notice and the flat one does not.
+
+The three frames are the same layout to the pixel: **51.1%** of the 206,336 pixels are exactly the
+kit's ground in each (105,390 / 105,373 / 105,401), so what is being compared is one screen's two
+paint jobs and not two different screens.
+
+**It is not a battery number, and it must never be quoted as one.** Three reasons, and all three
+apply every time it is repeated:
+
+1. **No panel calibration.** A screenshot is sRGB values, not emitted photons. The real transfer
+   curve of the Series 11's panel, its per-primary efficiency and its brightness setting are all
+   absent from the arithmetic.
+2. **No static floor.** Panel driver, backplane, SoC and radios draw power that has nothing to do
+   with what is on screen. A 27× ratio in the emissive term is a much smaller ratio in the total.
+3. **No duty cycle.** The Watch's screen is off, or Always-On dimmed, for the overwhelming majority
+   of the day. The ratio applies only while a person is looking at Today.
+
+**The prior measurement in `PLAN-apple-phase4.md` was dark 0.0466, cream 0.8146, 17.5×; this one is
+dark 0.0285, cream 0.7868, 27.6×.** The cream agrees to within 3.5%. The dark does not, and the
+denominator is where a ratio like this is fragile: a dark frame is *almost all* ground, so its drive
+is dominated by how much bright chrome happens to be on screen — the white system clock, the scroll
+indicator, how far the carousel has scrolled a bright row into view. The lesson is in the ratio's
+sensitivity rather than in either number: **a ratio whose denominator is near zero is not a stable
+quantity, and reporting it to three significant figures is a claim the method cannot support.** Both
+runs support the same sentence, which is the one worth keeping: *a cream ground drives this panel
+between one and two orders of magnitude harder than a near-black one.*
+
+### What stage 1 did not settle
+
+- **Always-On was not rendered.** `simctl` cannot put a watch simulator into luminance-reduced mode,
+  and there is no launch argument for it. The flattening rule is written and its colour is now the
+  kit's own `dim` rather than `Color(white: 0.62)`, but no screenshot of it exists.
+- **Only Today was screenshotted.** The picker sheet, the add sheet and the one-thing page are all
+  behind a tap or a scroll, and `simctl` has no `ui tap` for a watch. Their grounds are set the same
+  way Today's is; that they *look* right is a stage-2 question and a wrist question.
+- **Three kits, not eighteen.** Dark, Paper and Terminal — the three the old constant claimed to
+  serve — as a smoke test. The full eighteen are stage 2's, along with the picker that makes choosing
+  one a thing a person can do rather than a launch argument.
+
+## Track C, stage 2 — the picker, the confetti, the complications
+
+What was decided about the Watch's second half, and what each decision cost. Everything with a
+number in it was measured on the Apple Watch Series 11 46mm simulator (watchOS 26.5, `4594CB69`) on
+this machine, against `Kits`' generated table at build 158. Stage 1 is
+[`DECISIONS-phase4-C1.md`](DECISIONS-phase4-C1.md) and this does not repeat it.
+
+---
+
+### The one settings screen, and why it is the only one
+
+Phase 3 wrote a sentence and meant it:
+
+> There is no settings screen, no Everything, no sections, no History, no rules, no templates and no
+> themes: those live on a phone-sized screen because they need one.
+
+**That sentence is now wrong about exactly one word, and the reason is not that themes are more
+important than templates.** It is that a theme is the only item on that list which is a property of
+the *device you are looking at*. History belongs to a list. Rules belong to a list. Templates belong
+to an account. Every one of them has a phone to be configured on, and configuring it there is not a
+compromise — it is where it belongs. The kit a wrist is drawn in has nowhere else it could be
+chosen, because there is no other wrist.
+
+So: two slots, a Day/Night switch, and every available kit. `theme.js`'s shape, minus two things.
+
+* **`switch: "system"` cannot exist here.** watchOS has no light appearance at all, so
+  `\.colorScheme` reads `.dark` at the root of every app on the device forever. A mode that followed
+  the system would pin every Watch permanently to its night slot and present that as a feature. This
+  is a platform fact, not a decision.
+* **`switch: "schedule"` was dropped, and that *is* a decision.** It needs two time pickers on a
+  screen two inches across, a stored `holdAuto` so a manual flip survives until the automation next
+  changes its mind, and `settleHold` run on every occasion the app wakes — for a preference somebody
+  changes by looking at their wrist and deciding they would rather it were dark. If it is ever
+  wanted here, the place to put it is the phone's device record and it is a different round.
+
+**One control does two jobs and that is the design, not a shortcut.** The Day/Night buttons choose
+which slot is *on* and simultaneously choose which slot the list below is editing. Both slots stay
+reachable in one extra tap, and the row you press is the thing that happens, immediately, on the
+screen you are standing on. Showing somebody a kit they are not currently looking at while they
+choose it is the worse trade on a screen this size.
+
+Both leans are offered in both slots, which is the web's own rule — "any theme, light or dark: the
+slot is about *when*, not *what*". What the ordering does is put the eight kits designed for the
+current slot first, which on a crown is the whole of the affordance.
+
+### It hangs off the long press, and that cost Start again a tap
+
+The count was already this app's one long-press surface, and it held Start again. It now opens a
+two-row sheet: Start again, and Theme. **A gesture that used to do a thing and now opens a menu is a
+small regression for the person who had learned it**, and it is named here rather than left to be
+discovered. The alternative the plan allowed — a third page — would have cost Today a swipe every
+time anybody scrolls, forever, to reach a screen they will open twice a year.
+
+**It also fixed something that would otherwise have shipped as a bug.** The old hold was gated on
+`store.canEdit`, so a view-only list had no long press at all. Once the theme lives behind that
+gesture, a person whose only list is shared read-only could never have changed their Watch's theme —
+and a theme is not a property of the list. The hold is ungated now and *Start again* is the row that
+is disabled.
+
+### Stored in the App Group, and that is not where the other Watch preference lives
+
+`UserDefaults(suiteName: "group.com.pricebrannen.todaysfive")`, three keys under `tf/app/watch/kit/`.
+Deliberately unlike `WatchLinkReceiver`'s selected-list key, which is in `.standard` **because** it
+is a secret. A kit id is not a secret: `theme.js` ships all eighteen to every browser, and the two
+Secret kits are withheld from a wrist as a product rule rather than a cryptographic one. The
+complication is another process and has to be able to see the theme; `.standard` is invisible to it.
+
+**Verified across a cold launch**, which is the only way to verify persistence at all:
+
+```
+launch A  -TFThemeSet day:harbor
+  theme: slot=day day=harbor night=terminal → kit=harbor pair=manrope base=light unlocked=0 offered=16
+launch B  (no argument)
+  theme: slot=day day=harbor night=terminal → kit=harbor pair=manrope base=light unlocked=0 offered=16
+```
+
+`-TFThemeSet` calls `show(_:)` and `choose(_:for:)` — the identical two methods the picker's buttons
+call, not a copy of them — so what the two launches prove about the store is true of the picker.
+It exists because `simctl` cannot tap a watch simulator: there is no `simctl ui tap` and no
+accessibility bridge, so nothing can press a row and then relaunch to see whether it stuck.
+
+---
+
+### The volley, and the one number that had to move
+
+Every constant in `ConfettiField` is `fx.js`'s, read across rather than invented: gravity `0.30`,
+drag `0.992` on both axes, seven bursts of 26 at `w * (0.08 + 0.14i)`, `h * 0.97`, power 19, spread
+1.15, fired `i * 65` ms apart, then one of 40 at `w/2`, `h * 0.6`, power 14, spread 2.6, at 210 ms.
+222 particles. `life` from 1 decaying `0.0075 + rand * 0.008` a frame, alpha `life * 1.7` clamped,
+`rib` on 45% of pieces and its flutter `h * |cos(r * 1.7)|`. The four shapes are ported curve for
+curve.
+
+**Exactly one thing was rescaled, and the alternative would have broken something that matters.**
+`fx.js`'s speeds are in browser pixels. A piece launched at 19 px/frame against 0.30 px/frame² of
+gravity reaches its apex `19² / (2 × 0.30) = 601` px up; on a 208×248 pt watch screen that is two
+and a half screens, so the whole volley would leave through the top on frame one and the screen
+would be empty for a second and a half before anything came back.
+
+The port scales **every length by one factor** — positions, velocities, gravity and particle sizes
+alike — and scales nothing else. `k = height / 800`, 800 being a browser viewport's working height;
+on this simulator **k = 0.310**. That is the only rescaling that leaves the choreography alone: an
+apex is `v² / 2g`, so multiplying `v` and `g` by the same `k` multiplies the apex by `k` and leaves
+every *time* exactly where `fx.js` put it.
+
+**Why the times had to be left alone.** The obvious alternative — keep the speeds, shrink gravity —
+changes the timing, and the volley's timing is the half of it `WatchHaptics` is already playing:
+seven `WKInterfaceDevice.play(.click)` 65 ms apart and the chord at 700. Those two must not drift
+apart, and a scale factor that touches only lengths is the one guarantee that they cannot.
+
+Measured piece sizes at k = 0.310: ribbons **0.93–2.48 pt wide by 1.86–5.27 pt tall**, polygons
+**1.55–3.41 pt** across. On a 2× panel that is 2–11 device pixels, which is what the finale
+screenshots show and is the same fraction of the screen the web's are of a browser's.
+
+### It ends, and the mechanism for ending is the whole point
+
+A `TimelineView` has no "stop". Left mounted it holds a redraw source open on a live screen for as
+long as the app is in front, which on a watch is a battery bug with no symptom. So `ConfettiField`
+reports `isAlive`, the view clears the binding when it goes false, and the parent removes it.
+**Measured: the field is empty at frame 147** — 2.45 s, and `1 / 0.0075` = 133 frames is the slowest
+possible decay, so 147 is the arithmetic and not a guess. The same number for all eighteen kits.
+
+### Always-On is not gated, on purpose
+
+`AnimationTimelineSchedule.entries(from:mode:)` returns **zero entries** in `.lowFrequency`, so
+`TimelineView(.animation)` parks itself the moment the wrist drops. An `isLuminanceReduced` check
+would be a second mechanism doing the same job, and the failure mode of two mechanisms is that one
+of them is wrong. (A hand-rolled `PeriodicTimelineSchedule` would **not** self-park — it ignores the
+mode and keeps ticking. That is the trap and this is not one.)
+
+**The haptic half did not change and the code goes on saying why.** `CoreHaptics` is still absent
+from the watchOS SDK. Sound stays out.
+
+### 222 particles at 51–53 frames a second
+
+```
+[tfive] watch selftest: 10 confetti: run=1 frames=132 over 2.49s = 52.6/s
+[tfive] watch selftest: 10 confetti: run=1 frames=128 over 2.48s = 51.1/s
+```
+
+Two runs. The plan's checkpoint had rendered 180; this is 222 and the simulator holds ~52 Hz, which
+is what a `Canvas` doing 222 rotate-and-fill operations per frame costs on this runtime. The field
+is rebuilt from its seed on every frame rather than held in state — a `Canvas` closure cannot mutate
+view state and a `TimelineView` may draw the same date twice — so the arithmetic per frame is up to
+147 steps of 222 particles, and that is what those numbers already include.
+
+**The field is deterministic from a seed** (SplitMix64), which is what makes eighteen screenshots of
+the same volley worth comparing: they differ in colour and shape and in nothing else.
+
+---
+
+### `Kit.shapes` could not say what `fx.js` needs it to say, and now it does
+
+**This is the round's one real defect, Track C is the first thing in the project that could have
+found it, and it was fixed at the source at integration rather than worked around.**
+
+`fx.js` reads a kit's `shapes` as **either** a count — v1's meaning, 1 ribbons, 2 ribbons and
+hearts, 3 ribbons hearts and stars — **or**, since 1.6, a list to draw from: 0 ribbon, 1 heart,
+2 star, 3 sparkle, 4 sprinkle. The two readings of the same value disagree completely. As a count,
+`1` is ribbons only. As a list, `1` is *hearts* only.
+
+The loss happened at the fixture, in one expression:
+
+```js
+shapes: Array.isArray(t.shapes) ? t.shapes : [t.shapes]        // before
+```
+
+A number and a one-element array are the same value by the time the fixture is written, so `KitsGen`
+could not emit the difference and `Kit(json:)` could not read it. A **union type flattened at a
+boundary** — and nothing downstream said so, because nothing downstream had ever drawn a particle.
+It read **fifteen of the eighteen kits as hearts-only**.
+
+Track C first recovered it with a rule (`fx.js`'s count vocabulary stops at 3, so a one-element
+`[n]` with `n` in 1…3 was a count), which was right for all eighteen kits and had a real argument
+behind it. But it left a residue — a kit that one day wrote `shapes: [2]` *as a list* would be drawn
+as a count — and it put a heuristic in a renderer to compensate for a lossy generator. So at
+integration the generator was fixed instead:
+
+```js
+shapes: Array.isArray(t.shapes) ? t.shapes : Array.from({ length: t.shapes || 1 }, (_, i) => i)
+```
+
+A count is **resolved** rather than wrapped, which is exactly what `fx.js`'s `shapeOf()` does with
+it: `n` draws uniformly from `0 … n-1`, and its `n === 2` special case (0 or 1, evenly) is that same
+uniform draw written out. So `shapes` now means one thing everywhere — the list of indices to draw
+from — the fifteen kits read `[0]` instead of `[1]`, and `ConfettiField.readsAsList` and its
+`listSemantics` flag are deleted rather than documented.
+
+The self-test still walks every kit and prints what each drew, because it is the single thing about
+the port a reader cannot check by looking at the screen:
+
+```
+dark:      shapes=[0]       → drew [0]        · palette=5 · ends at frame 147
+sunset:    shapes=[0, 1]    → drew [0, 1]     · palette=5 · ends at frame 147
+pink:      shapes=[0, 1, 2] → drew [0, 1, 2]  · palette=6 · ends at frame 147
+superpink: shapes=[1, 2, 3] → drew [1, 2, 3]  · palette=6 · ends at frame 147
+birthday:  shapes=[4]       → drew [4]        · palette=6 · ends at frame 147
+```
+
+Birthday is the one that proves the union was real: `[4]` as a count would have thrown ribbons,
+hearts, stars and sparkles; as the list it is, it throws hundreds-and-thousands and nothing else,
+which is what `apple/shots/watch/finale-birthday.png` shows.
+
+**How to apply:** when a generator normalises a union, check that the normal form can still express
+both arms. `[t.shapes]` looked like a widening and was a narrowing, and the only reason it was ever
+caught is that something finally consumed the field.
+
+---
+
+### The complication can have the kit's type. It can never have its accent.
+
+**This was the round's one brief line that could not be delivered as written, and it is written down
+here rather than discovered by somebody later.**
+
+`WidgetRenderingMode.accented` — the mode every watchOS complication is drawn in on the great
+majority of faces — says in its own words that the system
+
+> treats the widget's views as if they were template images. It replaces the view's color —
+> rendering the new colors while preserving the view's alpha channel.
+
+The colour that replaces it is the one the wearer chose in the **face editor**. The escape hatch that
+exists on the phone, `WidgetAccentedRenderingMode.fullColor`, is documented in one sentence: *"Only
+applies to iOS."* There is no watchOS equivalent, no opt-out and no entitlement. A view's **shape**
+crosses to the face; its **colour** does not. `.widgetAccentable()` does not add a colour either — it
+moves a subview from the face's neutral group into the face's accent group, and both of those groups
+are the face's.
+
+### Observed, not trusted
+
+`-TFFaceProbe` renders a rectangle filled in the kit's accent, with a mark in the kit's danger colour
+on top of it, through `ImageRenderer` twice — once at `.fullColor`, once at `.accented` — and reads
+two pixels back out of each. Two pixels rather than one, because a mode that flattened everything to
+a single colour and a mode that changed nothing both leave one pixel looking plausible.
+
+```
+face probe: accent asked for #4AF07A
+face probe: fullColor  corner=#4AF07A@255 centre=#FF6B57@255
+face probe: accented   corner=#4AF07A@255 centre=#FF6B57@255
+face probe: the two renderings are IDENTICAL
+```
+
+Repeated on a second kit (`#0F8C8C`): identical again.
+
+**What that rules out is the cheerful hypothesis.** If `.accented` were a SwiftUI-side treatment, an
+`ImageRenderer` handed the environment value would show it, and an app could see it coming and
+compensate. It is not: SwiftUI passes the colours through untouched, which means the flattening is
+done by the widget host at composite time, and is therefore not reachable, not overridable, and not
+visible to any test that does not involve a watch face and a finger.
+
+### What was built instead
+
+| the **type**            | the count is set in the kit's own ui face, by PostScript name              |
+| **gauge or text**       | a monospaced pair gets the numbers; every other pair gets the ring         |
+| the **glyph**           | a finished list puts a check in the middle of a full ring                  |
+| **`.widgetAccentable`** | the count is accented; anybody's words are not                            |
+
+The gauge-vs-text choice is worth naming as a choice. Nothing in the SDK says a mono kit should
+prefer text, and a ring is the better glance for most people most of the time. It is the one
+structural thing a kit can change on a face at all, and spending it on the pair whose whole identity
+is setting numbers in a grid is more interesting than spending it on nothing.
+
+**A per-kit glyph was considered and rejected.** It would need an id-to-symbol table inside the
+appex: eighteen rows of design decision with nothing generating it, nothing checking it, and nothing
+to notice when a nineteenth kit is added. The extension does not link `TodaysFiveCore` and must not
+grow a hand-written copy of a table that lives somewhere else. `pair` is the one kit-shaped input it
+can act on without one.
+
+### The theme reaches the face additively, with `v` left at 1
+
+`WatchSnapshot` grew `kit`, `pair` and `face`. `read()` already defaults every field it cannot find,
+so an old extension reading a new snapshot gets `kit: ""` and draws the way it always did, and a new
+extension reading an old snapshot gets the same. **Bumping `version` would have turned the first of
+those into a refusal** — the face would have dropped to its placeholder — in order to announce a
+field that older code does not read. That is `COMPATIBILITY.md` §3's rule applied to a file rather
+than to the wire, and it is the whole reason the rule exists.
+
+`face` carries a PostScript name because **`pair` alone is not actionable in the extension**: mapping
+`"lato"` to `"Lato-Black"` needs the generated table, the extension does not link `TodaysFiveCore`,
+and a hand-written copy of that mapping in the appex is precisely the second copy of generated data
+`KitsGen` exists to prevent. `pair` still travels — it is what a log and a person diffing two
+snapshots want — but `face` is what draws.
+
+### The redraw is `publish()`, and there is no second door
+
+`publish()` writes the snapshot and calls `WidgetCenter.shared.reloadAllTimelines()` in the same
+breath, so routing a theme change through it is the entire mechanism that makes the face redraw on
+the change rather than at its next reload. Verified end to end, on a slot flip through `show(_:)` —
+the picker's own call:
+
+```
+watch selftest: 11 theme change: harbor/Manrope-ExtraLight-800 → terminal/IBMPlexMono-SemiBold changed=true
+```
+
+### The appex needs no fonts of its own, and the plan's premise was wrong in a checkable way
+
+The plan budgeted **1.5 MB and 26 hand edits** to duplicate the 33 faces into the extension, on the
+grounds that "the appex is a separate bundle with its own Info.plist and its own Resources phase, so
+the Watch app's fonts are NOT visible to it". The first half is true and was verified on the built
+product — **33 `.ttf` in `TodaysFiveWatch.app`, zero in `PlugIns/TodaysFiveComplications.appex`**.
+The second half does not follow:
+
+```
+TodaysFiveWatch.app/                 ← the 33 .ttf are here
+  PlugIns/
+    TodaysFiveComplications.appex/   ← Bundle.main, inside the extension
+```
+
+An extension's bundle is *inside* its containing app's bundle. Two `deletingLastPathComponent()` and
+the fonts are right there, in the same signed container, readable.
+`CTFontManagerRegisterFontsForURLs(_:.process:_:)` makes them resolvable for the life of the
+process, which is exactly as long as a widget rendering lasts. **No copy, no `UIAppFonts` entry, no
+second Resources phase, and nothing for the orchestrator to register.**
+
+Verified from the Watch app, against the extension's own bundle URL so the arithmetic under test is
+the extension's arithmetic and not a re-derivation of it:
+
+```
+face probe: appex=TodaysFiveComplications.appex ttfInAppex=0 fontsRoot=TodaysFiveWatch.app
+            facesOnDisk=33 registered=33 wantedFaceOnDisk=true
+```
+
+`facesOnDisk` is read with `CTFontManagerCreateFontDescriptorsFromURL`, not with
+`CTFontCreateWithName`, and the distinction is the point: inside the app all 33 are already
+registered by `UIAppFonts`, so a resolution check would answer yes whether or not the path worked.
+Opening the file at the computed URL and reading its name back takes the app's own registration out
+of the answer.
+
+**What could not be observed** is a complication actually drawing on a face. That needs the face
+editor, and `simctl` cannot tap a watch simulator. So the extension asks for the face and **falls
+back to the system font when it does not resolve** — which costs nothing if the last link turns out
+to be closed, and is why this shipped rather than being deferred.
+
+---
+
+### The eighteen screenshots, and how the two Secret ones got there
+
+`apple/shots/watch/today-<kit id>.png`, all eighteen, each launched under `-TFKit <id>`. Filenames
+are kit ids, which are not the word that unlocks anything and were never typed by a person.
+
+The Secret pair reached the wrist the way it will in the field: as JSON under `tf/app/watch/kits` in
+the App Group — the key `WatchLinkReceiver` writes and `WatchThemeStore` reads — after which
+`-TFKit superpink` resolves like any other id and the picker offers eighteen instead of sixteen.
+
+**The injection took two goes and the failure is worth recording.** `xcrun simctl spawn <udid>
+defaults write group.com.pricebrannen.todaysfive …` appears to work — `defaults read` reads it back
+— and the app does not see it. There are **two plists with the same name** on a booted simulator:
+
+```
+<data>/Library/Preferences/group.com.pricebrannen.todaysfive.plist                      ← simctl spawn writes here
+<data>/Containers/Shared/AppGroup/<id>/Library/Preferences/group.…todaysfive.plist      ← the app reads here
+```
+
+`UserDefaults(suiteName:)` resolves to the group *container*; a spawned process is not a member of
+the group, so its `defaults` lands in the device's own domain. `plutil -replace` straight into the
+group container's plist works, and the confirmation is `unlocked=2 offered=18` in the theme line.
+
+Also photographed: the two screens behind the long press, which had never been photographed because
+they are behind a gesture, and four finales. Those last are frozen at 0.55 s by `-TFFinaleHold`,
+because **a screenshot of an animation is otherwise a coin toss** and eighteen of them would be
+eighteen tosses. Held, every kit is photographed at the same instant of the same deterministic field.
+
+---
+
+### What eighteen screenshots found that three could not
+
+Stage 1 photographed dark, paper and terminal, fixed the carousel's row platter to the kit's own
+`ink2`, and moved on. **Eighteen frames show that the platter was only half the problem.**
+
+`.listStyle(.carousel)` composites its own treatment onto a row as that row leaves the focus band,
+*over* whatever `.listRowBackground` put there. Measured at the same three points on six frames:
+
+| kit | ground | platter in focus (kit's `ink2`) | the row leaving focus |
+| --- | --- | --- | --- |
+| sketch | `#F8F6F1` | `#EFECE5` | **`#807F7B`** |
+| paper | `#F7F2E8` | `#EFE8DA` | **`#807C75`** |
+| light | `#FAF8F4` | `#F1ECE3` | **`#817F7A`** |
+| birthday | `#FFF3F8` | `#FDE9F2` | **`#80767B`** |
+| dark | `#070A08` | `#0E140F` | `#080B08` |
+| terminal | `#070A08` | `#0E140F` | `#080B08` |
+
+The in-focus platters are the kit's, exactly — stage 1's fix works. The row on its way out lands at
+**about 50% grey on every light kit**, which is a grey slab across the foot of a cream screen, and on
+a dark kit is indistinguishable from the ground. It is the same failure stage 1 fixed one layer up:
+a system treatment tuned for a platform that is always dark, applied over a kit that is not.
+
+**It is not fixed here and the reason is that the fix is a bigger decision than it looks.**
+`.listStyle(.carousel)` has no API for the out-of-focus treatment — no modifier, no environment
+value, nothing on the row. Escaping it means leaving `.carousel`, which is the scroll behaviour the
+whole Watch app is built around: rows that snap, grow into focus and give the crown something to
+land on. Trading that for a flat list to get rid of a grey band is a product decision and belongs to
+somebody who has held the thing.
+
+What it is worth on its own is the method: **a three-kit smoke test cannot find a bug that only
+light kits have, and six of the eighteen kits are light.** The screenshots were asked for as
+evidence and turned out to be a test.
+
+---
+
+### What stage 2 did not settle
+
+* **A complication has still never been seen on a face.** Everything about the extension that can be
+  checked without tapping a watch has been; the face editor cannot be reached at all. Whether a
+  custom face renders under the widget host, and what `.accented` does to it there, remain open, and
+  the fallback to the system font is the answer to both being no.
+* **Always-On was still not rendered.** `simctl` cannot put a watch simulator into luminance-reduced
+  mode and there is no launch argument for it. The confetti's Always-On behaviour rests on
+  `AnimationTimelineSchedule` returning zero entries in `.lowFrequency`, which was measured, and not
+  on a screenshot of a dimmed screen, which does not exist.
+* **The picker was never touched by a finger.** `-TFThemeSet` calls the picker's own two store
+  methods and `-TFShow theme` puts the picker on screen to be photographed, but no gesture on this
+  machine has ever pressed one of its rows. The crown scroll, the hit targets and whether eighteen
+  rows is too many to get through are wrist questions.
+* **The carousel's out-of-focus grey is still there on every light kit.** Measured above, no API to
+  reach it, and the only escape is leaving `.listStyle(.carousel)` — which is a bigger trade than
+  this round should make on its own.
+* **`Kit.shapes` is still a flattened union.** Read correctly here, by a rule with an argument behind
+  it; not fixed at the source, which is Track B's fixture and Track B's generator.
+
 ## Track D — the poll papercut
 
 ### A narrow `DoorbellTransport`, because the protocol already there would have lied

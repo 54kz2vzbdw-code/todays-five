@@ -257,29 +257,21 @@ struct AlwaysOnTodayView: View {
 /// volley's timing is the half of it the haptics are already playing (`WatchHaptics`, seven clicks
 /// 65 ms apart). Those two must not drift apart.
 ///
-/// ---------------------------------------------------------------- what `shapes` cannot say
+/// ---------------------------------------------------------------- what `shapes` says
 ///
-/// `fx.js` reads a kit's `shapes` as **either** a count (v1's meaning: 1 ribbons, 2 ribbons and
-/// hearts, 3 ribbons hearts and stars) **or**, since 1.6, a list to draw from (0 ribbon, 1 heart,
-/// 2 star, 3 sparkle, 4 sprinkle). Those two readings of the same value disagree completely: as a
-/// count `1` is ribbons only, as a list it is hearts only.
+/// A kit's `shapes` is **the list of shape indices to draw from**: 0 ribbon, 1 heart, 2 star,
+/// 3 sparkle, 4 sprinkle. It arrives that way and this file draws it, and that is the whole of it.
 ///
-/// **`Kit.shapes` cannot tell them apart, and this file is the first thing in the project that
-/// needed to.** `test/fixtures/kits.json`'s own mapping expression is
-/// `shapes: Array.isArray(t.shapes) ? t.shapes : [t.shapes]` — a number and a one-element array are
-/// the same value by the time the fixture is written, so `KitsGen` cannot emit the difference and
-/// `Kit(json:)` cannot read it. It is a union type flattened at a boundary, and nothing downstream
-/// says so because nothing downstream had ever drawn a particle.
+/// It is worth a line only because it was briefly not that. In `theme.js` the field is a union —
+/// either a count carrying v1's meaning (1 ribbons, 2 ribbons and hearts, 3 ribbons hearts and
+/// stars) or a list — and the two readings disagree completely, because as a count `1` is ribbons
+/// and as a list `[1]` is hearts. The fixture's first mapping wrapped a count in an array, which
+/// flattened the union and read fifteen of the eighteen kits as hearts-only. Nothing could see it
+/// until something drew a particle, and this file is the first thing in the project that did.
 ///
-/// What is recoverable, and why: **`fx.js`'s count vocabulary stops at 3**. Its own header calls the
-/// count "v1's meaning, unchanged", and v1 had exactly three shapes; indices 3 (sparkle) and 4
-/// (sprinkle) arrived in 1.6 as list-only. So a one-element `[n]` with `n` in 1…3 was a count, and
-/// anything else was already a list. That is right for all eighteen kits in the table today —
-/// fifteen at `[1]`, sunset at `[2]`, pink/dusk/blush at `[3]`, superpink at `[1,2,3]` and birthday
-/// at `[4]` — and it is a rule rather than a coincidence, which is the difference that matters.
-/// The residue is honest and small: a kit that one day writes `shapes: [2]` *as a list* would be
-/// drawn as a count here. The real fix is one line in `test/tools/gen-kits.mjs` and it is not this
-/// track's file.
+/// `test/tools/gen-kits.mjs` now **resolves** a count instead of wrapping it — `n` becomes
+/// `0 … n-1`, which is exactly what `fx.js`'s `shapeOf()` does with it — so the union stops at the
+/// generator and no reader downstream has to know it existed.
 
 /// One piece. A struct, in a flat array, stepped by a free function — because the whole field has to
 /// be steppable with no view attached, which is what makes the volley checkable off-screen.
@@ -330,20 +322,11 @@ struct ConfettiField {
     private let size: CGSize
     private let palette: Int
     private let shapes: [Int]
-    private let listSemantics: Bool
-
-    /// `shapes` as `fx.js` would have read it — see the note above for why this cannot come out of
-    /// `Kit` already decided.
-    static func readsAsList(_ shapes: [Int]) -> Bool {
-        guard shapes.count == 1 else { return true }
-        return !(1...3).contains(shapes[0])
-    }
 
     init(size: CGSize, kit: Kit, seed: UInt64) {
         self.size = size
         self.palette = max(1, kit.confetti.count)
         self.shapes = kit.shapes
-        self.listSemantics = Self.readsAsList(kit.shapes)
         self.rng = SplitMix64(seed: seed)
         schedule()
     }
@@ -387,14 +370,9 @@ struct ConfettiField {
         }
     }
 
-    /// `shapeOf()`, with the count/list question already settled by `readsAsList`.
+    /// `shapeOf()`. `shapes` is already the list to draw from — see the note above.
     private mutating func shapeOf() -> Int {
-        if listSemantics {
-            return shapes.isEmpty ? 0 : shapes[Int(rng.unit() * Double(shapes.count)) % shapes.count]
-        }
-        let n = shapes.first ?? 1
-        if n == 2 { return rng.unit() < 0.5 ? 0 : 1 }
-        return Int(rng.unit() * Double(max(1, n))) % max(1, n)
+        return shapes.isEmpty ? 0 : shapes[Int(rng.unit() * Double(shapes.count)) % shapes.count]
     }
 
     /// Step to `target`, one frame at a time, firing each burst on the frame the volley put it on.
@@ -755,20 +733,17 @@ enum ConfettiSelfTest {
                 for p in f.particles { tally[p.shape, default: 0] += 1 }
             }
             shapeTally[kit.id] = tally
-            let list = ConfettiField.readsAsList(kit.shapes)
-            let allowed: Set<Int> = list ? Set(kit.shapes)
-                                         : Set(0..<max(1, kit.shapes.first ?? 1))
+            let allowed = Set(kit.shapes)
             check(Set(tally.keys).isSubset(of: allowed),
                   "\(kit.id): drew shapes \(Set(tally.keys).sorted()) outside \(allowed.sorted())")
         }
 
-        // The count/list question, said out loud for every kit, because it is the one thing about
-        // this port that a reader cannot check by looking at the screen.
+        // What each kit actually drew, said out loud, because it is the one thing about this port
+        // that a reader cannot check by looking at the screen.
         for kit in kits {
-            let list = ConfettiField.readsAsList(kit.shapes)
             let shapes = (shapeTally[kit.id] ?? [:]).keys.sorted()
-            say("\(kit.id): shapes=\(kit.shapes) read as \(list ? "LIST" : "count") "
-                + "→ drew \(shapes) · palette=\(kit.confetti.count) · ends at frame \(lifetimes[kit.id] ?? -1)")
+            say("\(kit.id): shapes=\(kit.shapes) → drew \(shapes) "
+                + "· palette=\(kit.confetti.count) · ends at frame \(lifetimes[kit.id] ?? -1)")
         }
 
         for f in failures { say("FAIL \(f)") }

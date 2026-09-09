@@ -41,6 +41,7 @@
 		TF0000000000000000000106 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000006 /* Assets.xcassets */; };
 		TF0000000000000000000107 /* TodaysFiveCore in Frameworks */ = {isa = PBXBuildFile; productRef = TF0000000000000000000032 /* TodaysFiveCore */; };
 		TF0000000000000000000436 /* archivo-500.ttf in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000264 /* archivo-500.ttf */; };
+		TF0000000000000000000469 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000297 /* OFL.txt */; };
 		TF0000000000000000000437 /* archivo-800.ttf in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000265 /* archivo-800.ttf */; };
 		TF0000000000000000000438 /* baloo-2-700.ttf in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000266 /* baloo-2-700.ttf */; };
 		TF0000000000000000000439 /* cormorant-garamond-700.ttf in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000267 /* cormorant-garamond-700.ttf */; };
@@ -136,6 +137,7 @@
 		TF0000000000000000000008 /* TodaysFive.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TodaysFive.entitlements; sourceTree = "<group>"; };
 		TF0000000000000000000009 /* TodaysFive.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TodaysFive.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		TF0000000000000000000264 /* archivo-500.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "archivo-500.ttf"; sourceTree = "<group>"; };
+		TF0000000000000000000297 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		TF0000000000000000000265 /* archivo-800.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "archivo-800.ttf"; sourceTree = "<group>"; };
 		TF0000000000000000000266 /* baloo-2-700.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "baloo-2-700.ttf"; sourceTree = "<group>"; };
 		TF0000000000000000000267 /* cormorant-garamond-700.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "cormorant-garamond-700.ttf"; sourceTree = "<group>"; };
@@ -289,6 +291,7 @@
 		TF0000000000000000000312 /* Fonts */ = {
 			isa = PBXGroup;
 			children = (
+				TF0000000000000000000297 /* OFL.txt */,
 				TF0000000000000000000264 /* archivo-500.ttf */,
 				TF0000000000000000000265 /* archivo-800.ttf */,
 				TF0000000000000000000266 /* baloo-2-700.ttf */,
@@ -478,6 +481,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				TF0000000000000000000469 /* OFL.txt in Resources */,
 				TF0000000000000000000202 /* Assets.xcassets in Resources */,
 				TF0000000000000000000436 /* archivo-500.ttf in Resources */,
 				TF0000000000000000000437 /* archivo-800.ttf in Resources */,

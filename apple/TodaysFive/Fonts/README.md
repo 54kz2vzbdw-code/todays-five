@@ -106,11 +106,36 @@ conversion untouched. **No family has been renamed to the CSS name** — a weigh
 is the only naming change this pipeline makes, and it exists so CoreText can tell two instances of
 one file apart.
 
+### The one defect the audit found
+
+**PT Sans' two faces carry no licence pointer at all.** Their `nameID 0` reads "Copyright © 2009
+ParaType Ltd. All rights reserved." — it does not mention the OFL — and their `nameID 14` points at
+`http://scripts.sil.org/OFL_web`, which **404s**. Every other face here carries a copyright notice
+and a licence URL that resolves, which is what SIL's FAQ 1.10 leans on when it says a font *bundled
+within a program* may travel without the licence text. Those two faces had nothing.
+
+`OFL.txt` beside these files is the answer, and it is why that file exists rather than being merely
+tidy: it carries every family's copyright line, its reserved names, and the licence in full, and it
+is copied into the app bundle and served on the web at `fonts/OFL.txt`. The web copies are the case
+that needed it most — serving a woff2 over HTTP is distribution, not bundling, so the FAQ's
+carve-out never reached them.
+
 ### One question left open, on purpose
 
 OFL 1.1 calls a format change a Modified Version, and §3 says a Modified Version may not carry the
-family's **Reserved Font Name**. Ten of these 33 faces declare one — Lato, DM Serif Display, Josefin
-Sans, Lora, Playfair Display, Quicksand and Source Serif 4 — and they keep their names here. The
+family's **Reserved Font Name**. **Fifteen** of these 33 faces do, across nine families — IBM Plex
+Mono, IBM Plex Sans, Josefin Sans, Lato, Lora, Playfair Display, PT Sans, Quicksand and Source
+Serif 4 — and they keep their names here.
+
+That count was **10 of 7** until a licence audit went back to the sources, and it was wrong in two
+ways that happened to cancel. Reading the reserved name out of the binary alone misses the families
+that declare it only in their `google/fonts` OFL.txt header — IBM Plex ("Plex") and PT Sans ("PT
+Sans", "ParaType"), five faces. And counting any declaration without checking the *shipped* name
+over-counts: DM Serif Display reserves "Source" and ships "DM Serif Display", which does not contain
+it, so §3 — which restricts "the primary font name as presented to the users" — does not bite. The
+generator now reads both sources and applies §3's actual test.
+
+The
 repo's own `fonts/*.woff2` are in exactly the same position and have been since v4: Google's subsets
 are themselves modified versions distributed under those names. `reservedFontName` is recorded per
 face in `test/fixtures/watch-fonts.json` so the question stays visible rather than folded away. If

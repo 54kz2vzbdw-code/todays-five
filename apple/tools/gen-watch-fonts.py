@@ -222,11 +222,59 @@ def convert(filename, weight, is_variable):
         "variable": is_variable,
         # OFL 1.1 §3: a Modified Version may not carry the family's Reserved Font Name. Recorded per
         # face rather than argued about here — see the licence note in the header and in the README.
-        "reservedFontName": "Reserved Font Name" in notice,
+        #
+        # Read from BOTH the binary's own notice and UPSTREAM_RFN below, because the binary is not
+        # authoritative: IBM Plex and PT Sans declare their reserved names only in their google/fonts
+        # OFL.txt header, and reading nameID 0 alone missed six faces and reported 10 of 33 where the
+        # true count is 15. A licence question answered from the more convenient of two sources is
+        # answered wrongly.
+        "reservedFontName": _carries_rfn(out_name, notice, produced["name"].getDebugName(1)),
         "bytes": os.path.getsize(out_path)
     }
     produced.close()
     return record
+
+
+# ---------------------------------------------------------------- reserved names
+
+# OFL 1.1 §3 restricts "the primary font name as presented to the users", so a face carries an RFN
+# only when the reserved STRING actually appears in the family name we ship. Two independent mistakes
+# are possible and both were made once:
+#
+#   * reading the reserved name from the binary alone MISSES families that declare it only in their
+#     google/fonts OFL.txt header — IBM Plex (Plex) and PT Sans (PT Sans, ParaType), five faces;
+#   * counting any declaration WITHOUT checking the shipped name over-counts — DM Serif Display
+#     declares "Source" and ships "DM Serif Display", which does not contain it, so §3 does not bite.
+#
+# Between them those two errors cancelled into a plausible-looking 10 of 33. The truth is 15.
+# Measured against raw.githubusercontent.com/google/fonts/main/ofl/<slug>/OFL.txt, not recalled.
+UPSTREAM_RFN = {
+    "ibm-plex-mono": ["Plex"],
+    "ibm-plex-sans": ["Plex"],
+    "pt-sans": ["PT Sans", "ParaType"],
+}
+
+_RFN_IN_NOTICE = re.compile(r"Reserved Font Names?\s+((?:[\u2018\u201c\"']?[^,.\u2019\u201d\"']+[\u2019\u201d\"']?)(?:\s+and\s+[\u2018\u201c\"']?[^,.\u2019\u201d\"']+[\u2019\u201d\"']?)*)")
+
+
+def _reserved_strings(out_name, notice):
+    """Every name this family reserves, from the binary's notice and from upstream."""
+    names = []
+    m = _RFN_IN_NOTICE.search(notice or "")
+    if m:
+        for part in m.group(1).split(" and "):
+            cleaned = part.strip().strip("\u2018\u2019\u201c\u201d\"'. ")
+            if cleaned:
+                names.append(cleaned)
+    for prefix, reserved in UPSTREAM_RFN.items():
+        if out_name.startswith(prefix):
+            names.extend(reserved)
+    return names
+
+
+def _carries_rfn(out_name, notice, shipped_family):
+    """True when the family name we ship contains a name this family reserves — §3's actual test."""
+    return any(r.lower() in (shipped_family or "").lower() for r in _reserved_strings(out_name, notice))
 
 
 # ---------------------------------------------------------------- go

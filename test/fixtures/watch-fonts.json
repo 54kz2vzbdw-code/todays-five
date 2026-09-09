@@ -68,7 +68,7 @@
       "postScriptName": "DMSerifDisplay-Regular",
       "weight": 400,
       "variable": false,
-      "reservedFontName": true,
+      "reservedFontName": false,
       "bytes": 39248
     },
     {
@@ -98,7 +98,7 @@
       "postScriptName": "IBMPlexMono-Regular",
       "weight": 400,
       "variable": false,
-      "reservedFontName": false,
+      "reservedFontName": true,
       "bytes": 23856
     },
     {
@@ -108,7 +108,7 @@
       "postScriptName": "IBMPlexMono-SemiBold",
       "weight": 600,
       "variable": false,
-      "reservedFontName": false,
+      "reservedFontName": true,
       "bytes": 23712
     },
     {
@@ -118,7 +118,7 @@
       "postScriptName": "IBMPlexSans-Regular-400",
       "weight": 400,
       "variable": true,
-      "reservedFontName": false,
+      "reservedFontName": true,
       "bytes": 45912
     },
     {
@@ -128,7 +128,7 @@
       "postScriptName": "IBMPlexSans-Regular-600",
       "weight": 600,
       "variable": true,
-      "reservedFontName": false,
+      "reservedFontName": true,
       "bytes": 45940
     },
     {
@@ -268,7 +268,7 @@
       "postScriptName": "PTSans-Regular",
       "weight": 400,
       "variable": false,
-      "reservedFontName": false,
+      "reservedFontName": true,
       "bytes": 22784
     },
     {
@@ -278,7 +278,7 @@
       "postScriptName": "PTSans-Bold",
       "weight": 700,
       "variable": false,
-      "reservedFontName": false,
+      "reservedFontName": true,
       "bytes": 22628
     },
     {

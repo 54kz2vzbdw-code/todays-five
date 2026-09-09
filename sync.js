@@ -46,6 +46,26 @@ export function saveMeta(m) { return write(K.meta, m); }
 function online() { return typeof navigator === "undefined" || navigator.onLine !== false; }
 function visible() { return typeof document === "undefined" || document.visibilityState !== "hidden"; }
 
+/** 1.12: how long a channel may hear nothing before it has stopped being a channel. The realtime client
+    sends a phoenix heartbeat every 30 s (`heartbeatIntervalMs` below) and waits to be answered, so three
+    unanswered beats is a socket that is gone. Nothing new goes on the wire to measure this — the beat has
+    always been sent, and `sync.js` had simply never looked at whether it came back. It is shorter than
+    POLL_LIVE_MS so the first safety poll after the silence is the one that finds it. */
+export const CHANNEL_SILENCE_MS = 95000;
+
+/** Is this channel really there? `alive()` is the channel's *own opinion of itself*, and the comment above
+    `wake()` has said since v3 that after sleep/wake it can read "joined" over a dead socket — so a page
+    that asked only that question went on believing it was live, kept the four-minute poll, and waited for
+    somebody to click the window. A transport that can say when it last *heard* from the server is believed
+    over the opinion; a transport that cannot say is believed exactly as before, which is every transport
+    but the real one. */
+export function channelAlive(ch, now = Date.now()) {
+  if (!ch || !ch.alive()) return false;
+  if (typeof ch.heardAt !== "function") return true;
+  const t = ch.heardAt();
+  return !!t && now - t < CHANNEL_SILENCE_MS;
+}
+
 export class SyncError extends Error {
   constructor(message, status = 0, code = "") { super(message); this.status = status; this.code = code; }
 }
@@ -55,9 +75,12 @@ export class SyncError extends Error {
      get(id, knownRev)         → { unchanged:true, rev } | { doc, rev } | null
      put(id, env, baseRev, tok) → { ok:true, rev } | { ok:false, rev, doc }      (throws SyncError 403/413/429/507)
      del(id, tok)               → boolean
-     subscribe(id, onMsg, onState, presence?) → { alive(), send(payload), close() },  wake?() }
+     subscribe(id, onMsg, onState, presence?) → { alive(), heardAt?(), send(payload), close() },
+     wake?(), reset?() }
    presence = { key, onCount }: track this session on the channel under a random key (nothing else is sent)
-   and report how many *other* keys are present. Absent when the device has turned "Show who's here" off. */
+   and report how many *other* keys are present. Absent when the device has turned "Show who's here" off.
+   heardAt() (1.12, optional) is when the transport last heard the far end — see `channelAlive`. reset()
+   (1.12, optional) throws the realtime client away so the next subscribe really joins. */
 
 export async function makeTransport(kind, config) {
   if (kind === "local") return makeLocalTransport();
@@ -81,11 +104,17 @@ async function makeSupabaseTransport(cfg) {
   }
   // The realtime client is vendored (vendor/realtime.js) and loaded lazily: it is only needed to *receive* broadcasts.
   let clientP = null;
+  // When this client last heard the far end answer anything at all. The only free evidence a socket is still
+  // a socket: the heartbeat it has sent every 30 s since v3, and the ack it has always waited for. The
+  // vendored wrapper calls this back with "sent", "ok", "error" or "timeout" (it swallows "disconnected"),
+  // and only "ok" is an answer from somebody.
+  let heard = 0;
   function client() {
     if (!clientP) {
       clientP = import("./vendor/realtime.js?v=" + BUILD).then(m => new m.RealtimeClient(base.replace(/^http/, "ws") + "/realtime/v1", {
         params: { apikey: cfg.key },
-        heartbeatIntervalMs: 30000
+        heartbeatIntervalMs: 30000,
+        heartbeatCallback: status => { if (status === "ok") heard = Date.now(); }
       })).catch(e => { clientP = null; throw e; });
     }
     return clientP;
@@ -97,24 +126,37 @@ async function makeSupabaseTransport(cfg) {
     del: (id, token) => rpc("delete_list_v3", { p_id: id, p_token: token || null }).then(Boolean),
     subscribe(id, onMsg, onState, presence) {
       let ch = null, rc = null, closed = false, failed = false;
+      let mine = Date.now();   // the last thing *this* channel heard: its own join, or a message on it
       client().then(c => {
         if (closed) return;
         rc = c;
         const config = { broadcast: { self: false, ack: false } };
         if (presence) config.presence = { key: presence.key };
         ch = c.channel("list:" + id, { config });
-        ch.on("broadcast", { event: "change" }, ({ payload }) => onMsg(payload));
+        ch.on("broadcast", { event: "change" }, ({ payload }) => { mine = Date.now(); onMsg(payload); });
         if (presence) {
-          const report = () => { try { const st = ch.presenceState(); presence.onCount(Object.keys(st).filter(k => k !== presence.key).length); } catch (e) { /* ignore */ } };
+          const report = () => { mine = Date.now(); try { const st = ch.presenceState(); presence.onCount(Object.keys(st).filter(k => k !== presence.key).length); } catch (e) { /* ignore */ } };
           ch.on("presence", { event: "sync" }, report);
         }
         ch.subscribe(status => {
+          if (status === "SUBSCRIBED") mine = Date.now();
           onState(status === "SUBSCRIBED" ? "joined" : String(status).toLowerCase());
           if (status === "SUBSCRIBED" && presence) { try { ch.track({}); } catch (e) { /* ignore */ } }
         });
       }).catch(() => { failed = true; onState("error"); });
       return {
-        alive() { return !closed && !failed && (!ch || ch.state === "joined" || ch.state === "joining"); },
+        alive() {
+          if (closed || failed) return false;
+          if (!ch) return true;                                               // the client is still loading: nothing to doubt yet
+          if (ch.state !== "joined" && ch.state !== "joining") return false;
+          // A channel cannot be joined over a socket that is not there. That was the whole of `wake()`'s
+          // comment and it was never checkable from here; it is now, and it costs a readyState lookup.
+          return !rc || rc.isConnected() || rc.isConnecting();
+        },
+        /** When anything last came the other way: this channel's join, a broadcast or presence event on it,
+            or the client's own heartbeat being answered. `channelAlive` reads this instead of `alive()`'s
+            opinion. */
+        heardAt() { return Math.max(mine, heard); },
         send(payload) {
           if (ch && ch.state === "joined") return ch.send({ type: "broadcast", event: "change", payload });
           // REST broadcast: needs no socket and works before the client has loaded
@@ -124,7 +166,20 @@ async function makeSupabaseTransport(cfg) {
       };
     },
     /** After sleep/wake the socket may be dead while channels still say "joined"; nudge it. */
-    wake() { if (clientP) clientP.then(c => { try { if (!c.isConnected()) c.connect(); } catch (e) { /* ignore */ } }).catch(() => {}); }
+    wake() { if (clientP) clientP.then(c => { try { if (!c.isConnected()) c.connect(); } catch (e) { /* ignore */ } }).catch(() => {}); },
+    /** Throw this client away; the next `subscribe` builds a new one.
+        A rejoin on the *same* client does not join. `RealtimeClient.channel(topic)` hands back the channel
+        object it is already holding for that topic, and `removeChannel` only lets go of it a round trip
+        later (it awaits the leave, and the removal happens on the close callback) — so re-subscribing in
+        the same tick re-binds handlers to the channel that is leaving, the join is skipped because the
+        channel is not closed, and the repair is a branch that runs and achieves nothing. Building a new
+        client costs no fetch, because the module is in the page's own build cache (§6); it costs one
+        WebSocket connect and one join, and only when the silence test has already fired. */
+    reset() {
+      const p = clientP;
+      clientP = null; heard = 0;
+      if (p) p.then(c => { try { c.removeAllChannels(); } catch (e) { /* ignore */ } }).catch(() => {});
+    }
   };
 }
 
@@ -374,18 +429,22 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone, on
   function subscribe() {
     if (!cur || !transport || !transport.subscribe) return;
     const me = cur;
-    if (me.channel && me.channel.alive()) return;
-    if (me.channel) me.channel.close();
+    if (channelAlive(me.channel)) return;
+    if (me.channel) { me.channel.close(); if (transport.reset) transport.reset(); }
     const wantPresence = presence && presence.key && (!presence.enabled || presence.enabled());
     me.presenceOn = !!wantPresence;
+    // A channel we have let go of must not speak for this list afterwards: a socket on its way out answers
+    // late, and one wake turning into a burst of pulls is what `failed()`'s comment is about.
+    const gen = ++me.chGen;
+    const ours = () => cur === me && me.chGen === gen;
     me.channel = transport.subscribe(me.ref.lookupId,
-      msg => { if (cur === me && (!msg || msg.from !== deviceId)) pull(); },
+      msg => { if (ours() && (!msg || msg.from !== deviceId)) pull(); },
       state => {
-        if (cur !== me) return;
+        if (!ours()) return;
         if (state === "joined") { setLive(true); pull(); }
         else setLive(false);
       },
-      wantPresence ? { key: presence.key, onCount: n => { if (cur === me) presence.onCount(n); } } : undefined);
+      wantPresence ? { key: presence.key, onCount: n => { if (ours()) presence.onCount(n); } } : undefined);
   }
 
   /** The safety-net poll: every minute while live updates are not flowing, every 4 minutes while they are. */
@@ -393,9 +452,21 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone, on
     clearTimeout(pollTimer);
     if (!cur || !transport) return;
     pollTimer = setTimeout(() => {
-      if (visible() && online() && cur && !cur.gone) pull();
+      pollNow();
       schedulePoll();
     }, live ? POLL_LIVE_MS : POLL_MS);
+  }
+  /** The poll tick's body, named so it can be run without waiting four minutes.
+      1.12: the tick is also the occasion to ask whether the channel is really there and to rejoin it if it
+      is not. It is a timer that already fires, so the asking costs nothing at idle — a living channel is not
+      replaced and the tick is the same unchanged 29-byte poll it always was. A rejoin costs one WebSocket
+      join and one extra unchanged poll (the join's own catch-up pull), once, at the moment it happens; a
+      rejoin that fails reports `channel_error` and `live` goes false, which puts the wait back to 60 s
+      through the machinery that was already there rather than through any new machinery. */
+  function pollNow() {
+    if (!visible() || !online() || !cur || cur.gone) return;
+    if (!channelAlive(cur.channel)) { if (transport.wake) transport.wake(); subscribe(); }
+    pull();
   }
 
   function wake() {
@@ -429,7 +500,7 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone, on
     /** Start syncing a list. `ref` is the derived link ({ mode, lookupId, key, token }); `doc` is what the app already painted. */
     open(ref, doc, { rev = 0, dirty = false, created = false } = {}) {
       this.close();
-      cur = { id: ref.id, ref, doc, rev: rev | 0, dirty: ref.mode === "edit" && (dirty || (rev === 0 && created)), created: !!created, version: 0, pushing: false, pulling: false, channel: null, gone: false, pushTimer: 0, holdUntil: 0 };
+      cur = { id: ref.id, ref, doc, rev: rev | 0, dirty: ref.mode === "edit" && (dirty || (rev === 0 && created)), created: !!created, version: 0, pushing: false, pulling: false, channel: null, chGen: 0, gone: false, pushTimer: 0, holdUntil: 0 };
       live = false;
       persist();
       if (!transport) { setStatus("off"); return; }
@@ -465,7 +536,15 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone, on
     },
     current() { return cur ? { id: cur.id, mode: cur.ref.mode, lookupId: cur.ref.lookupId, rev: cur.rev, dirty: cur.dirty, gone: cur.gone, live, presence: !!cur.presenceOn } : null; },
     /** "Show who's here" changed: rejoin the channel with or without presence. */
-    resubscribe() { if (!cur) return; if (cur.channel) { cur.channel.close(); cur.channel = null; } if (presence && presence.onCount) presence.onCount(0); subscribe(); },
+    resubscribe() {
+      if (!cur) return;
+      // The same trap `reset()` exists for: leaving a channel and asking the client for one on the same topic
+      // in the same tick gets the one that is leaving, so this toggle used to be capable of silently doing
+      // nothing. It costs one socket connect, on a button a person pressed.
+      if (cur.channel) { cur.channel.close(); cur.channel = null; if (transport && transport.reset) transport.reset(); }
+      if (presence && presence.onCount) presence.onCount(0);
+      subscribe();
+    },
     /** Tell other devices on `lookupId` that it was deleted (after Rotate); they pull, find nothing, and show "gone". */
     announceGone(lookupId) {
       if (!transport || !transport.subscribe) return;
@@ -476,6 +555,9 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone, on
     },
     async remove(lookupId, token) { if (transport && transport.del) return transport.del(lookupId, token); return false; },
     /** For tests: the poll delay the engine would use right now. */
-    pollDelay() { return live ? POLL_LIVE_MS : POLL_MS; }
+    pollDelay() { return live ? POLL_LIVE_MS : POLL_MS; },
+    /** The safety poll's tick, for the suite and the latency harness: check the channel, rejoin it if it has
+        gone quiet, then pull. Exactly what the 240-second timer runs. */
+    pollNow
   };
 }

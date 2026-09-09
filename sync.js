@@ -130,9 +130,13 @@ async function makeSupabaseTransport(cfg) {
 
 /** Same-origin transport for tests and multi-tab demos: a localStorage row per list (envelope + token), BroadcastChannel
     for wake-ups. Honours navigator.onLine so Playwright's setOffline() behaves like a dead network. Test hooks in
-    localStorage: tf/test/lag (ms), tf/test/rtfail (realtime never joins), tf/test/limit (every create → 429). */
+    localStorage: tf/test/lag (ms), tf/test/rtfail (realtime never joins), tf/test/limit (every create → 429),
+    tf/test/rtmute (the page's first channel joins, goes on reporting itself alive, and hears nothing ever again —
+    a socket that died under a channel still saying "joined", which is the one thing a BroadcastChannel in this
+    process cannot do to itself; the channel a rejoin asks for is a live one). */
 function makeLocalTransport() {
   const bc = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("tf-local-transport") : null;
+  let channels = 0;
   // presence between tabs: hello / here / bye on the same channel, a heartbeat, and a short expiry
   const PRESENCE_TTL = 12000;
   const hook = k => { try { return localStorage.getItem("tf/test/" + k); } catch (e) { return null; } };
@@ -174,9 +178,12 @@ function makeLocalTransport() {
     },
     subscribe(id, onMsg, onState, presence) {
       const others = new Map(); let beat = 0, closed = false;
+      const mute = !!hook("rtmute") && channels++ === 0;
+      const bornAt = Date.now();
       const count = () => { const t = Date.now(); for (const [k, at] of others) if (t - at > PRESENCE_TTL) others.delete(k); if (presence) presence.onCount(others.size); };
       const say = t => { if (bc && presence) bc.postMessage({ topic: id, presence: { t, key: presence.key } }); };
       const h = e => {
+        if (mute) return;
         const d = e.data; if (!d || d.topic !== id) return;
         if (d.presence) {
           if (!presence || d.presence.key === presence.key) return;
@@ -193,6 +200,10 @@ function makeLocalTransport() {
       setTimeout(() => { if (closed) return; onState(hook("rtfail") ? "channel_error" : "joined"); if (presence) { say("hello"); beat = setInterval(() => { say("here"); count(); }, 5000); } }, 0);
       return {
         alive: () => !hook("rtfail"),
+        /** This channel is a BroadcastChannel in this very process: there is no far end that can go quiet, so it is
+            always hearing. Under the mute hook the stamp freezes at the join, which is what a dead socket looks like
+            to a client that has not noticed. */
+        heardAt: () => mute ? bornAt : Date.now(),
         send(payload) { if (bc) bc.postMessage({ topic: id, payload }); },
         close() { closed = true; clearInterval(beat); say("bye"); if (typeof window !== "undefined") window.removeEventListener("pagehide", bye); if (bc) bc.removeEventListener("message", h); }
       };

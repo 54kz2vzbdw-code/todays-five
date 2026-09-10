@@ -1,0 +1,18 @@
+
+== desktop 1440×900
+[b] desktop 1440×900 t+2000 before Escape undoHidden= false toastOn= true msg= "Removed from this deviceUndo⌘Z" panels= ["ask","p-save"] saveOpen= true
+[b] desktop 1440×900 t+2600 after Escape undoHidden= false toastOn= true msg= "Removed from this deviceUndo⌘Z" panels= [] saveOpen= false
+[b] desktop 1440×900 t+4600 undoHidden= false toastOn= true msg= "Removed from this deviceUndo⌘Z" panels= [] saveOpen= false
+FAIL - desktop 1440×900: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere 
+     page.click: Timeout 6000ms exceeded.
+
+== phone 390×844
+[b] phone 390×844 t+2000 before Escape undoHidden= true toastOn= false msg= "Undo⌘Z" panels= ["p-save"] saveOpen= true
+[b] phone 390×844 t+2600 after Escape undoHidden= true toastOn= false msg= "Undo⌘Z" panels= [] saveOpen= false
+[b] phone 390×844 t+4600 undoHidden= true toastOn= false msg= "Undo⌘Z" panels= [] saveOpen= false
+FAIL - phone 390×844: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere 
+     the ten-second Undo is on screen after the switch, not hidden behind it
+
+0 passed, 2 failed
+  - desktop 1440×900: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere: page.click: Timeout 6000ms exceeded.
+  - phone 390×844: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere: the ten-second Undo is on screen after the switch, not hidden behind it

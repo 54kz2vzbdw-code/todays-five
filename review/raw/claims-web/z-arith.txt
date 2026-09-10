@@ -1,0 +1,6 @@
+9a2f369 'tightest is Light dim on its own --ink, 4.5002': 4.5002
+144e5b3 / theme.test.js '62 of the 314 hex tokens absent from theme.js source; every one of 18 kits has one': kits=18 hex tokens in colors=314 absent case-insensitive=58 (kits with >=1: 18) absent case-sensitive=58 (kits with >=1: 18)
+3ac91b2 'fifteen of eighteen read [0]': at HEAD kits with shapes [0] = 12; light-base kits = 7 (e3255d0 'six of the eighteen kits are light')
+1aada68 '15 faces across 9 families reserved' (9a2f369 said ten): faces=33 reserved=15 source families=9 [fonts/ibm-plex-mono, fonts/ibm-plex-sans-400, fonts/josefin-sans-400, fonts/lato, fonts/lora-500, fonts/playfair-display-700, fonts/pt-sans, fonts/quicksand-500, fonts/source-serif-4-400]
+  total source families in fixture: 22; total bytes 1238128 (9a2f369: 1.18 MB)
+PALETTE_REV 1ptwfkh CURATED 18 secret 2 SLOT_DEFAULT {"day":"T1:curated:paper","night":"T1:curated:terminal"} partnerOf(paper)=midnight PACK_IDS=12

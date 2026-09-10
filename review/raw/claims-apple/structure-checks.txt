@@ -1,0 +1,104 @@
+### 176e022
+### 0f11ee6
+JSON.stringify(CURATED).length = 17674
+kits.json bytes = 41650 | expr length = 138
+expr(theme.js) JSON length = 21380 (the drift test compares this)
+### 9a2f369
+JSON.stringify(CURATED).length = 17674
+kits.json bytes = 41650 | expr length = 138
+expr(theme.js) JSON length = 21380 (the drift test compares this)
+
+## PLAN-phase4 §5: about thirty tags — non-markdown count
+34
+
+## README: "the one print in the app" — prints in the phone app target today
+apple/TodaysFive/TodaysFive/WatchLinkSender.swift:2
+apple/TodaysFive/TodaysFive/WebViewController.swift:1
+
+## AddFlowView: Undo five seconds; WatchDictation: withSuggestions nil, .plain; TextFieldLink fallback
+58:    static let undoWindow: Duration = .seconds(5)
+336:        // 5. Undo puts the count back, and leaves a tombstone rather than a hole
+7://   * `TextFieldLink` has four initializers and none of them takes an input mode;
+12:// The one lever that exists is WatchKit's `[REDACTED](withSuggestions:allowedInputMode:
+18:// **Reaching WatchKit from SwiftUI.** `WKApplication.shared().[REDACTED]` is public
+20:// is a sanctioned fallback: `TextFieldLink`, which `AddFlowView` shows instead when this returns nil.
+35:        WKApplication.shared().[REDACTED] != nil
+40:    /// `withSuggestions: nil` is the whole trick: an empty array shows the chooser screen with no
+41:    /// suggestions on it, and nil skips the chooser. `allowedInputMode: .plain` keeps emoji and
+50:        guard let controller = WKApplication.shared().[REDACTED] else {
+
+## TodayView settle 320/160, hold 300; OneThing shuffle rules; ListPicker navigationTitle {}
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:485:        let delay = done ? 320 : 160        // app.js: afterChange({ delay: it.done ? 320 : 160 })
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:551:                try? await Task.sleep(for: .milliseconds(300))
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:708:        try? await Task.sleep(for: .milliseconds(400))     // past the 320 ms settle
+apple/TodaysFive/TodaysFiveWatch/ListPickerView.swift:4:// watchOS-exclusive `navigationTitle { }` overload, in `WatchApp.swift`) and it presents this.
+apple/TodaysFive/TodaysFiveWatch/ListPickerView.swift:47:        .navigationTitle { Text("Lists").foregroundStyle(theme.accent) }
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:638:        .navigationTitle { Text("Today").foregroundStyle(theme.accent) }
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:190:                .navigationTitle { titleButton }
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:269:    /// button, through the watchOS-exclusive `navigationTitle { }` overload that takes a view.
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:14:// **Double Tap.** The + carries `.handGestureShortcut(.primaryAction)`, which is what makes a double
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:15:// tap start dictation while the app is open. Its partner, `.scrollInputBehavior(_:for:)` with
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:16:// `ScrollInputKind.handGestureShortcut`, belongs on the screen's *scroll container* and not here —
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:144:                .handGestureShortcut(.primaryAction, isEnabled: !working)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:156:            .handGestureShortcut(.primaryAction, isEnabled: !working)
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:112:    /// `.handGestureShortcut(.primaryAction)` makes a Double Tap start it while the app is open.
+
+## Complications: families + gauge style + [REDACTED] + widgetLabel
+apple/TodaysFive/[REDACTED]/ComplicationsIntent.swift:5:// in the face editor, before the complication has ever drawn: that is what an `[REDACTED]`
+apple/TodaysFive/[REDACTED]/ComplicationsProvider.swift:76:/// `.accessoryCircular`, `.accessoryCorner`, `.accessoryInline`: no configuration, because there is
+apple/TodaysFive/[REDACTED]/ComplicationsProvider.swift:96:/// `.accessoryRectangular`, the only family that can put a line of somebody's list on a watch face,
+apple/TodaysFive/[REDACTED]/Complications.swift:3:// There are exactly four `WidgetFamily` cases on watchOS — `.accessoryCircular`,
+apple/TodaysFive/[REDACTED]/Complications.swift:4:// `.accessoryRectangular`, `.accessoryCorner`, `.accessoryInline` — and every `system*` case is
+apple/TodaysFive/[REDACTED]/Complications.swift:11:// | corner        | the count again, with `.widgetLabel` along the bezel                  |
+apple/TodaysFive/[REDACTED]/Complications.swift:14:// **On the gauge style.** `.[REDACTED]` draws a *ring* around a value in the middle;
+apple/TodaysFive/[REDACTED]/Complications.swift:15:// `.accessoryCircular` draws a dial with a needle and tick marks, which is a speedometer and not a
+apple/TodaysFive/[REDACTED]/Complications.swift:46:// *colour* does not. `.widgetAccentable()` does not add a colour either — it moves a subview from
+apple/TodaysFive/[REDACTED]/Complications.swift:63:// | **`.widgetAccentable`** | which subview joins the face's accent group — see the note at `CountView` |
+apple/TodaysFive/[REDACTED]/Complications.swift:125:                .containerBackground(for: .widget) { [REDACTED]() }
+apple/TodaysFive/[REDACTED]/Complications.swift:129:        .supportedFamilies([.accessoryCircular, .accessoryCorner, .accessoryInline])
+apple/TodaysFive/[REDACTED]/Complications.swift:139:    /// **Which subview carries `.widgetAccentable()` is the only colour lever an app has on a
+apple/TodaysFive/[REDACTED]/Complications.swift:148:        case .accessoryInline:
+apple/TodaysFive/[REDACTED]/Complications.swift:154:        case .accessoryCorner:
+apple/TodaysFive/[REDACTED]/Complications.swift:157:                .widgetAccentable()
+
+## AppShortcuts phrases
+1:// TodaysFiveShortcuts.swift — the App Shortcut and its phrases.
+11:// someone's to-do list has no set to enumerate, so there is nothing to model it as. The phrases are
+18://   * every phrase must contain `\(.applicationName)`;
+35:            phrases: [
+36:                "Add to \(.applicationName)",
+37:                "Add a line to \(.applicationName)",
+38:                "Put something on my \(.applicationName)"
+40:            shortTitle: "Add a line",
+
+## WatchSnapshot v / fields
+20:// **Phase 4 added `kit`, `pair` and `face` and did not touch `v`.** That is §3's rule applied to a file
+23:// `kit: ""` and draws the way it always did, and an extension from build 200 reading build 158's
+24:// snapshot gets the same. Bumping `version` would have made the first of those two a refusal — the
+25:// face would have gone to its placeholder — to announce a field that older code does not read.
+45:    static let version = 1
+65:    var rollsAt: Double = 0
+72:    var kit = ""
+75:    var pair = ""
+84:    var face = ""
+89:         viewOnly: Bool, at: Double, rollsAt: Double,
+90:         kit: String = "", pair: String = "", face: String = "") {
+98:        self.rollsAt = rollsAt
+99:        self.kit = kit
+100:        self.pair = pair
+
+## Package.swift platforms + plugins
+apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift:1:// KitsGen — reads the two fixtures at build time and writes Kits.generated.swift: the 16 open kits
+apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift:7:// contrast and a 60-step lightness loop. A plugin that recomputed them would be a second
+apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift:18:// It is a **prebuild** command over `/bin/sh`, for exactly ConfigGen's Phase 3 reason and with the
+apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift:21://   * a *build* command declares the file it produces, and the plugin work directory is keyed by
+apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift:22://     package, target and plugin — **not by platform**. The moment two targets in one project link
+apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift:24://     twice and the build system refuses: "Multiple commands produce …". A prebuild command hands
+apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift:26://   * "a prebuild command cannot use executables built from source" — the build system's own words —
+apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift:30:// rather than a heredoc: a heredoc that expands (ConfigGen's, which is fine for two short strings)
+apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift:37:struct KitsGen: BuildToolPlugin {
+apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift:41:        // two-level walk ConfigGen does, and for the identical reason: the package knows where it is
+apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift:51:        let out = context.[REDACTED].appending(path: "Kits.generated.swift")
+apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift:57:            .prebuildCommand(
+apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift:61:                outputFilesDirectory: context.[REDACTED]
+apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift:84:        // Generated at build time by the KitsGen plugin from test/fixtures/kits.json and

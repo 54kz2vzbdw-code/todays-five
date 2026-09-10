@@ -1,0 +1,40 @@
+== drive.mjs (predecessors' instrument, review/raw/kits/tools/drive.mjs) on the frames each write-up used — Thu Sep 10 15:04:16 CDT 2026
+-- HEAD 7341981 shipped frames apple/shots/watch/today-<kit>.png (committed by b6ce079, stage 2, before the scrim ed89bd7)
+today-dark.png: 416x496 px; drive flat=0.0289 luma709=0.0297 maxChannel=0.0299 (R 0.0299 G 0.0299 B 0.0269); exactly ground #070A08: 105281/206336 = 51.0%
+  pure-white pixels in the top-right quadrant: 914, bbox px x 302–411, y 40–134 (pt at 2x: 151.0,20.0–205.5,67.0)
+  under/around the clock: #070A08 x9901 → white on it 19.89:1
+  under/around the clock: #58350E x417 → white on it 10.88:1
+  under/around the clock: #919292 x22 → white on it 3.12:1
+  white on the scrim colour #F7F2E8: 1.12:1; white on the ground #070A08: 19.89:1
+today-terminal.png: 416x496 px; drive flat=0.0289 luma709=0.0328 maxChannel=0.0357 (R 0.0254 G 0.0357 B 0.0257); exactly ground #070A08: 105267/206336 = 51.0%
+  pure-white pixels in the top-right quadrant: 927, bbox px x 302–411, y 40–134 (pt at 2x: 151.0,20.0–205.5,67.0)
+  under/around the clock: #070A08 x9948 → white on it 19.89:1
+  under/around the clock: #297E41 x334 → white on it 5.05:1
+  under/around the clock: #27793F x23 → white on it 5.39:1
+  white on the scrim colour #D8FFD8: 1.09:1; white on the ground #070A08: 19.89:1
+today-paper.png: 416x496 px; drive flat=0.7869 luma709=0.8033 maxChannel=0.8451 (R 0.8451 G 0.7998 B 0.7158); exactly ground #F7F2E8: 105237/206336 = 51.0%
+  pure-white pixels in the top-right quadrant: 487, bbox px x 302–382, y 40–62 (pt at 2x: 151.0,20.0–191.0,31.0)
+  under/around the clock: #F7F2E8 x1849 → white on it 1.12:1
+  under/around the clock: #F8F4EC x29 → white on it 1.10:1
+  under/around the clock: #FBF9F5 x27 → white on it 1.05:1
+  white on the scrim colour #1F1B16: 17.12:1; white on the ground #F7F2E8: 1.12:1
+
+-- a4f180a stage-1 frames apple/shots/watch/today-kit-<kit>.png (the 27.6x measurement's own inputs; extracted read-only with git show)
+today-kit-dark.png: 416x496 px; drive flat=0.0285 luma709=0.0293 maxChannel=0.0295 (R 0.0295 G 0.0295 B 0.0264); exactly ground #070A08: 105390/206336 = 51.1%
+  pure-white pixels in the top-right quadrant: 830, bbox px x 318–411, y 40–134 (pt at 2x: 159.0,20.0–205.5,67.0)
+  under/around the clock: #070A08 x8362 → white on it 19.89:1
+  under/around the clock: #58350E x417 → white on it 10.88:1
+  under/around the clock: #21180A x22 → white on it 17.50:1
+  white on the scrim colour #F7F2E8: 1.12:1; white on the ground #070A08: 19.89:1
+today-kit-terminal.png: 416x496 px; drive flat=0.0284 luma709=0.0323 maxChannel=0.0352 (R 0.0248 G 0.0352 B 0.0252); exactly ground #070A08: 105401/206336 = 51.1%
+  pure-white pixels in the top-right quadrant: 830, bbox px x 318–411, y 40–134 (pt at 2x: 159.0,20.0–205.5,67.0)
+  under/around the clock: #070A08 x8434 → white on it 19.89:1
+  under/around the clock: #297E41 x334 → white on it 5.05:1
+  under/around the clock: #27793F x23 → white on it 5.39:1
+  white on the scrim colour #D8FFD8: 1.09:1; white on the ground #070A08: 19.89:1
+today-kit-paper.png: 416x496 px; drive flat=0.7868 luma709=0.8033 maxChannel=0.8450 (R 0.8450 G 0.7997 B 0.7157); exactly ground #F7F2E8: 105373/206336 = 51.1%
+  pure-white pixels in the top-right quadrant: 385, bbox px x 318–382, y 40–62 (pt at 2x: 159.0,20.0–191.0,31.0)
+  under/around the clock: #F7F2E8 x1489 → white on it 1.12:1
+  under/around the clock: #FFFFFE x21 → white on it 1.00:1
+  under/around the clock: #F8F3EA x20 → white on it 1.11:1
+  white on the scrim colour #1F1B16: 17.12:1; white on the ground #F7F2E8: 1.12:1

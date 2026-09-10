@@ -1,0 +1,137 @@
+SWIFT-MUT START Thu Sep 10 01:13:41 CDT 2026 |  1:13  up 92 days, 23:19, 2 users, load averages: 4.88 4.53 4.84
+[build-slot] kits-mut-swift acquired 1 at 01:13:41; load: 4.88 4.53 4.84
+[1/1] Compiling plugin ConfigGen
+[2/2] Compiling plugin KitsGen
+Building for debugging...
+[2/14] /private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/kits/mut-terminal/apple/TodaysFiveCore/.build/arm64-apple-macosx/debug/[REDACTED].derived/runner.swift
+[3/14] Write sources
+[6/14] Write tfive-entitlement.plist
+[7/14] Write sources
+[8/14] Write swift-version--58304C5D6DBC2206.txt
+[10/42] Compiling TodaysFiveCore Kits.swift
+[11/42] Compiling TodaysFiveCore Links.swift
+[12/42] Compiling TodaysFiveCore Vault.swift
+[13/42] Compiling TodaysFiveCore WatchLink.swift
+[14/42] Compiling TodaysFiveCore SupabaseTransport.swift
+[15/42] Compiling TodaysFiveCore SyncEngine.swift
+[16/42] Compiling TodaysFiveCore JSONWriter.swift
+[17/42] Compiling TodaysFiveCore JSString.swift
+[18/42] Compiling TodaysFiveCore Ops.swift
+[19/42] Compiling TodaysFiveCore Queries.swift
+[20/42] Compiling TodaysFiveCore Base62.swift
+[21/42] Compiling TodaysFiveCore Config.swift
+[22/42] Compiling TodaysFiveCore Dates.swift
+[23/42] Compiling TodaysFiveCore Rollover.swift
+[24/42] Compiling TodaysFiveCore Store.swift
+[25/42] Emitting module TodaysFiveCore
+[26/42] Compiling TodaysFiveCore JSONReader.swift
+[27/42] Compiling TodaysFiveCore JSONValue.swift
+[28/42] Compiling TodaysFiveCore JSText.swift
+[29/42] Compiling TodaysFiveCore Keys.swift
+[30/42] Compiling TodaysFiveCore Envelope.swift
+[31/42] Compiling TodaysFiveCore JSNumber.swift
+[32/42] Compiling TodaysFiveCore Deflate.swift
+[33/42] Compiling TodaysFiveCore Document.swift
+[34/42] Compiling TodaysFiveCore TodayOps.swift
+[35/42] Compiling TodaysFiveCore Transport.swift
+[36/42] Compiling TodaysFiveCore MemoryTransport.swift
+[37/42] Compiling TodaysFiveCore Merge.swift
+[38/44] Compiling TodaysFiveCore Config.generated.swift
+[39/44] Compiling TodaysFiveCore Kits.generated.swift
+[40/58] Emitting module tfive
+[41/58] Compiling tfive TFive.swift
+[41/58] Write Objects.LinkFileList
+[42/58] Linking tfive
+[43/58] Applying tfive
+[45/58] Compiling TodaysFiveCoreTests JSSemanticsTests.swift
+[46/58] Compiling TodaysFiveCoreTests KitFixtureTests.swift
+[47/58] Emitting module TodaysFiveCoreTests
+[48/58] Compiling TodaysFiveCoreTests VaultTests.swift
+[49/58] Compiling TodaysFiveCoreTests TodayOpsTests.swift
+[50/58] Compiling TodaysFiveCoreTests WatchLinkTests.swift
+[51/58] Compiling TodaysFiveCoreTests SyncTests.swift
+macro expansion #expect:1:22: warning: no 'async' operations occur within 'await' expression
+`- /private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/kits/mut-terminal/apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift:122:63: note: expanded code originates here
+120 |         #expect(await server.calls().first == "get \(keys.lookupId) 1")
+121 |         #expect(await engine.status == .synced)
+122 |         #expect(await engine.pollDelay() == SyncEngine.pollMs)
+    |         `- note: in expansion of macro 'expect' here
+    +--- macro expansion #expect ---------------------------------------
+    |1 | Testing.__checkValue(await engine.pollDelay() == SyncEngine.pollMs,expression: .__fromSyntaxNode("await engine.pollDelay() == SyncEngine.pollMs"),comments: [],isRequired: false,sourceLocation: Testing.SourceLocation.__here()).__expected()
+    |  |                      `- warning: no 'async' operations occur within 'await' expression
+    +-------------------------------------------------------------------
+123 |         #expect(await engine.pollDelay(live: true) == SyncEngine.pollLiveMs)
+124 |     }
+
+macro expansion #expect:1:22: warning: no 'async' operations occur within 'await' expression
+`- /private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/kits/mut-terminal/apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift:123:77: note: expanded code originates here
+121 |         #expect(await engine.status == .synced)
+122 |         #expect(await engine.pollDelay() == SyncEngine.pollMs)
+123 |         #expect(await engine.pollDelay(live: true) == SyncEngine.pollLiveMs)
+    |         `- note: in expansion of macro 'expect' here
+    +--- macro expansion #expect ---------------------------------------
+    |1 | Testing.__checkValue(await engine.pollDelay(live: true) == SyncEngine.pollLiveMs,expression: .__fromSyntaxNode("await engine.pollDelay(live: true) == SyncEngine.pollLiveMs"),comments: [],isRequired: false,sourceLocation: Testing.SourceLocation.__here()).__expected()
+    |  |                      `- warning: no 'async' operations occur within 'await' expression
+    +-------------------------------------------------------------------
+124 |     }
+125 | 
+[52/58] Compiling TodaysFiveCoreTests CryptoTests.swift
+[53/58] Compiling TodaysFiveCoreTests Fixtures.swift
+[54/58] Compiling TodaysFiveCoreTests DifferentialTests.swift
+[55/58] Compiling TodaysFiveCoreTests ContractFixtureTests.swift
+[56/58] Compiling TodaysFiveCoreTests ModelTests.swift
+[57/60] Compiling [REDACTED] runner.swift
+[58/60] Emitting module [REDACTED]
+[58/60] Write Objects.LinkFileList
+[59/60] Linking [REDACTED]
+Build complete! (9.64s)
+Test Suite 'Selected tests' started at 2026-09-10 01:13:52.556.
+Test Suite '[REDACTED].xctest' started at 2026-09-10 01:13:52.557.
+Test Suite '[REDACTED].xctest' passed at 2026-09-10 01:13:52.557.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-09-10 01:13:52.557.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite "The kit table" started.
+◇ Test "every pair resolves to faces that are actually in the repo" started.
+◇ Test "every kit survives the representation it crosses in" started.
+◇ Test "neither Secret kit is in the table, and neither is anywhere in this binary" started.
+◇ Test "the generated table is the fixture's 16 open kits, token for token" started.
+◇ Test "every kit clears its own grounds — all 18, the Secret pair included" started.
+◇ Test "live theme.js still produces the fixture, token for token" started.
+type: 13 pairs over 33 files, 33 PostScript names
+✔ Test "every pair resolves to faces that are actually in the repo" passed after 0.002 seconds.
+kit            acc/ink   acc/ink3   aTxt/ink  aTxt/ink3   (floors 3, 3, 4.5, 4.5)
+dark             4.118      3.476      5.495      4.639
+light            3.790      3.002      5.754      4.556
+✔ Test "neither Secret kit is in the table, and neither is anywhere in this binary" passed after 0.003 seconds.
+pink             5.429      4.014      6.095      4.507
+midnight         8.560      6.900      9.443      7.612
+forest           9.247      7.074     10.435      7.984
+paper            4.787      3.848      6.828      5.489
+terminal        13.292     11.221     14.104     11.906
+sunset           6.617      4.801      7.567      5.491
+dusk             7.941      6.313      9.132      7.259
+harbor           3.690      3.045      5.567      4.595
+ember            5.669      4.774      6.626      5.581
+cocoa            7.004      5.094      8.107      5.897
+blush            4.087      3.326      6.276      5.108
+teletype         3.592      3.006      5.645      4.724
+sketch           3.833      3.082      6.704      5.390
+arcade           6.069      4.831      7.948      6.327
+superpink        4.930      3.798      6.303      4.856
+birthday         4.229      3.540      6.165      5.161
+tightest against its floor: light accent on ink3 3.0016 against a floor of 3.0
+✔ Test "every kit clears its own grounds — all 18, the Secret pair included" passed after 0.003 seconds.
+✔ Test "the generated table is the fixture's 16 open kits, token for token" passed after 0.004 seconds.
+✔ Test "every kit survives the representation it crosses in" passed after 0.005 seconds.
+✘ Test "live theme.js still produces the fixture, token for token" recorded an issue at KitFixtureTests.swift:76:25: Issue recorded
+↳ theme.js and test/fixtures/kits.json have parted company (terminal) — run `node test/tools/gen-kits.mjs`
+drift: live theme.js reproduced the fixture — 21396 bytes, 18 kits, 13 pairs
+✘ Test "live theme.js still produces the fixture, token for token" failed after 0.012 seconds with 1 issue.
+✘ Suite "The kit table" failed after 0.012 seconds with 1 issue.
+✘ Test run with 6 tests in 1 suite failed after 0.013 seconds with 1 issue.
+[build-slot] kits-mut-swift released after 11s; exit 1; load: 6.23 4.83 4.95
+SWIFT-MUT END exit=1 Thu Sep 10 01:13:52 CDT 2026 |  1:13  up 92 days, 23:19, 2 users, load averages: 6.23 4.83 4.95

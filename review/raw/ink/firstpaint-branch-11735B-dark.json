@@ -1,0 +1,138 @@
+{
+  "label": "branch",
+  "base": "dark",
+  "code": "T2:d:11735B:manrope::Worst",
+  "staleAccent": "#11735B",
+  "paletteRev": "1ptwfkh",
+  "scenarios": {
+    "A_normal_then_reload": {
+      "blockApp": false,
+      "seededRev": "1ptwfkh",
+      "firstFrame": [
+        27,
+        "#11735B"
+      ],
+      "runs": [
+        {
+          "accent": "#11735B",
+          "from": 27,
+          "until": 40,
+          "frames": 2
+        },
+        {
+          "accent": "#338B72",
+          "from": 79,
+          "until": 1566,
+          "frames": 91
+        }
+      ],
+      "atDOMContentLoaded": [
+        75,
+        "#338B72"
+      ],
+      "atLoad": [
+        76,
+        "#338B72"
+      ],
+      "after1500ms": "#338B72",
+      "cacheAfter": {
+        "accent": "#338B72",
+        "rev": "1ptwfkh"
+      },
+      "pageStamp": "1ptwfkh",
+      "themeId": "custom-11735b-d-manrope",
+      "pageErrors": [],
+      "secondLoad": {
+        "firstFrame": [
+          22,
+          "#338B72"
+        ],
+        "runs": [
+          {
+            "accent": "#338B72",
+            "from": 22,
+            "until": 1031,
+            "frames": 62
+          }
+        ],
+        "after1000ms": "#338B72",
+        "cacheAfter": {
+          "accent": "#338B72",
+          "rev": "1ptwfkh"
+        }
+      },
+      "wallMs": 2656
+    },
+    "B_appjs_blocked": {
+      "blockApp": true,
+      "seededRev": "1ptwfkh",
+      "firstFrame": [
+        24,
+        "#11735B"
+      ],
+      "runs": [
+        {
+          "accent": "#11735B",
+          "from": 24,
+          "until": 1519,
+          "frames": 92
+        }
+      ],
+      "atDOMContentLoaded": [
+        17,
+        "#11735B"
+      ],
+      "atLoad": [
+        26,
+        "#11735B"
+      ],
+      "after1500ms": "#11735B",
+      "cacheAfter": {
+        "accent": "#11735B",
+        "rev": "1ptwfkh"
+      },
+      "pageStamp": "1ptwfkh",
+      "pageErrors": [],
+      "wallMs": 1535
+    },
+    "C_stamp_mismatch": {
+      "blockApp": false,
+      "seededRev": "stale00",
+      "firstFrame": [
+        15,
+        "#A86014"
+      ],
+      "runs": [
+        {
+          "accent": "#A86014",
+          "from": 15,
+          "until": 22,
+          "frames": 2
+        },
+        {
+          "accent": "#338B72",
+          "from": 41,
+          "until": 1533,
+          "frames": 91
+        }
+      ],
+      "atDOMContentLoaded": [
+        40,
+        "#338B72"
+      ],
+      "atLoad": [
+        42,
+        "#338B72"
+      ],
+      "after1500ms": "#338B72",
+      "cacheAfter": {
+        "accent": "#338B72",
+        "rev": "1ptwfkh"
+      },
+      "pageStamp": "1ptwfkh",
+      "themeId": "custom-11735b-d-manrope",
+      "pageErrors": [],
+      "wallMs": 1551
+    }
+  }
+}

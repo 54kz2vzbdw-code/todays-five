@@ -1,0 +1,5 @@
+app.js 0e03143..74bf09f: added lines=71 removed lines=35 net=36
+added comment-only lines=22 (2459 bytes raw, gzip alone 1148)
+removed comment-only lines=1 (125 bytes)
+added non-comment lines=49 (4645 bytes)
+added code lines carrying a trailing // comment=11

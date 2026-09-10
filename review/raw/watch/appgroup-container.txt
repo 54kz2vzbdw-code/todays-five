@@ -1,0 +1,22 @@
+# App Group container of the demo Watch app on the review pair, Thu Sep 10 01:32:47 CDT 2026
+# path: /Users/pricebrannen/Library/Developer/CoreSimulator/Devices/8F30B5F3-A512-4CA6-90CA-C596689046DB/data/Containers/Shared/AppGroup/11FD62D8-2074-47A1-82AF-CB2420184FC5
+# listing (names redacted where secret-shaped):
+/Users/pricebrannen/Library/Developer/CoreSimulator/Devices/8F30B5F3-A512-4CA6-90CA-C596689046DB/data/Containers/Shared/AppGroup/11FD62D8-2074-47A1-82AF-CB2420184FC5:
+total 16
+drwxr-xr-x@  6 pricebrannen  staff   192 Sep 10 01:32 .
+drwxr-xr-x  32 pricebrannen  staff  1024 Sep 10 01:29 ..
+-rw-r--r--   1 pricebrannen  staff   529 Sep 10 01:18 .com.apple.mobile_container_manager.metadata.plist
+drwxr-xr-x   4 pricebrannen  staff   128 Sep 10 01:18 Library
+drwxr-xr-x   3 pricebrannen  staff    96 Sep 10 01:32 lists
+-rw-r--r--   1 pricebrannen  staff   210 Sep 10 01:32 snapshot.json
+
+/Users/pricebrannen/Library/Developer/CoreSimulator/Devices/8F30B5F3-A512-4CA6-90CA-C596689046DB/data/Containers/Shared/AppGroup/11FD62D8-2074-47A1-82AF-CB2420184FC5/lists:
+total 8
+drwxr-xr-x  3 pricebrannen  staff    96 Sep 10 01:32 .
+drwxr-xr-x@ 6 pricebrannen  staff   192 Sep 10 01:32 ..
+-rw-r--r--  1 pricebrannen  staff  1929 Sep 10 01:32 [REDACTED].json
+
+# snapshot.json:
+{"at":1789021963837,"done":4,"face":"SourceSerif4-Regular-600","hasList":true,"kit":"paper","name":"Demo","next":"Ten minutes outside","pair":"playfair","rollsAt":1789102800000,"total":5,"v":1,"viewOnly":false}
+# each list file: is the FILENAME equal to the document's own id, and what keys does the record hold
+file: [REDACTED] | filename==doc.id: True | id length: 22 | record keys: ['created', 'dirty', 'doc', 'mode', 'origin', 'rev', 'savedAt'] | doc keys: ['history', 'id', 'items', 'name', 'nameAt', 'returns', 'rules', 'sections', 'templates', 'themes', 'updatedAt', 'v', 'zone'] | items: 5 | mode: edit | dirty: False | created: True

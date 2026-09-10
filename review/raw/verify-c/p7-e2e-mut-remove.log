@@ -1,0 +1,12 @@
+===== MUTATED copy (app.js: no paintMenu() in the p-menu opener; panels.js: no await on switchTo) served on 8898, run from /private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/verify-c/e2e-mut/tools/e2e4.js  START 15:25:45
+--- ONLY=Remove asks first  BASE=http://127.0.0.1:8898/
+
+== desktop 1440×900
+ok - desktop 1440×900: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere
+
+== phone 390×844
+ok - phone 390×844: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere
+
+2 passed, 0 failed
+exit=0
+===== END 15:26:03

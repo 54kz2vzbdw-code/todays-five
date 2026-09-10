@@ -1,0 +1,14 @@
+ok - muted: no context is ever created
+ok - first gesture: a fresh (suspended) context is resumed inside the tap; the engines load; the next tap plays
+ok - background then back: suspended → one resume, same context
+ok - interrupted by a call and resume never lands: the next tap closes it and makes a fresh context
+ok - a closed context is replaced at once
+ok - foreground(): resumes a suspended context, leaves a running one alone, never touches a closed one
+ok - every pack plays check, uncheck and finish without throwing, and the device override picks the pack
+ok - 1.5: twelve packs, the six new ones after the six of 1.1, every one named
+ok - 1.7: a check-off before the engines land plays as soon as they do, once; a late arrival is dropped; preload makes no context
+ok - 1.8: the Secret pair's two engines live in a module of their own, fetched only when one is asked for
+ok - an unknown engine name falls back to the knock
+ok - the finale's vibration keeps the volley's rhythm — read out of fx.js, not copied from it
+
+12 sound tests passed

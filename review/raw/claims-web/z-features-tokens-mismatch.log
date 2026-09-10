@@ -1,0 +1,47 @@
+ok - normalize keeps unknown keys on the document, on records and on tombstones; merge keeps unknown collections
+ok - tie-break: a tombstone, then the record that carries more, then the lexically larger; still a total order (fuzz)
+ok - isDue: daily, weekdays, chosen days, monthly (clamped to short months)
+ok - setRule stores a snapshot; a rule on a line already on Today is marked placed today; clearing tombstones it
+ok - rollover: a done daily line goes to History and resets undone on Today (+2); idempotent; two devices converge
+ok - rollover: a weekly line done on its day leaves Today until its next day, then comes back once; taking it off Today sticks
+ok - rollover: an unfinished recurring line just stays; a plain done line still tombstones (+1) as in v3
+ok - not today: off Today now, back at tomorrow's rollover, undo puts it straight back
+ok - recently deleted: tombstones with text, newest first; restore brings the line back into its section
+ok - templates: saved from a section without state, inserted anywhere, deleted
+ok - put a section on Today / take it off
+ok - move to another list: copied under a new id with its rule and return; the source keeps a bare tombstone
+ok - export → import round trip is byte-identical, carries no secret, and Markdown reads
+ok - add from anywhere: the hash parses, newlines make lines, a view link is recognisable, junk is null
+ok - what's new: once per version, never on a fresh device, and a pre-v4 device with a list counts as returning
+ok - what's new fires on a changed version string, never on its order: a 1.3 device, a 1.2 device, a 1.1 device and a 1.0 device (4.0.0) each see the newest entry once
+ok - the changelog (1.2): 1.0 and later only, a one-sentence headline of 12 words or fewer, up to three tagged items of 14 words or fewer, nothing about the plumbing
+ok - day review: streak, the week's finished days, today's lines
+ok - purgeTombstones drops rules and returns whose line is gone for good
+ok - the version is one number in three places, the build in four, and there are no dates anywhere
+ok - 1.8: the Secret pair is nowhere anyone reading the app can find it — not About, not How it works, not the changelog beyond the wink
+node:internal/modules/run_main:107
+    [REDACTED](
+    ^
+
+AssertionError [ERR_ASSERTION]: index.html's stamp is theme.js's PALETTE_REV — regenerate it when a palette moves
++ actual - expected
+
++ 'zzzzzzz'
+- '1ptwfkh'
+
+    at file:///private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/claims-web2/mut-tokens/test/features.test.js:345:12
+    at test (file:///private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/claims-web2/mut-tokens/test/features.test.js:9:27)
+    at file:///private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/claims-web2/mut-tokens/test/features.test.js:332:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:643:26
+    at async [REDACTED] (node:internal/modules/run_main:101:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 'zzzzzzz',
+  expected: '1ptwfkh',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.19.0
+exit=1

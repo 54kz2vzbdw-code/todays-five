@@ -1,0 +1,11 @@
+[tfive] registry: unreadable
+[tfive] bridge: ready
+[tfive] haptic: check=1 uncheck=0 finale=0 shuffle=0
+[tfive] haptic: check=1 uncheck=1 finale=0 shuffle=0
+[tfive] haptic: check=1 uncheck=1 finale=1 shuffle=0
+[tfive] haptic: check=1 uncheck=1 finale=1 shuffle=1
+[tfive] selftest: bridge=ready heard=4/4 check=1 uncheck=1 finale=1 shuffle=1
+[tfive] selftest: finale pattern ok duration=1.020s hardware=no
+[tfive] selftest: [REDACTED]=string
+[tfive] selftest: shellToken=true serviceWorker=true standaloneSeenByPage=false
+com.pricebrannen.todaysfive: 16872

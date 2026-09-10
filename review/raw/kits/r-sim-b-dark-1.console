@@ -1,0 +1,5 @@
+[tfive] theme: slot=day day=paper night=terminal → kit=dark pair=lato base=dark unlocked=0 offered=16
+[tfive] watch: store=appGroup
+[tfive] watch: demo list seeded, lines=5 mark=synced
+[tfive] face: kit=dark pair=lato face=PTSans-Bold → snapshot written, reloadAllTimelines requested
+com.pricebrannen.todaysfive.watchkitapp: 17880

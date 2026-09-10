@@ -1,0 +1,8 @@
+== gen-kits on a scratch copy (e) Thu Sep 10 01:11:54 CDT 2026
+wrote test/fixtures/kits.json
+  18 kits (16 open, 2 secret), 13 font pairs
+  14 floors × 18 kits = 252 contrast assertions, all cleared
+  tightest: light dim on ink 4.500 against a floor of 4.5
+  288 hex tokens, 96 confetti colours
+--- diff regenerated vs committed (empty = byte-identical):
+diff exit=? cmp: identical

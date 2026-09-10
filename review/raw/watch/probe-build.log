@@ -1,0 +1,42 @@
+PROBE-BUILD START 2026-09-10 01:16:38 |  1:16  up 92 days, 23:22, 2 users, load averages: 7.13 5.48 5.17
+[3/9] Write tfprobe-entitlement.plist
+[4/9] Write sources
+[5/9] Write swift-version--58304C5D6DBC2206.txt
+[7/37] Compiling TodaysFiveCore Kits.swift
+[8/37] Compiling TodaysFiveCore Links.swift
+[9/39] Compiling TodaysFiveCore Ops.swift
+[10/39] Compiling TodaysFiveCore Queries.swift
+[11/39] Compiling TodaysFiveCore MemoryTransport.swift
+[12/39] Compiling TodaysFiveCore Merge.swift
+[13/39] Compiling TodaysFiveCore Rollover.swift
+[14/39] Compiling TodaysFiveCore Store.swift
+[15/39] Compiling TodaysFiveCore SupabaseTransport.swift
+[16/39] Compiling TodaysFiveCore SyncEngine.swift
+[17/39] Compiling TodaysFiveCore Vault.swift
+[18/39] Compiling TodaysFiveCore WatchLink.swift
+[19/39] Compiling TodaysFiveCore JSText.swift
+[20/39] Compiling TodaysFiveCore Keys.swift
+[21/39] Compiling TodaysFiveCore Envelope.swift
+[22/39] Compiling TodaysFiveCore JSNumber.swift
+[23/39] Compiling TodaysFiveCore TodayOps.swift
+[24/39] Compiling TodaysFiveCore Transport.swift
+[25/39] Emitting module TodaysFiveCore
+[26/39] Compiling TodaysFiveCore JSONWriter.swift
+[27/39] Compiling TodaysFiveCore JSString.swift
+[28/39] Compiling TodaysFiveCore Base62.swift
+[29/39] Compiling TodaysFiveCore Config.swift
+[30/39] Compiling TodaysFiveCore Dates.swift
+[31/39] Compiling TodaysFiveCore Deflate.swift
+[32/39] Compiling TodaysFiveCore Document.swift
+[33/39] Compiling TodaysFiveCore JSONReader.swift
+[34/39] Compiling TodaysFiveCore JSONValue.swift
+[35/39] Compiling TodaysFiveCore Config.generated.swift
+[36/39] Compiling TodaysFiveCore Kits.generated.swift
+[37/41] Emitting module tfprobe
+[38/41] Compiling tfprobe main.swift
+[38/41] Write Objects.LinkFileList
+[39/41] Linking tfprobe
+[40/41] Applying tfprobe
+Build complete! (6.46s)
+[build-slot] watch-probe-build released after 8s; exit 0; load: 7.68 5.62 5.22
+PROBE-BUILD END 2026-09-10 01:16:46 exit= |  1:16  up 92 days, 23:22, 2 users, load averages: 7.68 5.62 5.22

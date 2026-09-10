@@ -1,0 +1,102 @@
+## 158 / 216 under apple/
+
+## 17x / 17.5x / 27.5 / 27.6 anywhere
+apple/DECISIONS-apple.md:1344:| **dark** (`#070A08`) | 0.0285 | 0.0293 | 0.0281 | 0.0306 |
+apple/DECISIONS-apple.md:1346:| **paper** (`#F7F2E8`) | **0.7868** | **0.8033** | **0.7755** | **0.8450** |
+apple/DECISIONS-apple.md:1348:**Paper ÷ dark: 27.6, 27.5, 27.6, 27.6 — 27.5–27.6× across all four weightings.**
+apple/DECISIONS-apple.md:1367:**The prior measurement in `PLAN-apple-phase4.md` was dark 0.0466, cream 0.8146, 17.5×; this one is
+apple/DECISIONS-apple.md:1368:dark 0.0285, cream 0.7868, 27.6×.** The cream agrees to within 3.5%. The dark does not, and the
+apple/PLAN-apple-phase4.md:261:  at γ 2.2 as a fraction of a full-white panel. Dark **0.0466**, cream **0.8146** — a **17.5×**
+apple/PLAN-apple-phase4.md:471:the pixel, 416×496 native — dark **0.0285**, cream **0.7868**, a ratio of **27.5–27.6×** across four
+apple/README.md:449:panel about 17× harder than a dark one.
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:229:        // where the 17x emissive-drive ratio between a dark kit and Paper's cream is actually spent.
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:36:// **3. The ground is the battery.** Paper's cream drives the panel about **17×** harder than a dark
+Binary file apple/shots/web-save-sheet-1.10.png matches
+audit/finale-timing.txt:16:    765 | 462 | matrix(1, 0, 0, 1, 0, -27.5982)
+Binary file audit/swatch-delete-after.png matches
+Binary file audit/theme-card-after.png matches
+Binary file shots/1.12/after/desktop-remove-confirm.png matches
+Binary file shots/1.12/after/phone-one-thing.png matches
+Binary file shots/1.4/after/desktop-about.png matches
+Binary file shots/1.8/after/desktop-flip-day.png matches
+Binary file shots/1.8/after/desktop-help.png matches
+Binary file shots/1.8/before/desktop-flip-day.png matches
+Binary file shots/1.9/before/desktop-flip-day.png matches
+
+## Helvetica / name counts: 10 of 22, ten of the twenty-two, 12 of the 22, twelve
+apple/DECISIONS-apple.md:1150:resolves **10 of 22 to Helvetica**: Quicksand, Space Grotesk, Manrope, DM Sans, Outfit, Nunito Sans,
+apple/PLAN-apple-phase4.md:47:resolves **10 of 22 to Helvetica** — including the *task* face of midnight, harbor, forest, sketch,
+apple/PLAN-apple-phase4.md:460:files, never from `theme.js`, because ten of the twenty-two CSS names resolve to Helvetica on Apple
+apple/TodaysFive/Fonts/README.md:15:binary calls itself **Outfit Thin**. CoreText asks the file. Twelve of the twenty-two families
+apple/TodaysFiveCore/Sources/TodaysFiveCore/Kits.swift:99:/// `styles.css`'s `@font-face` rules invent — twelve of the twenty-two resolve to something else on
+apple/tools/gen-watch-fonts.py:18:families `theme.js` names resolves **10 of 22 to Helvetica** — and a missing custom font on Apple
+
+## reserved-name count: 10 of 33 / 7 families / 15 / nine families / 16
+apple/TodaysFive/Fonts/README.md:126:family's **Reserved Font Name**. **Fifteen** of these 33 faces do, across nine families — IBM Plex
+apple/tools/gen-watch-fonts.py:228:        # OFL.txt header, and reading nameID 0 alone missed six faces and reported 10 of 33 where the
+apple/tools/gen-watch-fonts.py:249:# Between them those two errors cancelled into a plausible-looking 10 of 33. The truth is 15.
+
+## single-run medians on head: 54 s, 132 s, 144 s, 238 s, 32 s
+DECISIONS.md:467:- **Twelve at once rather than in queued waves.** The first six went first to learn the load; at about five on fourteen cores the rest followed without waiting, because the serial lenses (the simulators, eight simulated idle hours) are the long poles and starting them late would have cost an hour. The performance lens was told the machine is shared and to report medians and relative numbers.
+PLAN.md:688:| Lighthouse 12 (Chrome 152, gzip like GitHub Pages, the same harness and machine for both, an untouched clone of `main` as the 1.1 baseline, two rounds each) | **1.1 baseline** (the untouched clone of `main`): desktop 100 / 100 / 100 in both rounds (FCP 0.30–0.38 s, LCP 0.41–0.42 s); mobile cold 98, 99, 98, 98 (FCP 1.29–1.66 s, LCP 1.83–1.89 s); mobile warm 98, 99, 98, 99 (FCP 1.28–1.66 s, LCP 1.82–1.88 s). **1.2**: desktop 100 / 100 / 100 in both rounds (FCP 0.30 s, LCP 0.41 s); mobile cold 98, 98, 98, 98 (FCP 1.29–1.51 s, LCP 1.82–1.83 s); mobile warm 99, 99, 98, 99 (FCP 1.29–1.66 s, LCP 1.82–1.88 s). Performance / accessibility / best practices; TBT ≤ 8 ms everywhere. The harness falls into one of two modes on either build — a first paint at 1.29 s with a 0.07 layout shift (Lato arriving after the paint), scored 98, or a paint at 1.66 s with none, scored 99 — and both builds land in both; 1.2 matched the baseline mode for mode (the first cold rounds to the millisecond), the cold medians are the same (98) and the warm median is a point better (99 against 98.5): not worse, on eight mobile runs a side. The six extra kilobytes on the wire (146 KB against 140) sit inside the simulation's granularity. Lighthouse 12 has no installability audit; the install path was not re-checked in this build (the head script and the manifest are byte-identical to 1.1's) |
+PLAN.md:1727:medians are 52 ms apart and the ranges barely touch, on interleaved runs.
+apple/DECISIONS-apple.md:1927:### The median was not the finding
+apple/DECISIONS-apple.md:1929:The checkpoint recorded medians of 54 s (realtime connected) and 32 s (not connected). Three runs of
+apple/DECISIONS-apple.md:1932:error of tens of seconds, and the median is the statistic most exposed to it.
+apple/DECISIONS-apple.md:1941:**How to apply:** report the distribution and the mechanism that produces it. A median quoted from ten
+apple/PLAN-apple-phase4.md:87:| condition | trials (s) | median |
+apple/PLAN-apple-phase4.md:487:**The median was not the finding.** Three runs of the same condition gave 54 s, 132 s and 144 s.
+apple/TodaysFiveCore/Sources/TodaysFiveCore/SyncEngine.swift:258:    /// this line existed: a write took a median of 132 s to appear and as long as 238 s.
+audit/raw/performance/report.md:13:| **desktop median** | **100** | **100** | **100** | **382 ms** | **440 ms** | **4 ms** |
+audit/raw/performance/report.md:16:| **mobile cold median** | **99** | **100** | **100** | **1650 ms** | **1921 ms** | **0 ms** |
+audit/raw/performance/report.md:19:| **mobile warm median** | **100** | **100** | **100** | **1160 ms** | **1184 ms** | **0 ms** |
+audit/raw/performance/report.md:21:The runner uses a fresh profile, so every pass measures **the welcome**, not a saved list — there is no list on that profile to link to. For scale: 1.1's decisions record a historical mobile LCP of 1.98 s (1.0 baseline) vs. a 2.12 s regression they then fixed; today's 1.92 s median sits at that same level despite four rounds of new features since.
+audit/raw/performance/report.md:27:5 runs/cell, median. Cold = fresh profile seeded with the theme code, no `tf/v2/themecss` cached. Warm = `page.reload()` of that same page.
+audit/raw/performance/report.md:41:| **median (10 cells)** | | **68 ms** | **74 ms** | **28 ms** | **36 ms** |
+audit/raw/performance/report.md:120:What this lens found genuinely cheap: idle cost measures as near-zero by direct instrumentation, not just by inspection — 12 ms of task time and zero storage writes across a real 5 minutes, and a flat 6 timer reschedulings with zero storage writes in every one of 8 simulated hours, because `rollover()` is a true no-op (same object reference) when nothing is due. Long lists hold up well past the documented ~80-line scale: a synthetic 400-line Everything view renders in 206 ms, scrolls, checks off, and searches with zero long tasks recorded anywhere. The theme picker's open/close cycle is clean (no measurable leak over 30 cycles) even though Settings and the view toggle are not. Lighthouse scores are excellent throughout, and mobile LCP (1.92 s median) sits at the same level as the 1.98 s baseline 1.1's decisions record from two rounds ago, despite real feature growth since.
+tools/polld.js:203:function median(xs) {
+tools/polld.js:242:    const line = { id: cond.id, label: cond.label, seen: got.slice().sort((a, b) => a - b), never: never.length, broke, horizonS: cond.horizon / 1000, medianS: median(got), maxS: got.length ? Math.max(...got) : null };
+tools/polld.js:250:console.log("\n| condition | trials (s) | median |");
+tools/polld.js:260:  const med = c.medianS == null ? "—" : `${c.medianS} (max ${c.maxS})`;
+
+## 0.63 / 0.52 / live=true / the live-run script
+apple/PLAN-apple-phase4.md:522:| the deployed site | opened it, asked whose list it was once, answered — then **`status=synced`, `live=true`** |
+apple/PLAN-apple-phase4.md:523:| `tfive add` | the put returned in **0.52 s** |
+apple/PLAN-apple-phase4.md:524:| the line on the page | **0.63 s** after the write began — against **240 s** before, under identical conditions |
+apple/PLAN-apple-phase4.md:529:`live=true` is asserted **before** the write on purpose: a page that never joined the channel cannot
+9e05ad3 The cost claim gets an instrument too, because quietd cannot see a request
+99169d8 A real socket took the hypothesis away, and `reset()` with it
+12d908c An instrument for a channel that has stopped carrying anything
+9a2f369 Two generators: the kit table, and the type the Watch can actually name
+f4c5faa A harness for the poll papercut, and a median that is not the finding
+39b58af A render pass for the one question contrast arithmetic cannot answer
+8e3d5af Tracks A and D: the link hand-off, the ops, and the harness
+125b8d1 The mark keeps its shape and loses its borrowed colours
+9c36463 apple: the live interop script (work in progress)
+d72d43b apple: the live interop script (work in progress)
+f2418a7 1.9: the record — AUDIT.md's After 1.9, the decisions for 5–31 and the bug, PLAN.md's before/after and Lighthouse, the what's-new entry, the changelog, the README; the evidence re-taken
+4ee0d92 1.9: the open bug — a three-snapshot heap diff finds no leak; the measurement joins the suite with a ceiling
+04d2007 1.9: the check-off, choreographed (proposal 4) — at the checkpoint
+6203793 1.9: a home zone on the document, so a shared list rolls over once (proposal 3)
+32e5328 1.7: the audit fixture and harness — a long-time device (four lists, 80 lines, notes, repeats, 90 days of history, saved themes) and one way to open the app in every environment
+69ba72d 1.5: six more sound packs — kalimba, pencil, whistle, bongo, cork, arcade
+24ba64e 1.3: the first minute, the names, shuffle, the card — a texted link shows a card (Open Graph and Twitter tags in the static HTML of both pages, a canonical link, icons/og.png rendered by tools/og.mjs from tools/og.html, not precached); the welcome is the Today renderer with a local document: the title and one sentence above three live lines that strike, knock and throw confetti with nothing stored and nothing on the server, Keep this list once a line of your own is added or all three are crossed off, Skip and Paste as quiet links, the About link kept, no rail, footer, hint or toast; the save-your-link sheet rebuilt by device (Add to Home Screen in two steps on a phone in Safari with no QR, the icon holds your link in the installed app with Copy as a backup, Bookmark this page with ⌘D or Ctrl+D on a desktop then Copy then the QR behind Open it on your phone), saved means Copy or I've saved it, ⋯ carries a Save your link row with a dot until then and the Share sheet repeats the key line, devices from before grandfathered on their first open of 1.3; Tell a friend at the bottom of Share hands the system share sheet a note about the app and the bare app URL, never a list link; the edit link is the Private link (last in Share, under a warning in the danger colour, never the default), the View link keeps its name with view only beside it and is the default and the first Copy, Rotate is New keys with its consequence, the names applied to How it works (a Second screen example beside Let someone watch), About, Settings › Advanced, the refusal toast and the pill; shuffle in one-thing mode by S, ↻ beside the count and a shake (DeviceMotion, a delta over 15 m/s², one a second, a one-time Allow hint on iOS remembered either way), never the same line twice, no reorder, a wobble on the last line, the theme's tick and a haptic; the 1.3 changelog entry, the Node suites updated (three seed lines), DECISIONS.md's 1.3 decisions
+872647b 1.1: the version scheme — marketing version plus build number, About shows 1.1 (build N), history renumbered (4.0.0 → 1.0, the rest pre-release), no dates anywhere, the toast keys on a changed string; tools/csp-hash for the About page's inline script
+0fe363c 1.1: the before set — every surface at 1440×900 and 390×844, and the tool that takes it
+a006f95 v4: decisions, README and SETUP for v4; the browser suite; separate sockets per device in the real-backend suite; toast stacks above the install hint
+0a67a40 v4: the UI — Settings sheet with five sections, the short ⋯ menu, line menu, repeat picker, not-today swipe and key, one-thing mode, search, recently deleted, templates, move to another list, delete everywhere with undo, presence dots, celebrate remote, add-from-anywhere, what's-new toast, day review, theme schedule, sound packs; panels.js and exporter.js load lazily; the bottom line fixed; About with version and changelog; smoke test, dev server, real-backend suite
+
+## 1.12 b216 narrative tags (count, by file)
+apple/PLAN-apple-phase4.md:2
+apple/README.md:4
+apple/TodaysFiveCore/Sources/TodaysFiveCore/WatchLink.swift:3
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/KitFixtureTests.swift:1
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/WatchLinkTests.swift:1
+panels.js:2
+test/features.test.js:3
+test/theme.test.js:9
+test/tools/gen-kits.mjs:2
+theme.js:11
+tools/kitshots.js:1
+tools/mark.mjs:1
+total lines: 40

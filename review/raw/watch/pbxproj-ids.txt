@@ -1,0 +1,70 @@
+# project.pbxproj object-id integrity at 7341981. Thu Sep 10 01:28:38 CDT 2026
+# definitions = lines matching ^<tab><tab>[A-Z0-9]{24} (with or without a /* comment */) followed by ' = {'
+defined ids: 177  unique: 177  TF-prefixed: 177  24-char: 177
+duplicate definitions:
+  (end of duplicates)
+referenced-but-undefined:
+  (end)
+defined-but-referenced-nowhere-else:
+  (end)
+rootObject: rootObject = [REDACTED]
+hand-numbered ranges (TF + zero-padded number):
+1-13 20-22 30-32 40-42 50-53 101-107 201-204 210-213 220-224 230-233 240-242 250-297 300-306 310-312 320-323 330-330 332-333 340-342 401-413 420-422 430-469
+Embed phases:
+		[REDACTED] /* Embed Foundation Extensions */ = {
+			isa = [REDACTED];
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				[REDACTED] /* [REDACTED].appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			[REDACTED] = 0;
+		};
+		[REDACTED] /* Embed Watch Content */ = {
+			isa = [REDACTED];
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				[REDACTED] /* TodaysFiveWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			[REDACTED] = 0;
+SKIP_INSTALL / CURRENT_PROJECT_VERSION / bundle ids:
+590:				CURRENT_PROJECT_VERSION = 216;
+601:				MARKETING_VERSION = 1.12;
+602:				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive.watchkitapp.complications;
+605:				SKIP_INSTALL = YES;
+619:				CURRENT_PROJECT_VERSION = 216;
+630:				MARKETING_VERSION = 1.12;
+631:				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive.watchkitapp.complications;
+634:				SKIP_INSTALL = YES;
+648:				CURRENT_PROJECT_VERSION = 216;
+657:				MARKETING_VERSION = 1.12;
+658:				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive.watchkitapp;
+661:				SKIP_INSTALL = YES;
+675:				CURRENT_PROJECT_VERSION = 216;
+684:				MARKETING_VERSION = 1.12;
+685:				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive.watchkitapp;
+688:				SKIP_INSTALL = YES;
+753:				CURRENT_PROJECT_VERSION = 216;
+762:				MARKETING_VERSION = 1.12;
+763:				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive;
+776:				CURRENT_PROJECT_VERSION = 216;
+785:				MARKETING_VERSION = 1.12;
+786:				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive;
+dependencies:
+/* Begin PBXTargetDependency section */
+		[REDACTED] /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = [REDACTED] /* [REDACTED] */;
+			targetProxy = [REDACTED] /* PBXContainerItemProxy */;
+		};
+		[REDACTED] /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = [REDACTED] /* TodaysFiveWatch */;
+			targetProxy = [REDACTED] /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */

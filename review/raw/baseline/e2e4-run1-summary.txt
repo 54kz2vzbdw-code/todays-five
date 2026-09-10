@@ -1,0 +1,4 @@
+SERVE PID=87440 curl version.js => HTTP 200
+E2E4 START 2026-09-10 00:51:30 |  0:51  up 92 days, 22:57, 2 users, load averages: 5.04 5.41 5.60
+CMD: cd /Users/pricebrannen/Today's Five/todays-five-review-baseline && BASE=http://127.0.0.1:8890/ NODE_PATH=$NODE_PATH $NODE tools/e2e4.js
+E2E4 END 2026-09-10 00:54:10 exit=1 wall=160s |  0:54  up 92 days, 22:59, 2 users, load averages: 6.96 5.46 5.54

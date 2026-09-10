@@ -1,0 +1,8 @@
+===== UNMUTATED 7341981 copy served on 8898 (pid 43542); instrument: /Users/pricebrannen/Today's Five/todays-five-review/review/raw/verify-c/p11b-accent-probe.mjs  START 15:29:35
+[P11b] tokens: --accent-text = #BF7530 | --muted = #A8A49C | html[data-theme] = dark
+[P11b] #ask-extra as shipped: {"className":"chip","color":"rgb(143, 140, 132)","border":"rgba(247, 242, 232, 0.1)","bg":"rgba(0, 0, 0, 0)","transition":"color, border-color, background-color 0.18s, 0.18s, 0.18s"}
+[P11b] #ask-extra with `accent` forced on, read after 600 ms: {"className":"chip accent","color":"rgb(191, 117, 48)","border":"rgba(247, 242, 232, 0.3)","bg":"rgba(0, 0, 0, 0)","transition":"color, border-color, background-color 0.18s, 0.18s, 0.18s"}
+[P11b] #ask-extra after removing it again: {"className":"chip","color":"rgb(143, 140, 132)","border":"rgba(247, 242, 232, 0.1)","bg":"rgba(0, 0, 0, 0)","transition":"color, border-color, background-color 0.18s, 0.18s, 0.18s"}
+page errors: []
+exit=0
+===== END 15:29:40

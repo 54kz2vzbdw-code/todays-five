@@ -1,0 +1,34 @@
+# git diff 0e03143..67f35a5 -- app.js
+diffstat: 71	35	app.js
+added lines (+, excluding +++ header): 71
+of which comment-only (line starts with //, /*, * or */ after the +): 22
+of which blank: 0
+removed lines (-, excluding ---): 35
+
+# same for 0e03143..67cdf4b
+diffstat: 65	34	app.js
+added: 65  comment-only: 18
+
+# the comment-only added lines at 67f35a5:
++  // 1.12: Remove from this device takes the entry out for good, and the union above would hand it straight back
++  // from another tab's copy — so a removed id is marked the way a dead one is. It is *not* `dead`: that list is
++  // still on the server, and pasting its link again is the way back, which registerList clears the mark for.
++  // 1.12: this is the one door into the registry, so it is where "removed from this device" ends — pasting the
++  // link again, or opening it from anywhere, means this device holds the list once more.
++/** 1.12: the lines the view on screen is about — Today's starred ones, or every live line in Everything. The bar,
++  // 1.12: the two views have their own numbers, so a switch is a different bar rather than progress being made —
++  // it lands at its width with no slide. One frame is enough: paint() runs inside render() below.
++  // 1.12: `restack` is a panel that is a flow of steps (⋯ → Theme is Day, then Night) asking for the step it is
++  // leaving to become the frame below it, so ‹ Back walks the steps with the one primitive rather than a second
++  // idea of "back". The dialog is the one already open, so it is pushed as a frame and never closed.
++  // 1.12: a panel that is a flow of steps (⋯ → Theme) has itself as the frame below, so stepping back lands on the
++  // dialog that is already open. Do not close it: `close` is dispatched asynchronously, so the event from a close
++  // here arrives *after* panelSwitching has gone back to false and after the reopen has set openPanel to this same
++  // dialog — and the listener reads that as a close from somewhere else and takes the whole stack with it.
++/** 1.12: `extra` is one more button beside OK — Copy link on the Remove sheet, where the thing the person is
++// 1.12: how the ⋯ menu repaints itself when ‹ Back lands on it — repainted (the theme name, Sound, the Save row)
++// and back under the button, so a popover returns as a popover rather than as a sheet. `openers` claimed to have
++// this since 1.4 and never did, which is why nothing above the menu could step back to it.
++  // 1.12: a panel follows, so the menu stays open underneath it and becomes the frame below in the 1.4 stack —
++  // which is the whole of ‹ Back from ⋯ (showPanel renders it whenever there is a frame below). Full screen opens
++  // no panel, and Delete everywhere is a decision rather than a place worth going back from, so those two still close.

@@ -1,0 +1,10 @@
+[tfive] theme: slot=day day=paper night=terminal → kit=paper pair=playfair base=light unlocked=0 offered=16
+[tfive] watch: store=appGroup
+[tfive] face: kit=paper pair=playfair face=SourceSerif4-Regular-600 → snapshot written, reloadAllTimelines requested
+[tfive] face probe: appex=[REDACTED].appex ttfInAppex=0 fontsRoot=TodaysFiveWatch.app facesOnDisk=33 registered=33 wantedFaceOnDisk=true
+[REDACTED] failed e00002c7
+[tfive] face probe: accent asked for #C8321F
+[tfive] face probe: fullColor  corner=#C8321F@255 centre=#B02A1A@255
+[tfive] face probe: accented   corner=#C8321F@255 centre=#B02A1A@255
+[tfive] face probe: the two renderings are IDENTICAL — SwiftUI did not flatten anything; the treatment is the widget host's
+com.pricebrannen.todaysfive.watchkitapp: 15688

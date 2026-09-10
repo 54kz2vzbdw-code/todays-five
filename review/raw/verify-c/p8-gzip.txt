@@ -1,0 +1,22 @@
+# gzip -9 of 'git show <sha>:<file>' piped from stdin (no filename in header), bytes; Apple gzip 479
+file          0e03143  67cdf4b  67f35a5 |  d@67cdf4b  d@67f35a5
+app.js          48465    49888    50075 |       1423       1610
+model.js        14329    14685    14685 |        356        356
+styles.css      12048    12139    12139 |         91         91
+index.html      12898    12885    12884 |        -13        -14
+panels.js       24907    26373    26374 |       1466       1467
+TOTAL          112647   115970   116157 |       3323       3510
+
+# the three commits
+0e03143 Build 151, and a correction about the icon the phone actually showed
+67cdf4b Removed means removed, and the way back is the link
+67f35a5 Live: 1.12 on build 158, and the toast is the only new thing
+
+67cdf4b is an ancestor of 67f35a5
+67f35a5 is an ancestor of HEAD
+
+# commits 67cdf4b..67f35a5
+67f35a5 Live: 1.12 on build 158, and the toast is the only new thing
+a53bde8 Build 158, and the last Escape that landed on the menu
+74bf09f Build 157, the before and after sets, and the one number that went the wrong way
+cc9c7fe 1.12 in the suite, the changelog and the plan — and a close event that arrives late

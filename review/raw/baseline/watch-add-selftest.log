@@ -1,0 +1,13 @@
+[tfive] add self-test: begin
+[tfive] add self-test: [REDACTED]=present so the wrist takes the WatchKit path
+[tfive] theme: slot=day day=paper night=terminal → kit=paper pair=playfair base=light unlocked=0 offered=16
+[tfive] watch: store=appGroup
+[tfive] add self-test: canned ok outcome=added today=1 was=0
+[tfive] add self-test: empty ok outcome=nothing-said today=1 unchanged=true
+[tfive] add self-test: view-only ok outcome=view-only today=1
+[tfive] add self-test: no-list ok outcome=no-list
+[tfive] watch: demo list seeded, lines=5 mark=synced
+[tfive] face: kit=paper pair=playfair face=SourceSerif4-Regular-600 → snapshot written, reloadAllTimelines requested
+[tfive] add self-test: undo ok today=0 was=0 tombstoned=true
+[tfive] add self-test: end pass=5/5
+com.pricebrannen.todaysfive.watchkitapp: 10728

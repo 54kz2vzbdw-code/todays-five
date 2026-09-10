@@ -1,0 +1,27 @@
+XCODEBUILD BATTERY START 2026-09-10 01:15:51 |  1:15  up 92 days, 23:21, 2 users, load averages: 3.96 4.63 4.86
+== 5a-ios-sim START 2026-09-10 01:15:51 |  1:15  up 92 days, 23:21, 2 users, load averages: 3.96 4.63 4.86
+CMD: xcodebuild -project /Users/pricebrannen/Today's Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj -scheme TodaysFive -destination generic/platform=iOS Simulator -derivedDataPath /tmp/tf-review-baseline build
+== 5a-ios-sim END 2026-09-10 01:16:07 exit=0 wall=16s |  1:16  up 92 days, 23:21, 2 users, load averages: 5.54 4.96 4.97
+** BUILD SUCCEEDED **
+   warning: lines=0  error: lines=0  deprecated lines=0  slot: [build-slot] baseline-5a-ios-sim acquired 1 at 01:15:51; load: 3.96 4.63 4.86 [build-slot] baseline-5a-ios-sim released after 16s; exit 0; load: 5.54 4.96 4.97 
+== 5b-watch-sim START 2026-09-10 01:16:07 |  1:16  up 92 days, 23:21, 2 users, load averages: 5.54 4.96 4.97
+CMD: xcodebuild -project /Users/pricebrannen/Today's Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj -scheme TodaysFiveWatch -destination generic/platform=watchOS Simulator -derivedDataPath /tmp/tf-review-baseline build
+== 5b-watch-sim END 2026-09-10 01:16:09 exit=0 wall=2s |  1:16  up 92 days, 23:21, 2 users, load averages: 5.54 4.96 4.97
+** BUILD SUCCEEDED **
+   warning: lines=0  error: lines=0  deprecated lines=0  slot: [build-slot] baseline-5b-watch-sim acquired 1 at 01:16:07; load: 5.54 4.96 4.97 [build-slot] baseline-5b-watch-sim released after 2s; exit 0; load: 5.54 4.96 4.97 
+== 5c-ios-device START 2026-09-10 01:16:09 |  1:16  up 92 days, 23:21, 2 users, load averages: 5.54 4.96 4.97
+CMD: xcodebuild -project /Users/pricebrannen/Today's Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj -scheme TodaysFive -destination generic/platform=iOS -derivedDataPath /tmp/tf-review-baseline -[REDACTED] build
+== 5c-ios-device END 2026-09-10 01:16:22 exit=0 wall=13s |  1:16  up 92 days, 23:22, 2 users, load averages: 7.55 5.47 5.16
+** BUILD SUCCEEDED **
+   warning: lines=0  error: lines=0  deprecated lines=0  slot: [build-slot] baseline-5c-ios-device acquired 1 at 01:16:09; load: 5.54 4.96 4.97 [build-slot] baseline-5c-ios-device released after 13s; exit 0; load: 7.55 5.47 5.16 
+== 5d-watch-device START 2026-09-10 01:16:22 |  1:16  up 92 days, 23:22, 2 users, load averages: 7.55 5.47 5.16
+CMD: xcodebuild -project /Users/pricebrannen/Today's Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj -scheme TodaysFiveWatch -destination generic/platform=watchOS -derivedDataPath /tmp/tf-review-baseline -[REDACTED] build
+== 5d-watch-device END 2026-09-10 01:16:26 exit=0 wall=4s |  1:16  up 92 days, 23:22, 2 users, load averages: 7.27 5.45 5.15
+** BUILD SUCCEEDED **
+   warning: lines=0  error: lines=0  deprecated lines=0  slot: [build-slot] baseline-5d-watch-device acquired 1 at 01:16:22; load: 7.55 5.47 5.16 [build-slot] baseline-5d-watch-device released after 4s; exit 0; load: 7.27 5.45 5.15 
+== 5e-archive START 2026-09-10 01:16:26 |  1:16  up 92 days, 23:22, 2 users, load averages: 7.27 5.45 5.15
+CMD: xcodebuild -project /Users/pricebrannen/Today's Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj -scheme TodaysFive -destination generic/platform=iOS -derivedDataPath /tmp/tf-review-baseline -archivePath /tmp/tf-review/7341981.xcarchive -[REDACTED] archive
+== 5e-archive END 2026-09-10 01:16:56 exit=0 wall=30s |  1:16  up 92 days, 23:22, 2 users, load averages: 8.82 5.93 5.33
+** ARCHIVE SUCCEEDED **
+   warning: lines=0  error: lines=0  deprecated lines=0  slot: [build-slot] baseline-5e-archive acquired 1 at 01:16:26; load: 7.27 5.45 5.15 [build-slot] baseline-5e-archive released after 30s; exit 0; load: 8.82 5.93 5.33 
+XCODEBUILD BATTERY END 2026-09-10 01:16:56 |  1:16  up 92 days, 23:22, 2 users, load averages: 8.82 5.93 5.33

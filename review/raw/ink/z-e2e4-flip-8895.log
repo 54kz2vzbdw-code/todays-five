@@ -1,0 +1,10 @@
+E2E4 ONLY='crossfades the whole palette' on patch-built merged tree served at 8895 START 2026-09-10 15:04:25 | 15:04  up 93 days, 13:10, 2 users, load averages: 12.04 30.00 44.03
+
+== desktop 1440×900
+ok - desktop 1440×900: the flip — T, or a click on the sun/moon crossfades the whole palette (~400 ms, tokens interpolated) with the incoming theme's tick; instant under reduced motion
+
+== phone 390×844
+ok - phone 390×844: the flip — a tap on the sun/moon crossfades the whole palette (~400 ms, tokens interpolated) with the incoming theme's tick; instant under reduced motion
+
+2 passed, 0 failed
+E2E4 END 2026-09-10 15:08:24 exit=0 | 15:08  up 93 days, 13:14, 2 users, load averages: 13.00 29.37 43.56

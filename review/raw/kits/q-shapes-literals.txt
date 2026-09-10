@@ -1,0 +1,24 @@
+== shapes literals per kit block (q, corrected) Thu Sep 10 15:32:39 CDT 2026
+dark       shapes literal: (absent → 1)
+light      shapes literal: (absent → 1)
+pink       shapes literal: 3
+midnight   shapes literal: (absent → 1)
+forest     shapes literal: (absent → 1)
+paper      shapes literal: (absent → 1)
+terminal   shapes literal: (absent → 1)
+sunset     shapes literal: 2
+dusk       shapes literal: 3
+harbor     shapes literal: (absent → 1)
+ember      shapes literal: (absent → 1)
+cocoa      shapes literal: (absent → 1)
+blush      shapes literal: 3
+teletype   shapes literal: (absent → 1)
+sketch     shapes literal: (absent → 1)
+arcade     shapes literal: (absent → 1)
+superpink  shapes literal: [1, 2, 3]
+birthday   shapes literal: [4]
+
+bare count 1 or absent (wrapped as [1] = hearts-only by the old fixture): 12 — dark, light, midnight, forest, paper, terminal, harbor, ember, cocoa, teletype, sketch, arcade
+other bare counts (wrapped as a one-element list of the wrong shape): 4 — pink=3→[3], sunset=2→[2], dusk=3→[3], blush=3→[3]
+lists (unaffected): 2 — superpink=[1, 2, 3], birthday=[4]
+kits misread by the old [t.shapes] in total: 16 of 18

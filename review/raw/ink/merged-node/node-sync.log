@@ -1,0 +1,17 @@
+ok - a created list is pushed as an envelope; the server never holds plaintext or the secret
+ok - view ref pulls and decrypts, never pushes, and local edits do not mark it dirty
+ok - a view link's write is refused by the server (403) → status readonly, no retry storm
+ok - unchanged polls: a pull with the known rev transfers no document
+ok - realtime not joined → fast poll and live=false; joined → slow poll
+ok - conflict: decrypt the server envelope, merge on plaintext, re-encrypt, retry; both sides converge
+ok - a row recreated with a lower rev, or missing for an opened link, is 'gone' and never refilled
+ok - fetchLegacy reads a plaintext v2 row and ignores envelopes; deleteLegacy needs no token
+ok - local storage: v3 records carry the mode; legacy v2 records are readable and removable separately
+ok - 429 on create → status busy, list kept locally, retry scheduled later (not immediately)
+
+10 sync tests passed
+ok - presence: the engine tracks under its session key only when enabled, and reports other keys
+ok - delete everywhere, then undo: the row is removed and re-created under the same lookup id with the same token
+ok - a device that never created the list cannot re-create a deleted row by accident
+ok - 1.9: an import is measured against the server's cap before it lands — sealed the way a push seals it (proposal 18)
+14 sync tests passed (with v4)

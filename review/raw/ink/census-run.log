@@ -1,0 +1,23 @@
+START seed-dark 01:17:43
+START seed-light 01:17:43
+START codes 01:17:43
+END codes 01:17:43 exit=0
+END seed-dark 01:17:47 exit=0
+END seed-light 01:17:48 exit=0
+START sample-dark 01:17:48
+START sample-light 01:17:48
+START surprise-dark 01:17:48
+END surprise-dark 01:17:49 exit=0
+END sample-dark 01:18:00 exit=0
+END sample-light 01:18:05 exit=0
+START surprise-light 01:18:05
+START stride4-dark 01:18:05
+START stride4-light 01:18:05
+END surprise-light 01:18:07 exit=0
+END stride4-dark 01:18:27 exit=0
+END stride4-light 01:18:33 exit=0
+START stride2-dark 01:18:33
+START stride2-light 01:18:33
+END stride2-dark 01:20:18 exit=0
+END stride2-light 01:21:07 exit=0
+ALL DONE 01:21:07

@@ -1,0 +1,122 @@
+## TextFieldLink extension blocks in full (8606-8650)
+1:extension SwiftUI.TextFieldLink : Swift.Sendable {
+2:}
+8:extension SwiftUI.TextFieldLink {
+9:  nonisolated public init(prompt: SwiftUICore.Text? = nil, @SwiftUICore.ViewBuilder label: () -> Label, onSubmit: @escaping (Swift.String) -> Swift.Void)
+10:}
+16:extension SwiftUI.TextFieldLink where Label == SwiftUICore.Text {
+17:  nonisolated public init(_ titleKey: SwiftUICore.LocalizedStringKey, prompt: SwiftUICore.Text? = nil, onSubmit: @escaping (Swift.String) -> Swift.Void)
+18:  @_disfavoredOverload @_alwaysEmitIntoClient nonisolated public init(_ titleResource: Foundation.[REDACTED], prompt: SwiftUICore.Text? = nil, onSubmit: @escaping (Swift.String) -> Swift.Void) {
+19:        self.init(
+23:}
+28:extension SwiftUI.Scene {
+31:}
+37:extension SwiftUI.Scene {
+42:}
+all TextFieldLink mentions: 5
+8603:  public typealias Body = @_opaqueReturnTypeOf("$[REDACTED]", 0) __<Label>
+
+## scrollInputBehavior anywhere under apple/
+apple/PLAN-apple-phase3.md:407:   `.scrollInputBehavior(.enabled, for: .handGestureShortcut)` decides whether Double Tap scrolls
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:15:// tap start dictation while the app is open. Its partner, `.scrollInputBehavior(_:for:)` with
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:259:            // action is the point of the gesture here, and `.scrollInputBehavior` is the arbiter.
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:260:            .scrollInputBehavior(.disabled, for: .handGestureShortcut)
+
+## widgets: bundle, families, the Add complication
+apple/TodaysFive/[REDACTED]/Complications.swift:111:struct [REDACTED]: WidgetBundle {
+apple/TodaysFive/[REDACTED]/Complications.swift:121:struct CountComplication: Widget {
+apple/TodaysFive/[REDACTED]/Complications.swift:123:        StaticConfiguration(kind: "TodaysFiveCount", provider: CountProvider()) { entry in
+apple/TodaysFive/[REDACTED]/Complications.swift:129:        .supportedFamilies([.accessoryCircular, .accessoryCorner, .accessoryInline])
+apple/TodaysFive/[REDACTED]/Complications.swift:217:struct NextLineComplication: Widget {
+apple/TodaysFive/[REDACTED]/Complications.swift:219:        [REDACTED](kind: "TodaysFiveNextLine",
+apple/TodaysFive/[REDACTED]/Complications.swift:227:        .supportedFamilies([.accessoryRectangular])
+apple/TodaysFive/[REDACTED]/Complications.swift:282:struct AddComplication: Widget {
+apple/TodaysFive/[REDACTED]/Complications.swift:284:        StaticConfiguration(kind: "TodaysFiveAdd", provider: AddProvider()) { _ in
+apple/TodaysFive/[REDACTED]/Complications.swift:290:        .supportedFamilies([.accessoryCircular, .accessoryCorner])
+
+## display names / alternative app names (Siri phrase rendering)
+apple/TodaysFive/Config/Info.plist:   "CFBundleDisplayName" => "Today's Five"   "CFBundleName" => "$(PRODUCT_NAME)" 
+apple/TodaysFive/Config/WatchInfo.plist:   "CFBundleDisplayName" => "Today's Five"   "CFBundleName" => "$(PRODUCT_NAME)" 
+603:				PRODUCT_NAME = "$(TARGET_NAME)";
+632:				PRODUCT_NAME = "$(TARGET_NAME)";
+659:				PRODUCT_NAME = "$(TARGET_NAME)";
+686:				PRODUCT_NAME = "$(TARGET_NAME)";
+764:				PRODUCT_NAME = "$(TARGET_NAME)";
+787:				PRODUCT_NAME = "$(TARGET_NAME)";
+
+## Sources phases: which target owns 320 / 221 / 021
+ -> 				[REDACTED] /* Sources */,
+			name = [REDACTED]; -> 				[REDACTED] /* Sources */,
+			name = TodaysFiveWatch; -> 				[REDACTED] /* Sources */,
+
+## put_list_v3 / polld exit
+7:--   * get_list_v3 / put_list_v3 / delete_list_v3 — the v3 RPCs (token-checked writes, unchanged-rev polling)
+195:create or replace function public.put_list_v3(p_id text, p_doc jsonb, p_base_rev bigint, p_token text)
+361:revoke all on function public.put_list_v3(text, jsonb, bigint, text) from public;
+const broken = report.conditions.reduce((n, c) => n + c.broke, 0);
+console.log(`\npage errors: ${pageErrors}`);
+if (OUT) { fs.writeFileSync(OUT, JSON.stringify(report, null, 2)); console.log("wrote " + OUT); }
+if (broken) {
+  console.log(`\n${broken} trial(s) could not run — is \`node tools/serve.js 8791 .\` up? These numbers are not a measurement.`);
+  process.exit(1);
+}
+
+## Package.swift
+// swift-tools-version: 6.0
+// TodaysFiveCore — the Swift core of Today's Five: links, keys, the v3 envelope, the document,
+// merge and rollover, the three RPCs, a local store and a sync loop. No third-party dependencies:
+// Foundation, CryptoKit, Compression and the toolchain's own Testing. COMPATIBILITY.md is the contract.
+import PackageDescription
+
+let package = Package(
+    name: "TodaysFiveCore",
+    platforms: [.iOS(.v17), .watchOS(.v10), .macOS(.v14)],
+    products: [
+        .library(name: "TodaysFiveCore", targets: ["TodaysFiveCore"]),
+        .executable(name: "tfive", targets: ["tfive"])
+    ],
+    targets: [
+        .target(
+            name: "TodaysFiveCore",
+            plugins: [.plugin(name: "ConfigGen"), .plugin(name: "KitsGen")]
+        ),
+        .executableTarget(name: "tfive", dependencies: ["TodaysFiveCore"]),
+        .testTarget(name: "TodaysFiveCoreTests", dependencies: ["TodaysFiveCore"]),
+
+        // config.js is the single source of the project URL and the publishable key: the plugin reads
+        // the repo's own file at build time and emits Config.generated.swift, so neither value is ever
+        // copied by hand into Swift and neither can drift.
+        .plugin(name: "ConfigGen", capability: .buildTool()),
+
+        // The same arrangement for the kit table: test/fixtures/kits.json and
+        // test/fixtures/watch-fonts.json in, Kits.generated.swift out, the two Secret kits dropped on
+        // the way. Both plugins are prebuild commands, which is what lets two of them sit on one
+        // target — a prebuild hands over a directory to glob rather than promising a file, so the
+        // "Multiple commands produce…" collision that forced the first one cannot arise for the
+        // second either. Verified against both an iOS and a watchOS build, not assumed.
+        .plugin(name: "KitsGen", capability: .buildTool())
+    ],
+    swiftLanguageModes: [.v6]
+)
+
+## TodayOps: setDone fields, addToToday pipeline, startAgain
+20:    /// on a shared list a reader trusts what they see), trim, collapse runs of whitespace to one
+21:    /// space, and cut at 200 UTF-16 code units. Nothing left to add returns nil, which is
+27:    static func addToToday(_ doc: Doc, text: String, sectionId: String = "",
+30:        let clean = JSText.collapseSpaces(JSText.trim(stripBidi(JSString(text)))).prefix(textMax)
+44:        r.set("done", false)
+45:        r.set("doneAt", 0)
+46:        r.set("today", true)
+47:        r.set("order", lastOrder(doc.itemsInSection(sec).filter { !$0.done }) { $0.order })
+48:        r.set("todayOrder", lastOrder(doc.todayItems.filter { !$0.done }) { $0.todayOrder })
+49:        r.set("updatedAt", ts)
+68:    static func setDone(_ doc: Doc, _ id: String, _ done: Bool,
+71:        guard it.truthy("done") != done else { return doc }
+73:        item.set("done", done)
+74:        item.set("doneAt", done ? ts : 0)
+75:        item.set("updatedAt", ts)
+88:    static func startAgain(_ doc: Doc, ids: [String], at ts: Double = CalendarDates.now()) -> Doc {
+93:            guard let it = items[JSString(id)]?.objectValue, !it.truthy("deleted"), it.truthy("done") else { continue }
+95:            item.set("done", false)
+96:            item.set("doneAt", 0)
+97:            item.set("updatedAt", stamp)

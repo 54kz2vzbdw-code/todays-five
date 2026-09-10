@@ -1,0 +1,112 @@
+# what the watch simulator platform ships for UI testing  (Thu Sep 10 01:19:44 CDT 2026)
+platform: /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform
+
+## Developer/Library/Frameworks
+Testing.framework
+XCTest.framework
+XCUIAutomation.framework
+_Testing_CoreGraphics.framework
+_Testing_Foundation.framework
+_Testing_UIKit.framework
+
+## Developer/Library/Xcode/Agents
+XCPreviewAgent.app
+XCTRunner.app
+cdtool
+xctest
+
+## XCUIAutomation headers
+[REDACTED].h
+[REDACTED].h
+XCUIApplication.h
+XCUIAutomation.apinotes
+XCUIAutomation.h
+XCUIAutomationDefines.h
+XCUICoordinate.h
+XCUIDevice.h
+XCUIDeviceButton.h
+XCUIDeviceHandGesture.h
+XCUIElement.h
+XCUIElementAttributes.h
+XCUIElementQuery.h
+[REDACTED].h
+XCUIElementTypes.h
+XCUIKeyboardKeys.h
+XCUILocation.h
+XCUIProtectedResource.h
+XCUIRemote.h
+XCUIScreen.h
+XCUIScreenshot.h
+[REDACTED].h
+XCUISiriService.h
+XCUISystem.h
+
+## XCUIApplication.h — watchos availability lines
+63:- (void)openURL:(NSURL *)url API_AVAILABLE(macos(13.3), ios(16.4), tvos(16.4), watchos(9.4));
+140:- (void)[REDACTED]:(XCUIProtectedResource)resource XCUI_PROTECTED_RESOURCES_RESET_API_AVAILABLE;
+149:- (BOOL)[REDACTED]:([REDACTED])auditTypes issueHandler:(nullable XCUI_NOESCAPE BOOL (^)([REDACTED] *issue))block error:(NSError **)outError API_AVAILABLE(macos(14.0), ios(17.0), tvos(17.0), watchos(10.0)) NS_REFINED_FOR_SWIFT;
+
+## XCUIElement.h — gestures (only tvOS is excluded)
+139:- (void)tap API_UNAVAILABLE(tvos);
+144:- (void)doubleTap API_UNAVAILABLE(tvos);
+152:- (void)pressForDuration:(NSTimeInterval)duration API_UNAVAILABLE(tvos);
+161:- (void)pressForDuration:(NSTimeInterval)duration thenDragToElement:(XCUIElement *)otherElement API_UNAVAILABLE(tvos);
+174:- (void)pressForDuration:(NSTimeInterval)duration thenDragToElement:(XCUIElement *)otherElement withVelocity:(XCUIGestureVelocity)velocity thenHoldForDuration:(NSTimeInterval)holdDuration API_UNAVAILABLE(tvos);
+181:- (void)swipeUp;
+186:- (void)swipeDown;
+191:- (void)swipeLeft;
+196:- (void)swipeRight;
+203:- (void)swipeUpWithVelocity:(XCUIGestureVelocity)velocity;
+204:- (void)swipeDownWithVelocity:(XCUIGestureVelocity)velocity;
+205:- (void)swipeLeftWithVelocity:(XCUIGestureVelocity)velocity;
+206:- (void)[REDACTED]:(XCUIGestureVelocity)velocity;
+226:- (void)tapWithNumberOfTaps:(NSUInteger)numberOfTaps numberOfTouches:(NSUInteger)numberOfTouches;
+254:- (void)rotate:(CGFloat)rotation withVelocity:(CGFloat)velocity;
+
+## XCUIDevice.h
+58:@property (readonly) XCUISiriService *siriService NS_AVAILABLE_IOS(10_3);
+70:- (void)pressButton:(XCUIDeviceButton)button;
+112:- (void)performHandGesture:(XCUIDeviceHandGesture)gesture NS_SWIFT_NAME(perform(handGesture:)) API_AVAILABLE(watchos(10.0));
+118:@property (nonatomic) XCUIDeviceAppearance appearance API_AVAILABLE(macos(12.0), ios(15.0), tvos(15.0)) API_UNAVAILABLE(watchos);
+
+## XCUIDeviceHandGesture.h
+#import <XCUIAutomation/XCUIAutomationDefines.h>
+#if TARGET_OS_WATCH
+NS_ASSUME_NONNULL_BEGIN
+typedef NS_ENUM(NSInteger, XCUIDeviceHandGesture) {
+    [REDACTED]                              = 1,
+    [REDACTED] API_AVAILABLE(watchos(12.0))     = 2,
+};
+NS_ASSUME_NONNULL_END
+#endif // TARGET_OS_WATCH
+
+## XCUIDeviceButton.h
+    XCUIDeviceButtonHome = 1,
+    [REDACTED] XCUI_SIMULATOR_UNAVAILABLE("This API is not available in the Simulator, see the XCUIDeviceButton documentation for details.") = 2,
+    [REDACTED] XCUI_SIMULATOR_UNAVAILABLE("This API is not available in the Simulator, see the XCUIDeviceButton documentation for details.") = 3,
+    [REDACTED] = 4,
+
+## XCUISiriService.h
+18:@interface XCUISiriService : NSObject
+35:- (void)[REDACTED]:(NSString *)text;
+40:@interface XCUISiriService ([REDACTED]) <[REDACTED]>
+(nm -gU on the watch platform's XCUIAutomation binary: 2 symbols mention SiriService)
+
+## xcrun simctl subcommands that touch a device's UI
+	io                  Set up a device IO operation.
+	keychain            Manipulate a device's keychain
+	launch              Launch an application by identifier on a device.
+	openurl             Open a URL in a device.
+	privacy             Grant, revoke, or reset privacy and permissions
+	push                Send a simulated push notification
+	spawn               Spawn a process by executing a given executable on a device.
+	status_bar          Set or clear status bar overrides
+	ui                  Get or Set UI options
+(there is no simctl tap on ANY platform; on the iPhone other drivers exist — XCUITest, the Simulator app; on the watch simulator XCUITest is the one sanctioned driver)
+
+## helpers on this machine
+brew: absent
+mint: absent
+xcodegen: absent
+tuist: absent
+idb: absent

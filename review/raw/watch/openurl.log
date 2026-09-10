@@ -1,0 +1,11 @@
+An error was encountered processing the command (domain=[REDACTED], code=115):
+Simulator device failed to open todaysfive://add.
+Underlying error (domain=[REDACTED], code=115):
+	The operation couldn’t be completed. ([REDACTED] error 115.)
+openurl exit=115
+--- watch console:
+[tfive] theme: slot=day day=paper night=terminal → kit=paper pair=playfair base=light unlocked=0 offered=16
+[tfive] watch: store=appGroup
+[tfive] watch: demo list seeded, lines=5 mark=synced
+[tfive] face: kit=paper pair=playfair face=SourceSerif4-Regular-600 → snapshot written, reloadAllTimelines requested
+com.pricebrannen.todaysfive.watchkitapp: 20999

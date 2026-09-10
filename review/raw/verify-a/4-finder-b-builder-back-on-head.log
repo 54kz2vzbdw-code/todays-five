@@ -1,0 +1,9 @@
+[B0] ⋯ → Theme | header: Day theme | panels: ["p-menu","p-theme"] | open: p-theme | data-theme: dark | day/night: T1:curated:light / T1:curated:dark
+[B1] picked Paper on step one | header: Night theme | panels: ["p-menu","p-theme","p-theme"] | open: p-theme | data-theme: paper | day/night: T1:curated:paper / T1:curated:dark
+[B2] Make your own | panels: ["p-menu","p-theme","p-theme","p-builder"] | open: p-builder | data-theme: dark
+[B3] ‹ Back from the builder (expected: Night theme, panels [p-menu,p-theme]) | header: Day theme | panels: ["p-menu","p-theme","p-theme"] | open: p-theme | data-theme: dark | day/night: T1:curated:paper / T1:curated:dark
+[B4] ‹ Back again | header: Day theme | panels: ["p-menu","p-theme"] | open: p-theme | data-theme: dark | day/night: T1:curated:paper / T1:curated:dark
+[B5] ‹ Back again | panels: ["p-menu"] | open: p-menu | data-theme: dark
+[C0] Settings → Appearance → Day | header: Day theme | panels: ["p-menu","p-settings","p-theme"] | open: p-theme | data-theme: dark | day/night: T1:curated:paper / T1:curated:dark
+[C1] ‹ Back from the builder (control) | header: Day theme | panels: ["p-menu","p-settings","p-theme"] | open: p-theme | data-theme: dark | day/night: T1:curated:paper / T1:curated:dark
+page errors: []

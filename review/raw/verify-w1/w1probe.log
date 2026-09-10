@@ -1,0 +1,46 @@
+# w1probe run 2026-09-10 20:35:44 +0000
+
+== W-F4: WatchLinkReconciler.reconcile after a payload stamped ahead of the Watch's clock ==
+-- 10 minutes ahead: first payload stamped now+600000 ms → applied=true, mark = now+600000 ms, vault holds 1
+   honest removal (links=[]) 1 s later       : applied=false upsert=0 remove=0
+   honest new list at half the error         : applied=false upsert=0 remove=0
+   honest new list at mark − 1 ms             : applied=false upsert=0 remove=0
+   honest new list at mark exactly (at == mark): applied=false upsert=0 remove=0
+   honest new list at mark + 1 ms             : applied=true upsert=1 remove=0
+-- 1 hour ahead: first payload stamped now+3600000 ms → applied=true, mark = now+3600000 ms, vault holds 1
+   honest removal (links=[]) 1 s later       : applied=false upsert=0 remove=0
+   honest new list at half the error         : applied=false upsert=0 remove=0
+   honest new list at mark − 1 ms             : applied=false upsert=0 remove=0
+   honest new list at mark exactly (at == mark): applied=false upsert=0 remove=0
+   honest new list at mark + 1 ms             : applied=true upsert=1 remove=0
+-- 3 days ahead: first payload stamped now+259200000 ms → applied=true, mark = now+259200000 ms, vault holds 1
+   honest removal (links=[]) 1 s later       : applied=false upsert=0 remove=0
+   honest new list at half the error         : applied=false upsert=0 remove=0
+   honest new list at mark − 1 ms             : applied=false upsert=0 remove=0
+   honest new list at mark exactly (at == mark): applied=false upsert=0 remove=0
+   honest new list at mark + 1 ms             : applied=true upsert=1 remove=0
+
+== W-F5: Model.rollover vs WatchSnapshot.afterRollover's 0/(total−done); today rolls to 2026-09-09 (a Wednesday) ==
+A  3 done, no rules                       : before=3/5  face says 0/2  rollover gives 0/2 (changed=true)  → AGREE
+B1 2 done, one of them daily              : before=2/5  face says 0/3  rollover gives 0/4 (changed=true)  → DISAGREE: face total off by 1
+B2 3 done, two of them daily              : before=3/5  face says 0/2  rollover gives 0/4 (changed=true)  → DISAGREE: face total off by 2
+B3 1 done, weekly rule NOT due tomorrow   : before=1/5  face says 0/4  rollover gives 0/4 (changed=true)  → AGREE
+B4 1 done, weekly rule due tomorrow       : before=1/5  face says 0/4  rollover gives 0/5 (changed=true)  → DISAGREE: face total off by 1
+C  1 done + off-Today daily line (step 2) : before=1/5  face says 0/4  rollover gives 0/5 (changed=true)  → DISAGREE: face total off by 1
+R  1 done + off-Today line returning (step 3): before=1/5  face says 0/4  rollover gives 0/5 (changed=true)  → DISAGREE: face total off by 1
+D  NO zone, done 23:30, rollover at 00:05:00: before=1/5  face says 0/4  rollover gives 1/5 (changed=false)  → DISAGREE: face total off by 0
+D  NO zone, done 23:30, rollover at 05:29:00: before=1/5  face says 0/4  rollover gives 1/5 (changed=false)  → DISAGREE: face total off by 0
+D  NO zone, done 23:30, rollover at 05:31:00: before=1/5  face says 0/4  rollover gives 0/4 (changed=true)  → AGREE
+D  NO zone, done 23:30, rollover at 09:00:00: before=1/5  face says 0/4  rollover gives 0/4 (changed=true)  → AGREE
+Z  zoned, done 23:30, rollover at 00:05:00 : before=1/5  face says 0/4  rollover gives 0/4 (changed=true)  → AGREE
+
+== W-F2: AddService's throwaway engine and WatchStore's engine over ONE on-disk ListStore ==
+server: rev=1 today=3
+watch engine after start(): memory today=3  disk today=3
+AddService.add offline: status=offline (sentence would say '…on this watch, not up yet')  disk today=4 disk dirty=true
+   WatchStore.doc (its engine's memory) today=3  ← the screen; nothing told it
+after a Watch check-off offline: disk today=4 done=1 dirty=true diskHasAdd=true  watch memory today=3
+after the Watch's next sync online: SERVER hasAdd=false today=3  watch memory today=3  disk dirty=true diskHasAdd=true
+after a relaunch (open from disk + sync): SERVER hasAdd=true today=4  disk dirty=false
+
+done

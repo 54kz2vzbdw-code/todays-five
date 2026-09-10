@@ -1,0 +1,4 @@
+seed 4242 dark: accent under 3:1 on ink3 = 1137/3000 (worst 2.18 from #10591C); danger under 4.5:1 on ink3 = 1210/3000
+seed 4242 light: accent under 3:1 on ink3 = 1681/3000 (worst 2.45 from #EA6555); danger under 4.5:1 on ink3 = 0/3000
+seed 20260907 dark: accent under 3:1 on ink3 = 1142/3000 (worst 2.19 from #34732B); danger under 4.5:1 on ink3 = 1231/3000
+seed 20260907 light: accent under 3:1 on ink3 = 1686/3000 (worst 2.45 from #EA6555); danger under 4.5:1 on ink3 = 0/3000

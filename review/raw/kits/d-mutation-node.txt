@@ -1,0 +1,33 @@
+== mutation: Terminal accent #4AF07A -> #4AF07B in scratch theme.js; fixture NOT regenerated Thu Sep 10 01:13:37 CDT 2026
+285:    accent: "#4AF07B", accentHi: "#9CFFB5", accentDeep: "#21A64F", accentText: "#5DF58A", danger: "#FF6B57",
+--- model: exit=0
+30:28 model tests passed
+--- theme: exit=1
+9:AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+10:+ actual - expected
+29:  actual: [ '#4AF07B', '#9CFFB5', '#21A64F', '#5DF58A', '#FF6B57' ],
+30:  expected: [ '#4AF07A', '#9CFFB5', '#21A64F', '#5DF58A', '#FF6B57' ],
+--- crypto: exit=0
+12:10 crypto tests passed
+--- sync: exit=0
+12:10 sync tests passed
+17:14 sync tests passed (with v4)
+--- sound: exit=0
+14:12 sound tests passed
+--- features: exit=1
+26:AssertionError [ERR_ASSERTION]: index.html's stamp is theme.js's PALETTE_REV — regenerate it when a palette moves
+27:+ actual - expected
+40:  actual: '1ptwfkh',
+41:  expected: '1m520bw',
+--- compat: exit=0
+11:9 compatibility tests passed
+== any hook or script that runs the suites?
+test/fixtures/kits.json
+test/theme.test.js
+test/tools/gen-kits.mjs
+theme.js
+154:2. Node suites pass: `node test/model.test.js`, `test/theme.test.js`, `test/crypto.test.js`
+156:   The Swift core's suite passes too: `cd apple/TodaysFiveCore && swift test` (§8). It is quick, and
+158:3. The compatibility test passes: `node test/compat.test.js` (a v4 document through the frozen v3
+203:  both suites: `test/crypto.test.js` and `test/compat.test.js` on one side, `swift test` on the
+271:§7 step 2 already asks for `swift test` when the shared parts move. Beyond that, a change to

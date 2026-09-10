@@ -1,0 +1,56 @@
+ok - colour round trip: hex → oklch → hex within 1/255
+ok - out-of-gamut oklch is mapped by dropping chroma, never NaN
+ok - 18 curated themes, each a complete kit (the sixteen on offer and the Secret pair; 1.9 added Sketch and Arcade)
+ok - 1.11: light and pink keep v1's primary tokens exactly; Dark is recoloured in place
+ok - 1.12 b216: the brand constants are still the kits', the mark still carries #A86014, and Paper and Terminal carry their own accents again
+
+     kit         accent    a/ink  a/ink-3   aT/ink  aT/ink-3  danger/ink-3
+     dark       #A86014     4.12    3.48     5.49      4.64          4.63
+     light      #CB6015     3.79    3.00     5.75      4.56          4.50
+     pink       #FF3D9A     5.43    4.01     6.09      4.51          4.85
+     midnight   #7FB3FF     8.56    6.90     9.44      7.61          5.95
+     forest     #8BD17A     9.25    7.07    10.44      7.98          5.26
+     paper      #C8321F     4.79    3.85     6.83      5.49          4.74
+     terminal   #4AF07A    13.29   11.22    14.10     11.91          5.99
+     sunset     #FF7A59     6.62    4.80     7.57      5.49          4.53
+     dusk       #B49CFF     7.94    6.31     9.13      7.26          5.92
+     harbor     #0F8C8C     3.69    3.05     5.57      4.59          4.68
+     ember      #FF4D2E     5.67    4.77     6.63      5.58          5.80
+     cocoa      #D9A066     7.00    5.09     8.11      5.90          4.57
+     blush      #E02A80     4.09    3.33     6.28      5.11          4.51
+     teletype   #119449     3.59    3.01     5.64      4.72          4.63
+     sketch     #9D7700     3.83    3.08     6.70      5.39          4.67
+     arcade     #FF2BD6     6.07    4.83     7.95      6.33          5.15
+     superpink  #FF2E9A     4.93    3.80     6.30      4.86          5.69
+     birthday   #D62E86     4.23    3.54     6.16      5.16          4.59
+
+ok - 1.12 b216: every kit measured against its OWN grounds — accent 3:1 and accent text 4.5:1 on --ink and on --ink-3, printed
+ok - 1.9: --done-2 clears 4.5:1 on --ink-3 in every kit and in a theme you make, styles.css lifts a dragged line into it, and Pink's accent text clears the same bar (proposal 29)
+ok - 1.9: the twelve packs across the curated kits — every public pack on a kit, whistle and kalimba among them; Sketch and Arcade are a day/night pair through the same floors; the pin table is exactly the kits whose pack changed
+ok - 1.7: every curated kit's accent text and danger clear 4.5:1 and its accent 3:1 on the elevated surface too (1.12 b216: no kit is skipped any more)
+ok - best-fit sound packs: Paper types, Forest drops marbles, Harbor whistles (pops until 1.9), the originals keep theirs
+ok - every curated theme meets the contrast floors
+ok - custom derivation meets the floors for 2000 random accents on both bases
+ok - surprise me always passes and stays inside the tasteful ranges
+ok - codes round-trip for curated and custom themes
+ok - a theme you make carries a sound pack: T2 codes round-trip, T1 codes still import and get the hue rule
+ok - normalizeHex
+ok - every family a pair names is self-hosted: declared in styles.css and present in fonts/
+ok - pair auto-pick varies with base and warmth
+ok - cssText contains every token once and a color-scheme
+ok - every curated theme leans day or night and names a partner that names it back; the pairs are the designed ones
+ok - the two 1.2 kits reach the curated bar and share their partner's DNA: Blush is Pink's day (with its own pop since 1.9), Teletype is Terminal's day
+ok - the partner of a theme you make: same accent and pack, flipped base, a chosen pair kept and an automatic one re-picked; it round-trips
+ok - the Secret pair reaches the curated bar: two complete kits, partners of each other, in neither open group
+ok - every other kit keeps the default progress bar, and it is the fallback styles.css paints the first frame with
+ok - the key is a key, not a theme code: trimmed, case-insensitive, and parseCode has never heard of it
+ok - migration: a by-hand device keeps its theme in the slot matching its base, the other slot gets the partner
+ok - migration: Follow system becomes With the system with both slots carried over; the theme on screen does not change
+ok - migration: the schedule becomes On a schedule with its themes and times; the clock decides as before
+ok - 1.11: a fresh device gets Paper by day and Terminal by night, with the system
+ok - the hold rule: a manual flip under an automation holds until the automation next switches, then it resumes
+ok - the switch: turning an automation off keeps what is on; turning one on forgets a hold
+ok - the crossfade: colours interpolate in OKLab, the rest swaps at the midpoint, the ends are the themes themselves
+ok - 1.12 b216: the kit fixture the Swift core and the Watch read still is theme.js
+
+33 theme tests passed

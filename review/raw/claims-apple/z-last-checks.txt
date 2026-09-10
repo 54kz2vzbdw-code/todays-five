@@ -1,0 +1,56 @@
+## last small checks (Thu Sep 10 15:30:58 CDT 2026)
+=== app.js SHELL uses (grep -nw)
+28:const SHELL = / TodaysFive\//.test(navigator.userAgent);
+31:const STANDALONE = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true || SHELL;
+188:const HAPTIC = IOS && !SHELL && (() => { const h = document.getElementById("haptic"); return !!h && "switch" in h; })();
+=== app.js setInterval
+2031:setInterval(() => { tickDay(); retryPendingKills(); settleMigrations(); }, 60000);
+2379:  setInterval(() => { const a = sound.state(); b.textContent = `audio ${a.state} pending=${a.pending} made=${a.made} packs=${a.packs}\nchecks=${stats.check
+=== TodayView.swift seed expression (lines 515-535, code lines only)
+
+    private func seed(_ size: CGSize) -> UInt64 {
+        let mixed = UInt64(bitPattern: Int64(run)) &* 0x9E37_79B1
+        return mixed ^ UInt64(size.width.bitPattern &+ size.height.bitPattern)
+    }
+
+    private func path(_ p: ConfettiParticle) -> Path {
+        switch p.shape {
+        case 1: return heart(p.s)
+=== Canvas @available (SwiftUICore swiftinterface)
+  
+}
+@available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *)
+@_originallyDefinedIn(module: "SwiftUI", iOS 18.0)
+@_originallyDefinedIn(module: "SwiftUI", macOS 15.0)
+=== Haptics.swift 94-108
+            ], relativeTime: t)
+        }
+        var events: [CHHapticEvent] = []
+        // the run along the bottom: even and light, quick enough to read as one gesture and not seven taps
+        for i in 0..<Volley.count { events.append(tap(0.55, 0.45, at: Double(i) * Volley.step)) }
+        // the burst through the middle is forty pieces to the run's twenty-six, so it is fuller and rounder
+        events.append(tap(0.80, 0.30, at: Volley.centre))
+        // and the chord: the strongest of them, with a short roll under it for the ring-down
+        events.append(tap(1.00, 0.25, at: Volley.chord))
+        events.append(CHHapticEvent(eventType: .hapticContinuous, parameters: [
+            [REDACTED](parameterID: .hapticIntensity, value: 0.45),
+            [REDACTED](parameterID: .hapticSharpness, value: 0.15)
+        ], relativeTime: Volley.chord, duration: Volley.ring))
+        return try CHHapticPattern(events: events, parameters: [])
+    }
+=== realsync4 poll-size assertion
+99:  sizes.unchangedPollBytes = poll.bytes;
+102:  assert.ok(poll.bytes < 60, "unchanged poll bytes " + poll.bytes);
+=== libFontParser WOFF2Container in the watchOS 26.5 runtime
+path: /Library/Developer/CoreSimulator/Volumes/watchOS_23T570/Library/Developer/CoreSimulator/Profiles/Runtimes/watchOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/PrivateFrameworks/FontServices.framework/libFontParser.dylib
+4137360 bytes
+1
+WOFF2Container
+14WOFF2CFDataOut
+N5woff28WOFF2OutE
+=== README -TF table vs code (missing from README)
+-TFDumpWatchSend
+=== whatsnew/version.js at HEAD
+1:// version.js — VERSION is the marketing version (1.0.x a fix, 1.x a design or feature round, 2.0 a redesign; what
+2:// shipped as 4.0.0 is 1.0), BUILD the commit count on main at build time. Bump VERSION with sw.js and whatsnew.json,
+3:// BUILD with whatsnew.json; test/features.test.js checks they agree. The what's-new toast keys on VERSION changing.

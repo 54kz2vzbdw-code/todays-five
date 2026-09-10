@@ -1,0 +1,5 @@
+[tfive] theme: slot=day day=paper night=terminal → kit=paper pair=playfair base=light unlocked=0 offered=16
+[tfive] watch: store=appGroup
+[tfive] face: kit=paper pair=playfair face=SourceSerif4-Regular-600 → snapshot written, reloadAllTimelines requested
+[tfive] watch: heard v=1 links=0 applied=true +0 −0 holds=0 showing=none kits=0
+com.pricebrannen.todaysfive.watchkitapp: 21120

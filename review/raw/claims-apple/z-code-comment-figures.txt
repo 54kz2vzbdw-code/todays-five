@@ -1,0 +1,40 @@
+## code comments stating figures under apple/ (.swift .mjs .py .plist), 7341981 — python re (Thu Sep 10 15:29:05 CDT 2026)
+apple/TodaysFive/Shared/WatchSnapshot.swift:171:/// Resources phase, so the Watch app's fonts are NOT visible to it", and the stated price was 1.5 MB
+apple/TodaysFive/TodaysFive/Haptics.swift:12:// bursts along the bottom 65 ms apart, a fuller one through the middle, and the chord landing after
+apple/TodaysFive/TodaysFive/Haptics.swift:30:/// burst through the middle at 210 ms. The chord is `packs.js`'s, at `t0 + 0.7`.
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:90:/// The web's own default string, and its own 300 ms hold — the wait is in `WatchStore`, because
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:229:// where the 17x emissive-drive ratio between a dark kit and Paper's cream is actually spent.
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:238:/// frame, `rib` on 45% of pieces, alpha `life * 1.7` clamped, and the volley itself — seven bursts of
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:240:/// of 40 at `w/2`, `h * 0.6`, power 14, spread 2.6, at 210 ms. 222 particles.
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:245:/// px/frame against 0.30 px/frame² of gravity reaches its apex 601 px up. On a 208×248 pt watch
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:252:/// `k` and leaves every **time** exactly where `fx.js` put it. The bursts stay 65 ms apart, the wide
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:253:/// one still lands at 210 ms, and a piece still lives about as long as it did. `k = height / 800`,
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:258:/// 65 ms apart). Those two must not drift apart.
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:334:/// `volley()`. Seven along the foot 65 ms apart, one wide one through the middle at 210.
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:380:/// **The frame counter has to move inside the loop**, not before it: the seven bursts are 65 ms
+apple/TodaysFive/TodaysFiveWatch/WatchHaptics.swift:12:// pattern (seven transients 65 ms apart, a fuller one at 210, the chord at 700 with a 320 ms roll
+apple/TodaysFive/TodaysFiveWatch/WatchHaptics.swift:15:// So what is played here is the volley's *rhythm* and not its shape: seven `.click` 65 ms apart and
+apple/TodaysFive/TodaysFiveWatch/WatchHaptics.swift:43:/// From `fx.js`: `for (let i = 0; i < 7; i++) … i * 65`, and the chord at `t0 + 0.7`. The 210 ms
+apple/TodaysFive/TodaysFiveWatch/WatchHaptics.swift:44:/// burst through the middle and the 320 ms ring-down have no spelling in `WKHapticType` and are
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:67:/// The finale card is on screen. It is set 300 ms *after* the check-off that caused it, which is
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:79:/// changes at once** — only the re-order waits, 320 ms after a check-off and 160 after an
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:542:/// The finale fires when the list *becomes* complete, and waits **300 ms** after the check-off
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:544:/// If the line is taken back inside those 300 ms there is no chord for a finale that is not
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:36:// **3. The ground is the battery.** Paper's cream drives the panel about **17×** harder than a dark
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:189:/// added to the face's own line height**, which is already about 1.2–1.4× the point size. So the
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:661:/// disqualified by arithmetic rather than taste — the cream is 3× too bright for a white clock, and
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:676:// occupies pt (151,20)–(191,31), so 76 × 44 anchored at the top-trailing corner covers it
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:678:// points. A first attempt at 62 × 26 left the digits hanging below the patch's lower edge
+apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift:31:// would eat a `$` or a backtick in 13 KB of Swift, and one that does not expand cannot see the
+apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift:32:// argument at all. Measured: the source is ~28 KB against an ARG_MAX of 1 MB.
+apple/TodaysFiveCore/Sources/TodaysFiveCore/Base62.swift:1:// Base62 — the alphabet and the rejection sampling in crypto.js. 248 is 4 × 62, so a byte under it
+apple/TodaysFiveCore/Sources/TodaysFiveCore/Envelope.swift:106:/// The server refuses an envelope over 96 KB (private.limits in 002_v3.sql). 1.9 measures an
+apple/TodaysFiveCore/Sources/TodaysFiveCore/Kits.swift:38://   * `strikeSize` and `strikeAnim` are CSS animation parameters (`"300% 100%"`,
+apple/TodaysFiveCore/Sources/TodaysFiveCore/Kits.swift:39://     `"shimmer 3.4s linear infinite"`). **Dropped** — SwiftUI has no keyframe named `shimmer`.
+apple/TodaysFiveCore/Sources/TodaysFiveCore/SupabaseTransport.swift:107:/// once and goes away. The body is 138 bytes (measured, and pinned in the suite), one of them per
+apple/TodaysFiveCore/Sources/TodaysFiveCore/SupabaseTransport.swift:145:/// POST to `/rest/v1/rpc/get_list_v3` with `p_rev`, and the 29 bytes an unchanged poll answers
+apple/TodaysFiveCore/Sources/TodaysFiveCore/SyncEngine.swift:256:/// poll from 60 s to 240 s on the strength of a bell that nothing in the system rang — so the
+apple/TodaysFiveCore/Sources/TodaysFiveCore/SyncEngine.swift:258:/// this line existed: a write took a median of 132 s to appear and as long as 238 s.
+apple/TodaysFiveCore/Sources/TodaysFiveCore/SyncEngine.swift:264:///    is not writing is exactly zero requests, which is why the poll can stay at 240 s.
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/KitFixtureTests.swift:66:// Say which kit moved rather than dumping 21 KB of JSON at somebody.
+## total comment lines with figures: 38

@@ -1,0 +1,25 @@
+# verify-w1 — exact commands, Thu Sep 10 15:37:47 CDT 2026
+worktree: /Users/pricebrannen/Today's Five/todays-five-review-verify-b
+HEAD: [REDACTED] (7341981)
+uptime at start of work: 15:04 up 93 days, load 14.12 30.13 43.99
+
+## W-F1 probe (standalone swiftc; the real Shared/WatchSnapshot.swift compiled as-is, plus lines 44-65 of ComplicationsProvider.swift extracted with sed, plus stubs for the two WidgetKit types)
+cp "$W/apple/TodaysFive/Shared/WatchSnapshot.swift" f1/WatchSnapshot.swift   # verbatim copy, not kept here (it is the repo file at 7341981)
+sed -n '44,65p' "$W/apple/TodaysFive/[REDACTED]/ComplicationsProvider.swift" >> f1/Entries.swift   # then a closing brace
+build-slot.sh w1-f1 -- swiftc -o f1/f1probe f1/WatchSnapshot.swift f1/Entries.swift f1/main.swift
+   [build-slot] w1-f1 acquired 1 at 15:35:26; load: 3.65 7.10 21.19 / released after 1s; exit 0
+./f1/f1probe > f1-probe.log
+
+## W-F4 / W-F5 / W-F2 probe (SwiftPM executable depending on $W/apple/TodaysFiveCore by path — the core at 7341981)
+build-slot.sh w1-probe -- swift build -c debug --package-path w1probe
+   [build-slot] w1-probe acquired 1 at 15:35:36; load: 3.55 6.96 20.98 / Build complete! (6.49s) / released after 7s; exit 0; load: 7.31 7.63 21.05
+.build/debug/w1probe > w1probe.log
+
+## greps (W-F2, W-F3), run from $W
+grep -rn 'onChange' apple --include='*.swift'
+grep -rn 'AddCoordinator' apple --include='*.swift'
+grep -rn '\.add(' apple/TodaysFive --include='*.swift'
+grep -rn -E 'sync\(\)|sceneBecameActive|wokeInBackground|refreshable|showAdd|linksChanged\(\)' apple/TodaysFive/TodaysFiveWatch --include='*.swift'
+grep -rn 'UserDefaults' apple/TodaysFive --include='*.swift'
+grep -rn -i -E 'isExcludedFromBackup|ExcludedFromBackup|[REDACTED]|URLResourceValues|ThisDeviceOnly|kSecAttrAccessible|[REDACTED]' apple --include='*.swift' --include='*.md'
+grep -rn -i -E 'never a link|secrets never cross|never cross|through the night|right through' --include='*.md' --include='*.swift' --include='*.entitlements' .

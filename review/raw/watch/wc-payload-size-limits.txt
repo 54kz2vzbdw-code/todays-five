@@ -1,0 +1,16 @@
+# WCPayloadSizeLimit* read out of the watchOS 26.5 (23T570) simulator runtime's WatchConnectivity binary
+# Thu Sep 10 01:15:47 CDT 2026 |  1:15  up 92 days, 23:21, 2 users, load averages: 4.05 4.66 4.87
+binary: /Library/Developer/CoreSimulator/Volumes/watchOS_23T570/Library/Developer/CoreSimulator/Profiles/Runtimes/watchOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/WatchConnectivity.framework/WatchConnectivity
+Non-fat file: /Library/Developer/CoreSimulator/Volumes/watchOS_23T570/Library/Developer/CoreSimulator/Profiles/Runtimes/watchOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/Frameworks/WatchConnectivity.framework/WatchConnectivity is architecture: arm64
+nm -arch arm64 | grep WCPayloadSizeLimit:
+00000000000266a8 S _[REDACTED]
+0000000000026698 S _[REDACTED]
+00000000000266a0 S _[REDACTED]
+__TEXT segment (vmaddr/fileoff) from otool -l:
+__TEXT 0x0000000000000000 0
+_[REDACTED] vmaddr=0x00000000000266a8 fileoff=157352 bytes=0000040000000000
+  value (uint64 LE) = 262144
+_[REDACTED] vmaddr=0x0000000000026698 fileoff=157336 bytes=0000010000000000
+  value (uint64 LE) = 65536
+_[REDACTED] vmaddr=0x00000000000266a0 fileoff=157344 bytes=0000010000000000
+  value (uint64 LE) = 65536

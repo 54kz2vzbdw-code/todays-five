@@ -1,0 +1,76 @@
+## verticalPage full availability
+15120-@available(watchOS 10.0, *)
+15121-@available(iOS, unavailable)
+15122-@available(macOS, unavailable)
+15123-@available(tvOS, unavailable)
+15124-@available(visionOS, unavailable)
+15126:  @_alwaysEmitIntoClient @_Concurrency.MainActor @preconcurrency public static var verticalPage: SwiftUI.[REDACTED] {
+
+## navigationTitle view-builder overload full availability
+17422-  @_disfavoredOverload nonisolated public func navigationTitle<S>(_ title: S) -> some SwiftUICore.View where S : Swift.StringProtocol
+17424-  @available(iOS, unavailable)
+17425-  @available(macOS, unavailable)
+17426-  @available(tvOS, unavailable)
+17427-  @available(visionOS, unavailable)
+17428:  nonisolated public func navigationTitle<V>(@SwiftUICore.ViewBuilder _ title: () -> V) -> some SwiftUICore.View where V : SwiftUICore.View
+
+## Canvas availability
+
+## TextFieldLink: every declaration line and every init inside its blocks
+8594:public struct TextFieldLink<Label> : SwiftUICore.View where Label : SwiftUICore.View {
+8606:extension SwiftUI.TextFieldLink : Swift.Sendable {
+8613:extension SwiftUI.TextFieldLink {
+8621:extension SwiftUI.TextFieldLink where Label == SwiftUICore.Text {
+8594: public struct TextFieldLink<Label> : SwiftUICore.View where Label : SwiftUICore.View {
+8606: extension SwiftUI.TextFieldLink : Swift.Sendable {
+8613: extension SwiftUI.TextFieldLink {
+8614:   nonisolated public init(prompt: SwiftUICore.Text? = nil, @SwiftUICore.ViewBuilder label: () -> Label, onSubmit: @escaping (Swift.String) -> Swift.Void)
+8621: extension SwiftUI.TextFieldLink where Label == SwiftUICore.Text {
+8622:   nonisolated public init(_ titleKey: SwiftUICore.LocalizedStringKey, prompt: SwiftUICore.Text? = nil, onSubmit: @escaping (Swift.String) -> Swift.Void)
+8623:   @_disfavoredOverload @_alwaysEmitIntoClient nonisolated public init(_ titleResource: Foundation.[REDACTED], prompt: SwiftUICore.Text? = nil, onSubmit: @escaping (Swift.String) -> Swift.Void) {
+distinct public init( lines in TextFieldLink blocks: 3
+
+## WidgetFamily systemExtraLarge* availability on watchOS
+/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/WidgetKit.framework/Modules/WidgetKit.swiftmodule/arm64_32-apple-watchos.swiftinterface-635-  @available(iOS 15.0, macOS 14.0, visionOS 26.0, *)
+/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/WidgetKit.framework/Modules/WidgetKit.swiftmodule/arm64_32-apple-watchos.swiftinterface-636-  @available(tvOS, unavailable)
+/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/WidgetKit.framework/Modules/WidgetKit.swiftmodule/arm64_32-apple-watchos.swiftinterface-637-  @available(watchOS, unavailable)
+/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/WidgetKit.framework/Modules/WidgetKit.swiftmodule/arm64_32-apple-watchos.swiftinterface:638:  case systemExtraLarge
+/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/WidgetKit.framework/Modules/WidgetKit.swiftmodule/arm64_32-apple-watchos.swiftinterface-641-  @available(macOS, unavailable)
+/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/WidgetKit.framework/Modules/WidgetKit.swiftmodule/arm64_32-apple-watchos.swiftinterface-642-  @available(tvOS, unavailable)
+/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/WidgetKit.framework/Modules/WidgetKit.swiftmodule/arm64_32-apple-watchos.swiftinterface-643-  @available(watchOS, unavailable)
+/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/WidgetKit.framework/Modules/WidgetKit.swiftmodule/arm64_32-apple-watchos.swiftinterface:644:  case [REDACTED]
+
+## WidgetKit .swiftdoc strings: "Only applies to iOS" / "template images"
+/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/WidgetKit.framework/Modules/WidgetKit.swiftmodule/arm64_32-apple-watchos.swiftdoc
+Specifies that the Image should be rendered at full color with no other color modifications. Only applies to iOS.
+/// color modifications. Only applies to iOS.
+/// they were template images. It replaces the view's color --- rendering 
+/// the new colors while preserving the view's alpha channel.
+/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/WidgetKit.framework/Modules/WidgetKit.swiftmodule/arm64e-apple-watchos.swiftdoc
+Specifies that the Image should be rendered at full color with no other color modifications. Only applies to iOS.
+/// color modifications. Only applies to iOS.
+/// they were template images. It replaces the view's color --- rendering 
+/// the new colors while preserving the view's alpha channel.
+/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/WidgetKit.framework/Modules/WidgetKit.swiftmodule/armv7k-apple-watchos.swiftdoc
+Specifies that the Image should be rendered at full color with no other color modifications. Only applies to iOS.
+/// color modifications. Only applies to iOS.
+/// they were template images. It replaces the view's color --- rendering 
+/// the new colors while preserving the view's alpha channel.
+
+## WKApplication.h: the delegate protocol
+@protocol WKApplicationDelegate;
+- (instancetype)init NS_UNAVAILABLE;
+- (instancetype)new NS_UNAVAILABLE;
+- (void)openSystemURL:(NSURL *)url;
+- (void)[REDACTED];
+- (void)[REDACTED];
+@end
+URL-ish methods in the delegate: 1
+
+## WCPayloadSizeLimit in WatchConnectivity headers?
+(none above = not a public header constant)
+
+## App Shortcuts limit / AppEntity phrase rule: AppIntents interface mentions
+/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/AppIntents.framework/Modules/AppIntents.swiftmodule/arm64e-apple-watchos.swiftinterface:3:// swift-module-flags: -target arm64e-apple-watchos26.5 -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -Osize -library-level api -target-min-inlining-version min -enable-upcoming-feature [REDACTED] -enable-upcoming-feature [REDACTED] -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -user-module-version 300.5.12 -module-name AppIntents -package-name com.apple.appintents
+/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/AppIntents.framework/Modules/AppIntents.swiftmodule/arm64e-apple-watchos.swiftinterface:5:@_exported public import AppIntents
+/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/AppIntents.framework/Modules/AppIntents.swiftmodule/arm64e-apple-watchos.swiftinterface:8:public import ExtensionFoundation

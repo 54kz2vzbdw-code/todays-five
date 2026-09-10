@@ -1,0 +1,18 @@
+
+[X0] N (1.12) fresh, holds X=[REDACTED] | storage: {"lists":["[REDACTED]"],"removed":[],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"version":"1.12","listId":"[REDACTED]","demo":false}
+
+[X1] O (1.11) opened on the same origin | storage: {"lists":["[REDACTED]"],"removed":[],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"version":"1.11","listId":"[REDACTED]","demo":false}
+
+[X2] N: Remove from this device → Remove | storage: {"lists":[],"removed":["[REDACTED]"],"unremoved":null,"dead":[],"current":null} | this tab: {"version":"1.12","listId":null,"demo":true}
+
+[X3] O (1.11): one settings change (flip → its saveDevice) | storage: {"lists":["[REDACTED]"],"removed":[],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"version":"1.11","listId":"[REDACTED]","demo":false}
+
+[X4] N (1.12): one settings change (flip → saveDevice) | storage: {"lists":[],"removed":["[REDACTED]"],"unremoved":null,"dead":[],"current":null} | this tab: {"version":"1.12","listId":null,"demo":true}
+    O's Lists rows: 1 | removed-group rows: 0
+
+[X5] O (1.11): another settings change | storage: {"lists":["[REDACTED]"],"removed":[],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"version":"1.11","listId":"[REDACTED]","demo":false}
+
+[X6] O: reload | storage: {"lists":["[REDACTED]"],"removed":[],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"version":"1.11","listId":"[REDACTED]","demo":false}
+    O after reload: welcome visible = false
+
+[X7] N: reload | storage: {"lists":["[REDACTED]"],"removed":[],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"version":"1.12","listId":"[REDACTED]","demo":false}

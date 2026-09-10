@@ -1,0 +1,19 @@
+# sound.test.js mutations — each a copy of 7341981 with one edit (diff -u base vs copy)
+== mut-chord
+-export const FINALE_BUZZ = [14, 51, 14, 51, 14, 51, 30, 35, 14, 51, 14, 51, 14, 296, 60];
++export const FINALE_BUZZ = [14, 51, 14, 51, 14, 51, 30, 35, 14, 51, 14, 51, 14, 100, 60];
+== mut-buzz
+-export const FINALE_BUZZ = [14, 51, 14, 51, 14, 51, 30, 35, 14, 51, 14, 51, 14, 296, 60];
++export const FINALE_BUZZ = [20, 51, 14, 51, 14, 51, 30, 35, 14, 51, 14, 51, 14, 296, 60];
+== mut-step
+-    for (let i = 0; i < 7; i++) setTimeout(() => burst(w * (0.08 + 0.14 * i), h * 0.97, 26, 19, 1.15), i * 65);
++    for (let i = 0; i < 7; i++) setTimeout(() => burst(w * (0.08 + 0.14 * i), h * 0.97, 26, 19, 1.15), i * 70);
+== mut-centre
+-    setTimeout(() => burst(w * 0.5, h * 0.6, 40, 14, 2.6), 210);
++    setTimeout(() => burst(w * 0.5, h * 0.6, 40, 14, 2.6), 250);
+== mut-mine-count
+-    for (let i = 0; i < 7; i++) setTimeout(() => burst(w * (0.08 + 0.14 * i), h * 0.97, 26, 19, 1.15), i * 65);
++    for (let i = 0; i < 8; i++) setTimeout(() => burst(w * (0.08 + 0.14 * i), h * 0.97, 26, 19, 1.15), i * 65);
+== mut-mine-gap1000
+-export const FINALE_BUZZ = [14, 51, 14, 51, 14, 51, 30, 35, 14, 51, 14, 51, 14, 296, 60];
++export const FINALE_BUZZ = [14, 51, 14, 51, 14, 51, 30, 35, 14, 51, 14, 51, 14, 1000, 60];

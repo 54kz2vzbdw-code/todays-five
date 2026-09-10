@@ -1,0 +1,986 @@
+{
+  "mode": "list",
+  "generator": "217 distinct hexes given on the command line",
+  "base": "light",
+  "n": 217,
+  "moved": 127,
+  "movedPct": 58.525,
+  "binomialSE_pct": 3.345,
+  "under3OnMain": 127,
+  "under3Pct": 58.525,
+  "movedNotUnder3": 0,
+  "under3NotMoved": 0,
+  "dangerMoved": 0,
+  "dangerMovedPct": 0,
+  "cssDiff": 127,
+  "cssDiffPct": 58.525,
+  "confettiDiff": 127,
+  "soundDiff": 0,
+  "main": {
+    "worstAccentOnInk3": 2.4443,
+    "worstAccentOnInk3Hex": "#FF5A7A",
+    "worstAccentOnInk2": 2.7721,
+    "worstAccentOnInk2Hex": "#FF7B8A",
+    "worstAccentOnInk": 3.0008,
+    "worstAccentOnInkHex": "#F2B33A",
+    "accentUnder3OnInk2": 121,
+    "accentUnder3OnInk": 0,
+    "worstDangerOnInk3": 4.9524,
+    "worstDangerOnInk3Hex": "#FF3D9A"
+  },
+  "branch": {
+    "worstAccentOnInk3": 3.0016,
+    "worstAccentOnInk3Hex": "#FF9EB5",
+    "worstAccentOnInk2": 3.3829,
+    "worstDangerOnInk3": 4.9524
+  },
+  "dL": {
+    "mean": -0.0476,
+    "median": -0.05,
+    "p90": -0.0402,
+    "max": -0.0092,
+    "min": -0.0599
+  },
+  "dLdanger": null,
+  "[REDACTED]": {
+    "accent": 127,
+    "accentHi": 127,
+    "accentDeep": 127,
+    "glow": 127,
+    "boxDoneBg": 127,
+    "strikeBg": 127,
+    "accentText": 46
+  },
+  "movedByMainA3Bucket": {
+    "≥3": 90,
+    "2.5–3.0": 87,
+    "2.0–2.5": 40
+  },
+  "worstA3Detail": {
+    "hex": "#FF5A7A",
+    "moved": true,
+    "under3": true,
+    "a1": 3.008679294408958,
+    "a2": 2.774779171228934,
+    "a3": 2.4443177982939375,
+    "b2": 3.523976440994617,
+    "b3": 3.1042896763841217,
+    "d3": 4.958001731784536,
+    "d3b": 4.958001731784536,
+    "dangerMoved": false,
+    "dL": -0.05972488181028468,
+    "dLd": 0,
+    "diff": [
+      "accent",
+      "accentText",
+      "accentHi",
+      "accentDeep",
+      "glow",
+      "boxDoneBg",
+      "strikeBg"
+    ],
+    "confettiDiff": true,
+    "soundDiff": false,
+    "cssDiff": true,
+    "mAccent": "#F85374",
+    "bAccent": "#E23E63",
+    "ink2": "#FFE8EA",
+    "ink3": "#F5D9DC",
+    "mDanger": "#AF2B25",
+    "bDanger": "#AF2B25"
+  },
+  "movedList": [
+    {
+      "hex": "#1E9A4F",
+      "main": "#1E9A4F",
+      "branch": "#119449",
+      "a3": 2.8,
+      "dL": -0.0194
+    },
+    {
+      "hex": "#21A64F",
+      "main": "#1BA34C",
+      "branch": "#00923F",
+      "a3": 2.537,
+      "dL": -0.0516
+    },
+    {
+      "hex": "#2BF0FF",
+      "main": "#009DA7",
+      "branch": "#008F99",
+      "a3": 2.541,
+      "dL": -0.0415
+    },
+    {
+      "hex": "#38B3AF",
+      "main": "#119D99",
+      "branch": "#00908D",
+      "a3": 2.572,
+      "dL": -0.0395
+    },
+    {
+      "hex": "#4AF07A",
+      "main": "#00A345",
+      "branch": "#00953E",
+      "a3": 2.561,
+      "dL": -0.0399
+    },
+    {
+      "hex": "#4CC77A",
+      "main": "#1AA459",
+      "branch": "#00934C",
+      "a3": 2.509,
+      "dL": -0.0515
+    },
+    {
+      "hex": "#4E9A45",
+      "main": "#4E9A45",
+      "branch": "#45913C",
+      "a3": 2.68,
+      "dL": -0.029
+    },
+    {
+      "hex": "#5DF58A",
+      "main": "#00A34A",
+      "branch": "#009543",
+      "a3": 2.558,
+      "dL": -0.0399
+    },
+    {
+      "hex": "#5FC9AC",
+      "main": "#2FA084",
+      "branch": "#159076",
+      "a3": 2.498,
+      "dL": -0.0512
+    },
+    {
+      "hex": "#67A96E",
+      "main": "#5B9C62",
+      "branch": "#4C8D54",
+      "a3": 2.534,
+      "dL": -0.0488
+    },
+    {
+      "hex": "#6B9BD2",
+      "main": "#6292C8",
+      "branch": "#5382B8",
+      "a3": 2.485,
+      "dL": -0.0517
+    },
+    {
+      "hex": "#7ED0C8",
+      "main": "#479A93",
+      "branch": "#368B84",
+      "a3": 2.563,
+      "dL": -0.0492
+    },
+    {
+      "hex": "#7FB3FF",
+      "main": "#5E90DA",
+      "branch": "#4F81C9",
+      "a3": 2.482,
+      "dL": -0.0495
+    },
+    {
+      "hex": "#7FC8F0",
+      "main": "#4D95BB",
+      "branch": "#3D86AB",
+      "a3": 2.553,
+      "dL": -0.0494
+    },
+    {
+      "hex": "#7FCB86",
+      "main": "#539E5C",
+      "branch": "#448F4D",
+      "a3": 2.526,
+      "dL": -0.0486
+    },
+    {
+      "hex": "#8A8781",
+      "main": "#8A8781",
+      "branch": "#817E78",
+      "a3": 2.745,
+      "dL": -0.0303
+    },
+    {
+      "hex": "#8AA884",
+      "main": "#789572",
+      "branch": "#698664",
+      "a3": 2.538,
+      "dL": -0.0498
+    },
+    {
+      "hex": "#8B85C2",
+      "main": "#8B85C2",
+      "branch": "#7F79B5",
+      "a3": 2.576,
+      "dL": -0.0402
+    },
+    {
+      "hex": "#8B98B0",
+      "main": "#828FA7",
+      "branch": "#738097",
+      "a3": 2.491,
+      "dL": -0.0505
+    },
+    {
+      "hex": "#8BD17A",
+      "main": "#5A9E49",
+      "branch": "#4B8E3A",
+      "a3": 2.523,
+      "dL": -0.0512
+    },
+    {
+      "hex": "#8FBCFF",
+      "main": "#6590D0",
+      "branch": "#5681C0",
+      "a3": 2.493,
+      "dL": -0.0494
+    },
+    {
+      "hex": "#9AA7C4",
+      "main": "#828EAB",
+      "branch": "#737F9B",
+      "a3": 2.503,
+      "dL": -0.0504
+    },
+    {
+      "hex": "#9CFFB5",
+      "main": "#3BA05C",
+      "branch": "#28914D",
+      "a3": 2.552,
+      "dL": -0.0485
+    },
+    {
+      "hex": "#9EDB8E",
+      "main": "#619B51",
+      "branch": "#528C42",
+      "a3": 2.554,
+      "dL": -0.0491
+    },
+    {
+      "hex": "#A4BCC4",
+      "main": "#799198",
+      "branch": "#6E848C",
+      "a3": 2.548,
+      "dL": -0.0416
+    },
+    {
+      "hex": "#A697D6",
+      "main": "#9485C2",
+      "branch": "#8576B2",
+      "a3": 2.503,
+      "dL": -0.0501
+    },
+    {
+      "hex": "#A6B4CC",
+      "main": "#828FA6",
+      "branch": "#738096",
+      "a3": 2.511,
+      "dL": -0.0505
+    },
+    {
+      "hex": "#A88000",
+      "main": "#A88000",
+      "branch": "#A17A00",
+      "a3": 2.805,
+      "dL": -0.0203
+    },
+    {
+      "hex": "#A9C4A2",
+      "main": "#7B9575",
+      "branch": "#6D8666",
+      "a3": 2.514,
+      "dL": -0.0494
+    },
+    {
+      "hex": "#B39C86",
+      "main": "#A08A74",
+      "branch": "#917B66",
+      "a3": 2.517,
+      "dL": -0.0497
+    },
+    {
+      "hex": "#B3ADE0",
+      "main": "#8E88B9",
+      "branch": "#7F79A9",
+      "a3": 2.519,
+      "dL": -0.0503
+    },
+    {
+      "hex": "#B49CFF",
+      "main": "#957DDD",
+      "branch": "#876ECC",
+      "a3": 2.552,
+      "dL": -0.049
+    },
+    {
+      "hex": "#B5D4FF",
+      "main": "#728FB7",
+      "branch": "#6682AA",
+      "a3": 2.546,
+      "dL": -0.0424
+    },
+    {
+      "hex": "#B79BE8",
+      "main": "#9B7FCA",
+      "branch": "#8C70BA",
+      "a3": 2.539,
+      "dL": -0.0498
+    },
+    {
+      "hex": "#B8E6A6",
+      "main": "#6E995D",
+      "branch": "#608A4E",
+      "a3": 2.525,
+      "dL": -0.049
+    },
+    {
+      "hex": "#C0ABFF",
+      "main": "#9580D0",
+      "branch": "#8973C3",
+      "a3": 2.557,
+      "dL": -0.0417
+    },
+    {
+      "hex": "#C2B5E8",
+      "main": "#9387B7",
+      "branch": "#8478A7",
+      "a3": 2.5,
+      "dL": -0.0503
+    },
+    {
+      "hex": "#C48B78",
+      "main": "#BA826F",
+      "branch": "#A7705E",
+      "a3": 2.457,
+      "dL": -0.0599
+    },
+    {
+      "hex": "#C97A9E",
+      "main": "#C27498",
+      "branch": "#B26589",
+      "a3": 2.553,
+      "dL": -0.0496
+    },
+    {
+      "hex": "#CFB8A2",
+      "main": "#9F8A75",
+      "branch": "#907B66",
+      "a3": 2.523,
+      "dL": -0.05
+    },
+    {
+      "hex": "#D26128",
+      "main": "#D26128",
+      "branch": "#CF5E24",
+      "a3": 2.901,
+      "dL": -0.0092
+    },
+    {
+      "hex": "#D2E2DF",
+      "main": "#81908D",
+      "branch": "#758481",
+      "a3": 2.56,
+      "dL": -0.0402
+    },
+    {
+      "hex": "#D8CBFF",
+      "main": "#9386B7",
+      "branch": "#8477A7",
+      "a3": 2.522,
+      "dL": -0.0503
+    },
+    {
+      "hex": "#D8FFD8",
+      "main": "#749874",
+      "branch": "#658966",
+      "a3": 2.494,
+      "dL": -0.0496
+    },
+    {
+      "hex": "#D9998A",
+      "main": "#BB7E6F",
+      "branch": "#AB6F61",
+      "a3": 2.533,
+      "dL": -0.0499
+    },
+    {
+      "hex": "#D9A066",
+      "main": "#B88147",
+      "branch": "#AB753B",
+      "a3": 2.558,
+      "dL": -0.0401
+    },
+    {
+      "hex": "#D9A800",
+      "main": "#B08700",
+      "branch": "#9E7900",
+      "a3": 2.556,
+      "dL": -0.0491
+    },
+    {
+      "hex": "#D9C9A8",
+      "main": "#9A8B6B",
+      "branch": "#8D7F60",
+      "a3": 2.563,
+      "dL": -0.0408
+    },
+    {
+      "hex": "#DCE4D5",
+      "main": "#8A9284",
+      "branch": "#7B8375",
+      "a3": 2.468,
+      "dL": -0.0501
+    },
+    {
+      "hex": "#E0563F",
+      "main": "#E0563F",
+      "branch": "#D94F39",
+      "a3": 2.848,
+      "dL": -0.0203
+    },
+    {
+      "hex": "#E07B33",
+      "main": "#D67227",
+      "branch": "#C5620E",
+      "a3": 2.529,
+      "dL": -0.0509
+    },
+    {
+      "hex": "#E0AA97",
+      "main": "#B58270",
+      "branch": "#A57361",
+      "a3": 2.499,
+      "dL": -0.0504
+    },
+    {
+      "hex": "#E2DED4",
+      "main": "#938F86",
+      "branch": "#848077",
+      "a3": 2.471,
+      "dL": -0.0501
+    },
+    {
+      "hex": "#E2EDEB",
+      "main": "#87918F",
+      "branch": "#788280",
+      "a3": 2.493,
+      "dL": -0.0502
+    },
+    {
+      "hex": "#E3DAC8",
+      "main": "#978E7E",
+      "branch": "#887F6F",
+      "a3": 2.481,
+      "dL": -0.0501
+    },
+    {
+      "hex": "#E4AE76",
+      "main": "#B6834B",
+      "branch": "#A6743C",
+      "a3": 2.525,
+      "dL": -0.05
+    },
+    {
+      "hex": "#E4DED2",
+      "main": "#928C81",
+      "branch": "#868075",
+      "a3": 2.558,
+      "dL": -0.0402
+    },
+    {
+      "hex": "#E8814A",
+      "main": "#D7713A",
+      "branch": "#C66228",
+      "a3": 2.526,
+      "dL": -0.0493
+    },
+    {
+      "hex": "#E8846A",
+      "main": "#D37158",
+      "branch": "#C2624A",
+      "a3": 2.542,
+      "dL": -0.0496
+    },
+    {
+      "hex": "#E8D8B0",
+      "main": "#9B8C67",
+      "branch": "#8C7D58",
+      "a3": 2.538,
+      "dL": -0.05
+    },
+    {
+      "hex": "#E8EEF8",
+      "main": "#898F98",
+      "branch": "#7A8089",
+      "a3": 2.504,
+      "dL": -0.0502
+    },
+    {
+      "hex": "#E9EEE3",
+      "main": "#8A8F85",
+      "branch": "#7B8076",
+      "a3": 2.542,
+      "dL": -0.0503
+    },
+    {
+      "hex": "#EAF2E6",
+      "main": "#888F84",
+      "branch": "#798076",
+      "a3": 2.555,
+      "dL": -0.05
+    },
+    {
+      "hex": "#EE8AB9",
+      "main": "#CF6E9D",
+      "branch": "#BE5F8E",
+      "a3": 2.503,
+      "dL": -0.05
+    },
+    {
+      "hex": "#EEF5F4",
+      "main": "#898F8E",
+      "branch": "#7A807F",
+      "a3": 2.529,
+      "dL": -0.0503
+    },
+    {
+      "hex": "#EFE8DA",
+      "main": "#938C7F",
+      "branch": "#847D71",
+      "a3": 2.555,
+      "dL": -0.05
+    },
+    {
+      "hex": "#EFEAFF",
+      "main": "#908B9E",
+      "branch": "#817C8F",
+      "a3": 2.522,
+      "dL": -0.0502
+    },
+    {
+      "hex": "#EFECE5",
+      "main": "#908D87",
+      "branch": "#817E78",
+      "a3": 2.536,
+      "dL": -0.0503
+    },
+    {
+      "hex": "#F08A6A",
+      "main": "#D47152",
+      "branch": "#C36243",
+      "a3": 2.542,
+      "dL": -0.0496
+    },
+    {
+      "hex": "#F0B9A6",
+      "main": "#B5816F",
+      "branch": "#A57261",
+      "a3": 2.521,
+      "dL": -0.0502
+    },
+    {
+      "hex": "#F0C48A",
+      "main": "#AF854D",
+      "branch": "#A27941",
+      "a3": 2.56,
+      "dL": -0.0404
+    },
+    {
+      "hex": "#F1ECE3",
+      "main": "#918D85",
+      "branch": "#827E76",
+      "a3": 2.533,
+      "dL": -0.0503
+    },
+    {
+      "hex": "#F2A33A",
+      "main": "#C87E00",
+      "branch": "#B47100",
+      "a3": 2.479,
+      "dL": -0.0493
+    },
+    {
+      "hex": "#F2A8C8",
+      "main": "#BD7796",
+      "branch": "#AC6887",
+      "a3": 2.547,
+      "dL": -0.0512
+    },
+    {
+      "hex": "#F2B33A",
+      "main": "#BD8500",
+      "branch": "#A97700",
+      "a3": 2.47,
+      "dL": -0.0512
+    },
+    {
+      "hex": "#F2E9B8",
+      "main": "#958D5F",
+      "branch": "#898153",
+      "a3": 2.581,
+      "dL": -0.04
+    },
+    {
+      "hex": "#F3F1FF",
+      "main": "#8D8B98",
+      "branch": "#7E7D89",
+      "a3": 2.555,
+      "dL": -0.0481
+    },
+    {
+      "hex": "#F3F6EF",
+      "main": "#8D908A",
+      "branch": "#7E817B",
+      "a3": 2.487,
+      "dL": -0.0502
+    },
+    {
+      "hex": "#F4DAE5",
+      "main": "#A08893",
+      "branch": "#917A84",
+      "a3": 2.482,
+      "dL": -0.0479
+    },
+    {
+      "hex": "#F6EBDD",
+      "main": "#968C7F",
+      "branch": "#877D71",
+      "a3": 2.521,
+      "dL": -0.0499
+    },
+    {
+      "hex": "#F7D774",
+      "main": "#A98B1D",
+      "branch": "#997C00",
+      "a3": 2.513,
+      "dL": -0.05
+    },
+    {
+      "hex": "#F7DBE9",
+      "main": "#A08693",
+      "branch": "#907784",
+      "a3": 2.527,
+      "dL": -0.051
+    },
+    {
+      "hex": "#F7F2E8",
+      "main": "#918C83",
+      "branch": "#858077",
+      "a3": 2.561,
+      "dL": -0.0402
+    },
+    {
+      "hex": "#F8F6F1",
+      "main": "#8F8D88",
+      "branch": "#807E7A",
+      "a3": 2.541,
+      "dL": -0.05
+    },
+    {
+      "hex": "#FAF8F4",
+      "main": "#8E8C88",
+      "branch": "#82807C",
+      "a3": 2.572,
+      "dL": -0.0402
+    },
+    {
+      "hex": "#FBE9F0",
+      "main": "#9A8A91",
+      "branch": "#8B7B82",
+      "a3": 2.489,
+      "dL": -0.0501
+    },
+    {
+      "hex": "#FDE9F2",
+      "main": "#9C8A92",
+      "branch": "#8D7B83",
+      "a3": 2.474,
+      "dL": -0.05
+    },
+    {
+      "hex": "#FF2BD6",
+      "main": "#FB25D3",
+      "branch": "#E800C1",
+      "a3": 2.521,
+      "dL": -0.0487
+    },
+    {
+      "hex": "#FF2E9A",
+      "main": "#FF2E9A",
+      "branch": "#F0148E",
+      "a3": 2.592,
+      "dL": -0.0402
+    },
+    {
+      "hex": "#FF3D9A",
+      "main": "#FF3D9A",
+      "branch": "#ED268B",
+      "a3": 2.478,
+      "dL": -0.0489
+    },
+    {
+      "hex": "#FF4D2E",
+      "main": "#FF4D2E",
+      "branch": "#ED3A19",
+      "a3": 2.498,
+      "dL": -0.0489
+    },
+    {
+      "hex": "#FF58A2",
+      "main": "#F44D99",
+      "branch": "#E23B8A",
+      "a3": 2.486,
+      "dL": -0.0494
+    },
+    {
+      "hex": "#FF5A7A",
+      "main": "#F85374",
+      "branch": "#E23E63",
+      "a3": 2.444,
+      "dL": -0.0597
+    },
+    {
+      "hex": "#FF66B4",
+      "main": "#ED55A4",
+      "branch": "#DB4495",
+      "a3": 2.462,
+      "dL": -0.0499
+    },
+    {
+      "hex": "#FF6A4F",
+      "main": "#F15D42",
+      "branch": "#DF4C32",
+      "a3": 2.486,
+      "dL": -0.0503
+    },
+    {
+      "hex": "#FF6B57",
+      "main": "#F15E4B",
+      "branch": "#DF4D3B",
+      "a3": 2.463,
+      "dL": -0.0505
+    },
+    {
+      "hex": "#FF6B8A",
+      "main": "#ED5B7B",
+      "branch": "#DB4A6C",
+      "a3": 2.482,
+      "dL": -0.0508
+    },
+    {
+      "hex": "#FF6FAF",
+      "main": "#E65899",
+      "branch": "#D4488A",
+      "a3": 2.546,
+      "dL": -0.0498
+    },
+    {
+      "hex": "#FF6FE0",
+      "main": "#E354C6",
+      "branch": "#D143B5",
+      "a3": 2.5,
+      "dL": -0.0508
+    },
+    {
+      "hex": "#FF78B4",
+      "main": "#E35E9B",
+      "branch": "#D14E8C",
+      "a3": 2.497,
+      "dL": -0.0505
+    },
+    {
+      "hex": "#FF7A59",
+      "main": "#E66443",
+      "branch": "#D45433",
+      "a3": 2.547,
+      "dL": -0.0506
+    },
+    {
+      "hex": "#FF7AE8",
+      "main": "#DC59C7",
+      "branch": "#CB49B7",
+      "a3": 2.523,
+      "dL": -0.0488
+    },
+    {
+      "hex": "#FF7B8A",
+      "main": "#E66575",
+      "branch": "#D15264",
+      "a3": 2.458,
+      "dL": -0.0598
+    },
+    {
+      "hex": "#FF7B9C",
+      "main": "#E36284",
+      "branch": "#D15275",
+      "a3": 2.499,
+      "dL": -0.051
+    },
+    {
+      "hex": "#FF7FC4",
+      "main": "#DF62A7",
+      "branch": "#CB4F95",
+      "a3": 2.457,
+      "dL": -0.0586
+    },
+    {
+      "hex": "#FF8A3D",
+      "main": "#DF6D15",
+      "branch": "#CC6000",
+      "a3": 2.517,
+      "dL": -0.0479
+    },
+    {
+      "hex": "#FF8A6B",
+      "main": "#DF6E50",
+      "branch": "#CE5E41",
+      "a3": 2.457,
+      "dL": -0.0502
+    },
+    {
+      "hex": "#FF8A76",
+      "main": "#DC6B58",
+      "branch": "#CB5B49",
+      "a3": 2.537,
+      "dL": -0.0504
+    },
+    {
+      "hex": "#FF8E70",
+      "main": "#DC6F52",
+      "branch": "#CB5F43",
+      "a3": 2.47,
+      "dL": -0.0505
+    },
+    {
+      "hex": "#FF8FBE",
+      "main": "#D56A99",
+      "branch": "#C45A89",
+      "a3": 2.504,
+      "dL": -0.0512
+    },
+    {
+      "hex": "#FF9EB5",
+      "main": "#CC7087",
+      "branch": "#BE647B",
+      "a3": 2.551,
+      "dL": -0.0408
+    },
+    {
+      "hex": "#FFA5D2",
+      "main": "#C9739F",
+      "branch": "#B5628D",
+      "a3": 2.468,
+      "dL": -0.0585
+    },
+    {
+      "hex": "#FFB02E",
+      "main": "#C28100",
+      "branch": "#AE7300",
+      "a3": 2.495,
+      "dL": -0.0513
+    },
+    {
+      "hex": "#FFB8D9",
+      "main": "#BC7A9A",
+      "branch": "#AC6B8A",
+      "a3": 2.502,
+      "dL": -0.0503
+    },
+    {
+      "hex": "#FFC26B",
+      "main": "#BC8324",
+      "branch": "#AC7407",
+      "a3": 2.496,
+      "dL": -0.0496
+    },
+    {
+      "hex": "#FFC2E2",
+      "main": "#B67E9C",
+      "branch": "#A66F8D",
+      "a3": 2.472,
+      "dL": -0.0503
+    },
+    {
+      "hex": "#FFD1E4",
+      "main": "#AD8395",
+      "branch": "#9D7486",
+      "a3": 2.474,
+      "dL": -0.0506
+    },
+    {
+      "hex": "#FFD27A",
+      "main": "#B08628",
+      "branch": "#A17710",
+      "a3": 2.551,
+      "dL": -0.0489
+    },
+    {
+      "hex": "#FFD36E",
+      "main": "#B0870E",
+      "branch": "#9F7800",
+      "a3": 2.554,
+      "dL": -0.0504
+    },
+    {
+      "hex": "#FFE600",
+      "main": "#A09000",
+      "branch": "#8F8100",
+      "a3": 2.479,
+      "dL": -0.0501
+    },
+    {
+      "hex": "#FFEDE4",
+      "main": "#9B8B83",
+      "branch": "#8C7C74",
+      "a3": 2.499,
+      "dL": -0.0501
+    },
+    {
+      "hex": "#FFEEF6",
+      "main": "#988990",
+      "branch": "#897A81",
+      "a3": 2.531,
+      "dL": -0.0502
+    },
+    {
+      "hex": "#FFF0F6",
+      "main": "#988A90",
+      "branch": "#897C81",
+      "a3": 2.507,
+      "dL": -0.048
+    },
+    {
+      "hex": "#FFF1E6",
+      "main": "#988B81",
+      "branch": "#897C73",
+      "a3": 2.537,
+      "dL": -0.0499
+    },
+    {
+      "hex": "#FFF3F8",
+      "main": "#958A8F",
+      "branch": "#867B80",
+      "a3": 2.532,
+      "dL": -0.0502
+    },
+    {
+      "hex": "#FFF5F8",
+      "main": "#958C8F",
+      "branch": "#867D80",
+      "a3": 2.49,
+      "dL": -0.0502
+    },
+    {
+      "hex": "#FFFFFF",
+      "main": "#8C8C8C",
+      "branch": "#808080",
+      "a3": 2.562,
+      "dL": -0.0402
+    }
+  ],
+  "elapsedMs": 23,
+  "mainThemeJs": "/private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/ink/main/theme.js",
+  "branchThemeJs": "/private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/ink/branch/theme.js"
+}

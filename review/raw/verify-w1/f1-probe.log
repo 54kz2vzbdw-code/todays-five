@@ -1,0 +1,28 @@
+== S1 Chicago | zone=America/Chicago written=09-08 22:00:00 3/5 rollsAt=09-09 00:00:00 viewOnly=false hasList=true
+   getTimeline(now 09-08 22:00:00 local / 09-09 03:00:00 UTC): [09-08 22:00:00→3/5, 09-09 00:00:00→0/2] policy=after(09-09 00:01:00)
+   getTimeline(now 09-09 00:01:00 local / 09-09 05:01:00 UTC): [09-09 00:01:00→3/5] policy=after(09-09 01:01:00)
+   getTimeline(now 09-09 01:01:00 local / 09-09 06:01:00 UTC): [09-09 01:01:00→3/5] policy=after(09-09 02:01:00)
+   getTimeline(now 09-09 02:01:00 local / 09-09 07:01:00 UTC): [09-09 02:01:00→3/5] policy=after(09-09 03:01:00)
+   [S1 at 09:00 next morning] getTimeline(now 2026-09-09T09:00:00 America/Chicago): [09-09 09:00:00→3/5] policy=after(09-09 10:00:00)
+   [S1 at 23:59:59 (1 s before rollsAt)] getTimeline(now 2026-09-08T23:59:59 America/Chicago): [09-08 23:59:59→3/5, 09-09 00:00:00→0/2] policy=after(09-09 00:01:00)
+   [S1 at 00:00:00 (now == rollsAt)] getTimeline(now 2026-09-09T00:00:00 America/Chicago): [09-09 00:00:00→3/5] policy=after(09-09 01:00:00)
+   [S1 second entry fields] done=0 total=2 at==rollsAt:true rollsAt=0.0 viewOnly=false hasList=true
+== S2 Tokyo | zone=Asia/Tokyo written=09-08 22:00:00 3/5 rollsAt=09-09 00:00:00 viewOnly=false hasList=true
+   getTimeline(now 09-08 22:00:00 local / 09-08 13:00:00 UTC): [09-08 22:00:00→3/5, 09-09 00:00:00→0/2] policy=after(09-09 00:01:00)
+   getTimeline(now 09-09 00:01:00 local / 09-08 15:01:00 UTC): [09-09 00:01:00→3/5] policy=after(09-09 01:01:00)
+   getTimeline(now 09-09 01:01:00 local / 09-08 16:01:00 UTC): [09-09 01:01:00→3/5] policy=after(09-09 02:01:00)
+   [S2 at 09:00 next morning] getTimeline(now 2026-09-09T09:00:00 Asia/Tokyo): [09-09 09:00:00→3/5] policy=after(09-09 10:00:00)
+== S3 Kolkata | zone=Asia/Kolkata written=09-08 22:00:00 2/5 rollsAt=09-09 00:00:00 viewOnly=false hasList=true
+   getTimeline(now 09-08 22:00:00 local / 09-08 16:30:00 UTC): [09-08 22:00:00→2/5, 09-09 00:00:00→0/3] policy=after(09-09 00:01:00)
+   getTimeline(now 09-09 00:01:00 local / 09-08 18:31:00 UTC): [09-09 00:01:00→2/5] policy=after(09-09 01:01:00)
+== S4 rollsAt two days stale | zone=America/Chicago written=09-06 22:00:00 3/5 rollsAt=09-07 00:00:00 viewOnly=false hasList=true
+   getTimeline(now 09-09 10:00:00 local / 09-09 15:00:00 UTC): [09-09 10:00:00→3/5] policy=after(09-09 11:00:00)
+   getTimeline(now 09-09 11:00:00 local / 09-09 16:00:00 UTC): [09-09 11:00:00→3/5] policy=after(09-09 12:00:00)
+== S5 rollsAt=0 | zone=America/Chicago written=09-08 22:00:00 3/5 rollsAt=0 viewOnly=false hasList=true
+   getTimeline(now 09-08 22:00:00 local / 09-09 03:00:00 UTC): [09-08 22:00:00→3/5] policy=after(09-08 23:00:00)
+   getTimeline(now 09-08 23:00:00 local / 09-09 04:00:00 UTC): [09-08 23:00:00→3/5] policy=after(09-09 00:00:00)
+== S6 hasList=false | zone=America/Chicago written=09-08 22:00:00 0/0 rollsAt=09-09 00:00:00 viewOnly=false hasList=false
+   getTimeline(now 09-08 22:00:00 local / 09-09 03:00:00 UTC): [09-08 22:00:00→0/0] policy=after(09-08 23:00:00)
+== S7 viewOnly=true | zone=America/Chicago written=09-08 22:00:00 3/5 rollsAt=09-09 00:00:00 viewOnly=true hasList=true
+   getTimeline(now 09-08 22:00:00 local / 09-09 03:00:00 UTC): [09-08 22:00:00→3/5, 09-09 00:00:00→0/2] policy=after(09-09 00:01:00)
+   getTimeline(now 09-09 00:01:00 local / 09-09 05:01:00 UTC): [09-09 00:01:00→3/5] policy=after(09-09 01:01:00)

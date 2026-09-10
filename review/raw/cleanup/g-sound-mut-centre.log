@@ -1,0 +1,28 @@
+ok - muted: no context is ever created
+ok - first gesture: a fresh (suspended) context is resumed inside the tap; the engines load; the next tap plays
+ok - background then back: suspended → one resume, same context
+ok - interrupted by a call and resume never lands: the next tap closes it and makes a fresh context
+ok - a closed context is replaced at once
+ok - foreground(): resumes a suspended context, leaves a running one alone, never touches a closed one
+ok - every pack plays check, uncheck and finish without throwing, and the device override picks the pack
+ok - 1.5: twelve packs, the six new ones after the six of 1.1, every one named
+ok - 1.7: a check-off before the engines land plays as soon as they do, once; a late arrival is dropped; preload makes no context
+ok - 1.8: the Secret pair's two engines live in a module of their own, fetched only when one is asked for
+ok - an unknown engine name falls back to the knock
+node:internal/modules/run_main:107
+    [REDACTED](
+    ^
+
+AssertionError [ERR_ASSERTION]: the centre burst falls inside one of the buzzes
+    at file:///private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/cleanup/mut-centre/test/sound.test.js:178:10
+    at test (file:///private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/cleanup/mut-centre/test/sound.test.js:12:39)
+    at file:///private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/cleanup/mut-centre/test/sound.test.js:158:7 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v24.19.0

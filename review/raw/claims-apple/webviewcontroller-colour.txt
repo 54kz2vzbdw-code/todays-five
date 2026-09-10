@@ -1,0 +1,41 @@
+## WebViewController.swift lines 50-72 (the #1A1D21 the plan says was fixed)
+    /// The two Secret kits, once this page has been asked for them. Held for the life of the web
+    /// view rather than re-read on every reconcile: the palettes cannot change while a page is open,
+    /// and the import is a page's own module either way.
+    private var secretKits: [Kit] = []
+
+    override var [REDACTED]: UIStatusBarStyle { statusBarStyle }
+
+    // ---------------------------------------------------------------- setup
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = UIColor(red: 0x1A / 255, green: 0x1D / 255, blue: 0x21 / 255, alpha: 1)
+
+        webView = WKWebView(frame: .zero, configuration: makeConfiguration())
+        webView.navigationDelegate = self
+        webView.uiDelegate = self
+        webView.[REDACTED] = false
+        webView.isOpaque = false
+        webView.backgroundColor = view.backgroundColor
+        webView.scrollView.backgroundColor = view.backgroundColor
+        // the page has its own Back stack and its own Escape; a back-swipe would fight them
+        webView.[REDACTED] = false
+        webView.scrollView.[REDACTED] = .never
+
+## history of that line
+8085aad 2026-09-06 apple phase 2: the shell, the vault and the bridge
+
+## diff of WebViewController in the range, hunks touching backgroundColor / 0x1A / 0x07
+
+## Track A branch: did f9e64d7..b95ab1b touch WebViewController?
+7f0e112 The Secret pair reaches a wrist without ever being in a binary
+0354b5f Tracks B and C: Today on a wrist, the four ways in, and the complications
+ee5a1df A finale you can feel, on the volley's own rhythm
+7341981:apple/DECISIONS-apple.md:323:A mark on the launch screen would flash and vanish; a flat `#1A1D21` that matches the page's own first
+7341981:apple/DECISIONS-apple.md:1040:`--trace` renders `icons/mark.svg` in hard-coded `#1A1D21` / `#D26128` and pixel-diffs it against
+7341981:apple/PLAN-apple-phase2.md:109:- Launch screen: a solid `#1A1D21` (the site's current `theme-color`) with the icon mark, in a
+7341981:apple/PLAN-apple-phase4.md:173:- `WebViewController.swift:57` paints **`#1A1D21`** behind the web view before first paint — Dark's
+7341981:apple/PLAN-apple-phase4.md:176:- `tools/mark.mjs --trace` renders the mark in hard-coded `#1A1D21`/`#D26128` and pixel-diffs it
+7341981:apple/README.md:266:`--trace` renders `icons/mark.svg` in the **old** colours (`#1A1D21` ground, `#D26128` check) at 180
+7341981:apple/TodaysFive/TodaysFive/WebViewController.swift:61:        view.backgroundColor = UIColor(red: 0x1A / 255, green: 0x1D / 255, blue: 0x21 / 255, alpha: 1)

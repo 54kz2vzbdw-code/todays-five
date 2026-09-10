@@ -1,0 +1,4 @@
+base 4962f97: JSON.stringify(CURATED) = 17674 bytes; JSON.stringify({kits: normalized, pairs}) = 21394 bytes
+  base 4962f97: 16-token slots 288, absent from source 58 (kits with >=1: 18); every hex occurrence in colors 350, absent 62
+head 7341981: JSON.stringify(CURATED) = 17676 bytes; JSON.stringify({kits: normalized, pairs}) = 21396 bytes
+  head 7341981: 16-token slots 288, absent from source 54 (kits with >=1: 18); every hex occurrence in colors 350, absent 58

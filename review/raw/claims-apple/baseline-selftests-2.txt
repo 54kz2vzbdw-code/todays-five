@@ -1,0 +1,144 @@
+0 sim-session1.log
+7956 sim-summary.txt
+825 watch-add-selftest.log
+825 watch-addselftest.log
+1976 watch-confetti-selftest.log
+1976 watch-confettiselftest.log
+1586 watch-demo-selftest.log
+27305 watch-demo.png
+655 watch-font-selftest.log
+655 watch-fontselftest.log
+1586 watch-selftest.log
+598192 xcodebuild-5a-ios-sim.log
+74992 xcodebuild-5b-watch-sim.log
+153071 xcodebuild-5d-watch-device.log
+155259 xcodebuild-watchsim.log
+-- watch-font-selftest.log (9 lines)
+[tfive] theme: slot=day day=paper night=terminal → kit=paper pair=playfair base=light unlocked=0 offered=16
+[tfive] font self-test: begin kits=16 pairs=13 files=33 familiesOnDevice=75
+[tfive] font self-test: bundled=33/33
+[tfive] font self-test: weights told apart by advance=12 ink=1
+[tfive] font self-test: faces=33 end pass=96/96
+[tfive] font self-test: at 17pt title3 scales to 17.00, task line height 20.40, tracking -0.425, extra leading 0.00
+[tfive] watch: store=appGroup
+[tfive] face: kit=paper pair=playfair face=SourceSerif4-Regular-600 → snapshot written, reloadAllTimelines requested
+-- watch-faceprobe.log: not present
+-- watch-selftest.log (21 lines)
+[tfive] theme: slot=night day=paper night=terminal → kit=terminal pair=mono base=dark unlocked=0 offered=16
+[tfive] watch: store=appGroup
+[tfive] watch: demo list seeded, lines=5 mark=synced
+[tfive] face: kit=terminal pair=mono face=IBMPlexMono-SemiBold → snapshot written, reloadAllTimelines requested
+[tfive] watch selftest: store=appGroup
+[tfive] watch selftest: list=open editable=true lines=5
+[tfive] watch selftest: 1 check: modelDone=true done=1/5
+[tfive] watch selftest: 2 uncheck: modelUndone=true done=0/5
+[tfive] watch selftest: 3 finale: fired=yes after=0.510s done=5/5
+[tfive] watch selftest: 4 startAgain: done=0/5 finaleCard=false
+[tfive] watch selftest: 5 shuffle x10: distinct=5 sameTwiceInARow=0 undone=5
+[tfive] watch selftest: 6 wobble: undone=1 moved=false changed=false wobbled=true
+[tfive] watch selftest: 7 haptics: check=10 uncheck=2 finale=1 shuffle=10
+[tfive] watch selftest: 7 finale run: taps=8/8 duration=0.707s (approximation: no CoreHaptics on watchOS)
+[tfive] watch selftest: 8 appGroup=true
+[tfive] watch selftest: 9 snapshot: hasList=true done=4/5 nextLine=19 chars viewOnly=false rollsAt=set kit=terminal pair=mono face=IBMPlexMono-SemiBold
+[tfive] watch selftest: 10 confetti: run=1 frames=134 over 2.56s = 52.0/s
+[tfive] face: kit=paper pair=playfair face=SourceSerif4-Regular-600 → snapshot written, reloadAllTimelines requested
+[tfive] watch selftest: 11 theme change: terminal/IBMPlexMono-SemiBold → paper/SourceSerif4-Regular-600 changed=true
+-- watch-confetti-selftest.log (22 lines)
+[tfive] theme: slot=day day=paper night=terminal → kit=paper pair=playfair base=light unlocked=0 offered=16
+[tfive] confetti self-test: begin kits=16 canvas=208x248 k=0.310
+[tfive] confetti self-test: dark: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: light: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: pink: shapes=[0, 1, 2] → drew [0, 1, 2] · palette=6 · ends at frame 147
+[tfive] confetti self-test: midnight: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: forest: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: paper: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: terminal: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: sunset: shapes=[0, 1] → drew [0, 1] · palette=5 · ends at frame 147
+[tfive] confetti self-test: dusk: shapes=[0, 1, 2] → drew [0, 1, 2] · palette=5 · ends at frame 147
+[tfive] confetti self-test: harbor: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: ember: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: cocoa: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: blush: shapes=[0, 1, 2] → drew [0, 1, 2] · palette=6 · ends at frame 147
+[tfive] confetti self-test: teletype: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: sketch: shapes=[0] → drew [0] · palette=6 · ends at frame 147
+[tfive] confetti self-test: arcade: shapes=[0] → drew [0] · palette=6 · ends at frame 147
+[tfive] confetti self-test: end pass=96/96
+[tfive] watch: store=appGroup
+[tfive] face: kit=paper pair=playfair face=SourceSerif4-Regular-600 → snapshot written, reloadAllTimelines requested
+-- phone-selftest.log: not present
+
+## baseline.md §6 text
+## 6. The Watch and phone self-tests on my own simulator pair (under sim-slot.sh)
+
+Wrapper: `review/tools/sim-slot.sh baseline -- run-sims.sh` (the script creates the pair by UDID, boots by UDID, installs by UDID, and never names any other device). Bookends and every `[tfive]` line: `review/raw/baseline/sim-summary.txt`. Each console was captured with `xcrun simctl launch --console-pty <UDID> <bundle> <args>` run in the background, capped at 90 s, the app terminated between runs, and the console passed through the repo's `safe()` rule (`perl -pe 's/(?<![0-9A-Za-z])[0-9A-Za-z]{22,}(?![0-9A-Za-z])/[REDACTED]/g'`) before being saved as `review/raw/baseline/<name>.log`.
+
+- `SIM START 2026-09-10 01:17:42 |  1:17  up 92 days, 23:23, 2 users, load averages: 7.26 5.93 5.36`
+- `create watch => 8F30B5F3-A512-4CA6-90CA-C596689046DB` (`"tf-review watch"`, `Apple Watch Series 11 (42mm)`, `com.apple.CoreSimulator.SimRuntime.watchOS-26-5`)
+- `create phone => BA7707F5-B082-41EB-92A5-04E586CB0D55` (`"tf-review phone"`, `iPhone 17 Pro Max`, `com.apple.CoreSimulator.SimRuntime.iOS-26-5`)
+- `pair => E7F29476-51EC-4C21-A95C-C5A2D43C282B`; saved to `/tmp/tf-review/pair.env` as `WATCH=… PHONE=… PAIR=…` lines. **The pair is left booted for the orchestrator; it was not deleted.**
+- `pair state: E7F29476-51EC-4C21-A95C-C5A2D43C282B (active, connected)  Watch: tf-review watch (8F30B5F3-…) (Booted)  Phone: tf-review phone (BA7707F5-…) (Booted)` — the pair reported active, connected on the first try.
+- **Load**: booting two fresh 26.5 simulators sent the 1-minute load to `149.92 40.28 17.82` at 01:18:21 and it was still `99.95 67.62 31.94` at 01:19:58. Every timing in this section sits under that load, and Phase 5's latency round shared the Mac with it for those minutes.
+- `install watch app: (rc=0)` from `/tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app` (the 5a/5b product); `get_app_container watch: …/Devices/8F30B5F3-A512-4CA6-90CA-C596689046DB/data/Containers/Bundle/Application/…/TodaysFiveWatch.app`.
+
+### 6a. `-TFWatchDemo -TFWatchSelfTest` → `review/raw/baseline/watch-demo-selftest.log`
+
+`-- watch-demo-selftest START 2026-09-10 01:18:21 | load averages: 149.92 40.28 17.82` … `still running at 90s cap; terminating the app` … `END 2026-09-10 01:19:55 lines=21 tfive-lines=19`. The demo idles after its tally, so the cap is the normal end. Screenshot at t=30 s: `review/raw/baseline/watch-demo.png` (27,305 bytes) — the paper kit, the title `Demo`, a `4 /5` counter, `Ten minutes outside` unchecked, `Water the plants` checked and struck through, the clock reading 1:18.
+
+Every `[tfive]` line, verbatim (there is no single pass/fail tally — this self-test prints eleven numbered observations):
+
+```
+```
+
+The two non-`[tfive]` lines: `[REDACTED] failed e00002c7` (a system console line whose leading token the `safe()` rule struck; `e00002c7` is an IOKit/Mach status, not app output) and `com.pricebrannen.todaysfive.watchkitapp: 8295` (simctl's launch line with the PID).
+
+### 6b. `-TFWatchDemo -TFAddSelfTest` → `review/raw/baseline/watch-add-selftest.log`
+
+`-- watch-add-selftest START 2026-09-10 01:19:58 |  1:19  up 92 days, 23:25, 2 users, load averages: 99.95 67.62 31.94`
+`still running at 90s cap; terminating the app`
+`-- watch-add-selftest END 2026-09-10 01:21:30 lines=13 tfive-lines=12`
+
+The demo idles after its tally, so the 90 s cap is the normal end.
+
+Every `[tfive]` line, verbatim:
+
+```
+```
+
+Non-`[tfive]` lines: 1 — com.pricebrannen.todaysfive.watchkitapp: 10728
+
+### 6c. `-TFFontSelfTest` → `review/raw/baseline/watch-font-selftest.log`
+
+`-- watch-font-selftest START 2026-09-10 01:21:33 |  1:21  up 92 days, 23:27, 2 users, load averages: 24.02 50.48 29.07`
+`still running at 90s cap; terminating the app`
+`-- watch-font-selftest END 2026-09-10 01:23:06 lines=9 tfive-lines=8`
+
+The app stays up after the tally, so the 90 s cap is the normal end.
+
+Every `[tfive]` line, verbatim:
+
+```
+```
+
+Non-`[tfive]` lines: 1 — com.pricebrannen.todaysfive.watchkitapp: 12040
+
+### 6d. `-TFConfettiSelfTest` → `review/raw/baseline/watch-confetti-selftest.log`
+
+`-- watch-confetti-selftest START 2026-09-10 01:23:09 |  1:23  up 92 days, 23:28, 2 users, load averages: 11.00 39.32 27.04`
+`still running at 90s cap; terminating the app`
+`-- watch-confetti-selftest END 2026-09-10 01:24:42 lines=22 tfive-lines=21`
+
+The app stays up after the tally, so the 90 s cap is the normal end.
+
+## other tracks reports present?
+ 
+352 .
+128 ..
+1152 baseline
+27205 baseline.md
+288 calls
+1120 claims-apple
+512 claims-web
+1024 cleanup
+1728 ink
+928 kits
+256 watch

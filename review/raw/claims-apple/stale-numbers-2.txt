@@ -1,0 +1,146 @@
+## 158 / 216 under apple/ (PCRE, standalone numbers incl. b216 / (158))
+apple/DECISIONS-apple.md:1204:against `Kits`' generated table at build 158.
+apple/DECISIONS-apple.md:1393:this machine, against `Kits`' generated table at build 158. Stage 1 is
+apple/PLAN-apple-phase3.md:27:| git | clean on `main`, the web at **1.12 build 158**, 160 commits |
+apple/PLAN-apple-phase3.md:121:| version | `MARKETING_VERSION 1.12`, `CURRENT_PROJECT_VERSION 158` on all three bundles — the web's numbers, per Phase 2b's rule that the app's version is the page's version |
+apple/PLAN-apple-phase3.md:435:3. **The version.** `MARKETING_VERSION` → `1.12` and `CURRENT_PROJECT_VERSION` → `158`, so About,
+apple/PLAN-apple-phase4.md:26:| the web | **1.12 (158)**, and the deployed `version.js` and `sw.js` match the checkout byte for byte |
+apple/PLAN-apple-phase4.md:319:## §5. This ships as a build of 1.12, not as 1.12 b216
+apple/PLAN-apple-phase4.md:347:**The narrative tags.** Tracks A, B and D wrote `1.12 b216` into about thirty code comments — the repo's
+apple/PLAN-apple-phase4.md:349:stamping, which is unambiguous against what shipped as 1.12 build 158 and matches the unit that is
+apple/PLAN-apple-phase4.md:592:Seeded with exactly what a build-158 device leaves behind — its registry, its cached token CSS with
+apple/PLAN-apple-phase4.md:593:the old accent, and **no** `tf/v2/themerev`, because b158 never wrote one — then pointed at the live
+apple/PLAN-apple-phase4.md:596:| a device that last ran b158 on… | painted | ground | task face | page errors |
+apple/PLAN-apple-phase4.md:606:configurations now: a fresh context with a stale cache seeded, a local 158 → 212 deploy with no
+apple/PLAN-apple-phase4.md:607:service worker, the same with a **build-158 worker controlling the page** (caches
+apple/PLAN-apple-phase4.md:608:`tf-v1.12-b158` → `…-b212`), the first-paint isolation with `app.js` blocked, and this run against
+apple/PLAN-apple-phase4.md:612:Safari answered from Safari's HTTP cache, so the page still running is b158's `app.js` and
+apple/PLAN-apple-phase4.md:615:absent means the page is pre-b216 and §6 is the answer; `1ptwfkh` with an amber accent means a bug
+apple/README.md:37:| the 18 kits and the 13 font pairs (1.12 b216) | `test/fixtures/kits.json` | `test/tools/gen-kits.mjs` |
+apple/README.md:38:| the Watch's real family and PostScript names (1.12 b216) | `test/fixtures/watch-fonts.json` + `apple/TodaysFive/Fonts/*.ttf` | `apple/tools/gen-watch-fonts.py` |
+apple/README.md:161:| `Vault.swift`, `WatchLink.swift` | what the phone holds, and what crosses to the wrist (links, and since 1.12 b216 the two Secret kits) |
+apple/README.md:271:Since 1.12 b216 that comparison is **geometry**, which is what it always claimed to be: both images are
+apple/TodaysFive/Shared/WatchSnapshot.swift:22:// every field it cannot find, so an extension from build 158 reading a snapshot from build 200 gets
+apple/TodaysFive/Shared/WatchSnapshot.swift:23:// `kit: ""` and draws the way it always did, and an extension from build 200 reading build 158's
+apple/TodaysFive/TodaysFive.xcodeproj/project.pbxproj:590:				CURRENT_PROJECT_VERSION = 216;
+apple/TodaysFive/TodaysFive.xcodeproj/project.pbxproj:619:				CURRENT_PROJECT_VERSION = 216;
+apple/TodaysFive/TodaysFive.xcodeproj/project.pbxproj:648:				CURRENT_PROJECT_VERSION = 216;
+apple/TodaysFive/TodaysFive.xcodeproj/project.pbxproj:675:				CURRENT_PROJECT_VERSION = 216;
+apple/TodaysFive/TodaysFive.xcodeproj/project.pbxproj:753:				CURRENT_PROJECT_VERSION = 216;
+apple/TodaysFive/TodaysFive.xcodeproj/project.pbxproj:776:				CURRENT_PROJECT_VERSION = 216;
+apple/TodaysFiveCore/Sources/TodaysFiveCore/WatchLink.swift:9:// 1.12 b216 adds one thing to that, and it is a palette rather than a list: the two **Secret kits**, which
+apple/TodaysFiveCore/Sources/TodaysFiveCore/WatchLink.swift:106:    // ---------------------------------------------------------------- the Secret kits (1.12 b216)
+apple/TodaysFiveCore/Sources/TodaysFiveCore/WatchLink.swift:109:    /// own: a build that predates 1.12 b216 keeps unknown keys and hands them back, so a Watch on an
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/KitFixtureTests.swift:220:        // the other. Until 1.12 b216 the accent was one brand hex against four fixed grounds; now each
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/WatchLinkTests.swift:275:    // ---------------------------------------------------------------- the Secret kits (1.12 b216)
+apple/tools/watchsim.mjs:779:            // `missing`, not a note. Both bundles carry the web's frozen 1.12 (158) all round, so the
+
+## "about 17x" style ratio statements (PCRE)
+apple/DECISIONS-apple.md:1367:**The prior measurement in `PLAN-apple-phase4.md` was dark 0.0466, cream 0.8146, 17.5×; this one is
+apple/PLAN-apple-phase4.md:261:  at γ 2.2 as a fraction of a full-white panel. Dark **0.0466**, cream **0.8146** — a **17.5×**
+apple/README.md:449:panel about 17× harder than a dark one.
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:229:        // where the 17x emissive-drive ratio between a dark kit and Paper's cream is actually spent.
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:36:// **3. The ground is the battery.** Paper's cream drives the panel about **17×** harder than a dark
+
+## .primary / .secondary / system colours in the Watch + appex at HEAD (PCRE)
+apple/TodaysFive/[REDACTED]/Complications.swift:244:                    .foregroundStyle(.secondary)
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:9:// gives `var(--task-w)` — and everything else takes a ui face. There is no `.primary`, no
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:10:// `.secondary` and no system colour on this screen: watchOS has no light appearance, so those read
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:150:                    // what an unchecked box is. `.secondary` was a grey that happened to work on a
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:188:            // the web fills a chip with. The old `Color.primary.opacity(0.16)` was Pink's alpha
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:16:// the Watch may use `.primary`, `.secondary` or a system colour, because watchOS has no light
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:24:// cream it left every `.primary` white and invisible. `.environment(\.colorScheme, .light)` works
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:25:// and does flip `.primary`/`.secondary`. watchOS has no light appearance at all, which is why every
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:26:// colour on this screen is a kit token and not a system one: the dozen `.primary`/`.secondary` call
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:54:/// **Nothing on the Watch may use `.primary`, `.secondary`, `.red` or an asset colour**: on a device
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:133:    /// Phase 3 flattened to `Color(white: 0.62)`, which was the right *shape* and the wrong colour on
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:697:            self = Color(white: 0.5)
+
+## the same at 4ca4cb0^ (the tree the "fourteen call sites across five files" sentence describes)
+apple/TodaysFive/[REDACTED]/Complications.swift:127:                    .foregroundStyle(.secondary)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:168:                .foregroundStyle(pending.outcome.landed == nil ? .secondary : .primary)
+apple/TodaysFive/TodaysFiveWatch/ListPickerView.swift:25:                    .foregroundStyle(.secondary)
+apple/TodaysFive/TodaysFiveWatch/OneThingView.swift:30:                    .foregroundStyle(.secondary)
+apple/TodaysFive/TodaysFiveWatch/OneThingView.swift:56:                    .foregroundStyle(store.totalCount == 0 ? Color.secondary : WatchTheme.accent)
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:40:                .foregroundStyle(store.finaleShowing ? WatchTheme.accent : Color.primary)
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:43:                .foregroundStyle(.secondary)
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:49:                .foregroundStyle(.secondary)
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:115:                    .foregroundStyle(row.done ? WatchTheme.accent : Color.secondary)
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:119:                    .foregroundStyle(row.done ? WatchTheme.struck : Color.primary)
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:147:                Capsule().fill(Color.primary.opacity(0.16))
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:149:            .foregroundStyle(.secondary)
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:167:                    .foregroundStyle(.secondary)
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:178:                    .foregroundStyle(row.done ? WatchTheme.accentDim : Color.primary.opacity(0.75))
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:153:                .foregroundStyle(.secondary)
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:31:    static let accentDim = Color(white: 0.62)
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:34:    static let struck = Color.secondary
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:43:            self = Color(white: 0.5)
+count: 18 hits in 7 files
+
+## what 4ca4cb0 itself removed (diff hunks mentioning .primary/.secondary)
+-                .foregroundStyle(pending.outcome.landed == nil ? .secondary : .primary)
+-                    .foregroundStyle(.secondary)
+-                    .foregroundStyle(.secondary)
+-                    .foregroundStyle(store.totalCount == 0 ? Color.secondary : WatchTheme.accent)
+-                .foregroundStyle(store.finaleShowing ? WatchTheme.accent : Color.primary)
+-                .foregroundStyle(.secondary)
+-                .foregroundStyle(.secondary)
+-                    .foregroundStyle(row.done ? WatchTheme.accent : Color.secondary)
+-                    .foregroundStyle(row.done ? WatchTheme.struck : Color.primary)
+-                Capsule().fill(Color.primary.opacity(0.16))
+-            .foregroundStyle(.secondary)
+-                    .foregroundStyle(.secondary)
+-                    .foregroundStyle(row.done ? WatchTheme.accentDim : Color.primary.opacity(0.75))
+-                .foregroundStyle(.secondary)
+-    static let accentDim = Color(white: 0.62)
+-    static let struck = Color.secondary
+removed lines: 16
+
+## any script in history that prints live=true or the 0.63 figure
+5cd559f The live run: 0.63 seconds, where the same conditions used to mean 240
+(none above means: no committed instrument)
+
+## watchsim.mjs 262144 / 256 KiB / frozen 158 context
+        const bin = fs.existsSync(path.join(built, path.basename(built, ".app")))
+          ? path.join(built, path.basename(built, ".app")) : null;
+        const ibin = bin ? path.join(installed, path.basename(bin)) : null;
+        try {
+          if (bin && ibin && fs.statSync(bin).mtimeMs > fs.statSync(ibin).mtimeMs + 1000) {
+            // `missing`, not a note. Both bundles carry the web's frozen 1.12 (158) all round, so the
+            // version comparison above cannot fire — the mtime is the only thing left that can, and a
+            // pass run against yesterday's binary proves yesterday's code, which is worse than
+            // proving nothing because it looks like proof.
+            missing.push(`The built ${label} app is newer than the installed one. Run: watchsim.mjs install`);
+
+## KeychainLinkVault compiled into which targets (pbxproj PBXBuildFile lines)
+22:		[REDACTED] /* KeychainLinkVault.swift in Sources */ = {isa = PBXBuildFile; fileRef = [REDACTED] /* KeychainLinkVault.swift */; };
+40:		[REDACTED] /* KeychainLinkVault.swift in Sources */ = {isa = PBXBuildFile; fileRef = [REDACTED] /* KeychainLinkVault.swift */; };
+134:		[REDACTED] /* KeychainLinkVault.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainLinkVault.swift; sourceTree = "<group>"; };
+271:				[REDACTED] /* KeychainLinkVault.swift */,
+561:				[REDACTED] /* KeychainLinkVault.swift in Sources */,
+573:				[REDACTED] /* KeychainLinkVault.swift in Sources */,
+
+## WatchLinkReceiver: which UserDefaults holds the selected list
+    private var started = false
+
+    /// The high-water mark. `tf/app/` is the clients' prefix (COMPATIBILITY.md §8) and this is the
+    /// Watch's corner of it. A stamp, not a secret.
+    private static let appliedAtKey = "tf/app/watch/appliedAt"
+    /// The selection *is* a secret, and it is kept the way the store already keeps one: in the app's
+    /// own container, which is where the decrypted documents live too, under a name only this app
+    /// reads. It is never in an App Group, never synchronised, and never printed.
+    private static let selectedKey = "tf/app/watch/selected"
+    /// The unlocked palettes. **Not** in `.standard` beside the selection, and deliberately so: a
+    /// kit id is not a secret and the complication has to be able to see the theme, so this goes in
+    /// the App Group the snapshot already uses. It is written as JSON rather than as an archive
+    /// because the shape is the one `Kit(json:)` reads everywhere else.
+    private static let kitsKey = "tf/app/watch/kits"
+
+    init(vault: LinkVault = KeychainLinkVault(), defaults: UserDefaults = .standard,
+         shared: UserDefaults? = UserDefaults(suiteName: WatchGroup.identifier)) {
+        self.vault = vault
+        self.defaults = defaults
+        // nil when the entitlement is missing from the running binary, which is the same silent
+        // answer `containerURL([REDACTED]:)` gives — so fall back to the
+        // app's own defaults and carry on rather than dropping the palettes on the floor.
+        self.shared = shared ?? defaults

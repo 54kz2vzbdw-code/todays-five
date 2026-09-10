@@ -1,0 +1,4 @@
+[tfive] theme: slot=night day=paper night=terminal → kit=terminal pair=mono base=dark unlocked=0 offered=16
+[tfive] watch: store=appGroup
+[tfive] face: kit=terminal pair=mono face=IBMPlexMono-SemiBold → snapshot written, reloadAllTimelines requested
+[tfive] watch: demo list seeded, lines=5 mark=synced

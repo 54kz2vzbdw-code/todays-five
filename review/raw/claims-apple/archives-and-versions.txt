@@ -1,0 +1,31 @@
+no dir /Users/pricebrannen/Library/Developer/Xcode/Archives/2026-09-08
+no dir /Users/pricebrannen/Library/Developer/Xcode/Archives/2026-09-09
+no dir /Users/pricebrannen/Library/Developer/Xcode/Archives/2026-09-10
+
+## 12e62e3 version.js
+// version.js — VERSION is the marketing version (1.0.x a fix, 1.x a design or feature round, 2.0 a redesign; what
+// shipped as 4.0.0 is 1.0), BUILD the commit count on main at build time. Bump VERSION with sw.js and whatsnew.json,
+// BUILD with whatsnew.json; test/features.test.js checks they agree. The what's-new toast keys on VERSION changing.
+export const VERSION = "1.6";
+
+## whatsnew versions array / CHANGELOG headings
+"version": "1.12" "version": "1.11" "version": "1.10" "version": "1.9" "version": "1.8" "version": "1.7" "version": "1.5" "version": "1.4" "version": "1.3" "version": "1.2" "version": "1.1" "version": "1.0" 
+## 1.12 ## 1.11 ## 1.10 ## 1.9 ## 1.8 ## 1.7 ## 1.5 ## 1.4 ## 1.3 ## 1.2 ## 1.1 ## 1.0 ## 0.3 ## 0.2 ## 0.1 
+## build homes on HEAD
+1:// version.js — VERSION is the marketing version (1.0.x a fix, 1.x a design or feature round, 2.0 a redesign; what
+2:// shipped as 4.0.0 is 1.0), BUILD the commit count on main at build time. Bump VERSION with sw.js and whatsnew.json,
+3:// BUILD with whatsnew.json; test/features.test.js checks they agree. The what's-new toast keys on VERSION changing.
+11:const VERSION = "tf-v1.12"; // = "tf-v" + version.js's marketing version
+12:const BUILD = 216;          // = version.js's BUILD
+13:const CACHE = VERSION + "-b" + BUILD;
+data-build="216"
+6:const PANELS_BUILD = 216; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
+2:  "build": 216,
+
+## woff2 sum excluding lato-400/lato-700 (the "688 KB from 24 files")
+  704776
+      24
+
+## UIAppFonts (Config/WatchInfo.plist) vs Fonts/ directory
+UIAppFonts entries: 33
+UIAppFonts == Fonts/ directory (33 = 33)

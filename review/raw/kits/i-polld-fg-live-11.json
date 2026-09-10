@@ -1,0 +1,31 @@
+{
+  "base": "http://127.0.0.1:8892/",
+  "seed": 11,
+  "stepMs": 2000,
+  "trials": 10,
+  "pollMs": 60000,
+  "pollLiveMs": 240000,
+  "conditions": [
+    {
+      "id": "fg-live",
+      "label": "foreground, realtime connected",
+      "seen": [
+        24,
+        62,
+        66,
+        76,
+        102,
+        104,
+        110,
+        226,
+        232,
+        238
+      ],
+      "never": 0,
+      "broke": 0,
+      "horizonS": 300,
+      "medianS": 103,
+      "maxS": 238
+    }
+  ]
+}

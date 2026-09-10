@@ -1,0 +1,22 @@
+[tfive] theme: slot=day day=paper night=terminal → kit=paper pair=playfair base=light unlocked=0 offered=16
+[tfive] confetti self-test: begin kits=16 canvas=208x248 k=0.310
+[tfive] confetti self-test: dark: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: light: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: pink: shapes=[0, 1, 2] → drew [0, 1, 2] · palette=6 · ends at frame 147
+[tfive] confetti self-test: midnight: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: forest: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: paper: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: terminal: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: sunset: shapes=[0, 1] → drew [0, 1] · palette=5 · ends at frame 147
+[tfive] confetti self-test: dusk: shapes=[0, 1, 2] → drew [0, 1, 2] · palette=5 · ends at frame 147
+[tfive] confetti self-test: harbor: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: ember: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: cocoa: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: blush: shapes=[0, 1, 2] → drew [0, 1, 2] · palette=6 · ends at frame 147
+[tfive] confetti self-test: teletype: shapes=[0] → drew [0] · palette=5 · ends at frame 147
+[tfive] confetti self-test: sketch: shapes=[0] → drew [0] · palette=6 · ends at frame 147
+[tfive] confetti self-test: arcade: shapes=[0] → drew [0] · palette=6 · ends at frame 147
+[tfive] confetti self-test: end pass=96/96
+[tfive] watch: store=appGroup
+[tfive] face: kit=paper pair=playfair face=SourceSerif4-Regular-600 → snapshot written, reloadAllTimelines requested
+com.pricebrannen.todaysfive.watchkitapp: 14733

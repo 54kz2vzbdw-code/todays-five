@@ -1,0 +1,38 @@
+## @Test / @Suite counts per commit (apple/TodaysFiveCore/Tests), files listed
+e215e65  @Test=0    @Suite=0   files=8
+4962f97  @Test=0    @Suite=0   files=10
+c21c31c  @Test=0    @Suite=0   files=10
+0f11ee6  @Test=0    @Suite=0   files=11
+7f0e112  @Test=0    @Suite=0   files=11
+144e5b3  @Test=0    @Suite=0   files=11
+16aac3d  @Test=0    @Suite=0   files=11
+7341981  @Test=0    @Suite=0   files=11
+
+## HEAD: per-file @Test counts, and any @Test inside #if canImport / #if os
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/ContractFixtureTests.swift @Test=9 @Suite=1
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/CryptoTests.swift       @Test=10 @Suite=1
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/DifferentialTests.swift @Test=4 @Suite=1
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/Fixtures.swift          @Test=0 @Suite=0
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/JSSemanticsTests.swift  @Test=9 @Suite=1
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/KitFixtureTests.swift   @Test=6 @Suite=1
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/ModelTests.swift        @Test=24 @Suite=1
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift         @Test=20 @Suite=1
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/TodayOpsTests.swift     @Test=8 @Suite=1
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/VaultTests.swift        @Test=22 @Suite=1
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/WatchLinkTests.swift    @Test=18 @Suite=1
+
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/KitFixtureTests.swift:22:#if canImport(JavaScriptCore)
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/KitFixtureTests.swift:24:#endif
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/KitFixtureTests.swift:37:    #if canImport(JavaScriptCore)
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/KitFixtureTests.swift:81:    #endif
+
+## parameterized tests (arguments:) which run more than once
+
+## e215e65 suite names
+@Suite("The contract's own merge fixtures")
+@Suite("Keys, links and the envelope")
+@Suite("Differential: the web's answers, replayed")
+@Suite("JavaScript semantics")
+@Suite("The document: normalize, merge, rollover")
+@Suite("Sync: the engine against a server that behaves like the real one")
+@Suite("The link vault")

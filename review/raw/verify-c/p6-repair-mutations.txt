@@ -1,0 +1,8 @@
+base      14, 296, 60]     exit 0 | 12 sound tests passed
+repair    14, 296, 60]     exit 0 | 12 sound tests passed
+base-a    14, 100, 60]     exit 0 | 12 sound tests passed
+base-b    14, 296, 20]     exit 0 | 12 sound tests passed
+base-c    14, 1000, 60]    exit 0 | 12 sound tests passed
+repair-a  14, 100, 60]     exit 1 | AssertionError [ERR_ASSERTION]: the chord buzz starts at 700 ms, where sound.js says the chord is
+repair-b  14, 296, 20]     exit 1 | AssertionError [ERR_ASSERTION]: and it is the strongest of them
+repair-c  14, 1000, 60]    exit 1 | AssertionError [ERR_ASSERTION]: the chord buzz starts at 700 ms, where sound.js says the chord is

@@ -1,0 +1,4 @@
+seed: themerev=1ptwfkh data-tokens-rev=1ptwfkh themecss starts ":root{--ink:#F7F2E8;--ink-2:#EFE" (806 chars)
+b158 stamp (bogus)   -> --ink #070A08  data-base=dark  themerev now=b158  => the inline default (refused)
+no stamp             -> --ink #070A08  data-base=dark  themerev now=null  => the inline default (refused)
+current stamp        -> --ink #F7F2E8  data-base=light  themerev now=1ptwfkh  => the cache (trusted)

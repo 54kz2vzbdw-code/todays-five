@@ -1,0 +1,103 @@
+{
+  "mode": "stride",
+  "stride": 2,
+  "generator": "r,g,b ∈ {0,2,…,254} → 2097152 colours",
+  "base": "dark",
+  "n": 2097152,
+  "moved": 804483,
+  "movedPct": 38.361,
+  "binomialSE_pct": 0.034,
+  "under3OnMain": 804483,
+  "under3Pct": 38.361,
+  "movedNotUnder3": 0,
+  "under3NotMoved": 0,
+  "dangerMoved": 847772,
+  "dangerMovedPct": 40.425,
+  "cssDiff": 1517905,
+  "cssDiffPct": 72.379,
+  "confettiDiff": 804483,
+  "soundDiff": 0,
+  "main": {
+    "worstAccentOnInk3": 2.1796,
+    "worstAccentOnInk3Hex": "#066A4E",
+    "worstAccentOnInk2": 2.6295,
+    "worstAccentOnInk2Hex": "#1E5E02",
+    "worstAccentOnInk": 3,
+    "worstAccentOnInkHex": "#165898",
+    "accentUnder3OnInk2": 626267,
+    "accentUnder3OnInk": 0,
+    "worstDangerOnInk3": 4.3742,
+    "worstDangerOnInk3Hex": "#14B270"
+  },
+  "branch": {
+    "worstAccentOnInk3": 3,
+    "worstAccentOnInk3Hex": "#067862",
+    "worstAccentOnInk2": 3.5517,
+    "worstDangerOnInk3": 4.5001
+  },
+  "dL": {
+    "mean": 0.0593,
+    "median": 0.0693,
+    "p90": 0.0715,
+    "max": 0.0829,
+    "min": 0.0087
+  },
+  "dLdanger": {
+    "mean": 0.009,
+    "max": 0.009,
+    "min": 0.009
+  },
+  "[REDACTED]": {
+    "accent": 804483,
+    "accentHi": 804483,
+    "accentDeep": 804483,
+    "glow": 804483,
+    "strikeShadow": 804483,
+    "boxDoneBg": 804483,
+    "strikeBg": 804483,
+    "accentText": 358086,
+    "danger": 134350
+  },
+  "movedByMainA3Bucket": {
+    "2.0–2.5": 626173,
+    "2.5–3.0": 178310,
+    "≥3": 1292669
+  },
+  "worstA3Detail": {
+    "hex": "#066A4E",
+    "moved": true,
+    "under3": true,
+    "a1": 3.002194389215902,
+    "a2": 2.6584813122172024,
+    "a3": 2.179600790084422,
+    "b2": 3.72231801538445,
+    "b3": 3.0518052731809333,
+    "d3": 4.4160761833038045,
+    "d3b": 4.569892791566528,
+    "dangerMoved": true,
+    "dL": 0.08027239971829292,
+    "dLd": 0.008988067567769042,
+    "diff": [
+      "accent",
+      "accentHi",
+      "accentDeep",
+      "danger",
+      "glow",
+      "strikeShadow",
+      "boxDoneBg",
+      "strikeBg"
+    ],
+    "confettiDiff": true,
+    "soundDiff": false,
+    "cssDiff": true,
+    "mAccent": "#187356",
+    "bAccent": "#378B6D",
+    "ink2": "#122920",
+    "ink3": "#1F382E",
+    "mDanger": "#F2716A",
+    "bDanger": "#F5746D"
+  },
+  "elapsedMs": 103551,
+  "mainThemeJs": "/private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/ink/main/theme.js",
+  "branchThemeJs": "/private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/ink/branch/theme.js"
+}

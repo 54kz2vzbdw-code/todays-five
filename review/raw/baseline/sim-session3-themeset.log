@@ -1,0 +1,14 @@
+[sim-slot] baseline2-themeset acquired at 01:30:54
+[2026-09-10 01:30:54] SESSION3 START WATCH=8F30B5F3-A512-4CA6-90CA-C596689046DB |  1:30  up 92 days, 23:36, 2 users, load averages: 8.09 14.88 19.08
+[2026-09-10 01:30:54] bootstatus watch rc=0
+[2026-09-10 01:30:54] LAUNCH themeset-day-paper args=[-TFWatchDemo -TFThemeSet day:paper] cap=25s |  1:30  up 92 days, 23:36, 2 users, load averages: 8.09 14.88 19.08
+[2026-09-10 01:31:19] LAUNCH themeset-day-paper END terminate_rc=3 lines=4 -> /Users/pricebrannen/Today's Five/todays-five-review/review/raw/baseline/watch-themeset-day-paper.log
+[tfive] theme: slot=day day=paper night=terminal → kit=paper pair=playfair base=light unlocked=0 offered=16
+[2026-09-10 01:31:19] LAUNCH themeset-night-terminal args=[-TFWatchDemo -TFThemeSet night:terminal] cap=25s |  1:31  up 92 days, 23:37, 2 users, load averages: 6.59 13.98 18.63
+[2026-09-10 01:31:44] LAUNCH themeset-night-terminal END terminate_rc=3 lines=4 -> /Users/pricebrannen/Today's Five/todays-five-review/review/raw/baseline/watch-themeset-night-terminal.log
+[tfive] theme: slot=night day=paper night=terminal → kit=terminal pair=mono base=dark unlocked=0 offered=16
+[2026-09-10 01:31:44] LAUNCH themeset-readback args=[-TFWatchDemo] cap=20s |  1:31  up 92 days, 23:37, 2 users, load averages: 5.28 13.08 18.17
+[2026-09-10 01:32:04] LAUNCH themeset-readback END terminate_rc=3 lines=5 -> /Users/pricebrannen/Today's Five/todays-five-review/review/raw/baseline/watch-themeset-readback.log
+[tfive] theme: slot=night day=paper night=terminal → kit=terminal pair=mono base=dark unlocked=0 offered=16
+[2026-09-10 01:32:04] SESSION3 END |  1:32  up 92 days, 23:37, 2 users, load averages: 4.86 12.47 17.84
+[sim-slot] baseline2-themeset released; exit 0

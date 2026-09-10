@@ -1,0 +1,18 @@
+
+[S0] A fresh, holds X=[REDACTED] | storage: {"lists":["[REDACTED]"],"removed":[],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"listId":"[REDACTED]","panels":[],"demo":false}
+
+[S1] B opened in the same context (same origin, same localStorage); B shows | storage: {"lists":["[REDACTED]"],"removed":[],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"listId":"[REDACTED]","panels":[],"demo":false}
+
+[S2] A: Remove from this device → Remove (A had only X, so A shows the welcome) | storage: {"lists":[],"removed":["[REDACTED]"],"unremoved":null,"dead":[],"current":null} | this tab: {"listId":null,"panels":[],"demo":true}
+
+[S3] B: pasted X's link (a full navigation, so B re-read storage; registerList cleared the mark) | storage: {"lists":[],"removed":["[REDACTED]"],"unremoved":null,"dead":[],"current":null} | this tab: {"listId":"[REDACTED]","panels":[],"demo":false}
+
+[S4] A: one settings change (the sun/moon flip → saveDevice) with A's in-memory meta.removed=[X] | storage: {"lists":[],"removed":["[REDACTED]"],"unremoved":null,"dead":[],"current":null} | this tab: {"listId":null,"panels":[],"demo":true}
+
+[S5] B: one settings change (flip → saveDevice) — B still has X on screen | storage: {"lists":[],"removed":["[REDACTED]"],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"listId":"[REDACTED]","panels":[],"demo":false}
+    B's Lists panel rows: 0 | #listname: List
+
+[S6] B: reload | storage: {"lists":[],"removed":["[REDACTED]"],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"listId":null,"panels":[],"demo":false}
+    B after reload: welcome visible = false | #list rows = 0
+
+[S7] A: reload (is X still in `removed`?) | storage: {"lists":[],"removed":["[REDACTED]"],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"listId":null,"panels":[],"demo":false}

@@ -1,0 +1,6 @@
+== palette-rev (j) Thu Sep 10 01:11:43 CDT 2026
+PALETTE_REV = 1ptwfkh
+index.html: data-tokens-rev=1ptwfkh matches=true bootGuardPresent=true
+about.html: data-tokens-rev=1ptwfkh matches=true bootGuardPresent=true
+applyTheme persist line: if (persist) { try { localStorage.setItem(CSS_KEY, css); localStorage.setItem(REV_KEY, PALETTE_REV); localStorage.removeItem("tf/v2/fontsurl"); } catch (e) { /* private mode */ } }
+CURATED length used by the stamp: 18 (includes secret ids: superpink,birthday )

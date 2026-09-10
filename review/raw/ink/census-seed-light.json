@@ -1,0 +1,240 @@
+{
+  "mode": "seed",
+  "base": "light",
+  "variants": [
+    {
+      "label": "committed test: fresh LCG(4242) per base, floor(x*0xffffff)",
+      "under3OnMain": 1690,
+      "moved": 1690,
+      "worstA3": 2.4531,
+      "worstHex": "#da6d7f",
+      "worstMainAccent": "#DA6D7F",
+      "worstBranchAccent": "#C55B6D",
+      "worstA2": 2.7721,
+      "worstA3branch": 3,
+      "first3": [
+        "#cfff73",
+        "#fc7d6b",
+        "#404f5b"
+      ]
+    },
+    {
+      "label": "fresh LCG(4242), floor(x*0x1000000)",
+      "under3OnMain": 1687,
+      "moved": 1687,
+      "worstA3": 2.4464,
+      "worstHex": "#d68994",
+      "worstMainAccent": "#C57A85",
+      "worstBranchAccent": "#B26873",
+      "worstA2": 2.772,
+      "worstA3branch": 3.0003,
+      "first3": [
+        "#cfff74",
+        "#fc7d6c",
+        "#404f5c"
+      ]
+    },
+    {
+      "label": "fresh LCG(4242), round(x*0xffffff)",
+      "under3OnMain": 1689,
+      "moved": 1689,
+      "worstA3": 2.4464,
+      "worstHex": "#d68994",
+      "worstMainAccent": "#C57A85",
+      "worstBranchAccent": "#B26873",
+      "worstA2": 2.772,
+      "worstA3branch": 3.0001,
+      "first3": [
+        "#cfff74",
+        "#fc7d6b",
+        "#404f5c"
+      ]
+    },
+    {
+      "label": "one LCG(4242) sequence, light after dark's 3,000, floor(x*0xffffff)",
+      "under3OnMain": 1741,
+      "moved": 1741,
+      "worstA3": 2.4452,
+      "worstHex": "#ed9ce3",
+      "worstMainAccent": "#C274B9",
+      "worstBranchAccent": "#AE62A6",
+      "worstA2": 2.7671,
+      "worstA3branch": 3.0003,
+      "first3": [
+        "#c64ff7",
+        "#80c42d",
+        "#2d8bf5"
+      ]
+    },
+    {
+      "label": "one LCG(4242) sequence, light first, floor(x*0xffffff)",
+      "under3OnMain": 1690,
+      "moved": 1690,
+      "worstA3": 2.4531,
+      "worstHex": "#da6d7f",
+      "worstMainAccent": "#DA6D7F",
+      "worstBranchAccent": "#C55B6D",
+      "worstA2": 2.7721,
+      "worstA3branch": 3,
+      "first3": [
+        "#cfff73",
+        "#fc7d6b",
+        "#404f5b"
+      ]
+    },
+    {
+      "label": "shared rnd() after the 2000-accent test's 2,000 draws, floor(x*0xffffff)",
+      "under3OnMain": 1716,
+      "moved": 1716,
+      "worstA3": 2.4468,
+      "worstHex": "#fb47d9",
+      "worstMainAccent": "#F43FD2",
+      "worstBranchAccent": "#DE22BF",
+      "worstA2": 2.7685,
+      "worstA3branch": 3.0003,
+      "first3": [
+        "#1d1064",
+        "#999a2a",
+        "#a1beaf"
+      ]
+    },
+    {
+      "label": "shared rnd() after 2,000 draws, then dark's 3,000 before light's",
+      "under3OnMain": 1658,
+      "moved": 1658,
+      "worstA3": 2.4452,
+      "worstHex": "#ed9ce3",
+      "worstMainAccent": "#C274B9",
+      "worstBranchAccent": "#AE62A6",
+      "worstA2": 2.7671,
+      "worstA3branch": 3,
+      "first3": [
+        "#6eeaff",
+        "#d40f5f",
+        "#39cc3f"
+      ]
+    },
+    {
+      "label": "the 2000-accent test's alternating stream (i%2), this base's draws until 3,000",
+      "under3OnMain": 1708,
+      "moved": 1708,
+      "worstA3": 2.4452,
+      "worstHex": "#ed9ce3"
+    },
+    {
+      "label": "fresh LCG(1), floor(x*0xffffff)",
+      "under3OnMain": 1672,
+      "moved": 1672,
+      "worstA3": 2.4478,
+      "worstHex": "#eb84d3",
+      "worstMainAccent": "#D06BB9",
+      "worstBranchAccent": "#BC59A6",
+      "worstA2": 2.7693,
+      "worstA3branch": 3.0002,
+      "first3": [
+        "#838cfc",
+        "#2cfd61",
+        "#27bf1a"
+      ]
+    },
+    {
+      "label": "fresh LCG(42), floor(x*0xffffff)",
+      "under3OnMain": 1720,
+      "moved": 1720,
+      "worstA3": 2.4468,
+      "worstHex": "#fb47d9",
+      "worstMainAccent": "#F43FD2",
+      "worstBranchAccent": "#DE22BF",
+      "worstA2": 2.7685,
+      "worstA3branch": 3,
+      "first3": [
+        "#95121b",
+        "#8512d5",
+        "#ea397d"
+      ]
+    },
+    {
+      "label": "fresh LCG(4241), floor(x*0xffffff)",
+      "under3OnMain": 1705,
+      "moved": 1705,
+      "worstA3": 2.4531,
+      "worstHex": "#da6d7f",
+      "worstMainAccent": "#DA6D7F",
+      "worstBranchAccent": "#C55B6D",
+      "worstA2": 2.772,
+      "worstA3branch": 3,
+      "first3": [
+        "#4c72d7",
+        "#773836",
+        "#6db1ca"
+      ]
+    },
+    {
+      "label": "fresh LCG(4243), floor(x*0xffffff)",
+      "under3OnMain": 1706,
+      "moved": 1706,
+      "worstA3": 2.4452,
+      "worstHex": "#ed9ce3",
+      "worstMainAccent": "#C274B9",
+      "worstBranchAccent": "#AE62A6",
+      "worstA2": 2.7671,
+      "worstA3branch": 3.0002,
+      "first3": [
+        "#538c11",
+        "#81c2a0",
+        "#12eceb"
+      ]
+    },
+    {
+      "label": "fresh LCG(12345), floor(x*0xffffff)",
+      "under3OnMain": 1734,
+      "moved": 1734,
+      "worstA3": 2.4501,
+      "worstHex": "#f59fd7",
+      "worstMainAccent": "#C674AA",
+      "worstBranchAccent": "#B26298",
+      "worstA2": 2.7696,
+      "worstA3branch": 3,
+      "first3": [
+        "#a7b82c",
+        "#4e084f",
+        "#a1ea6f"
+      ]
+    },
+    {
+      "label": "fresh LCG(2024), floor(x*0xffffff)",
+      "under3OnMain": 1696,
+      "moved": 1696,
+      "worstA3": 2.448,
+      "worstHex": "#f067b1",
+      "worstMainAccent": "#E55DA8",
+      "worstBranchAccent": "#D04A95",
+      "worstA2": 2.763,
+      "worstA3branch": 3.0002,
+      "first3": [
+        "#0fb87b",
+        "#52e1c8",
+        "#fcf48f"
+      ]
+    },
+    {
+      "label": "fresh LCG(2026), floor(x*0xffffff)",
+      "under3OnMain": 1726,
+      "moved": 1726,
+      "worstA3": 2.4499,
+      "worstHex": "#fa5fa7",
+      "worstMainAccent": "#EF559E",
+      "worstBranchAccent": "#DA408B",
+      "worstA2": 2.7675,
+      "worstA3branch": 3.0001,
+      "first3": [
+        "#16d1b5",
+        "#5d6c32",
+        "#309c16"
+      ]
+    }
+  ],
+  "elapsedMs": 5539,
+  "mainThemeJs": "/private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/ink/main/theme.js",
+  "branchThemeJs": "/private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/ink/branch/theme.js"
+}

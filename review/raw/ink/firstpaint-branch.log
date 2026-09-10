@@ -1,0 +1,13 @@
+FIRSTPAINT branch 11735B dark START 01:25:58
+[branch] dark code accent #11735B → main's derive gives --accent #11735B; PALETTE_REV 1ptwfkh
+  A_normal_then_reload: first frame [27,"#11735B"]; runs #11735B×2 (27–40ms) → #338B72×91 (79–1566ms); DCL [75,"#338B72"]; load [76,"#338B72"]; after 1.5s #338B72; cache now #338B72 @1ptwfkh; page stamp 1ptwfkh; errors 0
+     second load: first frame [22,"#338B72"]; runs #338B72×62; cache #338B72
+  B_appjs_blocked: first frame [24,"#11735B"]; runs #11735B×92 (24–1519ms); DCL [17,"#11735B"]; load [26,"#11735B"]; after 1.5s #11735B; cache now #11735B @1ptwfkh; page stamp 1ptwfkh; errors 0
+  C_stamp_mismatch: first frame [15,"#A86014"]; runs #A86014×2 (15–22ms) → #338B72×91 (41–1533ms); DCL [40,"#338B72"]; load [42,"#338B72"]; after 1.5s #338B72; cache now #338B72 @1ptwfkh; page stamp 1ptwfkh; errors 0
+FIRSTPAINT branch DA6D7F light START 01:26:05
+[branch] light code accent #DA6D7F → main's derive gives --accent #DA6D7F; PALETTE_REV 1ptwfkh
+  A_normal_then_reload: first frame [13,"#DA6D7F"]; runs #DA6D7F×2 (13–20ms) → #C55B6D×91 (39–1533ms); DCL [38,"#C55B6D"]; load [42,"#C55B6D"]; after 1.5s #C55B6D; cache now #C55B6D @1ptwfkh; page stamp 1ptwfkh; errors 0
+     second load: first frame [13,"#C55B6D"]; runs #C55B6D×62; cache #C55B6D
+  B_appjs_blocked: first frame [29,"#DA6D7F"]; runs #DA6D7F×91 (29–1529ms); DCL [20,"#DA6D7F"]; load [29,"#DA6D7F"]; after 1.5s #DA6D7F; cache now #DA6D7F @1ptwfkh; page stamp 1ptwfkh; errors 0
+  C_stamp_mismatch: first frame [15,"#A86014"]; runs #A86014×1 (15–15ms) → #C55B6D×92 (42–1545ms); DCL [41,"#C55B6D"]; load [44,"#C55B6D"]; after 1.5s #C55B6D; cache now #C55B6D @1ptwfkh; page stamp 1ptwfkh; errors 0
+FIRSTPAINT END 01:26:12

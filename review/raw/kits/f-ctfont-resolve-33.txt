@@ -1,0 +1,28 @@
+== ctfont-resolve against the shipped 33, with file URLs Thu Sep 10 01:16:48 CDT 2026
+registered 33 of 33 files (already: 0, failed: 0)
+Archivo              -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+Baloo 2              -> family=Baloo 2  ps=Baloo2-Regular file=Baloo-Devanagari.ttc  custom
+Cormorant Garamond   -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+DM Sans              -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+DM Serif Display     -> family=DM Serif Display  ps=DMSerifDisplay-Regular file=dm-serif-display-400.ttf  custom
+Fraunces             -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+Fredoka              -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+IBM Plex Mono        -> family=IBM Plex Mono  ps=IBMPlexMono-Regular file=ibm-plex-mono-400.ttf  custom
+IBM Plex Sans        -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+JetBrains Mono       -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+Josefin Sans         -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+Karla                -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+Lato                 -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+Lora                 -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+Manrope              -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+Nunito Sans          -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+Outfit               -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+PT Sans              -> family=PT Sans  ps=PTSans-Regular file=pt-sans-400.ttf  custom
+Playfair Display     -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+Quicksand            -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+Source Serif 4       -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+Space Grotesk        -> family=Helvetica  ps=Helvetica file=Helvetica.ttc  SYSTEM/HELVETICA
+
+18 of 22 CSS family names come back as a system/Helvetica face on this macOS: Archivo, Cormorant Garamond, DM Sans, Fraunces, Fredoka, IBM Plex Sans, JetBrains Mono, Josefin Sans, Karla, Lato, Lora, Manrope, Nunito Sans, Outfit, Playfair Display, Quicksand, Source Serif 4, Space Grotesk
+4 resolve to a bundled face: Baloo 2, DM Serif Display, IBM Plex Mono, PT Sans
+exit=0

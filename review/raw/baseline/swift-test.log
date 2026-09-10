@@ -1,0 +1,399 @@
+SWIFT-TEST START 2026-09-10 00:49:45 |  0:49  up 92 days, 22:55, 2 users, load averages: 4.85 5.30 5.58
+CMD: cd /Users/pricebrannen/Today's Five/todays-five-review-baseline/apple/TodaysFiveCore && swift test
+[build-slot] baseline-swift-test acquired 1 at 00:49:45; load: 5.02 5.33 5.59
+[1/1] Compiling plugin ConfigGen
+[2/2] Compiling plugin KitsGen
+Building for debugging...
+[2/14] /Users/pricebrannen/Today's runner.swift
+[3/14] Write sources
+[7/14] Write tfive-entitlement.plist
+[8/14] Write swift-version--58304C5D6DBC2206.txt
+[10/42] Compiling TodaysFiveCore Base62.swift
+[11/42] Compiling TodaysFiveCore Config.swift
+[12/42] Compiling TodaysFiveCore Dates.swift
+[13/42] Compiling TodaysFiveCore JSText.swift
+[14/42] Compiling TodaysFiveCore Keys.swift
+[15/42] Compiling TodaysFiveCore Envelope.swift
+[16/42] Compiling TodaysFiveCore JSNumber.swift
+[17/42] Emitting module TodaysFiveCore
+[18/42] Compiling TodaysFiveCore Deflate.swift
+[19/42] Compiling TodaysFiveCore Document.swift
+[20/42] Compiling TodaysFiveCore MemoryTransport.swift
+[21/42] Compiling TodaysFiveCore Merge.swift
+[22/42] Compiling TodaysFiveCore Kits.swift
+[23/42] Compiling TodaysFiveCore Links.swift
+[24/42] Compiling TodaysFiveCore Ops.swift
+[25/42] Compiling TodaysFiveCore Queries.swift
+[26/42] Compiling TodaysFiveCore Vault.swift
+[27/42] Compiling TodaysFiveCore WatchLink.swift
+[28/42] Compiling TodaysFiveCore JSONReader.swift
+[29/42] Compiling TodaysFiveCore JSONValue.swift
+[30/42] Compiling TodaysFiveCore Rollover.swift
+[31/42] Compiling TodaysFiveCore Store.swift
+[32/42] Compiling TodaysFiveCore TodayOps.swift
+[33/42] Compiling TodaysFiveCore Transport.swift
+[34/42] Compiling TodaysFiveCore JSONWriter.swift
+[35/42] Compiling TodaysFiveCore JSString.swift
+[36/42] Compiling TodaysFiveCore SupabaseTransport.swift
+[37/42] Compiling TodaysFiveCore SyncEngine.swift
+[38/44] Compiling TodaysFiveCore Config.generated.swift
+[39/44] Compiling TodaysFiveCore Kits.generated.swift
+[40/58] Compiling tfive TFive.swift
+[41/58] Emitting module tfive
+[41/58] Write Objects.LinkFileList
+[42/58] Linking tfive
+[43/58] Applying tfive
+[45/58] Compiling TodaysFiveCoreTests VaultTests.swift
+[46/58] Compiling TodaysFiveCoreTests WatchLinkTests.swift
+[47/58] Compiling TodaysFiveCoreTests SyncTests.swift
+macro expansion #expect:1:22: warning: no 'async' operations occur within 'await' expression
+`- /Users/pricebrannen/Today's Five/todays-five-review-baseline/apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift:122:63: note: expanded code originates here
+120 |         #expect(await server.calls().first == "get \(keys.lookupId) 1")
+121 |         #expect(await engine.status == .synced)
+122 |         #expect(await engine.pollDelay() == SyncEngine.pollMs)
+    |         `- note: in expansion of macro 'expect' here
+    +--- macro expansion #expect ---------------------------------------
+    |1 | Testing.__checkValue(await engine.pollDelay() == SyncEngine.pollMs,expression: .__fromSyntaxNode("await engine.pollDelay() == SyncEngine.pollMs"),comments: [],isRequired: false,sourceLocation: Testing.SourceLocation.__here()).__expected()
+    |  |                      `- warning: no 'async' operations occur within 'await' expression
+    +-------------------------------------------------------------------
+123 |         #expect(await engine.pollDelay(live: true) == SyncEngine.pollLiveMs)
+124 |     }
+
+macro expansion #expect:1:22: warning: no 'async' operations occur within 'await' expression
+`- /Users/pricebrannen/Today's Five/todays-five-review-baseline/apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift:123:77: note: expanded code originates here
+121 |         #expect(await engine.status == .synced)
+122 |         #expect(await engine.pollDelay() == SyncEngine.pollMs)
+123 |         #expect(await engine.pollDelay(live: true) == SyncEngine.pollLiveMs)
+    |         `- note: in expansion of macro 'expect' here
+    +--- macro expansion #expect ---------------------------------------
+    |1 | Testing.__checkValue(await engine.pollDelay(live: true) == SyncEngine.pollLiveMs,expression: .__fromSyntaxNode("await engine.pollDelay(live: true) == SyncEngine.pollLiveMs"),comments: [],isRequired: false,sourceLocation: Testing.SourceLocation.__here()).__expected()
+    |  |                      `- warning: no 'async' operations occur within 'await' expression
+    +-------------------------------------------------------------------
+124 |     }
+125 | 
+[48/58] Compiling TodaysFiveCoreTests TodayOpsTests.swift
+[49/58] Compiling TodaysFiveCoreTests KitFixtureTests.swift
+[50/58] Compiling TodaysFiveCoreTests JSSemanticsTests.swift
+[51/58] Compiling TodaysFiveCoreTests DifferentialTests.swift
+[52/58] Compiling TodaysFiveCoreTests Fixtures.swift
+[53/58] Compiling TodaysFiveCoreTests ModelTests.swift
+[54/58] Emitting module TodaysFiveCoreTests
+[55/58] Compiling TodaysFiveCoreTests ContractFixtureTests.swift
+[56/58] Compiling TodaysFiveCoreTests CryptoTests.swift
+[57/60] Compiling [REDACTED] runner.swift
+[58/60] Emitting module [REDACTED]
+[58/60] Write Objects.LinkFileList
+[59/60] Linking [REDACTED]
+Build complete! (9.23s)
+Test Suite 'All tests' started at 2026-09-10 00:49:55.940.
+Test Suite 'All tests' passed at 2026-09-10 00:49:55.941.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite "Today: add, check off, start again" started.
+◇ Suite "Differential: the web's answers, replayed" started.
+◇ Suite "JavaScript semantics" started.
+◇ Suite "Sync: the engine against a server that behaves like the real one" started.
+◇ Suite "The kit table" started.
+◇ Suite "Keys, links and the envelope" started.
+◇ Suite "The Watch link hand-off" started.
+◇ Suite "The document: normalize, merge, rollover" started.
+◇ Suite "The link vault" started.
+◇ Test "addToToday: bidi stripped, trimmed, runs of whitespace collapsed, cut at 200 code units" started.
+◇ Test "addToToday: nothing left to add is nothing added" started.
+◇ Test "addToToday writes the ten fields, on Today, past the undone lines" started.
+◇ Test "addToToday: a section the list has, and one it does not" started.
+◇ Test "a Watch and a phone in different zones roll the same list to the same document" started.
+◇ Test "startAgain un-dones only the ids given, each with its own updatedAt" started.
+◇ Test "setDone: an unknown id, a tombstone and a line already in that state are all no-ops" started.
+◇ Test "setDone writes three fields and leaves today, order and todayOrder alone" started.
+◇ Test "the reader keeps key order, repeated keys and lone surrogates" started.
+◇ Test "dates, the home zone and bidi stripping match the web, case for case" started.
+◇ Suite "The contract's own merge fixtures" started.
+◇ Test "object keys come back the way Object.keys does: indices first, then insertion order" started.
+◇ Test "comparison and sorting are by UTF-16 code unit, not by Swift's collation" started.
+◇ Test "canon matches the web, case for case" started.
+◇ Test "numbers print the way JSON.stringify prints them" started.
+◇ Test "delete everywhere, then undo: the row comes back under the same lookup id and token" started.
+◇ Test "a put the server accepted rings the list's channel once, with the rev it wrote and nothing else" started.
+◇ Test "merge is commutative, associative and idempotent on every fixture document" started.
+◇ Test "operation sequences step for step" started.
+◇ Test "two lines revived into one section take their order from Object.keys" started.
+◇ Test "trim, whitespace collapsing and line splitting are JavaScript's" started.
+◇ Test "a created list is pushed as an envelope; the server never holds plaintext or the secret" started.
+◇ Test "merge, normalize, purge and diff on random document pairs" started.
+◇ Test "a transport with no doorbell pushes exactly as it did before there was one" started.
+◇ Test "a device that never created the list cannot re-create a deleted row by accident" started.
+◇ Test "a store record with a missing field gets that field's default when it is read" started.
+◇ Test "truthiness is JavaScript's" started.
+◇ Test "a row recreated with a lower rev is gone, never merged into" started.
+◇ Test "strings are UTF-16: slicing splits a surrogate pair and the half survives" started.
+◇ Test "envelopes the web sealed open here, and what we seal the web can open" started.
+◇ Test "every kit clears its own grounds — all 18, the Secret pair included" started.
+◇ Test "the generated table is the fixture's 16 open kits, token for token" started.
+◇ Test "the store keeps rev, dirty, created, mode and origin, and anything it does not know" started.
+◇ Test "live theme.js still produces the fixture, token for token" started.
+◇ Test "a view link derives the same lookup id and key, and no token" started.
+◇ Test "507 holds the list off the wire too" started.
+◇ Test "a view ref pulls and decrypts, never pushes, and local edits do not mark it dirty" started.
+◇ Test "the store merges on write, so a second writer cannot lose an edit" started.
+◇ Test "a year of history compresses far below the 96 KB server cap" started.
+◇ Test "every kit survives the representation it crosses in" started.
+◇ Test "every link case parses the way model.js parses it" started.
+◇ Test "429 on create: busy, the list kept locally as dirty and created, one attempt only" started.
+◇ Test "a plaintext row under a v3 id is not ours" started.
+◇ Test "nothing derivable from R reproduces the token" started.
+◇ Test "the pinned derivation vectors, byte for byte" started.
+◇ Test "neither Secret kit is in the table, and neither is anywhere in this binary" started.
+◇ Test "a write with the wrong token is refused (403): readonly, and no retry storm" started.
+◇ Test "a put the server refused rings nothing at all" started.
+◇ Test "every pair resolves to faces that are actually in the repo" started.
+◇ Test "a fresh iv per write, and the envelope's key order is the web's" started.
+◇ Test "tampering fails: the ciphertext, the iv, the compression flag, the wrong key" started.
+◇ Test "a doorbell is the bytes sync.js builds, and there are 138 of them" started.
+◇ Test "base62 mapping and isSecret match the web" started.
+◇ Test "the selection survives a payload that still names it, and moves when it does not" started.
+◇ Test "export to import round trip carries no secret and reads back" started.
+◇ Test "offline: the status says so, the edit is kept, and reconnecting sends it" started.
+◇ Test "merge: tombstones win ties and survive against older edits" started.
+◇ Test "a link made here opens on the web, and one from the web opens here" started.
+◇ Test "purgeTombstones: old ones go, fresh ones stay, nothing changed means nothing changed" started.
+◇ Test "a missing row for a link this device did not create is gone, and is never refilled" started.
+◇ Test "today and section ordering: undone by order, done sink by doneAt" started.
+◇ Test "a vault entry narrows to a WatchLink and widens back" started.
+◇ Test "conflict: decrypt the server envelope, merge on plaintext, re-encrypt, retry; both converge" started.
+◇ Test "a mode and an origin are read the way the vault reads them everywhere else" started.
+◇ Test "an unchanged poll carries the known rev and transfers no document" started.
+◇ Test "rollover: yesterday's done items move to history and are tombstoned; idempotent" started.
+◇ Test "an empty links array is a removal: the phone holds no lists and neither does the Watch" started.
+◇ Test "move to another list: a new id with its rule and return; the source keeps a bare tombstone" started.
+◇ Test "seeing a link again does not churn, and never narrows an edit link to a view link" started.
+◇ Test "an empty payload encodes and decodes as an empty payload, not as nothing" started.
+◇ Test "rollover: an unfinished recurring line stays; a plain done line still tombstones (+1)" started.
+◇ Test "a registry that parses writes what it names" started.
+◇ Test "the kits go in sorted, whatever order they arrive in and whatever else is already there" started.
+◇ Test "a registry with no lists key at all is still the page speaking" started.
+◇ Test "rollover: a weekly line leaves Today until its next day, then comes back once" started.
+◇ Test "diff lists changed ids only" started.
+◇ Test "a restore makes every link earn its place again, so the next read cannot delete it" started.
+◇ Test "orderBetween: midpoint, edges, and precision exhaustion" started.
+◇ Test "a payload from a future v is refused, and so is a shape that is not ours" started.
+◇ Test "a missing registry with an empty vault asks for nothing" started.
+◇ Test "the payload round-trips, and a payload from a later version keeps its defaults" started.
+◇ Test "two offline devices converge with no loss and no duplicates" started.
+◇ Test "a link the Watch has never held arrives whole, stamped now" started.
+◇ Test "out-of-order delivery is safe: an older stamp after a newer one changes nothing" started.
+◇ Test "the codec round-trips, and a key this build does not know survives it" started.
+◇ Test "merge: last writer wins per item" started.
+◇ Test "a payload with no kits leaves nothing behind" started.
+◇ Test "put a section on Today / take it off" started.
+◇ Test "nothing is written when the registry and the vault already agree" started.
+◇ Test "a value that is not JSON is treated as missing, not as empty" started.
+◇ Test "rollover: a done daily line goes to History and resets undone on Today (+2)" started.
+◇ Test "removing the only list leaves an empty registry — and must not resurrect it" started.
+◇ Test "only what the phone says about a link moves; a link it has not changed is not rewritten" started.
+◇ Test "normalize: junk in, well-formed doc out" started.
+◇ Test "silence is not: nothing arrived, so nothing is removed" started.
+◇ Test "localDate is local, not UTC; the streak counts back from today or yesterday" started.
+◇ Test "an older build keeps the key it does not understand and hands it back" started.
+◇ Test "a link the page has never registered is not removed — it has not had its turn" started.
+◇ Test "a repeated id is one link, and the first of them" started.
+◇ Test "a payload with them round-trips, palette for palette" started.
+◇ Test "the mark, not the registry, is what tells a wipe from a removal" started.
+◇ Test "an entry that is not a link is skipped, and the rest of the person's lists still arrive" started.
+◇ Test "a store the app has not seen before removes nothing, even when it names a list" started.
+◇ Test "the tie-break: a tombstone, then the record that carries more, then the lexically larger" started.
+◇ Test "the doubled delivery is free: the same payload twice applies once" started.
+◇ Test "normalize keeps unknown keys on the document, on records and on tombstones" started.
+◇ Test "setRule stores a snapshot; a rule on a line already on Today is marked placed today" started.
+◇ Test "a registry that is not an object removes nothing, mark or no mark" started.
+◇ Test "recently deleted: tombstones with text, newest first; restore brings the line back" started.
+◇ Test "not today: off Today now, back at tomorrow's rollover, undo puts it straight back" started.
+◇ Test "a wiped store looks like an empty registry, never like a missing one" started.
+◇ Test "items whose section was deleted fall back to Unsorted" started.
+◇ Test "a read that fails decides nothing at all" started.
+◇ Test "an archived entry is not a list to restore over, either" started.
+◇ Test "a junk id in the registry is ignored, and does not take a vaulted link with it" started.
+◇ Test "the seed is three Today lines that keep their marks when the list is kept" started.
+◇ Test "templates: saved from a section without state, inserted anywhere, deleted" started.
+◇ Test "a missing registry is the wiped store: restore, and remove nothing" started.
+◇ Test "Remove from this device flags the entry rather than dropping it, and the vault lets go" started.
+◇ Test "a link the registry no longer names is removed" started.
+◇ Test "a link the app sees is vaulted with its mode and origin" started.
+◇ Test "a renamed or re-origined list is written back" started.
+kit            acc/ink   acc/ink3   aTxt/ink  aTxt/ink3   (floors 3, 3, 4.5, 4.5)
+dark             4.118      3.476      5.495      4.639
+light            3.790      3.002      5.754      4.556
+pink             5.429      4.014      6.095      4.507
+midnight         8.560      6.900      9.443      7.612
+forest           9.247      7.074     10.435      7.984
+paper            4.787      3.848      6.828      5.489
+terminal        13.292     11.221     14.104     11.906
+sunset           6.617      4.801      7.567      5.491
+dusk             7.941      6.313      9.132      7.259
+harbor           3.690      3.045      5.567      4.595
+ember            5.669      4.774      6.626      5.581
+cocoa            7.004      5.094      8.107      5.897
+blush            4.087      3.326      6.276      5.108
+teletype         3.592      3.006      5.645      4.724
+sketch           3.833      3.082      6.704      5.390
+arcade           6.069      4.831      7.948      6.327
+superpink        4.930      3.798      6.303      4.856
+birthday         4.229      3.540      6.165      5.161
+tightest against its floor: light accent on ink3 3.0016 against a floor of 3.0
+✔ Test "addToToday: nothing left to add is nothing added" passed after 0.012 seconds.
+type: 13 pairs over 33 files, 33 PostScript names
+✔ Test "addToToday: a section the list has, and one it does not" passed after 0.014 seconds.
+✔ Test "addToToday writes the ten fields, on Today, past the undone lines" passed after 0.014 seconds.
+✔ Test "addToToday: bidi stripped, trimmed, runs of whitespace collapsed, cut at 200 code units" passed after 0.014 seconds.
+✔ Test "the reader keeps key order, repeated keys and lone surrogates" passed after 0.014 seconds.
+✔ Test "setDone writes three fields and leaves today, order and todayOrder alone" passed after 0.015 seconds.
+✔ Test "object keys come back the way Object.keys does: indices first, then insertion order" passed after 0.015 seconds.
+✔ Test "numbers print the way JSON.stringify prints them" passed after 0.017 seconds.
+secret kits: birthday, superpink in a 1178-byte application context
+◇ Test "a moved line can be sent to a named section of the target list" started.
+✔ Test "trim, whitespace collapsing and line splitting are JavaScript's" passed after 0.018 seconds.
+◇ Test "every case replays byte for byte" started.
+◇ Test "without a home zone, a line finished under six hours ago is never rolled" started.
+◇ Test "the losing side of a simultaneous edit is reported, once, inside the window" started.
+◇ Test "a line filed under another section of the same list keeps its Today place" started.
+✔ Test "comparison and sorting are by UTF-16 code unit, not by Swift's collation" passed after 0.018 seconds.
+◇ Test "bidi overrides are stripped where text enters, never on read" started.
+◇ Test "a list with a home zone rolls the same in every device zone; one without does not" started.
+✔ Test "startAgain un-dones only the ids given, each with its own updatedAt" passed after 0.018 seconds.
+✔ Test "setDone: an unknown id, a tombstone and a line already in that state are all no-ops" passed after 0.018 seconds.
+◇ Test "the envelope cap is measured the way the server measures the row" started.
+◇ Test "the home zone decides the day, and is kept even when this platform cannot compute in it" started.
+✔ Test "truthiness is JavaScript's" passed after 0.018 seconds.
+✔ Test "a store record with a missing field gets that field's default when it is read" passed after 0.018 seconds.
+✔ Test "strings are UTF-16: slicing splits a surrogate pair and the half survives" passed after 0.018 seconds.
+✔ Test "a row recreated with a lower rev is gone, never merged into" passed after 0.018 seconds.
+✔ Test "a device that never created the list cannot re-create a deleted row by accident" passed after 0.018 seconds.
+✔ Test "a transport with no doorbell pushes exactly as it did before there was one" passed after 0.018 seconds.
+✔ Test "a Watch and a phone in different zones roll the same list to the same document" passed after 0.018 seconds.
+✔ Test "canon matches the web, case for case" passed after 0.018 seconds.
+✔ Test "a created list is pushed as an envelope; the server never holds plaintext or the secret" passed after 0.018 seconds.
+✔ Test "a view link derives the same lookup id and key, and no token" passed after 0.018 seconds.
+✔ Test "507 holds the list off the wire too" passed after 0.018 seconds.
+✔ Test "delete everywhere, then undo: the row comes back under the same lookup id and token" passed after 0.018 seconds.
+✔ Test "envelopes the web sealed open here, and what we seal the web can open" passed after 0.018 seconds.
+✔ Test "the generated table is the fixture's 16 open kits, token for token" passed after 0.018 seconds.
+✔ Test "every kit clears its own grounds — all 18, the Secret pair included" passed after 0.018 seconds.
+✔ Test "the store keeps rev, dirty, created, mode and origin, and anything it does not know" passed after 0.018 seconds.
+✔ Test "nothing derivable from R reproduces the token" passed after 0.018 seconds.
+✔ Test "the pinned derivation vectors, byte for byte" passed after 0.018 seconds.
+✔ Test "a plaintext row under a v3 id is not ours" passed after 0.018 seconds.
+✔ Test "the store merges on write, so a second writer cannot lose an edit" passed after 0.018 seconds.
+✔ Test "every link case parses the way model.js parses it" passed after 0.018 seconds.
+✔ Test "a put the server accepted rings the list's channel once, with the rev it wrote and nothing else" passed after 0.018 seconds.
+✔ Test "429 on create: busy, the list kept locally as dirty and created, one attempt only" passed after 0.018 seconds.
+✔ Test "a fresh iv per write, and the envelope's key order is the web's" passed after 0.018 seconds.
+✔ Test "dates, the home zone and bidi stripping match the web, case for case" passed after 0.018 seconds.
+✔ Test "the selection survives a payload that still names it, and moves when it does not" passed after 0.018 seconds.
+✔ Test "neither Secret kit is in the table, and neither is anywhere in this binary" passed after 0.018 seconds.
+✔ Test "tampering fails: the ciphertext, the iv, the compression flag, the wrong key" passed after 0.018 seconds.
+✔ Test "merge: tombstones win ties and survive against older edits" passed after 0.018 seconds.
+✔ Test "a doorbell is the bytes sync.js builds, and there are 138 of them" passed after 0.018 seconds.
+✔ Test "a view ref pulls and decrypts, never pushes, and local edits do not mark it dirty" passed after 0.018 seconds.
+✔ Test "a link made here opens on the web, and one from the web opens here" passed after 0.018 seconds.
+✔ Test "purgeTombstones: old ones go, fresh ones stay, nothing changed means nothing changed" passed after 0.018 seconds.
+✔ Test "today and section ordering: undone by order, done sink by doneAt" passed after 0.018 seconds.
+✔ Test "export to import round trip carries no secret and reads back" passed after 0.018 seconds.
+✔ Test "a vault entry narrows to a WatchLink and widens back" passed after 0.018 seconds.
+✔ Test "every pair resolves to faces that are actually in the repo" passed after 0.018 seconds.
+✔ Test "a mode and an origin are read the way the vault reads them everywhere else" passed after 0.018 seconds.
+✔ Test "a put the server refused rings nothing at all" passed after 0.018 seconds.
+✔ Test "an empty links array is a removal: the phone holds no lists and neither does the Watch" passed after 0.018 seconds.
+✔ Test "seeing a link again does not churn, and never narrows an edit link to a view link" passed after 0.018 seconds.
+✔ Test "move to another list: a new id with its rule and return; the source keeps a bare tombstone" passed after 0.018 seconds.
+✔ Test "a missing row for a link this device did not create is gone, and is never refilled" passed after 0.018 seconds.
+✔ Test "a registry with no lists key at all is still the page speaking" passed after 0.018 seconds.
+✔ Test "a registry that parses writes what it names" passed after 0.018 seconds.
+✔ Test "every kit survives the representation it crosses in" passed after 0.018 seconds.
+✔ Test "a write with the wrong token is refused (403): readonly, and no retry storm" passed after 0.018 seconds.
+✔ Test "an empty payload encodes and decodes as an empty payload, not as nothing" passed after 0.018 seconds.
+✔ Test "rollover: an unfinished recurring line stays; a plain done line still tombstones (+1)" passed after 0.018 seconds.
+✔ Test "rollover: yesterday's done items move to history and are tombstoned; idempotent" passed after 0.018 seconds.
+✔ Test "diff lists changed ids only" passed after 0.018 seconds.
+✔ Test "a payload from a future v is refused, and so is a shape that is not ours" passed after 0.018 seconds.
+✔ Test "orderBetween: midpoint, edges, and precision exhaustion" passed after 0.018 seconds.
+✔ Test "the kits go in sorted, whatever order they arrive in and whatever else is already there" passed after 0.018 seconds.
+✔ Test "a restore makes every link earn its place again, so the next read cannot delete it" passed after 0.018 seconds.
+✔ Test "a missing registry with an empty vault asks for nothing" passed after 0.018 seconds.
+✔ Test "a link the Watch has never held arrives whole, stamped now" passed after 0.018 seconds.
+✔ Test "out-of-order delivery is safe: an older stamp after a newer one changes nothing" passed after 0.018 seconds.
+✔ Test "the codec round-trips, and a key this build does not know survives it" passed after 0.018 seconds.
+✔ Test "the payload round-trips, and a payload from a later version keeps its defaults" passed after 0.018 seconds.
+✔ Test "nothing is written when the registry and the vault already agree" passed after 0.018 seconds.
+✔ Test "a payload with no kits leaves nothing behind" passed after 0.018 seconds.
+✔ Test "put a section on Today / take it off" passed after 0.018 seconds.
+✔ Test "merge: last writer wins per item" passed after 0.018 seconds.
+✔ Test "only what the phone says about a link moves; a link it has not changed is not rewritten" passed after 0.018 seconds.
+✔ Test "removing the only list leaves an empty registry — and must not resurrect it" passed after 0.018 seconds.
+✔ Test "an unchanged poll carries the known rev and transfers no document" passed after 0.018 seconds.
+✔ Test "rollover: a weekly line leaves Today until its next day, then comes back once" passed after 0.018 seconds.
+✔ Test "silence is not: nothing arrived, so nothing is removed" passed after 0.018 seconds.
+✔ Test "normalize: junk in, well-formed doc out" passed after 0.018 seconds.
+✔ Test "a link the page has never registered is not removed — it has not had its turn" passed after 0.018 seconds.
+✔ Test "localDate is local, not UTC; the streak counts back from today or yesterday" passed after 0.018 seconds.
+✔ Test "a value that is not JSON is treated as missing, not as empty" passed after 0.018 seconds.
+✔ Test "an entry that is not a link is skipped, and the rest of the person's lists still arrive" passed after 0.018 seconds.
+✔ Test "a store the app has not seen before removes nothing, even when it names a list" passed after 0.018 seconds.
+✔ Test "a payload with them round-trips, palette for palette" passed after 0.018 seconds.
+✔ Test "rollover: a done daily line goes to History and resets undone on Today (+2)" passed after 0.018 seconds.
+✔ Test "the mark, not the registry, is what tells a wipe from a removal" passed after 0.018 seconds.
+✔ Test "an older build keeps the key it does not understand and hands it back" passed after 0.018 seconds.
+✔ Test "the doubled delivery is free: the same payload twice applies once" passed after 0.018 seconds.
+✔ Test "a repeated id is one link, and the first of them" passed after 0.018 seconds.
+✔ Test "setRule stores a snapshot; a rule on a line already on Today is marked placed today" passed after 0.018 seconds.
+✔ Test "two offline devices converge with no loss and no duplicates" passed after 0.018 seconds.
+✔ Test "normalize keeps unknown keys on the document, on records and on tombstones" passed after 0.018 seconds.
+✔ Test "recently deleted: tombstones with text, newest first; restore brings the line back" passed after 0.018 seconds.
+✔ Test "the tie-break: a tombstone, then the record that carries more, then the lexically larger" passed after 0.018 seconds.
+✔ Test "a wiped store looks like an empty registry, never like a missing one" passed after 0.018 seconds.
+✔ Test "a registry that is not an object removes nothing, mark or no mark" passed after 0.018 seconds.
+✔ Test "a read that fails decides nothing at all" passed after 0.018 seconds.
+✔ Test "offline: the status says so, the edit is kept, and reconnecting sends it" passed after 0.019 seconds.
+✔ Test "items whose section was deleted fall back to Unsorted" passed after 0.018 seconds.
+✔ Test "an archived entry is not a list to restore over, either" passed after 0.018 seconds.
+✔ Test "conflict: decrypt the server envelope, merge on plaintext, re-encrypt, retry; both converge" passed after 0.019 seconds.
+✔ Test "a missing registry is the wiped store: restore, and remove nothing" passed after 0.018 seconds.
+drift: live theme.js reproduced the fixture — 21396 bytes, 18 kits, 13 pairs
+✔ Test "not today: off Today now, back at tomorrow's rollover, undo puts it straight back" passed after 0.018 seconds.
+✔ Test "a junk id in the registry is ignored, and does not take a vaulted link with it" passed after 0.018 seconds.
+✔ Test "a link the app sees is vaulted with its mode and origin" passed after 0.018 seconds.
+✔ Test "Remove from this device flags the entry rather than dropping it, and the vault lets go" passed after 0.018 seconds.
+✔ Test "a link the registry no longer names is removed" passed after 0.018 seconds.
+✔ Test "the seed is three Today lines that keep their marks when the list is kept" passed after 0.018 seconds.
+✔ Test "a renamed or re-origined list is written back" passed after 0.018 seconds.
+✔ Suite "Today: add, check off, start again" passed after 0.020 seconds.
+✔ Suite "JavaScript semantics" passed after 0.020 seconds.
+✔ Test "templates: saved from a section without state, inserted anywhere, deleted" passed after 0.018 seconds.
+✔ Test "without a home zone, a line finished under six hours ago is never rolled" passed after 0.001 seconds.
+✔ Test "the losing side of a simultaneous edit is reported, once, inside the window" passed after 0.001 seconds.
+✔ Test "a moved line can be sent to a named section of the target list" passed after 0.001 seconds.
+✔ Test "live theme.js still produces the fixture, token for token" passed after 0.019 seconds.
+✔ Test "the home zone decides the day, and is kept even when this platform cannot compute in it" passed after 0.001 seconds.
+✔ Suite "Sync: the engine against a server that behaves like the real one" passed after 0.020 seconds.
+✔ Suite "The Watch link hand-off" passed after 0.020 seconds.
+✔ Suite "The link vault" passed after 0.020 seconds.
+✔ Suite "The kit table" passed after 0.020 seconds.
+✔ Test "the envelope cap is measured the way the server measures the row" passed after 0.001 seconds.
+✔ Suite "The document: normalize, merge, rollover" passed after 0.020 seconds.
+✔ Test "a line filed under another section of the same list keeps its Today place" passed after 0.001 seconds.
+✔ Test "bidi overrides are stripped where text enters, never on read" passed after 0.001 seconds.
+✔ Test "every case replays byte for byte" passed after 0.013 seconds.
+✔ Test "a list with a home zone rolls the same in every device zone; one without does not" passed after 0.017 seconds.
+✔ Suite "The contract's own merge fixtures" passed after 0.036 seconds.
+✔ Test "base62 mapping and isSecret match the web" passed after 0.047 seconds.
+✔ Test "a year of history compresses far below the 96 KB server cap" passed after 0.095 seconds.
+✔ Suite "Keys, links and the envelope" passed after 0.096 seconds.
+✔ Test "two lines revived into one section take their order from Object.keys" passed after 1.090 seconds.
+✔ Test "merge is commutative, associative and idempotent on every fixture document" passed after 4.069 seconds.
+✔ Test "operation sequences step for step" passed after 7.356 seconds.
+✔ Test "merge, normalize, purge and diff on random document pairs" passed after 8.389 seconds.
+✔ Suite "Differential: the web's answers, replayed" passed after 8.389 seconds.
+✔ Test run with 130 tests in 10 suites passed after 8.389 seconds.
+[build-slot] baseline-swift-test released after 19s; exit 0; load: 6.58 5.68 5.71
+SWIFT-TEST END 2026-09-10 00:50:04 exit=0 wall=19s |  0:50  up 92 days, 22:55, 2 users, load averages: 6.58 5.68 5.71

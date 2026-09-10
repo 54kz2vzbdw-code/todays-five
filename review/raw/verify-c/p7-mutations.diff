@@ -1,0 +1,23 @@
+# e2e4 mutations — a copy of 7341981 with two edits (diff -u base vs e2e-mut)
+--- /private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/verify-c/base/app.js	2026-09-09 00:14:29
++++ /private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/verify-c/e2e-mut/app.js	2026-09-10 09:08:03
+@@ -1953,7 +1953,7 @@
+ // 1.12: how the ⋯ menu repaints itself when ‹ Back lands on it — repainted (the theme name, Sound, the Save row)
+ // and back under the button, so a popover returns as a popover rather than as a sheet. `openers` claimed to have
+ // this since 1.4 and never did, which is why nothing above the menu could step back to it.
+-registerOpeners({ "p-menu": () => { paintMenu(); showPanel("p-menu", { anchor: $("#more") }); } });
++registerOpeners({ "p-menu": () => { showPanel("p-menu", { anchor: $("#more") }); } }); // MUTATED (verify-c): no paintMenu()
+ /** The registry entry of the open list when its link has not been saved yet (a list this device made). */
+ function unsavedEntry() { const e = listId && meta.lists.find(l => l.id === listId); return e && e.created && e.linkSaved === false && e.origin !== "shared" && listMode === "edit" ? e : null; }
+ function paintMenu() {
+--- /private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/verify-c/base/panels.js	2026-09-09 00:14:29
++++ /private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/verify-c/e2e-mut/panels.js	2026-09-10 09:08:03
+@@ -486,7 +486,7 @@
+   A.saveDevice();
+   // the switch first and the toast after it: opening a list clears whatever toast is on screen (app.js), so a
+   // ten-second Undo raised before the switch would be gone before the person could read it
+-  if (wasOpen) { const next = meta().lists[0]; if (next) await A.switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else A.showWelcome(); }
++  if (wasOpen) { const next = meta().lists[0]; if (next) A.switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else A.showWelcome(); } // MUTATED (verify-c): no await
+   A.toast("Removed from this device", { action: () => { // ten seconds, and then the link is the only way back
+     meta().removed = (meta().removed || []).filter(x => x !== id); meta().unremoved = [...(meta().unremoved || []), id]; // in storage too, or the merge on save drops it again
+     const back = A.registerList(id, entry.name || "", entry.mode === "view" ? "view" : "edit", entry.origin);

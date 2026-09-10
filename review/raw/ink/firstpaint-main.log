@@ -1,0 +1,7 @@
+FIRSTPAINT main 11735B dark START 01:27:10
+[main] dark code accent #11735B → main's derive gives --accent #11735B; PALETTE_REV 1ptwfkh
+  A_normal_then_reload: first frame [52,"#11735B"]; runs #11735B×92 (52–1549ms); DCL [51,"#11735B"]; load [54,"#11735B"]; after 1.5s #11735B; cache now #11735B @1ptwfkh; page stamp 1ptwfkh; errors 0
+     second load: first frame [12,"#11735B"]; runs #11735B×62; cache #11735B
+  B_appjs_blocked: first frame [30,"#11735B"]; runs #11735B×90 (30–1513ms); DCL [18,"#11735B"]; load [27,"#11735B"]; after 1.5s #11735B; cache now #11735B @1ptwfkh; page stamp 1ptwfkh; errors 0
+  C_stamp_mismatch: first frame [19,"#A86014"]; runs #A86014×2 (19–27ms) → #11735B×91 (45–1539ms); DCL [44,"#11735B"]; load [46,"#11735B"]; after 1.5s #11735B; cache now #11735B @1ptwfkh; page stamp 1ptwfkh; errors 0
+FIRSTPAINT main END 01:27:16

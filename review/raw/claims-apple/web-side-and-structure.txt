@@ -1,0 +1,196 @@
+## sync.js polls / broadcast / REST fallback
+121:          return fetch(`${base}/realtime/v1/api/broadcast`, { method: "POST", headers, body: JSON.stringify({ messages: [{ topic: "list:" + id, event: "change", payload, private: false }] }) }).catch(() => {});
+127:    wake() { if (clientP) clientP.then(c => { try { if (!c.isConnected()) c.connect(); } catch (e) { /* ignore */ } }).catch(() => {}); }
+215:export const POLL_LIVE_MS = 240000;
+216:export const POLL_MS = 60000;
+240:  function setLive(v) { if (v !== live) { live = v; onLive && onLive(v); } schedulePoll(); }
+331:          try { me.channel && me.channel.send({ rev: me.rev, from: deviceId }); } catch (e) { /* ignore */ }
+374:        if (state === "joined") { setLive(true); pull(); }
+375:        else setLive(false);
+387:    }, live ? POLL_LIVE_MS : POLL_MS);
+459:    announceGone(lookupId) {
+468:    pollDelay() { return live ? POLL_LIVE_MS : POLL_MS; }
+
+## supabase/ grep realtime|publication|pg_notify
+hits:        0
+supabase/migrations/002_v3.sql:1:-- Today's Five v3 — 002: end-to-end encryption, write tokens, caps, rate limit, reaping. Paste once into the SQL Editor (Checkpoint 1).
+supabase/migrations/002_v3.sql:8:--   * schema private     — salted-hash create log for the per-IP rate limit, state row, reaper
+supabase/migrations/002_v3.sql:10:-- Design and limits: PLAN.md, "Today's Five v3 — plan".
+supabase/migrations/002_v3.sql:27:-- ---------------------------------------------------------------- private schema: limits and state
+supabase/migrations/002_v3.sql:51:create or replace function private.limits()
+supabase/migrations/002_v3.sql:56:revoke all on function private.limits() from public;
+supabase/migrations/002_v3.sql:80:-- Delete lists idle for 12 months and rate-limit rows older than 24 h.
+supabase/migrations/002_v3.sql:90:  delete from public.lists where last_seen < now() - (select reap_after from private.limits());
+
+## fx.js volley numbers / packs.js chord / sound.js FINALE_BUZZ
+41:    const a = s * 1.15, b = s * 0.20;
+66:    const pal = (over && over.palette) || get("palette") || ["#A86014"], sh = (over && over.shapes) || get("shapes") || 1;
+78:        life: 1, dec: 0.0075 + Math.random() * 0.008,
+96:      p.vy += 0.30; p.vx *= 0.992; p.vy *= 0.992;
+100:      g2.globalAlpha = Math.max(0, Math.min(1, p.life * 1.7));
+105:      else if (p.sh === 4) sprinkle(g2, p.w * 1.15, p.h * 0.62);
+107:        const hh = p.rib ? p.h * Math.abs(Math.cos(p.r * 1.7)) : p.h;
+125:    for (let i = 0; i < 7; i++) setTimeout(() => burst(w * (0.08 + 0.14 * i), h * 0.97, 26, 19, 1.15), i * 65);
+126:    setTimeout(() => burst(w * 0.5, h * 0.6, 40, 14, 2.6), 210);
+124:    tone(env, { type: "triangle", f0: 130 * p, t: t0 + 0.75, attack: 0.02, peak: 0.2, len: 0.8 * dec });
+138:    for (let i = 0; i < 12; i++) pop(env, t0 + i * 0.055 + (i % 3) * 0.008, (300 + i * 55) * p, 0.7 + (i % 2) * 0.3, 0.08);
+181:  noiseShape(env, t, { attack: 0.012, hold, release: 0.03, filt: "bandpass", freq: freq * p, f1: freq * 0.7 * p, q: 0.8, gain });
+192:    for (let i = 0; i < 3; i++) noiseShape(env, t + i * 0.085, { attack: 0.02, hold: 0.03, release: 0.03, filt: "lowpass", freq: 1200 * p, q: 0.7, gain: 0.26 - i * 0.04 });
+228:  noiseShape(env, t, { attack: 0.002, hold: 0.008, release: 0.03, filt: "bandpass", freq: 2200, q: 0.7, gain: 0.22 * gain }); // the palm
+19:export const FINALE_BUZZ = [14, 51, 14, 51, 14, 51, 30, 35, 14, 51, 14, 51, 14, 296, 60];
+20-export function createSound(opts) {
+21-  const get = k => (typeof opts[k] === "function" ? opts[k]() : opts[k]);
+22-  const AC = () => (typeof window !== "undefined" && (window.AudioContext || window.webkitAudioContext)) || opts.AudioContext || null;
+23-  let ac = null, master = null, pending = false, packs = null, packsMod = null, packsP = null, made = 0;
+--
+106:    finish() { const ok = play("finish"); buzz(FINALE_BUZZ); return ok; },
+107-    tick() { return play("uncheck"); },
+108-    /** Warm the context up inside a user gesture and start loading the engines, so the first real sound is not swallowed. */
+109-    prime() { ctx(); loadPacks(); warm(kit().engine); },
+110-    /** 1.7: fetch the engines at idle, outside any gesture (no context is made), so the first check-off finds them loaded. */
+FINALE_BUZZ values: 15
+sound.js:101:    check(step) { const ok = play("check", step); buzz(8); return ok; },
+app.js:2155:  try { if (navigator.vibrate) navigator.vibrate(10); } catch (e) { /* ignore */ }
+
+## app.js settle 320/160, chord hold 300, shuffle rule
+139:let finaleHold = false;        // 1.9: the finale card waits for the chord (300 ms after the last check-off); paint() reads it
+565:  if (sessionStorage.getItem("tf/reopenShare")) { sessionStorage.removeItem("tf/reopenShare"); setTimeout(() => panels().then(p => p.openShare()), 300); }
+567:  if (resume && typeof resume === "object") { if (resume.view && resume.view !== view) setView(resume.view); const open = RESUME[resume.panel]; if (open) setTimeout(() => panels().then(p => open(p)), 300); }
+1015:/** 1.9: one row on its way to a new place — a done line sinking, a remote reorder — is a 300 ms FLIP that starts as the last
+1022:  const a = el.animate([{ transform: `translateY(${d}px)` }, { transform: "none" }], { duration: 300, delay: k * 20, easing: "cubic-bezier(.22,1,.36,1)", fill: "backwards" });
+1242:  // 1.9: the sink starts as the last of the ink lands (320 after a check-off, 160 after an uncheck; it was 520 and 200, with dead air between the strike and the move)
+1243:  afterChange({ animate: true, delay: it.done ? 320 : 160 });
+1246:    // 1.9: the chord and the volley at 300 ms, as the ink lands, with the card fading in under them (it was fully on screen 110 ms before the sound)
+1254:    }, 300); }
+1429:  setTimeout(() => { const li = rows.get(firstId); const el = li && li.querySelector(".check"); const a = document.activeElement; if (el && (a === document.body || a.id === "toast-undo")) { try { el.focus({ preventScroll: true }); } catch (e) { /* ignore */ } } }, 300);
+1448:  if (t.parentNode !== document.body) setTimeout(() => { if (!t.classList.contains("on") && t.parentNode !== document.body) document.body.appendChild(t); }, 300); // back out after the fade
+1473:  // 1.9: a counter for the last twenty characters before a cap (200 on a line, 300 on a note), so the field stopping never reads as the app freezing (proposal 22)
+
+## e2e4 asserts tf:* at both viewports
+5
+4:// Every feature at 1440×900 (mouse) and 390×844 (touch), v4's and 1.1's: quiet rows (nothing at rest on the phone,
+34:const VIEWPORTS = [["desktop 1440×900", { viewport: { width: 1440, height: 900 } }, false], ["phone 390×844", { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }, true]];
+610:      const z = await fresh({ ...opts, viewport: { width: 844, height: 390 } });
+
+## interop.mjs creates, step 5b, POLL_MS/4
+1:// apple/tools/interop.mjs — the live interop run: the Swift core and the web app against the real
+8://   1. list A, created on the live site by the browser
+9://   2. list B, created by tfive
+10://   3. list A's replacement, created by "New keys" on the site (which deletes A's row)
+18:import { createRequire } from "node:module";
+22:// the two poll intervals, read from the web rather than repeated here: step 5b's whole argument is
+24:import { POLL_MS, POLL_LIVE_MS } from "../../sync.js";
+26:const require = createRequire((process.env.NODE_PATH || (process.env.HOME + "/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules")) + "/");
+30:// fileURLToPath, not URL.pathname: this repo lives under "Today's Five", and a pathname
+39:/** How long step 5b gives a doorbell. A quarter of the *shorter* poll, so no timer can reach it. */
+40:const DOORBELL_MS = POLL_MS / 4;
+48:const LEDGER = fileURLToPath(new URL("./.interop-created.txt", import.meta.url));
+52:  console.log("   created", label + ":", W);
+141:/** Through the welcome and the save sheet: a brand-new list on the live backend.
+144:async function createOnTheWeb(d, label, firstLine) {
+166:  // ---------------------------------------------------------------- 1. the web makes a list (create 1)
+169:  W_A = await createOnTheWeb(web, "A (web)", "Made on the web");
+173:  step("the web created a list on the real backend",
+242:  // ---------------------------------------------------------------- 5. tfive makes a list, the web opens it (create 2)
+245:    const out = tfive("new", "From the Mac");
+
+## .gitignore p8, WebViewController colour, LaunchBackground, theme-color
+9:*.p8
+10:AuthKey_*.p8
+61:        view.backgroundColor = UIColor(red: 0x1A / 255, green: 0x1D / 255, blue: 0x21 / 255, alpha: 1)
+68:        webView.backgroundColor = view.backgroundColor
+69:        webView.scrollView.backgroundColor = view.backgroundColor
+150:    private func applyTheme(_ color: UIColor?) {
+152:        view.backgroundColor = color
+        "components" : { "alpha" : "1.000", "blue" : "0x08", "green" : "0x0A", "red" : "0x07" }
+21:theme-color" content="#070A08"
+97:theme-color"]').setAttribute("content", ink[1]);
+
+## icons tools: make-icon.mjs / og.mjs gone?
+ls: apple/make-icon.mjs: No such file or directory
+ls: tools/make-icon.mjs: No such file or directory
+ls: tools/og.mjs: No such file or directory
+
+## Watch UI: .primary/.secondary/system colours now; count before 4ca4cb0
+HEAD watch+appex: 1 hits
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:133:    /// Phase 3 flattened to `Color(white: 0.62)`, which was the right *shape* and the wrong colour on
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:697:            self = Color(white: 0.5)
+before 4ca4cb0 (4ca4cb0^): 2 hits in 1 files
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:31:    static let accentDim = Color(white: 0.62)
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:43:            self = Color(white: 0.5)
+
+## App Group / UserDefaults keys / snapshot v / URL types / background tasks
+apple/TodaysFive/Config/[REDACTED].entitlements:9:		<string>group.com.pricebrannen.todaysfive</string>
+apple/TodaysFive/Config/TodaysFiveWatch.entitlements:10:		<string>group.com.pricebrannen.todaysfive</string>
+apple/TodaysFive/Config/WatchInfo.plist:35:	<!-- The Add complication's `.widgetURL` is `todaysfive://add`, and WKApplicationDelegate has no
+apple/TodaysFive/Config/WatchInfo.plist:36:	     url-opening callback at all — the whole optional list was read — so SwiftUI's `onOpenURL` is
+apple/TodaysFive/Shared/AddToTodaysFive.swift:111:    static let appGroup = "group.com.pricebrannen.todaysfive"
+apple/TodaysFive/Shared/AddToTodaysFive.swift:118:    static let selectedListKey = "tf/app/watch/selected"
+apple/TodaysFive/Shared/AddToTodaysFive.swift:183:        if let id = UserDefaults.standard.string(forKey: key),
+apple/TodaysFive/Shared/WatchSnapshot.swift:36:    static let identifier = "group.com.pricebrannen.todaysfive"
+apple/TodaysFive/Shared/WatchSnapshot.swift:62:    /// The list's next midnight in its **home zone**, in milliseconds — the moment rollover empties
+apple/TodaysFive/Shared/WatchSnapshot.swift:148:    /// What Today looks like after the list's next midnight, worked out rather than stored.
+apple/TodaysFive/Shared/WatchSnapshot.swift:151:    /// leaves the undone lines where they are. So at midnight the done count goes to zero and the
+apple/TodaysFive/Shared/WatchSnapshot.swift:154:    /// line that comes *back* at midnight is not modelled: the face under-counts by one for a
+apple/TodaysFive/TodaysFive/WebViewController.swift:194:        UserDefaults.standard.set(parsed.id, forKey: AddService.openListKey)
+apple/TodaysFive/[REDACTED]/Complications.swift:278:/// callback, so the app receives this with SwiftUI's `onOpenURL` — see `WatchApp.swift`.
+apple/TodaysFive/[REDACTED]/Complications.swift:310:        .widgetURL(URL(string: "todaysfive://add"))
+apple/TodaysFive/[REDACTED]/ComplicationsProvider.swift:3:// **Freshness is the complication's whole problem**, and `WidgetCenter.reloadAllTimelines()` does not
+apple/TodaysFive/[REDACTED]/ComplicationsProvider.swift:7:// So the timeline is not one entry. It carries one for **now** and one for the list's **next midnight
+apple/TodaysFive/[REDACTED]/ComplicationsProvider.swift:11:// wakes the app through `.backgroundTask(.watchConnectivity)`, and the app asks for one background
+apple/TodaysFive/[REDACTED]/ComplicationsProvider.swift:12:// refresh a day at that same midnight.
+apple/TodaysFive/[REDACTED]/ComplicationsProvider.swift:46:    /// Now, and the list's next midnight. Nothing between them: the count cannot change without the
+apple/TodaysFive/[REDACTED]/ComplicationsProvider.swift:58:        let midnight = Date(timeIntervalSince1970: snapshot.rollsAt / 1000)
+apple/TodaysFive/[REDACTED]/ComplicationsProvider.swift:59:        guard midnight > now else {
+apple/TodaysFive/[REDACTED]/ComplicationsProvider.swift:62:        let second = SnapshotEntry(date: midnight, snapshot: snapshot.afterRollover, showLine: showLine)
+apple/TodaysFive/[REDACTED]/ComplicationsProvider.swift:64:        return ([first, second], .after(midnight.addingTimeInterval(60)))
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:20:// yesterday's count all morning, so: `.backgroundTask(.watchConnectivity)` wakes the app when the
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:21:// phone sends links, `.backgroundTask(.appRefresh)` is the one refresh a day the store asks for at
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:22:// the list's next midnight, and the scene becoming active is the third. Between them they are the
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:84:                        //     and calls `reloadAllTimelines()` in the same breath, so a snapshot that
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:115:        .backgroundTask(.watchConnectivity) {
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:118:        .backgroundTask(.appRefresh) { _ in
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:239:        .onOpenURL { url in
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:62:    private static let appliedAtKey = "tf/app/watch/appliedAt"
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:66:    private static let selectedKey = "tf/app/watch/selected"
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:71:    private static let kitsKey = "tf/app/watch/kits"
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:74:         shared: UserDefaults? = UserDefaults(suiteName: WatchGroup.identifier)) {
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:287:    /// One background refresh a day, asked for at the list's next midnight in its home zone, which is
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:289:    /// time and may honour it late; that is fine, because the timeline already carries the midnight
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:294:        WKApplication.shared().[REDACTED](withPreferredDate: date, userInfo: nil) { _ in
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:578:    /// next reload**: `publish()` writes the snapshot and calls `reloadAllTimelines()` in the same
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:588:              + "→ snapshot written, reloadAllTimelines requested")
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:593:    /// is a couple of hundred bytes and `reloadAllTimelines` coalesces.
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:610:        WidgetCenter.shared.reloadAllTimelines()
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:613:    /// The list's next midnight **in its home zone** — the moment rollover empties Today. A list with
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:622:        guard let midnight = calendar.nextDate(after: Date(),
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:625:        return midnight.timeIntervalSince1970 * 1000
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:632:    /// *out* — so SwiftUI's `onOpenURL` is the door, and this is what it decides.
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:337:    static let dayKey = "tf/app/watch/kit/day"
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:338:    static let nightKey = "tf/app/watch/kit/night"
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:339:    static let slotKey = "tf/app/watch/kit/slot"
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:381:    init(store: UserDefaults? = UserDefaults(suiteName: WatchGroup.identifier)) {
+
+## SyncTests doorbell body bytes / WatchLinkTests 394 / 1178 / v refused
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/WatchLinkTests.swift:46:        #expect(wire["v"] as? Int == 1)
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/WatchLinkTests.swift:78:        future["v"] = 2
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/WatchLinkTests.swift:82:        noVersion.removeValue(forKey: "v")
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/WatchLinkTests.swift:86:        zero["v"] = 0
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/WatchLinkTests.swift:90:        textVersion["v"] = "1"
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift:213:        plain.set("v", 2)
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift:323:        #expect(back.extra.str("aFutureField") == "kept", "an unknown key in the file is kept")
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift:352:        let text = #"{"doc":{"v":3,"items":{}},"rev":4}"#
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift:424:    @Test("a doorbell is the bytes sync.js builds, and there are 138 of them")
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift:433:        #expect(body.utf8.count == 137, "a one-digit revision")
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift:437:        #expect(two.utf8.count == 138, "the number this round costs a write, and idle costs nothing")
+ContractFixtureTests.swift
+CryptoTests.swift
+DifferentialTests.swift
+Fixtures.swift
+JSSemanticsTests.swift
+KitFixtureTests.swift
+ModelTests.swift
+SyncTests.swift
+TodayOpsTests.swift
+VaultTests.swift
+WatchLinkTests.swift

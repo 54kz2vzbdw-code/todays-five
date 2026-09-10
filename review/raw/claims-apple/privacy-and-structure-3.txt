@@ -1,0 +1,99 @@
+## simulator bundles: entitlements from the __TEXT,__entitlements section of the stub executable
+--- tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/TodaysFiveWatch
+<key>application-identifier</key><string><team>.com.pricebrannen.todaysfive.watchkitapp</string <key>com.apple.security.application-groups</key><array><string>group.com.pricebrannen.todaysfive</string></array 
+--- tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/PlugIns/[REDACTED].appex/[REDACTED]
+<key>application-identifier</key><string><team>.com.pricebrannen.todaysfive.watchkitapp.complications</string <key>com.apple.security.application-groups</key><array><string>group.com.pricebrannen.todaysfive</string></array 
+--- tf-review-baseline/Build/Products/Debug-iphonesimulator/TodaysFive.app/TodaysFive
+<key>application-identifier</key><string><team>.com.pricebrannen.todaysfive</string <key>com.apple.developer.associated-domains</key><array><string>applinks:54kz2vzbdw-code.github.io</string></array 
+
+## what the Watch store persists in the App Group (Store.swift record fields)
+10:public struct ListRecord: Sendable {
+58:              let docJSON = o["doc"]?.objectValue else { return nil }
+60:        let known: Set<JSString> = Set(["doc", "rev", "dirty", "created", "mode", "origin", "savedAt"].map { JSString($0) })
+64:            rev: Int(o.num("rev")),
+67:            mode: o.str("mode") == "view" ? .view : .edit,
+68:            origin: o.str("origin") == "shared" ? "shared" : "mine",
+76:        o["doc"] = .object(record.doc.json)
+77:        o.set("rev", Double(record.rev))
+78:        o.set("dirty", record.dirty)
+79:        o.set("created", record.created)
+80:        o.set("mode", record.mode.rawValue)
+81:        o.set("origin", record.origin)
+82:        o.set("savedAt", record.savedAt)
+
+## WatchStore: what directory, and does the file name carry an id
+103:    /// Support. Reported by the self-test, because a complication reading an empty directory looks
+157:    /// `containerURL([REDACTED]:)` returns nil *silently* whenever the
+159:    /// complication reading an empty directory is otherwise indistinguishable from a list with
+163:           let shared = try? ListStore(directory: group.[REDACTED]("lists", isDirectory: true)) {
+166:        return (try? ListStore(), false)
+47:            self.directory = support.[REDACTED]("TodaysFive/lists", isDirectory: true)
+53:    func file(_ id: String) -> URL { directory.[REDACTED](id + ".json") }
+76:        o["doc"] = .object(record.doc.json)
+119:        return names.filter { $0.hasSuffix(".json") }.map { String($0.dropLast(5)) }.sorted()
+
+## phone: what reaches the one print in WebViewController (call sites of the logger)
+199:                log("vault: kept a link")
+203:            log("vault: could not write")
+249:            log("read: registry=\(shape) mark=\(storeSeenBefore ? "there" : "gone")")
+260:                log("registry: unreadable")
+281:                log("vault: +\(plan.upsert.count) −\(plan.remove.count)")
+300:                log("vault: restoring a list the web store had lost")
+307:            log("vault: could not reconcile")
+349:            log("secret: unlocked, read \(secretKits.count) kit(s) from the page")
+373:        log("selftest: bridge=\(bridgeReady ? "ready" : "SILENT") heard=\(fired.count)/4 \(haptics.tally)")
+374:        log("selftest: finale pattern \(haptics.finaleSelfCheck())") // 1.12: the volley's rhythm, built even where it cannot be felt
+382:        log("selftest: [REDACTED]=\(store ?? "threw")")
+388:        log("selftest: shellToken=\(ua ?? false) serviceWorker=\(sw ?? false) standaloneSeenByPage=\(standalone ?? false)")
+397:            log("debug: web store wiped")
+408:        log("vault: \(links.count) link\(links.count == 1 ? "" : "s")")
+410:            log("  · mode=\(link.mode.rawValue) origin=\(link.origin) seen=\(link.seenInRegistry) id=\(link.id.count) chars")
+416:    private func log(_ message: String) {
+453:        log("navigation: failed to start")
+476:            log("bridge: ready")
+481:        log("haptic: \(haptics.tally)")
+
+## user-agent token / [REDACTED]
+21:    static let userAgentToken = "TodaysFive/1"
+107:        config.[REDACTED] = Self.userAgentToken
+
+## appex font registration call
+apple/TodaysFive/Shared/WatchSnapshot.swift:185:/// `[REDACTED](_:.process:_:)` then makes them resolvable for the life of the
+apple/TodaysFive/Shared/WatchSnapshot.swift:222:        // watchOS (2.0 → 6.0) and its replacement `[REDACTED]` is asynchronous,
+apple/TodaysFive/Shared/WatchSnapshot.swift:224:        // finished before the first glyph is drawn. `[REDACTED]` is deprecated
+apple/TodaysFive/Shared/WatchSnapshot.swift:233:            [REDACTED](url as CFURL, .process, &error)
+
+## watchsim.mjs: the version comparison the "cannot fire" comment refers to
+      "THE WATCH APP IS NOT INSTALLED ON THE WATCH, and the phone app is installed on the phone.\n" +
+      "  This is the state that looks exactly like WatchConnectivity being broken in the simulator and is not.\n" +
+      "  `simctl install` of the phone app does NOT install the watch app embedded inside it, so\n" +
+      "  isWatchAppInstalled is false and every [REDACTED] throws\n" +
+      "  [REDACTED] (7006), synchronously, with no delivery and no callback.\n" +
+      `  Fix: watchsim.mjs install  (it installs ${path.basename(WATCH_APP)} onto the watch explicitly)`);
+  } else if (bothAsked && (!phoneInstalled || !watchInstalled)) {
+    missing.push("One or both apps are not installed. Run: watchsim.mjs install");
+  }
+
+  // Version skew: an installed app older than the one on disk is a verification pass proving
+  // yesterday's code, which is worse than proving nothing.
+  for (const [label, built, installed] of [["phone", havePhoneApp && PHONE_APP, phoneInstalled],
+                                           ["watch", haveWatchApp && WATCH_APP, watchInstalled]]) {
+    if (built && installed) {
+      const a = versionOf(built), b = versionOf(installed);
+      if (a && b && a !== b) missing.push(`The installed ${label} app is ${b}; the built one is ${a}. Run: watchsim.mjs install`);
+
+## WatchDictation.swift header
+// WatchDictation.swift — the closest watchOS gets to hold-to-talk.
+//
+// What was wanted: press, speak, and the line lands. What watchOS allows is narrower, and the
+// narrowing was measured rather than assumed (DECISIONS-apple.md, "No API forces dictation"):
+//
+//   * `Speech.framework` is **not in the watchOS SDK**, so our own transcription cannot be built;
+//   * `TextFieldLink` has four initializers and none of them takes an input mode;
+//   * `WKTextInputMode` has three cases — `.plain`, `.allowEmoji`, `.allowAnimatedEmoji` — and none
+//     of them means "dictation only". The mode widens which characters may come back; it never picks
+//     the input method.
+//
+// The one lever that exists is WatchKit's `[REDACTED](withSuggestions:allowedInputMode:
+// completion:)`, where a **nil** suggestions array skips the chooser screen and goes straight to an
+// input method. In both the watchOS 11.1 and the watchOS 26.5 simulator that landed on the QWERTY

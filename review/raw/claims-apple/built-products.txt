@@ -1,0 +1,58 @@
+=== tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/TodaysFiveWatch
+   archs: x86_64 arm64 
+   otool -L frameworks: 
+   mentions CoreHaptics/Speech/JavaScriptCore anywhere in the binary: 0
+   strings: superpink=0 birthday=0 FF2E9A=0 D62E86=0 FF3D9A=0 A86014=0 4AF07A=0 C8321F=0 group.com.pricebrannen.todaysfive=4 todaysfive://add=0 TFWatchSelfTest=0 TFFontSelfTest=0 
+=== tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/PlugIns/[REDACTED].appex/[REDACTED]
+   archs: x86_64 arm64 
+   otool -L frameworks: 
+   mentions CoreHaptics/Speech/JavaScriptCore anywhere in the binary: 0
+   strings: superpink=0 birthday=0 FF2E9A=0 D62E86=0 FF3D9A=0 A86014=0 4AF07A=0 C8321F=0 group.com.pricebrannen.todaysfive=4 todaysfive://add=0 TFWatchSelfTest=0 TFFontSelfTest=0 
+=== tf-review-baseline/Build/Products/Debug-watchos/TodaysFiveWatch.app/TodaysFiveWatch
+   archs: arm64_32 arm64 
+   otool -L frameworks: 
+   mentions CoreHaptics/Speech/JavaScriptCore anywhere in the binary: 0
+   strings: superpink=0 birthday=0 FF2E9A=0 D62E86=0 FF3D9A=0 A86014=0 4AF07A=0 C8321F=0 group.com.pricebrannen.todaysfive=0 todaysfive://add=0 TFWatchSelfTest=0 TFFontSelfTest=0 
+=== tf-review-baseline/Build/Products/Debug-watchos/TodaysFiveWatch.app/PlugIns/[REDACTED].appex/[REDACTED]
+   archs: arm64_32 arm64 
+   otool -L frameworks: 
+   mentions CoreHaptics/Speech/JavaScriptCore anywhere in the binary: 0
+   strings: superpink=0 birthday=0 FF2E9A=0 D62E86=0 FF3D9A=0 A86014=0 4AF07A=0 C8321F=0 group.com.pricebrannen.todaysfive=0 todaysfive://add=0 TFWatchSelfTest=0 TFFontSelfTest=0 
+=== tf-review-baseline/Build/Products/Debug-iphonesimulator/TodaysFive.app/TodaysFive
+   archs: x86_64 arm64 
+   otool -L frameworks: 
+   mentions CoreHaptics/Speech/JavaScriptCore anywhere in the binary: 0
+   strings: superpink=0 birthday=0 FF2E9A=0 D62E86=0 FF3D9A=0 A86014=0 4AF07A=0 C8321F=0 group.com.pricebrannen.todaysfive=0 todaysfive://add=0 TFWatchSelfTest=0 TFFontSelfTest=0 
+=== tf-review-baseline/Build/Products/Debug-iphoneos/TodaysFive.app/TodaysFive
+   archs: arm64
+   otool -L frameworks: 
+   mentions CoreHaptics/Speech/JavaScriptCore anywhere in the binary: 0
+   strings: superpink=0 birthday=0 FF2E9A=0 D62E86=0 FF3D9A=0 A86014=0 4AF07A=0 C8321F=0 group.com.pricebrannen.todaysfive=0 todaysfive://add=0 TFWatchSelfTest=0 TFFontSelfTest=0 
+=== tf-review/7341981.xcarchive/Products/Applications/TodaysFive.app/TodaysFive
+   archs: arm64
+   otool -L frameworks: AVFAudio AppIntents CoreFoundation CoreHaptics CryptoKit Foundation Security UIKit WatchConnectivity WebKit 
+   mentions CoreHaptics/Speech/JavaScriptCore anywhere in the binary: 1
+   strings: superpink=0 birthday=0 FF2E9A=0 D62E86=0 FF3D9A=1 A86014=1 4AF07A=1 C8321F=1 group.com.pricebrannen.todaysfive=0 todaysfive://add=0 TFWatchSelfTest=0 TFFontSelfTest=0 
+=== tf-review/7341981.xcarchive/Products/Applications/TodaysFive.app/Watch/TodaysFiveWatch.app/TodaysFiveWatch
+   archs: arm64_32 arm64 
+   otool -L frameworks: AppIntents CoreFoundation CoreText CryptoKit Foundation Security SwiftUI UIKit WatchConnectivity WatchKit WidgetKit 
+   mentions CoreHaptics/Speech/JavaScriptCore anywhere in the binary: 0
+   strings: superpink=0 birthday=0 FF2E9A=0 D62E86=0 FF3D9A=3 A86014=3 4AF07A=3 C8321F=3 group.com.pricebrannen.todaysfive=2 todaysfive://add=0 TFWatchSelfTest=0 TFFontSelfTest=0 
+=== tf-review/7341981.xcarchive/Products/Applications/TodaysFive.app/Watch/TodaysFiveWatch.app/PlugIns/[REDACTED].appex/[REDACTED]
+   archs: arm64_32 arm64 
+   otool -L frameworks: AppIntents CoreText Foundation SwiftUI UIKit WidgetKit 
+   mentions CoreHaptics/Speech/JavaScriptCore anywhere in the binary: 0
+   strings: superpink=0 birthday=0 FF2E9A=0 D62E86=0 FF3D9A=0 A86014=0 4AF07A=0 C8321F=0 group.com.pricebrannen.todaysfive=2 todaysfive://add=2 TFWatchSelfTest=0 TFFontSelfTest=0 
+
+## the plain-Swift package .o files under the baseline swift-test build (space-safe)
+.build/arm64-apple-macosx/debug/TodaysFiveCore.build/Kits.generated.swift.o
+   A86014=1 FF3D9A=1 FF2E9A=0 FFC2E2=0 B5116F=0 D62E86=0 96125A=0 5FC9AC=0 superpink=0 birthday=0 
+
+## Kits.generated.swift in the baseline swift-test build: size, kit count, pair count
+19614 bytes
+Kit( literals: 16   KitPair( literals: 0   lines: 263
+204:    static let types: [String: KitType] = [
+Config.generated.swift: 271 bytes
+
+## KitsGen output in the Xcode DerivedData (the watch build), size
+19614 bytes  /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/KitsGen/Kits.generated.swift

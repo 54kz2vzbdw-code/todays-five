@@ -1,0 +1,9 @@
+[tfive] theme: slot=day day=paper night=terminal → kit=paper pair=playfair base=light unlocked=0 offered=16
+[tfive] font self-test: begin kits=16 pairs=13 files=33 familiesOnDevice=75
+[tfive] font self-test: bundled=33/33
+[tfive] font self-test: weights told apart by advance=12 ink=1
+[tfive] font self-test: faces=33 end pass=96/96
+[tfive] font self-test: at 17pt title3 scales to 17.00, task line height 20.40, tracking -0.425, extra leading 0.00
+[tfive] watch: store=appGroup
+[tfive] face: kit=paper pair=playfair face=SourceSerif4-Regular-600 → snapshot written, reloadAllTimelines requested
+com.pricebrannen.todaysfive.watchkitapp: 12040

@@ -1,0 +1,32 @@
+## Debug bundles: the stub executor + <App>.debug.dylib layout
+Assets.car Info.plist Metadata.appintents OFL.txt PkgInfo PlugIns TodaysFiveWatch TodaysFiveWatch.debug.dylib _CodeSignature __preview.dylib embedded.mobileprovision 
+=== tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/TodaysFiveWatch.debug.dylib
+   archs: x86_64 arm64 
+   otool -L frameworks: AppIntents CoreFoundation CoreGraphics CoreText CryptoKit DeveloperToolsSupport Foundation Security SwiftUI UIKit WatchConnectivity WatchKit WidgetKit 
+   mentions CoreHaptics/Speech/JavaScriptCore: 2
+   strings: superpink=0 birthday=0 FF2E9A=0 D62E86=0 FF3D9A=2 A86014=2 4AF07A=2 C8321F=2 group.com.pricebrannen.todaysfive=2 todaysfive://add=0 TFWatchSelfTest=2 TFFontSelfTest=2 TFDumpWatchSend=0 
+=== tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/PlugIns/[REDACTED].appex/[REDACTED].debug.dylib
+   archs: x86_64 arm64 
+   otool -L frameworks: AppIntents CoreFoundation CoreText DeveloperToolsSupport Foundation SwiftUI UIKit WidgetKit 
+   mentions CoreHaptics/Speech/JavaScriptCore: 0
+   strings: superpink=0 birthday=0 FF2E9A=0 D62E86=0 FF3D9A=0 A86014=0 4AF07A=0 C8321F=0 group.com.pricebrannen.todaysfive=2 todaysfive://add=2 TFWatchSelfTest=0 TFFontSelfTest=0 TFDumpWatchSend=0 
+=== tf-review-baseline/Build/Products/Debug-watchos/TodaysFiveWatch.app/TodaysFiveWatch.debug.dylib
+   archs: arm64_32 arm64 
+   otool -L frameworks: AppIntents CoreFoundation CoreGraphics CoreText CryptoKit DeveloperToolsSupport Foundation Security SwiftUI UIKit WatchConnectivity WatchKit WidgetKit 
+   mentions CoreHaptics/Speech/JavaScriptCore: 2
+   strings: superpink=0 birthday=0 FF2E9A=0 D62E86=0 FF3D9A=2 A86014=2 4AF07A=2 C8321F=2 group.com.pricebrannen.todaysfive=2 todaysfive://add=0 TFWatchSelfTest=2 TFFontSelfTest=2 TFDumpWatchSend=0 
+=== tf-review-baseline/Build/Products/Debug-watchos/TodaysFiveWatch.app/PlugIns/[REDACTED].appex/[REDACTED].debug.dylib
+   archs: arm64_32 arm64 
+   otool -L frameworks: AppIntents CoreFoundation CoreText DeveloperToolsSupport Foundation SwiftUI UIKit WidgetKit 
+   mentions CoreHaptics/Speech/JavaScriptCore: 0
+   strings: superpink=0 birthday=0 FF2E9A=0 D62E86=0 FF3D9A=0 A86014=0 4AF07A=0 C8321F=0 group.com.pricebrannen.todaysfive=2 todaysfive://add=2 TFWatchSelfTest=0 TFFontSelfTest=0 TFDumpWatchSend=0 
+=== tf-review-baseline/Build/Products/Debug-iphonesimulator/TodaysFive.app/TodaysFive.debug.dylib
+   archs: x86_64 arm64 
+   otool -L frameworks: AVFAudio AppIntents CoreFoundation CoreHaptics CryptoKit DeveloperToolsSupport Foundation Security UIKit WatchConnectivity WebKit 
+   mentions CoreHaptics/Speech/JavaScriptCore: 4
+   strings: superpink=0 birthday=0 FF2E9A=0 D62E86=0 FF3D9A=2 A86014=2 4AF07A=2 C8321F=2 group.com.pricebrannen.todaysfive=2 todaysfive://add=0 TFWatchSelfTest=0 TFFontSelfTest=0 TFDumpWatchSend=2 
+=== tf-review-baseline/Build/Products/Debug-iphoneos/TodaysFive.app/TodaysFive.debug.dylib
+   archs: arm64
+   otool -L frameworks: AVFAudio AppIntents CoreFoundation CoreHaptics CryptoKit DeveloperToolsSupport Foundation Security UIKit WatchConnectivity WebKit 
+   mentions CoreHaptics/Speech/JavaScriptCore: 2
+   strings: superpink=0 birthday=0 FF2E9A=0 D62E86=0 FF3D9A=1 A86014=1 4AF07A=1 C8321F=1 group.com.pricebrannen.todaysfive=1 todaysfive://add=0 TFWatchSelfTest=0 TFFontSelfTest=0 TFDumpWatchSend=1 

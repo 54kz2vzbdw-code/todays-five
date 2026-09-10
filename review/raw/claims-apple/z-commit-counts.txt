@@ -1,0 +1,13 @@
+## commit counts (git rev-list --count), Thu Sep 10 15:38:12 CDT 2026
+0e03143  151  Build 151, and a correction about the icon the phone actually showed
+e215e65  160  Say why the build number and the commit count part company
+7d9515f  161  Phase 3 begins: the plan, and a watchOS target that already embeds
+8e3d5af  166  Tracks A and D: the link hand-off, the ops, and the harness
+4962f97  169  The live run, the results, and an archive staged for Organizer
+176e022  170  Phase 4 begins: the plan, and the seven things a reading could not hav
+e809d78  191  This ships as a build of 1.12, and that is now the standing rule
+2dbdfd9  202  Build 202, and the one floor this round earned the right to enforce
+16aac3d  207  Build 207, and the suite line the tracks kept moving
+8a412a3  212  Build 212, and a rewrite that now refuses to write an empty file
+948a905  216  Build 216
+7341981  217  Measured on the live build: what a returning device actually sees

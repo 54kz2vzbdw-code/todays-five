@@ -1,0 +1,9 @@
+## node tools/mark.mjs --check  (01:27:25)
+paper-accent · #F7F2E8 tile · #A86014 check
+  safe zone clear; worst painted radius 0.316 of 0.400; ink covers 6.6 %
+exit=0
+
+## node tools/mark.mjs --trace  (01:27:26)
+trace vs the icon that shipped: 0.30 % of pixels differ
+exit=0
+git status --short after (must be empty): []

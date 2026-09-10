@@ -1,0 +1,159 @@
+=================== apple/TodaysFive/TodaysFive/Haptics.swift (148 lines)
+8:// intensity. From 1.10 the page turns that off when it sees the shell's user-agent token, so these
+11:// 1.12: the finale is a pattern rather than one tap. The page throws confetti in a shape — seven
+12:// bursts along the bottom 65 ms apart, a fuller one through the middle, and the chord landing after
+29:    /// The volley, from `fx.js`: `for (let i = 0; i < 7; i++) … i * 65` along the bottom, then one
+30:    /// burst through the middle at 210 ms. The chord is `packs.js`'s, at `t0 + 0.7`.
+44:    private var engineDead = false // asked once and refused: stop asking, and use the 1.10 notification tap
+=================== apple/TodaysFive/TodaysFiveWatch/WatchHaptics.swift (128 lines)
+4:// | moment  | phone (1.12)                         | Watch                                  |
+11:// `CoreHaptics.framework` is not in the watchOS SDK — checked on disk, not recalled — so 1.12's
+12:// pattern (seven transients 65 ms apart, a fuller one at 210, the chord at 700 with a 320 ms roll
+15:// So what is played here is the volley's *rhythm* and not its shape: seven `.click` 65 ms apart and
+16:// `.success` on the chord at 700.
+34:    /// The same four names the page dispatches (COMPATIBILITY.md §8), so a tally from the Watch and a
+43:    /// From `fx.js`: `for (let i = 0; i < 7; i++) … i * 65`, and the chord at `t0 + 0.7`. The 210 ms
+44:    /// burst through the middle and the 320 ms ring-down have no spelling in `WKHapticType` and are
+80:    /// The volley's rhythm. Seven `.click` on `i * 65`, then `.success` at 700 measured from the
+82:    /// by whatever the sleeps actually cost would put the chord somewhere that is not 700.
+=================== apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift (968 lines)
+4:// **What was built, and what was deliberately not.** Phase 3 shipped one hex — `#A86014` — and
+6:// carry". *That sentence is now false.* Phase 4 §1 gave Terminal back its own `#4AF07A` and Paper
+7:// its own `#C8321F`; only Dark still carries the brand accent, and it carries it as its own colour
+10:// kit** instead: `Kits`' 16 open kits plus whatever a phone has unlocked, one of them chosen on this
+14:// was in Phase 3.** Theme is a per-device preference in this app — the web keeps two slots per
+23:// **1. `.preferredColorScheme(.light)` is inert on watchOS — measured, not assumed.** Over Paper's
+27:// sites Phase 3 shipped were only ever right because watchOS is permanently dark.
+29:// **2. The system clock in the top-right stays white and there is no API to change it.** Not a
+31:// app's layer and the SDK offers nothing. On Paper's cream (`#F7F2E8`) white-on-cream is about
+32:// **1.06:1**, which is not "low contrast", it is *invisible*. A light kit on this device therefore
+36:// **3. The ground is the battery.** Paper's cream drives the panel about **17×** harder than a dark
+37:// kit's ink (measured; see `DECISIONS-phase4-C1.md` for the method and its three caveats). It is an
+65:    /// WCAG's 3:1 for non-text: on the eighteen kits today it selects exactly the seven light-base
+66:    /// ones (1.06–1.12) and none of the eleven dark ones (16.0–19.9), so there is a factor of fourteen
+70:    /// WCAG relative luminance against white, from a `#RRGGBB`. A hex this cannot read answers 21,
+79:    /// The page and the two surfaces above it. `ink` is the ground; `ink3` is the elevated one the
+80:    /// accent's 3:1 floor is measured against, so it is what a platter or a filled chip is drawn on.
+84:    /// The accent family. `accent` is a UI colour (3:1); `accentText` is the one that may carry text.
+87:    /// A solid line that clears 3:1 on `ink` — the unchecked box, a divider.
+92:    /// The five or six the finale throws. Stage 2's confetti reads this; nothing else does yet.
+97:    /// Terminal's `#4AF07A` and Pink's `#FFD36E` are both far too light to carry white text.
+133:    /// Phase 3 flattened to `Color(white: 0.62)`, which was the right *shape* and the wrong colour on
+136:    /// is `#8F8C84`, which is what the constant was reaching for.
+166:    /// Serif 4 carry no `fvar` named instances; measured byte-identical at `.light` and `.black`), so
+189:    /// added to the face's own line height**, which is already about 1.2–1.4× the point size. So the
+190:    /// naive `(lh - 1) * size` is not merely imprecise, it is wrong in the same direction on every
+227:        colors: KitColors(ink: "#000000", ink2: "#111111", ink3: "#222222",
+228:                          text: "#FFFFFF", muted: "#AAAAAA", dim: "#888888", done: "#888888",
+229:                          muted2: "#AAAAAA", dim2: "#888888", done2: "#888888",
+230:                          accent: "#888888", accentHi: "#AAAAAA", accentDeep: "#555555",
+231:                          accentText: "#AAAAAA", danger: "#FF0000", hairSolid: "#555555",
+233:        confetti: ["#888888", "#AAAAAA", "#FFFFFF", "#555555", "#666666"],
+336:    /// `tf/app/` is the clients' prefix (COMPATIBILITY.md §8); this is the Watch's corner of it.
+343:    /// The two slots, by kit id, and which one is on. Stage 2's picker writes these three and
+354:    /// Every kit this device may render: the 16 in the binary, plus whatever arrived.
+400:    /// Put a kit in a slot. Stage 2's picker is the only caller; it is here because the storage is.
+481:/// Phase 3 wrote: "There is no settings screen, no Everything, no sections, no History, no rules, no
+592:    /// as much as 26 points can carry, and they are the three that change the screen most.
+645:/// Measured on the shipped screenshots: the glyph core is exactly `(255,255,255)` and the ground is
+648:/// pair — and they are all equally bad: **Light 1.06, blush 1.07, sketch 1.08, birthday 1.08,
+649:/// teletype 1.09, harbor 1.10, Paper 1.12**. The round framed this as a Paper problem; Paper is in
+651:/// eleven dark kits sit between 16.0 and 19.9 and need nothing.
+656:///     layer, so a patch in the corner is enough. Paper goes from **1.12:1 to 17.12:1**;
+661:/// disqualified by arithmetic rather than taste — the cream is 3× too bright for a white clock, and
+662:/// the first darkening step that reaches even 3:1 breaks **all five** of Paper's own fixture floors
+663:/// (text 15.34 → 5.45 against a floor of 7, and so on), because those tokens were computed against
+665:/// kits are light-base. And `._statusBarHidden(true)` genuinely does hide the clock on watchOS 26.5 —
+672:        // Only where it buys something. On a dark kit the clock already reads at 16:1 or better, and
+675:            // Sized to the measured glyph box with a margin, not guessed: on the 46 mm face the time
+676:            // occupies pt (151,20)–(191,31), so 76 × 44 anchored at the top-trailing corner covers it
+677:            // with room for the 41 mm and 49 mm faces, where it sits at the same corner in fewer
+678:            // points. A first attempt at 62 × 26 left the digits hanging below the patch's lower edge
+718:/// secret — `theme.js` ships all 22 to every browser — but nothing else about the device is printed
+725:    /// long enough that a 100th of a point per glyph adds up to something a Double can tell apart.
+759:        // **Every pair, not every kit's pair.** The 16 open kits between them name only **11** of the
+760:        // 13 pairs — `baloo` and `fredoka` belong to the two Secret kits and to nothing else — and
+761:        // walking the kits alone leaves 2 of the 33 bundled files untested until somebody unlocks a
+785:        // Secret pair unlocked that is 18 kits against the same 13 pairs.
+796:        // kit reach the screen": a tracking of 0 would mean `UIFontMetrics` answered nothing.
+822:    /// assuming it.** IBM Plex Mono Regular and SemiBold set the same 21-character ruler to the same
+MISSING: apple/TodaysFive/TodaysFiveWatch/WatchSnapshot.swift
+apple/TodaysFive/Shared/WatchSnapshot.swift
+=================== apple/TodaysFive/[REDACTED]/Complications.swift (312 lines)
+12:// | inline        | `3/5` and nothing else                                                |
+33:// **What was asked.** Phase 4 gave the Watch eighteen kits, each with its own accent — Terminal's
+34:// `#4AF07A`, Paper's `#C8321F`, Dark's `#A86014` — and asked that the complication follow the kit
+65:// And the theme reaches all four through `WatchSnapshot`, additively, with `v` left at 1. See that
+79:/// short version: the appex is *inside* the Watch app's bundle, so the app's 33 `.ttf` are two
+85:/// Phase 3 rather than one that does not draw.
+149:            // `3/5` and nothing else. Inline is one line of text beside the time; anything more is
+203:    /// Finished, and not merely empty. `total == 0` is a day with nothing on it, which is not the
+=================== apple/TodaysFiveCore/Sources/TodaysFiveCore/SyncEngine.swift (316 lines)
+8://     lower than the one we hold, or a plaintext row under a v3 id;
+9://   * only a list this device created may be inserted (rev 0, created, an edit link);
+10://   * 403 and 413 hold the list off the wire until the next local change; 429 and 507 hold it for
+12://   * a put that succeeded rings the list's channel — the mirror of sync.js:331, so a phone with the
+90:        // sync.js: a created list at rev 0 is dirty even when nothing has been edited — it has never
+127:        // a new local change gets one fresh attempt after a 403 or a 413
+167:                markGone()                      // a plaintext row under a v3 id is not ours
+215:                    await ringDoorbell()                // sync.js:331, in the same place in the block
+250:    /// The mirror of `sync.js:331`, and the whole of this round's fix.
+256:    /// poll from 60 s to 240 s on the strength of a bell that nothing in the system rang — so the
+258:    /// this line existed: a write took a median of 132 s to appear and as long as 238 s.
+264:    ///    is not writing is exactly zero requests, which is why the poll can stay at 240 s.
+=================== apple/TodaysFiveCore/Sources/TodaysFiveCore/SupabaseTransport.swift (164 lines)
+2:// COMPATIBILITY.md §4: the signatures and the semantics are frozen; a new behaviour is a new function.
+4:// The read RPC's second parameter is `p_rev` (supabase/migrations/002_v3.sql), not `p_known_rev`;
+88:    /// The request body `sync.js:121` builds, key for key and in its order — the whole cost of a
+103:    /// This is `sync.js:121`'s REST fallback, header for header: `{ apikey, Content-Type }` and
+104:    /// **no `Authorization: Bearer`**, which the endpoint accepts (measured: HTTP 202, with the
+107:    /// once and goes away. The body is 138 bytes (measured, and pinned in the suite), one of them per
+144:    /// Nothing above touches this: a doorbell is a POST to `/realtime/v1/api/broadcast`, a poll is a
+145:    /// POST to `/rest/v1/rpc/get_list_v3` with `p_rev`, and the 29 bytes an unchanged poll answers
+=================== apple/TodaysFiveCore/Sources/TodaysFiveCore/WatchLink.swift (351 lines)
+9:// 1.12 b216 adds one thing to that, and it is a palette rather than a list: the two **Secret kits**, which
+12:// stays 1 — COMPATIBILITY.md §3's additive rule applied to a wire shape rather than a document.
+30:    /// "mine" or "shared", the 1.4 origin — the Watch's picker shows a Shared pill for it.
+81:/// COMPATIBILITY.md §3's rule is about the document, but it is really about any shape two builds
+106:    // ---------------------------------------------------------------- the Secret kits (1.12 b216)
+109:    /// own: a build that predates 1.12 b216 keeps unknown keys and hands them back, so a Watch on an
+110:    /// older build passes them through untouched instead of choking, and `v` stays 1.
+115:    /// **They are not in any binary.** The generated table is the 16 open kits; these two are read
+201:    /// as `1` and does not survive a round trip. Dates and data have no JSON spelling and are
+288:    /// That last sentence is the trap that cost Phase 2 its worst bug, one client along: reading "the
+=================== apple/tools/watchsim.mjs (911 lines)
+16:// `[REDACTED]` (7006). That looks exactly like WatchConnectivity being broken
+28:// `safe()` on its way to the terminal, which strikes out any run of 22 or more base62 characters.
+69:/** Any run of 22+ base62 characters is the shape of a list secret, a read id or a lookup id, so it
+127:      setTimeout(() => { try { child.kill("SIGKILL"); } catch (e) { /* already gone */ } }, 3000).unref();
+246:/** A runtime by whatever the person typed: "26.5", "watchOS 26.5", or the identifier. No flag means
+526:  // isWatchAppInstalled is false and every [REDACTED] throws 7006. The watch app is
+536:  // short settle here saves a first run that reports 7006 and then works on the second.
+744:  // about it is a claim rather than a reading — and it is the claim that makes the 7006 paragraph
+779:            // `missing`, not a note. Both bundles carry the web's frozen 1.12 (158) all round, so the
+844:  // shut when the machine is not ready — a warning that exits 0 lets the next command run against a
+=================== apple/TodaysFiveCore/Package.swift (36 lines)
+1:// swift-tools-version: 6.0
+2:// TodaysFiveCore — the Swift core of Today's Five: links, keys, the v3 envelope, the document,
+=================== apple/TodaysFiveCore/Plugins/ConfigGen/ConfigGen.swift (65 lines)
+6:// It is a **prebuild** command over `/bin/sh`, and both halves of that are forced (Phase 3):
+14://     arise. Measured, not read: PLAN-apple-phase3.md records the failing build.
+34:        // $1 the file, $2 the url, $3 the key — passed as arguments rather than interpolated into
+=================== apple/tools/gen-watch-fonts.py (389 lines)
+1:#!/usr/bin/env python3
+121:    """The weights a Google Fonts axis string names. "wght@500;800" -> [500, 800];
+122:    "wght@500..700" -> [500, 700]; "opsz,wght@9..144,500..700" -> [500, 700]; "" -> [400]."""
+137:    """Every woff2 in fonts/, keyed by the family name **inside the file**, plus the CSS name that
+175:        name.setName(value, nid, 3, 1, 0x409)                    # Windows / Unicode BMP / en-US
+176:        name.setName(value, nid, 1, 0, 0)                        # Macintosh / Roman / English
+194:                # opsz and anything else: the file's own default. Fraunces defaults to 9, the cut it
+198:        # STAT table has no entry for the weight (Fraunces at 500). The naming is done below instead.
+207:    font.flavor = None                                           # woff2 in, plain TTF out
+223:        # OFL 1.1 §3: a Modified Version may not carry the family's Reserved Font Name. Recorded per
+228:        # OFL.txt header, and reading nameID 0 alone missed six faces and reported 10 of 33 where the
+229:        # true count is 15. A licence question answered from the more convenient of two sources is
+240:# OFL 1.1 §3 restricts "the primary font name as presented to the users", so a face carries an RFN
+247:#     declares "Source" and ships "DM Serif Display", which does not contain it, so §3 does not bite.
+249:# Between them those two errors cancelled into a plausible-looking 10 of 33. The truth is 15.
+276:    """True when the family name we ship contains a name this family reserves — §3's actual test."""
+327:        "note": "Generated by apple/tools/gen-watch-fonts.py from the repo's own fonts/*.woff2. "

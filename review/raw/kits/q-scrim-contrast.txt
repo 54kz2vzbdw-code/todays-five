@@ -1,0 +1,19 @@
+== scrim-contrast (q) at HEAD Thu Sep 10 15:04:23 CDT 2026
+dark       dark  ink=#070A08 white/ink=19.89 scrim=false text=#F7F2E8 white/text=1.12
+light      light ink=#FAF8F4 white/ink=1.06 scrim=true text=#494F55 white/text=8.29
+pink       dark  ink=#2E0A1C white/ink=17.85 scrim=false text=#FFF0F6 white/text=1.10
+midnight   dark  ink=#0E1424 white/ink=18.35 scrim=false text=#E8EEF8 white/text=1.17
+forest     dark  ink=#10201A white/ink=16.89 scrim=false text=#EAF2E6 white/text=1.14
+paper      light ink=#F7F2E8 white/ink=1.12 scrim=true text=#1F1B16 white/text=17.12
+terminal   dark  ink=#070A08 white/ink=19.89 scrim=false text=#D8FFD8 white/text=1.09
+sunset     dark  ink=#2A1622 white/ink=16.99 scrim=false text=#FFF1E6 white/text=1.11
+dusk       dark  ink=#171226 white/ink=18.25 scrim=false text=#EFEAFF white/text=1.17
+harbor     light ink=#EEF5F4 white/ink=1.11 scrim=true text=#123A3E white/text=12.35
+ember      dark  ink=#1B0F0D white/ink=18.74 scrim=false text=#FFEDE4 white/text=1.14
+cocoa      dark  ink=#2A1F1A white/ink=16.04 scrim=false text=#F6EBDD white/text=1.18
+blush      light ink=#FFF5F8 white/ink=1.07 scrim=true text=#3E1228 white/text=15.89
+teletype   light ink=#F3F6EF white/ink=1.09 scrim=true text=#14261B white/text=15.88
+sketch     light ink=#F8F6F1 white/ink=1.08 scrim=true text=#2A2A2E white/text=14.29
+arcade     dark  ink=#0C0B1E white/ink=19.40 scrim=false text=#F3F1FF white/text=1.11
+superpink  dark  ink=#3F0026 white/ink=16.94 scrim=false text=#FFEEF6 white/text=1.12
+birthday   light ink=#FFF3F8 white/ink=1.08 scrim=true text=#3A1030 white/text=16.19

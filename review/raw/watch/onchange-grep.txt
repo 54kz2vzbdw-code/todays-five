@@ -1,0 +1,109 @@
+# Every 'onChange' in apple/TodaysFive at 4962f97, at 7341981, and on the four Phase 5 branches (git grep, read-only). Thu Sep 10 01:28:38 CDT 2026
+
+== 4962f97
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:11:// confirmation and the Undo are the same, and Track B hangs `onChange` off it to pull the new line
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:53:    var onChange: (@MainActor () -> Void)?
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:71:            onChange?()
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:89:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:43:    var onChange: (@MainActor () -> Void)?
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:86:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:134:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:182:        receiver.onChange = { [weak self] in self?.linksChanged() }
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:210:        receiver.select(id)          // the receiver remembers it; `onChange` brings it back here
+-- assignments (' = ') among them:
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:182:        receiver.onChange = { [weak self] in self?.linksChanged() }
+-- callers of WatchStore.add / store.add(:
+-- what the + and the intent call:
+apple/TodaysFive/Shared/AddToTodaysFive.swift:335:        let outcome = await AddService.live().add(line)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:209:            let outcome = await AddService.live().add(text)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:218:            let done = await AddService.live().undo(line)
+
+== 7341981
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:11:// confirmation and the Undo are the same, and Track B hangs `onChange` off it to pull the new line
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:53:    var onChange: (@MainActor () -> Void)?
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:71:            onChange?()
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:89:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:52:    var onChange: (@MainActor () -> Void)?
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:107:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:161:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:187:        receiver.onChange = { [weak self] in self?.linksChanged() }
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:215:        receiver.select(id)          // the receiver remembers it; `onChange` brings it back here
+-- assignments (' = ') among them:
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:187:        receiver.onChange = { [weak self] in self?.linksChanged() }
+-- callers of WatchStore.add / store.add(:
+-- what the + and the intent call:
+apple/TodaysFive/Shared/AddToTodaysFive.swift:335:        let outcome = await AddService.live().add(line)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:221:            let outcome = await AddService.live().add(text)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:230:            let done = await AddService.live().undo(line)
+
+== origin/watch-fixes
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:11:// confirmation and the Undo are the same, and Track B hangs `onChange` off it to pull the new line
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:53:    var onChange: (@MainActor () -> Void)?
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:71:            onChange?()
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:89:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:52:    var onChange: (@MainActor () -> Void)?
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:107:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:161:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:187:        receiver.onChange = { [weak self] in self?.linksChanged() }
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:215:        receiver.select(id)          // the receiver remembers it; `onChange` brings it back here
+-- assignments (' = ') among them:
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:187:        receiver.onChange = { [weak self] in self?.linksChanged() }
+-- callers of WatchStore.add / store.add(:
+-- what the + and the intent call:
+apple/TodaysFive/Shared/AddToTodaysFive.swift:335:        let outcome = await AddService.live().add(line)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:221:            let outcome = await AddService.live().add(text)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:230:            let done = await AddService.live().undo(line)
+
+== origin/p5-a-voice
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:127:    var onChange: (@MainActor () -> Void)?
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:153:            onChange?()
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:211:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:52:    var onChange: (@MainActor () -> Void)?
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:107:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:161:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:187:        receiver.onChange = { [weak self] in self?.linksChanged() }
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:215:        receiver.select(id)          // the receiver remembers it; `onChange` brings it back here
+-- assignments (' = ') among them:
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:187:        receiver.onChange = { [weak self] in self?.linksChanged() }
+-- callers of WatchStore.add / store.add(:
+-- what the + and the intent call:
+apple/TodaysFive/Shared/AddToTodaysFive.swift:426:        let outcome = await AddService.live().add(line)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:476:            let outcome = await AddService.live().add(text)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:485:            let done = await AddService.live().undo(line)
+
+== origin/p5-b-picker
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:11:// confirmation and the Undo are the same, and Track B hangs `onChange` off it to pull the new line
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:53:    var onChange: (@MainActor () -> Void)?
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:71:            onChange?()
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:89:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:52:    var onChange: (@MainActor () -> Void)?
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:107:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:161:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:187:        receiver.onChange = { [weak self] in self?.linksChanged() }
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:238:    /// know either answer — the hand-off below is synchronous (`receiver.select` calls `onChange`,
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:294:        receiver.select(id)          // the receiver remembers it; `onChange` brings it back here
+-- assignments (' = ') among them:
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:187:        receiver.onChange = { [weak self] in self?.linksChanged() }
+-- callers of WatchStore.add / store.add(:
+-- what the + and the intent call:
+apple/TodaysFive/Shared/AddToTodaysFive.swift:335:        let outcome = await AddService.live().add(line)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:221:            let outcome = await AddService.live().add(text)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:230:            let done = await AddService.live().undo(line)
+
+== origin/p5-c-faces
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:11:// confirmation and the Undo are the same, and Track B hangs `onChange` off it to pull the new line
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:53:    var onChange: (@MainActor () -> Void)?
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:71:            onChange?()
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:89:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:52:    var onChange: (@MainActor () -> Void)?
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:107:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:161:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:187:        receiver.onChange = { [weak self] in self?.linksChanged() }
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:215:        receiver.select(id)          // the receiver remembers it; `onChange` brings it back here
+-- assignments (' = ') among them:
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:187:        receiver.onChange = { [weak self] in self?.linksChanged() }
+-- callers of WatchStore.add / store.add(:
+-- what the + and the intent call:
+apple/TodaysFive/Shared/AddToTodaysFive.swift:335:        let outcome = await AddService.live().add(line)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:221:            let outcome = await AddService.live().add(text)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:230:            let done = await AddService.live().undo(line)

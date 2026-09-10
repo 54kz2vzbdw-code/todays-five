@@ -1,0 +1,26 @@
+
+== desktop 1440×900
+ok - desktop 1440×900: 1.7: add-from-anywhere with only spaces adds no line; the welcome's paste error clears on the next try; a saved theme's × is beside the swatch, clear of the name, and deleting can be undone
+ok - desktop 1440×900: 1.9: a sound for Day and one for Night — the row reads both slots and opens a sheet with a picker each, defaulting to the theme's pick and previewing; a 1.8 override lands in both slots; a kit whose pack changed keeps its old pack pinned until the slot's theme changes
+ok - desktop 1440×900: every sound pack plays check, uncheck and finale without console errors; the theme's pick is named and the override wins
+ok - desktop 1440×900: the theme builder carries a sound pack — Auto names the hue rule's pick, a saved theme's code is T2:, a T1: code imports
+FAIL - desktop 1440×900: the flip — T, or a click on the sun/moon crossfades the whole palette (~400 ms, tokens interpolated) with the incoming theme's tick; instant under reduced motion 
+     the row text is at the token, not trailing it expected "rgb(215, 212, 205)" got "rgb(223, 220, 212)"
+ok - desktop 1440×900: the picker fills one slot — Made for day / Made for night / Yours, every theme for either slot, the lean and partner tags, and the one-tap partner
+ok - desktop 1440×900: the builder — Use for the slot, Save to this list puts a theme under Yours, Make its partner saves a linked second theme and offers it
+ok - desktop 1440×900: both Secret themes in both slots, the flip between them, their own fonts, and a finale each
+ok - desktop 1440×900: a 1.1 device opens 1.8 — Follow system and the schedule migrate into the switch, the theme on screen does not change, and the toast is the only new thing
+
+== phone 390×844
+ok - phone 390×844: 1.7: add-from-anywhere with only spaces adds no line; the welcome's paste error clears on the next try; a saved theme's × is beside the swatch, clear of the name, and deleting can be undone
+ok - phone 390×844: 1.9: a sound for Day and one for Night — the row reads both slots and opens a sheet with a picker each, defaulting to the theme's pick and previewing; a 1.8 override lands in both slots; a kit whose pack changed keeps its old pack pinned until the slot's theme changes
+ok - phone 390×844: every sound pack plays check, uncheck and finale without console errors; the theme's pick is named and the override wins
+ok - phone 390×844: the theme builder carries a sound pack — Auto names the hue rule's pick, a saved theme's code is T2:, a T1: code imports
+ok - phone 390×844: the flip — a tap on the sun/moon crossfades the whole palette (~400 ms, tokens interpolated) with the incoming theme's tick; instant under reduced motion
+ok - phone 390×844: the picker fills one slot — Made for day / Made for night / Yours, every theme for either slot, the lean and partner tags, and the one-tap partner
+ok - phone 390×844: the builder — Use for the slot, Save to this list puts a theme under Yours, Make its partner saves a linked second theme and offers it
+ok - phone 390×844: both Secret themes in both slots, the flip between them, their own fonts, and a finale each
+ok - phone 390×844: a 1.1 device opens 1.8 — Follow system and the schedule migrate into the switch, the theme on screen does not change, and the toast is the only new thing
+
+17 passed, 1 failed
+  - desktop 1440×900: the flip — T, or a click on the sun/moon crossfades the whole palette (~400 ms, tokens interpolated) with the incoming theme's tick; instant under reduced motion: the row text is at the token, not trailing it expected "rgb(215, 212, 205)" got "rgb(223, 220, 212)"

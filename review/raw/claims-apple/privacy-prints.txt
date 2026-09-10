@@ -1,0 +1,137 @@
+## [REDACTED] handling
+apple/PLAN-apple-phase2.md:136:| accessibility | `[REDACTED]` |
+apple/PLAN-apple-phase3.md:276:Keychain**, `[REDACTED]`, **not synchronizable** — the phone's rule, for the
+apple/README.md:307:One Keychain item per link, `[REDACTED]`, **not synchronizable** — iCloud
+apple/README.md:477:The Watch's Keychain items are `[REDACTED]` and **not synchronizable**,
+apple/TodaysFive/TodaysFive/KeychainLinkVault.swift:3:// One generic-password item per link, keyed by the secret. [REDACTED] so a
+apple/TodaysFive/TodaysFive/KeychainLinkVault.swift:36:         [REDACTED] as String: false]
+apple/TodaysFive/TodaysFive/KeychainLinkVault.swift:75:        insert[kSecAttrAccessible as String] = [REDACTED]
+
+## every print( in apple/TodaysFive and apple/TodaysFiveCore/Sources
+apple/TodaysFive/Shared/AddToTodaysFive.swift:158: inDEBUG=True stack=['os(watchOS)', 'DEBUG'] 
+    print("[tfive] add: no app group container, falling back to Application Support")
+apple/TodaysFive/TodaysFive/WatchLinkSender.swift:108: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] watch: vault unreadable, sending nothing")
+apple/TodaysFive/TodaysFive/WatchLinkSender.swift:148: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] watch: \(what) v=\(payload.v) links=\(payload.links.count) "
+apple/TodaysFive/TodaysFive/WebViewController.swift:418: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] \(message)")
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:75: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] add: \(outcome.label)")
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:275: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] add self-test: \(name) \(ok ? "ok" : "FAILED") \(detail)")
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:278: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] add self-test: begin")
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:279: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] add self-test: [REDACTED]="
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:288: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] add self-test: FAILED could not make a scratch store")
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:347: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] add self-test: end pass=\(passed)/\(checked)")
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:685: inDEBUG=True stack=['DEBUG'] 
+    func say(_ s: String) { print("[tfive] confetti self-test: \(s)") }
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:78: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] watch selftest: 10 confetti: run=\(store.finaleTick) "
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:90: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] watch selftest: 11 theme change: "
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:139: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] watch: vault refused the write, mark not set")
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:168: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] watch: heard v=\(payload.map { String($0.v) } ?? "-") "
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:177: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] watch: store=\(group ? "appGroup" : "fallback(ApplicationSupport)")")
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:587: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] face: kit=\(kit) pair=\(pair) face=\(face.isEmpty ? "system" : face) "
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:683: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] watch: demo list seeded, lines=\(totalCount) mark=\(mark.rawValue)")
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:692: inDEBUG=True stack=['DEBUG'] 
+    func say(_ s: String) { print("[tfive] watch selftest: \(s)") }
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:470: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] theme: slot=\(slot.rawValue) day=\(dayId) night=\(nightId) "
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:743: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] font self-test: begin kits=\(kits.count) "
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:755: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] font self-test: bundled=\(present.count)/\(Kits.fontFiles.count)")
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:782: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] font self-test: weights told apart by advance=\(byAdvance) ink=\(byInk)")
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:791: inDEBUG=True stack=['DEBUG'] 
+    for line in failures { print("[tfive] font self-test: FAILED \(line)") }
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:792: inDEBUG=True stack=['DEBUG'] 
+    if failures.count == 12 { print("[tfive] font self-test: (further failures not listed)") }
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:793: inDEBUG=True stack=['DEBUG'] 
+    print("[tfive] font self-test: faces=\(seenFaces.count) end pass=\(passed)/\(checked)")
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:801: inDEBUG=True stack=['DEBUG'] 
+    print(String(format: "[tfive] font self-test: at %.0fpt title3 scales to %.2f, "
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:882: inDEBUG=True stack=['DEBUG'] 
+    func say(_ s: String) { print("[tfive] face probe: \(s)") }
+apple/TodaysFiveCore/Sources/TodaysFiveCore/SupabaseTransport.swift:129: inDEBUG=True stack=['DEBUG'] 
+    print("[doorbell] \(status), \(request.httpBody?.count ?? 0) bytes")
+apple/TodaysFiveCore/Sources/TodaysFiveCore/SupabaseTransport.swift:137: inDEBUG=True stack=['DEBUG'] URL?
+    print("[doorbell] not sent, URLError \((error as? URLError)?.code.rawValue ?? 0)")
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:105: inDEBUG=False stack=[] 
+    print(render(await engine.document(), keys: keys, snapshot: await engine.current()))
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:130: inDEBUG=False stack=[] 
+    print((wasDone ? "Back on: " : "Crossed off: ") + it.text)
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:131: inDEBUG=False stack=[] 
+    print(render(await engine.document(), keys: keys, snapshot: await engine.current()))
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:147: inDEBUG=False stack=[] 
+    print("Added: " + clean.string)
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:148: inDEBUG=False stack=[] 
+    print(render(await engine.document(), keys: keys, snapshot: await engine.current()))
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:154: inDEBUG=False stack=[] 
+    print("Watching \(keys.lookupId.prefix(8))… every \(Int(seconds))s. Ctrl-C to stop.")
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:160: inDEBUG=False stack=[] 
+    print("")
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:161: inDEBUG=False stack=[] 
+    print(render(doc, keys: keys, snapshot: await engine.current()))
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:165: inDEBUG=False stack=[] URL?
+    print("The list is gone — that link was rotated or deleted. Paste the new one.")
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:186: inDEBUG=False stack=[] 
+    print(render(await engine.document(), keys: keys, snapshot: await engine.current()))
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:187: inDEBUG=False stack=[] 
+    print("")
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:197: inDEBUG=False stack=[] URL?
+    print("Private  " + base + Links.fragment(id: W, mode: .edit))
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:199: inDEBUG=False stack=[] URL?
+    print("View     " + base + Links.fragment(id: keys.R, mode: .view))
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:200: inDEBUG=False stack=[] 
+    print("Row id   " + keys.lookupId)
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:212: inDEBUG=False stack=[] 
+    print(result.moved.isEmpty ? "Nothing to roll over." : "Moved \(result.moved.count) line(s) to History.")
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:213: inDEBUG=False stack=[] 
+    print(render(await engine.document(), keys: keys, snapshot: await engine.current()))
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:220: inDEBUG=False stack=[] 
+    print(gone ? "Deleted \(keys.lookupId) on the server, and the copy on this device."
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:228: inDEBUG=False stack=[] 
+    print("get_list_v3(p_rev: null)  HTTP \(full.status)  \(full.bytes) bytes")
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:229: inDEBUG=False stack=[] 
+    print(full.text.count > 400 ? String(full.text.prefix(400)) + "…" : full.text)
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:231: inDEBUG=False stack=[] URL?
+    print("no row: that link is gone")
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:235: inDEBUG=False stack=[] 
+    print("")
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:236: inDEBUG=False stack=[] 
+    print("get_list_v3(p_rev: \(result.rev))  HTTP \(poll.status)  \(poll.bytes) bytes  \(poll.text)")
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:238: inDEBUG=False stack=[] 
+    print("")
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:239: inDEBUG=False stack=[] 
+    print("envelope  v\(envelope.v) \(envelope.algorithm) z=\(envelope.z ?? "none")  \(envelope.byteCount) bytes stored")
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:241: inDEBUG=False stack=[] 
+    print("opens to  \(doc.liveItems.count) live lines, \(doc.history.count) history days")
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:243: inDEBUG=False stack=[] 
+    print("the row is not a v3 envelope")
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:250: inDEBUG=False stack=[] 
+    if ids.isEmpty { print("No lists on this device yet. `tfive new` makes one."); return }
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:256: inDEBUG=False stack=[] 
+    print("\(id)  \(name.padding(toLength: min(24, max(name.count, 24)), withPad: " ", startingAt: 0))  rev \(r.rev)  \(flags)")
+apple/TodaysFiveCore/Sources/tfive/TFive.swift:321: inDEBUG=False stack=[] 
+    print("""
+
+## summary
+prints NOT under #if DEBUG: 29
+prints under #if DEBUG: 30
+
+## prints in tfive (the CLI, expected to print freely) — count only
+29
+
+## os_log / Logger / NSLog use

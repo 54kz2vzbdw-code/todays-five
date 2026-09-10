@@ -1,0 +1,37 @@
+
+[A0] N (head 7341981) fresh, holds X | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.12","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+
+[A1] O (1.11, 0e03143) opened on the same origin | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.11","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+
+[A2] N: Remove from this device → Remove | storage: {"lists":0,"listsHasX":false,"removed":1,"removedHasX":true,"unremoved":null,"dead":0,"current":null} | this tab: {"version":"1.12","listId":null,"demo":true,"whoseOpen":false,"welcome":true}
+
+[A3] O (1.11): ordinary save via ⋯→Sound | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.11","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+
+[A4] O (1.11): a second save in a row via ⋯→Sound | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.11","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+
+[A5] N (head): ordinary save via sun/moon | storage: {"lists":0,"listsHasX":false,"removed":1,"removedHasX":true,"unremoved":null,"dead":0,"current":null} | this tab: {"version":"1.12","listId":null,"demo":true,"whoseOpen":false,"welcome":true}
+
+[A6] O (1.11): a third save via ⋯→Sound | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.11","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+
+[A7] N: reload | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.12","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+
+[A8] O: reload | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.11","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+
+[B0] N (head) fresh, holds X | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.12","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+
+[B1] O (1.11) opened | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.11","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+node:internal/modules/run_main:107
+    <id>(
+    ^
+
+page.waitForSelector: Timeout 8000ms exceeded.
+Call log:
+  - waiting for locator('#ask[open]') to be visible
+
+    at removeFirst (/private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/verify-a/vlib.mjs:14:164)
+    at async file:///private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/verify-a/v-bug2.mjs:22:3 {
+  log: [ "  - waiting for locator('#ask[open]') to be visible" ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.19.0

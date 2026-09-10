@@ -1,0 +1,52 @@
+# builds, deploys and what a web user's fetch changed  (Thu Sep 10 01:20:13 CDT 2026)
+
+## first-parent history of origin/main from the Phase 4 merge
+7341981 2026-09-09 Measured on the live build: what a returning device actually sees
+948a905 2026-09-09 Build 216
+1aada68 2026-09-09 The fonts' licence travels with them, and the reserved-name count was wrong twice
+ed89bd7 2026-09-09 The white clock gets something to sit on, and Paper was the best of the seven
+59ef2ee 2026-09-08 The cached tokens now say which palette they came from, and a boot refuses a stale one
+8a412a3 2026-09-08 Build 212, and a rewrite that now refuses to write an empty file
+e6f7d28 2026-09-08 What a person actually sees change tomorrow, as its own section
+923714c 2026-09-08 A watchOS device has a 32-bit Int, and only the archive ever said so
+5cd559f 2026-09-08 The live run: 0.63 seconds, where the same conditions used to mean 240
+fb018ce 2026-09-08 The results, and the two numbers that did not survive their second measurement
+16aac3d 2026-09-08 Build 207, and the suite line the tracks kept moving
+a6c0e1e 2026-09-08 Name the two Python packages, so the fonts can be regenerated on a clean machine
+b95ab1b 2026-09-08 theme.js said the Secret word was not written down, and that was false
+0c83a5d 2026-09-08 Pull derive() out of this build: it is the one change that moves without asking
+a902805 2026-09-08 Back to zero warnings: the singular registration call is the one that is not deprecated
+2dbdfd9 2026-09-08 Build 202, and the one floor this round earned the right to enforce
+
+## git rev-list --count origin/main = 217; version.js BUILD = 216
+
+## build stamps on the apple-themes branch before the merge (none but 216 was deployed to Pages; PLAN-apple-phase4.md's only mention of 212 is a LOCAL 158→212 deploy)
+2dbdfd9 09-08 22:42 Build 202, and the one floor this round earned the right to enforce
+16aac3d 09-08 22:55 Build 207, and the suite line the tracks kept moving
+8a412a3 09-08 23:26 Build 212, and a rewrite that now refuses to write an empty file
+948a905 09-09 00:11 Build 216
+
+## between 212 and 216 (what rode with the accent into the one deployed build)
+948a905 09-09 00:11 Build 216
+1aada68 09-09 00:09 The fonts' licence travels with them, and the reserved-name count was wrong twice
+ed89bd7 09-09 00:04 The white clock gets something to sit on, and Paper was the best of the seven
+59ef2ee 09-08 23:48 The cached tokens now say which palette they came from, and a boot refuses a stale one
+
+## files a browser fetches that changed between the 1.12 (158) deploy (67f35a5) and 216 (7341981)
+ about.html    |  15 ++-
+ fonts/OFL.txt | 294 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ index.html    |  11 ++-
+ panels.js     |  17 +++-
+ sw.js         |   2 +-
+ theme.js      | 170 +++++++++++++++++++++++++--------
+ version.js    |   2 +-
+ whatsnew.json |   2 +-
+ 8 files changed, 460 insertions(+), 53 deletions(-)
+
+## derive() pulled to ship alone: 0c83a5d
+
+ test/theme.test.js | 46 +++++++++++-----------------------------------
+ theme.js           | 36 ++++++++++++++++++++++++------------
+ 2 files changed, 35 insertions(+), 47 deletions(-)
+
+## 'what a person sees tomorrow' section: e6f7d28; 'measured on the live build': 7341981 (both are PLAN-apple-phase4.md additions after Build 216 / after the merge)

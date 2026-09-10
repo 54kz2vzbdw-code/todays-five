@@ -1,0 +1,130 @@
+## Haptics.swift: the pattern
+        case shuffle = "tf:shuffle"
+    }
+
+    /// The volley, from `fx.js`: `for (let i = 0; i < 7; i++) … i * 65` along the bottom, then one
+    /// burst through the middle at 210 ms. The chord is `packs.js`'s, at `t0 + 0.7`.
+    private enum Volley {
+        static let count = 7
+        static let step = 0.065
+        static let centre = 0.210
+        static let chord = 0.700
+        static let ring = 0.320
+    }
+
+    private let medium = [REDACTED](style: .medium)
+    private let light = [REDACTED](style: .light)
+    private let notice = [REDACTED]()
+
+    private var engine: CHHapticEngine?
+    private var engineDead = false // asked once and refused: stop asking, and use the 1.10 notification tap
+    private var supportsHaptics: Bool { CHHapticEngine.[REDACTED]().supportsHaptics }
+
+    /// Counted so a simulator run can prove the calls happened: a simulator has no motor.
+    private(set) var counts: [Moment: Int] = [:]
+
+    /// Called on touch-down, so the Taptic Engine is warm by the time the tap lands. Without it the
+    /// first haptic of a session is late enough to feel disconnected from the check-off.
+    func prepare() {
+        medium.prepare()
+        light.prepare()
+        notice.prepare()
+        startEngine()
+    }
+
+    func play(_ moment: Moment) {
+        counts[moment, default: 0] += 1
+        switch moment {
+        case .check: medium.impactOccurred()
+        case .uncheck, .shuffle: light.impactOccurred()
+        case .finale: if !playFinale() { notice.notificationOccurred(.success) } // 1.10's tap, where there is no engine
+        }
+        // keep them warm for the next line in the same burst
+        prepare()
+    }
+
+    // ---------------------------------------------------------------- the finale
+
+    /// The volley in the hand: seven along the bottom, the fuller one through the middle, and the
+    /// chord — the strongest tap, with a short roll under it the way the sound rings down. False
+    /// when there is no engine to play it, so the caller can fall back rather than lose the moment.
+    private func playFinale() -> Bool {
+
+## WatchHaptics.swift: the run
+    // ---------------------------------------------------------------- the finale
+
+    /// The volley's rhythm. Seven `.click` on `i * 65`, then `.success` at 700 measured from the
+    /// first tap rather than from the seventh — the onsets are absolute in `fx.js` and drifting them
+    /// by whatever the sleeps actually cost would put the chord somewhere that is not 700.
+    private func playFinale() {
+        finaleRun?.cancel()
+        lastFinaleTaps = 0
+        lastFinaleSeconds = 0
+        let started = Date()
+        finaleRun = Task { @MainActor [weak self] in
+            guard let self else { return }
+            for i in 0..<Volley.count {
+                if i > 0 {
+                    try? await Task.sleep(for: .milliseconds(Volley.stepMs))
+                    guard !Task.isCancelled else { return }
+                }
+                device.play(.click)
+                lastFinaleTaps += 1
+            }
+            let elapsed = Date().timeIntervalSince(started)
+            let remaining = Double(Volley.chordMs) / 1000 - elapsed
+            if remaining > 0 {
+                try? await Task.sleep(for: .seconds(remaining))
+                guard !Task.isCancelled else { return }
+            }
+            device.play(.success)
+            lastFinaleTaps += 1
+            lastFinaleSeconds = Date().timeIntervalSince(started)
+        }
+    }
+
+    // ---------------------------------------------------------------- the tally
+
+    /// For the simulator checklist. Names a count per moment and nothing else — no list, no link.
+    var tally: String {
+        Moment.allCases.map { "\($0.rawValue.dropFirst(3))=\(counts[$0] ?? 0)" }.joined(separator: " ")
+    }
+
+    #if DEBUG
+    /// `-TFWatchSelfTest`. The phone's `finaleSelfCheck()` builds the pattern and reports its
+    /// duration, because a simulator would otherwise never touch it. There is no pattern object here
+    /// to build — the run *is* the pattern — so this reports what the run that just happened did,
+    /// which is the same question one level down: eight calls, and how long they took.
+    func finaleSelfCheck() -> String {
+        let want = Volley.count + 1
+        return String(format: "taps=%d/%d duration=%.3fs (approximation: no CoreHaptics on watchOS)",
+                      lastFinaleTaps, want, lastFinaleSeconds)
+    }
+    #endif
+}
+
+## packs.js: the chord time
+2:// finish, and reads the theme's parameters through P(name, default): pitch, decay, noise, filter, bright, tone.
+37:  finish(env) {
+51:  finish(env) {
+74:  finish(env) {
+95:  finish(env) {
+120:  finish(env) {
+136:  finish(env) {
+160:   climb a major pentatonic scale; the finale rolls up it and lands on a chord. */
+280:    [1047, 1319, 1568, 2093].forEach((f, i) => tone(env, { type: i === 3 ? "triangle" : "square", f0: f * p, t: t0 + 0.7, attack: 0.005, peak: 0.035, len: 0.9 })); // the chord, ringing down
+
+## test/sound.test.js: what it reads from fx.js and asserts
+5:import { createSound, SECRET_ENGINES, FINALE_BUZZ } from "../sound.js";
+106:  const s = make({ kit: () => ({ engine: "knock", pitch: 0.7, decay: 1.6 }), pack: () => "cork" }); s.prime(); await tick();
+158:await test("the finale's vibration keeps the volley's rhythm — read out of fx.js, not copied from it", async () => {
+159:  // fx.js is where the confetti's timing lives; this reads the schedule back out of it so that changing the
+161:  const fx = fs.readFileSync(fileURLToPath(new URL("../fx.js", import.meta.url)), "utf8");
+164:  assert.ok(run && centre, "fx.js still schedules a run of bursts and a centre burst");
+171:  for (let i = 0; i < FINALE_BUZZ.length; i++) { if (i % 2 === 0) { onsets.push(t); lengths.push(FINALE_BUZZ[i]); } t += FINALE_BUZZ[i]; }
+
+## Haptics.swift self-test duration print
+apple/TodaysFive/TodaysFive/Haptics.swift:106:        ], relativeTime: Volley.chord, duration: Volley.ring))
+apple/TodaysFive/TodaysFive/Haptics.swift:120:                e.isAutoShutdownEnabled = true // it sleeps between finales rather than holding the hardware all day
+apple/TodaysFive/TodaysFive/Haptics.swift:137:            return String(format: "ok duration=%.3fs hardware=%@", p.duration, supportsHaptics ? "yes" : "no")
+apple/TodaysFive/TodaysFive/WebViewController.swift:162:    /// rather than after it. A zero-duration long press sees every touch and swallows none.

@@ -1,0 +1,75 @@
+
+[B0] N (head 7341981) fresh, holds X | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.12","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+
+[B1] O (1.11) opened | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.11","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+
+[B2] O (1.11): Remove from this device (1.11 archives, no sheet) — {"archivedFlags":[true],"removedKeyPresent":true} | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":null} | this tab: {"version":"1.11","listId":null,"demo":true,"whoseOpen":false,"welcome":true}
+
+[B3] N (head): save via ⋯→Sound (normalizeRegistry finishes the archived entry) — {"archivedFlags":[],"removedKeyPresent":true} | storage: {"lists":0,"listsHasX":false,"removed":1,"removedHasX":true,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.12","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+
+[B4] O (1.11): save via sun/moon — {"archivedFlags":[true],"removedKeyPresent":true} | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":null} | this tab: {"version":"1.11","listId":null,"demo":true,"whoseOpen":false,"welcome":true}
+
+[B5] N: reload — {"archivedFlags":[true],"removedKeyPresent":true} | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":null} | this tab: {"version":"1.12","listId":null,"demo":false,"whoseOpen":true,"welcome":false}
+node:internal/modules/run_main:107
+    <id>(
+    ^
+
+page.click: Timeout 8000ms exceeded.
+Call log:
+  - waiting for locator('#more')
+    - locator resolved to <button id="more" title="More" class="chip icon" aria-label="More" aria-haspopup="dialog">⋯</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - <dialog open="" id="whose" class="panel" aria-labelledby="whose-h">…</dialog> intercepts pointer events
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - <dialog open="" id="whose" class="panel" aria-labelledby="whose-h">…</dialog> intercepts pointer events
+    - retrying click action
+      - waiting 100ms
+    15 × waiting for element to be visible, enabled and stable
+       - element is visible, enabled and stable
+       - scrolling into view if needed
+       - done scrolling
+       - <dialog open="" id="whose" class="panel" aria-labelledby="whose-h">…</dialog> intercepts pointer events
+     - retrying click action
+       - waiting 500ms
+
+    at save (/private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/verify-a/vlib.mjs:13:245)
+    at async file:///private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/verify-a/v-bug2b.mjs:15:7 {
+  log: [
+    "  - waiting for locator('#more')",
+    '    - locator resolved to <button id="more" title="More" class="chip icon" aria-label="More" aria-haspopup="dialog">⋯</button>',
+    '  - attempting click action',
+    '    2 × waiting for element to be visible, enabled and stable',
+    '      - element is visible, enabled and stable',
+    '      - scrolling into view if needed',
+    '      - done scrolling',
+    '      - <dialog open="" id="whose" class="panel" aria-labelledby="whose-h">…</dialog> intercepts pointer events',
+    '    - retrying click action',
+    '    - waiting 20ms',
+    '    2 × waiting for element to be visible, enabled and stable',
+    '      - element is visible, enabled and stable',
+    '      - scrolling into view if needed',
+    '      - done scrolling',
+    '      - <dialog open="" id="whose" class="panel" aria-labelledby="whose-h">…</dialog> intercepts pointer events',
+    '    - retrying click action',
+    '      - waiting 100ms',
+    '    15 × waiting for element to be visible, enabled and stable',
+    '       - element is visible, enabled and stable',
+    '       - scrolling into view if needed',
+    '       - done scrolling',
+    '       - <dialog open="" id="whose" class="panel" aria-labelledby="whose-h">…</dialog> intercepts pointer events',
+    '     - retrying click action',
+    '       - waiting 500ms'
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.19.0

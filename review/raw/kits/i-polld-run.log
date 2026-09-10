@@ -1,0 +1,53 @@
+POLLD fg-live seed=20260907 START Thu Sep 10 01:16:19 CDT 2026 |  1:16  up 92 days, 23:22, 2 users, load averages: 8.03 5.53 5.18
+polld — 10 trial(s) per condition, 2 s steps, seed 20260907, against http://127.0.0.1:8892/
+POLL_MS 60 s, POLL_LIVE_MS 240 s (read from sync.js)
+
+fg-live   ..........
+
+| condition | trials (s) | median |
+| --- | --- | --- |
+| foreground, realtime connected | 16, 18, 60, 102, 126, 138, 208, 208, 212, 238 | 132 (max 238) |
+
+page errors: 0
+wrote /private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/kits/polld/fg-live-20260907.json
+POLLD fg-live seed=20260907 END exit=0 Thu Sep 10 01:16:49 CDT 2026 |  1:16  up 92 days, 23:22, 2 users, load averages: 8.11 5.74 5.26
+POLLD fg-live seed=11 START Thu Sep 10 01:16:49 CDT 2026 |  1:16  up 92 days, 23:22, 2 users, load averages: 8.11 5.74 5.26
+polld — 10 trial(s) per condition, 2 s steps, seed 11, against http://127.0.0.1:8892/
+POLL_MS 60 s, POLL_LIVE_MS 240 s (read from sync.js)
+
+fg-live   ..........
+
+| condition | trials (s) | median |
+| --- | --- | --- |
+| foreground, realtime connected | 24, 62, 66, 76, 102, 104, 110, 226, 232, 238 | 103 (max 238) |
+
+page errors: 0
+wrote /private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/kits/polld/fg-live-11.json
+POLLD fg-live seed=11 END exit=0 Thu Sep 10 01:17:18 CDT 2026 |  1:17  up 92 days, 23:22, 2 users, load averages: 7.49 5.84 5.32
+POLLD fg-live seed=4242 START Thu Sep 10 01:17:18 CDT 2026 |  1:17  up 92 days, 23:22, 2 users, load averages: 7.49 5.84 5.32
+polld — 10 trial(s) per condition, 2 s steps, seed 4242, against http://127.0.0.1:8892/
+POLL_MS 60 s, POLL_LIVE_MS 240 s (read from sync.js)
+
+fg-live   ..........
+
+| condition | trials (s) | median |
+| --- | --- | --- |
+| foreground, realtime connected | 26, 70, 70, 90, 102, 120, 204, 212, 224, 230 | 111 (max 230) |
+
+page errors: 0
+wrote /private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/kits/polld/fg-live-4242.json
+POLLD fg-live seed=4242 END exit=0 Thu Sep 10 01:17:48 CDT 2026 |  1:17  up 92 days, 23:23, 2 users, load averages: 19.09 8.41 6.24
+POLLD doorbell START Thu Sep 10 01:17:48 CDT 2026 |  1:17  up 92 days, 23:23, 2 users, load averages: 19.09 8.41 6.24
+polld — 10 trial(s) per condition, 2 s steps, seed 20260907, against http://127.0.0.1:8892/
+POLL_MS 60 s, POLL_LIVE_MS 240 s (read from sync.js)
+
+doorbell  ..........
+
+| condition | trials (s) | median |
+| --- | --- | --- |
+| foreground, realtime connected, writer rings the doorbell | 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1 | 0.1 (max 0.1) |
+
+page errors: 0
+wrote /private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/kits/polld/doorbell.json
+POLLD doorbell END exit=0 Thu Sep 10 01:18:11 CDT 2026 |  1:18  up 92 days, 23:23, 2 users, load averages: 123.89 33.38 15.28
+POLLD-ALL-DONE

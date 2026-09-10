@@ -1,0 +1,14 @@
+== accent-contrast (g) Thu Sep 10 01:11:42 CDT 2026
+terminal: base accent #A86014 a/ink 4.1178 a/ink3 3.4762 | head accent #4AF07A a/ink 13.2924 a/ink3 11.2212
+paper: base accent #A86014 a/ink 4.3284 a/ink3 3.4793 | head accent #C8321F a/ink 4.7867 a/ink3 3.8477
+dark: base accent #A86014 a/ink 4.1178 a/ink3 3.4762 | head accent #A86014 a/ink 4.1178 a/ink3 3.4762
+light: base accent #CB6015 a/ink 3.7904 a/ink3 3.0016 | head accent #CB6015 a/ink 3.7904 a/ink3 3.0016
+pink: base accent #FF3D9A a/ink 5.4287 a/ink3 4.0144 | head accent #FF3D9A a/ink 5.4287 a/ink3 4.0144
+light danger: base #B8402A on ink3 4.1205 on ink 5.2034 | head #B13924 on ink3 4.5050 on ink 5.6889
+light accent on ink3 (head): 3.0016
+pink accentText on ink3 (head): 4.5069
+
+exports at head containing finalize/ensure/fix: (none)
+exports at head: BRAND BRAND_ACCENT BRAND_COLOURWAYS CURATED CURATED_DAY CURATED_NIGHT CUSTOM_PAIRS PACK_BEFORE_19 PACK_IDS PACK_NAMES PAIRS PALETTE_REV PAPER_GROUND PAPER_TEXT SECRET SECRET_IDS SLOT_DEFAULT SWITCH_MODES TERMINAL_GROUND activeSlot applyTheme autoSlot brandColourways brandDark brandTiles contrast cssText cssTextBetween curated derive flipSlot hexToOklch hexToRgb hueSound isSecretCode isSecretKey isSecretTheme luminance makePartner migrateSlots mixHex normalizeHex oklch packBefore19 packOf pairFamilies pairOf parseCode partnerOf pickPair report rgbToHex rgba scheduledSlot setSwitchMode setTokenCss settleHold slotCode surprise themeCode
+paper RAW #C8321F #E0563F #8E2214 #9E2717 -> curated #C8321F #E0563F #8E2214 #9E2717 unchanged=true
+terminal RAW #4AF07A #9CFFB5 #21A64F #5DF58A -> curated #4AF07A #9CFFB5 #21A64F #5DF58A unchanged=true

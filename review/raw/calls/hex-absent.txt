@@ -1,0 +1,8 @@
+# hex tokens in test/fixtures/kits.json absent from theme.js source (case-insensitive substring)
+# run: Thu Sep 10 01:19:14 CDT 2026
+the 16 hex tokens x 18 kits: 288 absent: 54 kits with >=1 absent: 18
+per kit: {"dark":11,"light":4,"pink":3,"midnight":1,"forest":1,"paper":3,"terminal":1,"sunset":1,"dusk":1,"harbor":8,"ember":1,"cocoa":4,"blush":2,"teletype":2,"sketch":7,"arcade":1,"superpink":1,"birthday":2}
+by token: {"muted":1,"dim":3,"done":3,"accentHi":1,"accentDeep":1,"accentText":2,"danger":6,"hairSolid":18,"muted2":3,"dim2":7,"done2":7,"accent":2}
+every #RRGGBB inside colors (gradients/glow included): 350 absent: 58
+every #RRGGBB anywhere in a kit (confetti too): 446 absent: 60
+(the round wrote 62 of 314; the denominator depends on what is counted — every count agrees that roughly one token in five is computed, and every kit has one)

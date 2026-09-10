@@ -1,0 +1,77 @@
+## Fonts dir
+ttf count: 33
+ttf bytes: 1238128  (1.23 MB decimal; 1.18 MiB)
+OFL.txt
+README.md
+lato files: lato-900.ttf 
+
+## UIAppFonts vs directory
+apple/TodaysFive/TodaysFiveWatch/WatchInfo.plist: (The file “WatchInfo.plist” couldn’t be opened because there is no such file.)
+UIAppFonts entries: 0
+0a1,33
+> archivo-500.ttf
+> archivo-800.ttf
+> baloo-2-700.ttf
+> cormorant-garamond-700.ttf
+> dm-sans-400.ttf
+> dm-sans-700.ttf
+> dm-serif-display-400.ttf
+> fraunces-600.ttf
+> fredoka-600.ttf
+> ibm-plex-mono-400.ttf
+> ibm-plex-mono-600.ttf
+> ibm-plex-sans-400.ttf
+> ibm-plex-sans-600.ttf
+> jetbrains-mono-800.ttf
+> josefin-sans-400.ttf
+> josefin-sans-700.ttf
+> karla-400.ttf
+> karla-700.ttf
+> lato-900.ttf
+> lora-700.ttf
+> manrope-500.ttf
+> manrope-800.ttf
+> nunito-sans-400.ttf
+> nunito-sans-700.ttf
+> outfit-800.ttf
+> playfair-display-800.ttf
+> pt-sans-400.ttf
+> pt-sans-700.ttf
+> quicksand-500.ttf
+> quicksand-700.ttf
+> source-serif-4-400.ttf
+> source-serif-4-600.ttf
+> space-grotesk-700.ttf
+
+## repo woff2
+woff2 count: 26  bytes: 732924
+@font-face rules in styles.css: 26
+fonts/OFL.txt: 12364 bytes  apple Fonts/OFL.txt: 12364 bytes
+the two OFL.txt are identical
+about.html Typefaces: 1  links OFL: 1
+
+## watch-fonts.json fixture counts
+top-level keys: ['note', 'faces', 'pairs', 'totals']
+faces: 33
+faces with reservedFontName truthy: 15 ['True']
+distinct families: 32
+sources: 24
+sample: {'file': 'archivo-500.ttf', 'source': 'fonts/archivo-500-800.woff2', 'family': 'Archivo SemiBold 500', 'postScriptName': 'ArchivoSemiBold-Regular-500', 'weight': 500, 'variable': True, 'reservedFontName': False, 'bytes': 40980}
+
+## source-serif-4 opsz axis? fraunces axes?
+fonts/source-serif-4-400-600.woff2 axes= [('wght', 200.0, 400.0, 900.0)] namedInstances= 0 family= Source Serif 4
+fonts/fraunces-500-700.woff2 axes= [('opsz', 9.0, 9.0, 144.0), ('wght', 100.0, 900.0, 900.0)] namedInstances= 0 family= Fraunces
+fonts/outfit-500-800.woff2 axes= [('wght', 100.0, 100.0, 900.0)] namedInstances= 9 family= Outfit Thin
+
+## straight 26-face woff2->TTF conversion size (the checkpoint said 1.54 MB), and per-file family names
+files: 26 total TTF bytes: 1610380 = 1.61 MB decimal 1.54 MiB
+
+## Lato Black metrics at 16pt (hhea) and IBM Plex Mono advance for a 21-char ruler at 17pt
+lato-900 upem 2000 hhea asc/desc/gap 1974 -426 0 -> at 16pt: 19.2 | OS/2 typo 1610 -390 400 win 1974 426 USE_TYPO_METRICS bit7: False
+ibm-plex-mono-400.ttf advance(a)= 600 / 1000 -> 21 chars at 17pt = 214.2
+ibm-plex-mono-600.ttf advance(a)= 600 / 1000 -> 21 chars at 17pt = 214.2
+
+## lato pair in kits.json (lh, tracking)
+keys: ['note', 'expr', 'ids', 'openIds', 'secretIds', 'day', 'night', 'slotDefault', 'hexTokens', 'floors', 'ratios', 'kits', 'pairs']
+pairs: 13
+lato: {'name': 'Lato + PT Sans', 'task': ['Lato', 'wght@400;700;900', '"Lato","Helvetica Neue",Helvetica,Arial,sans-serif'], 'ui': ['PT Sans', 'wght@400;700', '"PT Sans","Helvetica Neue",Helvetica,Arial,sans-serif'], 'w': 900, 'ls': '-.025em', 'lh': 1.14}

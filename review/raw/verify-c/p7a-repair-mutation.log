@@ -1,0 +1,12 @@
+
+== desktop 1440×900
+FAIL - desktop 1440×900: 1.12: ‹ Back on every panel ⋯ opens returns to the menu as it was; × still takes the whole stack; a tap outside still closes everything 
+     help: repainted on the way back — the row still names the theme that is on expected "Dark" got ""
+
+== phone 390×844
+FAIL - phone 390×844: 1.12: ‹ Back on every panel ⋯ opens returns to the menu as it was; × still takes the whole stack; a tap outside still closes everything 
+     help: repainted on the way back — the row still names the theme that is on expected "Dark" got ""
+
+0 passed, 2 failed
+  - desktop 1440×900: 1.12: ‹ Back on every panel ⋯ opens returns to the menu as it was; × still takes the whole stack; a tap outside still closes everything: help: repainted on the way back — the row still names the theme that is on expected "Dark" got ""
+  - phone 390×844: 1.12: ‹ Back on every panel ⋯ opens returns to the menu as it was; × still takes the whole stack; a tap outside still closes everything: help: repainted on the way back — the row still names the theme that is on expected "Dark" got ""

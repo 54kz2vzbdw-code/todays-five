@@ -1,0 +1,18 @@
+
+== desktop 1440×900
+ok - desktop 1440×900: 1.12: ‹ Back on every panel ⋯ opens returns to the menu as it was; × still takes the whole stack; a tap outside still closes everything
+
+== phone 390×844
+ok - phone 390×844: 1.12: ‹ Back on every panel ⋯ opens returns to the menu as it was; × still takes the whole stack; a tap outside still closes everything
+
+2 passed, 0 failed
+===== END 01:20:17 exit=
+
+== desktop 1440×900
+ok - desktop 1440×900: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere
+
+== phone 390×844
+ok - phone 390×844: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere
+
+2 passed, 0 failed
+===== END 01:20:35 exit=

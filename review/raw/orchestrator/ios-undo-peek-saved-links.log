@@ -1,0 +1,18 @@
+
+== desktop 1440×900
+[b] desktop 1440×900 t+300 undoHidden= false toastOn= true msg= "Removed from this deviceUndo⌘Z" panels= [] status= synced errors= []
+[b] desktop 1440×900 t+1200 undoHidden= false toastOn= true msg= "Removed from this deviceUndo⌘Z" panels= [] status= synced errors= []
+[b] desktop 1440×900 t+3000 undoHidden= false toastOn= true msg= "Removed from this deviceUndo⌘Z" panels= [] status= synced errors= []
+[b] desktop 1440×900 t+6000 undoHidden= false toastOn= true msg= "Removed from this deviceUndo⌘Z" panels= [] status= synced errors= []
+ok - desktop 1440×900: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere
+
+== phone 390×844
+[b] phone 390×844 t+300 undoHidden= true toastOn= false msg= "Undo⌘Z" panels= [] status= synced errors= []
+[b] phone 390×844 t+1200 undoHidden= true toastOn= false msg= "Undo⌘Z" panels= [] status= synced errors= []
+[b] phone 390×844 t+3000 undoHidden= true toastOn= false msg= "Undo⌘Z" panels= [] status= synced errors= []
+[b] phone 390×844 t+6000 undoHidden= true toastOn= false msg= "Undo⌘Z" panels= [] status= synced errors= []
+FAIL - phone 390×844: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere 
+     the ten-second Undo is on screen after the switch, not hidden behind it
+
+1 passed, 1 failed
+  - phone 390×844: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere: the ten-second Undo is on screen after the switch, not hidden behind it

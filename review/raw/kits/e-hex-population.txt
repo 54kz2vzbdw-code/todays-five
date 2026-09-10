@@ -1,0 +1,32 @@
+== hex-population (e) Thu Sep 10 01:11:42 CDT 2026
+theme.js source carries 217 distinct #RRGGBB literals
+A: 16 hex tokens x 18 kits (slots): 288 tokens, 54 not literal in theme.js (41 distinct)
+B: distinct values of A: 216 tokens, 41 not literal in theme.js (41 distinct)
+C: A + confetti slots: 384 tokens, 56 not literal in theme.js (41 distinct)
+D: distinct values of C: 250 tokens, 41 not literal in theme.js (41 distinct)
+E: every #RRGGBB occurrence anywhere in colors (incl. gradients/box/strike): 350 tokens, 58 not literal in theme.js (41 distinct)
+F: distinct values of E: 221 tokens, 41 not literal in theme.js (41 distinct)
+G: E + confetti: 446 tokens, 60 not literal in theme.js (41 distinct)
+H: distinct values of G: 250 tokens, 41 not literal in theme.js (41 distinct)
+
+kits with at least one of the 16 hex tokens absent from the source: 18 of 18
+  dark       11 of 16 absent: muted=#A8A49C dim=#8F8C84 done=#8F8C84 accentHi=#D29663 accentDeep=#6F3B00 accentText=#BF7530 danger=#DC5E59 hairSolid=#5A5F5C muted2=#A8A49C dim2=#8F8C84 done2=#8F8C84
+  light      4 of 16 absent: hairSolid=#918F8B muted2=#5F6063 dim2=#5E6267 done2=#5D6167
+  pink       3 of 16 absent: hairSolid=#766169 dim2=#D080A4 done2=#D080A4
+  midnight   1 of 16 absent: hairSolid=#5D6476
+  forest     1 of 16 absent: hairSolid=#5B6D65
+  paper      3 of 16 absent: hairSolid=#8E8980 dim2=#665F53 done2=#665F53
+  terminal   1 of 16 absent: hairSolid=#5A5F5C
+  sunset     1 of 16 absent: hairSolid=#77636E
+  dusk       1 of 16 absent: hairSolid=#646073
+  harbor     8 of 16 absent: dim=#497477 done=#497477 accentText=#046D6D danger=#AD3728 hairSolid=#868C8B muted2=#3C676B dim2=#3E686B done2=#3E686B
+  ember      1 of 16 absent: hairSolid=#6D5D5B
+  cocoa      4 of 16 absent: danger=#EB876D hairSolid=#766963 dim2=#B69F89 done2=#B69F89
+  blush      2 of 16 absent: danger=#B93225 hairSolid=#958C8F
+  teletype   2 of 16 absent: accent=#119449 hairSolid=#8A8D87
+  sketch     7 of 16 absent: dim=#706F73 done=#706F73 accent=#9D7700 danger=#AE3620 hairSolid=#8F8D88 dim2=#626165 done2=#626165
+  arcade     1 of 16 absent: hairSolid=#5C5D6F
+  superpink  1 of 16 absent: hairSolid=#78636C
+  birthday   2 of 16 absent: danger=#B93225 hairSolid=#958A8F
+
+hex literals embedded in non-hex tokens (gradients etc.): 62

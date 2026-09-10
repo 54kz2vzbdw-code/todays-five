@@ -1,0 +1,307 @@
+diff --git a/app.js b/app.js
+index 53980ac..a9e2d93 100644
+--- a/app.js
++++ b/app.js
+@@ -78,11 +78,18 @@ function saveDevice() {
+   const undead = new Set(meta.undead || []); // an id this tab brought back (the ten-second undo after Delete everywhere): the dead mark goes, in storage too
+   const dead = new Set([...(stored.dead || []), ...(meta.dead || [])].filter(id => !undead.has(id)));
+   delete meta.undead;
++  // 1.12: Remove from this device takes the entry out for good, and the union above would hand it straight back
++  // from another tab's copy — so a removed id is marked the way a dead one is. It is *not* `dead`: that list is
++  // still on the server, and pasting its link again is the way back, which registerList clears the mark for.
++  const unremoved = new Set(meta.unremoved || []);
++  const removed = new Set([...(stored.removed || []), ...(meta.removed || [])].filter(id => !unremoved.has(id)));
++  delete meta.unremoved;
+   const byId = new Map();
+-  for (const l of [...(stored.lists || []), ...(meta.lists || [])]) if (l && l.id && !dead.has(l.id)) byId.set(l.id, { ...(byId.get(l.id) || {}), ...l });
++  for (const l of [...(stored.lists || []), ...(meta.lists || [])]) if (l && l.id && !dead.has(l.id) && !removed.has(l.id)) byId.set(l.id, { ...(byId.get(l.id) || {}), ...l });
+   meta.lists = Array.from(byId.values());
+   M.normalizeRegistry(meta);
+   meta.dead = Array.from(dead);
++  meta.removed = Array.from(new Set([...removed, ...(meta.removed || [])])); // normalizeRegistry above may have just named one (an `archived` entry finished on read)
+   meta.redirect = { ...(stored.redirect || {}), ...(meta.redirect || {}) };
+   const kills = new Map(); for (const k of [...(stored.pendingKill || []), ...(meta.pendingKill || [])]) if (k && k.lookupId) kills.set(k.lookupId, k);
+   meta.pendingKill = Array.from(kills.values());
+@@ -454,6 +461,9 @@ addEventListener("online", retryTransport);
+ document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") retryTransport(); });
+ 
+ function registerList(id, name, mode, origin) {
++  // 1.12: this is the one door into the registry, so it is where "removed from this device" ends — pasting the
++  // link again, or opening it from anywhere, means this device holds the list once more.
++  if ((meta.removed || []).includes(id)) { meta.removed = meta.removed.filter(x => x !== id); meta.unremoved = [...(meta.unremoved || []), id]; }
+   let e = meta.lists.find(l => l.id === id);
+   if (!e) { e = { id, mode: mode === "view" ? "view" : "edit", name: name || "", addedAt: Date.now(), fresh: !dev.tourDone, origin: origin === "shared" ? "shared" : "mine" }; meta.lists.push(e); }
+   else if (mode && e.mode !== mode) e.mode = mode;
+@@ -502,7 +512,7 @@ async function openList(r) {
+   $("#ro").hidden = mode !== "view";
+   paintOrigin();
+   rows.clear(); $("#list").innerHTML = ""; clearAll();
+-  wasAll = allDoneToday();
++  wasAll = allDoneInView();
+   paintWho(0);
+   try { setView(view, { force: true }); } catch (e) { console.error("render at open", e); } // 1.7: a bad row must not stop the engine
+   paintListName();
+@@ -644,7 +654,6 @@ async function migrateLegacy(oldId, legacyLocal, serverRow, gen = openGen) {
+   const old = meta.lists.find(l => l.id === oldId);
+   const e = registerList(W, old ? old.name : (copy.name || ""), "edit");
+   e.created = true; e.linkSaved = false; e.migrated = true;
+-  if (old && old.archived) e.archived = true;
+   meta.lists = meta.lists.filter(l => l.id !== oldId);
+   meta.dead = Array.from(new Set([...(meta.dead || []), oldId]));
+   meta.redirect = { ...(meta.redirect || {}), [oldId]: W };
+@@ -724,7 +733,7 @@ function applyPendingAdd() {
+ /* ---------------- lists registry ---------------- */
+ function paintListName() {
+   const btn = $("#listname");
+-  const active = meta.lists.filter(l => !l.archived);
++  const active = meta.lists; // 1.12: nothing is parked in the registry any more, so every entry is a list this device holds
+   const entry = meta.lists.find(l => l.id === listId);
+   const docName = doc && doc.name ? doc.name : (entry && entry.name) || "";
+   const name = (entry && entry.origin === "shared" && entry.nickname) || docName; // 1.4: a shared list goes by its nickname here
+@@ -739,6 +748,10 @@ function paintDate() {
+   $("#date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }).replace(", ", " · ");
+ }
+ function todayList() { return M.todayItems(doc); }
++/** 1.12: the lines the view on screen is about — Today's starred ones, or every live line in Everything. The bar,
++    the count and the finale are each a statement about the view you are looking at, so they all read this. */
++function viewList() { return view === "today" ? todayList() : M.liveItems(doc); }
++function allDoneInView() { const t = viewList(); return t.length > 0 && t.every(i => i.done); }
+ function doneCountToday() { return todayList().filter(i => i.done).length; }
+ function allDoneToday() { const t = todayList(); return t.length > 0 && t.every(i => i.done); }
+ /** Everything's DOM apart from its header: sections, the add button, the deleted shelf. */
+@@ -752,12 +765,16 @@ function setView(v, { force } = {}) {
+   hideMark();
+   if (v !== view || force) { rows.clear(); $("#list").innerHTML = ""; clearAll(); }
+   view = v;
++  // 1.12: the two views have their own numbers, so a switch is a different bar rather than progress being made —
++  // it lands at its width with no slide. One frame is enough: paint() runs inside render() below.
++  const fill = $("#fill"); fill.classList.add("nofade"); requestAnimationFrame(() => requestAnimationFrame(() => fill.classList.remove("nofade")));
+   $("#v-today").setAttribute("aria-selected", v === "today" ? "true" : "false");
+   $("#v-all").setAttribute("aria-selected", v === "all" ? "true" : "false");
+   $("#today").hidden = v !== "today";
+   $("#all").hidden = v !== "all";
+   $("#welcome").hidden = !demo; if (demo) $("#shared").hidden = true; // the welcome's title and sentence sit above the live list
+   render({ animate: false });
++  wasAll = allDoneInView(); // the view that just came up is either already finished or not; either way it is not news
+   if (v === "all") hintToday();
+ }
+ 
+@@ -1067,7 +1084,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => layo
+ if (document.fonts) document.fonts.addEventListener("loadingdone", () => layoutAll());
+ 
+ function paint() {
+-  const t = todayList(), n = t.length, d = t.filter(i => i.done).length;
++  const t = viewList(), n = t.length, d = t.filter(i => i.done).length;
+   const countHtml = `<b>${d}</b>/${n}<span class="sr-only"> done</span>`;
+   if ($("#count").innerHTML !== countHtml) $("#count").innerHTML = countHtml;
+   $("#count").setAttribute("aria-pressed", dev.oneThing && listMode === "edit" ? "true" : "false");
+@@ -1079,11 +1096,11 @@ function paint() {
+     ? `<em>${n > 1 ? "1–" + Math.min(n, 9) : "1"}</em> check off &nbsp;·&nbsp; <em>N</em> new &nbsp;·&nbsp; <em>E</em> edit &nbsp;·&nbsp; <em>?</em> help`
+     : `<em>A</em> today &nbsp;·&nbsp; <em>N</em> new &nbsp;·&nbsp; <em>/</em> search &nbsp;·&nbsp; <em>?</em> help`;
+   const fin = $("#finale"), hint = $("#hint");
+-  const finale = view === "today" && allDoneToday() && !editing && !finaleHold; // 1.9: the card waits for the chord
++  const finale = allDoneInView() && !editing && !finaleHold; // 1.9: the card waits for the chord; 1.12: each view finishes on its own
+   if (finale) { fin.classList.add("on"); hint.classList.add("off"); }
+   else { fin.classList.remove("on"); hint.classList.remove("off"); }
+   if (finale !== finaleOn) { finaleOn = finale; idleReset(); } // the controls never fade during the finale
+-  paintReview(finale);
++  paintReview(finale && view === "today"); // the review is a day's — a streak, this week, today's lines — so Everything's finale does not carry it
+ }
+ /** Day review: a quiet card under "That's the list", only when the setting is on, dismissed by any tap or key. */
+ function paintReview(finale) {
+@@ -1151,9 +1168,9 @@ function afterChange({ animate = true, delay = 0 } = {}) {
+ function applyRemote(prev) {
+   if (drag && (drag.moved || !drag.li.isConnected)) abortDrag(); // a moved drag or a lost row: abort; 1.7: an unmoved hold rides the render
+   const before = wasAll;
+-  const nowAll = allDoneToday();
++  const nowAll = allDoneToday();            // the remote celebration is about the day, as it has always been
+   render({ animate: true, quiet: true });
+-  wasAll = nowAll;
++  wasAll = allDoneInView();
+   paintListName();
+   if (editing && !doc.items[editing.id]) cancelEdit(true);
+   if (prev && (listMode === "view" || dev.celebrateRemote)) celebrateRemote(prev, before, nowAll);
+@@ -1224,12 +1241,12 @@ function toggle(id, px, py, fromPointer) {
+   }
+   // 1.9: the sink starts as the last of the ink lands (320 after a check-off, 160 after an uncheck; it was 520 and 200, with dead air between the strike and the move)
+   afterChange({ animate: true, delay: it.done ? 320 : 160 });
+-  if (view === "today") {
+-    const now = allDoneToday();
++  {
++    const now = allDoneInView();
+     // 1.9: the chord and the volley at 300 ms, as the ink lands, with the card fading in under them (it was fully on screen 110 ms before the sound)
+-    if (now && !wasAll) { finaleHold = true; const gen = openGen; setTimeout(() => {
++    if (now && !wasAll) { finaleHold = true; const gen = openGen, viewAtCheck = view; setTimeout(() => {
+       finaleHold = false;
+-      if (gen !== openGen || !doc || !allDoneToday() || view !== "today") { paint(); return; } // taken back, or another list opened, in the meantime: no chord for a finale that is not there
++      if (gen !== openGen || !doc || !allDoneInView() || view !== viewAtCheck) { paint(); return; } // taken back, another list opened, or the view changed in the meantime: no chord for a finale that is not there
+       if (dev.oneThing) setOneThing(false, { silent: true }); // the finale shows the whole list
+       paint(); // the card starts its fade now, under the chord
+       sound.finish(); moment("tf:finale"); finaleFx();
+@@ -1405,7 +1422,7 @@ function undo() {
+   sound.uncheck();
+   moment("tf:uncheck");
+   afterChange();
+-  wasAll = allDoneToday();
++  wasAll = allDoneInView();
+   toast("Undone");
+   // 1.7: focus to the line the undo touched
+   const firstId = u.items && u.items[0] && u.items[0][0];
+@@ -1776,14 +1793,18 @@ const backBtn = document.createElement("button"); backBtn.type = "button"; backB
+ backBtn.addEventListener("click", () => goBack());
+ function registerOpeners(map) { Object.assign(openers, map); }
+ function panelStackIds() { return [...panelStack.map(f => f.id), openPanel ? openPanel.id : null].filter(Boolean); }
+-function showPanel(id, { anchor = null } = {}) {
+-  if (!panelCssReady) { panelCss.then(() => showPanel(id, { anchor })); return; } // never paint a dialog before its stylesheet
++function showPanel(id, { anchor = null, restack = false } = {}) {
++  if (!panelCssReady) { panelCss.then(() => showPanel(id, { anchor, restack })); return; } // never paint a dialog before its stylesheet
+   const d = document.getElementById(id);
+   hideMark();
+-  const parent = openPanel && openPanel !== d ? openPanel : null;
++  // 1.12: `restack` is a panel that is a flow of steps (⋯ → Theme is Day, then Night) asking for the step it is
++  // leaving to become the frame below it, so ‹ Back walks the steps with the one primitive rather than a second
++  // idea of "back". The dialog is the one already open, so it is pushed as a frame and never closed.
++  const same = openPanel === d;
++  const parent = openPanel && (!same || restack) ? openPanel : null;
+   if (parent) {
+     if (!panelRestoring) { const pb = parent.querySelector(".body"); panelStack.push({ id: parent.id, scroll: pb ? pb.scrollTop : 0 }); }
+-    panelSwitching = true; parent.close(); panelSwitching = false;
++    if (!same) { panelSwitching = true; parent.close(); panelSwitching = false; }
+   }
+   openPanel = d;
+   d.classList.remove("closing"); d.style.transform = ""; d.removeAttribute("data-drag");
+@@ -1816,7 +1837,12 @@ function popPanel() {
+   if (!panelStack.length) { closeAll({ unwind: false }); return; }
+   const frame = panelStack.pop();
+   const cur = openPanel; openPanel = null;
+-  if (cur && cur.open) { panelSwitching = true; cur.close(); panelSwitching = false; }
++  // 1.12: a panel that is a flow of steps (⋯ → Theme) has itself as the frame below, so stepping back lands on the
++  // dialog that is already open. Do not close it: `close` is dispatched asynchronously, so the event from a close
++  // here arrives *after* panelSwitching has gone back to false and after the reopen has set openPanel to this same
++  // dialog — and the listener reads that as a close from somewhere else and takes the whole stack with it.
++  const stepping = !!cur && cur.id === frame.id;
++  if (cur && cur.open && !stepping) { panelSwitching = true; cur.close(); panelSwitching = false; }
+   panelRestoring = true;
+   try { if (openers[frame.id]) openers[frame.id](); else showPanel(frame.id); } finally { panelRestoring = false; }
+   const restore = () => { const body = openPanel && openPanel.querySelector(".body"); if (body && body.scrollTop !== frame.scroll) body.scrollTop = frame.scroll; };
+@@ -1831,13 +1857,6 @@ function closeAll({ unwind = true } = {}) {
+   panelDepth = 0;
+ }
+ function closePanel() { closeAll(); } // forget it now, not when the close event lands: what follows may need the panel gone
+-/** The ⋯ menu handing over to a panel (or to the About page): the menu closes, its history entry stays and becomes the new
+-    root's, so no traversal runs while the next panel opens or a navigation starts. */
+-function closeForSwitch() {
+-  const cur = openPanel; openPanel = null; panelStack.length = 0;
+-  if (cur && cur.open) { panelSwitching = true; cur.close(); panelSwitching = false; }
+-  if (backBtn.parentNode) backBtn.remove();
+-}
+ /** The app's own place, written back over whatever URL a history traversal brought up. */
+ function fixUrl() { history.replaceState(null, "", BASE + SEARCH + (listId && !demo ? frag({ id: listId, mode: listMode }) : "")); }
+ /** Resolves once a pending history unwind has landed (at once when none is pending): a reload must not race it. */
+@@ -1897,7 +1916,9 @@ function wireSheetSwipe(d) {
+   };
+   d.addEventListener("pointerup", end); d.addEventListener("pointercancel", end);
+ }
+-function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger = false }) {
++/** 1.12: `extra` is one more button beside OK — Copy link on the Remove sheet, where the thing the person is
++    about to need is the link they are removing. `extraFirst` puts it before OK, for when it matters more. */
++function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger = false, extra = null, extraFirst = false }) {
+   return new Promise(resolve => {
+     const d = $("#ask");
+     $("#ask-title").textContent = title;
+@@ -1906,6 +1927,14 @@ function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger =
+     field.hidden = !label; input.value = value; input.setAttribute("aria-label", label || title);
+     $("#ask-ok").textContent = confirm;
+     $("#ask-ok").classList.toggle("danger", danger); $("#ask-ok").classList.toggle("accent", !danger);
++    const ex = $("#ask-extra"); ex.hidden = !extra; ex.onclick = null;
++    if (extra) {
++      ex.textContent = extra.label;
++      ex.onclick = () => { extra.run(); };
++      const row = ex.parentNode, ok = $("#ask-ok");
++      if (extraFirst) row.insertBefore(ex, ok); else ok.after(ex);
++      ex.classList.toggle("accent", !!extraFirst && !danger);
++    }
+     let done = false;
+     const finish = v => { if (done) return; done = true; resolve(v); };
+     const form = $("#ask-form");
+@@ -1921,6 +1950,10 @@ function ask({ title, msg = "", label = "", value = "", confirm = "OK", danger =
+ /* the ⋯ menu: Share · Theme · Sound · Full screen · How it works · Lists · Settings · About · Delete (nine rows is the ceiling);
+    1.3: a Save your link row stands above them, with a dot, only until this device's list has its link saved */
+ $("#more").addEventListener("click", () => { paintMenu(); showPanel("p-menu", { anchor: $("#more") }); });
++// 1.12: how the ⋯ menu repaints itself when ‹ Back lands on it — repainted (the theme name, Sound, the Save row)
++// and back under the button, so a popover returns as a popover rather than as a sheet. `openers` claimed to have
++// this since 1.4 and never did, which is why nothing above the menu could step back to it.
++registerOpeners({ "p-menu": () => { paintMenu(); showPanel("p-menu", { anchor: $("#more") }); } });
+ /** The registry entry of the open list when its link has not been saved yet (a list this device made). */
+ function unsavedEntry() { const e = listId && meta.lists.find(l => l.id === listId); return e && e.created && e.linkSaved === false && e.origin !== "shared" && listMode === "edit" ? e : null; }
+ function paintMenu() {
+@@ -1938,10 +1971,13 @@ $("#p-menu").addEventListener("click", e => {
+   const act = b.dataset.act;
+   askedPanel = act; // what to reopen if loading the panels means reloading the page
+   if (act === "sound") { toggleMute(); return; } // a toggle row: the menu stays, the state flips
+-  if (act === "full" || act === "delete") closePanel(); else closeForSwitch(); // a panel or the About page follows: the menu's entry carries over, no traversal in between
++  // 1.12: a panel follows, so the menu stays open underneath it and becomes the frame below in the 1.4 stack —
++  // which is the whole of ‹ Back from ⋯ (showPanel renders it whenever there is a frame below). Full screen opens
++  // no panel, and Delete everywhere is a decision rather than a place worth going back from, so those two still close.
++  if (act === "full" || act === "delete") closePanel();
+   if (act === "save") panels().then(p => p.showSaveLink());
+   else if (act === "share") panels().then(p => p.openShare());
+-  else if (act === "theme") panels().then(p => p.openTheme()); // 1.9: the picker for the slot that is on — the row names the theme, so it opens the theme (proposal 19); Appearance keeps both slots
++  else if (act === "theme") panels().then(p => p.openThemeFlow()); // 1.12: Day, then Night — picking a theme for "whichever slot is on" meant switching to night to choose a night theme
+   else if (act === "full") toggleFullscreen();
+   else if (act === "help") panels().then(p => p.openHelp());
+   else if (act === "lists") panels().then(p => p.openLists());
+@@ -1990,7 +2026,7 @@ function tickDay() {
+   tickTheme();
+   if (!doc || listMode !== "edit" || demo) return;
+   const r = M.rollover(doc);
+-  if (r.doc !== doc) { if (drag) abortDrag(); doc = r.doc; afterChange({ animate: true }); wasAll = allDoneToday(); }
++  if (r.doc !== doc) { if (drag) abortDrag(); doc = r.doc; afterChange({ animate: true }); wasAll = allDoneInView(); }
+ }
+ setInterval(() => { tickDay(); retryPendingKills(); settleMigrations(); }, 60000);
+ 
+@@ -2067,7 +2103,7 @@ function switchTo(r, { paste = false } = {}) {
+     else location.replace(target); // path changes (…/index.html): this is a real navigation, no reload needed
+     return;
+   }
+-  openList(r);
++  return openList(r); // 1.12: returned so a caller that must speak *after* the switch can wait for it — opening a list clears the toast on screen, which was eating the ten-second Undo raised beside it
+ }
+ $("#listname").addEventListener("click", () => { askedPanel = "lists"; panels().then(p => p.openLists()); });
+ $("#w-keep").addEventListener("click", keepDemo);
+@@ -2209,7 +2245,7 @@ function toggleFullscreen() {
+ }
+ function startAgain() {
+   if (!canEdit()) return;
+-  const ids = todayList().filter(i => i.done).map(i => i.id);
++  const ids = viewList().filter(i => i.done).map(i => i.id); // 1.12: on Everything it brings back everything
+   if (!ids.length) return;
+   pushUndo("Start again", ids);
+   for (const id of ids) { const it = doc.items[id]; it.done = false; it.doneAt = 0; it.updatedAt = M.now(); }
+@@ -2217,7 +2253,7 @@ function startAgain() {
+   sound.uncheck();
+   moment("tf:uncheck");
+   afterChange();
+-  const first = todayList()[0]; if (first) focusRow(first.id);
++  const first = viewList()[0]; if (first) focusRow(first.id);
+ }
+ 
+ /* ---------------- keyboard ---------------- */
+@@ -2317,7 +2353,7 @@ const api = {
+   get listId() { return listId; }, get listMode() { return listMode; }, get ref() { return ref; }, get sync() { return sync; }, get transport() { return transport; },
+   get theme() { return theme; }, get view() { return view; }, get syncStatus() { return syncStatus; }, get editing() { return editing; }, get openPanel() { return openPanel; },
+   get whoCount() { return whoCount; },
+-  todayList, allDoneToday, setWasAll: () => { wasAll = allDoneToday(); },
++  todayList, allDoneToday, setWasAll: () => { wasAll = allDoneInView(); },
+   afterChange, applyRemote, render, setView, paint, paintListName, paintMute, paintStatus, paintMenu, paintWho, toast, hideToast, ask, showPanel, closePanel, goBack, registerOpeners,
+   focusRow, newItem, startEdit, commitEdit, deleteItem, toggle, toggleToday, notToday, pushUndo, undo, restoreItem,
+   saveDevice, registerList, switchTo, openList, showWelcome, createList, parseLink, flushQuick, flushOthers, killRemote, queueKill, retryPendingKills,
+@@ -2333,7 +2369,7 @@ const api = {
+ // 1.7: the secrets only on the local transport
+ window.__tf = () => ({ stats: { ...stats }, view, listId: TRANSPORT_KIND === "local" ? listId : (listId ? "held" : null), mode: listMode, lookupId: TRANSPORT_KIND === "local" && ref ? ref.lookupId : null, R: TRANSPORT_KIND === "local" && ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, secret: !!dev.secret, field: !!field, demo, soundPacks: { ...(dev.soundPacks || {}) }, soundPins: { ...(dev.soundPins || {}) }, shuffled: shuffledId, zone: doc && doc.zone ? doc.zone : null, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry(), origin: (entryOf(listId) || {}).origin || null, nickname: (entryOf(listId) || {}).nickname || null, whose: $("#whose").open, panels: panelStackIds() });
+ // test-only controls, on the local transport: simulate what iOS does to the audio context
+-if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneToday(); } }, presence: n => paintWho(n) };
++if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneInView(); } }, presence: n => paintWho(n) };
+ 
+ /* debug badge (?debug=1): the audio state machine, readable from a simulator screenshot */
+ if (new URLSearchParams(SEARCH).get("debug") === "1") {

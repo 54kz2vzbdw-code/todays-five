@@ -1,0 +1,53 @@
+
+=== V1 Day slot on (colorScheme light), Back button, Paper
+[0] ⋯ → Theme | header: Day theme | panels: ["p-menu","p-theme"] | open: p-theme | data-theme: light | slot on: day | day/night: T1:curated:light / T1:curated:dark | partner chip hidden: true
+[1] picked T1:curated:paper on step one — the pre-builder state Back should restore | header: Night theme | panels: ["p-menu","p-theme","p-theme"] | open: p-theme | data-theme: paper | slot on: day | day/night: T1:curated:paper / T1:curated:dark | partner chip hidden: false
+[2] Make your own | panels: ["p-menu","p-theme","p-theme","p-builder"] | open: p-builder
+[3] ‹ Back from the builder via button | header: Day theme | panels: ["p-menu","p-theme","p-theme"] | open: p-theme | data-theme: paper | slot on: day | day/night: T1:curated:paper / T1:curated:dark | partner chip hidden: true
+[4] ‹ Back again via button | header: Day theme | panels: ["p-menu","p-theme"] | open: p-theme | data-theme: paper | slot on: day | day/night: T1:curated:paper / T1:curated:dark | partner chip hidden: true
+[5] ‹ Back again via button | panels: ["p-menu"] | open: p-menu
+page errors: []
+
+=== V2 Night slot on (dark), Back by Escape, first day theme that is not the current one
+[0] ⋯ → Theme | header: Day theme | panels: ["p-menu","p-theme"] | open: p-theme | data-theme: dark | slot on: night | day/night: T1:curated:light / T1:curated:dark | partner chip hidden: true
+[1] picked T1:curated:paper on step one — the pre-builder state Back should restore | header: Night theme | panels: ["p-menu","p-theme","p-theme"] | open: p-theme | data-theme: paper | slot on: night | day/night: T1:curated:paper / T1:curated:dark | partner chip hidden: false
+[2] Make your own | panels: ["p-menu","p-theme","p-theme","p-builder"] | open: p-builder
+[3] ‹ Back from the builder via escape | header: Day theme | panels: ["p-menu","p-theme","p-theme"] | open: p-theme | data-theme: dark | slot on: night | day/night: T1:curated:paper / T1:curated:dark | partner chip hidden: true
+[4] ‹ Back again via escape | header: Day theme | panels: ["p-menu","p-theme"] | open: p-theme | data-theme: dark | slot on: night | day/night: T1:curated:paper / T1:curated:dark | partner chip hidden: true
+[5] ‹ Back again via escape | panels: ["p-menu"] | open: p-menu
+page errors: []
+
+=== V3 Night slot on (dark), Back by history.back() — the browser's own Back
+[0] ⋯ → Theme | header: Day theme | panels: ["p-menu","p-theme"] | open: p-theme | data-theme: dark | slot on: night | day/night: T1:curated:light / T1:curated:dark | partner chip hidden: true
+[1] picked T1:curated:paper on step one — the pre-builder state Back should restore | header: Night theme | panels: ["p-menu","p-theme","p-theme"] | open: p-theme | data-theme: paper | slot on: night | day/night: T1:curated:paper / T1:curated:dark | partner chip hidden: false
+[2] Make your own | panels: ["p-menu","p-theme","p-theme","p-builder"] | open: p-builder
+[3] ‹ Back from the builder via history | header: Day theme | panels: ["p-menu","p-theme","p-theme"] | open: p-theme | data-theme: dark | slot on: night | day/night: T1:curated:paper / T1:curated:dark | partner chip hidden: true
+[4] ‹ Back again via history | header: Day theme | panels: ["p-menu","p-theme"] | open: p-theme | data-theme: dark | slot on: night | day/night: T1:curated:paper / T1:curated:dark | partner chip hidden: true
+[5] ‹ Back again via history | panels: ["p-menu"] | open: p-menu
+page errors: []
+
+=== V4 phone 390×844 touch, Back button, Paper
+[0] ⋯ → Theme | header: Day theme | panels: ["p-menu","p-theme"] | open: p-theme | data-theme: dark | slot on: night | day/night: T1:curated:light / T1:curated:dark | partner chip hidden: true
+[1] picked T1:curated:paper on step one — the pre-builder state Back should restore | header: Night theme | panels: ["p-menu","p-theme","p-theme"] | open: p-theme | data-theme: paper | slot on: night | day/night: T1:curated:paper / T1:curated:dark | partner chip hidden: false
+[2] Make your own | panels: ["p-menu","p-theme","p-theme","p-builder"] | open: p-builder
+[3] ‹ Back from the builder via button | header: Day theme | panels: ["p-menu","p-theme","p-theme"] | open: p-theme | data-theme: dark | slot on: night | day/night: T1:curated:paper / T1:curated:dark | partner chip hidden: true
+[4] ‹ Back again via button | header: Day theme | panels: ["p-menu","p-theme"] | open: p-theme | data-theme: dark | slot on: night | day/night: T1:curated:paper / T1:curated:dark | partner chip hidden: true
+[5] ‹ Back again via button | panels: ["p-menu"] | open: p-menu
+page errors: []
+
+=== V5 step one's builder: ⋯ → Theme → Make your own → Back
+[0] ⋯ → Theme | header: Day theme | panels: ["p-menu","p-theme"] | open: p-theme | data-theme: dark | slot on: night | day/night: T1:curated:light / T1:curated:dark | partner chip hidden: true
+[1] Make your own | panels: ["p-menu","p-theme","p-builder"] | open: p-builder
+[2] ‹ Back from the builder (expected: Day theme, [p-menu,p-theme]) | header: Day theme | panels: ["p-menu","p-theme"] | open: p-theme | data-theme: dark | slot on: night | day/night: T1:curated:light / T1:curated:dark | partner chip hidden: true
+[3] ‹ Back again | panels: ["p-menu"] | open: p-menu
+page errors: []
+
+=== V6 control: Settings → Appearance → Night → Make your own → Back
+[0] Settings → Appearance → Night | header: Night theme | panels: ["p-menu","p-settings","p-theme"] | open: p-theme | data-theme: dark | slot on: night | day/night: T1:curated:light / T1:curated:dark | partner chip hidden: true
+[1] ‹ Back from the builder (expected: Night theme, [p-menu,p-settings,p-theme]) | header: Night theme | panels: ["p-menu","p-settings","p-theme"] | open: p-theme | data-theme: dark | slot on: night | day/night: T1:curated:light / T1:curated:dark | partner chip hidden: true
+page errors: []
+
+=== V7 contrast: Back from step two itself (no builder)
+[0] step two | header: Night theme | panels: ["p-menu","p-theme","p-theme"] | open: p-theme | data-theme: paper | slot on: night | day/night: T1:curated:paper / T1:curated:dark | partner chip hidden: false
+[1] ‹ Back from step two (the code's own rule: step one again) | header: Day theme | panels: ["p-menu","p-theme"] | open: p-theme | data-theme: paper | slot on: night | day/night: T1:curated:paper / T1:curated:dark | partner chip hidden: true
+page errors: []

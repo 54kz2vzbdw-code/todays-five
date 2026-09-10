@@ -1,0 +1,475 @@
+
+== desktop 1440×900
+ok - desktop 1440×900: a long-time device opens whole — four lists, a chosen-days repeat on the current one, 90 days of history: no page error, every Today line, the count, sync running
+ok - desktop 1440×900: 1.9: a list carries its home zone — the maker's zone at creation, stamped on a list from before by its maker on the next open, left alone by a device that only holds the link, and used for rollover whatever the device's own clock says
+ok - desktop 1440×900: 1.7: the first check-off on a cold page plays once the engines land; the panels warm on the first gesture; an empty Today says so; the star row explains itself; tooltips in Everything
+ok - desktop 1440×900: 1.7: a hold released in place opens the line's menu — on a first, a middle and a last row after a reorder, and through a remote change landing mid-hold
+ok - desktop 1440×900: 1.7: add-from-anywhere with only spaces adds no line; the welcome's paste error clears on the next try; a saved theme's × is beside the swatch, clear of the name, and deleting can be undone
+ok - desktop 1440×900: 1.7: one design language — the danger confirm, accent focus rings on selects, ranges, the About row and the Dark | Light control, uppercase chips in panels and the finale, the control widths in the builder, touch targets
+ok - desktop 1440×900: 1.7: the screen reader's view — a line's name and description, the star keeps keyboard focus, the finale and the count announced, headings without Close, key hints hidden, the keys sheet a list, the Repeat title whole, Undo returns focus, a sheet starts at its title
+ok - desktop 1440×900: 1.7: the worker keys the cached navigation without the fragment; the test hook hands out no secret off the local transport (by code); Share… falls back to a copy when the system sheet fails; Copy code falls back to a field
+ok - desktop 1440×900: 1.7: under reduced motion the finale's glow never flares
+ok - desktop 1440×900: a new list — the save sheet, then the three seed lines of 32 characters or fewer all on screen, no tour, no mark, nothing else
+ok - desktop 1440×900: the welcome has no rail and no footer; both are back once a list opens
+ok - desktop 1440×900: the rail is date · count with the sync dot · Today/Everything · Share · ⋯ (count · dot · views · ⋯ on the phone), no pills
+ok - desktop 1440×900: the ⋯ menu is nine rows in order, a popover under the button, and Sound toggles in place
+ok - desktop 1440×900: 1.10: the four moments the iPhone shell listens for fire, once each, and nothing about them shows on the web
+ok - desktop 1440×900: quiet rows — nothing at rest, hover reveals exactly one control, the star stays
+ok - desktop 1440×900: the line menu opens by ⋯, Edit first; dragging ⋯ moves the line; the popover sits by the row
+ok - desktop 1440×900: 1.9: the idle fade rests at 0.2 (26), the rail wraps whole at 200 % text (27), the Undo chip names its key (28)
+ok - desktop 1440×900: 1.9: a done line while lifted reads in --done-2 (29), the ⋯ menu is two columns in phone landscape and one otherwise (31)
+ok - desktop 1440×900: 1.9: no leak — Settings open/close ×20 and Today↔Everything ×30 keep nodes and listeners flat after a forced GC (ceiling 10 nodes, 4 listeners)
+FAIL - desktop 1440×900: 1.9: a sound for Day and one for Night — the row reads both slots and opens a sheet with a picker each, defaulting to the theme's pick and previewing; a 1.8 override lands in both slots; a kit whose pack changed keeps its old pack pinned until the slot's theme changes 
+     page.waitForSelector: Timeout 6000ms exceeded.
+FAIL - desktop 1440×900: the three just-in-time hints each appear once and never again (the star, drag, the menu) 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: the footers are four items per view 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: the idle fade — after 4 s the rail and footer fade to the date and the count; a move brings them back; off with a panel, off during the finale, off by setting 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: 1.9: Settings is three groups — Appearance, This device, This list — the toggles hold, Templates shows only for a list with no sections, and This list keeps the add-from-anywhere URL beside Export & import › 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: repeat rule from the line menu, the glyph, and the rollover reset 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: not today — the - key, the tomorrow tag, and the return 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: one-thing mode — the top undone line only, the next slides in, the finale ends it, remembered 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: search — no lone icon; a Search button past eight lines, / always works, Escape clears 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: recently deleted at the bottom of Everything (delete from the line menu), with Restore 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: section menu — templates (save, insert), put all on Today / take all off 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: move a line to another list, and the target holds it 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: 1.9: Move to… files a line under another section of this list — the sections first, then the other lists — and Undo brings it home 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: delete this list everywhere, then undo within ten seconds 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: add from anywhere — lines land on Today, the address is cleaned, a view link is refused 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: view-only link celebrates remote check-offs; an edit link only with the setting 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: 1.9: the losing side of a simultaneous edit gets a word — a pull that replaces a line this device just rewrote toasts once, and Undo puts the words back so they win 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: presence dots between two tabs, capped at five, beside the sync dot, off when the device says so 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: every sound pack plays check, uncheck and finale without console errors; the theme's pick is named and the override wins 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: the theme builder carries a sound pack — Auto names the hue rule's pick, a saved theme's code is T2:, a T1: code imports 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: audio recovers — a suspended context resumes on the next tap, a dead one is replaced 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: the bottom edge is the page background — no hairline under the list 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: export JSON round-trips byte for byte; Markdown reads; import merges (from the Export & import sub-sheet) 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: 1.7: unsynced edits on a link that died are carried to its successor on this device without a paste 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: day review shows under the finale when on, dismisses on a tap, never fires a sound 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: remove from this device takes it off this device only; the server keeps it and the link brings it back (1.12) 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: a 1.0 device (it called itself 4.0.0) opens 1.8 — the toast once, nothing else, nothing about version numbers, list intact, no hints later 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: About shows the version as 1.9 (build N) and the changelog in its shape, no dates 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/about.html
+FAIL - desktop 1440×900: How it works has the Shortcut and bookmarklet, the new gestures, no tour, and opens the reference 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: the flip — T, or a click on the sun/moon crossfades the whole palette (~400 ms, tokens interpolated) with the incoming theme's tick; instant under reduced motion 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: Switch · With the system — the device's setting picks the slot; a manual flip holds until the system next changes, then the automation resumes 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: Switch · On a schedule — day from / night from by a mocked clock; the minute tick switches; a manual flip holds until the schedule's next switch 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: the picker fills one slot — Made for day / Made for night / Yours, every theme for either slot, the lean and partner tags, and the one-tap partner 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: the builder — Use for the slot, Save to this list puts a theme under Yours, Make its partner saves a linked second theme and offers it 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: the Secret group shows up only after the key, and Forget puts it away and the slots back 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: both Secret themes in both slots, the flip between them, their own fonts, and a finale each 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: the sparkle field is behind the words, costs no frames at rest, pauses with the tab and stands still under reduced motion 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: a device that never gives the key asks for nothing of the Secret pair and is never told about it 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: T flips, Shift+T opens Appearance; ⋯ → Theme opens the picker for the slot that is on (1.9) 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: a 1.1 device opens 1.8 — Follow system and the schedule migrate into the switch, the theme on screen does not change, and the toast is the only new thing 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: a fresh device on a light system paints Light from the first frame and starts With the system 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: the welcome is a live list — the title and one sentence, three lines that strike, knock and throw confetti before any list exists, nothing stored, no rail, footer, hint or toast 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: a line of your own offers Keep; Keep carries the lines and the check marks into a real list, and the save sheet follows 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: 1.9: Skip on an untouched welcome starts an empty list; once a line of your own is on it, Skip keeps the lines; Paste opens the form, refuses junk, and opens a real link 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: the save sheet by device — a desktop leads with Bookmark this page, then Copy, then Open it on your phone with the QR 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: saving counts on Copy or I've saved it; until then ⋯ carries Save your link with a dot and the Share sheet repeats the key line; a device from before is grandfathered 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: the names everywhere — How it works (Private link, View link, Second screen beside Let someone watch, New keys), Settings › Advanced on a View link, the refusal of an add on a View link 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: shuffle in one-thing mode — S, or ↻ beside the count: a different undone line, never the same twice, no reorder, the last line wobbles, a check-off puts the top line back; nothing outside the mode 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: Keep under the server's create limit still degrades politely — the list is kept here, the toast says so, no error 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: the card a texted link shows — the Open Graph and Twitter tags are in the static HTML of both pages, the image answers 200 at 1200×630 under 150 KB 
+     fetch failed
+FAIL - desktop 1440×900: whose list is this — asked once for a bare private link and for a view link, never for a hinted link or a list made here; the answer files it and the hint leaves the address bar 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: 1.7: the whose question survives a tap outside the card and Escape, no answer carries a focus ring, and an answer opens the list 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: a shared list — under Shared with me in Lists, a nickname of its own that never touches the synced name, no New keys, no Delete everywhere, no save nudge; It's mine after all files it under My lists and brings them back; a list made here has no switch 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: the Share sheet by intent — Show it somewhere first (the View link, both uses in one breath, the first Copy), Open on my other device (the Private link marked /mine, qualified, the code first, then Copy), Let someone edit (the Private link marked /shared under the warning, Copy only), Tell a friend apart, New keys last; the system share sheet gets the note in the tap's own tick, and the note itself is shown when nothing else can take it 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: panels are one stack — a sub-panel shows ‹ Back and returns to its parent with its scroll and its changed value, × closes the whole stack, Escape goes back a level and closes at the root, one history entry per level so the browser's Back goes back a level 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: a 1.3 device opens 1.8 — every list it holds is mine with no question and no groups, and the toast is the only new thing 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: the Home Screen name is Today's Five (the apple title, the manifest's name and short_name); the save sheet's phone steps cover every iOS 26 Safari layout — Share may sit behind ⋯ — and other phones get their browser's menu 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: a page open across a deploy — its later modules are asked for by build and the service worker answers from that build's cache, this build's from its own cache first (1.9), an unknown build falls back to the network; the cache holds one copy of each file (1.9); a page whose build cannot be served reloads once after flushing and comes back to its view with the panel it asked for 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local&sw=1
+FAIL - desktop 1440×900: 1.9: a page another site has framed leaves the frame (the boot script's framebust, hashed in the CSP) 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/tools/og.html
+FAIL - desktop 1440×900: 1.9: a counter appears for the last twenty characters before a cap; Lists rows carry no id fragment 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: 1.12: ‹ Back on every panel ⋯ opens returns to the menu as it was; × still takes the whole stack; a tap outside still closes everything 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: 1.12: ⋯ → Theme asks Day then Night — the partner first, each step on screen, Back keeps the day choice; Appearance still fills one slot 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: 1.12: Everything has its own bar, count and finale; Start again there brings everything back; Today is unchanged 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: 1.12: a registry an older build left with an archived entry is finished on read, quietly 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - desktop 1440×900: no page errors, CSP violations or third-party requests across a full session 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+
+== phone 390×844
+FAIL - phone 390×844: a long-time device opens whole — four lists, a chosen-days repeat on the current one, 90 days of history: no page error, every Today line, the count, sync running 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.9: a list carries its home zone — the maker's zone at creation, stamped on a list from before by its maker on the next open, left alone by a device that only holds the link, and used for rollover whatever the device's own clock says 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.7: the first check-off on a cold page plays once the engines land; the panels warm on the first gesture; an empty Today says so; the star row explains itself; tooltips in Everything 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.7: a hold released in place opens the line's menu — on a first, a middle and a last row after a reorder, and through a remote change landing mid-hold 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.7: add-from-anywhere with only spaces adds no line; the welcome's paste error clears on the next try; a saved theme's × is beside the swatch, clear of the name, and deleting can be undone 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.7: one design language — the danger confirm, accent focus rings on selects, ranges, the About row and the Dark | Light control, uppercase chips in panels and the finale, the control widths in the builder, touch targets 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.7: the screen reader's view — a line's name and description, the star keeps keyboard focus, the finale and the count announced, headings without Close, key hints hidden, the keys sheet a list, the Repeat title whole, Undo returns focus, a sheet starts at its title 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.7: the worker keys the cached navigation without the fragment; the test hook hands out no secret off the local transport (by code); Share… falls back to a copy when the system sheet fails; Copy code falls back to a field 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local&sw=1
+FAIL - phone 390×844: 1.7: under reduced motion the finale's glow never flares 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: a new list — the save sheet, then the three seed lines of 32 characters or fewer all on screen, no tour, no mark, nothing else 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the welcome has no rail and no footer; both are back once a list opens 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the rail is date · count with the sync dot · Today/Everything · Share · ⋯ (count · dot · views · ⋯ on the phone), no pills 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the ⋯ menu is nine rows in order, a bottom sheet, and Sound toggles in place 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.10: the four moments the iPhone shell listens for fire, once each, and nothing about them shows on the web 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: quiet rows — nothing on a row at rest but the checkbox, the words and (in Everything) a small star 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the line menu opens by a hold released in place and by a swipe right, Edit first; a hold that moves drags 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.9: the idle fade rests at 0.2 (26), the rail wraps whole at 200 % text (27), the Undo chip names its key (28) 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.9: a done line while lifted reads in --done-2 (29), the ⋯ menu is two columns in phone landscape and one otherwise (31) 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.9: no leak — Settings open/close ×20 and Today↔Everything ×30 keep nodes and listeners flat after a forced GC (ceiling 10 nodes, 4 listeners) 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.9: a sound for Day and one for Night — the row reads both slots and opens a sheet with a picker each, defaulting to the theme's pick and previewing; a 1.8 override lands in both slots; a kit whose pack changed keeps its old pack pinned until the slot's theme changes 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the three just-in-time hints each appear once and never again (the star, drag, the menu) 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the footers are four items per view (hidden on the phone) 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.9: Settings is three groups — Appearance, This device, This list — the toggles hold, Templates shows only for a list with no sections, and This list keeps the add-from-anywhere URL beside Export & import › 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: repeat rule from the line menu, the glyph, and the rollover reset 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: not today — swipe left, the tomorrow tag, and the return 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: one-thing mode — the top undone line only, the next slides in, the finale ends it, remembered 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: search — no lone icon; a Search button past eight lines, / always works, Escape clears 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: recently deleted at the bottom of Everything (delete from the line menu), with Restore 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: section menu — templates (save, insert), put all on Today / take all off 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: move a line to another list, and the target holds it 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.9: Move to… files a line under another section of this list — the sections first, then the other lists — and Undo brings it home 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: delete this list everywhere, then undo within ten seconds 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: add from anywhere — lines land on Today, the address is cleaned, a view link is refused 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: view-only link celebrates remote check-offs; an edit link only with the setting 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.9: the losing side of a simultaneous edit gets a word — a pull that replaces a line this device just rewrote toasts once, and Undo puts the words back so they win 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: presence dots between two tabs, capped at five, beside the sync dot, off when the device says so 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: every sound pack plays check, uncheck and finale without console errors; the theme's pick is named and the override wins 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the theme builder carries a sound pack — Auto names the hue rule's pick, a saved theme's code is T2:, a T1: code imports 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: audio recovers — a suspended context resumes on the next tap, a dead one is replaced 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the bottom edge is the page background — no hairline under the list 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: export JSON round-trips byte for byte; Markdown reads; import merges (from the Export & import sub-sheet) 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.7: unsynced edits on a link that died are carried to its successor on this device without a paste 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: day review shows under the finale when on, dismisses on a tap, never fires a sound 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: remove from this device takes it off this device only; the server keeps it and the link brings it back (1.12) 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: a 1.0 device (it called itself 4.0.0) opens 1.8 — the toast once, nothing else, nothing about version numbers, list intact, no hints later 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: About shows the version as 1.9 (build N) and the changelog in its shape, no dates 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/about.html
+FAIL - phone 390×844: How it works has the Shortcut and bookmarklet, the new gestures, no tour, and opens the reference 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the flip — a tap on the sun/moon crossfades the whole palette (~400 ms, tokens interpolated) with the incoming theme's tick; instant under reduced motion 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: Switch · With the system — the device's setting picks the slot; a manual flip holds until the system next changes, then the automation resumes 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: Switch · On a schedule — day from / night from by a mocked clock; the minute tick switches; a manual flip holds until the schedule's next switch 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the picker fills one slot — Made for day / Made for night / Yours, every theme for either slot, the lean and partner tags, and the one-tap partner 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the builder — Use for the slot, Save to this list puts a theme under Yours, Make its partner saves a linked second theme and offers it 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the Secret group shows up only after the key, and Forget puts it away and the slots back 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: both Secret themes in both slots, the flip between them, their own fonts, and a finale each 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the sparkle field is behind the words, costs no frames at rest, pauses with the tab and stands still under reduced motion 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: a device that never gives the key asks for nothing of the Secret pair and is never told about it 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: a 1.1 device opens 1.8 — Follow system and the schedule migrate into the switch, the theme on screen does not change, and the toast is the only new thing 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: a fresh device on a light system paints Light from the first frame and starts With the system 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the welcome is a live list — the title and one sentence, three lines that strike, knock and throw confetti before any list exists, nothing stored, no rail, footer, hint or toast 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: a line of your own offers Keep; Keep carries the lines and the check marks into a real list, and the save sheet follows 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.9: Skip on an untouched welcome starts an empty list; once a line of your own is on it, Skip keeps the lines; Paste opens the form, refuses junk, and opens a real link 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the save sheet by device — Safari on a phone leads with Add to Home Screen and shows no QR; the installed app says the icon holds the link 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: saving counts on Copy or I've saved it; until then ⋯ carries Save your link with a dot and the Share sheet repeats the key line; a device from before is grandfathered 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the names everywhere — How it works (Private link, View link, Second screen beside Let someone watch, New keys), Settings › Advanced on a View link, the refusal of an add on a View link 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: shuffle in one-thing mode — ↻ beside the count: a different undone line, never the same twice, no reorder, the last line wobbles, a check-off puts the top line back; nothing outside the mode 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: shake to shuffle — the hint on the second visit to the mode, named for what it does, once; Allow, a shake shuffles, a walk does not, one shuffle a second; declined means ↻ only 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: Keep under the server's create limit still degrades politely — the list is kept here, the toast says so, no error 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the card a texted link shows — the Open Graph and Twitter tags are in the static HTML of both pages, the image answers 200 at 1200×630 under 150 KB 
+     fetch failed
+FAIL - phone 390×844: whose list is this — asked once for a bare private link and for a view link, never for a hinted link or a list made here; the answer files it and the hint leaves the address bar 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.7: the whose question survives a tap outside the card and Escape, no answer carries a focus ring, and an answer opens the list 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: a shared list — under Shared with me in Lists, a nickname of its own that never touches the synced name, no New keys, no Delete everywhere, no save nudge; It's mine after all files it under My lists and brings them back; a list made here has no switch 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the Share sheet by intent — Show it somewhere first (the View link, both uses in one breath, the first Copy), Open on my other device (the Private link marked /mine, qualified, the code first, then Copy), Let someone edit (the Private link marked /shared under the warning, Copy only), Tell a friend apart, New keys last; the system share sheet gets the note in the tap's own tick, and the note itself is shown when nothing else can take it 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: panels are one stack — a sub-panel shows ‹ Back and returns to its parent with its scroll and its changed value, × closes the whole stack, Escape goes back a level and closes at the root, one history entry per level so the browser's Back goes back a level, and an edge swipe from the left goes back 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: a 1.3 device opens 1.8 — every list it holds is mine with no question and no groups, and the toast is the only new thing 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: the Home Screen name is Today's Five (the apple title, the manifest's name and short_name); the save sheet's phone steps cover every iOS 26 Safari layout — Share may sit behind ⋯ — and other phones get their browser's menu 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: a page open across a deploy — its later modules are asked for by build and the service worker answers from that build's cache, this build's from its own cache first (1.9), an unknown build falls back to the network; the cache holds one copy of each file (1.9); a page whose build cannot be served reloads once after flushing and comes back to its view with the panel it asked for 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local&sw=1
+FAIL - phone 390×844: 1.9: a page another site has framed leaves the frame (the boot script's framebust, hashed in the CSP) 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/tools/og.html
+FAIL - phone 390×844: 1.9: a counter appears for the last twenty characters before a cap; Lists rows carry no id fragment 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.12: ‹ Back on every panel ⋯ opens returns to the menu as it was; × still takes the whole stack; a tap outside still closes everything 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.12: ⋯ → Theme asks Day then Night — the partner first, each step on screen, Back keeps the day choice; Appearance still fills one slot 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.12: Everything has its own bar, count and finale; Start again there brings everything back; Today is unchanged 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: 1.12: a registry an older build left with an archived entry is finished on read, quietly 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+FAIL - phone 390×844: no page errors, CSP violations or third-party requests across a full session 
+     page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+
+19 passed, 150 failed
+  - desktop 1440×900: 1.9: a sound for Day and one for Night — the row reads both slots and opens a sheet with a picker each, defaulting to the theme's pick and previewing; a 1.8 override lands in both slots; a kit whose pack changed keeps its old pack pinned until the slot's theme changes: page.waitForSelector: Timeout 6000ms exceeded.
+  - desktop 1440×900: the three just-in-time hints each appear once and never again (the star, drag, the menu): page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: the footers are four items per view: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: the idle fade — after 4 s the rail and footer fade to the date and the count; a move brings them back; off with a panel, off during the finale, off by setting: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: 1.9: Settings is three groups — Appearance, This device, This list — the toggles hold, Templates shows only for a list with no sections, and This list keeps the add-from-anywhere URL beside Export & import ›: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: repeat rule from the line menu, the glyph, and the rollover reset: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: not today — the - key, the tomorrow tag, and the return: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: one-thing mode — the top undone line only, the next slides in, the finale ends it, remembered: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: search — no lone icon; a Search button past eight lines, / always works, Escape clears: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: recently deleted at the bottom of Everything (delete from the line menu), with Restore: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: section menu — templates (save, insert), put all on Today / take all off: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: move a line to another list, and the target holds it: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: 1.9: Move to… files a line under another section of this list — the sections first, then the other lists — and Undo brings it home: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: delete this list everywhere, then undo within ten seconds: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: add from anywhere — lines land on Today, the address is cleaned, a view link is refused: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: view-only link celebrates remote check-offs; an edit link only with the setting: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: 1.9: the losing side of a simultaneous edit gets a word — a pull that replaces a line this device just rewrote toasts once, and Undo puts the words back so they win: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: presence dots between two tabs, capped at five, beside the sync dot, off when the device says so: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: every sound pack plays check, uncheck and finale without console errors; the theme's pick is named and the override wins: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: the theme builder carries a sound pack — Auto names the hue rule's pick, a saved theme's code is T2:, a T1: code imports: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: audio recovers — a suspended context resumes on the next tap, a dead one is replaced: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: the bottom edge is the page background — no hairline under the list: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: export JSON round-trips byte for byte; Markdown reads; import merges (from the Export & import sub-sheet): page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: 1.7: unsynced edits on a link that died are carried to its successor on this device without a paste: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: day review shows under the finale when on, dismisses on a tap, never fires a sound: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: remove from this device takes it off this device only; the server keeps it and the link brings it back (1.12): page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: a 1.0 device (it called itself 4.0.0) opens 1.8 — the toast once, nothing else, nothing about version numbers, list intact, no hints later: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: About shows the version as 1.9 (build N) and the changelog in its shape, no dates: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/about.html
+  - desktop 1440×900: How it works has the Shortcut and bookmarklet, the new gestures, no tour, and opens the reference: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: the flip — T, or a click on the sun/moon crossfades the whole palette (~400 ms, tokens interpolated) with the incoming theme's tick; instant under reduced motion: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: Switch · With the system — the device's setting picks the slot; a manual flip holds until the system next changes, then the automation resumes: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: Switch · On a schedule — day from / night from by a mocked clock; the minute tick switches; a manual flip holds until the schedule's next switch: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: the picker fills one slot — Made for day / Made for night / Yours, every theme for either slot, the lean and partner tags, and the one-tap partner: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: the builder — Use for the slot, Save to this list puts a theme under Yours, Make its partner saves a linked second theme and offers it: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: the Secret group shows up only after the key, and Forget puts it away and the slots back: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: both Secret themes in both slots, the flip between them, their own fonts, and a finale each: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: the sparkle field is behind the words, costs no frames at rest, pauses with the tab and stands still under reduced motion: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: a device that never gives the key asks for nothing of the Secret pair and is never told about it: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: T flips, Shift+T opens Appearance; ⋯ → Theme opens the picker for the slot that is on (1.9): page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: a 1.1 device opens 1.8 — Follow system and the schedule migrate into the switch, the theme on screen does not change, and the toast is the only new thing: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: a fresh device on a light system paints Light from the first frame and starts With the system: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: the welcome is a live list — the title and one sentence, three lines that strike, knock and throw confetti before any list exists, nothing stored, no rail, footer, hint or toast: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: a line of your own offers Keep; Keep carries the lines and the check marks into a real list, and the save sheet follows: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: 1.9: Skip on an untouched welcome starts an empty list; once a line of your own is on it, Skip keeps the lines; Paste opens the form, refuses junk, and opens a real link: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: the save sheet by device — a desktop leads with Bookmark this page, then Copy, then Open it on your phone with the QR: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: saving counts on Copy or I've saved it; until then ⋯ carries Save your link with a dot and the Share sheet repeats the key line; a device from before is grandfathered: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: the names everywhere — How it works (Private link, View link, Second screen beside Let someone watch, New keys), Settings › Advanced on a View link, the refusal of an add on a View link: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: shuffle in one-thing mode — S, or ↻ beside the count: a different undone line, never the same twice, no reorder, the last line wobbles, a check-off puts the top line back; nothing outside the mode: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: Keep under the server's create limit still degrades politely — the list is kept here, the toast says so, no error: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: the card a texted link shows — the Open Graph and Twitter tags are in the static HTML of both pages, the image answers 200 at 1200×630 under 150 KB: fetch failed
+  - desktop 1440×900: whose list is this — asked once for a bare private link and for a view link, never for a hinted link or a list made here; the answer files it and the hint leaves the address bar: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: 1.7: the whose question survives a tap outside the card and Escape, no answer carries a focus ring, and an answer opens the list: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: a shared list — under Shared with me in Lists, a nickname of its own that never touches the synced name, no New keys, no Delete everywhere, no save nudge; It's mine after all files it under My lists and brings them back; a list made here has no switch: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: the Share sheet by intent — Show it somewhere first (the View link, both uses in one breath, the first Copy), Open on my other device (the Private link marked /mine, qualified, the code first, then Copy), Let someone edit (the Private link marked /shared under the warning, Copy only), Tell a friend apart, New keys last; the system share sheet gets the note in the tap's own tick, and the note itself is shown when nothing else can take it: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: panels are one stack — a sub-panel shows ‹ Back and returns to its parent with its scroll and its changed value, × closes the whole stack, Escape goes back a level and closes at the root, one history entry per level so the browser's Back goes back a level: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: a 1.3 device opens 1.8 — every list it holds is mine with no question and no groups, and the toast is the only new thing: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: the Home Screen name is Today's Five (the apple title, the manifest's name and short_name); the save sheet's phone steps cover every iOS 26 Safari layout — Share may sit behind ⋯ — and other phones get their browser's menu: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: a page open across a deploy — its later modules are asked for by build and the service worker answers from that build's cache, this build's from its own cache first (1.9), an unknown build falls back to the network; the cache holds one copy of each file (1.9); a page whose build cannot be served reloads once after flushing and comes back to its view with the panel it asked for: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local&sw=1
+  - desktop 1440×900: 1.9: a page another site has framed leaves the frame (the boot script's framebust, hashed in the CSP): page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/tools/og.html
+  - desktop 1440×900: 1.9: a counter appears for the last twenty characters before a cap; Lists rows carry no id fragment: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: 1.12: ‹ Back on every panel ⋯ opens returns to the menu as it was; × still takes the whole stack; a tap outside still closes everything: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: 1.12: ⋯ → Theme asks Day then Night — the partner first, each step on screen, Back keeps the day choice; Appearance still fills one slot: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: 1.12: Everything has its own bar, count and finale; Start again there brings everything back; Today is unchanged: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: 1.12: a registry an older build left with an archived entry is finished on read, quietly: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - desktop 1440×900: no page errors, CSP violations or third-party requests across a full session: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: a long-time device opens whole — four lists, a chosen-days repeat on the current one, 90 days of history: no page error, every Today line, the count, sync running: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.9: a list carries its home zone — the maker's zone at creation, stamped on a list from before by its maker on the next open, left alone by a device that only holds the link, and used for rollover whatever the device's own clock says: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.7: the first check-off on a cold page plays once the engines land; the panels warm on the first gesture; an empty Today says so; the star row explains itself; tooltips in Everything: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.7: a hold released in place opens the line's menu — on a first, a middle and a last row after a reorder, and through a remote change landing mid-hold: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.7: add-from-anywhere with only spaces adds no line; the welcome's paste error clears on the next try; a saved theme's × is beside the swatch, clear of the name, and deleting can be undone: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.7: one design language — the danger confirm, accent focus rings on selects, ranges, the About row and the Dark | Light control, uppercase chips in panels and the finale, the control widths in the builder, touch targets: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.7: the screen reader's view — a line's name and description, the star keeps keyboard focus, the finale and the count announced, headings without Close, key hints hidden, the keys sheet a list, the Repeat title whole, Undo returns focus, a sheet starts at its title: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.7: the worker keys the cached navigation without the fragment; the test hook hands out no secret off the local transport (by code); Share… falls back to a copy when the system sheet fails; Copy code falls back to a field: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local&sw=1
+  - phone 390×844: 1.7: under reduced motion the finale's glow never flares: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: a new list — the save sheet, then the three seed lines of 32 characters or fewer all on screen, no tour, no mark, nothing else: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the welcome has no rail and no footer; both are back once a list opens: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the rail is date · count with the sync dot · Today/Everything · Share · ⋯ (count · dot · views · ⋯ on the phone), no pills: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the ⋯ menu is nine rows in order, a bottom sheet, and Sound toggles in place: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.10: the four moments the iPhone shell listens for fire, once each, and nothing about them shows on the web: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: quiet rows — nothing on a row at rest but the checkbox, the words and (in Everything) a small star: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the line menu opens by a hold released in place and by a swipe right, Edit first; a hold that moves drags: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.9: the idle fade rests at 0.2 (26), the rail wraps whole at 200 % text (27), the Undo chip names its key (28): page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.9: a done line while lifted reads in --done-2 (29), the ⋯ menu is two columns in phone landscape and one otherwise (31): page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.9: no leak — Settings open/close ×20 and Today↔Everything ×30 keep nodes and listeners flat after a forced GC (ceiling 10 nodes, 4 listeners): page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.9: a sound for Day and one for Night — the row reads both slots and opens a sheet with a picker each, defaulting to the theme's pick and previewing; a 1.8 override lands in both slots; a kit whose pack changed keeps its old pack pinned until the slot's theme changes: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the three just-in-time hints each appear once and never again (the star, drag, the menu): page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the footers are four items per view (hidden on the phone): page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.9: Settings is three groups — Appearance, This device, This list — the toggles hold, Templates shows only for a list with no sections, and This list keeps the add-from-anywhere URL beside Export & import ›: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: repeat rule from the line menu, the glyph, and the rollover reset: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: not today — swipe left, the tomorrow tag, and the return: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: one-thing mode — the top undone line only, the next slides in, the finale ends it, remembered: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: search — no lone icon; a Search button past eight lines, / always works, Escape clears: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: recently deleted at the bottom of Everything (delete from the line menu), with Restore: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: section menu — templates (save, insert), put all on Today / take all off: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: move a line to another list, and the target holds it: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.9: Move to… files a line under another section of this list — the sections first, then the other lists — and Undo brings it home: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: delete this list everywhere, then undo within ten seconds: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: add from anywhere — lines land on Today, the address is cleaned, a view link is refused: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: view-only link celebrates remote check-offs; an edit link only with the setting: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.9: the losing side of a simultaneous edit gets a word — a pull that replaces a line this device just rewrote toasts once, and Undo puts the words back so they win: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: presence dots between two tabs, capped at five, beside the sync dot, off when the device says so: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: every sound pack plays check, uncheck and finale without console errors; the theme's pick is named and the override wins: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the theme builder carries a sound pack — Auto names the hue rule's pick, a saved theme's code is T2:, a T1: code imports: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: audio recovers — a suspended context resumes on the next tap, a dead one is replaced: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the bottom edge is the page background — no hairline under the list: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: export JSON round-trips byte for byte; Markdown reads; import merges (from the Export & import sub-sheet): page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.7: unsynced edits on a link that died are carried to its successor on this device without a paste: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: day review shows under the finale when on, dismisses on a tap, never fires a sound: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: remove from this device takes it off this device only; the server keeps it and the link brings it back (1.12): page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: a 1.0 device (it called itself 4.0.0) opens 1.8 — the toast once, nothing else, nothing about version numbers, list intact, no hints later: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: About shows the version as 1.9 (build N) and the changelog in its shape, no dates: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/about.html
+  - phone 390×844: How it works has the Shortcut and bookmarklet, the new gestures, no tour, and opens the reference: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the flip — a tap on the sun/moon crossfades the whole palette (~400 ms, tokens interpolated) with the incoming theme's tick; instant under reduced motion: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: Switch · With the system — the device's setting picks the slot; a manual flip holds until the system next changes, then the automation resumes: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: Switch · On a schedule — day from / night from by a mocked clock; the minute tick switches; a manual flip holds until the schedule's next switch: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the picker fills one slot — Made for day / Made for night / Yours, every theme for either slot, the lean and partner tags, and the one-tap partner: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the builder — Use for the slot, Save to this list puts a theme under Yours, Make its partner saves a linked second theme and offers it: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the Secret group shows up only after the key, and Forget puts it away and the slots back: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: both Secret themes in both slots, the flip between them, their own fonts, and a finale each: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the sparkle field is behind the words, costs no frames at rest, pauses with the tab and stands still under reduced motion: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: a device that never gives the key asks for nothing of the Secret pair and is never told about it: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: a 1.1 device opens 1.8 — Follow system and the schedule migrate into the switch, the theme on screen does not change, and the toast is the only new thing: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: a fresh device on a light system paints Light from the first frame and starts With the system: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the welcome is a live list — the title and one sentence, three lines that strike, knock and throw confetti before any list exists, nothing stored, no rail, footer, hint or toast: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: a line of your own offers Keep; Keep carries the lines and the check marks into a real list, and the save sheet follows: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.9: Skip on an untouched welcome starts an empty list; once a line of your own is on it, Skip keeps the lines; Paste opens the form, refuses junk, and opens a real link: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the save sheet by device — Safari on a phone leads with Add to Home Screen and shows no QR; the installed app says the icon holds the link: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: saving counts on Copy or I've saved it; until then ⋯ carries Save your link with a dot and the Share sheet repeats the key line; a device from before is grandfathered: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the names everywhere — How it works (Private link, View link, Second screen beside Let someone watch, New keys), Settings › Advanced on a View link, the refusal of an add on a View link: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: shuffle in one-thing mode — ↻ beside the count: a different undone line, never the same twice, no reorder, the last line wobbles, a check-off puts the top line back; nothing outside the mode: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: shake to shuffle — the hint on the second visit to the mode, named for what it does, once; Allow, a shake shuffles, a walk does not, one shuffle a second; declined means ↻ only: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: Keep under the server's create limit still degrades politely — the list is kept here, the toast says so, no error: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the card a texted link shows — the Open Graph and Twitter tags are in the static HTML of both pages, the image answers 200 at 1200×630 under 150 KB: fetch failed
+  - phone 390×844: whose list is this — asked once for a bare private link and for a view link, never for a hinted link or a list made here; the answer files it and the hint leaves the address bar: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.7: the whose question survives a tap outside the card and Escape, no answer carries a focus ring, and an answer opens the list: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: a shared list — under Shared with me in Lists, a nickname of its own that never touches the synced name, no New keys, no Delete everywhere, no save nudge; It's mine after all files it under My lists and brings them back; a list made here has no switch: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the Share sheet by intent — Show it somewhere first (the View link, both uses in one breath, the first Copy), Open on my other device (the Private link marked /mine, qualified, the code first, then Copy), Let someone edit (the Private link marked /shared under the warning, Copy only), Tell a friend apart, New keys last; the system share sheet gets the note in the tap's own tick, and the note itself is shown when nothing else can take it: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: panels are one stack — a sub-panel shows ‹ Back and returns to its parent with its scroll and its changed value, × closes the whole stack, Escape goes back a level and closes at the root, one history entry per level so the browser's Back goes back a level, and an edge swipe from the left goes back: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: a 1.3 device opens 1.8 — every list it holds is mine with no question and no groups, and the toast is the only new thing: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: the Home Screen name is Today's Five (the apple title, the manifest's name and short_name); the save sheet's phone steps cover every iOS 26 Safari layout — Share may sit behind ⋯ — and other phones get their browser's menu: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: a page open across a deploy — its later modules are asked for by build and the service worker answers from that build's cache, this build's from its own cache first (1.9), an unknown build falls back to the network; the cache holds one copy of each file (1.9); a page whose build cannot be served reloads once after flushing and comes back to its view with the panel it asked for: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local&sw=1
+  - phone 390×844: 1.9: a page another site has framed leaves the frame (the boot script's framebust, hashed in the CSP): page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/tools/og.html
+  - phone 390×844: 1.9: a counter appears for the last twenty characters before a cap; Lists rows carry no id fragment: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.12: ‹ Back on every panel ⋯ opens returns to the menu as it was; × still takes the whole stack; a tap outside still closes everything: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.12: ⋯ → Theme asks Day then Night — the partner first, each step on screen, Back keeps the day choice; Appearance still fills one slot: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.12: Everything has its own bar, count and finale; Start again there brings everything back; Today is unchanged: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: 1.12: a registry an older build left with an archived entry is finished on read, quietly: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local
+  - phone 390×844: no page errors, CSP violations or third-party requests across a full session: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8890/?transport=local

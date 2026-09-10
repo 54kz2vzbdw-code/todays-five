@@ -1,0 +1,30 @@
+## -TF launch arguments: #if stack at each read site (python, Thu Sep 10 15:04:28 CDT 2026)
+-TFAddSelfTest         apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:255 inDEBUG=True stack=['DEBUG']
+-TFConfettiSelfTest    apple/TodaysFive/TodaysFiveWatch/TodayView.swift:680 inDEBUG=True stack=['DEBUG']
+-TFDumpVault           apple/TodaysFive/TodaysFive/WebViewController.swift:241 inDEBUG=True stack=['DEBUG']
+-TFDumpVault           apple/TodaysFive/TodaysFive/WebViewController.swift:91 inDEBUG=True stack=['DEBUG']
+-TFDumpWatchSend       apple/TodaysFive/TodaysFive/WatchLinkSender.swift:144 inDEBUG=True stack=['DEBUG']
+-TFFaceProbe           apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:71 inDEBUG=True stack=['DEBUG']
+-TFFinale              apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:58 inDEBUG=True stack=['DEBUG']
+-TFFinaleHold          apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:179 inDEBUG=True stack=['DEBUG']
+-TFFontSelfTest        apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:729 inDEBUG=True stack=['DEBUG']
+-TFKit                 apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:440 inDEBUG=True stack=['DEBUG']
+-TFQuery               apple/TodaysFive/TodaysFive/WebViewController.swift:31 inDEBUG=True stack=['DEBUG']
+-TFSelfTest            apple/TodaysFive/TodaysFive/WebViewController.swift:444 inDEBUG=True stack=['DEBUG']
+-TFShow                apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:164 inDEBUG=True stack=['DEBUG']
+-TFThemeSet            apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:456 inDEBUG=True stack=['DEBUG']
+-TFWatchDemo           apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:131 inDEBUG=True stack=['DEBUG']
+-TFWatchSelfTest       apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:68 inDEBUG=True stack=['DEBUG']
+-TFWatchSelfTest       apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:74 inDEBUG=True stack=['DEBUG']
+-TFWipeVault           apple/TodaysFive/TodaysFive/WebViewController.swift:90 inDEBUG=True stack=['DEBUG']
+-TFWipeWebStore        apple/TodaysFive/TodaysFive/WebViewController.swift:92 inDEBUG=True stack=['DEBUG']
+
+## archive (Release) binaries: any -TF string present? (strings | grep -c TF)
+TodaysFive: 0
+
+TodaysFiveWatch: 0
+
+
+## Debug dylibs: -TF strings present
+TodaysFiveWatch.debug.dylib: -TFAddSelfTest -TFConfettiSelfTest -TFFaceProbe -TFFinale -TFFinaleHold -TFFontSelfTest -TFKit -TFShow -TFThemeSet -TFWatchDemo -TFWatchSelfTest 
+TodaysFive.debug.dylib: -TFDumpVault -TFDumpWatchSend -TFQuery -TFSelfTest -TFWipeVault -TFWipeWebStore 

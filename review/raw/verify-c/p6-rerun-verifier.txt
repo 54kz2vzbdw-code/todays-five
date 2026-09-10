@@ -1,0 +1,4 @@
+base               exit=0 | 12 sound tests passed
+mut-chord          exit=0 | 12 sound tests passed
+mut-mine-gap1000   exit=0 | 12 sound tests passed
+mut-buzz           exit=1 | AssertionError [ERR_ASSERTION]: buzz 1 lands on burst 1

@@ -1,0 +1,75 @@
+## misc greps saved from the session, Thu Sep 10 15:38:12 CDT 2026
+=== AppIntentConfiguration availability (WidgetKit arm64_32 swiftinterface)
+@available(iOS 17.0, macOS 14.0, watchOS 10.0, visionOS 26.0, *)
+@available(tvOS, unavailable)
+WidgetFamily cases: 9
+=== merge-cases.json.deflate counts
+{'timezone': 'America/Chicago', 'mergeCases': 1200, 'sequenceCases': 900, 'revivalCases': 5}
+=== polld.js mechanism
+22://   * page.clock.install fakes Date and every timer; once the list is made and settled, pauseAt
+23://     stops real time flowing into the fake clock, so from then on only runFor moves it and the
+25://   * a random phase offset is run off first, because a poll is a sawtooth: without it every trial
+51:const SEED = +(flag("seed", 20260907));           // the phase offsets are seeded, so a run repeats
+101:    await page.clock.install({ time: T0 });
+140:      await page.clock.runFor(Math.min(STEP_MS, phaseMs - t));
+184:      await page.clock.runFor(step);
+259:    : "NOT MEASURED";
+268:  process.exit(1);
+=== interop / realsync4 poll-size assertions; interop DOORBELL_MS
+tools/realsync4.js:102:  assert.ok(poll.bytes < 60, "unchanged poll bytes " + poll.bytes);
+apple/tools/interop.mjs:40:const DOORBELL_MS = POLL_MS / 4;
+apple/tools/interop.mjs:348:    assert.ok(poll.bytes < 60, "the unchanged poll is small: " + poll.bytes);
+=== theme.js: import lines / localStorage lines / applyTheme start
+873:  if (persist) { try { localStorage.setItem(CSS_KEY, css); localStorage.setI
+861:export function applyTheme(t, doc = document, { persist = true } = {}) {
+=== -TFThemeSet -> show/choose (WatchTheme.swift 456-462)
+1:        if let i = args.firstIndex(of: "-TFThemeSet"), i + 1 < args.count {
+4:                show(lean)
+5:                choose(String(parts[1]), for: lean)
+=== AddSelfTest hosting
+230:            await AddSelfTest.runIfAsked()
+=== KitsGen ~28 KB comment vs the generated file
+32:// argument at all. Measured: the source is ~28 KB against an ARG_MAX of 1 MB.
+Kits.generated.swift: 19614 bytes
+=== sync.js local-transport lag
+139:  const wait = () => new Promise(r => setTimeout(r, +(hook("lag") || 15)));
+=== Model extension holding addToToday/setDone
+14:public extension Model {
+=== reserved-name faces and families (watch-fonts.json)
+15 faces: ['IBM Plex Mono', 'IBM Plex Mono SemiBold', 'IBM Plex Sans 400', 'IBM Plex Sans 600', 'Josefin Sans Thin 400', 'Josefin Sans Thin 700', 'Lato Black', 'Lora 700', 'Playfair Display 800', 'PT Sans', 'PT Sans', 'Quicksand Light 500', 'Quicksand Light 700', 'Source Serif 4 400', 'Source Serif 4 600']
+README names 9 families; faces whose family starts with one of them: 15
+=== OneThingView footer strings
+=== Phase 3: web moved zero bytes? git diff --stat e215e65 4962f97 -- . ':!apple'
+(empty above = no change outside apple/)
+=== derive-ink3-next branch present?
+  derive-ink3-next
+  remotes/origin/derive-ink3-next
+2
+=== tfive check view-link guard
+=== RealtimeTransport conformers / DoorbellTransport / announceGone / DoorbellRecorder
+7341981:apple/DECISIONS-apple.md:1848:So `DoorbellTransport` is one method wide — `func ring(_ id: String, _ payload: JSONObject) async` �
+7341981:apple/DECISIONS-apple.md:1984:* **`announceGone` has no Swift mirror.** `sync.js` broadcasts `{ rev: 0, from, gone: true }` after a
+7341981:apple/DECISIONS-apple.md:1990:  `DoorbellRecorder` that wraps it. Deliberate: the moment the shared test double can broadcast, a
+7341981:apple/PLAN-apple-phase4.md:294:**Step 1.** A narrow `DoorbellTransport { func ring(_ id:, _ payload:) async }` on `SupabaseTransport
+7341981:apple/TodaysFiveCore/Sources/TodaysFiveCore/SupabaseTransport.swift:114:    public func ring(_ id: String, _ payload: JSONObject) as
+7341981:apple/TodaysFiveCore/Sources/TodaysFiveCore/Transport.swift:116:public protocol DoorbellTransport: Transport {
+7341981:apple/TodaysFiveCore/Sources/TodaysFiveCore/Transport.swift:117:    func ring(_ id: String, _ payload: JSONObject) async
+7341981:apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift:367:        let server = DoorbellRecorder(MemoryTransport())
+7341981:apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift:405:        let server = DoorbellRecorder(inner)
+7341981:apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift:414:        let viewer = DoorbellRecorder(MemoryTransport())
+7341981:apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift:463:actor DoorbellRecorder: DoorbellTransport {
+7341981:apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift:480:    func ring(_ id: String, _ payload: JSONObject) async { rings.
+=== timeout on this machine
+timeout: ABSENT
+=== two Fonts sizes vs README table (lato-900 28 KB, archivo 80 KB total)
+40980 apple/TodaysFive/Fonts/archivo-500.ttf
+40900 apple/TodaysFive/Fonts/archivo-800.ttf
+28520 apple/TodaysFive/Fonts/lato-900.ttf
+=== WatchTheme.swift:31-32 (Paper 1.06?) and :648-649
+// app's layer and the SDK offers nothing. On Paper's cream (`#F7F2E8`) white-on-cream is about
+// **1.06:1**, which is not "low contrast", it is *invisible*. A light kit on this device therefore
+/// pair — and they are all equally bad: **Light 1.06, blush 1.07, sketch 1.08, birthday 1.08,
+/// teletype 1.09, harbor 1.10, Paper 1.12**. The round framed this as a Paper problem; Paper is in
+=== TodayView.swift:387-388 (empty by 140) vs measured 147
+    /// quarter of a million frames to arrive at an empty field is a spin, not a recovery. 600 frames
+    /// is ten seconds and the field is provably empty by 140 (`1 / 0.0075`, the slowest decay).

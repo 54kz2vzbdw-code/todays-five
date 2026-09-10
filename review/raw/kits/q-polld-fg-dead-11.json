@@ -1,0 +1,31 @@
+{
+  "base": "http://127.0.0.1:8893/",
+  "seed": 11,
+  "stepMs": 2000,
+  "trials": 10,
+  "pollMs": 60000,
+  "pollLiveMs": 240000,
+  "conditions": [
+    {
+      "id": "fg-dead",
+      "label": "foreground, realtime NOT connected",
+      "seen": [
+        12,
+        16,
+        18,
+        24,
+        30,
+        42,
+        44,
+        44,
+        56,
+        60
+      ],
+      "never": 0,
+      "broke": 0,
+      "horizonS": 120,
+      "medianS": 36,
+      "maxS": 60
+    }
+  ]
+}

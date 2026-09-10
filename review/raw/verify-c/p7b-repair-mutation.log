@@ -1,0 +1,11 @@
+
+== desktop 1440×900
+FAIL - desktop 1440×900: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere 
+     the ten-second Undo is on screen after the switch, not hidden behind it
+
+== phone 390×844
+     (two-list Undo: skipped on this viewport — the switch is a reload here)
+ok - phone 390×844: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere
+
+1 passed, 1 failed
+  - desktop 1440×900: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere: the ten-second Undo is on screen after the switch, not hidden behind it

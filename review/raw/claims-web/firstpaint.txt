@@ -1,0 +1,38 @@
+round 1 1.11 b151 desktop  FCP   116 ms  LCP   116 ms  wire 233701 B  reqs 16  welcome=true
+round 1 1.11 b151 mobile   FCP  1180 ms  LCP  1180 ms  wire 233701 B  reqs 16  welcome=true
+round 1 1.12 b157 desktop  FCP    56 ms  LCP    56 ms  wire 236106 B  reqs 16  welcome=true
+round 1 1.12 b157 mobile   FCP  1160 ms  LCP  1160 ms  wire 236106 B  reqs 16  welcome=true
+round 2 1.12 b157 desktop  FCP    52 ms  LCP    52 ms  wire 236106 B  reqs 16  welcome=true
+round 2 1.12 b157 mobile   FCP  1164 ms  LCP  1164 ms  wire 236106 B  reqs 16  welcome=true
+round 2 1.11 b151 desktop  FCP    60 ms  LCP    60 ms  wire 233701 B  reqs 16  welcome=true
+round 2 1.11 b151 mobile   FCP  1128 ms  LCP  1128 ms  wire 233701 B  reqs 16  welcome=true
+round 3 1.11 b151 desktop  FCP    60 ms  LCP    60 ms  wire 233701 B  reqs 16  welcome=true
+round 3 1.11 b151 mobile   FCP  1116 ms  LCP  1116 ms  wire 233701 B  reqs 16  welcome=true
+round 3 1.12 b157 desktop  FCP    52 ms  LCP    52 ms  wire 236106 B  reqs 16  welcome=true
+round 3 1.12 b157 mobile   FCP  1172 ms  LCP  1172 ms  wire 236106 B  reqs 16  welcome=true
+round 4 1.12 b157 desktop  FCP    56 ms  LCP    56 ms  wire 236106 B  reqs 16  welcome=true
+round 4 1.12 b157 mobile   FCP  1180 ms  LCP  1180 ms  wire 236106 B  reqs 16  welcome=true
+round 4 1.11 b151 desktop  FCP    56 ms  LCP    56 ms  wire 233701 B  reqs 16  welcome=true
+round 4 1.11 b151 mobile   FCP  1152 ms  LCP  1152 ms  wire 233701 B  reqs 16  welcome=true
+round 5 1.11 b151 desktop  FCP    48 ms  LCP    48 ms  wire 233701 B  reqs 16  welcome=true
+round 5 1.11 b151 mobile   FCP  1144 ms  LCP  1144 ms  wire 233701 B  reqs 16  welcome=true
+round 5 1.12 b157 desktop  FCP    48 ms  LCP    48 ms  wire 236106 B  reqs 16  welcome=true
+round 5 1.12 b157 mobile   FCP  1188 ms  LCP  1188 ms  wire 236106 B  reqs 16  welcome=true
+round 6 1.12 b157 desktop  FCP    64 ms  LCP    64 ms  wire 236106 B  reqs 16  welcome=true
+round 6 1.12 b157 mobile   FCP  1204 ms  LCP  1204 ms  wire 236106 B  reqs 16  welcome=true
+round 6 1.11 b151 desktop  FCP    84 ms  LCP    84 ms  wire 221882 B  reqs 15  welcome=true
+round 6 1.11 b151 mobile   FCP  1152 ms  LCP  1152 ms  wire 233701 B  reqs 16  welcome=true
+round 7 1.11 b151 desktop  FCP    44 ms  LCP    44 ms  wire 233701 B  reqs 16  welcome=true
+round 7 1.11 b151 mobile   FCP  1144 ms  LCP  1144 ms  wire 233701 B  reqs 16  welcome=true
+round 7 1.12 b157 desktop  FCP    56 ms  LCP    56 ms  wire 236106 B  reqs 16  welcome=true
+round 7 1.12 b157 mobile   FCP  1168 ms  LCP  1168 ms  wire 236106 B  reqs 16  welcome=true
+round 8 1.12 b157 desktop  FCP    56 ms  LCP    56 ms  wire 236106 B  reqs 16  welcome=true
+round 8 1.12 b157 mobile   FCP  1152 ms  LCP  1152 ms  wire 236106 B  reqs 16  welcome=true
+round 8 1.11 b151 desktop  FCP    48 ms  LCP    48 ms  wire 233701 B  reqs 16  welcome=true
+round 8 1.11 b151 mobile   FCP  1136 ms  LCP  1136 ms  wire 233701 B  reqs 16  welcome=true
+
+medians (range) over 8 interleaved, order-flipped rounds:
+  1.11 b151 desktop  FCP 58 (44–116) ms   LCP 58 (44–116) ms   wire 228.2 KB (221882–233701 B)   requests 16
+  1.11 b151 mobile   FCP 1144 (1116–1180) ms   LCP 1144 (1116–1180) ms   wire 228.2 KB (233701–233701 B)   requests 16
+  1.12 b157 desktop  FCP 56 (48–64) ms   LCP 56 (48–64) ms   wire 230.6 KB (236106–236106 B)   requests 16
+  1.12 b157 mobile   FCP 1170 (1152–1204) ms   LCP 1170 (1152–1204) ms   wire 230.6 KB (236106–236106 B)   requests 16

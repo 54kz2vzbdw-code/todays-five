@@ -1,0 +1,7 @@
+## pbxproj object ids (Thu Sep 10 15:04:29 CDT 2026)
+distinct TF0{19}NNN ids: 177
+definition lines (id /* */ = ...): 176
+duplicate definitions:
+0
+non-conforming ids (24-hex not TF-shaped):
+CURRENT_PROJECT_VERSION lines: 6 ; MARKETING_VERSION = 1.12 lines: 6 ; other CURRENT_PROJECT_VERSION values: 0

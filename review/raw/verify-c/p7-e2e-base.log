@@ -1,0 +1,22 @@
+===== BASE (unmutated 7341981) served on 8898, run from /private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/verify-c/base/tools/e2e4.js  START 09:08:36
+--- ONLY=Back on every panel
+
+== desktop 1440×900
+ok - desktop 1440×900: 1.12: ‹ Back on every panel ⋯ opens returns to the menu as it was; × still takes the whole stack; a tap outside still closes everything
+
+== phone 390×844
+ok - phone 390×844: 1.12: ‹ Back on every panel ⋯ opens returns to the menu as it was; × still takes the whole stack; a tap outside still closes everything
+
+2 passed, 0 failed
+exit=0
+--- ONLY=Remove asks first
+
+== desktop 1440×900
+ok - desktop 1440×900: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere
+
+== phone 390×844
+ok - phone 390×844: 1.12: Remove asks first, offers the link, warns harder when it was never saved, undoes for ten seconds — and there is no Removed group anywhere
+
+2 passed, 0 failed
+exit=0
+===== END 09:09:15

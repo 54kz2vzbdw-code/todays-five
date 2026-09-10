@@ -1,0 +1,26 @@
+
+[S0] A fresh, holds X | storage: {"lists":["[REDACTED]"],"removed":[],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"listId":"[REDACTED]","demo":false,"whoseOpen":false,"welcome":false}
+    storage keys: ["tf/v2/localserver/<id>","tf/v2/meta","tf/v2/themecss","tf/v2/themerev","tf/v3/list/<id>"] | local copy of X: {"present":true,"bytes":857,"keys":["doc","rev","dirty","created","mode","savedAt"],"lines":3}
+
+[S1] B opened in the same context | storage: {"lists":["[REDACTED]"],"removed":[],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"listId":"[REDACTED]","demo":false,"whoseOpen":false,"welcome":false}
+
+[S2] A: Remove from this device → Remove | storage: {"lists":[],"removed":["[REDACTED]"],"unremoved":null,"dead":[],"current":null} | this tab: {"listId":null,"demo":true,"whoseOpen":false,"welcome":true}
+    storage keys: ["tf/v2/localserver/<id>","tf/v2/meta","tf/v2/themecss","tf/v2/themerev","tf/v3/list/<id>"] | local copy of X after Remove: {"present":true,"bytes":857,"keys":["doc","rev","dirty","created","mode","savedAt"],"lines":3}
+    B: the Whose-list-is-this? dialog appeared; answering mine
+
+[S3] B: pasted X's link as a real navigation (page reloaded, storage re-read) | storage: {"lists":["[REDACTED]"],"removed":[],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"listId":"[REDACTED]","demo":false,"whoseOpen":false,"welcome":false}
+
+[S4] A: one settings change (flip → saveDevice) with A's in-memory meta.removed=[X] | storage: {"lists":[],"removed":["[REDACTED]"],"unremoved":null,"dead":[],"current":null} | this tab: {"listId":null,"demo":true,"whoseOpen":false,"welcome":true}
+
+[S5] B: one settings change (flip → saveDevice) — X is on B's screen | storage: {"lists":[],"removed":["[REDACTED]"],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"listId":"[REDACTED]","demo":false,"whoseOpen":false,"welcome":false}
+    B's Lists panel rows: 0
+
+[S6] B: reload | storage: {"lists":[],"removed":["[REDACTED]"],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"listId":null,"demo":false,"whoseOpen":true,"welcome":false}
+
+[S7] A: reload | storage: {"lists":[],"removed":["[REDACTED]"],"unremoved":null,"dead":[],"current":"[REDACTED]"} | this tab: {"listId":null,"demo":false,"whoseOpen":true,"welcome":false}
+page errors A: [] B: []
+
+[T0] two lists; open: second | registry size: 2
+[T1] removed the open list, +1 s: {"switchedTo":"the other list","toastOn":true,"msg":"Removed from this device","undoHidden":false,"at":1019}
+[T2] Undo: {"listId":"back on the removed list","registry":2,"removed":[]}
+page errors P: []

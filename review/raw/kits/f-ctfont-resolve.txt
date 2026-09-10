@@ -1,0 +1,28 @@
+== ctfont-resolve (f) Thu Sep 10 01:13:59 CDT 2026 |  1:13  up 92 days, 23:19, 2 users, load averages: 6.37 4.89 4.96
+registered 33 of 33 files (already: 0, failed: 0)
+Archivo              -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+Baloo 2              -> family=Baloo 2  ps=Baloo2-Regular  custom
+Cormorant Garamond   -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+DM Sans              -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+DM Serif Display     -> family=DM Serif Display  ps=DMSerifDisplay-Regular  custom
+Fraunces             -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+Fredoka              -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+IBM Plex Mono        -> family=IBM Plex Mono  ps=IBMPlexMono-Regular  custom
+IBM Plex Sans        -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+JetBrains Mono       -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+Josefin Sans         -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+Karla                -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+Lato                 -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+Lora                 -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+Manrope              -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+Nunito Sans          -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+Outfit               -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+PT Sans              -> family=PT Sans  ps=PTSans-Regular  custom
+Playfair Display     -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+Quicksand            -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+Source Serif 4       -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+Space Grotesk        -> family=Helvetica  ps=Helvetica  SYSTEM/HELVETICA
+
+18 of 22 CSS family names come back as a system/Helvetica face on this macOS: Archivo, Cormorant Garamond, DM Sans, Fraunces, Fredoka, IBM Plex Sans, JetBrains Mono, Josefin Sans, Karla, Lato, Lora, Manrope, Nunito Sans, Outfit, Playfair Display, Quicksand, Source Serif 4, Space Grotesk
+4 resolve to a bundled face: Baloo 2, DM Serif Display, IBM Plex Mono, PT Sans
+exit=0

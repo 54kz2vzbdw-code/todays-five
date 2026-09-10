@@ -1,0 +1,10 @@
+# WatchInfo.plist UIAppFonts vs apple/TodaysFive/Fonts vs pbxproj Resources at 7341981. Thu Sep 10 01:28:39 CDT 2026
+plist entries: 33
+ttf on disk: 33  (other files in Fonts/: OFL.txt README.md )
+in pbxproj Resources phase: 33
+plist entries missing on disk:
+  (end)
+on disk but not in plist:
+  (end)
+(eval):1: no matches found: /tmp/tf-review/7341981.xcarchive/Products/Applications/TodaysFive.app/Watch/TodaysFiveWatch.app/PlugIns/[REDACTED].appex/*.ttf
+archived watch app ttf count: 33  appex ttf count: 0

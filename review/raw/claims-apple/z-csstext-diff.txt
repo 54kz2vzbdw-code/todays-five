@@ -1,0 +1,7 @@
+## cssText per kit, 0e03143 vs 7341981, by id (Thu Sep 10 15:29:05 CDT 2026)
+cssText identical: 15 | moved: 3 -> light, paper, terminal
+  light: tokens differing in .colors: danger #B8402A→#B13924
+  paper: tokens differing in .colors: accent #A86014→#C8321F, accentHi #CB8B55→#E0563F, accentDeep #6F3B00→#8E2214, accentText #8F4D00→#9E2717, glow radial-gradient(125% 78% at 50% 30%, rgba(168,96,20,0.06), rgba(168,96,20,0) 60%)→radial-gradient(125% 78% at 50% 30%, rgba(200,50,31,0.06), rgba(200,50,31,0) 60%), boxDoneBg #A86014→#C8321F, strikeBg #A86014→#C8321F
+  terminal: tokens differing in .colors: accent #A86014→#4AF07A, accentHi #D5945E→#9CFFB5, accentDeep #6F3B00→#21A64F, accentText #BF7530→#5DF58A, glow radial-gradient(125% 78% at 50% 34%, rgba(168,96,20,0.08), rgba(168,96,20,0) 62%)→radial-gradient(125% 78% at 50% 34%, rgba(74,240,122,0.08), rgba(74,240,122,0) 62%), strikeShadow 0 0 14px rgba(168,96,20,0.55)→0 0 14px rgba(74,240,122,.55), boxDoneBg #A86014→#4AF07A, strikeBg #A86014→#4AF07A
+accent at 0e03143 (from CURATED.colors): dark=#A86014 paper=#A86014 terminal=#A86014 | at HEAD: dark=#A86014 paper=#C8321F terminal=#4AF07A
+kits with colors.accent #A86014 at 0e03143: dark,paper,terminal | at HEAD: dark

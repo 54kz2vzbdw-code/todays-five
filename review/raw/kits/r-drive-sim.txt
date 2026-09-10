@@ -1,0 +1,87 @@
+== drive.mjs over the predecessors' simulator frames (scratchpad/kits/sim, taken 01:19-01:30 on the review pair from the baseline Debug-watchsimulator product at 7341981, which includes the scrim ed89bd7) — Thu Sep 10 15:27:16 CDT 2026
+b-dark-1.png: 374x446 px; drive flat=0.0380 luma709=0.0389 maxChannel=0.0396 (R 0.0396 G 0.0391 B 0.0352); exactly ground #070A08: 85726/166804 = 51.4%
+  pure-white pixels in the top-right quadrant: 738, bbox px x 289–369, y 35–119 (pt at 2x: 144.5,17.5–184.5,59.5)
+  under/around the clock: #070A08 x6411 → white on it 19.89:1
+  under/around the clock: #58350E x382 → white on it 10.88:1
+  under/around the clock: #E1E1E1 x23 → white on it 1.31:1
+  white on the scrim colour #F7F2E8: 1.12:1; white on the ground #070A08: 19.89:1
+b-terminal-1.png: 374x446 px; drive flat=0.0379 luma709=0.0432 maxChannel=0.0472 (R 0.0331 G 0.0472 B 0.0335); exactly ground #070A08: 85730/166804 = 51.4%
+  pure-white pixels in the top-right quadrant: 738, bbox px x 289–369, y 35–119 (pt at 2x: 144.5,17.5–184.5,59.5)
+  under/around the clock: #070A08 x6429 → white on it 19.89:1
+  under/around the clock: #297E41 x335 → white on it 5.05:1
+  under/around the clock: #E1E1E1 x23 → white on it 1.31:1
+  white on the scrim colour #D8FFD8: 1.09:1; white on the ground #070A08: 19.89:1
+b-paper-1.png: 374x446 px; drive flat=0.7214 luma709=0.7368 maxChannel=0.7753 (R 0.7753 G 0.7335 B 0.6554); exactly ground #F7F2E8: 74031/166804 = 44.4%
+  pure-white pixels in the top-right quadrant: 278, bbox px x 289–344, y 35–55 (pt at 2x: 144.5,17.5–172.0,27.5)
+  under/around the clock: #1F1B16 x1252 → white on it 17.12:1
+  under/around the clock: #E4E3E3 x22 → white on it 1.28:1
+  under/around the clock: #ACAAA8 x18 → white on it 2.32:1
+  white on the scrim colour #1F1B16: 17.12:1; white on the ground #F7F2E8: 1.12:1
+b-dark-2.png: 374x446 px; drive flat=0.0380 luma709=0.0389 maxChannel=0.0396 (R 0.0396 G 0.0391 B 0.0352); exactly ground #070A08: 85726/166804 = 51.4%
+  pure-white pixels in the top-right quadrant: 738, bbox px x 289–369, y 35–119 (pt at 2x: 144.5,17.5–184.5,59.5)
+  under/around the clock: #070A08 x6411 → white on it 19.89:1
+  under/around the clock: #58350E x382 → white on it 10.88:1
+  under/around the clock: #E1E1E1 x23 → white on it 1.31:1
+  white on the scrim colour #F7F2E8: 1.12:1; white on the ground #070A08: 19.89:1
+b-terminal-2.png: 374x446 px; drive flat=0.0379 luma709=0.0432 maxChannel=0.0472 (R 0.0331 G 0.0472 B 0.0335); exactly ground #070A08: 85733/166804 = 51.4%
+  pure-white pixels in the top-right quadrant: 742, bbox px x 289–369, y 35–119 (pt at 2x: 144.5,17.5–184.5,59.5)
+  under/around the clock: #070A08 x6432 → white on it 19.89:1
+  under/around the clock: #297E41 x335 → white on it 5.05:1
+  under/around the clock: #E1E1E1 x23 → white on it 1.31:1
+  white on the scrim colour #D8FFD8: 1.09:1; white on the ground #070A08: 19.89:1
+b-paper-2.png: 374x446 px; drive flat=0.7214 luma709=0.7367 maxChannel=0.7753 (R 0.7753 G 0.7335 B 0.6553); exactly ground #F7F2E8: 74031/166804 = 44.4%
+  pure-white pixels in the top-right quadrant: 282, bbox px x 289–344, y 35–55 (pt at 2x: 144.5,17.5–172.0,27.5)
+  under/around the clock: #1F1B16 x1255 → white on it 17.12:1
+  under/around the clock: #E4E3E3 x22 → white on it 1.28:1
+  under/around the clock: #ACAAA8 x17 → white on it 2.32:1
+  white on the scrim colour #1F1B16: 17.12:1; white on the ground #F7F2E8: 1.12:1
+b-dark-3.png: 374x446 px; drive flat=0.0379 luma709=0.0389 maxChannel=0.0395 (R 0.0395 G 0.0391 B 0.0352); exactly ground #070A08: 85729/166804 = 51.4%
+  pure-white pixels in the top-right quadrant: 742, bbox px x 289–369, y 35–119 (pt at 2x: 144.5,17.5–184.5,59.5)
+  under/around the clock: #070A08 x6414 → white on it 19.89:1
+  under/around the clock: #58350E x382 → white on it 10.88:1
+  under/around the clock: #E1E1E1 x23 → white on it 1.31:1
+  white on the scrim colour #F7F2E8: 1.12:1; white on the ground #070A08: 19.89:1
+b-terminal-3.png: 374x446 px; drive flat=0.0379 luma709=0.0432 maxChannel=0.0472 (R 0.0331 G 0.0472 B 0.0335); exactly ground #070A08: 85733/166804 = 51.4%
+  pure-white pixels in the top-right quadrant: 742, bbox px x 289–369, y 35–119 (pt at 2x: 144.5,17.5–184.5,59.5)
+  under/around the clock: #070A08 x6432 → white on it 19.89:1
+  under/around the clock: #297E41 x335 → white on it 5.05:1
+  under/around the clock: #E1E1E1 x23 → white on it 1.31:1
+  white on the scrim colour #D8FFD8: 1.09:1; white on the ground #070A08: 19.89:1
+b-paper-3.png: 374x446 px; drive flat=0.7214 luma709=0.7367 maxChannel=0.7753 (R 0.7753 G 0.7335 B 0.6553); exactly ground #F7F2E8: 74031/166804 = 44.4%
+  pure-white pixels in the top-right quadrant: 282, bbox px x 289–344, y 35–55 (pt at 2x: 144.5,17.5–172.0,27.5)
+  under/around the clock: #1F1B16 x1255 → white on it 17.12:1
+  under/around the clock: #E4E3E3 x22 → white on it 1.28:1
+  under/around the clock: #ACAAA8 x17 → white on it 2.32:1
+  white on the scrim colour #1F1B16: 17.12:1; white on the ground #F7F2E8: 1.12:1
+
+-- k frames: k-A/k-B harbor (ground #EEF5F4, text #123A3E), k-restore1 paper, k-restore2/k-verify terminal
+k-A.png: 374x446 px; drive flat=0.7364 luma709=0.7467 maxChannel=0.7612 (R 0.6961 G 0.7612 B 0.7520); exactly ground #EEF5F4: 73876/166804 = 44.3%
+  pure-white pixels in the top-right quadrant: 275, bbox px x 288–344, y 35–55 (pt at 2x: 144.0,17.5–172.0,27.5)
+  under/around the clock: #123A3E x1283 → white on it 12.35:1
+  under/around the clock: #E2E7E8 x22 → white on it 1.25:1
+  under/around the clock: #A7B6B7 x19 → white on it 2.10:1
+  white on the scrim colour #123A3E: 12.35:1; white on the ground #EEF5F4: 1.11:1
+k-B.png: 374x446 px; drive flat=0.7364 luma709=0.7467 maxChannel=0.7612 (R 0.6961 G 0.7612 B 0.7520); exactly ground #EEF5F4: 73876/166804 = 44.3%
+  pure-white pixels in the top-right quadrant: 275, bbox px x 288–344, y 35–55 (pt at 2x: 144.0,17.5–172.0,27.5)
+  under/around the clock: #123A3E x1283 → white on it 12.35:1
+  under/around the clock: #E2E7E8 x22 → white on it 1.25:1
+  under/around the clock: #A7B6B7 x19 → white on it 2.10:1
+  white on the scrim colour #123A3E: 12.35:1; white on the ground #EEF5F4: 1.11:1
+k-restore1.png: 374x446 px; drive flat=0.7213 luma709=0.7367 maxChannel=0.7753 (R 0.7753 G 0.7334 B 0.6553); exactly ground #F7F2E8: 74031/166804 = 44.4%
+  pure-white pixels in the top-right quadrant: 275, bbox px x 288–344, y 35–55 (pt at 2x: 144.0,17.5–172.0,27.5)
+  under/around the clock: #1F1B16 x1283 → white on it 17.12:1
+  under/around the clock: #E4E3E3 x22 → white on it 1.28:1
+  under/around the clock: #ACAAA8 x19 → white on it 2.32:1
+  white on the scrim colour #1F1B16: 17.12:1; white on the ground #F7F2E8: 1.12:1
+k-restore2.png: 374x446 px; drive flat=0.0379 luma709=0.0432 maxChannel=0.0471 (R 0.0330 G 0.0471 B 0.0334); exactly ground #070A08: 85732/166804 = 51.4%
+  pure-white pixels in the top-right quadrant: 735, bbox px x 288–369, y 35–119 (pt at 2x: 144.0,17.5–184.5,59.5)
+  under/around the clock: #070A08 x6516 → white on it 19.89:1
+  under/around the clock: #297E41 x339 → white on it 5.05:1
+  under/around the clock: #E1E1E1 x23 → white on it 1.31:1
+  white on the scrim colour #D8FFD8: 1.09:1; white on the ground #070A08: 19.89:1
+k-verify.png: 374x446 px; drive flat=0.0379 luma709=0.0432 maxChannel=0.0471 (R 0.0330 G 0.0471 B 0.0334); exactly ground #070A08: 85732/166804 = 51.4%
+  pure-white pixels in the top-right quadrant: 735, bbox px x 288–369, y 35–119 (pt at 2x: 144.0,17.5–184.5,59.5)
+  under/around the clock: #070A08 x6516 → white on it 19.89:1
+  under/around the clock: #297E41 x339 → white on it 5.05:1
+  under/around the clock: #E1E1E1 x23 → white on it 1.31:1
+  white on the scrim colour #D8FFD8: 1.09:1; white on the ground #070A08: 19.89:1

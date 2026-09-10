@@ -1,0 +1,4 @@
+== surprise-ink3 (q) at HEAD 7341981 Thu Sep 10 15:04:21 CDT 2026
+seed 4242: surprise() returns {id,name,base,kind,pair,accent,pack,colors,sound,confetti,shapes}; bases {"dark":1016,"light":984}; accent under 3:1 on ink3 = 0/2000 (worst 3.108 #009161 on light); danger under 4.5:1 on ink3 = 416/2000
+seed 20260907: surprise() returns {id,name,base,kind,pair,accent,pack,colors,sound,confetti,shapes}; bases {"dark":1021,"light":979}; accent under 3:1 on ink3 = 0/2000 (worst 3.125 #00915B on light); danger under 4.5:1 on ink3 = 423/2000
+Math.random: accent under 3:1 on ink3 = 0/2000

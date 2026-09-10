@@ -1,0 +1,5 @@
+[REDACTED]  about.html
+[REDACTED]  index.html
+[REDACTED]  sw.js
+[REDACTED]  theme.js
+[REDACTED]  version.js

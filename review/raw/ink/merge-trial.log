@@ -1,0 +1,16 @@
+MERGE START 2026-09-10 01:18:16 HEAD=[REDACTED]
+Auto-merging panels.js
+Auto-merging test/theme.test.js
+Auto-merging theme.js
+Automatic merge went well; stopped before committing as requested
+merge exit=0
+--- status ---
+M  panels.js
+M  test/theme.test.js
+M  theme.js
+--- diff --stat vs HEAD ---
+ panels.js          | 10 +++++++++-
+ test/theme.test.js | 46 +++++++++++++++++++++++++++++++++++-----------
+ theme.js           | 36 ++++++++++++------------------------
+ 3 files changed, 56 insertions(+), 36 deletions(-)
+--- conflicts? ---

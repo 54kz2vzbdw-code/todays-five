@@ -1,0 +1,8 @@
+# gzip -9 (Apple gzip 479) of 'git show <sha>:<file>' piped from stdin (no filename in the header), bytes
+file 0e03143 67cdf4b 67f35a5 | delta@67cdf4b delta@67f35a5
+app.js 48465 49888 50075 | 1423 1610
+model.js 14329 14685 14685 | 356 356
+styles.css 12048 12139 12139 | 91 91
+index.html 12898 12885 12884 | -13 -14
+panels.js 24907 26373 26374 | 1466 1467
+(the earlier per-file numbers from the archived copies were 7 bytes higher: gzip stores the file name when given a path)

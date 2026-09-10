@@ -1,0 +1,21 @@
+[tfive] theme: slot=night day=paper night=terminal → kit=terminal pair=mono base=dark unlocked=0 offered=16
+[tfive] watch: store=appGroup
+[tfive] watch: demo list seeded, lines=5 mark=synced
+[tfive] face: kit=terminal pair=mono face=IBMPlexMono-SemiBold → snapshot written, reloadAllTimelines requested
+[tfive] watch selftest: store=appGroup
+[tfive] watch selftest: list=open editable=true lines=5
+[tfive] watch selftest: 1 check: modelDone=true done=1/5
+[tfive] watch selftest: 2 uncheck: modelUndone=true done=0/5
+[REDACTED] failed e00002c7
+[tfive] watch selftest: 3 finale: fired=yes after=0.364s done=5/5
+[tfive] watch selftest: 4 startAgain: done=0/5 finaleCard=false
+[tfive] watch selftest: 5 shuffle x10: distinct=5 sameTwiceInARow=0 undone=5
+[tfive] watch selftest: 6 wobble: undone=1 moved=false changed=false wobbled=true
+[tfive] watch selftest: 7 haptics: check=10 uncheck=2 finale=1 shuffle=10
+[tfive] watch selftest: 7 finale run: taps=8/8 duration=0.713s (approximation: no CoreHaptics on watchOS)
+[tfive] watch selftest: 8 appGroup=true
+[tfive] watch selftest: 9 snapshot: hasList=true done=4/5 nextLine=19 chars viewOnly=false rollsAt=set kit=terminal pair=mono face=IBMPlexMono-SemiBold
+[tfive] watch selftest: 10 confetti: run=1 frames=140 over 2.55s = 54.5/s
+[tfive] face: kit=paper pair=playfair face=SourceSerif4-Regular-600 → snapshot written, reloadAllTimelines requested
+[tfive] watch selftest: 11 theme change: terminal/IBMPlexMono-SemiBold → paper/SourceSerif4-Regular-600 changed=true
+com.pricebrannen.todaysfive.watchkitapp: 20809

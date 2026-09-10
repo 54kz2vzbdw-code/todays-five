@@ -1,0 +1,7 @@
+E2E4 ONLY=theme START 2026-09-10 01:27:56 | load averages: 7.70 19.86 21.49
+E2E4 ONLY=theme END 2026-09-10 01:30:16 exit=1 | ok=17 fail=1 | tally: 17 passed, 1 failed
+E2E4 ONLY=accent START 2026-09-10 01:30:16 | load averages: 11.16 16.29 19.76
+E2E4 ONLY=accent END 2026-09-10 01:30:35 exit=0 | ok=2 fail=0 | tally: 2 passed, 0 failed
+E2E4 ONLY=builder START 2026-09-10 01:30:35 | load averages: 9.56 15.60 19.43
+E2E4 ONLY=builder END 2026-09-10 01:31:22 exit=0 | ok=6 fail=0 | tally: 6 passed, 0 failed
+E2E4 ALL DONE 01:31:22

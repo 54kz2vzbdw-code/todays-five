@@ -1,0 +1,21 @@
+# privacy grep over review/raw/verify-w1.md and review/raw/verify-w1/ — Thu Sep 10 15:40:12 CDT 2026
+# command: grep -rn -E '[0-9A-Za-z]{22,}' <report> <evidence dir>
+# report: no hits (long non-secret identifiers carry a soft hyphen; the commit is cited short).
+# evidence: every residual hit below is a non-secret — an Apple API/attribute name, the Complications target's
+#           directory name, or a NSTemporaryDirectory call — quoted verbatim from raw grep output / probe source.
+#           No list id, secret, or stamp appears anywhere in these files; the probes print counts only.
+
+   1 /Users/pricebrannen/Today's Five/todays-five-review/review/raw/verify-w1/w1probe/Sources/w1probe/main.swift:145:[REDACTED]
+   1 /Users/pricebrannen/Today's Five/todays-five-review/review/raw/verify-w1/greps.txt:81:[REDACTED]
+   1 /Users/pricebrannen/Today's Five/todays-five-review/review/raw/verify-w1/greps.txt:78:[REDACTED]
+   1 /Users/pricebrannen/Today's Five/todays-five-review/review/raw/verify-w1/greps.txt:77:[REDACTED]
+   1 /Users/pricebrannen/Today's Five/todays-five-review/review/raw/verify-w1/greps.txt:71:[REDACTED]
+   1 /Users/pricebrannen/Today's Five/todays-five-review/review/raw/verify-w1/greps.txt:70:[REDACTED]
+   1 /Users/pricebrannen/Today's Five/todays-five-review/review/raw/verify-w1/greps.txt:69:[REDACTED]
+   1 /Users/pricebrannen/Today's Five/todays-five-review/review/raw/verify-w1/greps.txt:68:[REDACTED]
+   1 /Users/pricebrannen/Today's Five/todays-five-review/review/raw/verify-w1/greps.txt:67:[REDACTED]
+   1 /Users/pricebrannen/Today's Five/todays-five-review/review/raw/verify-w1/greps.txt:66:[REDACTED]
+   1 /Users/pricebrannen/Today's Five/todays-five-review/review/raw/verify-w1/greps.txt:65:[REDACTED]
+   1 /Users/pricebrannen/Today's Five/todays-five-review/review/raw/verify-w1/commands.txt:8:[REDACTED]
+   1 /Users/pricebrannen/Today's Five/todays-five-review/review/raw/verify-w1/commands.txt:24:[REDACTED]
+   1 /Users/pricebrannen/Today's Five/todays-five-review/review/raw/verify-w1/commands.txt:24:[REDACTED]

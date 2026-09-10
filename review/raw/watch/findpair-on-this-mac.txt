@@ -1,0 +1,8 @@
+chosen runtimes (newest, as pickRuntime does with no flag): com.apple.CoreSimulator.SimRuntime.watchOS-26-5 | com.apple.CoreSimulator.SimRuntime.iOS-26-5
+pair #1 in simctl's listing order: 3AB4CE04-9C8B-41D5-88B6-336E65BB583C | (active, disconnected) | Apple Watch Series 10 (42mm) + iPhone 16 | on chosen runtimes: False
+pair #2 in simctl's listing order: 6103547B-0E14-4706-B17B-15616FB812B3 | (active, disconnected) | Apple Watch Series 10 (46mm) + iPhone 16 Plus | on chosen runtimes: False
+pair #3 in simctl's listing order: 4B6A97F5-32AB-408A-9E2A-5F8917031CE8 | (active, connected) | Apple Watch Series 11 (46mm) + iPhone 17 | on chosen runtimes: True
+pair #4 in simctl's listing order: D4A3E40B-3B21-482B-97CC-7C7CE7B88238 | (active, disconnected) | Apple Watch Ultra 2 (49mm) + iPhone 16 Pro Max | on chosen runtimes: False
+pair #5 in simctl's listing order: E7F29476-51EC-4C21-A95C-C5A2D43C282B | (active, connected) | tf-review watch + tf-review phone | on chosen runtimes: True
+findPair would return: 4B6A97F5-32AB-408A-9E2A-5F8917031CE8 -> Apple Watch Series 11 (46mm) + iPhone 17 | pairs on the chosen runtimes: 2
+devices named 'TF Watch 26.5' / 'TF Phone 26.5' exist (makePair's reuse names): False / False

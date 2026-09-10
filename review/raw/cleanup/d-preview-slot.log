@@ -1,0 +1,20 @@
+[light D0] fresh (colorScheme light, switch: system) | data-theme: light | slot: day auto: day hold: null | day/night: T1:curated:light / T1:curated:dark | panels: [] 
+[light D1] ⋯ → Theme | data-theme: light | slot: day auto: day hold: null | day/night: T1:curated:light / T1:curated:dark | panels: ["p-menu","p-theme"] | header: Day theme
+[light D2] step one: Paper | data-theme: paper | slot: day auto: day hold: null | day/night: T1:curated:paper / T1:curated:dark | panels: ["p-menu","p-theme","p-theme"] | header: Night theme
+[light D3] step two: Dusk (the flow closes) | data-theme: paper | slot: day auto: day hold: null | day/night: T1:curated:paper / T1:curated:dusk | panels: [] 
+[light D4] +600 ms | data-theme: paper | slot: day auto: day hold: null | day/night: T1:curated:paper / T1:curated:dusk | panels: [] 
+[light D5] ⋯ → Theme, step one: Harbor (previewed) | data-theme: harbor | slot: day auto: day hold: null | day/night: T1:curated:harbor / T1:curated:dusk | panels: ["p-menu","p-theme","p-theme"] | header: Night theme
+[light D6] ‹ Back to step one | data-theme: harbor | slot: day auto: day hold: null | day/night: T1:curated:harbor / T1:curated:dusk | panels: ["p-menu","p-theme"] | header: Day theme
+[light D7] ‹ Back to the menu | data-theme: harbor | slot: day auto: day hold: null | day/night: T1:curated:harbor / T1:curated:dusk | panels: ["p-menu"] 
+[light D8] Escape | data-theme: harbor | slot: day auto: day hold: null | day/night: T1:curated:harbor / T1:curated:dusk | panels: [] 
+page errors: []
+[dark D0] fresh (colorScheme dark, switch: system) | data-theme: dark | slot: night auto: night hold: null | day/night: T1:curated:light / T1:curated:dark | panels: [] 
+[dark D1] ⋯ → Theme | data-theme: dark | slot: night auto: night hold: null | day/night: T1:curated:light / T1:curated:dark | panels: ["p-menu","p-theme"] | header: Day theme
+[dark D2] step one: Paper | data-theme: paper | slot: night auto: night hold: null | day/night: T1:curated:paper / T1:curated:dark | panels: ["p-menu","p-theme","p-theme"] | header: Night theme
+[dark D3] step two: Dusk (the flow closes) | data-theme: dusk | slot: night auto: night hold: null | day/night: T1:curated:paper / T1:curated:dusk | panels: [] 
+[dark D4] +600 ms | data-theme: dusk | slot: night auto: night hold: null | day/night: T1:curated:paper / T1:curated:dusk | panels: [] 
+[dark D5] ⋯ → Theme, step one: Harbor (previewed) | data-theme: harbor | slot: night auto: night hold: null | day/night: T1:curated:harbor / T1:curated:dusk | panels: ["p-menu","p-theme","p-theme"] | header: Night theme
+[dark D6] ‹ Back to step one | data-theme: harbor | slot: night auto: night hold: null | day/night: T1:curated:harbor / T1:curated:dusk | panels: ["p-menu","p-theme"] | header: Day theme
+[dark D7] ‹ Back to the menu | data-theme: dusk | slot: night auto: night hold: null | day/night: T1:curated:harbor / T1:curated:dusk | panels: ["p-menu"] 
+[dark D8] Escape | data-theme: dusk | slot: night auto: night hold: null | day/night: T1:curated:harbor / T1:curated:dusk | panels: [] 
+page errors: []

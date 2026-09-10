@@ -1,0 +1,33 @@
+{
+  "mode": "surprise",
+  "base": "light",
+  "seed": 20260910,
+  "draws": 2000,
+  "surpriseCallsMade": 3983,
+  "moved": 0,
+  "minAccentOnInk3OnMain": 3.0985,
+  "minHex": "#009337",
+  "minDangerOnInk3OnMain": 4.9501,
+  "dangerMoved": 0,
+  "observedL": [
+    0.449,
+    0.5807
+  ],
+  "observedMinC": 0.1,
+  "rangeFloorScan": {
+    "L": [
+      0.45,
+      0.58
+    ],
+    "C": "0.12…0.20 step 0.005",
+    "h": "0…359.5 step 0.5",
+    "pointsInGamut": 19686,
+    "moved": 0,
+    "minAccentOnInk3OnMain": 3.0569,
+    "atHex": "#039518",
+    "atL": 0.58
+  },
+  "elapsedMs": 1601,
+  "mainThemeJs": "/private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/ink/main/theme.js",
+  "branchThemeJs": "/private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/ink/branch/theme.js"
+}

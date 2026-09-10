@@ -1,0 +1,15 @@
+pt-sans-400.ttf | nameID0: Copyright © 2009 ParaType Ltd. All rights reserved. | nameID13:  | nameID14: http://scripts.sil.org/OFL_web
+pt-sans-700.ttf | nameID0: Copyright © 2009 ParaType Ltd. All rights reserved. | nameID13:  | nameID14: http://scripts.sil.org/OFL_web
+distinct nameID14 licence URLs:
+   http://scripts.sil.org/OFL -> 17 faces
+   https://openfontlicense.org -> 1 faces
+   https://scripts.sil.org/OFL -> 13 faces
+   http://scripts.sil.org/OFL_web -> 2 faces
+faces with no copyright (nameID0): []
+faces with neither nameID13 nor nameID14: []
+faces whose nameID0 mentions OFL/Open Font: 1 of 33
+
+## HEAD requests to the two licence URLs (public sites, read-only)
+http://scripts.sil.org/OFL_web           HTTP 404  final=https://scripts.sil.org/OFL_web
+https://scripts.sil.org/OFL              HTTP 200  final=https://openfontlicense.org/
+https://openfontlicense.org              HTTP 200  final=https://openfontlicense.org/

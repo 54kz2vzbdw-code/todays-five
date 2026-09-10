@@ -1,0 +1,11 @@
+ok - the frozen v3 model is what shipped (it must not know the v4 collections)
+ok - nothing an old client can see is dropped: items, sections, themes, history, name
+ok - the old client edits and pushes; the v4 client merging it back keeps its edits and recovers every v4 field
+ok - rollover on both sides converges on the v4 outcome: the recurring line resets instead of vanishing
+ok - revival: the old client rolled over before any v4 device saw the check-off; the rule brings the line back
+ok - 1.2: a saved theme's `partner` field is additive — the old client strips it, and the richer record wins the tie on the way back
+ok - v4 docs read by v4 keep v:3, and a v2-stamped doc from an old client is accepted as it is
+ok - 1.9: the home zone is additive — the frozen v3 model strips it, the next merge brings it back, and the old client's own rollover still runs
+ok - 1.9: the merge fixtures in test/fixtures/merge replay byte for byte (the Swift core runs the same files)
+
+9 compatibility tests passed

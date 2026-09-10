@@ -1,0 +1,19 @@
+# the two fixtures' pair data, and what holds them together  (Thu Sep 10 01:20:14 CDT 2026)
+KitsGen.swift reads a pair's name/ls/lh from watch-fonts.json (lines 80,142,145), not from kits.json:
+80:        let pairs = (fonts["pairs"] as? [String: Any]) ?? [:]
+142:            \(quote(id)): KitType(id: \(quote(id)), name: \(quote(pair["name"] as? String ?? "")),
+145:                tracking: \(em(pair["ls"])), lineHeight: \(number(pair["lh"]))),
+
+Tests mentioning tracking/lineHeight/ls/lh across KitFixtureTests.swift, theme.test.js, features.test.js:
+(none)
+
+The only pair-level cross-check is task weight, and both sides of it read watch-fonts.json:
+311:            #expect(type.task.weight == Int(Self.fonts.obj("pairs").obj(id).num("w")),
+
+Do the two fixtures agree today?
+13 pairs x 4 fields compared, differences: 0 (they agree today; nothing asserts that they go on agreeing)
+
+last regenerated: watch-fonts.json 1aada68 2026-09-09; kits.json 2dbdfd9 2026-09-08; theme.js last touched 948a905 2026-09-09
+
+drift test ran on this Mac in the baseline: 362:drift: live theme.js reproduced the fixture — 21396 bytes, 18 kits, 13 pairs
+Node's own copy of the drift test: test/theme.test.js '1.12 b216: the kit fixture the Swift core and the Watch read still is theme.js' (line 501)

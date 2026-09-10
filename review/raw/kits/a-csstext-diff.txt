@@ -1,0 +1,23 @@
+== csstext-diff (a) Thu Sep 10 01:11:42 CDT 2026
+dark       byte-identical (856 bytes)
+light      DIFFERS in 1 token(s): --danger: #B8402A -> #B13924
+pink       byte-identical (987 bytes)
+midnight   byte-identical (876 bytes)
+forest     byte-identical (866 bytes)
+paper      DIFFERS in 7 token(s): --accent: #A86014 -> #C8321F; --accent-hi: #CB8B55 -> #E0563F; --accent-deep: #6F3B00 -> #8E2214; --accent-text: #8F4D00 -> #9E2717; --glow: radial-gradient(125% 78% at 50% 30%, rgba(168,96,20,0.06), rgba(168,96,20,0) 60%) -> radial-gradient(125% 78% at 50% 30%, rgba(200,50,31,0.06), rgba(200,50,31,0) 60%); --box-done-bg: #A86014 -> #C8321F; --strike-bg: #A86014 -> #C8321F
+terminal   DIFFERS in 8 token(s): --accent: #A86014 -> #4AF07A; --accent-hi: #D5945E -> #9CFFB5; --accent-deep: #6F3B00 -> #21A64F; --accent-text: #BF7530 -> #5DF58A; --glow: radial-gradient(125% 78% at 50% 34%, rgba(168,96,20,0.08), rgba(168,96,20,0) 62%) -> radial-gradient(125% 78% at 50% 34%, rgba(74,240,122,0.08), rgba(74,240,122,0) 62%); --strike-shadow: 0 0 14px rgba(168,96,20,0.55) -> 0 0 14px rgba(74,240,122,.55); --box-done-bg: #A86014 -> #4AF07A; --strike-bg: #A86014 -> #4AF07A
+sunset     byte-identical (990 bytes)
+dusk       byte-identical (863 bytes)
+harbor     byte-identical (832 bytes)
+ember      byte-identical (859 bytes)
+cocoa      byte-identical (846 bytes)
+blush      byte-identical (959 bytes)
+teletype   byte-identical (825 bytes)
+sketch     byte-identical (834 bytes)
+arcade     byte-identical (889 bytes)
+superpink  byte-identical (1014 bytes)
+birthday   byte-identical (976 bytes)
+
+3 of 18 kits' cssText() differ base->head; 15 byte-identical
+kits whose cssText carries #A86014 at base: dark, paper, terminal (3); at head: dark (1)
+kits whose colors/confetti carry #A86014 at base: dark, paper, terminal; at head: dark

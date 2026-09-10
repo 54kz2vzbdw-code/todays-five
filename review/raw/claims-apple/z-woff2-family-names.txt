@@ -1,0 +1,4 @@
+## woff2 family names inside the binaries (fontTools, Thu Sep 10 15:04:29 CDT 2026)
+fonts/outfit-500-800.woff2: nameID1='Outfit Thin' nameID16=None
+fonts/manrope-500-800.woff2: nameID1='Manrope ExtraLight' nameID16=None
+fonts/dm-sans-400-700.woff2: nameID1='DM Sans 9pt' nameID16=None

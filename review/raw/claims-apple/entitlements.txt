@@ -1,0 +1,18 @@
+=== tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app
+
+=== tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/PlugIns/[REDACTED].appex
+
+=== tf-review-baseline/Build/Products/Debug-iphonesimulator/TodaysFive.app
+
+=== tf-review-baseline/Build/Products/Debug-watchos/TodaysFiveWatch.app
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>application-identifier</key><string><team>.com.pricebrannen.todaysfive.watchkitapp</string><key>com.apple.developer.team-identifier</key><string><team></string><key>com.apple.security.application-groups</key><array><string>group.com.pricebrannen.todaysfive</string></array><key>get-task-allow</key><true/></dict></plist> 
+=== tf-review-baseline/Build/Products/Debug-watchos/TodaysFiveWatch.app/PlugIns/[REDACTED].appex
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>application-identifier</key><string><team>.com.pricebrannen.todaysfive.watchkitapp.complications</string><key>com.apple.developer.team-identifier</key><string><team></string><key>com.apple.security.application-groups</key><array><string>group.com.pricebrannen.todaysfive</string></array><key>get-task-allow</key><true/></dict></plist> 
+=== tf-review-baseline/Build/Products/Debug-iphoneos/TodaysFive.app
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>application-identifier</key><string><team>.com.pricebrannen.todaysfive</string><key>com.apple.developer.associated-domains</key><array><string>applinks:54kz2vzbdw-code.github.io</string></array><key>com.apple.developer.team-identifier</key><string><team></string><key>get-task-allow</key><true/></dict></plist> 
+=== tf-review/7341981.xcarchive/Products/Applications/TodaysFive.app
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>application-identifier</key><string><team>.com.pricebrannen.todaysfive</string><key>com.apple.developer.associated-domains</key><array><string>applinks:54kz2vzbdw-code.github.io</string></array><key>com.apple.developer.team-identifier</key><string><team></string><key>get-task-allow</key><true/></dict></plist> 
+=== tf-review/7341981.xcarchive/Products/Applications/TodaysFive.app/Watch/TodaysFiveWatch.app
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>application-identifier</key><string><team>.com.pricebrannen.todaysfive.watchkitapp</string><key>com.apple.developer.team-identifier</key><string><team></string><key>com.apple.security.application-groups</key><array><string>group.com.pricebrannen.todaysfive</string></array><key>get-task-allow</key><true/></dict></plist> 
+=== tf-review/7341981.xcarchive/Products/Applications/TodaysFive.app/Watch/TodaysFiveWatch.app/PlugIns/[REDACTED].appex
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>application-identifier</key><string><team>.com.pricebrannen.todaysfive.watchkitapp.complications</string><key>com.apple.developer.team-identifier</key><string><team></string><key>com.apple.security.application-groups</key><array><string>group.com.pricebrannen.todaysfive</string></array><key>get-task-allow</key><true/></dict></plist> 

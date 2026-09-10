@@ -1,0 +1,14 @@
+## @Test / @Suite counts per commit (apple/TodaysFiveCore/Tests) — corrected loop
+e215e65  2026-09-07  @Test=94   @Suite=7   files=8
+7d9515f  2026-09-07  @Test=94   @Suite=7   files=8
+8e3d5af  2026-09-07  @Test=116  @Suite=9   files=10
+0354b5f  2026-09-07  @Test=116  @Suite=9   files=10
+4962f97  2026-09-07  @Test=116  @Suite=9   files=10
+c21c31c  2026-09-07  @Test=120  @Suite=9   files=10
+0f11ee6  2026-09-07  @Test=122  @Suite=10  files=11
+7f0e112  2026-09-07  @Test=126  @Suite=10  files=11
+144e5b3  2026-09-08  @Test=126  @Suite=10  files=11
+16aac3d  2026-09-08  @Test=130  @Suite=10  files=11
+7341981  2026-09-09  @Test=130  @Suite=10  files=11
+
+note: KitFixtureTests has one @Test inside #if canImport(JavaScriptCore) (macOS: compiled in) — see test-counts.txt

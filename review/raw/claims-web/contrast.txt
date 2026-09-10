@@ -1,0 +1,24 @@
+BRAND_ACCENT = #A86014
+-- theme.js:147-150 'clears the 3:1 floor on all four grounds by 16 % (min 3.48)'; '#D9A066 … 2.05:1 on Paper'
+   #A86014 on paper ink      #F7F2E8 4.3284
+   #A86014 on paper ink3     #E3DAC8 3.4793
+   #A86014 on terminal ink   #070A08 4.1178
+   #A86014 on terminal ink3  #152017 3.4762
+   min = 3.4762  margin over 3:1 = 15.9%
+   #D9A066 on Paper ink #F7F2E8 2.0523
+   OKLCH(#A86014) L=0.560 C=0.124 h=60.0
+-- theme.js:236-240 / test/theme.test.js:158-159 / 411f142: light's danger #B8402A → #B13924
+   light grounds ink #FAF8F4 ink2 #F1ECE3 ink3 #E4DED2  danger now #B13924
+   #B8402A on ink3 4.1205  on ink2 4.6907  on ink 5.2034
+   #B13924 on ink3 4.5050  on ink2 5.1284  on ink 5.6889
+-- test/theme.test.js:154 'light's accent on --ink-3 clears the floor by 0.0016'; f9e64d7 'Pink's accent text on --ink-3 is 4.5069'
+   light accent #CB6015 on ink3 #E4DED2 3.0016  margin 0.0016
+   pink accentText #FF58A2 on ink3 #58163A 4.5069
+-- f9e64d7's table (accent on --ink / --ink-3)
+   dark     #A86014  on ink 4.1178  on ink3 3.4762   (with #A86014 instead: 4.1178 / 3.4762)
+   paper    #C8321F  on ink 4.7867  on ink3 3.8477   (with #A86014 instead: 4.3284 / 3.4793)
+   terminal #4AF07A  on ink 13.2924  on ink3 11.2212   (with #A86014 instead: 4.1178 / 3.4762)
+-- 2dbdfd9 'light's danger #B13924 at 4.5050 … now the worst of the eighteen' (danger on ink3 across CURATED)
+   lowest three: light 4.5050, blush 4.5142, sunset 4.5324   kits=18
+-- PALETTE_REV = 1ptwfkh  CURATED kits = 18  secret = 2
+-- SLOT_DEFAULT = {"day":"T1:curated:paper","night":"T1:curated:terminal"}  partnerOf(paper) = midnight

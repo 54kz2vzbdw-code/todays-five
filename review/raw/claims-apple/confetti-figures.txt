@@ -1,0 +1,119 @@
+13:// **The row platter is the kit's `ink2`.** `.listStyle(.carousel)` draws its own translucent grey
+52:    /// **Phase 4 put a second thing behind the same hold, and that cost Start again a tap.** The
+90:    /// The web's own default string, and its own 300 ms hold — the wait is in `WatchStore`, because
+149:                    // `hairSolid` is the kit's own line that clears 3:1 on its ground — which is
+188:            // the web fills a chip with. The old `Color.primary.opacity(0.16)` was Pink's alpha
+229:        // where the 17x emissive-drive ratio between a dark kit and Paper's cream is actually spent.
+237:/// file's: gravity `0.30`, drag `0.992` on both axes, `life` from 1 decaying `0.0075 + rand*0.008` a
+238:/// frame, `rib` on 45% of pieces, alpha `life * 1.7` clamped, and the volley itself — seven bursts of
+239:/// 26 at `w * (0.08 + 0.14i)`, `h * 0.97`, power 19, spread 1.15, fired `i * 65` ms apart, then one
+240:/// of 40 at `w/2`, `h * 0.6`, power 14, spread 2.6, at 210 ms. 222 particles.
+244:/// **`fx.js`'s speeds are in browser pixels and a watch is not a browser.** A piece launched at 19
+245:/// px/frame against 0.30 px/frame² of gravity reaches its apex 601 px up. On a 208×248 pt watch
+251:/// alone: an apex is `v² / 2g`, so multiplying `v` and `g` by the same `k` multiplies the apex by
+252:/// `k` and leaves every **time** exactly where `fx.js` put it. The bursts stay 65 ms apart, the wide
+253:/// one still lands at 210 ms, and a piece still lives about as long as it did. `k = height / 800`,
+254:/// 800 being a browser viewport's working height; on this simulator that is **0.31**.
+258:/// 65 ms apart). Those two must not drift apart.
+262:/// A kit's `shapes` is **the list of shape indices to draw from**: 0 ribbon, 1 heart, 2 star,
+263:/// 3 sparkle, 4 sprinkle. It arrives that way and this file draws it, and that is the whole of it.
+266:/// either a count carrying v1's meaning (1 ribbons, 2 ribbons and hearts, 3 ribbons hearts and
+267:/// stars) or a list — and the two readings disagree completely, because as a count `1` is ribbons
+268:/// and as a list `[1]` is hearts. The fixture's first mapping wrapped a count in an array, which
+273:/// `0 … n-1`, which is exactly what `fx.js`'s `shapeOf()` does with it — so the union stops at the
+285:    /// A ribbon flutters: its drawn height is `h * |cos(r * 1.7)|`, which is `fx.js`'s trick for
+286:    /// making a flat rectangle read as a twisting strip without a 3-D transform.
+288:    /// 0 ribbon, 1 heart, 2 star, 3 sparkle, 4 sprinkle.
+297:/// **Fixed timestep, 60 a second.** `fx.js` steps once per `requestAnimationFrame` and its constants
+299:/// device whose refresh rate is not 60. So the view converts elapsed seconds into a frame number and
+334:    /// `volley()`. Seven along the foot 65 ms apart, one wide one through the middle at 210.
+380:    /// **The frame counter has to move inside the loop**, not before it: the seven bursts are 65 ms
+382:    /// the destination first would fire all eight bursts on one frame and throw the entire 222
+387:    /// quarter of a million frames to arrive at an empty field is a spin, not a recovery. 600 frames
+388:    /// is ten seconds and the field is provably empty by 140 (`1 / 0.0075`, the slowest decay).
+444:    /// 0..<1.
+451:/// 8.0+, and 180 rotating particles drawn live on a 26.5 simulator.
+518:    /// date twice. Cheap: 222 particles over at most 240 steps is arithmetic, and it is the same
+522:    /// The multiply is done in `UInt64` on purpose, and it is not a matter of style. **A watchOS
+523:    /// device is `arm64_32`: 64-bit registers, 32-bit pointers — and therefore a 32-bit `Int`.**
+524:    /// Knuth's golden-ratio constant 2_654_435_761 (`0x9E3779B1`) is larger than `Int32.max`, so
+525:    /// `run &* 2_654_435_761` does not compile there at all. Every simulator in this project is
+526:    /// 64-bit and took it happily; the only thing that ever said otherwise was `xcodebuild archive`
+592:/// Two rows, and the second one is the reason Phase 3's "no settings screen" has an exception.
+646:/// lives here. It is the only way to say what a watch simulator did with 222 rotating particles
+674:/// Nothing here draws. It steps the same `ConfettiField` the `Canvas` steps, on the same 208×248 the
+686:        // The Series 11 46mm, in points. A field is size-relative, so the number that matters is the
+703:            // 1. the full volley arrives, and arrives staggered.
+707:            field.advance(to: 12)                       // just before the wide burst at 210 ms
+719:            // 2. it stays on screen. A volley that leaves through the top is the failure the length
+728:            // 3. it ends. The whole reason the view removes itself.
+735:            // 4. the shapes are the kit's. Ten fields, so the tally is of the rule rather than of
+
+## confetti self-test check count
+11:        func say(_ s: String) { print("[tfive] confetti self-test: \(s)") }
+16:        var checked = 0, passed = 0
+17:        func check(_ ok: Bool, _ what: @autoclosure () -> String) {
+18:            checked += 1
+19:            if ok { passed += 1 } else { failures.append(what()) }
+22:        say("begin kits=\(kits.count) canvas=\(Int(size.width))x\(Int(size.height)) "
+28:        for kit in kits {
+29:            // 1. the full volley arrives, and arrives staggered.
+38:            check(atFirstFrame == ConfettiField.burstCount,
+40:            check(beforeWide > atFirstFrame,
+41:                  "\(kit.id): the seven bursts did not stagger — \(beforeWide) at frame 12")
+42:            check(afterWide >= beforeWide,
+50:            let onScreen = peak.particles.filter { $0.y >= 0 && $0.y <= size.height }.count
+51:            check(!peak.particles.isEmpty && Double(onScreen) / Double(peak.particles.count) > 0.5,
+52:                  "\(kit.id): only \(onScreen)/\(peak.particles.count) of the volley is on screen at frame 45")
+58:            check(!end.isAlive, "\(kit.id): the field never emptied — a TimelineView left awake forever")
+61:            // 4. the shapes are the kit's. Ten fields, so the tally is of the rule rather than of
+70:            let allowed = Set(kit.shapes)
+71:            check(Set(tally.keys).isSubset(of: allowed),
+72:                  "\(kit.id): drew shapes \(Set(tally.keys).sorted()) outside \(allowed.sorted())")
+77:        for kit in kits {
+78:            let shapes = (shapeTally[kit.id] ?? [:]).keys.sorted()
+79:            say("\(kit.id): shapes=\(kit.shapes) → drew \(shapes) "
+83:        for f in failures { say("FAIL \(f)") }
+84:        say("end pass=\(passed)/\(checked)")
+
+## ConfettiField constants
+237:/// file's: gravity `0.30`, drag `0.992` on both axes, `life` from 1 decaying `0.0075 + rand*0.008` a
+238:/// frame, `rib` on 45% of pieces, alpha `life * 1.7` clamped, and the volley itself — seven bursts of
+239:/// 26 at `w * (0.08 + 0.14i)`, `h * 0.97`, power 19, spread 1.15, fired `i * 65` ms apart, then one
+240:/// of 40 at `w/2`, `h * 0.6`, power 14, spread 2.6, at 210 ms. 222 particles.
+244:/// **`fx.js`'s speeds are in browser pixels and a watch is not a browser.** A piece launched at 19
+245:/// px/frame against 0.30 px/frame² of gravity reaches its apex 601 px up. On a 208×248 pt watch
+253:/// one still lands at 210 ms, and a piece still lives about as long as it did. `k = height / 800`,
+254:/// 800 being a browser viewport's working height; on this simulator that is **0.31**.
+285:    /// A ribbon flutters: its drawn height is `h * |cos(r * 1.7)|`, which is `fx.js`'s trick for
+304:    static let gravity = 0.30, drag = 0.992
+305:    static let burstCount = 26, wideCount = 40
+306:    static let burstPower = 19.0, widePower = 14.0
+307:    static let burstSpread = 1.15, wideSpread = 2.6
+311:    static let referenceHeight = 800.0
+321:    private var rng: SplitMix64
+330:        self.rng = SplitMix64(seed: seed)
+339:                            x: w * (0.08 + 0.14 * Double(i)), y: h * 0.97,
+366:                decay: 0.0075 + rng.unit() * 0.008,
+382:    /// the destination first would fire all eight bursts on one frame and throw the entire 222
+388:    /// is ten seconds and the field is provably empty by 140 (`1 / 0.0075`, the slowest decay).
+428:    var isAlive: Bool { !particles.isEmpty || !pending.isEmpty }
+434:struct SplitMix64 {
+445:    mutating func unit() -> Double { Double(next() >> 11) * (1.0 / 9007199254740992.0) }
+451:/// 8.0+, and 180 rotating particles drawn live on a 26.5 simulator.
+475:    /// Removed by the parent when this goes false — see `isAlive`.
+500:        if !field.isAlive {
+510:            c.opacity = min(1, max(0, p.life * 1.7))
+518:    /// date twice. Cheap: 222 particles over at most 240 steps is arithmetic, and it is the same
+524:    /// Knuth's golden-ratio constant 2_654_435_761 (`0x9E3779B1`) is larger than `Int32.max`, so
+525:    /// `run &* 2_654_435_761` does not compile there at all. Every simulator in this project is
+538:        case 4: return sprinkle(w: p.w * 1.15, h: p.h * 0.62)
+540:            let hh = p.ribbon ? p.h * abs(cos(p.rotation * 1.7)) : p.h
+574:        let a = s * 1.15, b = s * 0.20
+630:                        .frame(width: 14, height: 14)
+646:/// lives here. It is the only way to say what a watch simulator did with 222 rotating particles
+709:            field.advance(to: 14)
+717:                  "\(kit.id): the wide burst did not land by frame 14")
+731:            while end.isAlive && frame < 600 { frame += 1; end.advance(to: frame) }
+732:            check(!end.isAlive, "\(kit.id): the field never emptied — a TimelineView left awake forever")
+740:                f.advance(to: 14)

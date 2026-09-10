@@ -1,0 +1,30 @@
+
+[branch] dark accent asked #026F38 → --accent #328D54 on --ink-2 #112A19 / --ink-3 #1E3926; page errors: 0
+  menu: Delete this list everywhere (row): ring #328D54 (= --accent) on --ink-2 #112A19 → 3.7059:1 computed; pixels L #328D54/#536759 → 1.4697:1, B #328D54/#536759 → 1.4697:1; focus-visible=true tabs=8; accent on ink-3 3.0409, on ink-2 3.7059, on ink 4.1864
+  confirm: Delete everywhere (#ask-ok.danger): ring #328D54 (= --accent) on --ink-2 #112A19 → 3.7059:1 computed; pixels L #328D54/#112A19 → 3.7059:1, B #328D54/#112A19 → 3.7059:1; focus-visible=true tabs=0; accent on ink-3 3.0409, on ink-2 3.7059, on ink 4.1864
+  confirm: Remove from this device (#ask-ok.danger): ring #328D54 (= --accent) on --ink-2 #112A19 → 3.7059:1 computed; pixels L #328D54/#112A19 → 3.7059:1, B #328D54/#112A19 → 3.7059:1; focus-visible=true tabs=5; accent on ink-3 3.0409, on ink-2 3.7059, on ink 4.1864
+
+[branch] dark accent asked #11735B → --accent #338B72 on --ink-2 #112922 / --ink-3 #1E382F; page errors: 0
+  menu: Delete this list everywhere (row): ring #338B72 (= --accent) on --ink-2 #112922 → 3.7217:1 computed; pixels L #338B72/#536660 → 1.477:1, B #338B72/#536660 → 1.477:1; focus-visible=true tabs=8; accent on ink-3 3.0548, on ink-2 3.7217, on ink 4.2057
+  confirm: Delete everywhere (#ask-ok.danger): ring #338B72 (= --accent) on --ink-2 #112922 → 3.7217:1 computed; pixels L #338B72/#112922 → 3.7217:1, B #338B72/#112922 → 3.7217:1; focus-visible=true tabs=0; accent on ink-3 3.0548, on ink-2 3.7217, on ink 4.2057
+  confirm: Remove from this device (#ask-ok.danger): ring #338B72 (= --accent) on --ink-2 #112922 → 3.7217:1 computed; pixels L #338B72/#112922 → 3.7217:1, B #338B72/#112922 → 3.7217:1; focus-visible=true tabs=5; accent on ink-3 3.0548, on ink-2 3.7217, on ink 4.2057
+
+[branch] light accent asked #F57185 → --accent #D25168 on --ink-2 #FFE8EA / --ink-3 #F5D9DB; page errors: 0
+  menu: Delete this list everywhere (row): ring #D25168 (= --accent) on --ink-2 #FFE8EA → 3.5142:1 computed; pixels L #D25168/#AF9A9B → 1.5474:1, B #D25168/#AF9A9B → 1.5474:1; focus-visible=true tabs=8; accent on ink-3 3.0936, on ink-2 3.5142, on ink 3.8104
+  confirm: Delete everywhere (#ask-ok.danger): ring #D25168 (= --accent) on --ink-2 #FFE8EA → 3.5142:1 computed; pixels L #D25168/#FFE8EA → 3.5142:1, B #D25168/#FFE8EA → 3.5142:1; focus-visible=true tabs=0; accent on ink-3 3.0936, on ink-2 3.5142, on ink 3.8104
+  confirm: Remove from this device (#ask-ok.danger): ring #D25168 (= --accent) on --ink-2 #FFE8EA → 3.5142:1 computed; pixels L #D25168/#FFE8EA → 3.5142:1, B #D25168/#FFE8EA → 3.5142:1; focus-visible=true tabs=5; accent on ink-3 3.0936, on ink-2 3.5142, on ink 3.8104
+
+[branch] light accent asked #DA6D7F → --accent #C55B6D on --ink-2 #FEE9EA / --ink-3 #F3DADD; page errors: 0
+  menu: Delete this list everywhere (row): ring #C55B6D (= --accent) on --ink-2 #FEE9EA → 3.5468:1 computed; pixels L #C55B6D/#AE9A9C → 1.5521:1, B #C55B6D/#AE9A9C → 1.5521:1; focus-visible=true tabs=8; accent on ink-3 3.1197, on ink-2 3.5468, on ink 3.8322
+  confirm: Delete everywhere (#ask-ok.danger): ring #C55B6D (= --accent) on --ink-2 #FEE9EA → 3.5468:1 computed; pixels L #C55B6D/#FEE9EA → 3.5468:1, B #C55B6D/#FEE9EA → 3.5468:1; focus-visible=true tabs=0; accent on ink-3 3.1197, on ink-2 3.5468, on ink 3.8322
+  confirm: Remove from this device (#ask-ok.danger): ring #C55B6D (= --accent) on --ink-2 #FEE9EA → 3.5468:1 computed; pixels L #C55B6D/#FEE9EA → 3.5468:1, B #C55B6D/#FEE9EA → 3.5468:1; focus-visible=true tabs=5; accent on ink-3 3.1197, on ink-2 3.5468, on ink 3.8322
+
+[branch] light accent asked #FF3D9A → --accent #ED268B on --ink-2 #FEE8EF / --ink-3 #F3D9E1; page errors: 0
+  menu: Delete this list everywhere (row): ring #ED268B (= --accent) on --ink-2 #FEE8EF → 3.4286:1 computed; pixels L #ED268B/#AE9AA0 → 1.5101:1, B #ED268B/#AE9AA0 → 1.5101:1; focus-visible=true tabs=8; accent on ink-3 3.0134, on ink-2 3.4286, on ink 3.6975
+  confirm: Delete everywhere (#ask-ok.danger): ring #ED268B (= --accent) on --ink-2 #FEE8EF → 3.4286:1 computed; pixels L #ED268B/#FEE8EF → 3.4286:1, B #ED268B/#FEE8EF → 3.4286:1; focus-visible=true tabs=0; accent on ink-3 3.0134, on ink-2 3.4286, on ink 3.6975
+  confirm: Remove from this device (#ask-ok.danger): ring #ED268B (= --accent) on --ink-2 #FEE8EF → 3.4286:1 computed; pixels L #ED268B/#FEE8EF → 3.4286:1, B #ED268B/#FEE8EF → 3.4286:1; focus-visible=true tabs=5; accent on ink-3 3.0134, on ink-2 3.4286, on ink 3.6975
+
+[branch] dark accent asked #3366FF → --accent #3C6FFF on --ink-2 #162340 / --ink-3 #223050; page errors: 0
+  menu: Delete this list everywhere (row): ring #3C6FFF (= --accent) on --ink-2 #162340 → 3.6409:1 computed; pixels L #3C6FFF/#576178 → 1.4499:1, B #3C6FFF/#576178 → 1.4499:1; focus-visible=true tabs=8; accent on ink-3 3.056, on ink-2 3.6409, on ink 4.1068
+  confirm: Delete everywhere (#ask-ok.danger): ring #3C6FFF (= --accent) on --ink-2 #162340 → 3.6409:1 computed; pixels L #3C6FFF/#162340 → 3.6409:1, B #3C6FFF/#162340 → 3.6409:1; focus-visible=true tabs=0; accent on ink-3 3.056, on ink-2 3.6409, on ink 4.1068
+  confirm: Remove from this device (#ask-ok.danger): ring #3C6FFF (= --accent) on --ink-2 #162340 → 3.6409:1 computed; pixels L #3C6FFF/#162340 → 3.6409:1, B #3C6FFF/#162340 → 3.6409:1; focus-visible=true tabs=5; accent on ink-3 3.056, on ink-2 3.6409, on ink 4.1068

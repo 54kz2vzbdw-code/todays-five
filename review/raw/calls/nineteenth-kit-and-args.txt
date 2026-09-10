@@ -1,0 +1,27 @@
+# what a nineteenth kit has to touch  (Thu Sep 10 01:20:14 CDT 2026)
+## pinned counts
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/KitFixtureTests.swift:88:        #expect(want.count == 16, "16 open kits in the fixture")
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/KitFixtureTests.swift:132:        #expect(Kits.day.count == 8 && Kits.night.count == 8)
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/KitFixtureTests.swift:182:        #expect(Kits.types.count == 13)
+apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/KitFixtureTests.swift:223:        #expect(kits.count == 18, "all 18, secret included")
+test/theme.test.js:53:  assert.equal(CURATED.length, 18);
+test/theme.test.js:55:  assert.equal(ids.size, 18);
+test/theme.test.js:162:  assert.equal(rows.length, 18);
+test/theme.test.js:193:  assert.equal(CURATED.length, 18, "fourteen public kits, two new, the Secret pair");
+test/theme.test.js:511:  assert.equal(fx.kits.length, 18); assert.equal(fx.openIds.length, 16); assert.equal(fx.secretIds.length, 2);
+test/tools/gen-kits.mjs:92:assert.equal(kits.length, 18, "18 kits");
+test/tools/gen-kits.mjs:96:assert.equal(Object.keys(PAIRS).length, 13, "13 font pairs");
+test/tools/gen-kits.mjs:97:assert.equal(CURATED_DAY.length, 8, "eight day kits in the picker's order");
+test/tools/gen-kits.mjs:98:assert.equal(CURATED_NIGHT.length, 8, "eight night kits");
+
+## a kit needs a partner of the other lean (8+8 is asserted), so a 19th kit is really a 19th and a 20th
+## if it brings a new font pair: gen-watch-fonts.py, N new .ttf, 4 pbxproj lines each, N WatchInfo.plist entries, the 13-pair pins above
+## the KitsGen plugin, Kits.swift, WatchTheme.swift and the picker need no edit: they read the table
+
+## leans today
+{"night/dark":8,"day/light":6,"day/dark":2,"night/dark/secret":1,"day/light/secret":1}
+light-base: light, paper, harbor, blush, teletype, sketch, birthday
+
+## launch arguments in apple/ (distinct)
+"-TFAddSelfTest" "-TFConfettiSelfTest" "-TFDumpVault" "-TFDumpWatchSend" "-TFFaceProbe" "-TFFinale" "-TFFinaleHold" "-TFFontSelfTest" "-TFKit" "-TFQuery" "-TFSelfTest" "-TFShow" "-TFThemeSet" "-TFWatchDemo" "-TFWatchSelfTest" "-TFWipeVault" "-TFWipeWebStore" 
+count: 17

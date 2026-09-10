@@ -1,0 +1,7 @@
+[C0] ⋯ → Theme → Paper: header Night theme | offer: {"hidden":false,"prev":"theme-msg","text":"Use Midnight for Night"} | panels: ["p-menu","p-theme","p-theme"]
+[C1] × on step two: panels [] | data-theme: dark (flow is now stale at {step:2} in panels.js)
+[C2] Settings → Appearance → Night: header Night theme | offer: {"hidden":true,"prev":"theme-msg","text":"Use Midnight for Night"} | panels: ["p-menu","p-settings","p-theme"]
+[C3] picked Dusk there: still open? true | header: Night theme | offer: {"hidden":false,"prev":"sw-night","text":"Use Sunset for Day"} | panels: ["p-menu","p-settings","p-theme"] | toast: Dusk for Night | toast on: true
+[C4] ⋯ → Theme again: header Day theme | offer: {"hidden":true,"prev":"sw-night","text":"Use Sunset for Day"} | panels: ["p-menu","p-theme"]
+[C5] × on step two → Appearance → Night → builder → Back: header Night theme | panels: ["p-menu","p-settings","p-theme"] | offer: {"hidden":true,"prev":"theme-msg","text":"Use Midnight for Night"}
+page errors: []

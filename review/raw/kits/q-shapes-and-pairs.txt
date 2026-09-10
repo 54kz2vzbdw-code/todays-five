@@ -1,0 +1,6 @@
+== shapes literals and open kits' pairs (q) Thu Sep 10 15:32:05 CDT 2026
+theme.js RAW shapes literals (6): dark=3 midnight=2 dusk=3 harbor=3 teletype=[1, 2, 3] birthday=[4]
+fixture kits with shapes [0] (a bare count 1 in theme.js, ribbons only): 12 — dark, light, midnight, forest, paper, terminal, harbor, ember, cocoa, teletype, sketch, arcade
+the rest: pink=[0,1,2] sunset=[0,1] dusk=[0,1,2] blush=[0,1,2] superpink=[1,2,3] birthday=[4]
+pairs named by the 16 open kits: 11 of 13 — unused by open kits: fredoka, baloo
+secret kits' pairs: superpink->fredoka, birthday->baloo

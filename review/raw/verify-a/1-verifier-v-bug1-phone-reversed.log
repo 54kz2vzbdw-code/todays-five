@@ -1,0 +1,20 @@
+
+[R0] A fresh on the phone viewport, holds X | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.12","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+
+[R1] B: a second tab of the same profile, holds X | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.12","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+
+[R2] B: Remove from this device → Remove (sheet: "The server and your other devices keep it. This device forge"…) | storage: {"lists":0,"listsHasX":false,"removed":1,"removedHasX":true,"unremoved":null,"dead":0,"current":null} | this tab: {"version":"1.12","listId":null,"demo":true,"whoseOpen":false,"welcome":true}
+
+[R3] A: pasted X's link as a real navigation (Whose? asked=true, answered mine) | storage: {"lists":1,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.12","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+
+[R4] B: Keep on the welcome → a new list Y (registerList → saveDevice) with B's in-memory removed=[X]; B now holds Y | storage: {"lists":1,"listsHasX":false,"removed":1,"removedHasX":true,"unremoved":null,"dead":0,"current":"other"} | this tab: {"version":"1.12","listId":"other","demo":false,"whoseOpen":false,"welcome":false}
+
+[R5] A: ordinary save via ⋯→Sound — X is on A's screen | storage: {"lists":1,"listsHasX":false,"removed":1,"removedHasX":true,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.12","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+    A's Lists rows: 1 | rows of X on A's screen: 3 | #listname: List
+
+[R6] A: reload | storage: {"lists":1,"listsHasX":false,"removed":1,"removedHasX":true,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.12","listId":null,"demo":false,"whoseOpen":true,"welcome":false}
+
+[R7] B: reload (B holds Y) | storage: {"lists":1,"listsHasX":false,"removed":1,"removedHasX":true,"unremoved":null,"dead":0,"current":"other"} | this tab: {"version":"1.12","listId":"other","demo":false,"whoseOpen":false,"welcome":false}
+
+[R8] A: answered Whose? → mine a second time | storage: {"lists":2,"listsHasX":true,"removed":0,"removedHasX":false,"unremoved":null,"dead":0,"current":"X"} | this tab: {"version":"1.12","listId":"X","demo":false,"whoseOpen":false,"welcome":false}
+page errors A: [] B: []

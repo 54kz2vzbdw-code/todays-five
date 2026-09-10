@@ -1,0 +1,8 @@
+== mark.mjs --trace at 7341981 Thu Sep 10 01:13:45 CDT 2026
+trace vs the icon that shipped: 0.30 % of pixels differ
+exit=0
+-rw-r--r--@ 1 pricebrannen  wheel  1405 Sep  7 22:54 /tmp/mark-trace-180.png
+== mark.mjs --trace at the Phase 4 base 4962f97 (scratch copy) Thu Sep 10 01:16:40 CDT 2026
+trace vs the icon that shipped: 93.84 % of pixels differ
+over 2 % — the trace has drifted; /tmp/mark-trace-180.png is the render
+exit=1

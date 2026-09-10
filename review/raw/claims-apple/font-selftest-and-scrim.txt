@@ -1,0 +1,60 @@
+## WatchTheme.swift font self-test: how many checks per face/pair
+3:/// It prints counts, a tally, and the names of the faces that **failed**. A font family is not a
+10:    /// The string the two weights are measured on: ASCII, no kerning pairs worth arguing about, and
+21:        var checked = 0, passed = 0
+23:        func check(_ ok: Bool, _ what: @autoclosure () -> String) {
+24:            checked += 1
+25:            if ok { passed += 1 } else if failures.count < 12 { failures.append(what()) }
+30:            + "pairs=\(Kits.types.count) files=\(Kits.fontFiles.count) "
+31:            + "familiesOnDevice=\(families.count)")
+41:        print("[tfive] font self-test: bundled=\(present.count)/\(Kits.fontFiles.count)")
+42:        check(present.count == Kits.fontFiles.count,
+46:        // 13 pairs — `baloo` and `fredoka` belong to the two Secret kits and to nothing else — and
+47:        // walking the kits alone leaves 2 of the 33 bundled files untested until somebody unlocks a
+50:        // are checked. Which kits may be *rendered* is a separate question, asked separately below.
+53:        for type in Kits.types.values.sorted(by: { $0.id < $1.id }) {
+54:            for face in [type.task] + type.ui {
+56:                check(families.contains(face.family), "family not on device: \(face.family)")
+57:                check(resolves(face), "PostScript name did not resolve: \(face.postScriptName)")
+62:            let told = weightsDiffer(a, b)
+63:            check(told.ok, "pair \(type.id): \(told.detail)")
+65:                if told.how == "advance" { byAdvance += 1 } else { byInk += 1 }
+68:        print("[tfive] font self-test: weights told apart by advance=\(byAdvance) ink=\(byInk)")
+71:        // Secret pair unlocked that is 18 kits against the same 13 pairs.
+72:        for kit in kits {
+73:            check(kit.type != nil,
+77:        for line in failures { print("[tfive] font self-test: FAILED \(line)") }
+79:        print("[tfive] font self-test: faces=\(seenFaces.count) end pass=\(passed)/\(checked)")
+104:    /// Do these two faces actually render differently, or is one of them the other under a second
+110:    /// the advance, and — when the advance ties — the **ink**, the bounding box of the drawn glyphs,
+112:    /// one settled each pair, because "told apart by ink" on a pair that is not monospaced would
+114:    private static func weightsDiffer(_ a: KitFace, _ b: KitFace) -> (ok: Bool, how: String, detail: String) {
+115:        let wa = advance(a), wb = advance(b)
+
+## the scrim (needsClockScrim + geometry)
+
+    /// Whether the white system clock needs a patch behind it on this kit's ground — see `ClockScrim`.
+    ///
+    /// Computed from the kit's own `ink` rather than switched on `base == .light`, so a kit whose
+    /// ground moves gets the right answer without anybody remembering this exists. The threshold is
+    /// WCAG's 3:1 for non-text: on the eighteen kits today it selects exactly the seven light-base
+    /// ones (1.06–1.12) and none of the eleven dark ones (16.0–19.9), so there is a factor of fourteen
+    /// between the two groups and nothing sits near the line.
+    var needsClockScrim: Bool { Self.contrastWithWhite(kit.colors.ink) < 3 }
+
+    /// WCAG relative luminance against white, from a `#RRGGBB`. A hex this cannot read answers 21,
+    /// the maximum — an unreadable ground is not a reason to paint a patch nobody asked for.
+    static func contrastWithWhite(_ hex: String) -> Double {
+        guard let c = Kits.rgb(hex) else { return 21 }
+        let lin = { (v: Double) in v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
+        let l = 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b)
+        return 1.05 / (l + 0.05)
+    }
+
+9:/// pair — and they are all equally bad: **Light 1.06, blush 1.07, sketch 1.08, birthday 1.08,
+10:/// teletype 1.09, harbor 1.10, Paper 1.12**. The round framed this as a Paper problem; Paper is in
+17:///     layer, so a patch in the corner is enough. Paper goes from **1.12:1 to 17.12:1**;
+23:/// the first darkening step that reaches even 3:1 breaks **all five** of Paper's own fixture floors
+37:            // occupies pt (151,20)–(191,31), so 76 × 44 anchored at the top-trailing corner covers it
+42:                .frame(width: 76, height: 44)
+58:            self = Color(white: 0.5)

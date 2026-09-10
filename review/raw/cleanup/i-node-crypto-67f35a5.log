@@ -1,0 +1,12 @@
+ok - pinned derivation vectors: W → R → lookupId, key; W → token
+ok - the view link derives the same lookupId and key, and no token
+ok - nothing derivable from R reproduces the token (R is not an input to the write branch)
+ok - envelope shape and round trip, compressed and not
+ok - fresh iv per write; ciphertexts differ for the same doc
+ok - tampering fails: ct, iv, header flag, wrong key, plaintext doc
+ok - a year of history compresses far below the 96 KB server cap
+ok - base62 mapping is deterministic and rejects biased bytes
+ok - isSecret accepts 22–64 base62 and nothing else
+ok - the shared fixture is the contract the Swift core reads: three derivations, the salt, the alphabet, real envelopes
+
+10 crypto tests passed

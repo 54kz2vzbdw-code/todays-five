@@ -1,0 +1,7 @@
+== font bytes (q) Thu Sep 10 15:29:28 CDT 2026 — sizes summed with stat -f %z in the worktree at 7341981
+shipped .ttf: files=33 bytes=1238128 = 1.180 MiB = 1.238 MB
+watch-fonts.json totals (test/fixtures/watch-fonts.json, read by tools/selftest-counts.mjs in m-selftest-counts.txt): faces 33, bytes 1238128, sourceFiles 24, sourceBytes 704776
+all fonts/*.woff2 in the repo: files=26 bytes=732924 = 715.7 KiB = 732.9 KB   (PLAN:36 says 26 faces, 732 KB; watch-fonts.json sourceFiles=24 sourceBytes=704776 = the 24 actually used)
+predecessors' ttf26 (one-to-one woff2->ttf conversions, scratchpad/kits/ttf26): files=26 bytes=1610380 = 1.61 MB   (PLAN:36 says 1.54 MB of TTF)
+UIAppFonts .ttf entries in apple/TodaysFive/Config/WatchInfo.plist: 33
+project.pbxproj lines mentioning .ttf: 132 (33 x 4 = 132)

@@ -1,0 +1,125 @@
+## files under apple/ changed in 0e03143..7341981
+ 119 files changed, 13197 insertions(+), 89 deletions(-)
+M	apple/DECISIONS-apple.md
+A	apple/PLAN-apple-phase3.md
+A	apple/PLAN-apple-phase4.md
+M	apple/README.md
+A	apple/TodaysFive/Config/ComplicationsInfo.plist
+A	apple/TodaysFive/Config/[REDACTED].entitlements
+A	apple/TodaysFive/Config/TodaysFiveWatch.entitlements
+A	apple/TodaysFive/Config/WatchInfo.plist
+A	apple/TodaysFive/Fonts/OFL.txt
+A	apple/TodaysFive/Fonts/README.md
+A	apple/TodaysFive/Shared/AddToTodaysFive.swift
+A	apple/TodaysFive/Shared/TodaysFiveShortcuts.swift
+A	apple/TodaysFive/Shared/WatchSnapshot.swift
+M	apple/TodaysFive/TodaysFive.xcodeproj/project.pbxproj
+A	apple/TodaysFive/TodaysFive.xcodeproj/xcshareddata/xcschemes/TodaysFiveWatch.xcscheme
+M	apple/TodaysFive/TodaysFive/Haptics.swift
+A	apple/TodaysFive/TodaysFive/WatchLinkSender.swift
+M	apple/TodaysFive/TodaysFive/WebViewController.swift
+A	apple/TodaysFive/[REDACTED]/Assets.xcassets/AccentColor.colorset/Contents.json
+A	apple/TodaysFive/[REDACTED]/Assets.xcassets/Contents.json
+A	apple/TodaysFive/[REDACTED]/Assets.xcassets/WidgetBackground.colorset/Contents.json
+A	apple/TodaysFive/[REDACTED]/Complications.swift
+A	apple/TodaysFive/[REDACTED]/ComplicationsIntent.swift
+A	apple/TodaysFive/[REDACTED]/ComplicationsProvider.swift
+A	apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift
+A	apple/TodaysFive/TodaysFiveWatch/Assets.xcassets/AccentColor.colorset/Contents.json
+A	apple/TodaysFive/TodaysFiveWatch/Assets.xcassets/AppIcon.appiconset/Contents.json
+A	apple/TodaysFive/TodaysFiveWatch/Assets.xcassets/AppIcon.appiconset/icon-1024.png
+A	apple/TodaysFive/TodaysFiveWatch/Assets.xcassets/Contents.json
+A	apple/TodaysFive/TodaysFiveWatch/ListPickerView.swift
+A	apple/TodaysFive/TodaysFiveWatch/OneThingView.swift
+A	apple/TodaysFive/TodaysFiveWatch/TodayView.swift
+A	apple/TodaysFive/TodaysFiveWatch/WatchApp.swift
+A	apple/TodaysFive/TodaysFiveWatch/WatchDictation.swift
+A	apple/TodaysFive/TodaysFiveWatch/WatchHaptics.swift
+A	apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift
+A	apple/TodaysFive/TodaysFiveWatch/WatchStore.swift
+A	apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift
+M	apple/TodaysFiveCore/Package.swift
+M	apple/TodaysFiveCore/Plugins/ConfigGen/ConfigGen.swift
+A	apple/TodaysFiveCore/Plugins/KitsGen/KitsGen.swift
+A	apple/TodaysFiveCore/Sources/TodaysFiveCore/Kits.swift
+M	apple/TodaysFiveCore/Sources/TodaysFiveCore/SupabaseTransport.swift
+M	apple/TodaysFiveCore/Sources/TodaysFiveCore/SyncEngine.swift
+A	apple/TodaysFiveCore/Sources/TodaysFiveCore/TodayOps.swift
+M	apple/TodaysFiveCore/Sources/TodaysFiveCore/Transport.swift
+A	apple/TodaysFiveCore/Sources/TodaysFiveCore/WatchLink.swift
+D	apple/TodaysFiveCore/Sources/tfconfiggen/main.swift
+M	apple/TodaysFiveCore/Sources/tfive/TFive.swift
+M	apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/Fixtures.swift
+A	apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/KitFixtureTests.swift
+M	apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/SyncTests.swift
+A	apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/TodayOpsTests.swift
+A	apple/TodaysFiveCore/Tests/TodaysFiveCoreTests/WatchLinkTests.swift
+A	apple/shots/watch/count-actions.png
+A	apple/shots/watch/empty.png
+A	apple/shots/watch/finale-birthday.png
+A	apple/shots/watch/finale-dark.png
+A	apple/shots/watch/finale-pink.png
+A	apple/shots/watch/finale-sunset.png
+A	apple/shots/watch/from-the-phone.png
+A	apple/shots/watch/live-backend.png
+A	apple/shots/watch/theme-picker.png
+A	apple/shots/watch/today-after-selftest.png
+A	apple/shots/watch/today-arcade.png
+A	apple/shots/watch/today-birthday.png
+A	apple/shots/watch/today-blush.png
+A	apple/shots/watch/today-cocoa.png
+A	apple/shots/watch/today-dark.png
+A	apple/shots/watch/today-dusk.png
+A	apple/shots/watch/today-ember.png
+A	apple/shots/watch/today-forest.png
+A	apple/shots/watch/today-harbor.png
+A	apple/shots/watch/today-light.png
+A	apple/shots/watch/today-midnight.png
+A	apple/shots/watch/today-paper.png
+A	apple/shots/watch/today-pink.png
+A	apple/shots/watch/today-sketch.png
+A	apple/shots/watch/today-sunset.png
+A	apple/shots/watch/today-superpink.png
+A	apple/shots/watch/today-teletype.png
+A	apple/shots/watch/today-terminal.png
+A	apple/shots/watch/today.png
+A	apple/tools/gen-watch-fonts.py
+M	apple/tools/interop.mjs
+A	apple/tools/watchsim.mjs
+
+ttf files changed: 33
+
+## ttf history
+9a2f369 2026-09-07 Two generators: the kit table, and the type the Watch can actually name
+
+## shots/watch
+count-actions.png empty.png finale-birthday.png finale-dark.png finale-pink.png finale-sunset.png from-the-phone.png live-backend.png theme-picker.png today-after-selftest.png today-arcade.png today-birthday.png today-blush.png today-cocoa.png today-dark.png today-dusk.png today-ember.png today-forest.png today-harbor.png today-light.png today-midnight.png today-paper.png today-pink.png today-sketch.png today-sunset.png today-superpink.png today-teletype.png today-terminal.png today.png 
+count:       29  today-*: 19  finale-*: 4
+
+## DECISIONS-phase4-C*.md on HEAD?
+ls: apple/DECISIONS-phase4-C1.md: No such file or directory
+ls: apple/DECISIONS-phase4-C2.md: No such file or directory
+apple/DECISIONS-apple.md:1394:[`DECISIONS-phase4-C1.md`](DECISIONS-phase4-C1.md) and this does not repeat it.
+apple/README.md:447:`DECISIONS-phase4-C1.md` has the argument and what it cost, including the two things it cost that
+apple/README.md:454:`schedule` (two time pickers and a `holdAuto` on a screen two inches across). `DECISIONS-phase4-C2.md`
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:37:// kit's ink (measured; see `DECISIONS-phase4-C1.md` for the method and its three caveats). It is an
+
+## tools present?
+ls: tools/og.mjs: No such file or directory
+tools/kitshots.js
+tools/mark.mjs
+tools/polld.js
+tools/shots.js
+
+apple/tools/:
+gen-watch-fonts.py
+interop.mjs
+watchsim.mjs
+948a905 Build 216
+8a412a3 Build 212, and a rewrite that now refuses to write an empty file
+16aac3d Build 207, and the suite line the tracks kept moving
+2dbdfd9 Build 202, and the one floor this round earned the right to enforce
+20e45d3 Merge branch 'p4-d-latency' into apple-themes
+c0b8e2b A harness that reported nothing and looked like it had reported something
+f4c5faa A harness for the poll papercut, and a median that is not the finding
+39b58af A render pass for the one question contrast arithmetic cannot answer

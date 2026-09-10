@@ -1,0 +1,11 @@
+polld — 10 trial(s) per condition, 2 s steps, seed 1, against http://127.0.0.1:8894/
+POLL_MS 60 s, POLL_LIVE_MS 240 s (read from sync.js)
+
+fg-dead   ..........
+
+| condition | trials (s) | median |
+| --- | --- | --- |
+| foreground, realtime NOT connected | 8, 10, 14, 16, 46, 48, 52, 54, 56, 58 | 47 (max 58) |
+
+page errors: 0
+exit=0

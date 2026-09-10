@@ -1,0 +1,9 @@
+# e2e4 mutations: a copy of the 67f35a5 tree with two edits, served on 8895
+1956c1956
+< registerOpeners({ "p-menu": () => { paintMenu(); showPanel("p-menu", { anchor: $("#more") }); } });
+---
+> registerOpeners({ "p-menu": () => { showPanel("p-menu", { anchor: $("#more") }); } }); // MUTATED: no paintMenu()
+480c480
+<   if (wasOpen) { const next = meta().lists[0]; if (next) await A.switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else A.showWelcome(); }
+---
+>   if (wasOpen) { const next = meta().lists[0]; if (next) A.switchTo({ id: next.id, mode: next.mode === "view" ? "view" : "edit" }); else A.showWelcome(); }

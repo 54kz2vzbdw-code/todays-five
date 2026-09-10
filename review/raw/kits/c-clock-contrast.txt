@@ -1,0 +1,22 @@
+== clock-contrast (c) Thu Sep 10 01:11:43 CDT 2026
+light      light #FAF8F4  contrastWithWhite=1.0607  theme.js contrast(ink,#FFFFFF)=1.0607  scrim=true
+blush      light #FFF5F8  contrastWithWhite=1.0677  theme.js contrast(ink,#FFFFFF)=1.0677  scrim=true
+sketch     light #F8F6F1  contrastWithWhite=1.0800  theme.js contrast(ink,#FFFFFF)=1.0800  scrim=true
+birthday   light #FFF3F8  contrastWithWhite=1.0809  theme.js contrast(ink,#FFFFFF)=1.0809  scrim=true
+teletype   light #F3F6EF  contrastWithWhite=1.0915  theme.js contrast(ink,#FFFFFF)=1.0915  scrim=true
+harbor     light #EEF5F4  contrastWithWhite=1.1051  theme.js contrast(ink,#FFFFFF)=1.1051  scrim=true
+paper      light #F7F2E8  contrastWithWhite=1.1158  theme.js contrast(ink,#FFFFFF)=1.1158  scrim=true
+cocoa      dark  #2A1F1A  contrastWithWhite=16.0384  theme.js contrast(ink,#FFFFFF)=16.0384  scrim=false
+forest     dark  #10201A  contrastWithWhite=16.8871  theme.js contrast(ink,#FFFFFF)=16.8871  scrim=false
+superpink  dark  #3F0026  contrastWithWhite=16.9445  theme.js contrast(ink,#FFFFFF)=16.9445  scrim=false
+sunset     dark  #2A1622  contrastWithWhite=16.9860  theme.js contrast(ink,#FFFFFF)=16.9860  scrim=false
+pink       dark  #2E0A1C  contrastWithWhite=17.8518  theme.js contrast(ink,#FFFFFF)=17.8518  scrim=false
+dusk       dark  #171226  contrastWithWhite=18.2459  theme.js contrast(ink,#FFFFFF)=18.2459  scrim=false
+midnight   dark  #0E1424  contrastWithWhite=18.3533  theme.js contrast(ink,#FFFFFF)=18.3533  scrim=false
+ember      dark  #1B0F0D  contrastWithWhite=18.7376  theme.js contrast(ink,#FFFFFF)=18.7376  scrim=false
+arcade     dark  #0C0B1E  contrastWithWhite=19.4040  theme.js contrast(ink,#FFFFFF)=19.4040  scrim=false
+dark       dark  #070A08  contrastWithWhite=19.8872  theme.js contrast(ink,#FFFFFF)=19.8872  scrim=false
+terminal   dark  #070A08  contrastWithWhite=19.8872  theme.js contrast(ink,#FFFFFF)=19.8872  scrim=false
+
+light-base kits: 7, range 1.06–1.12; dark-base: 11, range 16.04–19.89
+kits needing the scrim (< 3): light, blush, sketch, birthday, teletype, harbor, paper

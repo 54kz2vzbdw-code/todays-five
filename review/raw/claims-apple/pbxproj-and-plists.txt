@@ -1,0 +1,89 @@
+## versions
+590:				CURRENT_PROJECT_VERSION = 216;
+601:				MARKETING_VERSION = 1.12;
+619:				CURRENT_PROJECT_VERSION = 216;
+630:				MARKETING_VERSION = 1.12;
+648:				CURRENT_PROJECT_VERSION = 216;
+657:				MARKETING_VERSION = 1.12;
+675:				CURRENT_PROJECT_VERSION = 216;
+684:				MARKETING_VERSION = 1.12;
+753:				CURRENT_PROJECT_VERSION = 216;
+762:				MARKETING_VERSION = 1.12;
+776:				CURRENT_PROJECT_VERSION = 216;
+785:				MARKETING_VERSION = 1.12;
+
+## deployment targets, bundle ids, teams (team id redacted), product types
+351:			productType = "com.apple.product-type.app-extension";
+373:			productType = "com.apple.product-type.application";
+395:			productType = "com.apple.product-type.application";
+588:				CODE_SIGN_ENTITLEMENTS = Config/[REDACTED].entitlements;
+602:				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive.watchkitapp.complications;
+608:				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+617:				CODE_SIGN_ENTITLEMENTS = Config/[REDACTED].entitlements;
+631:				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive.watchkitapp.complications;
+637:				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+646:				CODE_SIGN_ENTITLEMENTS = Config/TodaysFiveWatch.entitlements;
+658:				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive.watchkitapp;
+664:				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+673:				CODE_SIGN_ENTITLEMENTS = Config/TodaysFiveWatch.entitlements;
+685:				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive.watchkitapp;
+691:				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+713:				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+719:				SWIFT_STRICT_CONCURRENCY = complete;
+720:				SWIFT_VERSION = 6.0;
+737:				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+741:				SWIFT_STRICT_CONCURRENCY = complete;
+742:				SWIFT_VERSION = 6.0;
+751:				CODE_SIGN_ENTITLEMENTS = Config/TodaysFive.entitlements;
+763:				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive;
+774:				CODE_SIGN_ENTITLEMENTS = Config/TodaysFive.entitlements;
+786:				PRODUCT_BUNDLE_IDENTIFIER = com.pricebrannen.todaysfive;
+
+## frameworks named in the pbxproj
+framework lines: 0
+
+## object-id bands: PBXFileReference ids in 264-299, PBXBuildFile 436+, group 312
+ids 264-299: 34  ids>=436: 34  id 312 present: 1  max id: 469
+ttf refs: 132   OFL.txt refs: 4   Fonts/README refs: 0
+
+## entitlements files in repo
+--- apple/TodaysFive/Config/[REDACTED].entitlements
+{
+  "com.apple.security.application-groups" => [
+    0 => "group.com.pricebrannen.todaysfive"
+  ]
+}
+--- apple/TodaysFive/Config/TodaysFive.entitlements
+{
+  "com.apple.developer.associated-domains" => [
+    0 => "applinks:54kz2vzbdw-code.github.io"
+  ]
+}
+--- apple/TodaysFive/Config/TodaysFiveWatch.entitlements
+{
+  "com.apple.security.application-groups" => [
+    0 => "group.com.pricebrannen.todaysfive"
+  ]
+}
+
+## WatchInfo.plist / appex Info.plist / phone Info.plist keys of interest
+--- apple/TodaysFive/Config/WatchInfo.plist
+9:  "[REDACTED]" => "$(MARKETING_VERSION)"
+10:  "CFBundleURLTypes" => [
+13:      "CFBundleURLName" => "com.pricebrannen.todaysfive.watchkitapp"
+14:      "CFBundleURLSchemes" => [
+19:  "CFBundleVersion" => "$(CURRENT_PROJECT_VERSION)"
+22:  "UIAppFonts" => [
+57:  "WKApplication" => true
+58:  "[REDACTED]" => "com.pricebrannen.todaysfive"
+59:  "[REDACTED]" => true
+--- apple/TodaysFive/Config/ComplicationsInfo.plist
+9:  "[REDACTED]" => "$(MARKETING_VERSION)"
+10:  "CFBundleVersion" => "$(CURRENT_PROJECT_VERSION)"
+11:  "NSExtension" => {
+12:    "[REDACTED]" => "com.apple.widgetkit-extension"
+--- apple/TodaysFive/Config/Info.plist
+9:  "[REDACTED]" => "$(MARKETING_VERSION)"
+10:  "CFBundleVersion" => "$(CURRENT_PROJECT_VERSION)"
+35:  "WKAppBoundDomains" => [
+UIAppFonts entries: 0

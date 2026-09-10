@@ -1,0 +1,2 @@
+[supervisor] 2026-09-10 00:56:41 starting tools/serve.js (via symlink /tmp/tf-review/baseline-static.mjs) on 8890, root /Users/pricebrannen/Today's Five/todays-five-review-baseline
+serving /Users/pricebrannen/Today's Five/todays-five-review-baseline on http://127.0.0.1:8890

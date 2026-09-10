@@ -1,0 +1,122 @@
+watchOS SDK: /Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk
+iOS SDK: /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk
+
+## frameworks present? (Speech, CoreHaptics, JavaScriptCore, WatchConnectivity, WidgetKit, AppIntents, WatchKit)
+Speech             watchOS:NO   watchsim:NO   iOS:yes  macOS:yes 
+CoreHaptics        watchOS:NO   watchsim:NO   iOS:yes  macOS:yes 
+JavaScriptCore     watchOS:NO   watchsim:NO   iOS:yes  macOS:yes 
+WatchConnectivity  watchOS:yes  watchsim:yes  iOS:yes  macOS:NO  
+WidgetKit          watchOS:yes  watchsim:yes  iOS:yes  macOS:yes 
+AppIntents         watchOS:yes  watchsim:yes  iOS:yes  macOS:yes 
+WatchKit           watchOS:yes  watchsim:yes  iOS:NO   macOS:NO  
+CoreText           watchOS:yes  watchsim:yes  iOS:yes  macOS:yes 
+
+SwiftUI interface: /Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/SwiftUI.framework/Modules/SwiftUI.swiftmodule/arm64_32-apple-watchos.swiftinterface
+## handGestureShortcut availability
+419-@available(iOS 18.0, macOS 15.0, tvOS 18.0, watchOS 11.0, *)
+420-@available(visionOS, unavailable)
+422:  nonisolated public func handGestureShortcut(_ shortcut: SwiftUI.HandGestureShortcut, isEnabled: Swift.Bool = true) -> some SwiftUICore.View
+## verticalPage
+15122-@available(macOS, unavailable)
+15123-@available(tvOS, unavailable)
+15124-@available(visionOS, unavailable)
+15126:  @_alwaysEmitIntoClient @_Concurrency.MainActor @preconcurrency public static var verticalPage: SwiftUI.[REDACTED] {
+## Canvas / TimelineView availability
+21071-@available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *)
+21072:public struct TimelineView<Schedule, Content> where Schedule : SwiftUICore.TimelineSchedule {
+## navigationTitle(_ title: () -> V) overload
+17425-  @available(macOS, unavailable)
+17426-  @available(tvOS, unavailable)
+17427-  @available(visionOS, unavailable)
+17428:  nonisolated public func navigationTitle<V>(@SwiftUICore.ViewBuilder _ title: () -> V) -> some SwiftUICore.View where V : SwiftUICore.View
+## TextFieldLink initializers
+SwiftUI:8614:   nonisolated public init(prompt: SwiftUICore.Text? = nil, @SwiftUICore.ViewBuilder label: () -> Label, onSubmit: @escaping (Swift.String) -> Swift.Void)
+SwiftUI:8622:   nonisolated public init(_ titleKey: SwiftUICore.LocalizedStringKey, prompt: SwiftUICore.Text? = nil, onSubmit: @escaping (Swift.String) -> Swift.Void)
+SwiftUI:8623:   @_disfavoredOverload @_alwaysEmitIntoClient nonisolated public init(_ titleResource: Foundation.[REDACTED], prompt: SwiftUICore.Text? = nil, onSubmit: @escaping (Swift.String) -> Swift.Void) {
+SwiftUI:8624:         self.init(
+TextFieldLink init lines total: 961
+## [REDACTED].entries mode
+8332:public struct [REDACTED] : SwiftUICore.TimelineSchedule, Swift.Sendable {
+8334:  public func entries(from start: Foundation.Date, mode: SwiftUICore.TimelineScheduleMode) -> SwiftUI.[REDACTED].Entries
+
+## WidgetFamily cases in watchOS WidgetKit
+626:  case systemSmall
+630:  case systemMedium
+634:  case systemLarge
+638:  case systemExtraLarge
+644:  case [REDACTED]
+651:  case accessoryCorner
+656:  case accessoryCircular
+661:  case accessoryRectangular
+666:  case accessoryInline
+623-  @available(iOS 14.0, macOS 11.0, visionOS 26.0, *)
+624-  @available(tvOS, unavailable)
+625-  @available(watchOS, unavailable)
+626:  case systemSmall
+627-  @available(iOS 14.0, macOS 11.0, visionOS 26.0, *)
+628-  @available(tvOS, unavailable)
+629-  @available(watchOS, unavailable)
+630:  case systemMedium
+631-  @available(iOS 14.0, macOS 11.0, visionOS 26.0, *)
+632-  @available(tvOS, unavailable)
+633-  @available(watchOS, unavailable)
+634:  case systemLarge
+## [REDACTED].fullColor doc
+172-@available(iOS 18.0, watchOS 11.0, macOS 15.0, visionOS 26.0, *)
+173-@available(tvOS, unavailable)
+174-public struct [REDACTED] : Swift.Hashable {
+175-  public static let accented: WidgetKit.[REDACTED]
+176-  public static let desaturated: WidgetKit.[REDACTED]
+177-  public static let accentedDesaturated: WidgetKit.[REDACTED]
+178:  public static let fullColor: WidgetKit.[REDACTED]
+--
+727-        }
+728-  }
+729-}
+730-@available(iOS 16.0, watchOS 9.0, macOS 13.0, visionOS 26.0, *)
+731-@available(tvOS, unavailable)
+732-public struct WidgetRenderingMode : Swift.Equatable, Swift.[REDACTED] {
+733:  public static let fullColor: WidgetKit.WidgetRenderingMode
+## WidgetRenderingMode.accented doc
+167-  public var [REDACTED]: Swift.Bool {
+168-    get
+169-    set
+170-  }
+171-}
+172-@available(iOS 18.0, watchOS 11.0, macOS 15.0, visionOS 26.0, *)
+173-@available(tvOS, unavailable)
+174-public struct [REDACTED] : Swift.Hashable {
+175:  public static let accented: WidgetKit.[REDACTED]
+176-  public static let desaturated: WidgetKit.[REDACTED]
+177:  public static let accentedDesaturated: WidgetKit.[REDACTED]
+--
+726-            }
+727-        }
+
+## WatchKit headers: WKTextInputMode cases, WKApplicationDelegate URL/open methods, [REDACTED]
+50:typedef NS_ENUM(NSInteger, WKTextInputMode)  {
+51-    WKTextInputModePlain,		// text (no emoji) from dictation + suggestions
+52-    [REDACTED], 		// text plus non-animated emoji from dictation + suggestions
+53-    [REDACTED] API_DEPRECATED("Animated Emojis are no longer supported. Use [REDACTED] instead", watchos(2.0, 6.0))
+54-};
+55-
+56-typedef NS_ENUM(NSInteger, [REDACTED]) {
+ugrep: warning: /Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/WatchKit.framework/Headers/WKApplicationDelegate.h: No such file or directory
+131:- (void)[REDACTED]:(nullable NSArray<NSString*> *)suggestions allowedInputMode:(WKTextInputMode)inputMode completion:(void(^)(NSArray * __nullable results))completion; // results is nil if cancelled
+132:- (void)[REDACTED]:(NSArray * __nullable (^ __nullable)(NSString *inputLanguage))suggestionsHandler allowedInputMode:(WKTextInputMode)inputMode completion:(void(^)(NSArray * __nullable results))completion; // will never go straight to dictation because allows for switching input language
+/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/WatchKit.framework/Headers/WKApplication.h:33:- (void)openSystemURL:(NSURL *)url;
+/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.5.sdk/System/Library/Frameworks/WatchKit.framework/Headers/WKExtension.h:32:- (void)openSystemURL:(NSURL *)url;
+
+## WatchConnectivity error codes
+22:	[REDACTED]                 = 7006,
+26:	[REDACTED]              = 7010,
+
+## CoreText registration deprecations (watchOS SDK CTFontManager.h)
+171:bool [REDACTED](
+173-    CTFontManagerScope      scope,
+174-    CFErrorRef *            error ) CT_AVAILABLE(macos(10.6), ios(4.1), watchos(2.0), tvos(9.0));
+253:bool [REDACTED](
+255-    CTFontManagerScope      scope,
+256-    CFArrayRef _Nullable * _Nullable errors ) CT_DEPRECATED_WITH_REPLACEMENT("[REDACTED]", macos(10.6, 10.15), ios(4.1, 13.0), watchos(2.0, 6.0), tvos(9.0, 13.0));
+300:void [REDACTED](
+302-	CTFontManagerScope      scope,

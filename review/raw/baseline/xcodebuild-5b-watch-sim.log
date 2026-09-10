@@ -1,0 +1,564 @@
+[build-slot] baseline-5b-watch-sim acquired 1 at 01:16:07; load: 5.54 4.96 4.97
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project "/Users/pricebrannen/Today's Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj" -scheme TodaysFiveWatch -destination "generic/platform=watchOS Simulator" -derivedDataPath /tmp/tf-review-baseline build
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  TodaysFiveCore: /Users/pricebrannen/Today's Five/todays-five-review-baseline/apple/TodaysFiveCore @ local
+
+[REDACTED]
+
+Prepare packages
+
+Compile plug-in “KitsGen” in package “todaysfivecore”
+[debug]: Compiling plugin to executable at /tmp/tf-review-baseline/Build/Products/PluginExecutables/KitsGen
+[debug]: Using compiler /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc
+[debug]: Plugin compilation output directory '/tmp/tf-review-baseline/Build/Products/PluginExecutables'
+[debug]: Computed hash of plugin compilation inputs: [REDACTED]
+
+
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -L /Applications/Xcode.app/Contents/SharedFrameworks/SwiftPM.framework/SharedSupport/PluginAPI -lPackagePlugin -Xlinker -rpath -Xlinker /Applications/Xcode.app/Contents/SharedFrameworks/SwiftPM.framework/SharedSupport/PluginAPI -target arm64-apple-macos14.0 -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -g -swift-version 6 -package-description-version 6.0.0 -I /Applications/Xcode.app/Contents/SharedFrameworks/SwiftPM.framework/SharedSupport/PluginAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -parse-as-library -j14 -Xfrontend -serialize-diagnostics-path -Xfrontend /tmp/tf-review-baseline/Build/Products/PluginExecutables/ConfigGen.dia /Users/pricebrannen/Today's\ Five/todays-five-review-baseline/apple/TodaysFiveCore/Plugins/ConfigGen/ConfigGen.swift -o /tmp/tf-review-baseline/Build/Products/PluginExecutables/ConfigGen
+[debug]: Compiling plugin to executable at /tmp/tf-review-baseline/Build/Products/PluginExecutables/ConfigGen
+[debug]: Using compiler /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc
+[debug]: Plugin compilation output directory '/tmp/tf-review-baseline/Build/Products/PluginExecutables'
+[debug]: Computed hash of plugin compilation inputs: [REDACTED]
+
+
+Apply build tool plug-in “ConfigGen” to target “TodaysFiveCore” in package “todaysfivecore”
+
+/usr/bin/sandbox-exec -p "(version 1)
+(deny default)
+(import \"system.sb\")
+(allow file-read*)
+(allow process*)
+(allow mach-lookup (global-name \"com.apple.lsd.mapdb\"))
+(allow mach-lookup (global-name \"com.apple.mobileassetd.v2\"))
+(allow file-write*
+    (subpath \"/private/tmp\")
+    (subpath \"/private/var/tmp\")
+    (subpath \"/private/var/folders/cm/[REDACTED]/T\")
+    (subpath \"/private/var/folders/cm/[REDACTED]/C\")
+)
+(deny file-write*
+    (subpath \"/Users/pricebrannen/Today's Five/todays-five-review-baseline/apple/TodaysFiveCore\")
+)
+(allow file-write*
+    (subpath \"/private/tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/ConfigGen\")
+    (subpath \"/private/var/folders/cm/[REDACTED]/T/TemporaryItems\")
+)
+" /bin/sh -c "mkdir -p \"$(dirname \"$1\")\"
+cat > \"$1\" <<EOF
+// Generated from the repo's config.js at build time by the ConfigGen plugin. Do not edit.
+public enum GeneratedConfig {
+    public static let url = \"$2\"
+    public static let key = \"$3\"
+}
+EOF" config-gen /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/ConfigGen/Config.generated.swift "https://xyfjxdbwhysbaltcwvcx.supabase.co" sb_publishable_1YSlOSI8FfxJuhbj_2555w_IzXaWa8v
+
+working directory:
+   /Users/pricebrannen/Today's Five/todays-five-review-baseline/apple/TodaysFiveCore
+tool mapping:
+tool search paths:
+   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+   /Applications/Xcode.app/Contents/Developer/usr/bin
+   /Library/Apple/usr/bin
+   /System/Cryptexes/App/usr/bin
+   /Users/pricebrannen/Library/Application Support/Claude/local-agent-mode-sessions/ce0410f8-11ea-4010-885c-507e26b204c4/524dc546-f84c-4f27-af03-576d1f523588/rpm/plugin_[REDACTED]/bin
+   /Users/pricebrannen/Library/Application Support/Claude/local-agent-mode-sessions/ce0410f8-11ea-4010-885c-507e26b204c4/524dc546-f84c-4f27-af03-576d1f523588/rpm/plugin_[REDACTED]/bin
+   /Users/pricebrannen/Library/Application Support/Claude/local-agent-mode-sessions/ce0410f8-11ea-4010-885c-507e26b204c4/524dc546-f84c-4f27-af03-576d1f523588/rpm/plugin_[REDACTED]/bin
+   /Users/pricebrannen/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/524dc546-f84c-4f27-af03-576d1f523588/ce0410f8-11ea-4010-885c-507e26b204c4/bin
+   /Users/pricebrannen/Library/pnpm
+   /bin
+   /pkg/env/global/bin
+   /sbin
+   /usr/bin
+   /usr/local/bin
+   /usr/sbin
+   /var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin
+   /var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin
+   /var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin
+
+/usr/bin/sandbox-exec -p "(version 1)
+(deny default)
+(import \"system.sb\")
+(allow file-read*)
+(allow process*)
+(allow mach-lookup (global-name \"com.apple.lsd.mapdb\"))
+(allow mach-lookup (global-name \"com.apple.mobileassetd.v2\"))
+(allow file-write*
+    (subpath \"/private/tmp\")
+    (subpath \"/private/var/tmp\")
+    (subpath \"/private/var/folders/cm/[REDACTED]/T\")
+    (subpath \"/private/var/folders/cm/[REDACTED]/C\")
+)
+(deny file-write*
+    (subpath \"/Users/pricebrannen/Today's Five/todays-five-review-baseline/apple/TodaysFiveCore\")
+)
+(allow file-write*
+    (subpath \"/private/tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/KitsGen\")
+    (subpath \"/private/var/folders/cm/[REDACTED]/T/TemporaryItems\")
+)
+" /bin/sh -c "mkdir -p \"$(dirname \"$1\")\"
+printf '%s' \"$2\" > \"$1\"" kits-gen /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/KitsGen/Kits.generated.swift "// Generated at build time by the KitsGen plugin from test/fixtures/kits.json and
+// test/fixtures/watch-fonts.json. Do not edit — regenerate the fixtures with
+// `node test/tools/gen-kits.mjs` and `python3 apple/tools/gen-watch-fonts.py`.
+//
+// The two Secret kits are deliberately absent: the fixture holds 18 and this holds 16.
+// Kits.swift says what each token is and what was dropped on the way here.
+
+enum GeneratedKits {
+    static let all: [Kit] = [
+    Kit(id: \"dark\", name: \"Dark\",
+        base: .dark, lean: .night,
+        partner: \"light\", pair: \"lato\",
+        secret: false,
+        colors: KitColors(ink: \"#070A08\", ink2: \"#0E140F\", ink3: \"#152017\",
+                          text: \"#F7F2E8\", muted: \"#A8A49C\", dim: \"#8F8C84\", done: \"#8F8C84\",
+                          muted2: \"#A8A49C\", dim2: \"#8F8C84\", done2: \"#8F8C84\",
+                          accent: \"#A86014\", accentHi: \"#D29663\",
+                          accentDeep: \"#6F3B00\", accentText: \"#BF7530\",
+                          danger: \"#DC5E59\", hairSolid: \"#5A5F5C\",
+                          hairAlpha: 0.1, hairHiAlpha: 0.3),
+        confetti: [\"#A86014\", \"#D29663\", \"#F7F2E8\", \"#6F3B00\", \"#8A8781\"], shapes: [0], finaleItalic: false),
+    Kit(id: \"light\", name: \"Light\",
+        base: .light, lean: .day,
+        partner: \"dark\", pair: \"lato\",
+        secret: false,
+        colors: KitColors(ink: \"#FAF8F4\", ink2: \"#F1ECE3\", ink3: \"#E4DED2\",
+                          text: \"#494F55\", muted: \"#707174\", dim: \"#6F7378\", done: \"#6E7278\",
+                          muted2: \"#5F6063\", dim2: \"#5E6267\", done2: \"#5D6167\",
+                          accent: \"#CB6015\", accentHi: \"#E07B33\",
+                          accentDeep: \"#9E4A10\", accentText: \"#9E4A10\",
+                          danger: \"#B13924\", hairSolid: \"#918F8B\",
+                          hairAlpha: 0.16, hairHiAlpha: 0.42),
+        confetti: [\"#D26128\", \"#E8814A\", \"#A34A1C\", \"#4B4F54\", \"#A4BCC4\"], shapes: [0], finaleItalic: false),
+    Kit(id: \"pink\", name: \"Pink\",
+        base: .dark, lean: .night,
+        partner: \"blush\", pair: \"fraunces\",
+        secret: false,
+        colors: KitColors(ink: \"#2E0A1C\", ink2: \"#421029\", ink3: \"#58163A\",
+                          text: \"#FFF0F6\", muted: \"#F2A8C8\", dim: \"#C97A9E\", done: \"#C97A9E\",
+                          muted2: \"#F2A8C8\", dim2: \"#D080A4\", done2: \"#D080A4\",
+                          accent: \"#FF3D9A\", accentHi: \"#FFD36E\",
+                          accentDeep: \"#C2185B\", accentText: \"#FF58A2\",
+                          danger: \"#FF6B8A\", hairSolid: \"#766169\",
+                          hairAlpha: 0.16, hairHiAlpha: 0.42),
+        confetti: [\"#FF3D9A\", \"#FF8FBE\", \"#FFD36E\", \"#FFFFFF\", \"#FF6FAF\", \"#FFB8D9\"], shapes: [0, 1, 2], finaleItalic: true),
+    Kit(id: \"midnight\", name: \"Midnight\",
+        base: .dark, lean: .night,
+        partner: \"paper\", pair: \"grotesk\",
+        secret: false,
+        colors: KitColors(ink: \"#0E1424\", ink2: \"#151C30\", ink3: \"#1E2740\",
+                          text: \"#E8EEF8\", muted: \"#A6B4CC\", dim: \"#8B98B0\", done: \"#8B98B0\",
+                          muted2: \"#A6B4CC\", dim2: \"#8B98B0\", done2: \"#8B98B0\",
+                          accent: \"#7FB3FF\", accentHi: \"#B5D4FF\",
+                          accentDeep: \"#3B7BD8\", accentText: \"#8FBCFF\",
+                          danger: \"#FF7B8A\", hairSolid: \"#5D6476\",
+                          hairAlpha: 0.1, hairHiAlpha: 0.3),
+        confetti: [\"#7FB3FF\", \"#B5D4FF\", \"#FFFFFF\", \"#3B7BD8\", \"#9AA7C4\"], shapes: [0], finaleItalic: false),
+    Kit(id: \"forest\", name: \"Forest\",
+        base: .dark, lean: .night,
+        partner: \"harbor\", pair: \"outfit\",
+        secret: false,
+        colors: KitColors(ink: \"#10201A\", ink2: \"#172A22\", ink3: \"#20362C\",
+                          text: \"#EAF2E6\", muted: \"#A9C4A2\", dim: \"#8AA884\", done: \"#8AA884\",
+                          muted2: \"#A9C4A2\", dim2: \"#8AA884\", done2: \"#8AA884\",
+                          accent: \"#8BD17A\", accentHi: \"#B8E6A6\",
+                          accentDeep: \"#4E9A45\", accentText: \"#9EDB8E\",
+                          danger: \"#F08A6A\", hairSolid: \"#5B6D65\",
+                          hairAlpha: 0.1, hairHiAlpha: 0.3),
+        confetti: [\"#8BD17A\", \"#B8E6A6\", \"#F2E9B8\", \"#4E9A45\", \"#EAF2E6\"], shapes: [0], finaleItalic: false),
+    Kit(id: \"paper\", name: \"Paper\",
+        base: .light, lean: .day,
+        partner: \"midnight\", pair: \"playfair\",
+        secret: false,
+        colors: KitColors(ink: \"#F7F2E8\", ink2: \"#EFE8DA\", ink3: \"#E3DAC8\",
+                          text: \"#1F1B16\", muted: \"#5E5749\", dim: \"#6C6559\", done: \"#6C6559\",
+                          muted2: \"#5E5749\", dim2: \"#665F53\", done2: \"#665F53\",
+                          accent: \"#C8321F\", accentHi: \"#E0563F\",
+                          accentDeep: \"#8E2214\", accentText: \"#9E2717\",
+                          danger: \"#B02A1A\", hairSolid: \"#8E8980\",
+                          hairAlpha: 0.16, hairHiAlpha: 0.42),
+        confetti: [\"#C8321F\", \"#1F1B16\", \"#E0563F\", \"#D9C9A8\", \"#F7F2E8\"], shapes: [0], finaleItalic: false),
+    Kit(id: \"terminal\", name: \"Terminal\",
+        base: .dark, lean: .night,
+        partner: \"teletype\", pair: \"mono\",
+        secret: false,
+        colors: KitColors(ink: \"#070A08\", ink2: \"#0E140F\", ink3: \"#152017\",
+                          text: \"#D8FFD8\", muted: \"#7FCB86\", dim: \"#67A96E\", done: \"#67A96E\",
+                          muted2: \"#7FCB86\", dim2: \"#67A96E\", done2: \"#67A96E\",
+                          accent: \"#4AF07A\", accentHi: \"#9CFFB5\",
+                          accentDeep: \"#21A64F\", accentText: \"#5DF58A\",
+                          danger: \"#FF6B57\", hairSolid: \"#5A5F5C\",
+                          hairAlpha: 0.1, hairHiAlpha: 0.3),
+        confetti: [\"#4AF07A\", \"#9CFFB5\", \"#FFFFFF\", \"#21A64F\", \"#D8FFD8\"], shapes: [0], finaleItalic: false),
+    Kit(id: \"sunset\", name: \"Sunset\",
+        base: .dark, lean: .day,
+        partner: \"dusk\", pair: \"dmserif\",
+        secret: false,
+        colors: KitColors(ink: \"#2A1622\", ink2: \"#3A1F2E\", ink3: \"#4C2A3C\",
+                          text: \"#FFF1E6\", muted: \"#F0B9A6\", dim: \"#D9998A\", done: \"#D9998A\",
+                          muted2: \"#F0B9A6\", dim2: \"#D9998A\", done2: \"#D9998A\",
+                          accent: \"#FF7A59\", accentHi: \"#FFC26B\",
+                          accentDeep: \"#C2452B\", accentText: \"#FF8E70\",
+                          danger: \"#FF6B8A\", hairSolid: \"#77636E\",
+                          hairAlpha: 0.1, hairHiAlpha: 0.3),
+        confetti: [\"#FF7A59\", \"#FFC26B\", \"#FF9EB5\", \"#FFF1E6\", \"#C2452B\"], shapes: [0, 1], finaleItalic: true),
+    Kit(id: \"dusk\", name: \"Dusk\",
+        base: .dark, lean: .night,
+        partner: \"sunset\", pair: \"cormorant\",
+        secret: false,
+        colors: KitColors(ink: \"#171226\", ink2: \"#211A35\", ink3: \"#2C2446\",
+                          text: \"#EFEAFF\", muted: \"#C2B5E8\", dim: \"#A697D6\", done: \"#A697D6\",
+                          muted2: \"#C2B5E8\", dim2: \"#A697D6\", done2: \"#A697D6\",
+                          accent: \"#B49CFF\", accentHi: \"#D8CBFF\",
+                          accentDeep: \"#7C5CE6\", accentText: \"#C0ABFF\",
+                          danger: \"#FF7B9C\", hairSolid: \"#646073\",
+                          hairAlpha: 0.1, hairHiAlpha: 0.3),
+        confetti: [\"#B49CFF\", \"#D8CBFF\", \"#FFFFFF\", \"#FFD27A\", \"#7C5CE6\"], shapes: [0, 1, 2], finaleItalic: true),
+    Kit(id: \"harbor\", name: \"Harbor\",
+        base: .light, lean: .day,
+        partner: \"forest\", pair: \"manrope\",
+        secret: false,
+        colors: KitColors(ink: \"#EEF5F4\", ink2: \"#E2EDEB\", ink3: \"#D2E2DF\",
+                          text: \"#123A3E\", muted: \"#3F6A6E\", dim: \"#497477\", done: \"#497477\",
+                          muted2: \"#3C676B\", dim2: \"#3E686B\", done2: \"#3E686B\",
+                          accent: \"#0F8C8C\", accentHi: \"#38B3AF\",
+                          accentDeep: \"#0A6666\", accentText: \"#046D6D\",
+                          danger: \"#AD3728\", hairSolid: \"#868C8B\",
+                          hairAlpha: 0.16, hairHiAlpha: 0.42),
+        confetti: [\"#0F8C8C\", \"#38B3AF\", \"#E8D8B0\", \"#FFFFFF\", \"#7ED0C8\"], shapes: [0], finaleItalic: false),
+    Kit(id: \"ember\", name: \"Ember\",
+        base: .dark, lean: .night,
+        partner: \"cocoa\", pair: \"archivo\",
+        secret: false,
+        colors: KitColors(ink: \"#1B0F0D\", ink2: \"#271512\", ink3: \"#351C18\",
+                          text: \"#FFEDE4\", muted: \"#E0AA97\", dim: \"#C48B78\", done: \"#C48B78\",
+                          muted2: \"#E0AA97\", dim2: \"#C48B78\", done2: \"#C48B78\",
+                          accent: \"#FF4D2E\", accentHi: \"#FFB02E\",
+                          accentDeep: \"#B4291A\", accentText: \"#FF6A4F\",
+                          danger: \"#FF6B8A\", hairSolid: \"#6D5D5B\",
+                          hairAlpha: 0.1, hairHiAlpha: 0.3),
+        confetti: [\"#FF4D2E\", \"#FFB02E\", \"#FF8A3D\", \"#FFEDE4\", \"#B4291A\"], shapes: [0], finaleItalic: false),
+    Kit(id: \"cocoa\", name: \"Cocoa\",
+        base: .dark, lean: .day,
+        partner: \"ember\", pair: \"lora\",
+        secret: false,
+        colors: KitColors(ink: \"#2A1F1A\", ink2: \"#362923\", ink3: \"#45352D\",
+                          text: \"#F6EBDD\", muted: \"#CFB8A2\", dim: \"#B39C86\", done: \"#B39C86\",
+                          muted2: \"#CFB8A2\", dim2: \"#B69F89\", done2: \"#B69F89\",
+                          accent: \"#D9A066\", accentHi: \"#F0C48A\",
+                          accentDeep: \"#A66A34\", accentText: \"#E4AE76\",
+                          danger: \"#EB876D\", hairSolid: \"#766963\",
+                          hairAlpha: 0.1, hairHiAlpha: 0.3),
+        confetti: [\"#D9A066\", \"#F0C48A\", \"#F6EBDD\", \"#8C5A3C\", \"#A66A34\"], shapes: [0], finaleItalic: false),
+    Kit(id: \"blush\", name: \"Blush\",
+        base: .light, lean: .day,
+        partner: \"pink\", pair: \"fraunces\",
+        secret: false,
+        colors: KitColors(ink: \"#FFF5F8\", ink2: \"#FBE9F0\", ink3: \"#F4DAE5\",
+                          text: \"#3E1228\", muted: \"#7A3D58\", dim: \"#874A64\", done: \"#874A64\",
+                          muted2: \"#7A3D58\", dim2: \"#874A64\", done2: \"#874A64\",
+                          accent: \"#E02A80\", accentHi: \"#FF78B4\",
+                          accentDeep: \"#A8145A\", accentText: \"#B0175F\",
+                          danger: \"#B93225\", hairSolid: \"#958C8F\",
+                          hairAlpha: 0.16, hairHiAlpha: 0.42),
+        confetti: [\"#E02A80\", \"#FF78B4\", \"#F2A33A\", \"#FFFFFF\", \"#FFD1E4\", \"#A8145A\"], shapes: [0, 1, 2], finaleItalic: true),
+    Kit(id: \"teletype\", name: \"Teletype\",
+        base: .light, lean: .day,
+        partner: \"terminal\", pair: \"mono\",
+        secret: false,
+        colors: KitColors(ink: \"#F3F6EF\", ink2: \"#E9EEE3\", ink3: \"#DCE4D5\",
+                          text: \"#14261B\", muted: \"#3E5A47\", dim: \"#4B6753\", done: \"#4B6753\",
+                          muted2: \"#3E5A47\", dim2: \"#4B6753\", done2: \"#4B6753\",
+                          accent: \"#119449\", accentHi: \"#4CC77A\",
+                          accentDeep: \"#137039\", accentText: \"#14703A\",
+                          danger: \"#B13924\", hairSolid: \"#8A8D87\",
+                          hairAlpha: 0.16, hairHiAlpha: 0.42),
+        confetti: [\"#1E9A4F\", \"#4CC77A\", \"#14261B\", \"#FFFFFF\", \"#DCE4D5\"], shapes: [0], finaleItalic: false),
+    Kit(id: \"sketch\", name: \"Sketch\",
+        base: .light, lean: .day,
+        partner: \"arcade\", pair: \"outfit\",
+        secret: false,
+        colors: KitColors(ink: \"#F8F6F1\", ink2: \"#EFECE5\", ink3: \"#E2DED4\",
+                          text: \"#2A2A2E\", muted: \"#5F5E63\", dim: \"#706F73\", done: \"#706F73\",
+                          muted2: \"#5F5E63\", dim2: \"#626165\", done2: \"#626165\",
+                          accent: \"#9D7700\", accentHi: \"#D9A800\",
+                          accentDeep: \"#7A5C00\", accentText: \"#6E5300\",
+                          danger: \"#AE3620\", hairSolid: \"#8F8D88\",
+                          hairAlpha: 0.16, hairHiAlpha: 0.42),
+        confetti: [\"#A88000\", \"#2A2A2E\", \"#D9A800\", \"#FFFFFF\", \"#6B9BD2\", \"#D2452B\"], shapes: [0], finaleItalic: false),
+    Kit(id: \"arcade\", name: \"Arcade\",
+        base: .dark, lean: .night,
+        partner: \"sketch\", pair: \"outfit\",
+        secret: false,
+        colors: KitColors(ink: \"#0C0B1E\", ink2: \"#161536\", ink3: \"#211F4A\",
+                          text: \"#F3F1FF\", muted: \"#B3ADE0\", dim: \"#8B85C2\", done: \"#8B85C2\",
+                          muted2: \"#B3ADE0\", dim2: \"#8B85C2\", done2: \"#8B85C2\",
+                          accent: \"#FF2BD6\", accentHi: \"#FF7AE8\",
+                          accentDeep: \"#B3128F\", accentText: \"#FF6FE0\",
+                          danger: \"#FF5A7A\", hairSolid: \"#5C5D6F\",
+                          hairAlpha: 0.1, hairHiAlpha: 0.3),
+        confetti: [\"#FF2BD6\", \"#2BF0FF\", \"#FFE600\", \"#FFFFFF\", \"#8A2BFF\", \"#FF7AE8\"], shapes: [0], finaleItalic: false),
+    ]
+
+    static let types: [String: KitType] = [
+    \"archivo\": KitType(id: \"archivo\", name: \"Archivo\",
+        task: KitFace(postScriptName: \"ArchivoSemiBold-Regular-800\", family: \"Archivo SemiBold 800\", weight: 800, file: \"archivo-800.ttf\"),
+        ui: [KitFace(postScriptName: \"ArchivoSemiBold-Regular-500\", family: \"Archivo SemiBold 500\", weight: 500, file: \"archivo-500.ttf\"), KitFace(postScriptName: \"ArchivoSemiBold-Regular-800\", family: \"Archivo SemiBold 800\", weight: 800, file: \"archivo-800.ttf\")],
+        tracking: -0.025, lineHeight: 1.08),
+    \"baloo\": KitType(id: \"baloo\", name: \"Baloo 2 + Quicksand\",
+        task: KitFace(postScriptName: \"Baloo2-Regular-700\", family: \"Baloo 2 700\", weight: 700, file: \"baloo-2-700.ttf\"),
+        ui: [KitFace(postScriptName: \"Quicksand-Light-500\", family: \"Quicksand Light 500\", weight: 500, file: \"quicksand-500.ttf\"), KitFace(postScriptName: \"Quicksand-Light-700\", family: \"Quicksand Light 700\", weight: 700, file: \"quicksand-700.ttf\")],
+        tracking: 0.0, lineHeight: 1.18),
+    \"cormorant\": KitType(id: \"cormorant\", name: \"Cormorant + Josefin\",
+        task: KitFace(postScriptName: \"CormorantGaramond-Light-700\", family: \"Cormorant Garamond Light 700\", weight: 700, file: \"cormorant-garamond-700.ttf\"),
+        ui: [KitFace(postScriptName: \"JosefinSans-Thin-400\", family: \"Josefin Sans Thin 400\", weight: 400, file: \"josefin-sans-400.ttf\"), KitFace(postScriptName: \"JosefinSans-Thin-700\", family: \"Josefin Sans Thin 700\", weight: 700, file: \"josefin-sans-700.ttf\")],
+        tracking: 0.0, lineHeight: 1.06),
+    \"dmserif\": KitType(id: \"dmserif\", name: \"DM Serif + DM Sans\",
+        task: KitFace(postScriptName: \"DMSerifDisplay-Regular\", family: \"DM Serif Display\", weight: 400, file: \"dm-serif-display-400.ttf\"),
+        ui: [KitFace(postScriptName: \"DMSans9pt-Regular-400\", family: \"DM Sans 9pt 400\", weight: 400, file: \"dm-sans-400.ttf\"), KitFace(postScriptName: \"DMSans9pt-Regular-700\", family: \"DM Sans 9pt 700\", weight: 700, file: \"dm-sans-700.ttf\")],
+        tracking: -0.005, lineHeight: 1.1),
+    \"fraunces\": KitType(id: \"fraunces\", name: \"Fraunces + Quicksand\",
+        task: KitFace(postScriptName: \"Fraunces-Regular-600\", family: \"Fraunces 600\", weight: 600, file: \"fraunces-600.ttf\"),
+        ui: [KitFace(postScriptName: \"Quicksand-Light-500\", family: \"Quicksand Light 500\", weight: 500, file: \"quicksand-500.ttf\"), KitFace(postScriptName: \"Quicksand-Light-700\", family: \"Quicksand Light 700\", weight: 700, file: \"quicksand-700.ttf\")],
+        tracking: -0.01, lineHeight: 1.15),
+    \"fredoka\": KitType(id: \"fredoka\", name: \"Fredoka + Quicksand\",
+        task: KitFace(postScriptName: \"FredokaLight-Regular-600\", family: \"Fredoka Light 600\", weight: 600, file: \"fredoka-600.ttf\"),
+        ui: [KitFace(postScriptName: \"Quicksand-Light-500\", family: \"Quicksand Light 500\", weight: 500, file: \"quicksand-500.ttf\"), KitFace(postScriptName: \"Quicksand-Light-700\", family: \"Quicksand Light 700\", weight: 700, file: \"quicksand-700.ttf\")],
+        tracking: -0.005, lineHeight: 1.16),
+    \"grotesk\": KitType(id: \"grotesk\", name: \"Space Grotesk + Plex Sans\",
+        task: KitFace(postScriptName: \"SpaceGrotesk-Light-700\", family: \"Space Grotesk Light 700\", weight: 700, file: \"space-grotesk-700.ttf\"),
+        ui: [KitFace(postScriptName: \"IBMPlexSans-Regular-400\", family: \"IBM Plex Sans 400\", weight: 400, file: \"ibm-plex-sans-400.ttf\"), KitFace(postScriptName: \"IBMPlexSans-Regular-600\", family: \"IBM Plex Sans 600\", weight: 600, file: \"ibm-plex-sans-600.ttf\")],
+        tracking: -0.02, lineHeight: 1.12),
+    \"lato\": KitType(id: \"lato\", name: \"Lato + PT Sans\",
+        task: KitFace(postScriptName: \"Lato-Black\", family: \"Lato Black\", weight: 900, file: \"lato-900.ttf\"),
+        ui: [KitFace(postScriptName: \"PTSans-Regular\", family: \"PT Sans\", weight: 400, file: \"pt-sans-400.ttf\"), KitFace(postScriptName: \"PTSans-Bold\", family: \"PT Sans\", weight: 700, file: \"pt-sans-700.ttf\")],
+        tracking: -0.025, lineHeight: 1.14),
+    \"lora\": KitType(id: \"lora\", name: \"Lora + Karla\",
+        task: KitFace(postScriptName: \"Lora-Regular-700\", family: \"Lora 700\", weight: 700, file: \"lora-700.ttf\"),
+        ui: [KitFace(postScriptName: \"Karla-Regular-400\", family: \"Karla 400\", weight: 400, file: \"karla-400.ttf\"), KitFace(postScriptName: \"Karla-Regular-700\", family: \"Karla 700\", weight: 700, file: \"karla-700.ttf\")],
+        tracking: -0.01, lineHeight: 1.14),
+    \"manrope\": KitType(id: \"manrope\", name: \"Manrope\",
+        task: KitFace(postScriptName: \"Manrope-ExtraLight-800\", family: \"Manrope ExtraLight 800\", weight: 800, file: \"manrope-800.ttf\"),
+        ui: [KitFace(postScriptName: \"Manrope-ExtraLight-500\", family: \"Manrope ExtraLight 500\", weight: 500, file: \"manrope-500.ttf\"), KitFace(postScriptName: \"Manrope-ExtraLight-800\", family: \"Manrope ExtraLight 800\", weight: 800, file: \"manrope-800.ttf\")],
+        tracking: -0.03, lineHeight: 1.1),
+    \"mono\": KitType(id: \"mono\", name: \"JetBrains Mono + Plex Mono\",
+        task: KitFace(postScriptName: \"JetBrainsMono-Regular-800\", family: \"JetBrains Mono 800\", weight: 800, file: \"jetbrains-mono-800.ttf\"),
+        ui: [KitFace(postScriptName: \"IBMPlexMono-Regular\", family: \"IBM Plex Mono\", weight: 400, file: \"ibm-plex-mono-400.ttf\"), KitFace(postScriptName: \"IBMPlexMono-SemiBold\", family: \"IBM Plex Mono SemiBold\", weight: 600, file: \"ibm-plex-mono-600.ttf\")],
+        tracking: -0.03, lineHeight: 1.2),
+    \"outfit\": KitType(id: \"outfit\", name: \"Outfit + Nunito Sans\",
+        task: KitFace(postScriptName: \"Outfit-Thin-800\", family: \"Outfit Thin 800\", weight: 800, file: \"outfit-800.ttf\"),
+        ui: [KitFace(postScriptName: \"[REDACTED]-Regular-400\", family: \"Nunito Sans 12pt ExtraLight 12pt 400\", weight: 400, file: \"nunito-sans-400.ttf\"), KitFace(postScriptName: \"[REDACTED]-Regular-700\", family: \"Nunito Sans 12pt ExtraLight 12pt 700\", weight: 700, file: \"nunito-sans-700.ttf\")],
+        tracking: -0.02, lineHeight: 1.12),
+    \"playfair\": KitType(id: \"playfair\", name: \"Playfair + Source Serif\",
+        task: KitFace(postScriptName: \"PlayfairDisplay-Regular-800\", family: \"Playfair Display 800\", weight: 800, file: \"playfair-display-800.ttf\"),
+        ui: [KitFace(postScriptName: \"SourceSerif4-Regular-400\", family: \"Source Serif 4 400\", weight: 400, file: \"source-serif-4-400.ttf\"), KitFace(postScriptName: \"SourceSerif4-Regular-600\", family: \"Source Serif 4 600\", weight: 600, file: \"source-serif-4-600.ttf\")],
+        tracking: -0.012, lineHeight: 1.12),
+    ]
+
+    static let dayIds: [String] = [\"light\", \"paper\", \"harbor\", \"blush\", \"teletype\", \"sunset\", \"cocoa\", \"sketch\"]
+    static let nightIds: [String] = [\"dark\", \"midnight\", \"forest\", \"pink\", \"terminal\", \"dusk\", \"ember\", \"arcade\"]
+    static let defaultDayId = \"paper\"
+    static let defaultNightId = \"terminal\"
+}
+"
+
+Process build tool plug-in results
+package: <IDESwiftPackageCore.[REDACTED]:0x9f9734300 path:'/Users/pricebrannen/Today's Five/todays-five-review-baseline/apple/TodaysFiveCore'>
+    target: TodaysFiveCore
+        [REDACTED]: [SwiftPM.SPMAbsolutePath(absolutePath: <AbsolutePath:"/tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/ConfigGen/Config.generated.swift">), SwiftPM.SPMAbsolutePath(absolutePath: <AbsolutePath:"/tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/KitsGen/Kits.generated.swift">)]
+        buildCommands: []
+        allDerivedOutputPaths: [SwiftPM.SPMAbsolutePath(absolutePath: <AbsolutePath:"/tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/ConfigGen/Config.generated.swift">), SwiftPM.SPMAbsolutePath(absolutePath: <AbsolutePath:"/tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/KitsGen/Kits.generated.swift">)]
+
+CreateBuildRequest
+
+[REDACTED]
+
+CreateBuildOperation
+
+[REDACTED]
+note: Building targets in dependency order
+note: Target dependency graph (6 targets)
+    Target 'TodaysFiveWatch' in project 'TodaysFive'
+        ➜ Explicit dependency on target '[REDACTED]' in project 'TodaysFive'
+        ➜ Explicit dependency on target 'TodaysFiveCore' in project 'TodaysFiveCore'
+    Target 'TodaysFiveCore' in project 'TodaysFiveCore'
+        ➜ Explicit dependency on target 'TodaysFiveCore' in project 'TodaysFiveCore'
+        ➜ Explicit dependency on target 'ConfigGen' in project 'TodaysFiveCore'
+        ➜ Explicit dependency on target 'KitsGen' in project 'TodaysFiveCore'
+    Target 'TodaysFiveCore' in project 'TodaysFiveCore'
+        ➜ Explicit dependency on target 'ConfigGen' in project 'TodaysFiveCore'
+        ➜ Explicit dependency on target 'KitsGen' in project 'TodaysFiveCore'
+    Target 'KitsGen' in project 'TodaysFiveCore' (no dependencies)
+    Target 'ConfigGen' in project 'TodaysFiveCore' (no dependencies)
+    Target '[REDACTED]' in project 'TodaysFive' (no dependencies)
+
+[REDACTED]
+
+[REDACTED]
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/pricebrannen/Today's Five/todays-five-review-baseline/apple/TodaysFive/TodaysFiveWatch/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: [REDACTED]
+Build description path: /tmp/tf-review-baseline/Build/Intermediates.noindex/XCBuildData/[REDACTED].xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator26.5.sdk /tmp/tf-review-baseline/SDKStatCaches.noindex/watchsimulator26.5-23T570-[REDACTED].sdkstatcache
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator26.5.sdk -o /tmp/tf-review-baseline/SDKStatCaches.noindex/watchsimulator26.5-23T570-[REDACTED].sdkstatcache
+
+ProcessInfoPlistFile /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/[REDACTED].appex/Info.plist /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/Config/ComplicationsInfo.plist (in target '[REDACTED]' from project 'TodaysFive')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive
+    builtin-infoPlistUtility /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/Config/ComplicationsInfo.plist -producttype com.apple.product-type.app-extension -expandbuildsettings -format binary -platform watchsimulator -additionalcontentfile /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFive.build/Debug-watchsimulator/[REDACTED].build/assetcatalog_generated_info.plist -o /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/[REDACTED].appex/Info.plist
+
+SwiftDriver TodaysFiveCore normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name TodaysFiveCore -Onone @/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE -DXcode -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator26.5.sdk -target x86_64-apple-watchos10.0-simulator -g -module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -suppress-warnings -index-store-path /tmp/tf-review-baseline/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/usr/lib -F /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator26.5.sdk/Developer/Library/Frameworks -c -j14 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/tf-review-baseline/SDKStatCaches.noindex/watchsimulator26.5-23T570-[REDACTED].sdkstatcache -output-file-map /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED] -clang-scanner-module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -sdk-module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/tf-review-baseline/ModuleCache.noindex/Session.modulevalidation -package-name todaysfivecore -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore_const_extract_protocols.json -Xcc -I/tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/include -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources-normal/x86_64 -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources/x86_64 -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore-Swift.h -working-directory /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj -experimental-emit-module-separately -disable-cmo
+
+SwiftDriver TodaysFiveCore normal arm64 com.apple.xcode.tools.swift.compiler (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name TodaysFiveCore -Onone @/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE -DXcode -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator26.5.sdk -target arm64-apple-watchos10.0-simulator -g -module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -suppress-warnings -index-store-path /tmp/tf-review-baseline/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/usr/lib -F /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator26.5.sdk/Developer/Library/Frameworks -c -j14 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/tf-review-baseline/SDKStatCaches.noindex/watchsimulator26.5-23T570-[REDACTED].sdkstatcache -output-file-map /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED] -clang-scanner-module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -sdk-module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/tf-review-baseline/ModuleCache.noindex/Session.modulevalidation -package-name todaysfivecore -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore_const_extract_protocols.json -Xcc -I/tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/include -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources-normal/arm64 -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources/arm64 -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore-Swift.h -working-directory /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj -experimental-emit-module-separately -disable-cmo
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ TodaysFiveCore (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+
+EmitSwiftModule normal arm64 (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj
+    
+
+SwiftEmitModule normal x86_64 Emitting\ module\ for\ TodaysFiveCore (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+EmitSwiftModule normal x86_64 (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj
+    
+
+SwiftCompile normal x86_64 Compiling\ Kits.generated.swift /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/KitsGen/Kits.generated.swift (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+
+SwiftCompile normal x86_64 /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/KitsGen/Kits.generated.swift (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj
+    
+
+SwiftCompile normal x86_64 Compiling\ Config.generated.swift /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/ConfigGen/Config.generated.swift (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+
+SwiftCompile normal x86_64 /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/ConfigGen/Config.generated.swift (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj
+    
+
+SwiftCompile normal arm64 Compiling\ Config.generated.swift /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/ConfigGen/Config.generated.swift (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+
+SwiftCompile normal arm64 /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/ConfigGen/Config.generated.swift (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj
+    
+
+SwiftCompile normal arm64 Compiling\ Kits.generated.swift /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/KitsGen/Kits.generated.swift (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+
+SwiftCompile normal arm64 /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED]/todaysfivecore.output/TodaysFiveCore/KitsGen/Kits.generated.swift (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj
+    
+
+[REDACTED] normal x86_64 Compiling Config.generated.swift (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+
+[REDACTED] normal arm64 Compiling Config.generated.swift (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+
+[REDACTED] normal x86_64 Compiling Kits.generated.swift (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+
+[REDACTED] normal arm64 Compiling Kits.generated.swift (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+
+[REDACTED] normal arm64 Emitting module for TodaysFiveCore (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+
+SwiftDriver\ Compilation\ Requirements TodaysFiveCore normal arm64 com.apple.xcode.tools.swift.compiler (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name TodaysFiveCore -Onone @/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE -DXcode -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator26.5.sdk -target arm64-apple-watchos10.0-simulator -g -module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -suppress-warnings -index-store-path /tmp/tf-review-baseline/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/usr/lib -F /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator26.5.sdk/Developer/Library/Frameworks -c -j14 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/tf-review-baseline/SDKStatCaches.noindex/watchsimulator26.5-23T570-[REDACTED].sdkstatcache -output-file-map /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED] -clang-scanner-module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -sdk-module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/tf-review-baseline/ModuleCache.noindex/Session.modulevalidation -package-name todaysfivecore -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore_const_extract_protocols.json -Xcc -I/tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/include -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources-normal/arm64 -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources/arm64 -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore-Swift.h -working-directory /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj -experimental-emit-module-separately -disable-cmo
+
+SwiftDriver\ Compilation TodaysFiveCore normal arm64 com.apple.xcode.tools.swift.compiler (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name TodaysFiveCore -Onone @/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE -DXcode -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator26.5.sdk -target arm64-apple-watchos10.0-simulator -g -module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -suppress-warnings -index-store-path /tmp/tf-review-baseline/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/usr/lib -F /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator26.5.sdk/Developer/Library/Frameworks -c -j14 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/tf-review-baseline/SDKStatCaches.noindex/watchsimulator26.5-23T570-[REDACTED].sdkstatcache -output-file-map /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED] -clang-scanner-module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -sdk-module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/tf-review-baseline/ModuleCache.noindex/Session.modulevalidation -package-name todaysfivecore -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore_const_extract_protocols.json -Xcc -I/tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/include -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources-normal/arm64 -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources/arm64 -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore-Swift.h -working-directory /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj -experimental-emit-module-separately -disable-cmo
+
+Copy /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveCore.swiftmodule/Project/arm64-apple-watchos-simulator.swiftsourceinfo /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore.swiftsourceinfo (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFiveCore
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore.swiftsourceinfo /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveCore.swiftmodule/Project/arm64-apple-watchos-simulator.swiftsourceinfo
+
+SwiftDriver\ Compilation TodaysFiveCore normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name TodaysFiveCore -Onone @/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE -DXcode -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator26.5.sdk -target x86_64-apple-watchos10.0-simulator -g -module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -suppress-warnings -index-store-path /tmp/tf-review-baseline/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/usr/lib -F /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator26.5.sdk/Developer/Library/Frameworks -c -j14 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/tf-review-baseline/SDKStatCaches.noindex/watchsimulator26.5-23T570-[REDACTED].sdkstatcache -output-file-map /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED] -clang-scanner-module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -sdk-module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/tf-review-baseline/ModuleCache.noindex/Session.modulevalidation -package-name todaysfivecore -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore_const_extract_protocols.json -Xcc -I/tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/include -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources-normal/x86_64 -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources/x86_64 -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore-Swift.h -working-directory /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj -experimental-emit-module-separately -disable-cmo
+
+[REDACTED] normal x86_64 Emitting module for TodaysFiveCore (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+
+Copy /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveCore.swiftmodule/arm64-apple-watchos-simulator.abi.json /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore.abi.json (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFiveCore
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore.abi.json /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveCore.swiftmodule/arm64-apple-watchos-simulator.abi.json
+
+SwiftDriver\ Compilation\ Requirements TodaysFiveCore normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name TodaysFiveCore -Onone @/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE -DXcode -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator26.5.sdk -target x86_64-apple-watchos10.0-simulator -g -module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -suppress-warnings -index-store-path /tmp/tf-review-baseline/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/usr/lib -F /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator26.5.sdk/Developer/Library/Frameworks -c -j14 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/tf-review-baseline/SDKStatCaches.noindex/watchsimulator26.5-23T570-[REDACTED].sdkstatcache -output-file-map /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/tf-review-baseline/Build/Intermediates.noindex/[REDACTED] -clang-scanner-module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -sdk-module-cache-path /tmp/tf-review-baseline/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/tf-review-baseline/ModuleCache.noindex/Session.modulevalidation -package-name todaysfivecore -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore_const_extract_protocols.json -Xcc -I/tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/include -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources-normal/x86_64 -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources/x86_64 -Xcc -I/tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore-Swift.h -working-directory /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/TodaysFive.xcodeproj -experimental-emit-module-separately -disable-cmo
+
+Copy /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveCore.swiftmodule/Project/x86_64-apple-watchos-simulator.swiftsourceinfo /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore.swiftsourceinfo (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFiveCore
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore.swiftsourceinfo /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveCore.swiftmodule/Project/x86_64-apple-watchos-simulator.swiftsourceinfo
+
+Copy /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveCore.swiftmodule/x86_64-apple-watchos-simulator.abi.json /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore.abi.json (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFiveCore
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore.abi.json /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveCore.swiftmodule/x86_64-apple-watchos-simulator.abi.json
+
+[REDACTED] (in target 'TodaysFiveCore' from project 'TodaysFiveCore')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFiveCore
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/[REDACTED] --toolchain-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name TodaysFiveCore --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/WatchSimulator.platform/Developer/SDKs/WatchSimulator26.5.sdk --xcode-version 17F113 --platform-family watchOS --deployment-target 10.0 --bundle-identifier todaysfivecore.TodaysFiveCore --output /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveCore.appintents --target-triple arm64-apple-watchos10.0-simulator --target-triple x86_64-apple-watchos10.0-simulator --binary-file /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveCore.o --dependency-file /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore_dependency_info.dat --dependency-file /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore_dependency_info.dat --stringsdata-file /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/[REDACTED].stringsdata --stringsdata-file /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/[REDACTED].stringsdata --source-file-list /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore.SwiftFileList --source-file-list /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore.SwiftFileList --metadata-file-list /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/TodaysFiveCore.[REDACTED] --static-metadata-file-list /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/TodaysFiveCore.[REDACTED] --swift-const-vals-list /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/arm64/TodaysFiveCore.[REDACTED] --swift-const-vals-list /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFiveCore.build/Debug-watchsimulator/TodaysFiveCore.build/Objects-normal/x86_64/TodaysFiveCore.[REDACTED] --force --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-10 01:16:09.290 [REDACTED][3676:40397738] Starting [REDACTED] export
+2026-09-10 01:16:09.297 [REDACTED][3676:40397738] Extracted no relevant App Intents symbols, skipping writing output
+
+Copy /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/PlugIns/[REDACTED].appex /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/[REDACTED].appex (in target 'TodaysFiveWatch' from project 'TodaysFive')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks -remove-static-executable /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/[REDACTED].appex /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/PlugIns
+
+CopySwiftLibs /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app (in target 'TodaysFiveWatch' from project 'TodaysFive')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive
+    builtin-swiftStdLibTool --copy --verbose --sign - --scan-executable /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/TodaysFiveWatch.debug.dylib --scan-folder /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/Frameworks --scan-folder /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/PlugIns --scan-folder /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/SystemExtensions --scan-folder /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/Extensions --platform watchsimulator --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFive.build/Debug-watchsimulator/TodaysFiveWatch.build/[REDACTED].dep --filter-for-swift-os --back-deploy-swift-span
+
+ProcessInfoPlistFile /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/Info.plist /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/Config/WatchInfo.plist (in target 'TodaysFiveWatch' from project 'TodaysFive')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive
+    builtin-infoPlistUtility /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive/Config/WatchInfo.plist -producttype com.apple.product-type.application -genpkginfo /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/PkgInfo -expandbuildsettings -format binary -platform watchsimulator -additionalcontentfile /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFive.build/Debug-watchsimulator/TodaysFiveWatch.build/assetcatalog_generated_info.plist -scanforprivacyfile /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/PlugIns/[REDACTED].appex -o /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/Info.plist
+
+CodeSign /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/TodaysFiveWatch.debug.dylib (in target 'TodaysFiveWatch' from project 'TodaysFive')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/TodaysFiveWatch.debug.dylib
+/tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/TodaysFiveWatch.debug.dylib: replacing existing signature
+
+CodeSign /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/__preview.dylib (in target 'TodaysFiveWatch' from project 'TodaysFive')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/__preview.dylib
+/tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/__preview.dylib: replacing existing signature
+
+CodeSign /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app (in target 'TodaysFiveWatch' from project 'TodaysFive')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --entitlements /tmp/tf-review-baseline/Build/Intermediates.noindex/TodaysFive.build/Debug-watchsimulator/TodaysFiveWatch.build/TodaysFiveWatch.app.xcent --timestamp\=none --generate-entitlement-der /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app
+/tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app: replacing existing signature
+
+Validate /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app (in target 'TodaysFiveWatch' from project 'TodaysFive')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive
+    builtin-validationUtility /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app -shallow-bundle -infoplist-subpath Info.plist
+
+[REDACTED] /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/PlugIns/[REDACTED].appex (in target 'TodaysFiveWatch' from project 'TodaysFive')
+    cd /Users/pricebrannen/Today\'s\ Five/todays-five-review-baseline/apple/TodaysFive
+    /Applications/Xcode.app/Contents/Developer/usr/bin/[REDACTED] /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/PlugIns/[REDACTED].appex -signing-cert - -info-plist-path /tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app/Info.plist
+
+** BUILD SUCCEEDED **
+
+[build-slot] baseline-5b-watch-sim released after 2s; exit 0; load: 5.54 4.96 4.97

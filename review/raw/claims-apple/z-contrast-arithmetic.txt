@@ -1,0 +1,14 @@
+## contrast arithmetic from test/fixtures/kits.json at HEAD (Thu Sep 10 15:04:29 CDT 2026)
+terminal: accent=#4AF07A ink=#070A08 ink3=#152017 | accent/ink=13.2924 accent/ink3=11.2212 | #A86014/ink=4.1178 #A86014/ink3=3.4762
+paper: accent=#C8321F ink=#F7F2E8 ink3=#E3DAC8 | accent/ink=4.7867 accent/ink3=3.8477 | #A86014/ink=4.3284 #A86014/ink3=3.4793
+dark: accent=#A86014 ink=#070A08 ink3=#152017 | accent/ink=4.1178 accent/ink3=3.4762 | #A86014/ink=4.1178 #A86014/ink3=3.4762
+kits whose accent is #A86014: dark
+light accent/ink3=3.0016 (claim 3.0016) | pink accentText/ink3=4.5069 pink accentText/ink=6.0948 (claim 4.5069-ish: "by 0.0069") | pink accent/ink3=4.0144 (claim 4.0144)
+light danger now=#B13924 on ink3 #E4DED2: 4.5050 (claim 4.51) | old #B8402A on ink3: 4.1205 (claim 4.12) | on ink: 5.2034
+relative luminance: paper ink 0.8910 terminal ink 0.0028 | L(#A86014)= 0.1674 | 4.5:1 on paper needs L<= 0.1591 | on terminal needs L>= 0.1876
+dark's greys absent from theme.js source: muted=#A8A49C dim=#8F8C84 done=#8F8C84 muted2=#A8A49C dim2=#8F8C84 done2=#8F8C84 hairSolid=#5A5F5C | present: text,ink2,ink3
+floors x kits = 14 x 18 = 252
+per-kit light-base count 7 dark-base 11
+mean of 1152/3000 and 1687/3000 = 47.3%
+#B8402A -> #B13924 per-channel deltas: 7,7,6
+confetti particles 7*26+40 = 222 | 1/0.0075 = 133.3 | 240/60 = 4

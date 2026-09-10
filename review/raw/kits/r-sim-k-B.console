@@ -1,0 +1,5 @@
+[tfive] theme: slot=day day=harbor night=terminal → kit=harbor pair=manrope base=light unlocked=0 offered=16
+[tfive] watch: store=appGroup
+[tfive] watch: demo list seeded, lines=5 mark=synced
+[tfive] face: kit=harbor pair=manrope face=Manrope-ExtraLight-800 → snapshot written, reloadAllTimelines requested
+com.pricebrannen.todaysfive.watchkitapp: 20024

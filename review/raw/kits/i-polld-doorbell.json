@@ -1,0 +1,31 @@
+{
+  "base": "http://127.0.0.1:8892/",
+  "seed": 20260907,
+  "stepMs": 2000,
+  "trials": 10,
+  "pollMs": 60000,
+  "pollLiveMs": 240000,
+  "conditions": [
+    {
+      "id": "doorbell",
+      "label": "foreground, realtime connected, writer rings the doorbell",
+      "seen": [
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1,
+        0.1
+      ],
+      "never": 0,
+      "broke": 0,
+      "horizonS": 60,
+      "medianS": 0.1,
+      "maxS": 0.1
+    }
+  ]
+}

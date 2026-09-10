@@ -1,0 +1,962 @@
+[
+  {
+    "label": "branch",
+    "base": "dark",
+    "accentAsked": "#026F38",
+    "code": "T2:d:026F38:manrope::Worst",
+    "tokens": {
+      "theme": "custom-026f38-d-manrope",
+      "base": "dark",
+      "accent": "#328D54",
+      "ink": "#071F0F",
+      "ink2": "#112A19",
+      "ink3": "#1E3926",
+      "danger": "#F5746D",
+      "accentText": "#54AC71"
+    },
+    "flows": [
+      {
+        "flow": "menu: Delete this list everywhere (row)",
+        "sel": "#menu-delete",
+        "tabsPressed": 8,
+        "computed": {
+          "text": "Delete this list everywhere",
+          "classes": "danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(50, 141, 84)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(245, 116, 109)",
+          "borderColor": "rgb(245, 116, 109)",
+          "ground": {
+            "el": "dialog#p-menu.panel.sheet.pop",
+            "bg": "rgb(17, 42, 25)"
+          },
+          "rect": {
+            "x": 848.1875,
+            "y": 387.75,
+            "w": 295.625,
+            "h": 38
+          }
+        },
+        "ringHex": "#328D54",
+        "groundHex": "#112A19",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.7059,
+        "pixels": {
+          "ringLeft": "#328D54",
+          "groundLeft": "#536759",
+          "ringBottom": "#328D54",
+          "groundBottom": "#536759",
+          "insideControl": "#112A19"
+        },
+        "contrastPixelsLeft": 1.4697,
+        "contrastPixelsBottom": 1.4697,
+        "accentOnInk3": 3.0409,
+        "accentOnInk2": 3.7059,
+        "accentOnInk": 4.1864,
+        "screenshot": "ring-branch-026F38-dark-menu-delete.png"
+      },
+      {
+        "flow": "confirm: Delete everywhere (#ask-ok.danger)",
+        "sel": "#ask-ok",
+        "tabsPressed": 0,
+        "computed": {
+          "text": "Delete everywhere",
+          "classes": "chip danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(50, 141, 84)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(245, 116, 109)",
+          "borderColor": "rgb(245, 116, 109)",
+          "ground": {
+            "el": "dialog#ask.panel",
+            "bg": "rgb(17, 42, 25)"
+          },
+          "rect": {
+            "x": 380.1875,
+            "y": 488.84375,
+            "w": 161.171875,
+            "h": 40
+          }
+        },
+        "ringHex": "#328D54",
+        "groundHex": "#112A19",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.7059,
+        "pixels": {
+          "ringLeft": "#328D54",
+          "groundLeft": "#112A19",
+          "ringBottom": "#328D54",
+          "groundBottom": "#112A19",
+          "insideControl": "#112A19"
+        },
+        "contrastPixelsLeft": 3.7059,
+        "contrastPixelsBottom": 3.7059,
+        "accentOnInk3": 3.0409,
+        "accentOnInk2": 3.7059,
+        "accentOnInk": 4.1864,
+        "screenshot": "ring-branch-026F38-dark-ask-delete.png"
+      },
+      {
+        "flow": "confirm: Remove from this device (#ask-ok.danger)",
+        "sel": "#ask-ok",
+        "tabsPressed": 5,
+        "computed": {
+          "text": "Remove",
+          "classes": "chip danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(50, 141, 84)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(245, 116, 109)",
+          "borderColor": "rgb(245, 116, 109)",
+          "ground": {
+            "el": "dialog#ask.panel",
+            "bg": "rgb(17, 42, 25)"
+          },
+          "rect": {
+            "x": 380.1875,
+            "y": 478.6875,
+            "w": 74.4375,
+            "h": 40
+          }
+        },
+        "ringHex": "#328D54",
+        "groundHex": "#112A19",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.7059,
+        "pixels": {
+          "ringLeft": "#328D54",
+          "groundLeft": "#112A19",
+          "ringBottom": "#328D54",
+          "groundBottom": "#112A19",
+          "insideControl": "#112A19"
+        },
+        "contrastPixelsLeft": 3.7059,
+        "contrastPixelsBottom": 3.7059,
+        "accentOnInk3": 3.0409,
+        "accentOnInk2": 3.7059,
+        "accentOnInk": 4.1864,
+        "screenshot": "ring-branch-026F38-dark-ask-remove.png"
+      }
+    ],
+    "pageErrors": []
+  },
+  {
+    "label": "branch",
+    "base": "dark",
+    "accentAsked": "#11735B",
+    "code": "T2:d:11735B:manrope::Worst",
+    "tokens": {
+      "theme": "custom-11735b-d-manrope",
+      "base": "dark",
+      "accent": "#338B72",
+      "ink": "#071E17",
+      "ink2": "#112922",
+      "ink3": "#1E382F",
+      "danger": "#F5746D",
+      "accentText": "#55AA8F"
+    },
+    "flows": [
+      {
+        "flow": "menu: Delete this list everywhere (row)",
+        "sel": "#menu-delete",
+        "tabsPressed": 8,
+        "computed": {
+          "text": "Delete this list everywhere",
+          "classes": "danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(51, 139, 114)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(245, 116, 109)",
+          "borderColor": "rgb(245, 116, 109)",
+          "ground": {
+            "el": "dialog#p-menu.panel.sheet.pop",
+            "bg": "rgb(17, 41, 34)"
+          },
+          "rect": {
+            "x": 848.1875,
+            "y": 387.75,
+            "w": 295.625,
+            "h": 38
+          }
+        },
+        "ringHex": "#338B72",
+        "groundHex": "#112922",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.7217,
+        "pixels": {
+          "ringLeft": "#338B72",
+          "groundLeft": "#536660",
+          "ringBottom": "#338B72",
+          "groundBottom": "#536660",
+          "insideControl": "#112922"
+        },
+        "contrastPixelsLeft": 1.477,
+        "contrastPixelsBottom": 1.477,
+        "accentOnInk3": 3.0548,
+        "accentOnInk2": 3.7217,
+        "accentOnInk": 4.2057,
+        "screenshot": "ring-branch-11735B-dark-menu-delete.png"
+      },
+      {
+        "flow": "confirm: Delete everywhere (#ask-ok.danger)",
+        "sel": "#ask-ok",
+        "tabsPressed": 0,
+        "computed": {
+          "text": "Delete everywhere",
+          "classes": "chip danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(51, 139, 114)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(245, 116, 109)",
+          "borderColor": "rgb(245, 116, 109)",
+          "ground": {
+            "el": "dialog#ask.panel",
+            "bg": "rgb(17, 41, 34)"
+          },
+          "rect": {
+            "x": 380.1875,
+            "y": 488.84375,
+            "w": 161.171875,
+            "h": 40
+          }
+        },
+        "ringHex": "#338B72",
+        "groundHex": "#112922",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.7217,
+        "pixels": {
+          "ringLeft": "#338B72",
+          "groundLeft": "#112922",
+          "ringBottom": "#338B72",
+          "groundBottom": "#112922",
+          "insideControl": "#112922"
+        },
+        "contrastPixelsLeft": 3.7217,
+        "contrastPixelsBottom": 3.7217,
+        "accentOnInk3": 3.0548,
+        "accentOnInk2": 3.7217,
+        "accentOnInk": 4.2057,
+        "screenshot": "ring-branch-11735B-dark-ask-delete.png"
+      },
+      {
+        "flow": "confirm: Remove from this device (#ask-ok.danger)",
+        "sel": "#ask-ok",
+        "tabsPressed": 5,
+        "computed": {
+          "text": "Remove",
+          "classes": "chip danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(51, 139, 114)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(245, 116, 109)",
+          "borderColor": "rgb(245, 116, 109)",
+          "ground": {
+            "el": "dialog#ask.panel",
+            "bg": "rgb(17, 41, 34)"
+          },
+          "rect": {
+            "x": 380.1875,
+            "y": 478.6875,
+            "w": 74.4375,
+            "h": 40
+          }
+        },
+        "ringHex": "#338B72",
+        "groundHex": "#112922",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.7217,
+        "pixels": {
+          "ringLeft": "#338B72",
+          "groundLeft": "#112922",
+          "ringBottom": "#338B72",
+          "groundBottom": "#112922",
+          "insideControl": "#112922"
+        },
+        "contrastPixelsLeft": 3.7217,
+        "contrastPixelsBottom": 3.7217,
+        "accentOnInk3": 3.0548,
+        "accentOnInk2": 3.7217,
+        "accentOnInk": 4.2057,
+        "screenshot": "ring-branch-11735B-dark-ask-remove.png"
+      }
+    ],
+    "pageErrors": []
+  },
+  {
+    "label": "branch",
+    "base": "light",
+    "accentAsked": "#F57185",
+    "code": "T2:l:F57185:fraunces::Worst",
+    "tokens": {
+      "theme": "custom-f57185-l-fraunces",
+      "base": "light",
+      "accent": "#D25168",
+      "ink": "#FFF4F4",
+      "ink2": "#FFE8EA",
+      "ink3": "#F5D9DB",
+      "danger": "#AF2B25",
+      "accentText": "#AF314C"
+    },
+    "flows": [
+      {
+        "flow": "menu: Delete this list everywhere (row)",
+        "sel": "#menu-delete",
+        "tabsPressed": 8,
+        "computed": {
+          "text": "Delete this list everywhere",
+          "classes": "danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(210, 81, 104)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(175, 43, 37)",
+          "borderColor": "rgb(175, 43, 37)",
+          "ground": {
+            "el": "dialog#p-menu.panel.sheet.pop",
+            "bg": "rgb(255, 232, 234)"
+          },
+          "rect": {
+            "x": 848.1875,
+            "y": 387.75,
+            "w": 295.625,
+            "h": 38
+          }
+        },
+        "ringHex": "#D25168",
+        "groundHex": "#FFE8EA",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.5142,
+        "pixels": {
+          "ringLeft": "#D25168",
+          "groundLeft": "#AF9A9B",
+          "ringBottom": "#D25168",
+          "groundBottom": "#AF9A9B",
+          "insideControl": "#FFE8EA"
+        },
+        "contrastPixelsLeft": 1.5474,
+        "contrastPixelsBottom": 1.5474,
+        "accentOnInk3": 3.0936,
+        "accentOnInk2": 3.5142,
+        "accentOnInk": 3.8104,
+        "screenshot": "ring-branch-F57185-light-menu-delete.png"
+      },
+      {
+        "flow": "confirm: Delete everywhere (#ask-ok.danger)",
+        "sel": "#ask-ok",
+        "tabsPressed": 0,
+        "computed": {
+          "text": "Delete everywhere",
+          "classes": "chip danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(210, 81, 104)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(175, 43, 37)",
+          "borderColor": "rgb(175, 43, 37)",
+          "ground": {
+            "el": "dialog#ask.panel",
+            "bg": "rgb(255, 232, 234)"
+          },
+          "rect": {
+            "x": 380.1875,
+            "y": 488.84375,
+            "w": 162.125,
+            "h": 40
+          }
+        },
+        "ringHex": "#D25168",
+        "groundHex": "#FFE8EA",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.5142,
+        "pixels": {
+          "ringLeft": "#D25168",
+          "groundLeft": "#FFE8EA",
+          "ringBottom": "#D25168",
+          "groundBottom": "#FFE8EA",
+          "insideControl": "#FFE8EA"
+        },
+        "contrastPixelsLeft": 3.5142,
+        "contrastPixelsBottom": 3.5142,
+        "accentOnInk3": 3.0936,
+        "accentOnInk2": 3.5142,
+        "accentOnInk": 3.8104,
+        "screenshot": "ring-branch-F57185-light-ask-delete.png"
+      },
+      {
+        "flow": "confirm: Remove from this device (#ask-ok.danger)",
+        "sel": "#ask-ok",
+        "tabsPressed": 5,
+        "computed": {
+          "text": "Remove",
+          "classes": "chip danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(210, 81, 104)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(175, 43, 37)",
+          "borderColor": "rgb(175, 43, 37)",
+          "ground": {
+            "el": "dialog#ask.panel",
+            "bg": "rgb(255, 232, 234)"
+          },
+          "rect": {
+            "x": 380.1875,
+            "y": 478.6875,
+            "w": 74.765625,
+            "h": 40
+          }
+        },
+        "ringHex": "#D25168",
+        "groundHex": "#FFE8EA",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.5142,
+        "pixels": {
+          "ringLeft": "#D25168",
+          "groundLeft": "#FFE8EA",
+          "ringBottom": "#D25168",
+          "groundBottom": "#FFE8EA",
+          "insideControl": "#FFE8EA"
+        },
+        "contrastPixelsLeft": 3.5142,
+        "contrastPixelsBottom": 3.5142,
+        "accentOnInk3": 3.0936,
+        "accentOnInk2": 3.5142,
+        "accentOnInk": 3.8104,
+        "screenshot": "ring-branch-F57185-light-ask-remove.png"
+      }
+    ],
+    "pageErrors": []
+  },
+  {
+    "label": "branch",
+    "base": "light",
+    "accentAsked": "#DA6D7F",
+    "code": "T2:l:DA6D7F:fraunces::Worst",
+    "tokens": {
+      "theme": "custom-da6d7f-l-fraunces",
+      "base": "light",
+      "accent": "#C55B6D",
+      "ink": "#FFF4F5",
+      "ink2": "#FEE9EA",
+      "ink3": "#F3DADD",
+      "danger": "#AF2B25",
+      "accentText": "#A73F54"
+    },
+    "flows": [
+      {
+        "flow": "menu: Delete this list everywhere (row)",
+        "sel": "#menu-delete",
+        "tabsPressed": 8,
+        "computed": {
+          "text": "Delete this list everywhere",
+          "classes": "danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(197, 91, 109)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(175, 43, 37)",
+          "borderColor": "rgb(175, 43, 37)",
+          "ground": {
+            "el": "dialog#p-menu.panel.sheet.pop",
+            "bg": "rgb(254, 233, 234)"
+          },
+          "rect": {
+            "x": 848.1875,
+            "y": 387.75,
+            "w": 295.625,
+            "h": 38
+          }
+        },
+        "ringHex": "#C55B6D",
+        "groundHex": "#FEE9EA",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.5468,
+        "pixels": {
+          "ringLeft": "#C55B6D",
+          "groundLeft": "#AE9A9C",
+          "ringBottom": "#C55B6D",
+          "groundBottom": "#AE9A9C",
+          "insideControl": "#FEE9EA"
+        },
+        "contrastPixelsLeft": 1.5521,
+        "contrastPixelsBottom": 1.5521,
+        "accentOnInk3": 3.1197,
+        "accentOnInk2": 3.5468,
+        "accentOnInk": 3.8322,
+        "screenshot": "ring-branch-DA6D7F-light-menu-delete.png"
+      },
+      {
+        "flow": "confirm: Delete everywhere (#ask-ok.danger)",
+        "sel": "#ask-ok",
+        "tabsPressed": 0,
+        "computed": {
+          "text": "Delete everywhere",
+          "classes": "chip danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(197, 91, 109)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(175, 43, 37)",
+          "borderColor": "rgb(175, 43, 37)",
+          "ground": {
+            "el": "dialog#ask.panel",
+            "bg": "rgb(254, 233, 234)"
+          },
+          "rect": {
+            "x": 380.1875,
+            "y": 488.84375,
+            "w": 162.125,
+            "h": 40
+          }
+        },
+        "ringHex": "#C55B6D",
+        "groundHex": "#FEE9EA",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.5468,
+        "pixels": {
+          "ringLeft": "#C55B6D",
+          "groundLeft": "#FEE9EA",
+          "ringBottom": "#C55B6D",
+          "groundBottom": "#FEE9EA",
+          "insideControl": "#FEE9EA"
+        },
+        "contrastPixelsLeft": 3.5468,
+        "contrastPixelsBottom": 3.5468,
+        "accentOnInk3": 3.1197,
+        "accentOnInk2": 3.5468,
+        "accentOnInk": 3.8322,
+        "screenshot": "ring-branch-DA6D7F-light-ask-delete.png"
+      },
+      {
+        "flow": "confirm: Remove from this device (#ask-ok.danger)",
+        "sel": "#ask-ok",
+        "tabsPressed": 5,
+        "computed": {
+          "text": "Remove",
+          "classes": "chip danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(197, 91, 109)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(175, 43, 37)",
+          "borderColor": "rgb(175, 43, 37)",
+          "ground": {
+            "el": "dialog#ask.panel",
+            "bg": "rgb(254, 233, 234)"
+          },
+          "rect": {
+            "x": 380.1875,
+            "y": 478.6875,
+            "w": 74.765625,
+            "h": 40
+          }
+        },
+        "ringHex": "#C55B6D",
+        "groundHex": "#FEE9EA",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.5468,
+        "pixels": {
+          "ringLeft": "#C55B6D",
+          "groundLeft": "#FEE9EA",
+          "ringBottom": "#C55B6D",
+          "groundBottom": "#FEE9EA",
+          "insideControl": "#FEE9EA"
+        },
+        "contrastPixelsLeft": 3.5468,
+        "contrastPixelsBottom": 3.5468,
+        "accentOnInk3": 3.1197,
+        "accentOnInk2": 3.5468,
+        "accentOnInk": 3.8322,
+        "screenshot": "ring-branch-DA6D7F-light-ask-remove.png"
+      }
+    ],
+    "pageErrors": []
+  },
+  {
+    "label": "branch",
+    "base": "light",
+    "accentAsked": "#FF3D9A",
+    "code": "T2:l:FF3D9A:fraunces::Worst",
+    "tokens": {
+      "theme": "custom-ff3d9a-l-fraunces",
+      "base": "light",
+      "accent": "#ED268B",
+      "ink": "#FFF3F7",
+      "ink2": "#FEE8EF",
+      "ink3": "#F3D9E1",
+      "danger": "#AF2B25",
+      "accentText": "#C1006D"
+    },
+    "flows": [
+      {
+        "flow": "menu: Delete this list everywhere (row)",
+        "sel": "#menu-delete",
+        "tabsPressed": 8,
+        "computed": {
+          "text": "Delete this list everywhere",
+          "classes": "danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(237, 38, 139)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(175, 43, 37)",
+          "borderColor": "rgb(175, 43, 37)",
+          "ground": {
+            "el": "dialog#p-menu.panel.sheet.pop",
+            "bg": "rgb(254, 232, 239)"
+          },
+          "rect": {
+            "x": 848.1875,
+            "y": 387.75,
+            "w": 295.625,
+            "h": 38
+          }
+        },
+        "ringHex": "#ED268B",
+        "groundHex": "#FEE8EF",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.4286,
+        "pixels": {
+          "ringLeft": "#ED268B",
+          "groundLeft": "#AE9AA0",
+          "ringBottom": "#ED268B",
+          "groundBottom": "#AE9AA0",
+          "insideControl": "#FEE8EF"
+        },
+        "contrastPixelsLeft": 1.5101,
+        "contrastPixelsBottom": 1.5101,
+        "accentOnInk3": 3.0134,
+        "accentOnInk2": 3.4286,
+        "accentOnInk": 3.6975,
+        "screenshot": "ring-branch-FF3D9A-light-menu-delete.png"
+      },
+      {
+        "flow": "confirm: Delete everywhere (#ask-ok.danger)",
+        "sel": "#ask-ok",
+        "tabsPressed": 0,
+        "computed": {
+          "text": "Delete everywhere",
+          "classes": "chip danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(237, 38, 139)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(175, 43, 37)",
+          "borderColor": "rgb(175, 43, 37)",
+          "ground": {
+            "el": "dialog#ask.panel",
+            "bg": "rgb(254, 232, 239)"
+          },
+          "rect": {
+            "x": 380.1875,
+            "y": 488.84375,
+            "w": 162.125,
+            "h": 40
+          }
+        },
+        "ringHex": "#ED268B",
+        "groundHex": "#FEE8EF",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.4286,
+        "pixels": {
+          "ringLeft": "#ED268B",
+          "groundLeft": "#FEE8EF",
+          "ringBottom": "#ED268B",
+          "groundBottom": "#FEE8EF",
+          "insideControl": "#FEE8EF"
+        },
+        "contrastPixelsLeft": 3.4286,
+        "contrastPixelsBottom": 3.4286,
+        "accentOnInk3": 3.0134,
+        "accentOnInk2": 3.4286,
+        "accentOnInk": 3.6975,
+        "screenshot": "ring-branch-FF3D9A-light-ask-delete.png"
+      },
+      {
+        "flow": "confirm: Remove from this device (#ask-ok.danger)",
+        "sel": "#ask-ok",
+        "tabsPressed": 5,
+        "computed": {
+          "text": "Remove",
+          "classes": "chip danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(237, 38, 139)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(175, 43, 37)",
+          "borderColor": "rgb(175, 43, 37)",
+          "ground": {
+            "el": "dialog#ask.panel",
+            "bg": "rgb(254, 232, 239)"
+          },
+          "rect": {
+            "x": 380.1875,
+            "y": 478.6875,
+            "w": 74.765625,
+            "h": 40
+          }
+        },
+        "ringHex": "#ED268B",
+        "groundHex": "#FEE8EF",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.4286,
+        "pixels": {
+          "ringLeft": "#ED268B",
+          "groundLeft": "#FEE8EF",
+          "ringBottom": "#ED268B",
+          "groundBottom": "#FEE8EF",
+          "insideControl": "#FEE8EF"
+        },
+        "contrastPixelsLeft": 3.4286,
+        "contrastPixelsBottom": 3.4286,
+        "accentOnInk3": 3.0134,
+        "accentOnInk2": 3.4286,
+        "accentOnInk": 3.6975,
+        "screenshot": "ring-branch-FF3D9A-light-ask-remove.png"
+      }
+    ],
+    "pageErrors": []
+  },
+  {
+    "label": "branch",
+    "base": "dark",
+    "accentAsked": "#3366FF",
+    "code": "T2:d:3366FF:grotesk::Worst",
+    "tokens": {
+      "theme": "custom-3366ff-d-grotesk",
+      "base": "dark",
+      "accent": "#3C6FFF",
+      "ink": "#0D1833",
+      "ink2": "#162340",
+      "ink3": "#223050",
+      "danger": "#F2716A",
+      "accentText": "#6B97FF"
+    },
+    "flows": [
+      {
+        "flow": "menu: Delete this list everywhere (row)",
+        "sel": "#menu-delete",
+        "tabsPressed": 8,
+        "computed": {
+          "text": "Delete this list everywhere",
+          "classes": "danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(60, 111, 255)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(242, 113, 106)",
+          "borderColor": "rgb(242, 113, 106)",
+          "ground": {
+            "el": "dialog#p-menu.panel.sheet.pop",
+            "bg": "rgb(22, 35, 64)"
+          },
+          "rect": {
+            "x": 848.1875,
+            "y": 387.75,
+            "w": 295.625,
+            "h": 38
+          }
+        },
+        "ringHex": "#3C6FFF",
+        "groundHex": "#162340",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.6409,
+        "pixels": {
+          "ringLeft": "#3C6FFF",
+          "groundLeft": "#576178",
+          "ringBottom": "#3C6FFF",
+          "groundBottom": "#576178",
+          "insideControl": "#162340"
+        },
+        "contrastPixelsLeft": 1.4499,
+        "contrastPixelsBottom": 1.4499,
+        "accentOnInk3": 3.056,
+        "accentOnInk2": 3.6409,
+        "accentOnInk": 4.1068,
+        "screenshot": "ring-branch-3366FF-dark-menu-delete.png"
+      },
+      {
+        "flow": "confirm: Delete everywhere (#ask-ok.danger)",
+        "sel": "#ask-ok",
+        "tabsPressed": 0,
+        "computed": {
+          "text": "Delete everywhere",
+          "classes": "chip danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(60, 111, 255)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(242, 113, 106)",
+          "borderColor": "rgb(242, 113, 106)",
+          "ground": {
+            "el": "dialog#ask.panel",
+            "bg": "rgb(22, 35, 64)"
+          },
+          "rect": {
+            "x": 380.1875,
+            "y": 488.84375,
+            "w": 161.859375,
+            "h": 40
+          }
+        },
+        "ringHex": "#3C6FFF",
+        "groundHex": "#162340",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.6409,
+        "pixels": {
+          "ringLeft": "#3C6FFF",
+          "groundLeft": "#162340",
+          "ringBottom": "#3C6FFF",
+          "groundBottom": "#162340",
+          "insideControl": "#162340"
+        },
+        "contrastPixelsLeft": 3.6409,
+        "contrastPixelsBottom": 3.6409,
+        "accentOnInk3": 3.056,
+        "accentOnInk2": 3.6409,
+        "accentOnInk": 4.1068,
+        "screenshot": "ring-branch-3366FF-dark-ask-delete.png"
+      },
+      {
+        "flow": "confirm: Remove from this device (#ask-ok.danger)",
+        "sel": "#ask-ok",
+        "tabsPressed": 5,
+        "computed": {
+          "text": "Remove",
+          "classes": "chip danger",
+          "focusVisible": true,
+          "isActive": true,
+          "outlineColor": "rgb(60, 111, 255)",
+          "outlineStyle": "solid",
+          "outlineWidth": "2px",
+          "outlineOffset": "2px",
+          "boxShadow": "none",
+          "controlBg": "rgba(0, 0, 0, 0)",
+          "color": "rgb(242, 113, 106)",
+          "borderColor": "rgb(242, 113, 106)",
+          "ground": {
+            "el": "dialog#ask.panel",
+            "bg": "rgb(22, 35, 64)"
+          },
+          "rect": {
+            "x": 380.1875,
+            "y": 478.6875,
+            "w": 74,
+            "h": 40
+          }
+        },
+        "ringHex": "#3C6FFF",
+        "groundHex": "#162340",
+        "ringIsAccent": true,
+        "groundIs": "--ink-2",
+        "contrastComputed": 3.6409,
+        "pixels": {
+          "ringLeft": "#3C6FFF",
+          "groundLeft": "#162340",
+          "ringBottom": "#3C6FFF",
+          "groundBottom": "#162340",
+          "insideControl": "#162340"
+        },
+        "contrastPixelsLeft": 3.6409,
+        "contrastPixelsBottom": 3.6409,
+        "accentOnInk3": 3.056,
+        "accentOnInk2": 3.6409,
+        "accentOnInk": 4.1068,
+        "screenshot": "ring-branch-3366FF-dark-ask-remove.png"
+      }
+    ],
+    "pageErrors": []
+  }
+]

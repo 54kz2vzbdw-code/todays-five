@@ -1,0 +1,32 @@
+ok - normalize keeps unknown keys on the document, on records and on tombstones; merge keeps unknown collections
+ok - tie-break: a tombstone, then the record that carries more, then the lexically larger; still a total order (fuzz)
+ok - isDue: daily, weekdays, chosen days, monthly (clamped to short months)
+ok - setRule stores a snapshot; a rule on a line already on Today is marked placed today; clearing tombstones it
+ok - rollover: a done daily line goes to History and resets undone on Today (+2); idempotent; two devices converge
+ok - rollover: a weekly line done on its day leaves Today until its next day, then comes back once; taking it off Today sticks
+ok - rollover: an unfinished recurring line just stays; a plain done line still tombstones (+1) as in v3
+ok - not today: off Today now, back at tomorrow's rollover, undo puts it straight back
+ok - recently deleted: tombstones with text, newest first; restore brings the line back into its section
+ok - templates: saved from a section without state, inserted anywhere, deleted
+ok - put a section on Today / take it off
+ok - move to another list: copied under a new id with its rule and return; the source keeps a bare tombstone
+ok - export → import round trip is byte-identical, carries no secret, and Markdown reads
+ok - add from anywhere: the hash parses, newlines make lines, a view link is recognisable, junk is null
+ok - what's new: once per version, never on a fresh device, and a pre-v4 device with a list counts as returning
+ok - what's new fires on a changed version string, never on its order: a 1.3 device, a 1.2 device, a 1.1 device and a 1.0 device (4.0.0) each see the newest entry once
+ok - the changelog (1.2): 1.0 and later only, a one-sentence headline of 12 words or fewer, up to three tagged items of 14 words or fewer, nothing about the plumbing
+ok - day review: streak, the week's finished days, today's lines
+ok - purgeTombstones drops rules and returns whose line is gone for good
+ok - the version is one number in three places, the build in four, and there are no dates anywhere
+ok - 1.8: the Secret pair is nowhere anyone reading the app can find it — not About, not How it works, not the changelog beyond the wink
+ok - 1.12 b216: the cached token CSS is stamped with the palette it was computed from, and both pages agree
+ok - 1.12 b216: the Secret group's third door — a saved theme whose code names a secret kit is not rendered on a device without the key
+ok - no class or id the common content-blocker lists hide everywhere (build 69: .share-block hid the whole Share sheet on a phone with a blocker)
+ok - 1.7: about.html's fallback version line matches version.js (it shows when the script cannot run)
+ok - 1.7: nothing boot() can reach is declared below the boot call — the module-level const/let after it are the known few
+ok - 1.9: a list carries its home zone — today and a line's day are computed in it, so two devices in different zones roll the same records; without one the six-hour guard holds a fresh line
+ok - 1.9: moveToSection files a line at the end of another section, keeps its Today place, refreshes its rule's snapshot, and is a no-op for the section it is in
+ok - 1.9: the losing side of a simultaneous edit — lostEdits names the line this device rewrote in the last minute that a pull replaced, once; the undo writes the words back as a newer edit that wins from then on
+ok - 1.9: bidi overrides are stripped where text enters — the editor's commit (app.js), add from anywhere, names, and an import, everywhere a person reads — and never on read
+
+30 feature tests passed

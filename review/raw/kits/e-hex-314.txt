@@ -1,0 +1,4 @@
+base 4962f97: 16-token slots 288 + bare-hex boxDoneBg/strikeBg/barBg 26 = 314; absent from source 58 + 4 = 62
+  colors keys (26): ink ink2 ink3 text muted dim done accent accentHi accentDeep accentText danger hair hairHi glow strikeShadow hairSolid boxDoneBg barBg strikeBg strikeSize strikeAnim finaleStyle dim2 muted2 done2
+head 7341981: 16-token slots 288 + bare-hex boxDoneBg/strikeBg/barBg 26 = 314; absent from source 54 + 4 = 58
+  colors keys (26): ink ink2 ink3 text muted dim done accent accentHi accentDeep accentText danger hair hairHi glow strikeShadow hairSolid boxDoneBg barBg strikeBg strikeSize strikeAnim finaleStyle dim2 muted2 done2

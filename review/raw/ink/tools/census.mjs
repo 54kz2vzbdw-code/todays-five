@@ -91,7 +91,7 @@ function tally() {
       branch: { worstAccentOnInk3: +t.worstB3.toFixed(4), worstAccentOnInk3Hex: t.worstB3Hex, worstAccentOnInk2: +t.worstB2.toFixed(4), worstDangerOnInk3: +t.worstD3b.toFixed(4) },
       dL: t.dL.length ? { mean: +(t.dL.reduce((a, b) => a + b, 0) / t.dL.length).toFixed(4), median: +q(t.dL, 0.5).toFixed(4), p90: +q(t.dL, 0.9).toFixed(4), max: +mx(t.dL).toFixed(4), min: +mn(t.dL).toFixed(4) } : null,
       dLdanger: t.dLd.length ? { mean: +(t.dLd.reduce((a, b) => a + b, 0) / t.dLd.length).toFixed(4), max: +mx(t.dLd).toFixed(4), min: +mn(t.dLd).toFixed(4) } : null,
-      tokensMovedWithAccent: t.tokens, movedByMainA3Bucket: t.movedByA3Bucket, worstA3Detail: t.worstA3Detail
+      [REDACTED]: t.tokens, movedByMainA3Bucket: t.movedByA3Bucket, worstA3Detail: t.worstA3Detail
     };
   };
   return t;

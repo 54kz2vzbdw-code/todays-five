@@ -1,0 +1,7 @@
+base: exit=0 | 12 sound tests passed 
+mut-chord: exit=0 | 12 sound tests passed 
+mut-buzz: exit=1 | AssertionError [ERR_ASSERTION]: buzz 1 lands on burst 1 71 !== 65
+mut-step: exit=1 | AssertionError [ERR_ASSERTION]: buzz 1 lands on burst 1 65 !== 70
+mut-centre: exit=1 | AssertionError [ERR_ASSERTION]: the centre burst falls inside one of the buzzes  at test (file:///private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/verify-c/mut-centre/test/sound.test.js:12:39)
+mut-mine-count: exit=1 | AssertionError [ERR_ASSERTION]: one buzz per burst, and one more for the chord 8 !== 9
+mut-mine-gap1000: exit=0 | 12 sound tests passed 

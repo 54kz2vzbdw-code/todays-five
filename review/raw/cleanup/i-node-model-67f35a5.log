@@ -1,0 +1,30 @@
+ok - ids: 22 base62 chars, unique, valid
+ok - ids: every symbol appears (no dead symbols from rejection sampling)
+ok - normalize: junk in, well-formed doc out
+ok - merge: last writer wins per item
+ok - merge: tombstones win ties and survive against older edits
+ok - merge: commutative, associative, idempotent (fuzz)
+ok - merge: two offline devices converge with no loss and no duplicates
+ok - 1.7: moveItem can land in a section of the target, and the undo of a move sends the line home
+ok - 1.7: purgeTombstones is a fixed point — a rule orphaned by this pass goes in this pass
+ok - purgeTombstones: old ones go, fresh ones stay
+ok - rollover: yesterday's done items move to history and are tombstoned; idempotent; undone stay
+ok - localDate is local, not UTC
+ok - today/section ordering: undone by order, done sink by doneAt
+ok - items whose section was deleted fall back to Unsorted
+ok - orderBetween: midpoint, edges, and precision exhaustion
+ok - migrateV1 keeps text, done state, and done order; everything is Today
+ok - seedDoc: three today lines that work as the welcome's live list, 32 characters or fewer, the payoff last
+ok - streak counts consecutive days back from today or yesterday
+ok - diff lists changed ids only
+ok - canon is key-order independent
+ok - reorderPlan: nothing to do when the order is unchanged
+ok - reorderPlan: a done line sinking moves exactly one row (the others are never detached)
+ok - reorderPlan: new rows and removed rows, and random permutations always land (fuzz)
+ok - seed: three Today lines that teach the basics without naming keys (1.3: they are the welcome's live list)
+ok - 1.4: a private link's origin hint parses and the id stays readable — /mine, /shared, nothing on a view link, unknown suffixes ignored
+ok - 1.4: the registry migrates on read — existing entries become mine, a shared entry stays shared, no nickname appears, nothing else moves
+ok - 1.12: an archived entry is finished on read — removed means removed, and nothing else moves
+ok - 1.4: the frozen 1.3 parser and a hinted link — what a page still running 1.3 does
+
+28 model tests passed

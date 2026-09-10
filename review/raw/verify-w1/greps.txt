@@ -1,0 +1,86 @@
+# greps at 7341981, Thu Sep 10 15:37:47 CDT 2026
+== onChange (whole apple tree)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:11:// confirmation and the Undo are the same, and Track B hangs `onChange` off it to pull the new line
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:53:    var onChange: (@MainActor () -> Void)?
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:71:            onChange?()
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:89:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:52:    var onChange: (@MainActor () -> Void)?
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:107:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:161:        onChange?()
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:98:        .onChange(of: theme.theme) { _, _ in
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:104:        .onChange(of: scenePhase) { _, phase in
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:207:                .onChange(of: showAdd) { _, open in if !open { openedFromFace = false } }
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:219:                .onChange(of: store.finaleTick) { _, tick in
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:261:            .onChange(of: page) { _, _ in
+apple/TodaysFive/TodaysFiveWatch/OneThingView.swift:87:        .onChange(of: store.wobbleTick) { _, _ in
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:187:        receiver.onChange = { [weak self] in self?.linksChanged() }
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:215:        receiver.select(id)          // the receiver remembers it; `onChange` brings it back here
+== AddCoordinator
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:10:// from the vault. `AddCoordinator` is what lets the two meet: whichever way a line came in, the
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:38:final class AddCoordinator {
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:39:    static let shared = AddCoordinator()
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:114:    private var coordinator: AddCoordinator { AddCoordinator.shared }
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:173:    private func confirmation(_ pending: AddCoordinator.Pending) -> some View {
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:195:            try? await Task.sleep(for: AddCoordinator.undoWindow)
+apple/TodaysFive/Shared/AddToTodaysFive.swift:340:        await AddCoordinator.shared.note(outcome)
+== .add( callers under apple/TodaysFive
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:221:            let outcome = await AddService.live().add(text)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:314:        let added = await service(both, pick: editLink.id).add("Ring the dentist back")
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:320:        let empty = await service(both, pick: editLink.id).add("   \n  ")
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:325:        let refused = await service(both, pick: viewLink.id).add("Should not land")
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:333:        let none = await service([], pick: nil).add("Nowhere to put this")
+apple/TodaysFive/Shared/AddToTodaysFive.swift:335:        let outcome = await AddService.live().add(line)
+apple/TodaysFive/TodaysFive/WebViewController.swift:115:        config.userContentController.add(self, contentWorld: world, name: "tf")
+== store.add( / WatchStore.add callers anywhere
+(none)
+== sync triggers in the Watch target
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:106:                store.sceneBecameActive()
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:116:            await store.wokeInBackground()
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:119:            await store.wokeInBackground()
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:187:        receiver.onChange = { [weak self] in self?.linksChanged() }
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:189:        linksChanged()
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:190:        await sync()
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:194:    private func linksChanged() {
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:204:            Task { await sync() }
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:275:    func sceneBecameActive() {
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:277:        Task { await sync() }
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:281:    func wokeInBackground() async {
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:283:        await sync()
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:313:    func sync() async {
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:324:            // that lands while `sync()` is suspended would be overwritten by a `fresh` that predates
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:327:            _ = await engine.sync()
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:682:        await sync()
+== UserDefaults
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:55:    private let defaults: UserDefaults
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:56:    private let shared: UserDefaults
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:73:    init(vault: LinkVault = KeychainLinkVault(), defaults: UserDefaults = .standard,
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:74:         shared: UserDefaults? = UserDefaults(suiteName: WatchGroup.identifier)) {
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:183:    static func storedKits(in store: UserDefaults) -> [Kit] {
+apple/TodaysFive/TodaysFiveWatch/WatchLinkReceiver.swift:189:    private static func writeKits(_ kits: [Kit], to store: UserDefaults) {
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:379:    private let store: UserDefaults
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:381:    init(store: UserDefaults? = UserDefaults(suiteName: WatchGroup.identifier)) {
+apple/TodaysFive/Shared/AddToTodaysFive.swift:183:        if let id = UserDefaults.standard.string(forKey: key),
+apple/TodaysFive/TodaysFive/WebViewController.swift:194:        UserDefaults.standard.set(parsed.id, forKey: AddService.openListKey)
+== backup exclusion / keychain attributes
+apple/README.md:307:One Keychain item per link, `[REDACTED]`, **not synchronizable** — iCloud
+apple/README.md:477:The Watch's Keychain items are `[REDACTED]` and **not synchronizable**,
+apple/PLAN-apple-phase3.md:276:Keychain**, `[REDACTED]`, **not synchronizable** — the phone's rule, for the
+apple/PLAN-apple-phase2.md:136:| accessibility | `[REDACTED]` |
+apple/TodaysFive/TodaysFive/KeychainLinkVault.swift:3:// One generic-password item per link, keyed by the secret. [REDACTED] so a
+apple/TodaysFive/TodaysFive/KeychainLinkVault.swift:36:         [REDACTED] as String: false]
+apple/TodaysFive/TodaysFive/KeychainLinkVault.swift:75:        insert[kSecAttrAccessible as String] = [REDACTED]
+== the quoted sentences
+apple/DECISIONS-apple.md:743:empties Today — so the face is right through the night with nothing running at all.
+apple/TodaysFive/TodaysFive/WatchLinkSender.swift:140:    /// `-TFDumpWatchSend` — the shape and the counts, never a link. An id's *length* is the most this
+apple/TodaysFive/Shared/WatchSnapshot.swift:64:    /// and be right through the night with nothing running; see `ComplicationsProvider`.
+apple/README.md:479:stamp — and **never a link**; the complication cannot reach the Keychain and has no reason to. No
+apple/TodaysFive/[REDACTED]/ComplicationsProvider.swift:10:// the face is then right through the night with nothing running at all. Beyond that: a phone send
+apple/TodaysFive/[REDACTED]/ComplicationsProvider.swift:14:// The extension reads `WatchSnapshot` and **never a link**. It does not depend on `TodaysFiveCore`,
+apple/PLAN-apple-phase3.md:244:  home zone**, where rollover empties Today — so the count on the face is right through the night
+apple/PLAN-apple-phase3.md:464:  never a link. The Keychain items are not in the group.
+apple/TodaysFive/[REDACTED]/Complications.swift:26:// The extension reads `WatchSnapshot` from the App Group and **never a link**. It does not depend on
+apple/TodaysFive/Config/TodaysFiveWatch.entitlements:6:	     never cross: the Keychain items stay the Watch app's, and what is shared is the decrypted
+== §8 of COMPATIBILITY.md on the keychain (lines 265-267)
+- **Nothing about the app may leak a link**: no URL in any log, no analytics, no crash reporting, no
+  `NSUserActivity`, and Keychain items that are not synchronizable. iCloud Keychain would put list
+  secrets on Apple's servers and change what `about.html` promises.

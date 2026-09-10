@@ -1,0 +1,80 @@
+## every -TF launch argument the code reads (apple/**)
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:255:"-TFAddSelfTest"
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:680:"-TFConfettiSelfTest"
+apple/TodaysFive/TodaysFive/WebViewController.swift:241:"-TFDumpVault"
+apple/TodaysFive/TodaysFive/WebViewController.swift:91:"-TFDumpVault"
+apple/TodaysFive/TodaysFive/WatchLinkSender.swift:144:"-TFDumpWatchSend"
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:71:"-TFFaceProbe"
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:58:"-TFFinale"
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:179:"-TFFinaleHold"
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:729:"-TFFontSelfTest"
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:440:"-TFKit"
+apple/TodaysFive/TodaysFive/WebViewController.swift:31:"-TFQuery"
+apple/TodaysFive/TodaysFive/WebViewController.swift:444:"-TFSelfTest"
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:164:"-TFShow"
+apple/TodaysFive/TodaysFiveWatch/WatchTheme.swift:456:"-TFThemeSet"
+apple/TodaysFive/TodaysFiveWatch/WatchStore.swift:131:"-TFWatchDemo"
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:68:"-TFWatchSelfTest"
+apple/TodaysFive/TodaysFiveWatch/WatchApp.swift:74:"-TFWatchSelfTest"
+apple/TodaysFive/TodaysFive/WebViewController.swift:90:"-TFWipeVault"
+apple/TodaysFive/TodaysFive/WebViewController.swift:92:"-TFWipeWebStore"
+
+## distinct names in code
+-TFAddSelfTest -TFConfettiSelfTest -TFDumpVault -TFDumpWatchSend -TFFaceProbe -TFFinale -TFFinaleHold -TFFontSelfTest -TFKit -TFQuery -TFSelfTest -TFShow -TFThemeSet -TFWatchDemo -TFWatchSelfTest -TFWipeVault -TFWipeWebStore 
+## distinct names in apple/README.md
+-TFAddSelfTest -TFConfettiSelfTest -TFDumpVault -TFFaceProbe -TFFinale -TFFinaleHold -TFFontSelfTest -TFKit -TFQuery -TFSelfTest -TFShow -TFThemeSet -TFWatchDemo -TFWatchSelfTest -TFWipeVault -TFWipeWebStore 
+## distinct names in the two PLANs + DECISIONS
+   5 -TFAddSelfTest
+   4 -TFSelfTest
+   3 -TFThemeSet
+   2 -TFWatchSelfTest
+   2 -TFWatchDemo
+   2 -TFKit
+   2 -TFFontSelfTest
+   1 -TFWipeWebStore
+   1 -TFShow
+   1 -TFFinaleHold
+   1 -TFFaceProbe
+   1 -TFDumpWatchSend
+   1 -TFDumpVault
+   1 -TFConfettiSelfTest
+
+## where a self-test printout is cited as proof: key phrases
+apple/README.md:387:| `-TFThemeSet <slot>:<id>` | calls the theme picker's own two store methods from a launch argument, so persistence across a cold launch can be verified at all |
+apple/PLAN-apple-phase4.md:27:| baseline suites | Node **132 tests** across seven suites (model 28, theme 31, crypto 10, sync 14, sound 12, features 28, compat 9) — green. `swift test` **116 tests in 9 suites**, 8.5 s — green |
+apple/PLAN-apple-phase4.md:114:green-on-black terminal — draws an amber check.
+apple/PLAN-apple-phase4.md:179:  still report 1.60 % — **verified, not assumed.**
+apple/PLAN-apple-phase4.md:370:after `swift test`, the Node suites, both Xcode builds and the paired-simulator pass are green on the
+apple/PLAN-apple-phase4.md:389:- `swift test` and all seven Node suites green, with `test/theme.test.js` re-pointed and **every kit's
+apple/PLAN-apple-phase4.md:391:- The web on Terminal: the check and the strike are Terminal's green, the mark is still `#A86014`,
+apple/PLAN-apple-phase4.md:425:| the Watch | `-TFFontSelfTest` **98/98**, `-TFConfettiSelfTest` **108/108**, `-TFWatchSelfTest` and `-TFAddSelfTest` green |
+apple/PLAN-apple-phase4.md:438:`finalize()` returns all six reverted hexes unchanged — verified by running its own `fix3` nudge on
+apple/PLAN-apple-phase4.md:466:the App Group and **verified to persist across a cold launch**; the confetti as a `Canvas` in a
+apple/PLAN-apple-phase4.md:477:proves SwiftUI passes the colours through untouched and the flattening is the widget host's at
+apple/PLAN-apple-phase4.md:555:green `#4AF07A`. **The grounds and the text do not move**, so the app is the same colour it was
+apple/PLAN-apple-phase4.md:557:foreign object on a green-on-black screen. Contrast improves in both cases, sharply on Terminal.
+apple/PLAN-apple-phase4.md:576:compatibility replay and the pinned crypto vectors are all untouched and green, so a device on an
+apple/PLAN-apple-phase4.md:585:**What genuinely improves without anyone asking:** a line crossed off on a Watch, in Shortcuts, from
+apple/PLAN-apple-phase3.md:30:| baseline | `swift test` **94 tests in 7 suites**, green; `xcodebuild -scheme TodaysFiveCore -destination 'generic/platform=watchOS'` builds |
+apple/PLAN-apple-phase3.md:162:Watch cannot claim is the shape of each tap. A simulator has no motor, so what a simulator run proves
+apple/PLAN-apple-phase3.md:224:  shows the count and the list's name instead of the line. The SDK proves the mechanism; only a face
+apple/PLAN-apple-phase3.md:474:after `swift test`, both Xcode builds and the paired-simulator pass are green on the integrated
+apple/PLAN-apple-phase3.md:514:verified at all.
+apple/PLAN-apple-phase3.md:532:  machine-checked rather than watched — shuffles with one line left and reports that nothing moved,
+apple/PLAN-apple-phase3.md:600:**A self-test inside a sheet nobody opens proves nothing.** `-TFAddSelfTest` was hosted in
+apple/PLAN-apple-phase3.md:618:| Node | model 28, theme 31, crypto 10, sync 14, sound 12, features 28, compat 9 — all green, and the web is untouched |
+apple/PLAN-apple-phase3.md:639:add self-test: [REDACTED]=present so the wrist takes the WatchKit path
+apple/PLAN-apple-phase3.md:643:same line never came up twice in a row**, which is `app.js`'s shuffle rule checked by machine rather
+apple/PLAN-apple-phase3.md:688:The self-test proves the *rules* behind those screens — the shuffle pick, the wobble, the finale's
+apple/PLAN-apple-phase3.md:702:- whether the finale run **feels** like the volley looks. A simulator has no motor: the tally proves
+
+## DECISIONS (from line 455) same phrases
++454:415:## A self-test inside a sheet nobody opens proves nothing
++454:429:could at least ask: `[REDACTED]=present`, so the wrist takes the WatchKit dictation
++454:456:brand at all, it reads as a **foreign object** — a rust-orange block dropped into a green-on-black
++454:895:Paper ÷ terminal: 27.7, 24.9, 28.1, 24.0 — 24–28×, the spread being Terminal's green text, which the
++454:1133:Birthday is the one that proves the union was real: `[4]` as a count would have thrown ribbons,
++454:1231:the Watch app's fonts are NOT visible to it". The first half is true and was verified on the built
++454:1380:**How to apply:** a green simulator run says nothing about `Int` width on a watch. The device
++454:1505:### What the local transport proves, and what it cannot
++454:1515:lag. It proves the arrival path (a broadcast reaching a live page turns into a pull immediately) and

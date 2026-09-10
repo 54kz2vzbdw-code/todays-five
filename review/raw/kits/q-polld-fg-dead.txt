@@ -1,0 +1,28 @@
+== polld fg-dead (q) at HEAD, BASE=http://127.0.0.1:8893/, Thu Sep 10 15:25:53 CDT 2026 | 15:25  up 93 days, 13:31, 2 users, load averages: 7.40 19.60 36.43
+-- seed 20260907
+polld — 10 trial(s) per condition, 2 s steps, seed 20260907, against http://127.0.0.1:8893/
+POLL_MS 60 s, POLL_LIVE_MS 240 s (read from sync.js)
+
+fg-dead   ..........
+
+| condition | trials (s) | median |
+| --- | --- | --- |
+| foreground, realtime NOT connected | 0.5, 6, 6, 12, 14, 18, 36, 48, 58, 60 | 16 (max 60) |
+
+page errors: 0
+wrote /private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/kits2/polld-fg-dead-20260907.json
+exit=0
+-- seed 11
+polld — 10 trial(s) per condition, 2 s steps, seed 11, against http://127.0.0.1:8893/
+POLL_MS 60 s, POLL_LIVE_MS 240 s (read from sync.js)
+
+fg-dead   ..........
+
+| condition | trials (s) | median |
+| --- | --- | --- |
+| foreground, realtime NOT connected | 12, 16, 18, 24, 30, 42, 44, 44, 56, 60 | 36 (max 60) |
+
+page errors: 0
+wrote /private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/kits2/polld-fg-dead-11.json
+exit=0
+== END Thu Sep 10 15:26:28 CDT 2026 | 15:26  up 93 days, 13:32, 2 users, load averages: 6.54 17.98 35.16

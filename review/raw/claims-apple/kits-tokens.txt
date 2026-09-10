@@ -1,0 +1,114 @@
+fixture keys: note,expr,ids,openIds,secretIds,day,night,slotDefault,hexTokens,floors,ratios,kits,pairs
+kits: 18 secret: 2 pairs: 13
+#RRGGBB tokens in the kit table: 410 | distinct: 250
+tokens absent from theme.js source: 60 | kits with at least one: 18 of 18
+per-kit token count: dark=23 light=23 pink=22 midnight=23 forest=23 paper=23 terminal=23 sunset=21 dusk=23 harbor=23 ember=23 cocoa=23 blush=22 teletype=23 sketch=24 arcade=24 superpink=22 birthday=22
+light-base kits: light,paper,harbor,blush,teletype,sketch,birthday = 7
+day order: ["light","paper","harbor","blush","teletype","sunset","cocoa","sketch"] night order: ["dark","midnight","forest","pink","terminal","dusk","ember","arcade"]
+file:///Users/pricebrannen/Today's%20Five/todays-five-review/review/raw/claims-apple/tools/kit-tokens.mjs:25
+const L = h => 0.2126 * lin(parseInt(h.slice(1, 3), 16)) + 0.7152 * lin(parseInt(h.slice(3, 5), 16)) + 0.0722 * lin(parseInt(h.slice(5, 7), 16));
+                                       ^
+
+TypeError: Cannot read properties of undefined (reading 'slice')
+    at L (file:///Users/pricebrannen/Today's%20Five/todays-five-review/review/raw/claims-apple/tools/kit-tokens.mjs:25:40)
+    at cr (file:///Users/pricebrannen/Today's%20Five/todays-five-review/review/raw/claims-apple/tools/kit-tokens.mjs:26:44)
+    at file:///Users/pricebrannen/Today's%20Five/todays-five-review/review/raw/claims-apple/tools/kit-tokens.mjs:27:50
+    at Array.map (<anonymous>)
+    at file:///Users/pricebrannen/Today's%20Five/todays-five-review/review/raw/claims-apple/tools/kit-tokens.mjs:27:19
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:643:26
+    at async [REDACTED] (node:internal/modules/run_main:101:5)
+
+Node.js v24.19.0
+
+## gen-kits.mjs floors / assertions
+14:// Modelled on gen-vectors.mjs, including its **refusal to write**: a fixture that can be regenerated
+17:import assert from "node:assert/strict";
+60:/** The floors every kit clears **on its own grounds** — which is the point of the round: until 1.12 b216
+63:    star), and text that clears the floor on only one of them disappears on the other. These are the
+64:    floors finalize() actually enforces, so a failure here means theme.js moved, not that the table
+67:    `danger` against `--ink-3` is in this table, and it is the one floor that had to be *earned*
+69:    and `light.danger` #B8402A measured **4.12** there — under the floor since v1, invisible because
+90:/* ---------------- refuse to write on anything less ---------------- */
+92:assert.equal(kits.length, 18, "18 kits");
+93:assert.equal(kits.filter(k => k.secret).length, 2, "exactly 2 secret kits");
+94:assert.deepEqual(kits.filter(k => k.secret).map(k => k.id), SECRET_IDS, "the secret pair is the one theme.js names");
+95:assert.equal(new Set(kits.map(k => k.id)).size, 18, "ids are unique");
+96:assert.equal(Object.keys(PAIRS).length, 13, "13 font pairs");
+97:assert.equal(CURATED_DAY.length, 8, "eight day kits in the picker's order");
+98:assert.equal(CURATED_NIGHT.length, 8, "eight night kits");
+101:  assert.ok(typeof k.name === "string" && k.name.length, `${k.id}: a name`);
+102:  assert.ok(k.base === "dark" || k.base === "light", `${k.id}: base is dark or light`);
+103:  assert.ok(k.lean === "day" || k.lean === "night", `${k.id}: lean is day or night`);
+104:  assert.ok(PAIRS[k.pair], `${k.id}: names a pair that exists`);
+106:  assert.ok(partner, `${k.id}: names a partner that exists`);
+107:  assert.equal(partner.partner, k.id, `${k.id}: the partnership is mutual`);
+108:  assert.equal(partner.secret, k.secret, `${k.id}: a secret kit's partner is secret too`);
+109:  assert.ok(Array.isArray(k.shapes) && k.shapes.length && k.shapes.every(Number.isInteger), `${k.id}: shapes is a non-empty array of ints`);
+110:  assert.ok(Array.isArray(k.confetti) && k.confetti.length >= 5, `${k.id}: at least five confetti colours`);
+111:  assert.ok(k.finaleStyle === undefined, `${k.id}: finaleStyle lives in colors`);
+112:  assert.ok(["italic", "normal"].includes(k.colors.finaleStyle), `${k.id}: finaleStyle is italic or normal`);
+113:  for (const key of HEX_TOKENS) assert.match(k.colors[key], /^#[0-9A-F]{6}$/i, `${k.id}: ${key} is a plain hex`);
+114:  for (const hex of k.confetti) assert.match(hex, /^#[0-9A-F]{6}$/i, `${k.id}: confetti hex`);
+121:  for (const [token, ground, floor] of FLOORS) {
+124:    assert.ok(got >= floor - 1e-9,
+125:      `${k.id}: ${token} on ${ground} is ${got.toFixed(3)}, under ${floor} — fix theme.js, not this file`);
+126:    if (got / floor < worst.slack) worst = { slack: got / floor, id: k.id, token, ground, got, floor };
+141:    assert.ok(m, `${k.id}: ${key} is an rgba() string`);
+143:    assert.equal(rgb, k.colors.text.toUpperCase(), `${k.id}: ${key} is an alpha over --text, not a colour of its own`);
+144:    assert.ok(+m[4] > 0 && +m[4] < 1, `${k.id}: ${key} alpha in (0,1)`);
+156:      + "with `node test/tools/gen-kits.mjs`; it refuses to write unless every kit clears its floors.",
+165:  floors: FLOORS.map(([token, ground, floor]) => ({ token, ground, floor })),
+175:console.log(`  ${FLOORS.length} floors × ${kits.length} kits = ${FLOORS.length * kits.length} contrast assertions, all cleared`);
+176:console.log(`  tightest: ${worst.id} ${worst.token} on ${worst.ground} ${worst.got.toFixed(3)} against a floor of ${worst.floor}`);
+
+## Kits.swift comment figures
+3:// **There is no palette data in this file.** The 16 open kits and the 13 font pairs live in
+9:// Why a fixture and not `theme.js` itself. 62 of the 314 hex tokens in the finished table appear
+11:// `finalize()` → `ensure()` → `oklch()`: cube roots, a 14-iteration gamut search, WCAG contrast and
+12:// a 60-step lightness loop. A Swift plugin that recomputed them would have to match JavaScript
+21:// `Kit` through `Kit(json:)`. The table below is the 16 anyone can have.
+25:// `theme.js` gives a kit 26 colour tokens. **16 of them are really `#RRGGBB`** and all 16 are here.
+29://     asserted by the generator, because Pink writes .16/.42 by hand despite being a dark base, so
+38://   * `strikeSize` and `strikeAnim` are CSS animation parameters (`"300% 100%"`,
+39://     `"shimmer 3.4s linear infinite"`). **Dropped** — SwiftUI has no keyframe named `shimmer`.
+61:/// The 16 tokens that are really colours, plus the two hairline alphas. Every string is `#RRGGBB`,
+64:    /// The page, and the two surfaces above it. `ink3` is the elevated one — panels, filled chips, a
+69:    /// The same three secondaries nudged for `ink3`, which is a different ground and a different floor.
+71:    /// The accent family. `accent` clears 3:1 on both grounds (a UI colour); `accentText` clears
+72:    /// 4.5:1 on both (a text colour). They are usually not the same hex and must not be swapped.
+75:    /// A solid line that clears 3:1 on `ink` — checkbox borders, dividers.
+122:/// resolve anything — measured to be a no-op on Fraunces and Source Serif 4, which carry no `fvar`
+164:    /// Which shapes the finale throws: 1 dot, 2 ribbon, 3 heart/star, 4 the Birthday set — `fx.js`
+187:    /// The 16 kits anyone can have, in `theme.js`'s own order. The two Secret kits are not here;
+191:    /// The 13 font pairs, by id. All thirteen, including the two only the Secret kits use — a font
+201:    /// What a device that has never chosen gets: Paper by day, Terminal by night, since 1.11.
+225:    /// `#RRGGBB` → three channels in 0…1, or nil. Case-insensitive; the leading `#` is required,
+232:            guard let hi = nibble(s[1 + i * 2]), let lo = nibble(s[2 + i * 2]) else { return nil }
+233:            v[i] = Double(hi * 16 + lo) / 255
+341:            // CSS writes a leading bare dot — theme.js's own light and pink hard-code ".16" — and
+
+## KitsGen plugin: what it emits/limits
+KitsGen.swift
+1:// KitsGen — reads the two fixtures at build time and writes Kits.generated.swift: the 16 open kits
+2:// and the 13 font pairs, as Swift literals.
+5:// 62 of the 314 hex tokens in the finished table appear nowhere in theme.js's source, because they
+6:// come out of finalize() → ensure() → oklch() — cube roots, a 14-iteration gamut search, WCAG
+7:// contrast and a 60-step lightness loop. A plugin that recomputed them would be a second
+13:// **The two Secret kits are dropped here.** The fixture has all 18; this emits the 16 that are not
+14:// secret, so `superpink` and `birthday` are in no binary. The font *pairs* are all 13, including the
+15:// two only the Secret kits use: a pair is not a secret, and a Secret kit that arrives at runtime
+29:// The generated source goes across as one `/bin/sh` argument and is written with `printf '%s'`
+31:// would eat a `$` or a backtick in 13 KB of Swift, and one that does not expand cannot see the
+32:// argument at all. Measured: the source is ~28 KB against an ARG_MAX of 1 MB.
+54:        printf '%s' "$2" > "$1"
+79:        let open = all.filter { ($0["secret"] as? Bool) != true }
+88:        // The two Secret kits are deliberately absent: the fixture holds 18 and this holds \(open.count).
+95:        for kit in open { lines.append(kitLiteral(kit)) }
+124:                secret: false,
+140:        let taskFace = ((task["faces"] as? [[String: Any]]) ?? []).first.map(faceLiteral) ?? "KitFace(postScriptName: \"\", family: \"\", weight: 400, file: \"\")"
+152:        + "weight: \(face["weight"] as? Int ?? 400), "
+159:    /// gen-kits.mjs asserts that of all 18 kits, because Pink writes .16/.42 by hand despite a dark
+169:    /// theme.js's `ls`: "-.025em", "0", "-.005em" → a Double in em.
+174:    /// CSS writes a leading bare dot — ".16", "-.025" — and Swift's `Double(String)` is not obliged
+ARG_MAX: 1048576

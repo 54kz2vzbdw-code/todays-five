@@ -1,0 +1,127 @@
+# project.pbxproj across the four Phase 5 branches, read-only  (Thu Sep 10 01:19:32 CDT 2026)
+
+## hunks vs origin/main (git diff -U0 origin/main...origin/<branch>)
+### p5-a-voice  head=e633a46 base=7341981 commits=8
+ 1 file changed, 4 insertions(+)
+@@ -17,0 +18 @@
++		[REDACTED] /* WatchDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = [REDACTED] /* WatchDiagnostics.swift */; };
+@@ -112,0 +114 @@
++		[REDACTED] /* WatchDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDiagnostics.swift; sourceTree = "<group>"; };
+@@ -235,0 +238 @@
++				[REDACTED] /* WatchDiagnostics.swift */,
+@@ -561,0 +565 @@
++				[REDACTED] /* WatchDiagnostics.swift in Sources */,
+### p5-b-picker  head=46e1cf6 base=7341981 commits=8
+ 1 file changed, 4 insertions(+)
+@@ -17,0 +18 @@
++		[REDACTED] /* WatchDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = [REDACTED] /* WatchDiagnostics.swift */; };
+@@ -112,0 +114 @@
++		[REDACTED] /* WatchDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDiagnostics.swift; sourceTree = "<group>"; };
+@@ -235,0 +238 @@
++				[REDACTED] /* WatchDiagnostics.swift */,
+@@ -561,0 +565 @@
++				[REDACTED] /* WatchDiagnostics.swift in Sources */,
+### p5-c-faces  head=11aebc8 base=7341981 commits=3
+ 1 file changed, 4 insertions(+)
+@@ -17,0 +18 @@
++		[REDACTED] /* WatchDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = [REDACTED] /* WatchDiagnostics.swift */; };
+@@ -112,0 +114 @@
++		[REDACTED] /* WatchDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDiagnostics.swift; sourceTree = "<group>"; };
+@@ -235,0 +238 @@
++				[REDACTED] /* WatchDiagnostics.swift */,
+@@ -561,0 +565 @@
++				[REDACTED] /* WatchDiagnostics.swift in Sources */,
+### p5-d-latency  head=e85bf2c base=7341981 commits=11
+ 1 file changed, 4 insertions(+)
+@@ -17,0 +18 @@
++		[REDACTED] /* WatchDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = [REDACTED] /* WatchDiagnostics.swift */; };
+@@ -112,0 +114 @@
++		[REDACTED] /* WatchDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDiagnostics.swift; sourceTree = "<group>"; };
+@@ -235,0 +238 @@
++				[REDACTED] /* WatchDiagnostics.swift */,
+@@ -561,0 +565 @@
++				[REDACTED] /* WatchDiagnostics.swift in Sources */,
+
+## are the four branch copies of the file identical to each other?
+p5-a-voice vs p5-b-picker: 0 diff lines
+p5-a-voice vs p5-c-faces: 0 diff lines
+p5-a-voice vs p5-d-latency: 0 diff lines
+
+## the one commit that touched it, shared by all four (first commit on watch-fixes):
+bd45872 An instrument that survives Release, because the wrist is where the bugs are
+
+ apple/PLAN-apple-phase5.md                         | 450 +++++++++++++++++++++
+ .../TodaysFive.xcodeproj/project.pbxproj           |   4 +
+ apple/TodaysFive/TodaysFiveWatch/TodayView.swift   |  20 +
+ apple/TodaysFive/TodaysFiveWatch/WatchApp.swift    |  13 +
+ .../TodaysFiveWatch/WatchDiagnostics.swift         | 402 ++++++++++++++++++
+ 5 files changed, 889 insertions(+)
+
+## git merge-tree --write-tree (three-way, writes nothing) for every pair; rc 0 = clean, 1 = conflict
+p5-a-voice + p5-b-picker  rc=0  tree=5f3330b0ae65
+p5-a-voice + p5-c-faces  rc=0  tree=8918844d8968
+p5-a-voice + p5-d-latency  rc=0  tree=41ebe253edb1
+p5-b-picker + p5-c-faces  rc=0  tree=de88ea524f28
+p5-b-picker + p5-d-latency  rc=0  tree=f3aa4640c7b4
+p5-c-faces + p5-d-latency  rc=0  tree=64150415cf73
+
+## files touched per branch (overlaps are TodayView.swift, WatchApp.swift, WatchDiagnostics.swift, PLAN-apple-phase5.md)
+-- p5-a-voice
+ apple/PLAN-apple-phase5.md                         | 450 ++++++++++++++++
+ apple/TodaysFive/Shared/AddToTodaysFive.swift      |  93 +++-
+ .../TodaysFive.xcodeproj/project.pbxproj           |   4 +
+ apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift | 589 +++++++++++++++++----
+ apple/TodaysFive/TodaysFiveWatch/TodayView.swift   |  81 ++-
+ apple/TodaysFive/TodaysFiveWatch/WatchApp.swift    |  66 ++-
+ .../TodaysFiveWatch/WatchDiagnostics.swift         | 416 +++++++++++++++
+ .../TodaysFiveWatch/WatchDictation.swift           | 278 ++++++++--
+ .../Tests/TodaysFiveCoreTests/TodayOpsTests.swift  |  35 ++
+ apple/shots/watch/add-trace-diagnostics.png        | Bin 0 -> 44012 bytes
+ apple/shots/watch/today-add-row.png                | Bin 0 -> 27647 bytes
+ 11 files changed, 1837 insertions(+), 175 deletions(-)
+-- p5-b-picker
+ apple/PLAN-apple-phase5.md                         | 450 +++++++++++++++++++++
+ .../TodaysFive.xcodeproj/project.pbxproj           |   4 +
+ .../TodaysFiveWatch/ListPickerView.swift           | 169 +++++++-
+ apple/TodaysFive/TodaysFiveWatch/TodayView.swift   |  90 ++++-
+ apple/TodaysFive/TodaysFiveWatch/WatchApp.swift    |  84 +++-
+ .../TodaysFiveWatch/WatchDiagnostics.swift         | 409 +++++++++++++++++++
+ apple/TodaysFive/TodaysFiveWatch/WatchStore.swift  | 188 ++++++++-
+ .../Tests/TodaysFiveCoreTests/WatchLinkTests.swift |  80 ++++
+ 8 files changed, 1440 insertions(+), 34 deletions(-)
+-- p5-c-faces
+ apple/PLAN-apple-phase5.md                         | 450 +++++++++++++++++++++
+ apple/TodaysFive/Shared/WatchSnapshot.swift        |  16 +-
+ .../TodaysFive.xcodeproj/project.pbxproj           |   4 +
+ .../[REDACTED]/Complications.swift    | 377 ++++++++++++++---
+ apple/TodaysFive/TodaysFiveWatch/TodayView.swift   |  20 +
+ apple/TodaysFive/TodaysFiveWatch/WatchApp.swift    |  13 +
+ .../TodaysFiveWatch/WatchDiagnostics.swift         | 402 ++++++++++++++++++
+ .../TodaysFiveCoreTests/KitFixtureTests.swift      |  60 +++
+ 8 files changed, 1291 insertions(+), 51 deletions(-)
+-- p5-d-latency
+ apple/PLAN-apple-phase5.md                         | 450 +++++++++++++++++++++
+ .../TodaysFive.xcodeproj/project.pbxproj           |   4 +
+ apple/TodaysFive/TodaysFiveWatch/TodayView.swift   |  20 +
+ apple/TodaysFive/TodaysFiveWatch/WatchApp.swift    |  13 +
+ .../TodaysFiveWatch/WatchDiagnostics.swift         | 402 ++++++++++++++++++
+ sync.js                                            | 165 +++++++-
+ test/sync.test.js                                  | 206 ++++++++++
+ tools/beatd.mjs                                    |  86 ++++
+ tools/quietd.js                                    | 334 +++++++++++++++
+ tools/socketd.mjs                                  | 239 +++++++++++
+ tools/ticks.mjs                                    | 175 ++++++++
+ 11 files changed, 2079 insertions(+), 15 deletions(-)
+
+## hand-numbered ids in the pbxproj at 7341981
+lines:      853  distinct TF ids: 177  max: 469
+PBXFileReference ids: 001 002 003 004 005 006 007 008 009 210 211 212 213 250 251 252 253 254 255 256 257 258 259 260 261 262 263 264 265 266 267 268 269 270 271 272 273 274 275 276 277 278 279 280 281 282 283 284 285 286 287 288 289 290 291 292 293 294 295 296 297 300 301 302 303 304 305 306 
+PBXBuildFile ids:     		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 		[REDACTED] 
+Phase 4 plan reserved: FileReference 264-299, BuildFile 436+. Used at 7341981: FileReference 264-297 (298 taken by Phase 5's WatchDiagnostics, 299 the last free), BuildFile 436-469 (470 taken by Phase 5).
+lines mentioning .ttf: 132 (= 33 fonts x 4)
+
+## size over time
+8085aad 304 lines  apple phase 2: the shell, the vault and the bridge
+0e03143 304 lines  Build 151, and a correction about the icon the phone actually showed
+4962f97 708 lines  The live run, the results, and an archive staged for Organizer
+7341981 853 lines  Measured on the live build: what a returning device actually sees

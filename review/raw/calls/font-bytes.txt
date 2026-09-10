@@ -1,0 +1,11 @@
+# font bytes per bundling alternative, from test/fixtures/watch-fonts.json  (Thu Sep 10 01:19:14 CDT 2026)
+D shipped: task + every ui weight, all 13 pairs       33 files   1238128 bytes  100% of shipped
+E open kits pairs only (drop baloo, fredoka)          31 files   1157580 bytes   93% of shipped
+B task + one ui weight (regular), 13 pairs            24 files    938264 bytes   76% of shipped
+C task + one ui weight (bold), 13 pairs               22 files    861112 bytes   70% of shipped
+A task faces only, 13 pairs (ui = system font)        13 files    561248 bytes   45% of shipped
+F task faces only, open kits                          11 files    480700 bytes   39% of shipped
+system font only                                       0 files         0 bytes    0% of shipped
+(repo woff2 sources: 26 files 732924 bytes; PLAN measured 26 variable TTFs un-instanced at 1.54 MB, so instancing to 33 statics is SMALLER than shipping the 26 variable TTFs)
+on disk apple/TodaysFive/Fonts: 33 ttf 1238128 bytes
+pbxproj lines per font: 4 (BuildFile, FileReference, group child, Resources entry) = 132 lines; WatchInfo.plist UIAppFonts entries: 33

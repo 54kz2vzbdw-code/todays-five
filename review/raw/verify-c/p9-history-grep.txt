@@ -1,0 +1,26 @@
+# git grep over every commit reachable from any ref (262 commits) for CDP throttling identifiers
+## pattern A: [REDACTED]|setCPUThrottlingRate|Network.emulate|Emulation.setCPU
+ 175 tools/audit/harness.mjs
+(end A)
+
+## pattern B: interleav
+  99 PLAN.md
+(end B)
+
+## pattern C: 1\.6 ?Mbps|150 ?ms RTT|150 ms RTT|4× CPU|4x CPU|CPU throttl|mobile throttl
+ 165 PLAN.md
+   3 tools/quietd.js
+(end C)
+
+## pattern D: lighthouse (any case), FCP|LCP|largest-contentful|first-contentful|PerformanceObserver
+ 260 PLAN.md
+ 258 DECISIONS.md
+ 238 COMPATIBILITY.md
+ 235 tools/serve.js
+ 213 test/features.test.js
+ 167 audit/raw/performance/report.md
+ 143 audit/leak-after.json
+ 129 apple/PLAN-apple-phase2.md
+ 120 apple/DECISIONS-apple.md
+  35 apple/PLAN-apple-phase5.md
+(end D)

@@ -1,0 +1,34 @@
+[session 01:28:02] WATCH=8F30B5F3-A512-4CA6-90CA-C596689046DB
+    tf-review watch (8F30B5F3-A512-4CA6-90CA-C596689046DB) (Booted) 
+…/CoreSimulator/Devices/8F30B5F3-A512-4CA6-90CA-C596689046DB/data/Containers/Bundle/Application/1B55669D-CB11-4B20-8859-B158522C3764/TodaysFiveWatch.app
+[session 01:28:04] launch b-dark-1: -TFWatchDemo -TFKit dark
+[session 01:28:15]   -> 5 console lines, 26715 png bytes
+[session 01:28:16] launch b-paper-1: -TFWatchDemo -TFKit paper
+[session 01:28:27]   -> 5 console lines, 28469 png bytes
+[session 01:28:29] launch b-terminal-1: -TFWatchDemo -TFKit terminal
+[session 01:28:40]   -> 5 console lines, 29627 png bytes
+[session 01:28:41] launch b-dark-2: -TFWatchDemo -TFKit dark
+[session 01:28:52]   -> 5 console lines, 26715 png bytes
+[session 01:28:53] launch b-paper-2: -TFWatchDemo -TFKit paper
+[session 01:29:05]   -> 5 console lines, 28459 png bytes
+[session 01:29:06] launch b-terminal-2: -TFWatchDemo -TFKit terminal
+[session 01:29:17]   -> 5 console lines, 29597 png bytes
+[session 01:29:18] launch b-dark-3: -TFWatchDemo -TFKit dark
+[session 01:29:29]   -> 5 console lines, 26689 png bytes
+[session 01:29:31] launch b-paper-3: -TFWatchDemo -TFKit paper
+[session 01:29:42]   -> 5 console lines, 28459 png bytes
+[session 01:29:43] launch b-terminal-3: -TFWatchDemo -TFKit terminal
+[session 01:29:54]   -> 5 console lines, 29597 png bytes
+[session 01:29:55] launch k-A: -TFWatchDemo -TFThemeSet day:harbor
+[session 01:30:05]   -> 5 console lines, 29221 png bytes
+[session 01:30:06] launch k-B: -TFWatchDemo
+[session 01:30:15]   -> 5 console lines, 29221 png bytes
+[session 01:30:16] launch k-restore1: -TFWatchDemo -TFThemeSet day:paper
+[session 01:30:24]   -> 5 console lines, 28499 png bytes
+[session 01:30:26] launch k-restore2: -TFWatchDemo -TFThemeSet night:terminal
+[session 01:30:34]   -> 5 console lines, 29611 png bytes
+[session 01:30:35] launch k-verify: -TFWatchDemo
+[session 01:30:43]   -> 5 console lines, 29611 png bytes
+[session 01:30:43] app group container: present
+[session 01:30:43] app group files:        4
+[session 01:30:43] done

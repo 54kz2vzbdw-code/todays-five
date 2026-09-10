@@ -1,0 +1,6 @@
+index.html inline script #1 attrs=[] bytes=5986 sha256-qsJZKnL4d03c+n6v9plo8VA7MFCddfN+1V29dJZf1pw=
+index.html inline style #1 bytes=753 sha256-42Imb/[REDACTED]=
+index.html CSP: default-src 'self'; script-src 'self' 'sha256-qsJZKnL4d03c+n6v9plo8VA7MFCddfN+1V29dJZf1pw='; style-src 'self' 'sha256-42Imb/[REDACTED]='; img-src 'self' data:; font-src 'self'; connect-src 'self' https://xyfjxdbwhysbaltcwvcx.supabase.co wss://xyfjxdbwhysbaltcwvcx.supabase.co; manifest-src blob: 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'
+about.html inline script #1 attrs=[] bytes=2688 sha256-fB4H4dbLvW5k+iUF9UzSHTbZ/QTZqz1Xhzks1eI5RWU=
+about.html inline style #1 bytes=753 sha256-42Imb/[REDACTED]=
+about.html CSP: default-src 'self'; script-src 'sha256-fB4H4dbLvW5k+iUF9UzSHTbZ/QTZqz1Xhzks1eI5RWU='; style-src 'self' 'sha256-42Imb/[REDACTED]='; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'

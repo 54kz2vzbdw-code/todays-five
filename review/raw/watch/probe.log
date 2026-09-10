@@ -1,0 +1,30 @@
+# tfprobe run 2026-09-10 01:17:29 |  1:17  up 92 days, 23:23, 2 users, load averages: 7.68 5.93 5.35
+# binary: /private/tmp/claude-501/-Users-pricebrannen-Today-s-Five-Swift-Code/785dcc72-e6dc-4e1d-ba89-702b481a76d0/scratchpad/watch/probe-build/debug/tfprobe (built from review/raw/watch/tools/tfprobe against the worktree's TodaysFiveCore at 7341981)
+== (b) SyncEngine.current() for a list the Watch has never pulled ==
+creator: status=synced rev=1 todayItems=3
+watch before open: current()=nil
+watch after open:  current()=non-nil rev=0 dirty=false todayItems=0
+watch after sync:  status=synced rev=1 todayItems=3
+
+== (d) what rollover does to Today vs what WatchSnapshot.afterRollover assumes (total - done) ==
+A plain:     before done=2/5  afterRollover assumes 0/3  rollover gives 0/3  agree
+B daily rule: before done=2/5  afterRollover assumes 0/3  rollover gives 0/4  DISAGREE (face under-counts by 1)
+C due rule off Today: before done=0/4  afterRollover assumes 0/4  rollover gives 0/5  DISAGREE (face under-counts by 1)
+D no zone, done 23:30: afterRollover assumes 0/4  rollover at 00:05 gives 1/5  at 09:00 gives 0/4
+
+== (f) a phone clock one hour ahead, then corrected ==
+1. ahead payload: applied=true appliedAt-now=+3600000 ms  (the Watch now holds a mark 1 h in its own future)
+2. honest removal 1 s later: applied=false remove=0  → the list stays on the wrist
+3. a new list 59 min 59 s later: applied=false
+4. the same, 1 h 0.001 s later: applied=true upsert=1  → outage = the clock error, to the millisecond
+
+== (g) SnapshotTimeline.entries, verbatim, with WidgetKit stubbed: what the face shows across midnight when the app never runs ==
+getTimeline at 09-08 22:00:00: entries=[09-08 22:00:00→3/5, 09-09 00:00:00→0/2] reload at 09-09 00:01:00
+   → on the face at 00:00:30: 0/2 (the midnight entry)
+getTimeline at 09-09 00:01:00: entries=[09-09 00:01:00→3/5] reload at 09-09 01:01:00
+getTimeline at 09-09 01:01:00: entries=[09-09 01:01:00→3/5] reload at 09-09 02:01:00
+getTimeline at 09-09 02:01:00: entries=[09-09 02:01:00→3/5] reload at 09-09 03:01:00
+   → the face reads 3/5 again from the 00:01 reload until the app runs
+
+done
+# exit=0

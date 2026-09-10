@@ -1,0 +1,32 @@
+file                  0e03143 (1.11, b151)            74bf09f (b157)            a53bde8 (b158)      7341981 (head, b216)
+index.html      50557 raw/12953 g6/12934 g950512 raw/12938 g6/12922 g950512 raw/12938 g6/12921 g951206 raw/13184 g6/13167 g9
+app.js          156714 raw/48557 g6/48505 g9160942 raw/50180 g6/50134 g9160942 raw/50180 g6/50134 g9160942 raw/50180 g6/50134 g9
+model.js        47200 raw/14360 g6/14346 g948142 raw/14719 g6/14706 g948142 raw/14719 g6/14706 g948142 raw/14719 g6/14706 g9
+styles.css      53989 raw/12097 g6/12046 g954232 raw/12188 g6/12136 g954232 raw/12188 g6/12136 g954232 raw/12188 g6/12136 g9
+panels.js       80467 raw/25018 g6/24994 g984852 raw/26524 g6/26498 g984852 raw/26524 g6/26498 g985808 raw/26882 g6/26859 g9
+panels.css       21641 raw/5787 g6/5773 g9 21641 raw/5787 g6/5773 g9 21641 raw/5787 g6/5773 g9 21641 raw/5787 g6/5773 g9
+theme.js        52713 raw/18088 g6/18071 g952713 raw/18088 g6/18071 g952713 raw/18088 g6/18071 g960259 raw/21042 g6/21024 g9
+sync.js          24162 raw/7665 g6/7660 g9 24162 raw/7665 g6/7660 g9 24162 raw/7665 g6/7660 g9 24162 raw/7665 g6/7660 g9
+crypto.js         6334 raw/2532 g6/2532 g9  6334 raw/2532 g6/2532 g9  6334 raw/2532 g6/2532 g9  6334 raw/2532 g6/2532 g9
+fx.js             5915 raw/2219 g6/2216 g9  5915 raw/2219 g6/2216 g9  5915 raw/2219 g6/2216 g9  5915 raw/2219 g6/2216 g9
+sound.js          7283 raw/2734 g6/2734 g9  8035 raw/3079 g6/3079 g9  8035 raw/3079 g6/3079 g9  8035 raw/3079 g6/3079 g9
+version.js           474 raw/310 g6/310 g9     474 raw/312 g6/312 g9     474 raw/312 g6/312 g9     474 raw/311 g6/311 g9
+config.js            538 raw/377 g6/377 g9     538 raw/377 g6/377 g9     538 raw/377 g6/377 g9     538 raw/377 g6/377 g9
+packs.js         20280 raw/5358 g6/5348 g9 20280 raw/5358 g6/5348 g9 20280 raw/5358 g6/5348 g9 20280 raw/5358 g6/5348 g9
+exporter.js         1741 raw/888 g6/888 g9    1741 raw/888 g6/888 g9    1741 raw/888 g6/888 g9    1741 raw/888 g6/888 g9
+qr.js           56681 raw/11865 g6/11765 g956681 raw/11865 g6/11765 g956681 raw/11865 g6/11765 g956681 raw/11865 g6/11765 g9
+secretfx.js      10979 raw/4378 g6/4379 g9 10979 raw/4378 g6/4379 g9 10979 raw/4378 g6/4379 g9 10979 raw/4378 g6/4379 g9
+secretfx.css        1653 raw/796 g6/796 g9    1653 raw/796 g6/796 g9    1653 raw/796 g6/796 g9    1653 raw/796 g6/796 g9
+packs-secret.js   5428 raw/2100 g6/2099 g9  5428 raw/2100 g6/2099 g9  5428 raw/2100 g6/2099 g9  5428 raw/2100 g6/2099 g9
+
+Deltas 0e03143 -> 74bf09f (gzip level 6 / level 9 / raw):
+  app.js       1623 / 1629 / 4228
+  model.js     359 / 360 / 942
+  styles.css   91 / 90 / 243
+  index.html   -15 / -12 / -45
+  panels.js    1506 / 1504 / 4385
+  theme.js     0 / 0 / 0
+  sync.js      0 / 0 / 0
+critical-path sum delta g6: 2058  g9: 2067
+
+Deltas 74bf09f -> 7341981 g6: app.js 0, model.js 0, styles.css 0, index.html 246, panels.js 358, theme.js 2954

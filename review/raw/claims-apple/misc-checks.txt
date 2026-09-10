@@ -1,0 +1,146 @@
+## WKApplicationDelegate protocol block (the definition, not the forward declaration)
+15:@protocol WKApplicationDelegate;
+58:@protocol WKApplicationDelegate <NSObject>
+@protocol WKApplicationDelegate <NSObject>
+- (void)[REDACTED];
+- (void)[REDACTED];
+- (void)[REDACTED];
+- (void)[REDACTED];
+- (void)[REDACTED];
+- (void)[REDACTED]:([REDACTED] *)workoutConfiguration;
+- (void)[REDACTED];
+- (void)[REDACTED]:([REDACTED] *)[REDACTED];
+- (void)[REDACTED];
+- (void)handleUserActivity:(nullable NSDictionary *)userInfo;
+- (void)handleActivity:(NSUserActivity *)userActivity;
+- (void)handleIntent:(INIntent *)intent completionHandler:(void(^)(INIntentResponse *intentResponse))completionHandler;
+- (void)handleBackgroundTasks:(NSSet <[REDACTED] *> *)backgroundTasks;
+- (void)[REDACTED]; // called when [REDACTED], [REDACTED], or autorotated value changes
+- (void)[REDACTED]:(NSData *)deviceToken;
+- (void)[REDACTED]:(NSError *)error;
+- (void)[REDACTED]:(NSDictionary *)userInfo [REDACTED]:(void (^)([REDACTED] result))completionHandler;
+- (void)[REDACTED]:(CKShareMetadata *)cloudKitShareMetadata;
+@end
+methods mentioning URL/open in the delegate: 0
+
+## TextFieldLink struct body (8594-8630)
+1:public struct TextFieldLink<Label> : SwiftUICore.View where Label : SwiftUICore.View {
+2:  @_Concurrency.MainActor @preconcurrency public var body: some SwiftUICore.View {
+13:extension SwiftUI.TextFieldLink : Swift.Sendable {
+20:extension SwiftUI.TextFieldLink {
+21:  nonisolated public init(prompt: SwiftUICore.Text? = nil, @SwiftUICore.ViewBuilder label: () -> Label, onSubmit: @escaping (Swift.String) -> Swift.Void)
+28:extension SwiftUI.TextFieldLink where Label == SwiftUICore.Text {
+29:  nonisolated public init(_ titleKey: SwiftUICore.LocalizedStringKey, prompt: SwiftUICore.Text? = nil, onSubmit: @escaping (Swift.String) -> Swift.Void)
+30:  @_disfavoredOverload @_alwaysEmitIntoClient nonisolated public init(_ titleResource: Foundation.[REDACTED], prompt: SwiftUICore.Text? = nil, onSubmit: @escaping (Swift.String) -> Swift.Void) {
+31:        self.init(
+
+## Complications.swift:244 context (the .secondary that remains)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            HStack(spacing: 4) {
+                Text(snapshot.hasList ? snapshot.fraction : "—")
+                    .font(FaceType.count(snapshot, size: 16, relativeTo: .headline))
+                    .widgetAccentable()
+                Text(title)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            // Off, this is the list's name and a count — useful, and nobody's words. On, it is the
+            // line, which is the whole reason the switch exists. It is **not** `.widgetAccentable()`
+            // — see the note at `CountView.body`.
+            Text(second)
+
+## fx.js particle sizes (for the 0.93–2.48 / 1.86–5.27 / 1.55–3.41 pt claim at k=0.31)
+69:      const sp = power * (0.55 + Math.random() * 0.8);
+74:        w: 3 + Math.random() * 5, h: 6 + Math.random() * 11,
+75:        s: 5 + Math.random() * 6,
+78:        life: 1, dec: 0.0075 + Math.random() * 0.008,
+79:        rib: Math.random() < 0.45,
+80:        sh: shapeOf(sh)
+
+## put_list_v3 lines and the create limit in 002_v3.sql
+61:language plpgsql stable
+77:$$;
+83:language plpgsql
+96:$$;
+102:language plpgsql
+116:$$;
+122:language plpgsql
+151:$$;
+163:-- Read. p_rev is the revision the caller already has: when nothing changed the answer is {unchanged:true, rev}
+165:create or replace function public.get_list_v3(p_id text, p_rev bigint default null)
+167:language plpgsql
+185:  if p_rev is not null and r.rev = p_rev then
+create or replace function private.limits()
+returns table (max_rows int, max_doc_bytes int, creates_per_hour int, creates_per_day int, reap_after interval)
+language sql immutable
+set search_path = ''
+as $$ select 2400, 98304, 12, 40, interval '12 months' $$;
+revoke all on function private.limits() from public;
+6:--   * lists.last_seen   — for reaping lists nobody has read or written in 12 months
+36:create table if not exists private.creates (
+40:create index if not exists creates_at_idx on private.creates (at);
+41:create index if not exists creates_ip_at_idx on private.creates (ip_hash, at);
+42:revoke all on table private.state, private.creates from public, anon, authenticated;
+52:returns table (max_rows int, max_doc_bytes int, creates_per_hour int, creates_per_day int, reap_after interval)
+55:as $$ select 2400, 98304, 12, 40, interval '12 months' $$;
+80:-- Delete lists idle for 12 months and rate-limit rows older than 24 h.
+
+## VaultReconciler still skips archived
+142:    /// "Names a list" means an entry that is not `archived`: *Remove from this device* leaves the
+169:            // *Remove from this device* does not take the entry out of `lists` — it sets `archived`
+171:            // brings it back. So an archived entry is a list this device does **not** hold, and the
+174:            guard !entry.truthy("archived") else { continue }
+
+## polld.js: NOT MEASURED / x marking (c0b8e2b)
+224:    let broke = 0;
+232:        broke++;
+242:    const line = { id: cond.id, label: cond.label, seen: got.slice().sort((a, b) => a - b), never: never.length, broke, horizonS: cond.horizon / 1000, medianS: median(got), maxS: got.length ? Math.max(...got) : null };
+259:    : "NOT MEASURED";
+261:  console.log(`| ${c.label} | ${trials}${c.broke ? ` (${c.broke} trial(s) could not run)` : ""} | ${med} |`);
+263:const broken = report.conditions.reduce((n, c) => n + c.broke, 0);
+266:if (broken) {
+267:  console.log(`\n${broken} trial(s) could not run — is \`node tools/serve.js 8791 .\` up? These numbers are not a measurement.`);
+
+## which Sources phases hold KeychainLinkVault (413 -> which target, 105 -> which)
+				[REDACTED] /* TodaysFiveShortcuts.swift in Sources */,
+				[REDACTED] /* KeychainLinkVault.swift in Sources */,
+				[REDACTED] /* Audio.swift in Sources */,
+				[REDACTED] /* KeychainLinkVault.swift in Sources */,
+337:			isa = PBXNativeTarget;
+348:			name = [REDACTED];
+354:			isa = PBXNativeTarget;
+367:			name = TodaysFiveWatch;
+376:			isa = PBXNativeTarget;
+389:			name = TodaysFive;
+533:		[REDACTED] /* Sources */ = {
+544:		[REDACTED] /* Sources */ = {
+565:		[REDACTED] /* Sources */ = {
+
+## any ref anywhere fixing the pre-paint colour?
+7f0e112 The Secret pair reaches a wrist without ever being in a binary
+0354b5f Tracks B and C: Today on a wrist, the four ways in, and the complications
+ee5a1df A finale you can feel, on the volley's own rhythm
+0717746 The vault kept a mark of its own, because the registry could not answer
+5a91558 The vault must not read a failed read as an empty store
+8085aad apple phase 2: the shell, the vault and the bridge
+
+## PLAN-phase4 mentions of archive / Organizer
+399:- The archive, with the Watch app embedded.
+
+## simctl pairs (read-only listing)
+6103547B-0E14-4706-B17B-15616FB812B3 (active, disconnected)
+    Watch: Apple Watch Series 10 (46mm) (64228B31-F06E-412A-B261-E6707E330BCA) (Shutdown)
+    Phone: iPhone 16 Plus (9197B5A6-83C5-4A42-AF10-FA23835F6BB3) (Shutdown)
+3AB4CE04-9C8B-41D5-88B6-336E65BB583C (active, disconnected)
+    Watch: Apple Watch Series 10 (42mm) (B49DF871-76C8-4EA6-835C-2AB220F2F37B) (Shutdown)
+    Phone: iPhone 16 (B5291304-AC8B-4D82-B99B-E4EDB4DC8CD5) (Shutdown)
+D4A3E40B-3B21-482B-97CC-7C7CE7B88238 (active, disconnected)
+    Watch: Apple Watch Ultra 2 (49mm) (9AF1E9E4-420E-4FEC-9096-7E8A57A3A0A7) (Shutdown)
+    Phone: iPhone 16 Pro Max (6BBADCB9-D649-49B7-9735-0966DBA81C75) (Shutdown)
+4B6A97F5-32AB-408A-9E2A-5F8917031CE8 (active, connected)
+    Watch: Apple Watch Series 11 (46mm) (4594CB69-FD2A-404B-9364-9F7BD070AAC4) (Booted)
+    Phone: iPhone 17 (C33542F5-1D08-439D-B47B-E61355E3C07C) (Booted)
+E7F29476-51EC-4C21-A95C-C5A2D43C282B (active, connected)
+    Watch: tf-review watch (8F30B5F3-A512-4CA6-90CA-C596689046DB) (Booted)

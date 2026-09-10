@@ -1,0 +1,138 @@
+{
+  "label": "branch",
+  "base": "light",
+  "code": "T2:l:DA6D7F:fraunces::Worst",
+  "staleAccent": "#DA6D7F",
+  "paletteRev": "1ptwfkh",
+  "scenarios": {
+    "A_normal_then_reload": {
+      "blockApp": false,
+      "seededRev": "1ptwfkh",
+      "firstFrame": [
+        13,
+        "#DA6D7F"
+      ],
+      "runs": [
+        {
+          "accent": "#DA6D7F",
+          "from": 13,
+          "until": 20,
+          "frames": 2
+        },
+        {
+          "accent": "#C55B6D",
+          "from": 39,
+          "until": 1533,
+          "frames": 91
+        }
+      ],
+      "atDOMContentLoaded": [
+        38,
+        "#C55B6D"
+      ],
+      "atLoad": [
+        42,
+        "#C55B6D"
+      ],
+      "after1500ms": "#C55B6D",
+      "cacheAfter": {
+        "accent": "#C55B6D",
+        "rev": "1ptwfkh"
+      },
+      "pageStamp": "1ptwfkh",
+      "themeId": "custom-da6d7f-l-fraunces",
+      "pageErrors": [],
+      "secondLoad": {
+        "firstFrame": [
+          13,
+          "#C55B6D"
+        ],
+        "runs": [
+          {
+            "accent": "#C55B6D",
+            "from": 13,
+            "until": 1017,
+            "frames": 62
+          }
+        ],
+        "after1000ms": "#C55B6D",
+        "cacheAfter": {
+          "accent": "#C55B6D",
+          "rev": "1ptwfkh"
+        }
+      },
+      "wallMs": 2589
+    },
+    "B_appjs_blocked": {
+      "blockApp": true,
+      "seededRev": "1ptwfkh",
+      "firstFrame": [
+        29,
+        "#DA6D7F"
+      ],
+      "runs": [
+        {
+          "accent": "#DA6D7F",
+          "from": 29,
+          "until": 1529,
+          "frames": 91
+        }
+      ],
+      "atDOMContentLoaded": [
+        20,
+        "#DA6D7F"
+      ],
+      "atLoad": [
+        29,
+        "#DA6D7F"
+      ],
+      "after1500ms": "#DA6D7F",
+      "cacheAfter": {
+        "accent": "#DA6D7F",
+        "rev": "1ptwfkh"
+      },
+      "pageStamp": "1ptwfkh",
+      "pageErrors": [],
+      "wallMs": 1546
+    },
+    "C_stamp_mismatch": {
+      "blockApp": false,
+      "seededRev": "stale00",
+      "firstFrame": [
+        15,
+        "#A86014"
+      ],
+      "runs": [
+        {
+          "accent": "#A86014",
+          "from": 15,
+          "until": 15,
+          "frames": 1
+        },
+        {
+          "accent": "#C55B6D",
+          "from": 42,
+          "until": 1545,
+          "frames": 92
+        }
+      ],
+      "atDOMContentLoaded": [
+        41,
+        "#C55B6D"
+      ],
+      "atLoad": [
+        44,
+        "#C55B6D"
+      ],
+      "after1500ms": "#C55B6D",
+      "cacheAfter": {
+        "accent": "#C55B6D",
+        "rev": "1ptwfkh"
+      },
+      "pageStamp": "1ptwfkh",
+      "themeId": "custom-da6d7f-l-fraunces",
+      "pageErrors": [],
+      "wallMs": 1551
+    }
+  }
+}

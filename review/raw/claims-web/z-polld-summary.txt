@@ -1,0 +1,20 @@
+=== polld, fg-dead then fg-live, three seeds each (15:27:58) ===
+-- fg-dead seed=1 start 15:27:58
+| foreground, realtime NOT connected | 8, 10, 14, 16, 46, 48, 52, 54, 56, 58 | 47 (max 58) |
+exit=0
+-- fg-dead seed=2 start 15:28:16
+| foreground, realtime NOT connected | 0.4, 4, 4, 16, 30, 34, 44, 52, 54, 54 | 32 (max 54) |
+exit=0
+-- fg-dead seed=3 start 15:28:32
+| foreground, realtime NOT connected | 14, 20, 26, 28, 30, 40, 44, 44, 54, 58 | 35 (max 58) |
+exit=0
+-- fg-live seed=1 start 15:28:50
+| foreground, realtime connected | 8, 12, 32, 56, 78, 88, 90, 124, 200, 210 | 83 (max 210) |
+exit=0
+-- fg-live seed=2 start 15:29:16
+| foreground, realtime connected | 8, 36, 56, 104, 120, 142, 162, 190, 196, 198 | 131 (max 198) |
+exit=0
+-- fg-live seed=3 start 15:29:42
+| foreground, realtime connected | 24, 36, 46, 70, 76, 124, 148, 176, 200, 226 | 100 (max 226) |
+exit=0
+=== done 15:30:09 ===

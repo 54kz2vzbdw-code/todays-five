@@ -1,0 +1,53 @@
+SIM-SESSION QUEUED 2026-09-10 01:21:11 |  1:21  up 92 days, 23:26, 2 users, load averages: 31.90 53.68 29.66
+[sim-slot] watch acquired at 01:32:12
+[session] 01:32:12 session start WATCH=8F30B5F3-A512-4CA6-90CA-C596689046DB PHONE=BA7707F5-B082-41EB-92A5-04E586CB0D55
+ 1:32  up 92 days, 23:37, 2 users, load averages: 4.89 12.23 17.69
+device tf-review watch | watchOS-26-5 | Booted | watch
+device tf-review phone | iOS-26-5 | Booted | phone
+[session] 01:32:12 pair state: (active, connected)
+[session] 01:32:12 built products:
+/tmp/tf-review-baseline/Build/Products/Debug-iphonesimulator/TodaysFive.app
+/tmp/tf-review-baseline/Build/Products/Debug-watchsimulator/TodaysFiveWatch.app
+  TodaysFiveWatch.app: com.pricebrannen.todaysfive.watchkitapp 1.12 216
+  [REDACTED].appex: com.pricebrannen.todaysfive.watchkitapp.complications 1.12 216
+  TodaysFive.app: com.pricebrannen.todaysfive 1.12 216
+  ttf in the watch app:       33
+  ttf in the appex:        0
+[session] 01:32:12 install watch app
+[session] 01:32:15 selftest run 1 start
+ 1:32  up 92 days, 23:37, 2 users, load averages: 4.89 12.23 17.69
+[session] 01:32:23 screenshot /Users/pricebrannen/Today's Five/todays-five-review/review/raw/watch/selftest-run1.png
+[session] 01:32:24 selftest run 1 end after 7s wait
+ 1:32  up 92 days, 23:38, 2 users, load averages: 4.98 12.00 17.54
+[session] 01:32:26 selftest run 2 start
+ 1:32  up 92 days, 23:38, 2 users, load averages: 4.98 12.00 17.54
+[session] 01:32:35 screenshot /Users/pricebrannen/Today's Five/todays-five-review/review/raw/watch/selftest-run2.png
+[session] 01:32:36 selftest run 2 end after 7s wait
+ 1:32  up 92 days, 23:38, 2 users, load averages: 5.14 11.81 17.41
+[session] 01:32:38 selftest run 3 start
+ 1:32  up 92 days, 23:38, 2 users, load averages: 5.29 11.73 17.35
+[session] 01:32:46 screenshot /Users/pricebrannen/Today's Five/todays-five-review/review/raw/watch/selftest-run3.png
+[session] 01:32:47 selftest run 3 end after 7s wait
+ 1:32  up 92 days, 23:38, 2 users, load averages: 5.31 11.52 17.21
+[session] 01:32:47 app group container path: /Users/pricebrannen/Library/Developer/CoreSimulator/Devices/8F30B5F3-A512-4CA6-90CA-C596689046DB/data/Containers/Shared/AppGroup/11FD62D8-2074-47A1-82AF-CB2420184FC5
+[session] 01:32:49 openurl test start
+ 1:32  up 92 days, 23:38, 2 users, load averages: 5.31 11.52 17.21
+[session] 01:32:57 screenshot /Users/pricebrannen/Today's Five/todays-five-review/review/raw/watch/openurl-before.png
+  An error was encountered processing the command (domain=[REDACTED], code=115):
+  Simulator device failed to open todaysfive://add.
+  Underlying error (domain=[REDACTED], code=115):
+  	The operation couldn’t be completed. ([REDACTED] error 115.)
+  openurl exit=115
+[session] 01:33:03 screenshot /Users/pricebrannen/Today's Five/todays-five-review/review/raw/watch/openurl-after.png
+[session] 01:33:05 openurl test end
+[session] 01:33:05 hand-off start (pair (active, connected))
+ 1:33  up 92 days, 23:38, 2 users, load averages: 5.01 11.15 16.98
+[session] 01:33:05 install phone app
+[session] 01:33:38 screenshot /Users/pricebrannen/Today's Five/todays-five-review/review/raw/watch/handoff-watch.png
+[session] 01:33:38 screenshot handoff-phone.png
+[session] 01:33:40 hand-off end
+ 1:33  up 92 days, 23:39, 2 users, load averages: 4.58 10.36 16.45
+[session] 01:33:40 session end
+ 1:33  up 92 days, 23:39, 2 users, load averages: 4.58 10.36 16.45
+[sim-slot] watch released; exit 0
+SIM-SESSION DONE 2026-09-10 01:33:40 exit=0 |  1:33  up 92 days, 23:39, 2 users, load averages: 4.58 10.36 16.45

@@ -1,0 +1,114 @@
+## baseline state at Thu Sep 10 01:19:45 CDT 2026
+    
+896 Sep 10 01:18 .
+352 Sep 10 01:08 ..
+76264 Sep 10 00:54 e2e4-run1-server-killed.log
+396 Sep 10 00:54 e2e4-run1-summary.txt
+444 Sep 10 01:15 e2e4-summary.txt
+27216 Sep 10 01:15 e2e4.log
+1009 Sep 10 00:49 node-compat.log
+738 Sep 10 00:49 node-crypto.log
+3599 Sep 10 00:49 node-features.log
+2115 Sep 10 00:49 node-model.log
+1053 Sep 10 00:49 node-sound.log
+515 Sep 10 00:49 node-summary.txt
+1380 Sep 10 00:49 node-sync.log
+4851 Sep 10 00:49 node-theme.log
+234 Sep 10 00:56 serve-run1-wrapper.txt
+94 Sep 10 00:51 serve-run1.log
+275 Sep 10 00:56 serve.log
+0 Sep 10 01:17 sim-session1.log
+1332 Sep 10 01:18 sim-summary.txt
+33424 Sep 10 00:50 swift-test.log
+27305 Sep 10 01:18 watch-demo.png
+598192 Sep 10 01:16 xcodebuild-5a-ios-sim.log
+74992 Sep 10 01:16 xcodebuild-5b-watch-sim.log
+487230 Sep 10 01:16 xcodebuild-5c-ios-device.log
+153071 Sep 10 01:16 xcodebuild-5d-watch-device.log
+566126 Sep 10 01:16 xcodebuild-5e-archive.log
+3914 Sep 10 01:16 xcodebuild-summary.txt
+155259 Sep 10 01:16 xcodebuild-watchsim.log
+
+## baseline.md tail
+`XCODEBUILD BATTERY END 2026-09-10 01:16:56 |  1:16  up 92 days, 23:22, 2 users, load averages: 8.82 5.93 5.33`
+
+| step | command (after `xcodebuild -project …/apple/TodaysFive/TodaysFive.xcodeproj`) | result line | exit | wall | load before → after | `warning:` | `error:` | `deprecated` |
+|---|---|---|---|---|---|---|---|---|
+| 5a | `-scheme TodaysFive -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/tf-review-baseline build` | `** BUILD SUCCEEDED **` | 0 | 16 s | `3.96 4.63 4.86` → `5.54 4.96 4.97` | 0 | 0 | 0 |
+| 5b | `-scheme TodaysFiveWatch -destination 'generic/platform=watchOS Simulator' -derivedDataPath /tmp/tf-review-baseline build` | `** BUILD SUCCEEDED **` | 0 | 2 s | `5.54 4.96 4.97` → `5.54 4.96 4.97` | 0 | 0 | 0 |
+| 5c | `-scheme TodaysFive -destination 'generic/platform=iOS' -derivedDataPath /tmp/tf-review-baseline -[REDACTED] build` | `** BUILD SUCCEEDED **` | 0 | 13 s | `5.54 4.96 4.97` → `7.55 5.47 5.16` | 0 | 0 | 0 |
+| 5d | `-scheme TodaysFiveWatch -destination 'generic/platform=watchOS' -derivedDataPath /tmp/tf-review-baseline -[REDACTED] build` | `** BUILD SUCCEEDED **` | 0 | 4 s | `7.55 5.47 5.16` → `7.27 5.45 5.15` | 0 | 0 | 0 |
+| 5e | `-scheme TodaysFive -destination 'generic/platform=iOS' -derivedDataPath /tmp/tf-review-baseline -archivePath /tmp/tf-review/7341981.xcarchive -[REDACTED] archive` | `** ARCHIVE SUCCEEDED **` | 0 | 30 s | `7.27 5.45 5.15` → `8.82 5.93 5.33` | 0 | 0 | 0 |
+
+- Why the wall times are small: 5a is a real cold build — its log has 286 `SwiftCompile`/`CompileSwift` lines, 22 `Ld`, 9 `CodeSign`, a 9-target dependency graph, and it emplaced the Watch app and the appex into `Debug-watchsimulator/` as embedded dependencies — so 5b found its targets already built (564-line log, 0 `Ld`, `** BUILD SUCCEEDED **`). Likewise 5c (3478 lines, 225 compile steps, 18 `Ld`, 9 `CodeSign`) built `Debug-iphoneos/` and `Debug-watchos/`, so 5d was incremental (754 lines, 0 `Ld`). 5e is a separate Release configuration (`-O -whole-module-optimization`) and compiled everything again, including the `arm64_32` slice (`SwiftDriver\ Compilation [REDACTED] normal arm64_32 …` and the matching lines for the Watch app).
+- Signing: no signing failure on 5c, 5d or 5e, so the `CODE_SIGNING_ALLOWED=NO` fallback was never used — every device build and the archive is signed (Automatic, the team in the project).
+- Warnings, all five logs: **0 lines match `warning:`**, 0 match `error:`, 0 match `deprecated` (case-insensitive). The case-insensitive `warning` hits (18 / 6 / 15 / 8 / 15) are all `actool` and `swiftc` command lines carrying warning-related flags, not diagnostics; there is nothing to deduplicate. `note:` lines in 5a: `Target dependency graph (9 targets)`, three `Using stub executor library with Swift entry point.` (one per app target), and two `Emplaced …/Assets.car`.
+
+### The archive, verified
+
+- `find /tmp/tf-review/7341981.xcarchive -maxdepth 6 -name '*.app'`:
+  - `/tmp/tf-review/7341981.xcarchive/Products/Applications/TodaysFive.app`
+  - `/tmp/tf-review/7341981.xcarchive/Products/Applications/TodaysFive.app/Watch/TodaysFiveWatch.app`
+- `find … -name '*.appex'`: `/tmp/tf-review/7341981.xcarchive/Products/Applications/TodaysFive.app/Watch/TodaysFiveWatch.app/PlugIns/[REDACTED].appex`
+- PlistBuddy, `[REDACTED]` / `CFBundleVersion` / `CFBundleIdentifier`:
+  - iOS app: `1.12` / `216` / `com.pricebrannen.todaysfive`
+  - Watch app: `1.12` / `216` / `com.pricebrannen.todaysfive.watchkitapp`
+  - appex: `1.12` / `216` / `com.pricebrannen.todaysfive.watchkitapp.complications`
+  - **All three agree, and agree with `version.js` (1.12 / 216) and the pbxproj.** The archive's own `Info.plist` `ApplicationProperties` says `[REDACTED] = 1.12`, `CFBundleVersion = 216`, `Architectures = [arm64]`.
+- `du -sh`: `29M` (29268 KiB). dSYMs: `TodaysFive.app.dSYM`, `[REDACTED].appex.dSYM`, `TodaysFiveWatch.app.dSYM`.
+- Fonts in the Watch app (excluding PlugIns): **33 `.ttf`, 1,238,128 bytes**, at the bundle root of `TodaysFiveWatch.app` — identical in count and bytes to the source `apple/TodaysFive/Fonts/` (33 `.ttf`, 1,238,128 bytes) and to `test/fixtures/watch-fonts.json` `totals` (`{"faces":33,"bytes":1238128,…}`). The round's "33 faces, ~1.3 MB" is 33 faces and 1.24 MB (1.18 MiB); `du -sk` of the source directory with its `OFL.txt` and `README.md` is 1300 KiB, which is where "~1.3 MB" comes from.
+- Fonts in the appex: **0 `.ttf`, 0 bytes** — the appex carries no fonts of its own, as the round claimed. Fonts in the iOS app outside `Watch/`: 0.
+- Architectures (`lipo -info`): `TodaysFiveWatch`: `arm64_32 arm64`; `[REDACTED]`: `arm64_32 arm64`; `TodaysFive` (iOS): `arm64` only. So this archive is the one instrument in the battery that compiled the Watch code with a 32-bit `Int`, and it compiled clean.
+
+
+## built products / archive present?
+/tmp/tf-review-baseline/Build/Products/Debug
+/tmp/tf-review-baseline/Build/Products/Debug-iphoneos
+/tmp/tf-review-baseline/Build/Products/Debug-iphonesimulator
+/tmp/tf-review-baseline/Build/Products/Debug-watchos
+/tmp/tf-review-baseline/Build/Products/Debug-watchsimulator
+/tmp/tf-review-baseline/Build/Products/PluginExecutables
+/tmp/tf-review/7341981.xcarchive
+7341981.xcarchive
+baseline-e2e4-run2.done
+baseline-e2e4.done
+baseline-serve-supervisor.pid
+baseline-serve.pid
+baseline-static.mjs
+baseline-xcodebuild.done
+pair.env
+sim-slot
+slots
+watch-demo-selftest.raw
+
+## KitsGen / ConfigGen outputs in the baseline .build (swift test) — sizes
+271 /Users/pricebrannen/Today's
+19614 /Users/pricebrannen/Today's
+kit ids in generated table: 29  superpink/birthday mentions: 0  FF2E9A/D62E86: 0  A86014: 2  pairs: 0
+id: "arcade" id: "archivo" id: "baloo" id: "blush" id: "cocoa" id: "cormorant" id: "dark" id: "dmserif" id: "dusk" id: "ember" id: "forest" id: "fraunces" id: "fredoka" id: "grotesk" id: "harbor" id: "lato" id: "light" id: "lora" id: "manrope" id: "midnight" id: "mono" id: "outfit" id: "paper" id: "pink" id: "playfair" id: "sketch" id: "sunset" id: "teletype" id: "terminal" 
+
+## object files in the baseline .build: the byte-level Secret-kit check (7f0e112 / 0f11ee6)
+/Users/pricebrannen/Today's
+   error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: /Users/pricebrannen/Today's (No such file or directory)
+A86014=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: /Users/pricebrannen/Today's (No such file or directory)
+FF3D9A=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: /Users/pricebrannen/Today's (No such file or directory)
+FF2E9A=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: /Users/pricebrannen/Today's (No such file or directory)
+FFC2E2=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: /Users/pricebrannen/Today's (No such file or directory)
+B5116F=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: /Users/pricebrannen/Today's (No such file or directory)
+D62E86=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: /Users/pricebrannen/Today's (No such file or directory)
+96125A=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: /Users/pricebrannen/Today's (No such file or directory)
+5FC9AC=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: /Users/pricebrannen/Today's (No such file or directory)
+superpink=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: /Users/pricebrannen/Today's (No such file or directory)
+birthday=0 
+Five/todays-five-review-baseline/apple/TodaysFiveCore/.build/arm64-apple-macosx/debug/TodaysFiveCore.build/Kits.generated.swift.o
+   error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: Five/todays-five-review-baseline/apple/TodaysFiveCore/.build/arm64-apple-macosx/debug/TodaysFiveCore.build/Kits.generated.swift.o (No such file or directory)
+A86014=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: Five/todays-five-review-baseline/apple/TodaysFiveCore/.build/arm64-apple-macosx/debug/TodaysFiveCore.build/Kits.generated.swift.o (No such file or directory)
+FF3D9A=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: Five/todays-five-review-baseline/apple/TodaysFiveCore/.build/arm64-apple-macosx/debug/TodaysFiveCore.build/Kits.generated.swift.o (No such file or directory)
+FF2E9A=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: Five/todays-five-review-baseline/apple/TodaysFiveCore/.build/arm64-apple-macosx/debug/TodaysFiveCore.build/Kits.generated.swift.o (No such file or directory)
+FFC2E2=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: Five/todays-five-review-baseline/apple/TodaysFiveCore/.build/arm64-apple-macosx/debug/TodaysFiveCore.build/Kits.generated.swift.o (No such file or directory)
+B5116F=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: Five/todays-five-review-baseline/apple/TodaysFiveCore/.build/arm64-apple-macosx/debug/TodaysFiveCore.build/Kits.generated.swift.o (No such file or directory)
+D62E86=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: Five/todays-five-review-baseline/apple/TodaysFiveCore/.build/arm64-apple-macosx/debug/TodaysFiveCore.build/Kits.generated.swift.o (No such file or directory)
+96125A=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: Five/todays-five-review-baseline/apple/TodaysFiveCore/.build/arm64-apple-macosx/debug/TodaysFiveCore.build/Kits.generated.swift.o (No such file or directory)
+5FC9AC=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: Five/todays-five-review-baseline/apple/TodaysFiveCore/.build/arm64-apple-macosx/debug/TodaysFiveCore.build/Kits.generated.swift.o (No such file or directory)
+superpink=0 error: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strings: can't open file: Five/todays-five-review-baseline/apple/TodaysFiveCore/.build/arm64-apple-macosx/debug/TodaysFiveCore.build/Kits.generated.swift.o (No such file or directory)
+birthday=0 

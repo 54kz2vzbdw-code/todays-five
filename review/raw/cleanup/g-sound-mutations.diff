@@ -1,0 +1,25 @@
+# sound.test.js mutations, each a copy of the 67f35a5 tree with one edit
+== mut-buzz
+19c19
+< export const FINALE_BUZZ = [14, 51, 14, 51, 14, 51, 30, 35, 14, 51, 14, 51, 14, 296, 60];
+---
+> export const FINALE_BUZZ = [20, 51, 14, 51, 14, 51, 30, 35, 14, 51, 14, 51, 14, 296, 60];
+exit/tally: AssertionError [ERR_ASSERTION]: buzz 1 lands on burst 1
+== mut-step
+125c125
+<     for (let i = 0; i < 7; i++) setTimeout(() => burst(w * (0.08 + 0.14 * i), h * 0.97, 26, 19, 1.15), i * 65);
+---
+>     for (let i = 0; i < 7; i++) setTimeout(() => burst(w * (0.08 + 0.14 * i), h * 0.97, 26, 19, 1.15), i * 70);
+exit/tally: AssertionError [ERR_ASSERTION]: buzz 1 lands on burst 1
+== mut-chord
+19c19
+< export const FINALE_BUZZ = [14, 51, 14, 51, 14, 51, 30, 35, 14, 51, 14, 51, 14, 296, 60];
+---
+> export const FINALE_BUZZ = [14, 51, 14, 51, 14, 51, 30, 35, 14, 51, 14, 51, 14, 100, 60];
+exit/tally: 12 sound tests passed
+== mut-centre
+126c126
+<     setTimeout(() => burst(w * 0.5, h * 0.6, 40, 14, 2.6), 210);
+---
+>     setTimeout(() => burst(w * 0.5, h * 0.6, 40, 14, 2.6), 250);
+exit/tally: AssertionError [ERR_ASSERTION]: the centre burst falls inside one of the buzzes

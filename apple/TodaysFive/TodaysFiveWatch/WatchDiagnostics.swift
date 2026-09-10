@@ -90,6 +90,13 @@ final class WatchDiagnostics: @unchecked Sendable {
         // the add path — §1, and the reason this file exists
         /// The `+` (or Double Tap, or the complication) asked for input.
         static let addTap: StaticString = "add.tap"
+        /// `AddPressStyle` was asked to draw, so the custom `ButtonStyle` on the add control is
+        /// honoured and its label is in the view tree. Once per process.
+        ///
+        /// It exists because `add.tap` is written from `configuration.isPressed`, and `asked 0` on its
+        /// own cannot tell "pressed and nothing happened" from "never pressed". This row settles the
+        /// weaker half: at 0, the control never drew at all.
+        static let addStyle: StaticString = "add.style"
         /// `WatchDictation.present` was reached. `a` is 1 when there was a controller to present from.
         static let addPresent: StaticString = "add.present"
         /// `presentTextInputController` returned without throwing — the controller is up, or believes
@@ -115,6 +122,13 @@ final class WatchDiagnostics: @unchecked Sendable {
         static let addUndone: StaticString = "add.undone"
         /// The App Intent ran — Siri, the Action button, or Shortcuts.
         static let intentRan: StaticString = "intent.ran"
+        /// The Add complication's `todaysfive://add` arrived: the app was opened *asking* for an add.
+        ///
+        /// Since Phase 5 that opens the app on Today and presents nothing — a `TextFieldLink` cannot be
+        /// triggered from code, and a presentation fired during a transition is what a wrist saw fail.
+        /// So this row followed by an `add.tap` is the face path working, and this row **alone** is the
+        /// person arriving and not finding the control.
+        static let addFromFace: StaticString = "add.face"
 
         // the picker — §2
         /// The title was pressed. **Its absence after a press is the finding.**

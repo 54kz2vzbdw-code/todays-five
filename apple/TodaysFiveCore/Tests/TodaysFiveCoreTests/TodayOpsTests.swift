@@ -67,6 +67,41 @@ struct TodayOpsTests {
         #expect(cut.units.last == 0xD83D, "half an emoji, kept, because that is what the web stores")
     }
 
+    /// **What Phase 5 widened, pinned here rather than assumed.**
+    ///
+    /// The Watch's add used to go through WatchKit's `presentTextInputController` with
+    /// `allowedInputMode: .plain`, which kept emoji and stickers out of a line. Phase 5 makes
+    /// `TextFieldLink` the path — the system's own input screen — and that screen has no such
+    /// restriction. So a line from a wrist may now carry what a line typed into the web has always been
+    /// able to carry, and the Watch stops being the one client with a narrower alphabet than the
+    /// document it writes into.
+    ///
+    /// Nothing in the core changed for that. This test is the net under the claim: a line that is all
+    /// emoji is a line (it is not whitespace, so `trim` does not eat it), a ZWJ sequence is carried
+    /// through whole rather than split at its joiner, and a variation selector survives. The one place
+    /// the widening *can* bite — the 200-code-unit cut landing inside a surrogate pair — is the test
+    /// above, and its answer is `String.prototype.slice`'s, which is the answer the web stores.
+    @Test("addToToday: an emoji line is a line, and a joined sequence is carried whole")
+    func addKeepsWhatAWiderKeyboardCanSend() throws {
+        let doc = Doc.empty(id: "L", at: 0)
+
+        let only = try #require(Model.addToToday(doc, text: "🥛", at: 500, idFn: Self.ids(["e1"])))
+        #expect(only.doc.items["e1"]?.objectValue?.str("text").string == "🥛")
+
+        // U+200D is a format character, not whitespace, so neither `trim` nor the `\s+` collapse may
+        // touch it — a family that arrived as one grapheme has to stay one.
+        let family = "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}"
+        let joined = try #require(Model.addToToday(doc, text: "  Call \(family)  ", at: 500, idFn: Self.ids(["e2"])))
+        let text = try #require(joined.doc.items["e2"]?.objectValue?.str("text"))
+        #expect(text.string == "Call \(family)")
+        #expect(text.units.count == 13, "eight units of family plus five of \"Call \", none inserted")
+
+        // A variation selector is the difference between ✓ and an emoji ✓, and it is one code unit
+        // after the base. Dropping it would silently change the glyph on every other client.
+        let vs = try #require(Model.addToToday(doc, text: "\u{2714}\u{FE0F} done", at: 500, idFn: Self.ids(["e3"])))
+        #expect(vs.doc.items["e3"]?.objectValue?.str("text").units.count == 7)
+    }
+
     @Test("addToToday: nothing left to add is nothing added")
     func addRefusesEmpty() {
         let doc = Doc.empty(id: "L", at: 0)

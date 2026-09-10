@@ -17,6 +17,23 @@
 // `async` and do their work on whatever executor calls them, which for an intent is the intent's own
 // and for the `+` is a `Task` off the main actor. Nothing here touches UI. The one main-actor hop is
 // the Watch's confirmation banner, and it is made explicitly at the call site.
+//
+// **The trace, and why every call in it is `#if os(watchOS)`.** Phase 5 put `WatchDiagnostics` on this
+// path, because this is the one function all four ways in end at — so one set of trace rows answers
+// "did the core see it and what did it answer" for Siri, the `+`, Double Tap and the Action button
+// alike, rather than four sets written four times. This file compiles into **both** the phone and the
+// watch target and `WatchDiagnostics` exists only in the second, which is the same guard the `noList`
+// sentence already needed.
+//
+// **The refusal ordinal, written down once because the wrist screen cannot name it.** `add.refused`
+// carries `AddOutcome.outcomeCode` as its one number, and `DiagnosticsView` prints the number rather
+// than a word: that screen is the orchestrator's file and this round may not teach it a new vocabulary.
+// So the mapping lives here, beside the enum it is an ordinal of, and a reader of a wrist screenshot
+// needs this table:
+//
+//     0 added · 1 nothing-said · 2 no-list · 3 view-only · 4 gone · 5 could-not-open · 6 input-timeout
+//
+// A case is only ever appended, because a screenshot sent last week is read against this list.
 import AppIntents
 import Foundation
 import TodaysFiveCore
@@ -50,6 +67,19 @@ enum AddOutcome: Sendable, Equatable {
     case listGone(listName: String)
     /// The keys would not derive, or there is no server configured in this build.
     case couldNotOpen
+    /// The input screen was asked for and never came back inside `WatchDictation.defaultTimeout`.
+    ///
+    /// It is the one outcome the core has no opinion about — nothing was ever handed to it — and it is
+    /// here rather than in the view because this enum is *what a person is told*, and the person who
+    /// pressed Add and waited a minute is owed a sentence in the same place as every other answer.
+    /// Phase 3's `working` latch is the bug it replaces: there, the same event produced no sentence and
+    /// a dead control.
+    ///
+    /// **Reachable only through the WatchKit seam, which no tap on a Release wrist reaches.** It is
+    /// raised by `WatchDictation.Gate`'s deadline, and `WatchDictation.preferred` never selects the path
+    /// that arms one. Written down here because the ordinal table below is what a wrist screenshot is
+    /// decoded with, and nobody should go hunting a wrist for a 6 that cannot appear on it.
+    case inputTimedOut
 
     /// The one line a person is shown or told, whichever way they came in. Deliberately a sentence
     /// rather than a code: these are the two answers most people will actually meet.
@@ -76,6 +106,11 @@ enum AddOutcome: Sendable, Equatable {
             return "\(name) isn't there any more, so there was nowhere to put it."
         case .couldNotOpen:
             return "I couldn't get to your list just now. Try again in a moment."
+        case .inputTimedOut:
+            // It does not say "I didn't catch that": that sentence belongs to an input screen that
+            // came back empty, and this one never came back at all. Telling the two apart is the whole
+            // of what the wrist asked for.
+            return "The input screen never came back, so nothing was added. Try the plus again."
         }
     }
 
@@ -95,6 +130,29 @@ enum AddOutcome: Sendable, Equatable {
         case .viewOnly: return "view-only"
         case .listGone: return "gone"
         case .couldNotOpen: return "could-not-open"
+        case .inputTimedOut: return "input-timeout"
+        }
+    }
+
+    /// The ordinal `WatchDiagnostics` carries on `add.refused`, and the reason it is an ordinal.
+    ///
+    /// A trace entry holds a fixed literal and two `Int`s and nothing else — that is the privacy
+    /// guarantee, not a convention — so "which refusal" has to be a number. The number is defined here,
+    /// beside the cases, and the table is in this file's header because `DiagnosticsView` shows the
+    /// digit: that screen belongs to the orchestrator and a round that taught it a new word would be
+    /// editing a file three other tracks are also writing to.
+    ///
+    /// **Append only.** A screenshot from a wrist is read against whatever this list said when the
+    /// build on that wrist was made, so renumbering would silently re-label somebody's evidence.
+    var outcomeCode: Int {
+        switch self {
+        case .added: return 0
+        case .nothingSaid: return 1
+        case .noList: return 2
+        case .viewOnly: return 3
+        case .listGone: return 4
+        case .couldNotOpen: return 5
+        case .inputTimedOut: return 6
         }
     }
 }
@@ -189,8 +247,31 @@ struct AddService: Sendable {
 
     // ---------------------------------------------------------------- add
 
-    /// The whole of it. Four ways in end here.
+    /// The whole of it. Four ways in end here — which is why the trace is here and not in the view.
+    ///
+    /// Three rows per add, and between them they separate "the core never saw it" from "the core saw it
+    /// and said no" from "a line landed": `add.service` with the character count handed in, then either
+    /// `add.landed` with the length the core kept and whether it is queued, or `add.refused` with the
+    /// ordinal above. **Lengths and an ordinal. Never the text, never an id, never a list name.**
     func add(_ raw: String) async -> AddOutcome {
+        #if os(watchOS)
+        WatchDiagnostics.shared.record(WatchDiagnostics.Code.addService, raw.count)
+        #endif
+        let outcome = await added(raw)
+        #if os(watchOS)
+        if let line = outcome.landed {
+            WatchDiagnostics.shared.record(WatchDiagnostics.Code.addLanded,
+                                           line.text.count, line.queued ? 1 : 0)
+        } else {
+            WatchDiagnostics.shared.record(WatchDiagnostics.Code.addRefused, outcome.outcomeCode)
+        }
+        #endif
+        return outcome
+    }
+
+    /// The add itself, so `add` above can be the one place the trace is written. Split for that and for
+    /// nothing else: every return in here is an answer `add` then records.
+    private func added(_ raw: String) async -> AddOutcome {
         let links = (try? vault.all()) ?? []
         guard let link = pickList(links) else { return .noList }
         let name = Self.displayName(of: link)
@@ -279,6 +360,9 @@ struct AddService: Sendable {
 
         await engine.update(out)
         await engine.push()
+        #if os(watchOS)
+        WatchDiagnostics.shared.record(WatchDiagnostics.Code.addUndone)
+        #endif
         return true
     }
 
@@ -332,6 +416,13 @@ struct AddToTodaysFive: AppIntent {
     }
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        #if os(watchOS)
+        // Siri, the Action button and Shortcuts all arrive here and nowhere else, and none of them has
+        // a screen of its own — so without this row the trace could not tell "Siri never reached the
+        // app" from "Siri reached it and the add was refused". It carries the length of the line and
+        // nothing about it.
+        WatchDiagnostics.shared.record(WatchDiagnostics.Code.intentRan, line.count)
+        #endif
         let outcome = await AddService.live().add(line)
         #if os(watchOS)
         // If the app happens to be running, the same confirmation and the same five seconds of Undo

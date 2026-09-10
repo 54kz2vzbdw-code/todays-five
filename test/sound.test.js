@@ -180,7 +180,10 @@ await test("the finale's vibration keeps the volley's rhythm — read out of fx.
 
   const chord = onsets[onsets.length - 1];
   assert.ok(chord > bursts[count - 1], "the last buzz comes after the run, with the chord");
-  assert.ok(lengths[lengths.length - 1] > lengths[0], "and it is the strongest of them");
+  // sound.js says where the chord is (700 ms) and that this buzz is the longest; hold it to both, so that
+  // moving the gap before it, or shortening it below the centre's buzz, is red rather than unnoticed
+  assert.equal(chord, 700, "the chord buzz starts at 700 ms, where sound.js says the chord is");
+  assert.equal(lengths[lengths.length - 1], Math.max(...lengths), "and it is the strongest of them");
 });
 
 console.log(`\n${passed} sound tests passed`);

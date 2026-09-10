@@ -22,6 +22,10 @@ struct TodayView: View {
     /// on the count can mean — see `CountActionsView`.
     @Binding var showActions: Bool
 
+    /// Where the list is scrolled to. Only ever written by the Add complication's arrival — see
+    /// `addRow`. A person's own crown is never overridden.
+    @State private var scroll = ScrollPosition()
+
     var body: some View {
         List {
             countRow
@@ -32,6 +36,15 @@ struct TodayView: View {
             }
         }
         .listStyle(.carousel)
+        .scrollPosition($scroll)
+        // `todaysfive://add` arrived. A resumed watch app comes back with the scroll offset it had, so
+        // "the add control is the row under the count" is only one tap when the list is at the top, and
+        // `page = .today` does not put it there. Whether this moves a carousel `List` is on this round's
+        // unverified list: `simctl` cannot scroll a watch simulator, so nothing here could leave it
+        // scrolled and then check that this brought it back.
+        .onChange(of: AddCoordinator.shared.focusTick) { _, _ in
+            scroll.scrollTo(edge: .top)
+        }
         .scrollContentBackground(.hidden)
         .background(theme.ink)
         // The document changes at once; only the re-order waits, and this is the wait made visible.
@@ -120,6 +133,13 @@ struct TodayView: View {
     /// opens the app on Today rather than presenting anything — so the control has to be *on screen at
     /// launch* for the face path to cost one tap, and a row below five lines on a 46 mm screen is a
     /// crown turn away. The cost is that the Watch's vertical order no longer matches the web's.
+    ///
+    /// **Being the second row is not the same as being on screen, and a review was right about that.**
+    /// A watch app resumed from the background comes back with the scroll offset it had; `onOpenURL`
+    /// sets `page = .today` and that moves nothing. So the complication bumps
+    /// `AddCoordinator.focusTick` and `body` asks this list to scroll to its top edge. Stated as what it
+    /// is: the call is made, and whether a carousel `List` honours it is unverified here, because
+    /// nothing on this machine can scroll a watch simulator in order to find out.
     ///
     /// `canAdd` is the only thing the flow needs from the model: the view deliberately holds no
     /// reference to `WatchStore`, because the same add has to work from an App Intent that ran while the

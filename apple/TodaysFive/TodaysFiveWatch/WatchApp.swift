@@ -252,12 +252,20 @@ struct RootView: View {
             // here and let its `.task` fire the dictation controller during the sheet's entry
             // animation, which is the textbook swallowed presentation. And a `TextFieldLink` cannot be
             // triggered from code at all — it is a button a person presses. So the honest design is the
-            // cheap one: make sure Today is the page in front, where the add control is the row under
-            // the count, already on screen. **From the face the cost is one tap**, and the trace says
-            // whether the app was opened this way so that tap can be told apart from a cold launch.
+            // cheap one: make sure Today is the page in front, and make sure the list is at the top,
+            // where the add control is the row under the count. The trace says whether the app was
+            // opened this way, so that tap can be told apart from a cold launch.
+            //
+            // **Two things, not one, and a review found the second one missing.** `page = .today`
+            // selects the page; it does not scroll it, and a resumed watch app keeps the scroll offset it
+            // had — so a list left showing line five had the add control off screen and the cost was a
+            // crown turn plus a tap rather than a tap. `requestFocus` is the ask; `TodayView` holds the
+            // `ScrollPosition` that answers it. Whether a carousel `List` obeys is unverified: nothing
+            // here can scroll a watch simulator to set the test up.
             guard store.wantsAddFlow(url) else { return }
             WatchDiagnostics.shared.record(WatchDiagnostics.Code.addFromFace)
             page = .today
+            AddCoordinator.shared.requestFocus()
         }
     }
 

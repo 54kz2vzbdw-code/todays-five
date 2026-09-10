@@ -19,11 +19,14 @@
 // every 60, and the thing that rescues it is the person clicking the window. Which is the bug as reported
 // from a real second monitor: the list does not move until you click it.
 //
-// WHAT "UNFOCUSED" IS HERE, PRECISELY. It is not an OS-level unfocused window. Measured twice on this
-// machine (headless and headed, system Chrome via Playwright 1.62.1): every page reports
-// visibilityState "visible" and hasFocus() true no matter which page was last brought to front —
-// Playwright emulates focus so that tests are deterministic, so an unfocused window is not producible
-// here at all. What IS producible is the only thing sync.js keys on: whether a `focus` event arrives.
+// WHAT "UNFOCUSED" IS HERE, PRECISELY. It is not an OS-level unfocused window, and that is measured
+// rather than assumed. Two contexts, both headless and headed, system Chrome via Playwright 1.62.1:
+// whichever page was last `bringToFront`ed, **both** report visibilityState "visible" and hasFocus()
+// true, and a `bringToFront` round trip delivers **zero** window `focus` events to the page that lost
+// and regained the front. Playwright emulates focus so that tests are deterministic, so an unfocused
+// window is not producible here at all — which is a real limit on this harness and is why the fix is
+// argued from mechanism (`tools/socketd.mjs`, and the reading of vendor/realtime.js) and not from the
+// table alone. What IS producible is the only thing sync.js keys on: whether a `focus` event arrives.
 // sync.js has no notion of "is focused", only of "just gained focus" (onFocus), so a window focused for
 // an hour and a window unfocused for an hour are the same page to it — the difference is the transition,
 // and that is the `clicked` condition below. Everything else runs with no focus transition at all, which

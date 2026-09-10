@@ -74,6 +74,11 @@ enum AddOutcome: Sendable, Equatable {
     /// pressed Add and waited a minute is owed a sentence in the same place as every other answer.
     /// Phase 3's `working` latch is the bug it replaces: there, the same event produced no sentence and
     /// a dead control.
+    ///
+    /// **Reachable only through the WatchKit seam, which no tap on a Release wrist reaches.** It is
+    /// raised by `WatchDictation.Gate`'s deadline, and `WatchDictation.preferred` never selects the path
+    /// that arms one. Written down here because the ordinal table below is what a wrist screenshot is
+    /// decoded with, and nobody should go hunting a wrist for a 6 that cannot appear on it.
     case inputTimedOut
 
     /// The one line a person is shown or told, whichever way they came in. Deliberately a sentence

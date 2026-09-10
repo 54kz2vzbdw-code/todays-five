@@ -90,6 +90,13 @@ final class WatchDiagnostics: @unchecked Sendable {
         // the add path — §1, and the reason this file exists
         /// The `+` (or Double Tap, or the complication) asked for input.
         static let addTap: StaticString = "add.tap"
+        /// `AddPressStyle` was asked to draw, so the custom `ButtonStyle` on the add control is
+        /// honoured and its label is in the view tree. Once per process.
+        ///
+        /// It exists because `add.tap` is written from `configuration.isPressed`, and `asked 0` on its
+        /// own cannot tell "pressed and nothing happened" from "never pressed". This row settles the
+        /// weaker half: at 0, the control never drew at all.
+        static let addStyle: StaticString = "add.style"
         /// `WatchDictation.present` was reached. `a` is 1 when there was a controller to present from.
         static let addPresent: StaticString = "add.present"
         /// `presentTextInputController` returned without throwing — the controller is up, or believes

@@ -60,18 +60,31 @@
 // `String.prototype.slice(0, 200)` does, lone surrogate and all; `TodayOpsTests` pins it.
 //
 // ============================================================================================
-// THE GATE, WHICH IS THE ACTUAL BUG FIX IN THIS FILE
+// THE GATE — WHICH REPAIRS THIS SEAM AND IS NOT ON THE PATH A WRIST TAKES
 // ============================================================================================
 //
-// `AddFlowView.begin()` used to set `working = true` before presenting and clear it only *inside* the
-// completion handler. A completion that never arrives therefore disabled the add control for the life
-// of the screen, with no sentence and no way back. One failure cost the feature rather than one
-// attempt — and that is a defect independent of whichever hypothesis about the presentation is true.
+// Said first, because an independent review found the earlier version of this paragraph overstated and
+// that is exactly the failure this round exists to stop: **`Gate`, the 60-second deadline and
+// `AddOutcome.inputTimedOut` are unreachable in a shipping build.** `Gate` is constructed only in
+// `present` below; `present` is called only from `AddFlowView.begin()`; `begin()` is only in the
+// `.watchKit` arm of `addControl`; and `preferred` returns `.fieldLink` unless something wrote
+// `inputKey`, which nothing shipping does. So `add.present`, `add.presented`, `add.nopresenter` and
+// `add.timeout` are **structurally zero** on a Release wrist, the timeout sentence can never be shown
+// there, and nothing on the shipping path can grey itself out. The Diagnostics screen's `timed out`
+// row reading 0 is health, not a finding.
+//
+// What the gate is, then: the repair that makes this seam *already correct* if `prefer(.watchKit)` is
+// ever turned on. `AddFlowView.begin()` used to set `working = true` before presenting and clear it
+// only *inside* the completion handler. A completion that never arrives therefore disabled the add
+// control for the life of the screen, with no sentence and no way back — one failure costing the
+// feature rather than one attempt. On the shipping path that latch is gone for a blunter reason than
+// the gate: nothing is presented, so there is nothing to latch.
 //
 // `Gate` answers exactly once, whichever happens first: the controller's completion, or a deadline.
 // A late completion after a timeout is dropped rather than delivered, because the caller has already
 // released its control and told the person so, and a line appearing two minutes after a sentence
-// saying nothing was added is worse than either.
+// saying nothing was added is worse than either. `-TFAddSelfTest` exercises both directions on a
+// simulator without presenting anything, which is the whole of what can be measured about it here.
 //
 // **No epoch reaches an `Int` here.** Phase 4's integration found a watchOS device is `arm64_32` and
 // its `Int` is 32 bits; the gate reports an *elapsed* millisecond count, clamped to a day, which is
@@ -163,6 +176,11 @@ enum WatchDictation {
     /// The three trace rows this writes are the three hypotheses, separated: no `add.present` is "it
     /// was never reached", `add.nopresenter` is "there was nothing to present from", and `add.presented`
     /// with no `add.heard` after it is "it went up and nothing came back".
+    ///
+    /// **All three are zero unless this seam was deliberately turned on.** Nothing a person can press on
+    /// a Release wrist reaches this function — see `preferred` — so a trace with no `add.present` in it
+    /// is not evidence about the add path the wrist actually used. It is only evidence when the reader
+    /// knows `prefer(.watchKit)` or `-TFAddWatchKit` was in force.
     static func present(timeout: Duration = defaultTimeout,
                         _ completion: @escaping @MainActor (Answer) -> Void) {
         let gate = Gate(timeout: timeout, completion)

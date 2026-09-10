@@ -540,7 +540,21 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone, on
       cur = null;
       live = false;
     },
-    current() { return cur ? { id: cur.id, mode: cur.ref.mode, lookupId: cur.ref.lookupId, rev: cur.rev, dirty: cur.dirty, gone: cur.gone, live, presence: !!cur.presenceOn } : null; },
+    current() {
+      // `quietFor` is the one thing about this change that cannot be measured without the real backend:
+      // the silence test believes the realtime client's heartbeat, and if that beat were never answered on
+      // the live socket the stamp would freeze at the join and every safety poll would rejoin a channel
+      // that was fine — one socket join every four minutes, forever. So the number the test reads is put
+      // where a person with the live site open can read it too: `__tf().cur.quietFor` in milliseconds, which
+      // on a healthy page never passes 30 000 and must never approach CHANNEL_SILENCE_MS at idle. It is a
+      // duration and nothing else; `.catch(() => {})` on a request was the last thing this project did that
+      // threw away the only evidence a mechanism exists.
+      if (!cur) return null;
+      const ch = cur.channel;
+      const heard = ch && typeof ch.heardAt === "function" ? ch.heardAt() : 0;
+      return { id: cur.id, mode: cur.ref.mode, lookupId: cur.ref.lookupId, rev: cur.rev, dirty: cur.dirty, gone: cur.gone, live, presence: !!cur.presenceOn,
+        quietFor: heard ? Date.now() - heard : null, channelAlive: channelAlive(ch) };
+    },
     /** "Show who's here" changed: rejoin the channel with or without presence. */
     resubscribe() { if (!cur) return; if (cur.channel) { cur.channel.close(); cur.channel = null; } if (presence && presence.onCount) presence.onCount(0); subscribe(); },
     /** Tell other devices on `lookupId` that it was deleted (after Rotate); they pull, find nothing, and show "gone". */

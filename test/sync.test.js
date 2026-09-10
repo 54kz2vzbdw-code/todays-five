@@ -400,4 +400,26 @@ await test("the poll tick changes nothing for a transport that cannot say when i
   s.close();
 });
 
+await test("a healthy channel is left alone tick after tick, and what the page reports about it is readable", async () => {
+  const srv = mutableServer();
+  const W = M.newId(); const e = await C.fromWrite(W);
+  const s = S.createSync({ transport: srv, deviceId: "d" });
+  s.open(e, M.seedDoc(W), { rev: 0, dirty: true, created: true });
+  assert.ok(await waitReal(() => s.status === "synced" && s.live === true));
+  srv.log.length = 0;
+  for (let i = 0; i < 4; i++) { s.pollNow(); await tick(30); }
+  assert.equal(srv.subs.length, 1, "four ticks on a channel that is hearing, and it is still the same channel");
+  assert.equal(srv.log.filter(l => l[0] === "get").length, 4, "four unchanged polls, which is what the timer cost before this round too");
+  // the number the silence test reads is the number a person can read, so the one unmeasurable risk is checkable
+  const c1 = s.current();
+  assert.ok(c1.quietFor != null && c1.quietFor < 1000, "quietFor is a duration, and on a hearing channel it is tiny: " + c1.quietFor);
+  assert.equal(c1.channelAlive, true);
+  assert.ok(!("heardAt" in c1) && !("key" in c1) && !("token" in c1), "and nothing about the link goes with it");
+  srv.subs[0].quiet = true;
+  await tick(20);
+  const c2 = s.current();
+  assert.ok(c2.quietFor >= 0, "a quiet channel's stamp stops moving, so the duration grows: " + c2.quietFor);
+  s.close();
+});
+
 console.log(`${passed} sync tests passed (with 1.12)`);

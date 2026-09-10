@@ -139,6 +139,13 @@ final class WatchDiagnostics: @unchecked Sendable {
         static let pickerShown: StaticString = "picker.shown"
         /// A different list was chosen. `a` is 1 when it is an edit link.
         static let listSelected: StaticString = "picker.selected"
+        /// The list asked for was **already the one open** — a press on the row with the tick, or on
+        /// the only row a one-list wrist has. `a` is 1 when it is an edit link, `b` is how many lists
+        /// the Watch holds. Its own code rather than a `picker.selected` with `b` of 1, so that
+        /// `picker.selected` keeps one meaning: a list that changed. Before Phase 5 this path returned
+        /// in silence, which made the most reachable tap in the picker indistinguishable from the
+        /// Button never firing — see `WatchStore.select`.
+        static let listAlreadyOpen: StaticString = "picker.already"
 
         // the rest
         static let launched: StaticString = "app.launch"

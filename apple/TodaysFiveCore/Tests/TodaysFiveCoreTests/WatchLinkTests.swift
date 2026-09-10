@@ -354,4 +354,84 @@ struct WatchLinkTests {
         #expect(again.secretKits == fromNewPhone.secretKits,
                 "two passes through a build that does not know the key, and the palettes are intact")
     }
+
+    // ---------------------------------------------------------------- switching onto a view list
+
+    /// **Phase 5 §2 gives list switching two new controls, and this is the thing that must not move.**
+    ///
+    /// A view-only list cannot be changed — no check-off, no add, no Start again — and the refusal
+    /// happens before the document is touched. What this test covers is the chain on either side of the
+    /// Watch's own half of that: payload → vault entry → keys → engine → no `put`. The mode a switch
+    /// lands on is the phone's, carried whole through the hand-off, and the ref it derives refuses the
+    /// write even when something gets past the view and asks for one.
+    ///
+    /// **What it does not cover, stated plainly because the count at the bottom of `swift test` will
+    /// imply otherwise.** `Package.swift` gives this target one dependency, `TodaysFiveCore`, so
+    /// nothing here can see the `TodaysFiveWatch` target — and that is where every line Phase 5 §2
+    /// changed lives: `WatchStore.select` and its three new trace lines, `WatchStore.canEdit`,
+    /// `ListPickerView`, `TodayListRow`, the Lists row, the title button. Every API this test touches
+    /// (`WatchLinkReconciler.reconcile`, `Keys.fromLink`, `MemoryTransport`, `SyncEngine`,
+    /// `Model.setDone`) existed before the round, so **this test compiles and passes byte-identically
+    /// on the branch this one came from, and reverting all of Phase 5 §2 would not turn it red.**
+    ///
+    /// It is here anyway, and it is not decoration: it is the regression guard for the property the
+    /// two new controls put weight on — that arriving on a view link by *switching* is the same view
+    /// link as arriving on one any other way, mode and all, and that the core still refuses the write.
+    /// If a later round makes `reconcile` drop `mode` on a switch, or makes a view ref push, this goes
+    /// red. What it cannot do is tell anybody the new controls work. The only instrument that executes
+    /// `select` is `runSelfTest`'s step 12 under `-TFWatchDemo -TFWatchSelfTest` on a simulator, and
+    /// this track may not install on the watch simulator: see the round's unverified list.
+    @Test("a switch onto a view list lands on a view ref, and the view ref still refuses the write")
+    func switchingOntoAViewListStillRefuses() async throws {
+        // Two different lists: one the person owns, one they were given read-only.
+        let mine = Model.newId()
+        let theirs = Model.newId()
+        let theirEdit = try Keys.fromWrite(theirs)
+        let R = theirEdit.R
+
+        let plan = WatchLinkReconciler.reconcile(
+            payload: WatchLinkPayload(links: [Self.link(mine, name: "Mine"),
+                                              Self.link(R, mode: .view, origin: "shared",
+                                                        nickname: "Sam's", name: "Groceries")],
+                                      at: 2000),
+            lastAppliedAt: 1000, vault: [], selected: nil, now: 5000)
+        #expect(plan.applied)
+        #expect(plan.select == mine, "the phone's own order decides where a fresh Watch lands")
+
+        let landed = try #require(plan.upsert.first { $0.id == R })
+        #expect(landed.mode == .view, "the mode of the list a switch goes to is the phone's, carried whole")
+        #expect(landed.origin == "shared", "and so is the origin the second pill is drawn from")
+
+        // The keys the Watch derives for the list it switched to. `fromLink` is what `openList` calls.
+        let view = try Keys.fromLink(landed.mode, landed.id)
+        #expect(view.mode == .view)
+        #expect(view.token == nil, "there is no write token on the view path, so there is nothing to push with")
+
+        // A real row for that list, sealed by the owner, so the pull has something to decrypt and the
+        // refusal is refusing a write to a list that exists rather than to nothing.
+        let server = MemoryTransport()
+        var wire = Doc.seed(id: theirs).json
+        wire.remove("id")
+        await server.seed(theirEdit.lookupId,
+                          envelope: try Crypto.seal(key: theirEdit.key, document: wire).json,
+                          rev: 4, token: theirEdit.token)
+
+        let engine = SyncEngine(transport: server, store: try SyncTests.tempStore())
+        await engine.open(view, ListRecord(doc: Model.normalize(nil, R), mode: .view))
+        await engine.pull()
+        let opened = await engine.document()
+        #expect(opened.todayItems.count == 3, "the list the person switched to is on screen and readable")
+
+        // The check-off `canEdit` exists to stop, performed anyway — which is what a bug in a view
+        // would look like. Nothing may reach the server from it.
+        let first = try #require(opened.todayItems.first)
+        await engine.update(Model.setDone(opened, first.id, true))
+        await engine.push()
+        await engine.sync()
+
+        #expect(await server.calls().contains { $0.hasPrefix("put") } == false,
+                "no put from a view ref, whatever the view let through")
+        #expect(await engine.current()?.dirty == false, "and a local edit on one never even goes dirty")
+        #expect(await engine.current()?.mode == .view)
+    }
 }

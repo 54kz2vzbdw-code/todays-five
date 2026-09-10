@@ -28,6 +28,12 @@ struct TodayView: View {
 
     var body: some View {
         List {
+            // **The list row**, above the count, and only when there is more than one list to switch
+            // between. It is `TodayListRow` in `ListPickerView.swift`, with the picker's other two
+            // doors, because the three belong to one question and not to this screen.
+            if store.links.count > 1 {
+                TodayListRow().listRowBackground(rowPlatter)
+            }
             countRow
             if store.finaleShowing { finaleCard }
             addRow
@@ -64,8 +70,16 @@ struct TodayView: View {
     /// **Phase 4 put a second thing behind the same hold, and that cost Start again a tap.** The
     /// count is the Watch's one long-press surface and a third page would cost Today a swipe every
     /// time somebody scrolls, forever, to reach a screen they will open twice a year — so the hold
-    /// now presents a two-row sheet instead of firing. Named rather than buried: a gesture that used
-    /// to do a thing and now opens a menu is a small regression for the person who had learned it.
+    /// now presents a sheet instead of firing. Named rather than buried: a gesture that used to do a
+    /// thing and now opens a menu is a small regression for the person who had learned it.
+    ///
+    /// **Phase 5 puts a third thing there, and it is Lists** — on this gesture specifically, because it
+    /// is the one gesture in this app a wrist has reported working: Price reaches the theme picker
+    /// through it, so the hold fires and the sheet presents. That is **his report, not a measurement
+    /// taken here** — nothing on this machine can tap a watch — and it is still the best evidence the
+    /// round has about any control on this screen, which is why the new row went behind this gesture
+    /// rather than a new one. *Start again* keeps the first row it has always had; the new row is
+    /// additive rather than a re-teaching.
     ///
     /// It also fixed something. **The old hold was gated on `store.canEdit`**, so a view-only list
     /// had no long press at all — and once the theme lives behind it, that would have meant a person
@@ -79,8 +93,12 @@ struct TodayView: View {
             Text("/\(store.totalCount)")
                 .font(theme.ui(16, .headline))
                 .foregroundStyle(theme.muted)
-            if store.isViewOnly { Pill(text: "view only") }
-            if store.isShared { Pill(text: "Shared") }
+            // The pills live on the list row when there is one, so they are drawn once and the
+            // count row does not grow by the width of two chips it was already showing elsewhere.
+            if store.links.count < 2 {
+                if store.isViewOnly { Pill(text: "view only") }
+                if store.isShared { Pill(text: "Shared") }
+            }
             Spacer(minLength: 0)
             Image(systemName: store.mark.symbol)
                 .font(.system(size: 11))
@@ -90,7 +108,7 @@ struct TodayView: View {
         .padding(.vertical, 2)
         .contentShape(Rectangle())
         .onLongPressGesture(minimumDuration: 0.5) { showActions = true }
-        .accessibilityHint(Text("Hold for start again and theme"))
+        .accessibilityHint(Text("Hold for start again, lists and theme"))
         .listRowBackground(Color.clear)
     }
 
@@ -610,11 +628,13 @@ struct ConfettiView: View {
 
 // ---------------------------------------------------------------- what a hold on the count means
 
-/// Two rows, and the second one is the reason Phase 3's "no settings screen" has an exception.
+/// Start again, Lists, the theme, and the trace — the second of those is Phase 3's "no settings
+/// screen" exception and the third is Phase 5's answer to a title that would not open a picker.
 ///
 /// `NavigationLink` rather than a second `.sheet`: a sheet from a sheet on watchOS stacks two
 /// dismiss gestures on top of each other, and the crown-and-swipe that gets you out of the inner one
-/// is the same gesture that gets you out of the outer.
+/// is the same gesture that gets you out of the outer. For the Lists row that is not merely tidier —
+/// a push cannot fail the way a presentation can, which is half of what this round is about.
 struct CountActionsView: View {
     @Environment(WatchStore.self) private var store
     @Environment(WatchThemeStore.self) private var themeStore
@@ -636,6 +656,42 @@ struct CountActionsView: View {
             .buttonStyle(.plain)
             .disabled(!store.canEdit)
             .listRowBackground(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(theme.ink2))
+
+            // **Lists.** Ungated by `canEdit` on purpose, for the same reason the hold itself is:
+            // which list you are looking at is not a thing a view-only list may forbid you to change.
+            // *Start again* above is the row that is disabled.
+            //
+            // It carries the count and the current list's name, because a row that says only "Lists"
+            // makes a person open a screen to find out what they already had on the one they left —
+            // and the count is what says whether there is anything to switch *to*. Absent below two,
+            // which is the same rule the row at the top of Today follows.
+            //
+            // The name is `store.title`, which is what `ListPickerView.name(of:)` returns for the list
+            // that is open: this row and the picker's row one push away are the same string computed
+            // the same way, rather than the registry's name here and the document's name there.
+            //
+            // `dismiss` is handed down so that choosing a list closes the whole sheet onto it rather
+            // than popping back here: the hold's menu is not where somebody wants to land after
+            // asking to go and look at another list.
+            if store.links.count > 1 {
+                NavigationLink {
+                    ListPickerView(door: .actions, dismissAll: dismiss).watchGround(theme)
+                } label: {
+                    Label {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Lists").font(theme.ui(15, .body)).foregroundStyle(theme.text)
+                            Text(verbatim: "\(store.links.count) lists · \(store.title)")
+                                .font(theme.ui(11, .caption2))
+                                .foregroundStyle(theme.muted)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        }
+                    } icon: {
+                        Image(systemName: "list.bullet").foregroundStyle(theme.accent)
+                    }
+                }
+                .listRowBackground(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(theme.ink2))
+            }
 
             NavigationLink {
                 KitPickerView().watchGround(theme)

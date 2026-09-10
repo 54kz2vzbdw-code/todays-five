@@ -193,8 +193,12 @@ struct RootView: View {
             content
                 .watchGround(theme)
                 .navigationTitle { titleButton }
+                // The title's door, kept exactly as it was so that what the wrist reports about it is
+                // a report about the shipped thing. The two doors that are meant to *work* are pushes
+                // and are not here: `TodayListRow` at the top of Today, and the Lists row behind the
+                // hold on the count.
                 .sheet(isPresented: $showPicker) {
-                    NavigationStack { ListPickerView() }.watchGround(theme)
+                    NavigationStack { ListPickerView(door: .title) }.watchGround(theme)
                 }
                 .sheet(isPresented: $showActions) {
                     NavigationStack { CountActionsView() }.watchGround(theme)
@@ -297,26 +301,65 @@ struct RootView: View {
         }
     }
 
-    /// watchOS has **no SwiftUI `Menu`**, so the picker cannot be a dropdown. The title itself is the
-    /// button, through the watchOS-exclusive `navigationTitle { }` overload that takes a view.
+    /// The title says **which list you are looking at**. Since Phase 5 it promises nothing else.
+    ///
+    /// Phase 3 made the title itself the button, through the watchOS-exclusive `navigationTitle { }`
+    /// overload that takes a view, because watchOS has no SwiftUI `Menu`. That is true about `Menu` and
+    /// says nothing about whether the navigation bar's title area is hit-testable on a real watch.
+    ///
+    /// **What is known about that, and how it is known.** Price reports that on his own Apple Watch,
+    /// running 1.12 (216) from TestFlight, the title showed the list name with a down caret and
+    /// pressing it did nothing. That is **a report from a wrist, not a measurement taken in this
+    /// round** — there is no Apple Watch reachable from this machine (`devicectl` lists one iPhone and
+    /// calls it unavailable) and `simctl` cannot tap a watch simulator, so nothing here has pressed
+    /// this control even once. It is why this round exists; it is not a finding of it. Everything
+    /// below is reading, and reading is why the caret had to go rather than be explained.
+    ///
+    /// **So the caret is gone.** A title that advertises an action it may not perform is worse than no
+    /// control at all, and switching lists now lives on two controls that are hit-testable by
+    /// construction — a `List` row at the top of Today and the Lists row behind the long press on the
+    /// count, both pushes rather than presentations.
+    ///
+    /// **And the `.disabled` below two lists went with it, which is the repair and not a tidy-up.**
+    /// The caret used to be the visible proof that the button was enabled: when you could see it, the
+    /// count was above one and a press that recorded nothing could only be the navigation bar. Take
+    /// the caret away and leave the disable in, and a wrist holding **one** list — a link removed on
+    /// the phone, or a payload that has not landed — presses a control that cannot fire, reads
+    /// `title tap  0` on the Diagnostics screen, and the reading says "watchOS never handed the finger
+    /// on" when the truth is "SwiftUI declined it, exactly as this file asked". That is the round's
+    /// own measurement returning a false positive, so the disable is gone and a press always leaves a
+    /// line. The cost is that a one-list wrist can open a picker with one row in it, which is a true
+    /// screen and a press nobody makes by accident on a title that no longer looks like a control.
+    ///
+    /// **The button and its trace stay, and they are the measurement.** A press writes
+    /// `picker.title.tap` in every build, including Release, with the number of lists in `a`, so the
+    /// next report from a wrist separates the two mechanisms:
+    ///
+    ///   * **no `picker.title.tap` at all**, after a press somebody is sure they made, is a navigation
+    ///     bar that never handed the finger on. Nothing in this file can now swallow the press first —
+    ///     that is what dropping the `.disabled` bought;
+    ///   * **`picker.title.tap` with no `picker.shown` after it** is a press that arrived and a sheet
+    ///     whose content was never even built. Note what `picker.shown` is and is not: it is written
+    ///     from the picker's `.onAppear`, so it says SwiftUI inserted that view, not that a pixel was
+    ///     drawn. That is the weaker claim and it is still enough to tell these two apart.
+    ///
+    /// A third line can follow either, and it is not a failure: on a wrist holding one list the picker
+    /// opens on that one row, and pressing it writes `picker.already` rather than `picker.selected`.
+    /// If it turns out the press does arrive, a later round can give the caret back with evidence
+    /// behind it.
     @ViewBuilder
     private var titleButton: some View {
         Button {
+            WatchDiagnostics.shared.record(WatchDiagnostics.Code.titleTap, store.links.count)
             showPicker = true
         } label: {
-            HStack(spacing: 3) {
-                Text(store.title)
-                    .font(theme.ui(15, .headline, bold: true))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                if store.links.count > 1 {
-                    Image(systemName: "chevron.down").font(.system(size: 8, weight: .semibold))
-                }
-            }
-            .foregroundStyle(theme.accent)
+            Text(store.title)
+                .font(theme.ui(15, .headline, bold: true))
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .foregroundStyle(theme.accent)
         }
         .buttonStyle(.plain)
-        .disabled(store.links.count < 2)
     }
 }
 

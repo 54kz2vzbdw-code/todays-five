@@ -360,15 +360,27 @@ struct WatchLinkTests {
     /// **Phase 5 §2 gives list switching two new controls, and this is the thing that must not move.**
     ///
     /// A view-only list cannot be changed — no check-off, no add, no Start again — and the refusal
-    /// happens before the document is touched. The Watch's own half of that is one line,
-    /// `WatchStore.canEdit`, which reads the mode of the link the selection landed on; it lives in the
-    /// app target and **no host test can reach it**, which is said here rather than implied. What this
-    /// test covers is everything on either side of that line: the mode a switch lands on is the
-    /// phone's, carried whole through the hand-off, and the ref it derives refuses the write even when
-    /// something gets past the view and asks for one.
+    /// happens before the document is touched. What this test covers is the chain on either side of the
+    /// Watch's own half of that: payload → vault entry → keys → engine → no `put`. The mode a switch
+    /// lands on is the phone's, carried whole through the hand-off, and the ref it derives refuses the
+    /// write even when something gets past the view and asks for one.
     ///
-    /// So it is the chain, end to end, minus a line a host cannot run: payload → vault entry → keys →
-    /// engine → no `put`.
+    /// **What it does not cover, stated plainly because the count at the bottom of `swift test` will
+    /// imply otherwise.** `Package.swift` gives this target one dependency, `TodaysFiveCore`, so
+    /// nothing here can see the `TodaysFiveWatch` target — and that is where every line Phase 5 §2
+    /// changed lives: `WatchStore.select` and its three new trace lines, `WatchStore.canEdit`,
+    /// `ListPickerView`, `TodayListRow`, the Lists row, the title button. Every API this test touches
+    /// (`WatchLinkReconciler.reconcile`, `Keys.fromLink`, `MemoryTransport`, `SyncEngine`,
+    /// `Model.setDone`) existed before the round, so **this test compiles and passes byte-identically
+    /// on the branch this one came from, and reverting all of Phase 5 §2 would not turn it red.**
+    ///
+    /// It is here anyway, and it is not decoration: it is the regression guard for the property the
+    /// two new controls put weight on — that arriving on a view link by *switching* is the same view
+    /// link as arriving on one any other way, mode and all, and that the core still refuses the write.
+    /// If a later round makes `reconcile` drop `mode` on a switch, or makes a view ref push, this goes
+    /// red. What it cannot do is tell anybody the new controls work. The only instrument that executes
+    /// `select` is `runSelfTest`'s step 12 under `-TFWatchDemo -TFWatchSelfTest` on a simulator, and
+    /// this track may not install on the watch simulator: see the round's unverified list.
     @Test("a switch onto a view list lands on a view ref, and the view ref still refuses the write")
     func switchingOntoAViewListStillRefuses() async throws {
         // Two different lists: one the person owns, one they were given read-only.

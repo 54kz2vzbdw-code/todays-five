@@ -154,8 +154,8 @@ grounds*, and every kit is held to it — curated, Secret, and derived-from-one-
   instead of assuming it.
 - **The derived path's guarantee is measured against a different rule, and that is a real bug.**
   `derive()` calls `ensure(…, c.ink, 3, dir)` — against `--ink`, never `--ink-3`. Over 3,000 seeded
-  accents per base: worst `accent` vs `ink3` is **2.18 on dark** (1,152 of 3,000 below 3:1) and
-  **2.45 on light** (1,687 of 3,000). Fixed by nudging against `ink3` as the curated path already
+  accents per base: worst `accent` vs `ink3` is **2.18 on dark** (1,139 of 3,000 below 3:1) and
+  **2.45 on light** (1,690 of 3,000). Fixed by nudging against `ink3` as the curated path already
   does. **This lands as its own commit**, because saved theme codes live in the encrypted document
   (`model.js:104`, the `themes` collection) and this changes what another person's device renders on
   a shared list — a compatibility decision that must be revertible without reverting the palette.
@@ -503,8 +503,12 @@ codes live in the encrypted document — and it should be attributable to one co
 round that also moved Paper, Terminal, the type and the sync path.
 
 Measured against realistic codes rather than synthetic ones, which moved the risk a long way down:
-the builder's own **Surprise me over 2,000 themes moved 0**, and the four real-shaped `T2:` codes in
-the repo moved 0. The ~47 % figure came from uniform-random hex, which is the wrong denominator.
+the builder's own **Surprise me cannot produce a moving accent** (0 of 2,000, because it draws L from
+0.68–0.80 on dark and 0.45–0.58 on light, above the failing region — though 777 of the 2,000 dark draws
+move `danger` by one step), while a stride-2 census of everything the picker accepts (2,097,152 colours
+per base) moves the accent of **38.4 % on dark and 56.4 % on light**; this repo's own hex literals move
+40 % / 59 %, and 5 of the 11 real-shaped `T2:` codes in the repo move. The ~47 % figure was that same
+population averaged over both bases — the right denominator, since the builder's input is a free picker.
 
 And the plain answer to whether the contract would have caught it: **no.** `COMPATIBILITY.md` never
 mentions theme codes or what one renders to — §5 pins the shape of `tf/v2/themecss`, §3 passes the

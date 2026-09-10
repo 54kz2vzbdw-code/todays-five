@@ -65,11 +65,22 @@ export const CHANNEL_SILENCE_MS = 95000;
     is a check the page can make for itself, for the case where the client's machinery did not run at all
     (a host that slept, a page that was suspended), which is the one case no instrument in this repo can
     produce. A transport that can say when it last heard is believed over the opinion; one that cannot is
-    believed exactly as before, which is every transport but the real one. */
-export function channelAlive(ch, now = Date.now()) {
+    believed exactly as before, which is every transport but the real one.
+    `heldSince` is when the caller took this channel, and it is what bounds the cost of being wrong. The
+    silence test has exactly one way to misfire — if an answered heartbeat never reached `heartbeatCallback`
+    on the live socket, the stamp would freeze at the join while the channel was perfectly well — and the
+    question is then how expensive that is. `subscribe()` is also reached from `wake()`, which
+    `visibilitychange` calls with no throttle at all, so with no floor a misfiring silence test would cost a
+    teardown and a join on every tab switch. With it, a channel may not be called quiet until it has been
+    *held* for CHANNEL_SILENCE_MS, and its replacement is born held-since-now: the worst case is one join
+    per 95 s per list however many events arrive, and one per 240 s on a page nobody touches. The floor
+    belongs here and not in the transports — both of them do stamp their own birth, but a bound that
+    depends on a convention in another file is not a bound. Measured in `tools/ticks.mjs`, "a frozen stamp
+    and a storm of wakes". */
+export function channelAlive(ch, now = Date.now(), heldSince = 0) {
   if (!ch || !ch.alive()) return false;
   if (typeof ch.heardAt !== "function") return true;
-  const t = ch.heardAt();
+  const t = Math.max(ch.heardAt() || 0, heldSince || 0);
   return !!t && now - t < CHANNEL_SILENCE_MS;
 }
 
@@ -112,7 +123,10 @@ async function makeSupabaseTransport(cfg) {
   // When this client last heard the far end answer anything at all. The only free evidence a socket is still
   // a socket: the heartbeat it has sent every 30 s since v3, and the ack it has always waited for. The
   // vendored wrapper calls this back with "sent", "ok", "error" or "timeout" (it swallows "disconnected"),
-  // and only "ok" is an answer from somebody.
+  // and only "ok" is an answer from somebody. That the wrapper does this at all is measured in
+  // `tools/socketd.mjs`, against a phoenix server written in this repo; that the *live* endpoint answers a
+  // beat into the same callback is `tools/beatd.mjs`, one command, no channel and no row — and it had not
+  // been run when this line was written, so the live half is an unverified item and not a measurement.
   let heard = 0;
   function client() {
     if (!clientP) {
@@ -429,13 +443,16 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone, on
   function subscribe() {
     if (!cur || !transport || !transport.subscribe) return;
     const me = cur;
-    if (channelAlive(me.channel)) return;
+    // `me.chAt` is the floor `channelAlive` needs: a channel this page has only just taken is not one the
+    // silence test may throw away, however often a `visibilitychange` arrives. See `channelAlive`.
+    if (channelAlive(me.channel, Date.now(), me.chAt)) return;
     if (me.channel) me.channel.close();
     const wantPresence = presence && presence.key && (!presence.enabled || presence.enabled());
     me.presenceOn = !!wantPresence;
     // A channel we have let go of must not speak for this list afterwards: a socket on its way out answers
     // late, and one wake turning into a burst of pulls is what `failed()`'s comment is about.
     const gen = ++me.chGen;
+    me.chAt = Date.now();
     const ours = () => cur === me && me.chGen === gen;
     me.channel = transport.subscribe(me.ref.lookupId,
       msg => { if (ours() && (!msg || msg.from !== deviceId)) pull(); },
@@ -461,17 +478,28 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone, on
       is not, and it is here because it is the only clock the page runs that nobody has to touch. Before
       this, every road to `subscribe()` went through `wake()`, and every road to `wake()` was an event a
       person or an operating system produces — `visibilitychange`, `focus`, `pageshow`, `online`. A window
-      on a second monitor gets none of them for a day, so whatever had gone wrong with its channel, the
-      page's only repair was a click. That is the bug, and it is a bug about *who can start a repair*
-      rather than about any one way a channel dies.
-      It is a timer that already fires, so the asking costs nothing at idle — a living channel is not
-      replaced and the tick is the same unchanged 29-byte poll it always was. A rejoin costs one WebSocket
-      join and one extra unchanged poll (the join's own catch-up pull), once, at the moment it happens; a
-      rejoin that fails reports `channel_error` and `live` goes false, which puts the wait back to 60 s
-      through the machinery that was already there rather than through any new machinery. */
+      on a second monitor gets none of them for a day, so the page had no repair it could start by itself.
+      Be exact about which cases that was worth, because two instruments narrowed it. The *client* has
+      repairs of its own wherever its own timers run, and `tools/socketd.mjs` measured them on a real
+      socket: a socket held open that answers nothing is reported as CHANNEL_ERROR within one heartbeat
+      timeout, and a socket cut rudely is reconnected *and* the channel rejoined, which re-fires SUBSCRIBED
+      into the same `onState` callback in `subscribe()` below — so that page was already back on the fast
+      path with nobody touching the window, before this change and without this tick. What this tick adds is
+      for the case where the client reports nothing at all because none of its machinery ran: a host that
+      slept, a page that was suspended, a channel that reads "joined" over a socket that is gone. That is
+      the state `wake()`'s comment has described since v3; no instrument in this repo can produce it (Node
+      runs its timers and Playwright's clock drives the page's, not a socket's), so the *value* of this
+      repair is a reading and a wrist item, while its cost and its mechanics are measured.
+      It is a timer that already fires, so the asking costs nothing at idle: a living channel is not
+      replaced and the tick is the same single unchanged conditional poll it always was (measured as one
+      request in `tools/ticks.mjs`; what an unchanged poll weighs on the wire is `tools/realsync4.js` and
+      `apple/tools/interop.mjs`, not here). A rejoin costs one WebSocket join and one extra unchanged poll
+      (the join's own catch-up pull), once, at the moment it happens; a rejoin that fails reports
+      `channel_error` and `live` goes false, which puts the wait back to 60 s through the machinery that was
+      already there rather than through any new machinery. */
   function pollNow() {
     if (!visible() || !online() || !cur || cur.gone) return;
-    if (!channelAlive(cur.channel)) { if (transport.wake) transport.wake(); subscribe(); }
+    if (!channelAlive(cur.channel, Date.now(), cur.chAt)) { if (transport.wake) transport.wake(); subscribe(); }
     pull();
   }
 
@@ -506,7 +534,7 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone, on
     /** Start syncing a list. `ref` is the derived link ({ mode, lookupId, key, token }); `doc` is what the app already painted. */
     open(ref, doc, { rev = 0, dirty = false, created = false } = {}) {
       this.close();
-      cur = { id: ref.id, ref, doc, rev: rev | 0, dirty: ref.mode === "edit" && (dirty || (rev === 0 && created)), created: !!created, version: 0, pushing: false, pulling: false, channel: null, chGen: 0, gone: false, pushTimer: 0, holdUntil: 0 };
+      cur = { id: ref.id, ref, doc, rev: rev | 0, dirty: ref.mode === "edit" && (dirty || (rev === 0 && created)), created: !!created, version: 0, pushing: false, pulling: false, channel: null, chGen: 0, chAt: 0, gone: false, pushTimer: 0, holdUntil: 0 };
       live = false;
       persist();
       if (!transport) { setStatus("off"); return; }
@@ -543,17 +571,19 @@ export function createSync({ transport, deviceId, onStatus, onRemote, onGone, on
     current() {
       // `quietFor` is the one thing about this change that cannot be measured without the real backend:
       // the silence test believes the realtime client's heartbeat, and if that beat were never answered on
-      // the live socket the stamp would freeze at the join and every safety poll would rejoin a channel
-      // that was fine — one socket join every four minutes, forever. So the number the test reads is put
-      // where a person with the live site open can read it too: `__tf().cur.quietFor` in milliseconds, which
-      // on a healthy page never passes 30 000 and must never approach CHANNEL_SILENCE_MS at idle. It is a
+      // the live socket the stamp would freeze at the join and the page would replace a channel that was
+      // fine. What that costs is bounded by `channelAlive`'s `heldSince` floor and measured in
+      // `tools/ticks.mjs`: at most one join per CHANNEL_SILENCE_MS per list, and one per POLL_LIVE_MS on a
+      // page nobody touches. Bounded is not the same as invisible, so the number the test reads is put where
+      // a person with the live site open can read it too: `__tf().cur.quietFor` in milliseconds, which on a
+      // healthy page should never pass 30 000 and must never approach CHANNEL_SILENCE_MS at idle. It is a
       // duration and nothing else; `.catch(() => {})` on a request was the last thing this project did that
       // threw away the only evidence a mechanism exists.
       if (!cur) return null;
       const ch = cur.channel;
       const heard = ch && typeof ch.heardAt === "function" ? ch.heardAt() : 0;
       return { id: cur.id, mode: cur.ref.mode, lookupId: cur.ref.lookupId, rev: cur.rev, dirty: cur.dirty, gone: cur.gone, live, presence: !!cur.presenceOn,
-        quietFor: heard ? Date.now() - heard : null, channelAlive: channelAlive(ch) };
+        quietFor: heard ? Date.now() - heard : null, channelAlive: channelAlive(ch, Date.now(), cur.chAt) };
     },
     /** "Show who's here" changed: rejoin the channel with or without presence. */
     resubscribe() { if (!cur) return; if (cur.channel) { cur.channel.close(); cur.channel = null; } if (presence && presence.onCount) presence.onCount(0); subscribe(); },

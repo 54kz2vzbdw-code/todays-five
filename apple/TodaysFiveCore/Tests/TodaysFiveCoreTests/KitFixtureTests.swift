@@ -350,6 +350,15 @@ struct KitFixtureTests {
     /// All 33 faces, not only the 13 the corner can name today: which face a kit hands the
     /// complication is a decision that has already moved once (Phase 4 chose `uiBold`), and a test
     /// that pins the answer to today's choice would go quiet exactly when the choice changes.
+    ///
+    /// **What this does not cover, said here so the round's write-up cannot imply otherwise.** It
+    /// asserts bytes on disk. It references nothing in `Complications.swift`, and it cannot:
+    /// `TodaysFiveCore` does not compile the appex, the appex has no test target, and adding one
+    /// means the project file, which is not a track's to edit. So reverting every behavioural change
+    /// Phase 5 made to the complications — the corner's fraction, the text bezel label, the em dash
+    /// where a list has no lines — leaves this suite green. The detectors for those are a wrist and
+    /// the round's unverified list, and that is the honest state of it rather than a gap to paper
+    /// over with a test that greps a source file.
     @Test("every face in the repo can draw a fraction and an em dash")
     func everyFaceHasTheComplicationsGlyphs() throws {
         let dir = Fixtures.repoRoot.appendingPathComponent("apple/TodaysFive/Fonts")

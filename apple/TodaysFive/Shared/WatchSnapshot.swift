@@ -145,6 +145,11 @@ struct WatchSnapshot: Sendable, Equatable {
     /// `3/5` — the inline complication, whole; and since Phase 5 the **corner** one too, where it
     /// replaced a bare `done` that read as "a 1 and a dot on a line" on a real wrist.
     ///
+    /// The families that draw it go through `glance` in `Complications.swift` rather than reading this
+    /// directly, because a list with nothing on it makes this string `0/0` — a denominator that says
+    /// as little as the bare digit the corner was changed to stop showing. That is a reading decision
+    /// and it belongs in the extension; this stays the arithmetic.
+    ///
     /// **Phase 5 added no field to this file, and that is a finding rather than an omission.**
     /// Everything the corner's redesign needed — the fraction, the finished check, the `2 to go` on
     /// the bezel, the em dash when no phone has named a list — is a function of `hasList`, `done` and

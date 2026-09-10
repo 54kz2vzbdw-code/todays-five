@@ -18,17 +18,22 @@
 // The finding, off a real Apple Watch, bottom-left corner slot: the complication reads as **"a 1 and
 // a dot on a line"**. That is not a mystery, it is a reading. The `.accessoryCorner` arm was
 // `Text("\(snapshot.done)")` — the **done count alone, no denominator** — with a `Gauge` in
-// `.widgetLabel`, which the host draws as a thin arc along the bezel. A bare digit and a three-point
-// arc is exactly what "a 1 and a dot on a line" describes, so this one was diagnosable by reading and
-// only the replacement needs a face.
+// `.widgetLabel`, which the host draws as an arc along the bezel. A bare digit beside a mark that is
+// not a reading is what that code asks for, so this one was diagnosable by reading and only the
+// replacement needs a face.
+//
+// **How thick and how long that arc is drawn, nothing here measured.** An earlier draft of this
+// comment said "a three-point arc" and a review was right to call that invented: the arc is the
+// widget host's compositing, and Phase 4 established that the host's compositing is invisible to
+// every instrument this project has. The diagnosis does not need the number and no longer carries it.
 //
 // **What replaced it, and the numbers the choice rests on.**
 //
 //   * the content slot gets the **fraction**. `3/5` is three characters where `3` was one, and the
 //     three carry the whole glance: a bare `1` on a corner says nothing at all, because the corner —
 //     unlike the circular family — has no ring around it to be the denominator;
-//   * the bezel label becomes **`Text`** rather than a `Gauge`. A curved word is legible at that
-//     size; a three-point arc is a mark, not a reading;
+//   * the bezel label becomes **`Text`** rather than a `Gauge`. A curved word is a reading and a mark
+//     is not, which is the same argument as above and is all it rests on;
 //   * the finished-list **check** is kept, and is the one case where a glyph replaces the fraction
 //     rather than sitting beside it. There is no room for both — see the widths below.
 //
@@ -43,23 +48,68 @@
 // | `12/15` | 2.210 | **3.000** |
 //
 // So `3/5` costs about 2.7× the width of the bare digit it replaces, and at **17 pt** the widest face
-// draws it in **30.6 pt** — which is why 17 is the number in the code rather than the 22 that was
-// there. `minimumScaleFactor(0.5)` covers the two-digit list: `12/15` at 17 pt wants 51 pt, scales
-// into a 32 pt square, and was rendered and looked at rather than assumed to be legible there.
+// draws it in **30.6 pt** — which is why 17 is the number here rather than the 22 that was there.
+// `minimumScaleFactor(0.5)` covers the two-digit list: `12/15` at 17 pt wants 51 pt and scales into a
+// 32 pt square. Rendered after the repair, on the **system-fallback** path — the one that used to be
+// the unmeasured one — in a 32 pt square: `3/5` inks **26.5 pt** wide, `12/15` inks **30.2 pt** with
+// the scale floor doing the last of the work, and `—` inks **17.0 pt**. All three draw inside the
+// slot, in this machine's SF Pro Rounded, which is not the face a watch substitutes.
 //
-// **The instrument, and what it cannot see.** Those renderings are `ImageRenderer` on macOS over a
-// *transcription* of these view bodies, in a throwaway package under `/tmp`, outside the repository —
-// the only way to look at pixels this round had, since `simctl` cannot tap a watch simulator, driving
-// the Simulator app was requested and declined, and no real Watch is reachable from this machine. It
-// shows what **the app's own layer** draws: how many characters fit, where a line truncates, when
-// `minimumScaleFactor` starts eating the type. It shows **nothing** the widget host does — not the
-// bezel label, not `.accented` flattening, not the real slot rectangle, and not whether the host
-// permits a custom face at render time. Two further blind spots, named because they shaped what was
-// looked at: an accessory `Gauge` style **draws nothing at all** outside a widget context (the note
-// below records the Watch app finding the same thing in Phase 3), so the ring is in none of this
-// round's pictures; and `Font.TextStyle` resolves to different points on macOS than on watchOS, which
-// is why the sizes that decide fit are written as explicit points below rather than as `.body` and
-// `.caption2`.
+// **Since the review, 17 is the number on both paths, and it was not before.** `FaceType.count` used
+// to drop the `size:` it was handed whenever the face did not resolve and draw at the text style's
+// own size instead — so the path the sweep described was the *custom face* path, and the **default**
+// path (a host that refuses the face, or a snapshot from a build older than `face`, where `face` is
+// `""` and `resolves("")` is false) drew the fraction at a size nothing had measured. It did not
+// overflow — the 0.5 floor covers a lot — but a number presented as the one that makes the corner fit
+// has to be the number the corner actually uses. Both paths now take `size`.
+//
+// **Every size in this file is a point value the wearer's Text Size scales.** `.custom(_:size:)` and
+// `.system(size:)` are both *fixed*-size fonts, and `Font` has no `.system(size:relativeTo:)`, so the
+// scaling is done once, in the view, with `@ScaledMetric` — the measured points at the default Text
+// Size, growing the way the text style beside each one grows. The two exceptions are named rather
+// than overlooked: the **SF Symbols** (the check, the plus) stay at fixed points, because an `Image`
+// has no `minimumScaleFactor` to catch it if it grows past a slot a few points wide; and whether the
+// **widget host hands a complication the wearer's Text Size at all** is not observable here — if it
+// does not, every size in this file is the measured point value and nothing is worse than before.
+// The round's earlier draft of the rectangular family had a fixed 13 pt and a fixed 12 pt with no
+// relative style at all, which a review caught: a line and a list name that could not grow while the
+// count beside them did, and the line is the part of that family a low-vision wearer most needs to be
+// able to grow.
+//
+// **The instrument, and what it cannot see.** The renderings behind the sizes are `ImageRenderer` on
+// macOS over a *transcription* of these view bodies, in a throwaway package under `/tmp`, outside the
+// repository — the only way to look at pixels this round had, since `simctl` cannot tap a watch
+// simulator, driving the Simulator app was requested and declined, and no real Watch is reachable
+// from this machine. It shows what **the app's own layer** draws: how many ink bands a body produces,
+// how tall each band is, where a line truncates, when `minimumScaleFactor` starts eating the type.
+// Four blind spots, each of which changed something written here:
+//
+//   * it shows **nothing the widget host does** — not the bezel label, not `.accented` flattening,
+//     not the real slot rectangle, and not whether the host permits a custom face at render time;
+//   * an accessory `Gauge` style **draws nothing at all** outside a widget context (the note below
+//     records the Watch app finding the same thing in Phase 3), so the circular family's ring is in
+//     none of this round's pictures;
+//   * **it cannot see Dynamic Type at all.** Measured: `Text("Hxy").font(.system(.body))` and a
+//     `@ScaledMetric` 13 pt both draw an 11.75 pt glyph band at every `DynamicTypeSize` from `.large`
+//     to `.accessibility5`, because macOS has no Dynamic Type to set. So the claim that this file's
+//     sizes now grow with the wearer is an **API contract, not a measurement**, and it is on the
+//     round's unverified list with a pass and a fail;
+//   * `design: .rounded` is **SF Pro Rounded** on this machine and **SF Compact Rounded** on a watch,
+//     which are different widths — measured off `/System/Library/Fonts/SFCompactRounded.ttf`: a
+//     34-character line is 194.6 pt in the first and 185.6 pt in the second at 13 pt, so the watch
+//     fits about 5% more. Every character count in this file is therefore a **model** of what the
+//     wrist will show, in a face the wrist does not use, and is written as such.
+//
+// **And one number this round could not reconcile.** `apple/PLAN-apple-phase5.md` §3 gives
+// `.accessoryRectangular` as "~72 × 32 pt, three short lines"; the sweep behind the note at
+// `NextLineView` used 140×38, 160×44 and 176×50, which is this file's bracket and not Apple's figure.
+// They cannot both be right and nothing here can settle which: the one measurement available is that
+// the booted Series 11 46 mm's screen is **416×496 px, i.e. 208×248 pt** (a `simctl io screenshot`,
+// which is the one thing `simctl` will do to a watch), so 72 pt would be 35% of the screen's width
+// and 176 pt would be 85%. At 13 pt, 72 pt of width holds about **ten characters** of a line and 176
+// pt holds about **26**; if the plan's figure is the real one then the opt-in line is two words and
+// the character counts below are all wrong. It is on the unverified list, and it is the only item
+// there that a screenshot of a face would settle in one look.
 //
 // **On the gauge style.** `.accessoryCircularCapacity` draws a *ring* around a value in the middle;
 // `.accessoryCircular` draws a dial with a needle and tick marks, which is a speedometer and not a
@@ -123,6 +173,30 @@
 import SwiftUI
 import WidgetKit
 
+// ------------------------------------------------------- what the families read off the snapshot
+
+/// **A fraction needs a denominator that says something, and `0/0` does not.** Three of the four
+/// families draw `WatchSnapshot.fraction`, and a review found the one state where that string is not
+/// a reading: a list that exists and has nothing on it — `hasList` true, `total` 0 — put **`0/0`** on
+/// the corner under a bezel reading *Nothing today*. The whole premise of replacing the corner's bare
+/// digit was that a number with no denominator carries nothing; a denominator of zero carries nothing
+/// either, and it is the state a brand-new list sits in before its first line.
+///
+/// So the em dash covers both of the states that have no fraction to show, and the **bezel** is what
+/// tells them apart: *Today's Five* when no phone has named a list, *Nothing today* when one has and
+/// the day is empty.
+///
+/// The circular family keeps `0` in an empty ring for the same state, on purpose and not by omission:
+/// there the ring **is** the denominator, so an unfilled ring around a `0` is already the whole
+/// sentence. It is the families that spell the denominator out that need this.
+///
+/// It lives here rather than in `WatchSnapshot.swift` because it is a reading, not a wire format —
+/// that file's job is what two builds have to agree about, and this is what one extension chose to
+/// draw. `fileprivate` keeps it to this file, where both views are.
+fileprivate extension WatchSnapshot {
+    var glance: String { hasList && total > 0 ? fraction : "—" }
+}
+
 // ---------------------------------------------------------------- the kit's type, in the appex
 
 /// The face the count is set in. See `WatchFaceType` in `WatchSnapshot.swift` for the mechanism —
@@ -154,13 +228,17 @@ enum FaceType {
     /// Once per process. A widget rendering is short; a `static let` is exactly its lifetime.
     private static let registered = WatchFaceType.register()
 
-    static func count(_ snapshot: WatchSnapshot, size: CGFloat,
-                      relativeTo style: Font.TextStyle) -> Font {
+    /// `size` is points, and it is **already scaled** — the caller holds a `@ScaledMetric` so that
+    /// the kit's face and the system fallback grow by the same ratio. Before the Phase 5 review this
+    /// took a `relativeTo:` style as well and the fallback used the style *instead of* the size,
+    /// which meant the default path — a host that refuses the face, or `face == ""` from a build
+    /// older than Phase 4 — drew at a size nothing had measured. One number, both paths, now.
+    static func count(_ snapshot: WatchSnapshot, size: CGFloat) -> Font {
         _ = registered
         guard WatchFaceType.resolves(snapshot.face) else {
-            return .system(style, design: .rounded, weight: .semibold)
+            return .system(size: size, weight: .semibold, design: .rounded)
         }
-        return .custom(snapshot.face, size: size, relativeTo: style)
+        return .custom(snapshot.face, size: size)
     }
 
     /// `theme.js`'s two monospaced kits — Terminal and Teletype — share one pair, and on a face a
@@ -201,6 +279,12 @@ struct CountView: View {
     @Environment(\.widgetFamily) private var family
     let entry: SnapshotEntry
 
+    /// The measured points, at the default Text Size, growing with the style each one sits beside.
+    /// See the note on sizes at the top of the file — including the part about what cannot see them.
+    @ScaledMetric(relativeTo: .title3) private var fractionSize: CGFloat = 17
+    @ScaledMetric(relativeTo: .title2) private var monoDoneSize: CGFloat = 20
+    @ScaledMetric(relativeTo: .caption) private var monoTotalSize: CGFloat = 13
+
     private var snapshot: WatchSnapshot { entry.snapshot }
 
     /// **Which subview carries `.widgetAccentable()` is the only colour lever an app has on a
@@ -218,7 +302,7 @@ struct CountView: View {
             // one family the kit cannot reach at all, and that is the SDK's doing, not ours. No font
             // is asked for here on purpose: asking and being ignored is worse than not asking,
             // because it reads like a bug in this file rather than a limit of the platform.
-            Text(snapshot.hasList ? snapshot.fraction : "—")
+            Text(snapshot.glance)
 
         case .accessoryCorner:
             corner
@@ -243,8 +327,8 @@ struct CountView: View {
                 Image(systemName: "checkmark")
                     .font(.system(size: 15, weight: .semibold))
             } else {
-                Text(snapshot.hasList ? snapshot.fraction : "—")
-                    .font(FaceType.count(snapshot, size: 17, relativeTo: .title3))
+                Text(snapshot.glance)
+                    .font(FaceType.count(snapshot, size: fractionSize))
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
             }
@@ -256,8 +340,12 @@ struct CountView: View {
     /// **What the bezel says, and why it is never the list's name.**
     ///
     /// The corner label is drawn along the outside of the watch face. It is on screen whenever the
-    /// face is, at the largest type of anything this extension draws, and it is read by whoever is
-    /// standing next to the wearer. The rectangular family puts a line of somebody's list on a face
+    /// face is, with **no opt-in in front of it**, and it is read by whoever is standing next to the
+    /// wearer. (An earlier draft of this paragraph also called it "the largest type of anything this
+    /// extension draws". Nothing here measured the bezel label — the comment below says plainly that
+    /// I have never seen one drawn — so the sentence is gone and the size question is on the round's
+    /// unverified list. The privacy argument never needed it.) The rectangular family puts a line of
+    /// somebody's list on a face
     /// only behind an explicit opt-in, for exactly that reason (`ComplicationsIntent.swift`) — and a
     /// label with **no** opt-in at all should therefore hold strictly less, not more.
     ///
@@ -283,11 +371,11 @@ struct CountView: View {
             // `FaceType.prefersNumbers`.
             VStack(spacing: -2) {
                 Text(count)
-                    .font(FaceType.count(snapshot, size: 20, relativeTo: .title2))
+                    .font(FaceType.count(snapshot, size: monoDoneSize))
                     .widgetAccentable()
                 if snapshot.hasList {
                     Text("\(snapshot.total)")
-                        .font(FaceType.count(snapshot, size: 13, relativeTo: .caption))
+                        .font(FaceType.count(snapshot, size: monoTotalSize))
                         .opacity(0.7)
                 }
             }
@@ -307,7 +395,7 @@ struct CountView: View {
                             .font(.system(size: 15, weight: .semibold))
                     } else {
                         Text(count)
-                            .font(FaceType.count(snapshot, size: 17, relativeTo: .title3))
+                            .font(FaceType.count(snapshot, size: fractionSize))
                     }
                 }
                 .widgetAccentable()
@@ -322,6 +410,11 @@ struct CountView: View {
     /// yet". `WatchSnapshot` keeps `hasList` separate from an empty list precisely so the two can be
     /// told apart, and until now only the inline family used it. The em dash is in all thirteen
     /// ui-bold faces — measured, not assumed.
+    ///
+    /// **Found by reading, not by a picture**, and the round's first write-up said otherwise. It is a
+    /// one-line `hasList` omission, and the view it lives in is the one view no instrument here ever
+    /// drew: an accessory `Gauge` style renders nothing outside a widget context. Only the
+    /// rectangular defect came off pixels.
     private var count: String { snapshot.hasList ? "\(snapshot.done)" : "—" }
 
     /// Finished, and not merely empty. `total == 0` is a day with nothing on it, which is not the
@@ -355,38 +448,75 @@ struct NextLineComplication: Widget {
 struct NextLineView: View {
     let entry: SnapshotEntry
 
+    /// Points at the default Text Size, scaled with the wearer's. 16 and 12 are Phase 3's sizes; 13
+    /// is this round's, and the note below is what it is measured against.
+    @ScaledMetric(relativeTo: .headline) private var countSize: CGFloat = 16
+    @ScaledMetric(relativeTo: .caption2) private var nameSize: CGFloat = 12
+    @ScaledMetric(relativeTo: .caption2) private var lineSize: CGFloat = 13
+
     private var snapshot: WatchSnapshot { entry.snapshot }
 
-    /// **The two-line allowance was nominal, and the probe caught it.** This view asked for
-    /// `lineLimit(2)` at `.body`, which on a 45/46 mm watch is about 16 pt — under a 16 pt count row,
-    /// in a slot a few tens of points tall, that is one line of room, not two. Rendered at three
-    /// plausible content sizes (140×38, 160×44, 176×50 pt), a 34-character line came out truncated to
-    /// **17, 19 and 21 characters** — one line, at every one of the three: `Call the pharmacy a…`.
-    /// The line the wearer had to go into the face editor and switch on was arriving as a fragment.
+    /// **What the probe actually measured, after a review went through it line by line.**
     ///
-    /// Three changes, and each is there because a picture showed it:
+    /// The instrument is `ImageRenderer` on macOS over a transcription of this body; it counts ink
+    /// bands and their heights. One band is the count row; two means one line of the text; three
+    /// means the text wrapped. Four rects: 140×38, 160×44, 176×50 — this file's bracket — plus
+    /// **72×32**, the plan's own figure, added because the review pointed out the two disagree.
     ///
-    ///   * the line is set at an explicit **13 pt** instead of `.body`. At 160×44 the whole
-    ///     34-character line now fits on one line; at 176×50 it wraps to two and is shown whole; at
-    ///     140×38 it truncates at 27 characters rather than 17;
-    ///   * **`fixedSize` is gone.** With it, two lines of 13 pt plus the count row overflowed the
-    ///     frame at the smallest size — drawn outside the rectangle, which on a face is drawn nowhere.
-    ///     Without it the text takes the height it is given and truncates inside the slot, which is
-    ///     the failure that can be read;
-    ///   * the sizes are **explicit points**, not `.body` and `.caption2`, because `Font.TextStyle`
-    ///     resolves differently on macOS than on watchOS and a number that decides whether a line
-    ///     survives should not change between the machine that measured it and the wrist that shows
-    ///     it. The count keeps `relativeTo:` — it is the one thing here small enough to grow.
+    ///   * **`lineLimit(2)` is one line of room in this layout, not two.** Measured with the floor
+    ///     removed: an 86-character line produces **two bands at every one of the four rects, at 13 pt
+    ///     and at 16 pt alike** — the count row plus one line of text. The limit is a ceiling for a
+    ///     slot taller than anything swept, which is all it ever was;
+    ///   * **the second line the first draft of this round produced was bought by shrinking the
+    ///     type.** With `minimumScaleFactor(0.75)` the same line came back as three bands whose text
+    ///     glyphs were **8.75 pt** tall against **12.00 pt** with the floor gone. That is the 0.75
+    ///     floor spending ~3 pt of glyph height to fit a second line, on a wrist, and a review was
+    ///     right that it is the wrong trade: watchOS's own smallest text style is about 13 pt, and
+    ///     this was drawing a list line at 9.75. **The floor is gone.** The line truncates at full
+    ///     size now, which is the failure a person can read;
+    ///   * **`fixedSize` is gone** and stays gone. With it, two lines plus the count row overflowed
+    ///     the frame at the smallest rect — drawn outside the rectangle, which on a face is drawn
+    ///     nowhere.
+    ///
+    /// **Two numbers from the first write-up are withdrawn.** It reported a 34-character line
+    /// truncating at "17, 19 and 21 characters" before and reaching "27, 34, 34" after. The before
+    /// column was not what the probe drew: `.body` resolves to about 13 pt on macOS, and 17/19/21 is
+    /// exactly what 16 pt — watchOS's `.body`, which this machine cannot render — gives in today's
+    /// advance-width table. The after column came off the renders that had the 0.75 floor in them, so
+    /// it counted characters at 9.75 pt. What the table can honestly say, measured with `NSFont`
+    /// advance widths and an ellipsis, is how much of one line fits:
+    ///
+    /// | width | 16 pt | 13 pt | 13 pt, SF Compact Rounded |
+    /// | 72 pt | 9 | 10 | 11 |
+    /// | 140 pt | 17 | 20 | 21 |
+    /// | 160 pt | 19 | 24 | 26 |
+    /// | 176 pt | 21 | 26 | 29 |
+    ///
+    /// The last column is the one a wrist would show, because watchOS substitutes SF Compact Rounded
+    /// for `design: .rounded`; the first two are this machine's face. So 13 pt buys **about five
+    /// characters** over `.body` on one readable line — *if* the slot is ~176 pt wide, which is the
+    /// open question in the header note.
+    ///
+    /// The sizes are `@ScaledMetric`: the measured points at the default Text Size, growing with the
+    /// wearer's setting. The first draft of this round used a bare `.system(size: 13)` and a bare
+    /// `.system(size: 12)`, which are fixed-size fonts — a line and a name that could not grow at all
+    /// while the count beside them did. That was the review's serious finding and it was correct.
+    ///
+    /// **This body, as it now ships, rendered at all four rects**, with a 34-character line and an
+    /// 86-character one: **two ink bands every time** — the count row at a 14.50 pt band and one line
+    /// of text at a **12.00 pt** band, which is full-size 13 pt type and not a shrunken one — with the
+    /// ink 64.0, 132.8, 152.0 and 167.0 pt wide inside rects of 72, 140, 160 and 176, and **no ink on
+    /// the last row** at any of them, which is the check that nothing is drawing outside the slot.
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 4) {
-                Text(snapshot.hasList ? snapshot.fraction : "—")
-                    .font(FaceType.count(snapshot, size: 16, relativeTo: .headline))
+                Text(snapshot.glance)
+                    .font(FaceType.count(snapshot, size: countSize))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                     .widgetAccentable()
                 Text(title)
-                    .font(.system(size: 12))
+                    .font(.system(size: nameSize))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
@@ -394,9 +524,8 @@ struct NextLineView: View {
             // line, which is the whole reason the switch exists. It is **not** `.widgetAccentable()`
             // — see the note at `CountView.body`.
             Text(second)
-                .font(.system(size: 13, design: .rounded))
+                .font(.system(size: lineSize, design: .rounded))
                 .lineLimit(2)
-                .minimumScaleFactor(0.75)
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

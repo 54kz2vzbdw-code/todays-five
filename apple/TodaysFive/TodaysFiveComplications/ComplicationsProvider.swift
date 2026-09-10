@@ -57,7 +57,13 @@ enum SnapshotTimeline {
         }
         let midnight = Date(timeIntervalSince1970: snapshot.rollsAt / 1000)
         guard midnight > now else {
-            return ([first], .after(now.addingTimeInterval(3600)))
+            // The midnight this snapshot named has passed and the app has not written a newer one,
+            // so the count on disk is yesterday's. This is the reload the policy below asked for,
+            // and every hourly one after it until the app runs: hand back what the midnight entry
+            // showed, not the evening's count. `afterRollover` zeroes `rollsAt`, so the same stale
+            // file gives the same answer every time.
+            let rolled = SnapshotEntry(date: now, snapshot: snapshot.afterRollover, showLine: showLine)
+            return ([rolled], .after(now.addingTimeInterval(3600)))
         }
         let second = SnapshotEntry(date: midnight, snapshot: snapshot.afterRollover, showLine: showLine)
         // A minute past, so the reload never lands in the same second as the entry it would replace.

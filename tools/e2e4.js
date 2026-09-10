@@ -2374,6 +2374,31 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.ok(!(await t.page.$eval("#toast-undo", e => e.hidden)), "the ten-second Undo is on screen, not hidden behind the switch");
     await t.page.click("#toast-undo"); await wait(1200);
     assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).lists.length), 1, "and it comes back");
+    // with a second list on the device, removing the open one switches to the other — and the Undo has to outlive that switch,
+    // because opening a list clears whatever toast is on screen (the case the "not hidden behind the switch" wording is about).
+    // Only where the switch happens in the page: where app.js takes iOS Safari for the page (a Mac user agent with touch, as
+    // this harness's phone viewport is), switchTo reloads instead of opening, and the toast raised after it does not survive
+    // the reload — see REVIEW-1.12.md; that is measured there, not asserted here
+    const inPage = !(await t.page.evaluate(() => /iP(hone|ad|od)/.test(navigator.platform) || (navigator.userAgent.includes("Mac") && navigator.maxTouchPoints > 0)));
+    if (!inPage) console.log("     (two-list Undo: skipped on this viewport — the switch is a reload here)");
+    if (inPage) {
+    await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.lists[0].linkSaved = true; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); }); // saved again, so the helper's page is not met by the save sheet
+    const other = await makeList(t, "Errands");
+    await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); for (const l of m.lists) l.linkSaved = true; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); }); // both saved: the switch must not be met by the save sheet
+    await t.reload(); await wait(1200); await t.esc(); await wait(200);
+    const open = (await t.s()).listId; const rest = other.id === open ? null : other.id;
+    await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]"); await wait(200);
+    assert.equal(await t.page.locator("#lists-menu .row").count(), 2, "two lists on the device");
+    await t.page.click("#lists-menu .row:has(.lb.cur) .more"); await t.page.waitForSelector("#p-list[open]"); await wait(200);
+    await t.page.click('#p-list [data-lact="remove"]'); await t.page.waitForSelector("#ask[open]"); await wait(250);
+    await t.page.click("#ask-ok"); await wait(1500);
+    assert.notEqual((await t.s()).listId, open, "the open list went, so the app switched to the other one");
+    if (rest) assert.equal((await t.s()).listId, rest, "the other one");
+    assert.ok(!(await t.page.$eval("#toast-undo", e => e.hidden)), "the ten-second Undo is on screen after the switch, not hidden behind it");
+    await t.page.click("#toast-undo"); await wait(1500);
+    assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).lists.length), 2, "Undo brings it back beside the other");
+    assert.equal((await t.s()).listId, open, "and opens it again, since it was the open one");
+    }
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 

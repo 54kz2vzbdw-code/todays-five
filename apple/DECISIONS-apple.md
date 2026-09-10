@@ -1992,3 +1992,559 @@ Write the state the way the real writer writes it, and let the reader find out h
 * **`SyncEngine` still has no timer.** The caller drives, which is what a CLI, a background refresh
   and a widget all want, and `pollDelay(live:)` still only *says* what the web would wait.
 
+
+---
+
+# Phase 5 — the wrist, from a real wrist
+
+Every round before this one was verified on a simulator. This one began with four findings from a real
+Apple Watch, and two of them were features that looked present and did nothing.
+
+**The round's discipline, and it is the reason this section reads the way it does: every claim names
+the instrument that measured it and what that instrument cannot see.** The simulator had already lied
+to this project twice — once about dictation, on a machine with no microphone, and once about a 32-bit
+`Int` — and this round caught itself doing the same thing three more times before it finished. Those
+three are written up rather than tidied away, because each of them is the same lesson arriving from a
+new direction and the pattern is worth more than any one of them.
+
+Four tracks in worktrees, each read by an independent reviewer who owed it no deference, each repaired
+against what that reader found. What follows is each track's own entries, then integration's.
+
+
+## Track A — add-by-voice
+### The five-second Undo window belongs to the coordinator, not to a view
+
+Phase 5 moved `AddFlowView` out of `.sheet(isPresented: $showAdd)` and into Today's `List`. The
+countdown moved with it, and it should not have: it was a `.task(id: pending.id)` on the confirmation
+view, which is safe only while that view is presented content. `RootView.content` is an `if/else`
+ViewBuilder — empty state, else `AlwaysOnTodayView` when `isLuminanceReduced`, else the `TabView` — and
+switching branches destroys the other branch's views and cancels their tasks. Lowering the wrist inside
+five seconds, which is the ordinary gesture after adding a line, therefore cancelled the window with
+`AddCoordinator.pending` still set. An hour later Today drew a live Undo for an hour-old line, and
+pressing it tombstoned that line. The App Intent had the same hole from the other end: it calls `note`
+with no view anywhere, so Siri's adds never had a window at all.
+
+The window is now a `Task` on the `AddCoordinator` singleton, which nothing tears down. It is also
+*arithmetic*: `Pending` carries the moment it was made, the view draws the confirmation only while
+`isLive()`, and an `onAppear` sweep clears an expired one. That second half is not belt-and-braces
+fussiness — a watch app is suspended seconds after a wrist drops, and what the runtime does with the
+remainder of a `Task.sleep` across a suspend-resume is not something any instrument on this machine can
+measure. Where the timing cannot be trusted, the timestamp can.
+
+Cost: two extra checks in `-TFAddSelfTest`, one of which sleeps five real seconds, and one sentence on
+Today for those five seconds during a self-test launch.
+
+**How to apply:** a countdown that decides whether a *destructive* control is live must not be scoped to
+a view, and "it worked in the sheet" is not evidence it works in a row. Ask what happens to the timer
+when the wrist drops — on this platform that question has a different answer for every kind of
+container, and the wrong answer is silent.
+
+### An instrument whose only witness is a mechanism you cannot test is not yet an instrument
+
+On the shipping path, `add.tap` is written from `configuration.isPressed` on a `ButtonStyle` applied to
+a `TextFieldLink`. Nothing here can press a watch control, so if that mechanism does not fire, a wrist
+reporting `asked 0` reads identically to a wrist where nobody pressed anything — and `asked 0 · heard 0`
+was the exact failure signature this round predicted. One mechanism carrying the whole question is the
+same shape as Phase 3's `visibleInterfaceController=present`.
+
+So the question was split. `add.style` is written from the style's own `onAppear`, which can only run if
+watchOS called `makeBody` and mounted its result — that is the same as saying the custom style is
+honoured. Measured on the watch simulator: `add.style` at +69 ms on a plain launch. What remains
+unmeasured is only whether `isPressed` toggles, and that is separated by *looking* rather than by the
+trace: a press that reaches this style fades the row to 0.55 while the finger is down.
+
+Rejected: a `.simultaneousGesture` or `.onTapGesture` to catch the press directly. A second recogniser
+competing with the control's own risks the one thing this round may not ship — a control that looks
+right and does not activate — on a device nobody here can test. An observer that cannot interfere,
+answering a smaller question, beats a reporter that might break the thing it reports on.
+
+**How to apply:** when one signal carries a whole finding and you cannot exercise it, add a second signal
+that asks a *narrower* question you can exercise, and write down which of the two answers each reading
+admits. Do not add a second signal that is also untested — that is two guesses, not a cross-check.
+
+### Four trace rows and a whole outcome cannot happen on a wrist, and the files now say so
+
+`WatchDictation.Gate`, the 60-second deadline, `AddOutcome.inputTimedOut` and the rows `add.present`,
+`add.presented`, `add.nopresenter` and `add.timeout` are reachable only through the WatchKit seam, and
+`WatchDictation.preferred` never selects it unless something wrote `tf/app/watch/addinput` — which
+nothing in a shipping build does. The gate is a genuine repair of Phase 3's one-way latch and it is
+tested; it is *not* part of what a wrist exercises, and the earlier write-up counted it among the fixes
+and asked Price to check the timeout sentence on his wrist, which he cannot produce. The Diagnostics
+screen's `presented 0` and `timed out 0` are health, not findings.
+
+The statement that survives is narrower and blunter: on the shipping path there is no latch because
+nothing is presented.
+
+**How to apply:** unreachable-in-Release code is not a bug, but describing it as a fix is. Every seam
+kept for a future flip should name, in its own file, the exact condition that would make it live — and
+anything the seam writes into a shared instrument should say it will read zero.
+
+### A cap can only be checked by going past it
+
+The first version of the ring check asserted `all.count <= limit && all.count >= nService` against a
+trace holding about eleven rows with a cap of sixty: 11 ≤ 60 and 11 ≥ 4, both true by construction.
+Deleting the eviction line from `WatchDiagnostics.record` altogether left it printing `ok`, which was
+measured, not reasoned. It now writes `limit + 5` rows — five of one code, then `limit` of another — and
+asks two questions: is the count exactly `limit`, and is what survived the *newest* end. With the
+eviction line removed it prints `trace-ring FAILED wrote=65 entries=65 cap=60 oldest-evicted=false`.
+
+It runs last and clears afterwards, because it floods the ring on purpose.
+
+**How to apply:** a check on a bound must cross the bound. If the assertion is satisfied by the state the
+test happens to be in, it is a sentence, not a check — and the way to know which you have written is to
+break the thing and watch it fail.
+
+### The complication opens the app on Today; it did not put Today at the top
+
+`onOpenURL` did `page = .today` and nothing more, and "from the face the cost is one tap" was stated as
+fact. A resumed watch app comes back with the scroll offset it had, so a list left showing line five had
+the add control — the second row, above the lines — off screen, and the true cost was a crown turn plus
+a tap. The complication now bumps `AddCoordinator.focusTick` and Today's `List` answers with
+`ScrollPosition.scrollTo(edge: .top)`. Nothing else writes it, so a person's own crown is never
+overridden.
+
+What that is worth is limited and should be read that way: `simctl openurl` on a watch simulator fails
+outright (LSApplicationWorkspaceErrorDomain code 115), so `todaysfive://add` cannot be delivered on this
+machine at all. Neither the scroll nor the `add.face` row has been exercised by any instrument in this
+round.
+
+**How to apply:** "the control is on screen" is a claim about scroll state, not about view order, and on
+a watch the scroll state outlives the app being in front.
+
+### Two paragraphs in this file are now false, and this section does not fix them by itself
+
+The branch reverses a decision recorded here, and this file is not on the branch — the orchestrator
+integrates it, which is why nothing above edited it. Until the two passages below are amended, a reader
+who comes here looking for the flip finds Phase 3's superseded reasoning:
+
+* **line 669**, in *No API forces dictation…*: "falls back to `TextFieldLink` if that is ever nil" — the
+  precedence is now the reverse, and `TextFieldLink` is not a fallback but the path;
+* **line 884**, at the end of the Phase 3 self-test entry: "`visibleInterfaceController=present`, so the
+  wrist takes the WatchKit dictation path rather than the `TextFieldLink` fallback" — this is the exact
+  over-read Phase 5 exists to correct, and leaving it unmarked is how it gets cited again.
+
+The replacement wording is in this round's `patchSpec`.
+
+**How to apply:** already written down in this file and worth repeating: a stale paragraph beside correct
+code is worse than no paragraph. A round that reverses a decision owes the reversal to the place the
+decision is kept, not only to the round's own results.
+## Track B — the list picker
+### A control that refuses must still leave a line, or the trace it writes is not evidence
+
+Phase 5 §2's fail criterion is "no `picker.title.tap` after a press ⇒ the navigation bar is not hit-testable". The caret came off the title and `.disabled(store.links.count < 2)` was left on it. The caret had been the guard: while it was drawn you knew the button was enabled and the wrist held two lists, so a press that recorded nothing could only be the bar. Remove the caret, keep the disable, and a wrist holding one list — a link removed on the phone, or a payload that has not landed — presses a control SwiftUI declines, reads `title tap  0`, and the conclusion is about watchOS when the truth is "this file asked SwiftUI to ignore it". The disable is gone. The cost is that a one-list wrist can open a picker with one row in it: a true screen, and not a press anybody makes by accident on a title that no longer looks like a control.
+
+The same shape sat in `WatchStore.select`: `guard id != openId else { return }`, silent, on the most reachable tap in the picker — the row that already has the tick. The trace read `picker.shown 2 3` and then nothing, and under this round's own rules the *absence* of a line is unclassified, with "the Button never fired" as its nearest reading. Every path out of `select` now writes something.
+
+**How to apply:** when a diagnostic's conclusion is drawn from an event being *absent*, the absence is only evidence if every path that could have produced the event is known to write one. Audit the guards and the modifiers between the finger and the recorder — `.disabled`, `.allowsHitTesting`, an early `return` — before trusting a zero. A zero on a screen is a claim about the world, and a control that refuses in silence makes it a false one.
+
+### `picker.already` rather than a `picker.selected` with `b` of 1
+
+The review's suggested repair was `record(listSelected, canEdit ? 1 : 0, 1)` on the already-open path. That closes the silence, and it spends the one reading that matters: `picker.selected` with `b` of 1 means *a list changed*, and reusing it for "you pressed the list you are already on" makes a real switch and a no-op the same row. So the no-op got its own code — `a` the edit flag, `b` how many lists the Watch holds — which is the one edit a track may make to `WatchDiagnostics.swift` and is worth the line in the vocabulary a person reads.
+
+**How to apply:** when an event code would need a second meaning to cover a new outcome, add the code instead. A vocabulary where one line means two things costs a reader more than a longer list does.
+
+### One name for one list, and the open one is named by its document
+
+`store.title` prefers the document's name; `ListPickerView.name(of:)` read `VaultedLink.name`, which is whatever the phone's registry last sent. Rename a list on a laptop, let the Watch pull the document, and Today's new row said *Groceries* while the picker's row for that same list, one push away, said *Errands* — or *Untitled list*, which is the case that fallback exists for. `name(of:)` now returns `store.title` for the list that is open, so all three places are one expression, last resort included. Rows for lists that are *not* open still carry the registry's name: their documents are on disk, and a row builder on a watch is not the place to read five of them. The row is picked by `store.selected` rather than `openId` because that is the field the tick is drawn from six lines above — the name and the tick must not be two opinions about which list you are on.
+
+**How to apply:** two views that name the same object must read one expression, not two rules that agree today. Where a rule has to differ, differ on something the reader can see (here: the list you are on has a document loaded, the others do not) and say so where it is written.
+
+### `.onAppear` says the view was inserted; it does not say anything was drawn
+
+`picker.shown` was written up as "the picker **actually presented** … this fires when the view is on screen". `.onAppear` fires when SwiftUI inserts the view into the hierarchy. A view inserted behind a failed presentation would fire it, and no hook in this SDK can tell the difference. The weaker true statement — the content closure was evaluated and the view was inserted — still separates "the press never arrived" from "the press arrived and the sheet did not come up", which is the whole job. So the hook stayed and the sentence changed.
+
+Two neighbours got the same treatment. The wrist's caret-and-no-response was written into two source comments as established fact; it is Price's report, and both now say so in the line that carries it. And "a `List` row is the most reliably tappable thing watchOS has" is an argument from every control in this app that is known to work, not a measured fact about watchOS hit-testing — nothing in this round has tapped the new rows either.
+
+**How to apply:** write the claim the hook can support, then check that the weaker claim still does the job. It usually does, and a comment that overstates its instrument is the same failure as a test that passes for the wrong reason — Phase 5 has two of those in its history already.
+
+### A sentence about ordering, withdrawn rather than defended
+
+A docstring said every local change "persists it inside the actor before this method can be called". It does not: `apply(local: true)` calls `chain`, which *enqueues* a `Task`, and `SyncEngine.persist()` runs inside it, while `openList` reads `store?.load(id)` synchronously. What `chain` does give is ordering — the old engine's `update` and `push` complete before the new engine's `open`. What makes a pending write safe is that `persist()` goes through `ListStore.merge`, a CRDT merge rather than an overwrite (`Store.swift:91`), and that `sync()` compares `doc.canon` before and after and declines a read that predates an edit. Nothing in this round raced them, so the comment now says it is reading and the race is on the unverified list.
+
+**How to apply:** a claim of the form "X has already happened by the time Y runs" is a claim about a schedule, and an enqueued `Task` is not a schedule. Either measure it or describe the invariant that makes the order not matter.
+
+### A step number is part of the instrument
+
+The new self-test step was numbered 10, and `WatchApp.swift` prints a 10 (confetti) and an 11 (theme) after `runSelfTest` returns. Three steps answering to "10" in output a person greps to decide pass or fail, and a step that silently failed to print is invisible while another 10 is there. It is 12 now, so the console reads 1–9, 12, 10–11. Out of order beats ambiguous; renumbering the other two is a region this track does not own, so it is offered to the orchestrator as a patch instead.
+
+**How to apply:** numbered output is an index, and an index with duplicates is worse than one with gaps. When the fix crosses an ownership line, take the gap and hand over the patch.
+
+### A test count is not coverage, and the test should say whose code it cannot see
+
+`swift test` went from 130 to 131 and the new test cannot reach one line this round changed: `apple/TodaysFiveCore/Package.swift:21` gives the test target `TodaysFiveCore` and nothing else, while every changed file lives in the `TodaysFiveWatch` Xcode target. The test compiles and passes byte-identically on the branch this one came from. It was kept — it is the regression guard for the property the new controls lean on, that a switch onto a view link lands on a view link with its mode intact and the core still refuses the write — and its docstring now states plainly what it cannot do and names the only instrument that can.
+
+**How to apply:** when a suite cannot reach the target you changed, say so in the test, next to the assertions, where the next reader will be standing. A number at the bottom of a test run is read as coverage whether or not it is, and the correction has to live where the misreading happens.
+## Track C — the complications
+### A size that cannot grow is not a size, and a floor that only shrinks it is worse
+
+Phase 5's first pass at the rectangular complication replaced `.font(.system(.body, design: .rounded))` with `.font(.system(size: 13, design: .rounded)).minimumScaleFactor(0.75)`, to pin a number a macOS probe had measured. Both halves were wrong on a wrist, and a review that had not written the code found both.
+
+`Font.system(size:)` is a **fixed-size** font. `Font.system(.body)` is not. So the line a wearer has to go into the face editor and switch on became the one thing on the complication that did not respond to Watch > Settings > Display & Brightness > Text Size — while the count beside it, still `relativeTo: .headline`, did. The file's own comment had it exactly inverted: it called the count "the one thing here small enough to grow". The line is the part a low-vision wearer needs to grow.
+
+And the floor made it smaller. Measured on the probe: with `minimumScaleFactor(0.75)` an 86-character line came back as three ink bands whose text glyphs were **8.75 pt** tall; with the floor gone, two bands and a **12.00 pt** glyph band. The second line was being bought with three points of glyph height, putting list text at 9.75 pt when watchOS's own smallest text style is about 13.
+
+The repair is not a text style either, because a text style moves the number between the machine that measures and the wrist that shows: `.caption2` is about 11 pt here and about 13 there. Every size in the file is now a `@ScaledMetric` point value — the measured number at the default Text Size, scaled by the style beside it. `.custom(_:size:)` and `.system(size:)` are both fixed-size and `Font` has no `.system(size:relativeTo:)`, so one `@ScaledMetric` per size is the only arrangement that holds the measured number and the wearer's setting at the same time. Two exceptions are named rather than overlooked: the SF Symbols stay fixed, because an `Image` has no `minimumScaleFactor` to catch it if it grows past a slot a few points wide; and whether the widget host hands a complication the wearer's Text Size at all is not observable from here.
+
+**How to apply:** `.system(size:)` and `.custom(_:size:)` are fixed-size fonts. Pinning a measured point value is right and dropping Dynamic Type to do it is not — `@ScaledMetric` gives you both, and `minimumScaleFactor` on a line of somebody's text buys characters with legibility, which on a watch is the wrong direction to trade.
+
+### The fallback path was the one the measurement did not describe
+
+`FaceType.count` took `size:` and `relativeTo:` and, when the kit's face did not resolve, returned `.system(style, design: .rounded, weight: .semibold)` — dropping the size entirely. So the 17 pt the corner's whole width argument rests on described the **custom-face** path, and the default path drew at the text style's own size.
+
+Default is not an edge here. `WatchSnapshot.face` defaults to `""` and `WatchFaceType.resolves("")` is false, so every snapshot from a build older than Phase 4 takes it — and so does the one thing this round could never observe, a widget host refusing a custom face at render time. The round named that refusal as its open question and then published a size that would not apply if the answer came back no.
+
+Both paths take the size now. Rendered on the fallback path in a 32 pt square: `3/5` inks 26.5 pt, `12/15` inks 30.2 pt with the scale floor doing the last of the work, `—` inks 17.0 pt.
+
+**How to apply:** when a function has a documented fallback, check that the number in the write-up survives it. A measurement that describes only the branch you hope is taken is a measurement of the hope.
+
+### `0/0` is the same sentence as the bare digit the round was replacing
+
+The corner was changed because `Text("\(snapshot.done)")` put a number on a face with nothing to divide it by. A list that exists and has no lines — `hasList` true, `total` 0 — then got `0/0`, which is a denominator that carries exactly as little, and it is the state a brand-new list sits in before its first line is added.
+
+The three families that spell the fraction out now read `glance`: the fraction when there is one, the em dash when there is not. The **bezel** is what tells the two silent states apart — *Today's Five* when no phone has named a list, *Nothing today* when one has and the day is empty. The circular family keeps `0` inside an empty ring for the same state, deliberately: there the ring **is** the denominator, so an unfilled ring around a zero is already the whole sentence. It is the families that write the denominator out that need the em dash.
+
+`glance` lives in the extension, not in `WatchSnapshot.swift`, because it is a reading and not a wire format: that file's job is what two builds have to agree about forever, and this is what one extension chose to draw. No field was added and `v` stays 1.
+
+**How to apply:** when you replace a reading because it says nothing, enumerate the states of the replacement. `done` with no `total` and `0/0` fail for the same reason, and the second one looks like it is working.
+
+### Three claims the round published that no instrument backed
+
+Written down because the round's discipline is that this is the expensive kind of mistake, not the embarrassing kind.
+
+* *"Two things the pixels found that reading had not."* One thing. The circular family's `0`-should-be-`—` is a one-line `hasList` omission found by reading, and an accessory `Gauge` style draws nothing at all outside a widget context — so the view it lives in is in none of this round's pictures. Only the rectangular defect came off pixels, and the commit message said otherwise.
+* *The bezel label is "at the largest type of anything this extension draws."* Nothing here measured the bezel label. The same file says plainly that no instrument in this project has ever drawn one. The privacy argument the sentence was supporting — a label with no opt-in in front of it holds strictly less than a family that has one — never needed a size, and now does not carry one.
+* *The `Gauge` in `.widgetLabel` is "a three-point arc."* Its thickness and length are host compositing, which Phase 4 established is invisible to everything here: `ImageRenderer` at `.fullColor` and at `.accented` came back byte-identical. "A bare digit beside a mark that is not a reading" is the whole diagnosis and it needs no number.
+
+**How to apply:** an invented number inside a correct argument is worse than no number, because it makes the argument checkable and then fails the check. When the mechanism carries the conclusion, delete the figure.
+
+### Two character counts, retracted and re-measured, and a face nobody here can stop
+
+The round published a 34-character line truncating at "17, 19 and 21 characters" before and reaching "27, 34 and 34" after. Both are withdrawn. The before column was not the `.body` render the probe made — SwiftUI resolves `.body` to about 13 pt on macOS, and 17/19/21 is exactly the **16 pt** column of today's advance-width table, i.e. a hand model of watchOS's `.body` printed in a column headed with the shipped code. The after column came off the renders that still had the 0.75 floor in them, so it was counting characters at 9.75 pt.
+
+Two blind spots were behind it, and both are now written into the file:
+
+* **this machine cannot see Dynamic Type at all.** Measured: `Text("Hxy").font(.system(.body))` and a `@ScaledMetric` 13 pt both draw an 11.75 pt glyph band at every `DynamicTypeSize` from `.large` to `.accessibility5`, because macOS has no Dynamic Type to set. So a probe here cannot tell a scaling font from a fixed one — which is exactly the defect it was being used to rule out;
+* **`design: .rounded` is SF Pro Rounded here and SF Compact Rounded on a watch.** Measured off `/System/Library/Fonts/SFCompactRounded.ttf`: the same line is 194.6 pt in the first and 185.6 pt in the second at 13 pt. The wrist fits about 5% more, so the direction is safe and the numbers still do not transfer.
+
+**How to apply:** before quoting a character count from a transcription, ask which font and which point size the transcription actually resolved. A stand-in is fine; a stand-in in a column headed "shipped" is a different claim from the one you measured.
+
+### A figure in the plan, a figure in the sweep, and nothing between them
+
+`apple/PLAN-apple-phase5.md` §3 gives `.accessoryRectangular` as "~72 × 32 pt, three short lines". This round swept 140×38, 160×44 and 176×50 and called it "my bracket, not Apple's figure" without ever naming the figure in its own brief. They cannot both be right.
+
+Nothing here can settle it. The one measurement available is that the booted Series 11 46 mm's screen is **416×496 px, 208×248 pt** (a `simctl io screenshot`, which is the one thing `simctl` will do to a watch), so 72 pt is 35% of its width and 176 pt is 85%. At 13 pt the first holds about ten characters of a line and the second about 26.
+
+The change survives either answer, which is why it shipped: at 72 pt the line fits 9 characters at 16 pt against 10-11 at 13, and the Dynamic Type repair is a gain at any width. But if 72 pt is the real one, then the opt-in line is two words and the reason for the opt-in is thinner than the round assumed. It is on the unverified list and it is the only item there a single screenshot of a face would settle.
+
+**How to apply:** when your own sweep disagrees with the brief you were handed, say which two numbers disagree before you report either. "My bracket, not Apple's figure" is a sentence that sounds like reconciliation and performs none.
+
+### The suite asserts bytes, and the views have no test target
+
+`swift test` gained one assertion this round: every `.ttf` in `apple/TodaysFive/Fonts` carries the ten digits, `U+002F` and `U+2014`, read out of the files with `CTFontManagerCreateFontDescriptorsFromURL`. That is real and it is worth having — a latin subset that dropped the solidus would put a blank box on one kit's watch face and the first person to find out would be wearing it.
+
+It is not coverage of this round's behaviour, and the write-up should not have been readable as though it were. `TodaysFiveCore` does not compile the appex, the appex has no test target, and giving it one means editing `project.pbxproj`, which is not a track's file. Reverting the corner's fraction, the text bezel label and the em dash leaves the suite green at 131/131. The detectors for those are a wrist and the unverified list. That is now said in the test's own doc comment, so the next reader finds the limit next to the assertion rather than in a report.
+
+A grep-the-source test was considered and rejected: it would pass by matching text, fail on a rename nobody should fear, and teach the suite to assert about formatting.
+
+**How to apply:** name what a new test does not cover in the same breath as what it does, especially when it is the only new test in a round that changed behaviour elsewhere.
+## Track D — the unfocused window
+### A channel's own opinion of itself, and the one number that can disagree with it
+
+`alive()` asked the channel what it thought of itself. `channelAlive` asks a second question that does not
+depend on the realtime client having noticed anything: has anything at all come the other way recently? The
+evidence is free — the client has sent a phoenix heartbeat every 30 s since v3 and waited to be answered,
+and `sync.js` had simply never looked at whether the answer came. `heartbeatCallback` stamps it, the channel
+handle stamps its own join and every message on it, and the stamp is believed over the opinion. Three missed
+beats is 95 s, which is inside one 240 s safety poll, so the first poll after the silence is the one that
+finds it. Nothing new goes on the wire. A transport that cannot say when it last heard is believed exactly
+as before, which is every transport but the real one.
+
+**How to apply:** when a component's health check is the component's own self-report, look for a signal that
+is already crossing the boundary for another reason. The cheapest independent witness is usually a
+keep-alive somebody is already paying for and nobody is reading.
+
+### What the tick is actually worth, narrowed twice, by two instruments
+
+The round began with a hypothesis — the channel drops or is throttled and the client does not notice — and
+four readings of the minified `vendor/realtime.js` supporting it. `tools/socketd.mjs` put the client on a
+real phoenix socket and took three of the four away: a socket that answers nothing IS noticed and reported
+as `CHANNEL_ERROR`; `removeChannel` on a joined channel closes it in the same tick so a rejoin needs no new
+client (`reset()` deleted, before it could throw away the temporary channel `announceGone` holds); and after
+a rude cut the client reconnects **and rejoins by itself**, re-firing `SUBSCRIBED` into `onState`.
+
+That last one was measured early and then mis-quoted twice — in a commit message and in `ticks.mjs`'s
+closing line — as "before this change a page had no way back to live except a click". An independent
+reviewer caught it by re-running this track's own instrument. It is false: `onState` has mapped a re-fired
+`SUBSCRIBED` to `setLive(true); pull()` since v3, so that page was already repairing itself. What this
+round buys is narrower: the case where the client reports **nothing at all** because none of its machinery
+ran. That case is a reading, not a measurement, and it is on the unverified list.
+
+**How to apply:** the instrument you wrote is not read once and retired. When a claim is quoted from it,
+re-read the output that is supposed to support the sentence. A finding that flatters the change is the one
+to re-read first — this one survived four commits because it was the answer the round wanted.
+
+### A silence test that can be wrong must be cheap to be wrong
+
+The silence test has exactly one failure mode: if an answered heartbeat never reached `heartbeatCallback` on
+the live socket, the stamp would freeze at the join while the channel was carrying perfectly well. The
+write-up costed that at "one socket join every four minutes" — the poll's period — and the review pointed
+out that `subscribe()` is also reached from `wake()`, which `visibilitychange` calls with no throttle at all.
+The reviewer's own figure (a join per tab switch, ~2 s) was too high, because both transports stamp their
+own birth so a fresh channel was already believed for 95 s; the real bound was one join per 95 s. But a
+bound that depends on a convention in another file is not a bound. `channelAlive` now takes `heldSince` and
+the engine passes it: a channel may not be called quiet until it has been **held** for `CHANNEL_SILENCE_MS`,
+and its replacement is born held-since-now. A channel that reports `channel_error` is still replaced as fast
+as it was before 1.12 — the floor rescues nothing that says no.
+
+Measured, on the frozen clock: 81 wakes across 257 s on a page whose stamp never moves cost **one** join
+(`tools/ticks.mjs`), and the suite holds the same bound.
+
+**How to apply:** when a check can be wrong about a healthy thing, the design question is not only "how
+likely" but "what does one wrong answer cost, and how often can it be given?" Put the ceiling in the code
+that owns the decision, and measure the ceiling rather than reasoning about it.
+
+### A double that is wrong in the flattering direction
+
+`ticks.mjs`'s fake channel handle never re-fired `onState` after `channel_error`, and its header defended
+that as "a state the real client does not have". Backwards: the real channel does come back, and re-firing
+`SUBSCRIBED` is exactly what it does. The double therefore reported the tick as the thing that rescued a
+repaired socket, which is the round's own change taking credit for work the vendored client was already
+doing. It now fires the state the real client fires — the state `socketd.mjs` printed — and measures the
+tick's contribution to that case as zero joins and one poll.
+
+**How to apply:** a test double must be modelled on the instrument that watched the real thing, not on the
+reading that motivated the change. And say in the double what it does and what it refuses to do, so the
+next person can check the model instead of trusting it.
+
+### A harness's integrity rule that was only a comment
+
+`quietd.js`'s CONDITIONS comment said a trial where the page no longer believes it is live "is thrown and
+marked, never quietly averaged in". The pre-write check was a throw; the post-preroll check incremented a
+counter and pushed the latency in anyway. The trap is specific: such a trial has fallen to the 60 s poll, so
+its latency is drawn against a 60 s bound while its whole column was drawn against 240 s — and a mixed
+column reads exactly like the uniform one the argument rests on. It is now a `NotTheCondition` throw, kept
+apart from "could not run": excluded from the distribution, printed as its own count in the cell, and an
+exit code. Verified by inverting the guard on a scratch copy so every trial took the path.
+
+**How to apply:** an integrity rule written in a comment is a wish. If the harness can print a mixed result
+that looks like a clean one, it will, on the run you most want to believe.
+
+### The instrument that was never run, and says so
+
+`tools/beatd.mjs` asks the round's one gating question of the live endpoint: does an answered heartbeat
+reach `heartbeatCallback("ok")`? One WebSocket with the public key from `config.js` — the connection every
+visitor's browser makes — no channel, no broadcast, no RPC, no row, so it spends none of the twelve lists an
+hour. It has produced no output: the session that wrote it had no outbound network. Its first paragraph says
+so, along with what a pass prints and what each failure would mean. It is shipped unrun on purpose, because
+the alternative was leaving the question with no way to ask it.
+
+**How to apply:** an instrument that has not run is not evidence, and shipping it is only honest if the file
+itself refuses to be mistaken for a result.
+
+### What was left alone
+
+* **`POLL_LIVE_MS` and `POLL_MS` do not move.** A rejoin that fails reports `channel_error` and `live` goes
+  false, which puts the wait back to 60 s through machinery that was already there.
+* **No throttle on `wake()`.** `onVisible` is still ungated and `onFocus` still has its 2 s gate, exactly as
+  before; the ceiling is on channel replacement, not on the wake. `wake()`'s own pull per visibilitychange
+  is unchanged since v3 and is measured as such.
+* **There is no `focused` condition in `quietd.js`.** An OS-level unfocused window is not producible under
+  Playwright — measured: both contexts report `hasFocus()` true and a `bringToFront` round trip delivers
+  zero `focus` events — so the brief's focused condition is stood in for by `heard`, and every number quoted
+  for it says so.
+* **`current()` grows two additive fields** (`quietFor`, `channelAlive`) and nothing else about the link
+  travels with them.
+## Integration — the instrument, three harnesses that lied, and the half of §4 nobody had measured
+
+### Every diagnostic this project had was invisible where the bugs were
+
+Eleven launch arguments, all `#if DEBUG`: `-TFSelfTest`, `-TFWatchSelfTest`, `-TFAddSelfTest`,
+`-TFFontSelfTest`, `-TFConfettiSelfTest`, `-TFFaceProbe`, `-TFKit`, `-TFShow`, `-TFThemeSet`,
+`-TFFinale`, `-TFFinaleHold`. **A TestFlight build is Release and takes no launch arguments**, so on
+the one device where this round's four findings were found, the project was blind — and had been for
+three phases.
+
+That is not a missing feature. It is the reason a feature could look present and do nothing for a whole
+round with nothing going red: the only instrument ever pointed at dictation printed
+`visibleInterfaceController=present` from a machine with no microphone, and a wrist had no way to
+disagree with it because a wrist had no way to say anything at all.
+
+So `WatchDiagnostics` ships: a bounded trace in the App Group under `tf/app/watch/trace`, and one
+screen behind the long press on the count, in **every** configuration.
+
+**The privacy rule is the type rather than the call sites.** `record` takes a `StaticString`, which the
+compiler accepts only as a literal written in this repository — it cannot be built from a variable,
+interpolated, concatenated or derived from input — and the only runtime payload an entry can hold is
+two `Int`s. Every other `print` in this project obeys the no-secrets rule by *convention*, each call
+site written to pass a fixed string and counts, and a convention is a thing that holds until somebody is
+in a hurry. There is no field in this type that can hold a secret, so no call site can put one there and
+a photograph of that screen is safe to send.
+
+The codes are `static let`s in one `Code` enum rather than literals scattered across four files, and
+that is not tidiness: it is what lets the *screen* compute a verdict. "asked 3, presented 3, heard 0" is
+the answer to this round's first question and it can only be counted if the writer and the reader name
+the event the same way. A `StaticString` constant is still a `StaticString`, so naming them centrally
+gives up none of the guarantee.
+
+**No timestamp in it is an epoch**, which is Phase 4's integration lesson applied before it could bite
+rather than after. A watchOS device is `arm64_32` and its `Int` is 32 bits: `Int32.max` is 2,147,483,647
+and epoch milliseconds are about 1.76 × 10¹², three orders of magnitude past it. It would not be a
+runtime overflow a test might miss — it would not compile for the target, and only `xcodebuild archive`
+would ever have said so. An entry carries a session number and milliseconds since that session's first
+entry, both of which stay small.
+
+**How to apply:** before building an instrument, ask which build it exists in. A diagnostic that is only
+in Debug is a diagnostic that is never where the bug is.
+
+### A seam a finger cannot reach is the same mistake one level along
+
+Track A built the WatchKit path as a seam: `WatchDictation.prefer(.watchKit)` writes a key and the add
+control changes. Reachable by editing a line and making a build — which, for a wrist that gets its
+builds through TestFlight, means another upload and another day.
+
+The round's own first unverified item is *does the input screen offer the microphone*, and if the answer
+is no, the very next thing anybody wants is to try the other path. On the wrist that is already in the
+room. So it is a button on the Diagnostics screen, next to the numbers that would make somebody want it,
+and `WatchDictation.prefer` is still the only writer of the key.
+
+Worth naming as the same failure this whole file exists to answer: **a diagnostic nobody can reach is
+worth exactly what one that is only in Debug is worth.** Phase 3 shipped a fallback nobody could reach
+and it took two rounds to find out.
+
+### `visibleInterfaceController` is documented as a *stale* cache, and that is the add bug's mechanism
+
+Phase 3's results line has been read three times as evidence that dictation worked:
+
+> `add self-test: visibleInterfaceController=present so the wrist takes the WatchKit path`
+
+Apple's own header says what that property answers with. `WKApplication.h:37`:
+
+    @property (nonatomic, readonly, nullable) WKInterfaceController *visibleInterfaceController;
+    // in the cases when queried after an app launch we will return the instance of the last visible
+    // interface controller
+
+**"The *last* visible interface controller"** — not the currently visible one. Non-nil never meant *on
+screen*, and a modal sent to a controller that is not the visible one presents into nothing while the
+system, which owns the input UI and the microphone both, still lights the indicator. Microphone on,
+screen unchanged, which is what a wrist reported.
+
+Two corroborations, both read rather than assumed. `Config/WatchInfo.plist` declares no
+`NSMicrophoneUsageDescription` and `otool -L` on the device build lists no AVFAudio, no AVFoundation and
+no Speech — so an app that reached the microphone would have been terminated rather than record, which
+makes it very unlikely the app itself acquired it. (`otool -L` lists direct link-time dependencies only,
+so that is "very unlikely", not "cannot".) And `WKInterfaceController.h:132` says of the *other* overload
+that it "will never go straight to dictation because allows for switching input language" — Apple
+stating in the negative that the overload this app calls **can**.
+
+**So Phase 3 read the API correctly, and the bug is not the call — it is what the call is sent to.** That
+distinction is the whole reason to write this down: "Phase 3 picked the wrong API" would be the wrong
+lesson and would send the next round at the wrong thing.
+
+**How to apply:** when a measurement says a pointer is non-nil, read what the pointer is documented to
+point *at*. "Present" and "current" are different claims, and an SDK comment will often say which one
+you actually have.
+
+### Three harnesses lied in three different ways in one round, and only the third was caught by a test
+
+This round set out to catch a simulator lying and then caught itself three times. They are worth reading
+together, because the shapes are different and the fix is the same shape each time.
+
+**One: the harness measured the control condition and called it the condition.** §4's whole subject is a
+window that is visible but not focused. Producing that state in a headless Chromium takes two levers and
+neither works alone — measured, four attempts:
+
+| attempt | `visibilityState` / `hasFocus()` |
+| --- | --- |
+| a plain headless page | visible / **true** |
+| `Emulation.setFocusEmulationEnabled({enabled:false})` alone | visible / **true** |
+| a second page in the same context, fronted, alone | visible / **true** (stable at +1 s, +6 s, +27 s) |
+| **both, in that order** | visible / **false**; one `blur`, never a `focus`; stable at +8 s and +38 s |
+
+Playwright turns Chromium's focus emulation *on* so headless pages behave as if frontmost, which is why
+every single-lever attempt reports a focused page with no window manager anywhere. The first probe used
+the second lever only and printed `hasFocus=true` on every row while calling itself the unfocused arm.
+`tools/quietd.js` had made the opposite version of the same mistake — it had *measured* that the state
+was unproducible, from `bringToFront` alone, and written that into the file as a limit. Both are fixed,
+and `quietd.js` now prints `50/50 trials ran on a page reporting visibilityState "visible" with
+hasFocus() false` above its table. It changed none of its numbers, which is the part worth keeping:
+`sync.js` has no notion of *is focused*, only of *just gained focus*, so the difference was never the
+state and always the transition.
+
+**Two: the harness reported its own starvation as the server's silence.** Two 45-minute channel probes,
+one focused and one unfocused, two independent browsers on two independent topics, came back identical:
+both lost rings 2, 5, 6 and 7 of ten, both raised `CHANNEL_ERROR` at 985–986 s and again at 3253–3254 s,
+both ran 54.4/54.5 minutes against a 45-minute schedule. Two independent clients do not agree to that
+precision about a server. The per-event timeline is what gave it away, and only the timeline:
+
+    986.0s   STATUS CHANNEL_ERROR
+    987.2s   STATUS SUBSCRIBED
+    994.7s   heard rev 3
+    994.8s   heard rev 4          ← rings five minutes apart, arriving a tenth of a second apart
+
+Rings scheduled five minutes apart cannot arrive a tenth of a second apart, and a run cannot take nine
+minutes longer than a schedule built from absolute targets. Four Xcode builds and two headless
+Chromiums on one Mac starved the page; it missed its own 30-second heartbeats, declared a heartbeat
+timeout, rejoined, and then processed a queue of arrivals in a burst when it next got CPU. **Those runs
+cannot distinguish "the channel lost a message" from "the harness could not observe one", and the honest
+verdict on them is `NOT MEASURED`.** The probe now carries a 1 Hz liveness counter and prints
+`NOT OBSERVED (starved)` where it used to print `NOT HEARD`.
+
+**Three: the check that could not fail.** Track A's own ring-buffer assertion compared eleven written
+entries against a cap of sixty and passed by construction. Its reviewer found it; the track then
+rewrote it *and falsified it* — deleted the eviction line, rebuilt, and watched the check go red
+(`wrote=65 entries=65 cap=60 oldest-evicted=false`) before restoring it. That is the only one of the
+three that a test caught, and the only one that was proved to work rather than argued to.
+
+**How to apply, and it is one rule with three faces:** a harness must print its own evidence that it was
+measuring what it says it measured — that the condition held, that it was awake, that it would have
+failed. Phase 4 learned that a harness must not be able to report "nothing ran" as "nothing happened".
+This round is the same rule applied to the condition, to the observer, and to the assertion.
+
+### The half of §4 nobody had measured is the wrist ringing the bell
+
+Phase 4's live run reads:
+
+> `tfive add` | the put returned in **0.52 s** · the line on the page | **0.63 s**
+
+**That writer is `tfive`, on a Mac.** The doorbell went into `SyncEngine.push()`, which the Watch, the
+CLI and the App Intent share — so the *code* is shared, exactly as Phase 4 said — but the only writer
+ever measured ringing the bell is a command-line process with a live network and no suspension model.
+A watchOS app is suspended seconds after the wrist drops, and `ringDoorbell()` is an awaited round trip
+*after* the put has already succeeded. A wrist that drops in between writes the list and tells nobody;
+the page then waits out `POLL_LIVE_MS`, which is the reported second-monitor symptom exactly.
+
+And nothing could have said so: `SupabaseTransport.ring` logs its status `#if DEBUG`, which on a
+TestFlight build is nowhere. So the core grows `SupabaseTransport.Doorbell.report` — an HTTP status and
+a body length, or `0` and a `URLError` code — set once at launch, and the Watch points it at the trace.
+The id never crosses: it is a channel name derived from a link.
+
+**How to apply:** when a fix is shared by three clients, it has been verified on the clients you
+measured and on no others. "The code is shared" is a statement about the code, not about the hosts —
+and `SyncEngine.push()` runs in a process macOS will keep alive and watchOS will not.
+
+### The one thing that could have made Track D's fix wrong does not happen
+
+`channelAlive` believes a healthy socket stamps `heard` through `heartbeatCallback("ok")`. If the live
+endpoint never delivered that, every real page would replace a channel that was fine — bounded by the
+`heldSince` floor to one join per 95 s per list, but a rejoin nobody needed.
+
+`tools/beatd.mjs` asks it in one command, opens one socket, joins no channel and creates no row.
+Track D shipped it having never run it, because its session had no outbound network. Integration ran it:
+
+    socket connected: true
+    callback fired 4 time(s): sent, ok, sent, ok
+    first "ok" after 30.6 s, and there were 2 of them
+
+So on this network the silence test's stamp moves on a healthy socket and the misfire does not happen.
+It says nothing about a socket with a channel on it, a proxy, or an iOS app coming back from suspend.
+
+**How to apply:** a tool shipped without ever being run is a hypothesis with a filename. Run it before
+the round closes, or say in the file that nobody has.
+
+### The trap this repository documents, walked into by someone who had just read it
+
+`new URL(…, import.meta.url).pathname` percent-encoded the space in `Today's Five`, and the first run of
+integration's own probe died on `/Today's%20Five/todays-five/config.js`. That is the
+`fileURLToPath`-never-`URL.pathname` entry in this file, word for word, an hour after reading it.
+
+**How to apply:** a warning in a decisions file is not a defence. The path is passed in now, which is.

@@ -345,6 +345,44 @@ network request of the app's own beyond the web view's.
 thing at a time, and four ways to put a line on the list by speaking.
 `apple/TodaysFive/TodaysFiveComplications` is the four accessory families on the face.
 
+**Since 1.12 b<BUILD> the add control on Today *is* the input**, rather than a button that opens a sheet
+containing another button that asks for one. `TextFieldLink` is the path and WatchKit's
+`presentTextInputController` is a seam behind the Diagnostics screen — the reverse of Phase 3, which
+shipped a WatchKit modal raised on `visibleInterfaceController` from underneath a SwiftUI sheet and
+which a real wrist reported as a microphone that lit and a screen that never changed. Neither path can
+*ask* for dictation: nothing on watchOS can, and `WKTextInputMode` widens which characters may come back
+rather than choosing the method.
+
+**And switching lists no longer hangs off the title.** The caret is gone from a control that advertised
+an action it may not perform; the title keeps its action and its trace because that is the measurement.
+Two controls that are tappable the way everything else in this app is do the job: a row at the top of
+Today, and a **Lists** row behind the long press on the count.
+
+## Diagnostics — the one instrument that ships
+
+Behind the long press on the count, last row, in **every build including Release**. That is the whole
+point of it: the other eleven instruments in this project are `#if DEBUG` behind a launch argument, and
+a TestFlight build takes no launch arguments — so on the one device where Phase 5's four findings were
+found, the project was blind, and had been for three phases.
+
+It leads with a verdict — *asked · presented · heard · landed · timed out · title tap · bell rung* —
+because the question anybody opens it with is "did the thing happen", and counting rows on a two-inch
+screen is not a way to answer that. The rows are underneath. Press **Clear** before a test or the counts
+include earlier launches.
+
+Two rows are *supposed* to read zero on a healthy wrist: `presented` and `timed out` belong to the
+WatchKit path, which nothing shipping selects.
+
+Under the verdict is **the add control switch** — system field, or WatchKit. It is there because a seam
+only an engineer with a build can reach is the same mistake as a diagnostic only Debug has: if the wrist
+reports that the system's input screen will not offer the microphone, the other path is one tap away
+rather than one upload away.
+
+**Nothing on that screen can carry a secret.** `WatchDiagnostics.record` takes a `StaticString`, which
+the compiler accepts only as a literal written in this repository, and the only runtime payload is two
+`Int`s. The privacy rule is a property of the type rather than a habit of its call sites, so a
+photograph of the screen is safe to send.
+
 **The phone hands over links and never data.** The Watch is a client of the server in its own right —
 it derives the keys, opens the envelope and merges with the same `TodaysFiveCore` the phone and the
 CLI use. That is the whole reason the core is a library. Read `PLAN-apple-phase3.md` before changing
@@ -379,13 +417,13 @@ Each is `#if DEBUG` only. They exist because the Watch cannot be driven by hand 
 | --- | --- |
 | `-TFWatchDemo` | seeds a local demo list over `MemoryTransport` — no phone, no network, and nothing spent from the server's create limit |
 | `-TFWatchSelfTest` | crosses a line off and back, finishes the list and reports whether the finale fired and after how long, runs Start again, **shuffles ten times and reports how many distinct lines came up and whether one ever came up twice in a row**, shuffles with one line left and reports that nothing moved, then prints the haptic tally, the finale run's duration, whether the store landed in the App Group, and the snapshot's counts |
-| `-TFAddSelfTest` | the add path with a canned string, with an empty one, against a view-only list, with no list selected, and Undo — and whether `visibleInterfaceController` is present, which is what decides the dictation path a wrist will take |
+| `-TFAddSelfTest` | the add path with a canned string, with an empty one, against a view-only list, with no list selected, and Undo; the trace's rows and outcome ordinals; the input gate; the five-second Undo window and a stale one; and the trace ring's eviction. Thirteen checks. It also prints `visibleInterfaceController` — which since Phase 5 is printed with the sentence *"which says a branch would be taken and nothing about whether it renders"* beside it, because that line was read for two rounds as evidence the feature worked |
 | `-TFFontSelfTest` | every one of the 13 font pairs: is each family on the device, does `CTFontCreateWithName` hand back the face it was asked for rather than Helvetica, and do the pair's two ui weights actually render differently. **A wrong font name renders Helvetica with no log and no error**, so this is the only thing that turns a silent fallback into a failure. Prints a tally |
 | `-TFKit <id>` | render one kit for this launch, whichever slot is stored. `simctl` cannot tap a watch simulator, so this is the only way a screenshot of a given kit exists |
 | `-TFConfettiSelfTest` | steps the finale's particle field off-screen for every kit: does the whole volley arrive and arrive staggered, is more than half of it still on screen at its most spread out, does the field **end** (it does, at frame 147), and are the shapes the ones the kit asks for. Prints how each kit's `shapes` was read — see below |
 | `-TFFaceProbe` | the two things about the complication that could not be settled by reading a doc comment: whether the extension can reach the app's fonts without a copy of them, and what `WidgetRenderingMode.accented` does to a custom accent (nothing, in SwiftUI — it is the widget host's) |
 | `-TFThemeSet <slot>:<id>` | calls the theme picker's own two store methods from a launch argument, so persistence across a cold launch can be verified at all |
-| `-TFShow actions\|theme` | opens one of the two screens behind the long press on the count. The only way a screenshot of either exists |
+| `-TFShow actions\|theme\|diagnostics\|lists` | opens one of the screens behind a gesture. The only way a screenshot of any of them exists. **`lists` raises the picker through the *title's* own sheet**, which is the path Phase 5 put under suspicion — so that screenshot says the sheet presents in a simulator and nothing whatever about a wrist |
 | `-TFFinale` | crosses the demo list off and **leaves** it crossed off, so there is a finale to photograph |
 | `-TFFinaleHold <seconds>` | freezes the confetti at one instant instead of running it. A screenshot of an animation is otherwise a coin toss, and the field is deterministic, so every kit is photographed at the same moment of the same volley |
 

@@ -267,7 +267,7 @@ confirming the replacement does.
 | --- | --- | --- | --- |
 | `.accessoryCircular` | a round slot, ~58 pt | a ring and about two characters inside it | the proportion, as a ring, with the count inside — **the glance.** Unchanged in shape |
 | `.accessoryCorner` | a screen corner, a few points of content plus a curved bezel label | one glyph or 2–4 characters, and a bezel label | **a glyph and the fraction.** The count alone has no context; `1/5` has all of it in three characters |
-| `.accessoryRectangular` | ~72 × 32 pt, three short lines | the most of any family | the name and the count, and the line **only** when the wearer opted in |
+| `.accessoryRectangular` | **slot size unconfirmed.** This plan drafted ~72 × 32 pt; Track C's sweep bracketed 140 × 38 to 176 × 50; nothing here can settle it (the 46 mm screen is 208 × 248 pt, so the two are 35 % and 85 % of its width). At 13 pt the first holds ~10 characters of a line and the second ~26 | the most of any family | the name and the count, and the line **only** when the wearer opted in |
 | `.accessoryInline` | one line beside the time, the face's own font | text only — it ignores fonts and colours both | `3/5`. It is the one family a kit cannot reach at all, and that is the SDK's, not ours |
 
 ### The corner, specifically

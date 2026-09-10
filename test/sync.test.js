@@ -257,3 +257,209 @@ await test("1.9: an import is measured against the server's cap before it lands 
 });
 
 console.log(`${passed} sync tests passed (with v4)`);
+
+/* ---- 1.12: a channel that says it is there and is not ---- */
+
+// Date.now is the instrument for every test below, so the real one is kept here: `until` above measures
+// its own patience with Date.now, and a frozen clock would turn a failed expectation into a hung suite.
+const realNow = Date.now;
+const waitReal = async (fn, ms = 3000) => { const t0 = realNow(); while (realNow() - t0 < ms) { if (fn()) return true; await tick(10); } return fn(); };
+
+/** A fake server whose channels can be told to go quiet: the handle goes on saying `alive`, and stops
+    advancing the stamp of the last thing it heard. That is a socket that died under a channel which still
+    reports "joined" — the state sync.js's own comment above `wake()` has described since v3. Every handle
+    it has ever given out is kept, in order, so a rejoin is visible. Set `quietAll` and every handle it
+    gives out from then on is born quiet, which is the shape of the silence test *misfiring*: a channel that
+    is really carrying while nothing ever advances its stamp. */
+function mutableServer() {
+  const t = fakeServer();
+  t.subs = [];
+  t.subscribe = (id, onMsg, onState, presence) => {
+    const h = {
+      id, onMsg, onState, presence, quiet: !!t.quietAll, closed: false, state: "", born: Date.now(),
+      alive: () => !h.closed && h.state !== "channel_error",
+      heardAt: () => h.quiet ? h.born : Date.now(),
+      send() {}, close() { h.closed = true; }
+    };
+    t.subs.push(h);
+    setTimeout(() => { if (!h.closed) { h.state = t.rtfail ? "channel_error" : "joined"; h.onState(h.state); } }, 0);
+    return h;
+  };
+  return t;
+}
+
+await test("the silence test: a channel that has heard nothing for longer than it should have is not alive, whatever it says about itself", () => {
+  const now = 1700000000000;
+  assert.equal(S.channelAlive({ alive: () => true }, now), true, "a transport that cannot say is believed, exactly as before");
+  assert.equal(S.channelAlive({ alive: () => true, heardAt: () => now - 1000 }, now), true);
+  assert.equal(S.channelAlive({ alive: () => true, heardAt: () => now - S.CHANNEL_SILENCE_MS + 1000 }, now), true, "just inside the silence");
+  assert.equal(S.channelAlive({ alive: () => true, heardAt: () => now - S.CHANNEL_SILENCE_MS - 1 }, now), false, "quiet for longer than the beat allows");
+  assert.equal(S.channelAlive({ alive: () => false, heardAt: () => now }, now), false, "the channel's own no is still a no");
+  assert.equal(S.channelAlive(null, now), false);
+  assert.equal(S.channelAlive({ alive: () => true, heardAt: () => 0 }, now), false, "a channel that has never heard anything is not one to trust");
+  assert.ok(S.CHANNEL_SILENCE_MS > 90000, "three of the client's 30 s heartbeats, and slack");
+  assert.ok(S.CHANNEL_SILENCE_MS < S.POLL_LIVE_MS, "so the first safety poll after the silence finds it");
+  // `heldSince`: a channel this page has only just taken is not one the silence test may throw away. This is
+  // what bounds the cost if the stamp is ever wrong — see the test two below, and `channelAlive`'s comment.
+  assert.equal(S.channelAlive({ alive: () => true, heardAt: () => 0 }, now, now - 1000), true, "held a second ago, so not yet evidence of anything");
+  assert.equal(S.channelAlive({ alive: () => true, heardAt: () => now - 10 * S.CHANNEL_SILENCE_MS }, now, now - 1000), true, "a stamp frozen long ago on a channel just taken is not evidence either");
+  assert.equal(S.channelAlive({ alive: () => true, heardAt: () => 0 }, now, now - S.CHANNEL_SILENCE_MS - 1), false, "held through a whole silence and still nothing heard");
+  assert.equal(S.channelAlive({ alive: () => false, heardAt: () => now }, now, now), false, "the floor rescues nothing that says no: a channel reporting channel_error is replaced as fast as it was before 1.12");
+});
+
+await test("the safety poll is the occasion: a quiet channel is let go and rejoined, and the rejoined one delivers", async () => {
+  const srv = mutableServer();
+  const W = M.newId(); const e = await C.fromWrite(W);
+  let NOW = 1700000000000;
+  try {
+    Date.now = () => NOW;
+    const s = S.createSync({ transport: srv, deviceId: "d" });
+    s.open(e, M.seedDoc(W), { rev: 0, dirty: true, created: true });
+    assert.ok(await waitReal(() => s.status === "synced" && s.live === true), "joined and synced");
+    assert.equal(srv.subs.length, 1);
+
+    // idle, and the channel is fine: the poll tick costs one unchanged get and nothing else
+    srv.log.length = 0;
+    s.pollNow();
+    assert.ok(await waitReal(() => srv.log.length > 0));
+    await tick(40);
+    assert.equal(srv.subs.length, 1, "a living channel is not replaced");
+    assert.equal(srv.log.filter(l => l[0] === "get").length, 1, "one poll, which is the poll that already happened");
+
+    // now the channel dies without saying so, and a whole silence goes by
+    srv.subs[0].quiet = true;
+    NOW += S.CHANNEL_SILENCE_MS + 1000;
+    s.pollNow();
+    assert.ok(await waitReal(() => srv.subs.length === 2), "the poll tick rejoined");
+    assert.equal(srv.subs[0].closed, true, "the channel that had stopped hearing is let go");
+    assert.ok(await waitReal(() => s.live === true));
+    assert.equal(s.pollDelay(), S.POLL_LIVE_MS, "live again, so the slow poll again");
+
+    // and the doorbell works again: a broadcast on the new channel turns into a pull
+    srv.log.length = 0;
+    srv.subs[1].onMsg({ rev: 9, from: "somebody-else" });
+    assert.ok(await waitReal(() => srv.log.some(l => l[0] === "get")), "the rejoined channel's doorbell is answered");
+    s.close();
+  } finally { Date.now = realNow; }
+});
+
+await test("a silence test that is wrong about a healthy channel costs one join per silence window, not one per tick", async () => {
+  // The misfire this bounds: if an answered heartbeat never reached `heartbeatCallback` on the live socket,
+  // `heardAt()` would freeze at the join while the channel was carrying perfectly well. `quietAll` is that
+  // page. The engine must then replace the channel at most once per CHANNEL_SILENCE_MS however often it is
+  // asked — and `wake()`, which `visibilitychange` calls with no throttle at all, asks exactly as often as
+  // a person switches tabs.
+  const srv = mutableServer();
+  srv.quietAll = true;
+  const W = M.newId(); const e = await C.fromWrite(W);
+  let NOW = 1700000000000;
+  try {
+    Date.now = () => NOW;
+    const s = S.createSync({ transport: srv, deviceId: "d" });
+    s.open(e, M.seedDoc(W), { rev: 0, dirty: true, created: true });
+    assert.ok(await waitReal(() => s.status === "synced" && s.live === true));
+    assert.equal(srv.subs.length, 1);
+
+    // forty asks inside one silence window — eighty seconds of tab switching, with the stamp never moving
+    for (let i = 0; i < 40; i++) { NOW += 2000; s.pollNow(); await tick(6); }
+    assert.equal(srv.subs.length, 1, "not one rejoin: the channel has not been held long enough to be called quiet");
+
+    // past the window, and exactly one replacement
+    NOW += S.CHANNEL_SILENCE_MS;
+    s.pollNow();
+    assert.ok(await waitReal(() => srv.subs.length === 2), "held through a whole silence, so it is replaced");
+    for (let i = 0; i < 40; i++) { NOW += 2000; s.pollNow(); await tick(6); }
+    assert.equal(srv.subs.length, 2, "and the replacement gets the same grace, so the storm costs nothing more");
+    assert.equal(s.live, true, "and the page stays live throughout: a rejoin is not an outage");
+    s.close();
+  } finally { Date.now = realNow; }
+});
+
+await test("a channel that has been replaced does not speak for the list any more", async () => {
+  const srv = mutableServer();
+  const W = M.newId(); const e = await C.fromWrite(W);
+  let NOW = 1700000000000;
+  try {
+    Date.now = () => NOW;
+    const s = S.createSync({ transport: srv, deviceId: "d" });
+    s.open(e, M.seedDoc(W), { rev: 0, dirty: true, created: true });
+    assert.ok(await waitReal(() => s.live === true));
+    srv.subs[0].quiet = true;
+    NOW += S.CHANNEL_SILENCE_MS + 1000;
+    s.pollNow();
+    assert.ok(await waitReal(() => srv.subs.length === 2));
+    await tick(40);
+    // the handle we let go of answers late, as a socket shutting down does
+    srv.log.length = 0;
+    srv.subs[0].onState("joined");
+    srv.subs[0].onMsg({ rev: 99, from: "somebody-else" });
+    srv.subs[0].onState("channel_error");
+    await tick(60);
+    assert.equal(srv.log.length, 0, "no pull from a channel we have replaced: one wake is not a burst");
+    assert.equal(s.live, true, "and it cannot put out the live light either");
+    s.close();
+  } finally { Date.now = realNow; }
+});
+
+await test("a rejoin that fails puts the poll back to a minute, through the machinery that was already there", async () => {
+  const srv = mutableServer();
+  const W = M.newId(); const e = await C.fromWrite(W);
+  let NOW = 1700000000000;
+  try {
+    Date.now = () => NOW;
+    const s = S.createSync({ transport: srv, deviceId: "d" });
+    s.open(e, M.seedDoc(W), { rev: 0, dirty: true, created: true });
+    assert.ok(await waitReal(() => s.live === true));
+    assert.equal(s.pollDelay(), S.POLL_LIVE_MS);
+    srv.subs[0].quiet = true;
+    srv.rtfail = true;                                  // the channel is gone and cannot be got back
+    NOW += S.CHANNEL_SILENCE_MS + 1000;
+    s.pollNow();
+    assert.ok(await waitReal(() => s.live === false), "the engine stops claiming to be live");
+    assert.equal(s.pollDelay(), S.POLL_MS, "and the existing machinery halves the wait four times over");
+    assert.equal(s.status !== "gone", true);
+    s.close();
+  } finally { Date.now = realNow; }
+});
+
+await test("the poll tick changes nothing for a transport that cannot say when it last heard", async () => {
+  const srv = fakeServer();
+  let subs = 0;
+  const base = srv.subscribe;
+  srv.subscribe = (...a) => { subs++; return base(...a); };
+  const W = M.newId(); const e = await C.fromWrite(W);
+  const s = S.createSync({ transport: srv, deviceId: "d" });
+  s.open(e, M.seedDoc(W), { rev: 0, dirty: true, created: true });
+  await until(() => s.status === "synced" && s.live === true);
+  assert.equal(subs, 1);
+  srv.log.length = 0;
+  s.pollNow(); await until(() => srv.log.length > 0); await tick(40);
+  s.pollNow(); await tick(60);
+  assert.equal(subs, 1, "no rejoin: the channel never claimed anything that could be checked");
+  assert.equal(srv.log.filter(l => l[0] === "get").length, 2, "two ticks, two unchanged polls, and nothing else");
+  s.close();
+});
+
+await test("a healthy channel is left alone tick after tick, and what the page reports about it is readable", async () => {
+  const srv = mutableServer();
+  const W = M.newId(); const e = await C.fromWrite(W);
+  const s = S.createSync({ transport: srv, deviceId: "d" });
+  s.open(e, M.seedDoc(W), { rev: 0, dirty: true, created: true });
+  assert.ok(await waitReal(() => s.status === "synced" && s.live === true));
+  srv.log.length = 0;
+  for (let i = 0; i < 4; i++) { s.pollNow(); await tick(30); }
+  assert.equal(srv.subs.length, 1, "four ticks on a channel that is hearing, and it is still the same channel");
+  assert.equal(srv.log.filter(l => l[0] === "get").length, 4, "four unchanged polls, which is what the timer cost before this round too");
+  // the number the silence test reads is the number a person can read, so the one unmeasurable risk is checkable
+  const c1 = s.current();
+  assert.ok(c1.quietFor != null && c1.quietFor < 1000, "quietFor is a duration, and on a hearing channel it is tiny: " + c1.quietFor);
+  assert.equal(c1.channelAlive, true);
+  assert.ok(!("heardAt" in c1) && !("key" in c1) && !("token" in c1), "and nothing about the link goes with it");
+  srv.subs[0].quiet = true;
+  await tick(20);
+  const c2 = s.current();
+  assert.ok(c2.quietFor >= 0, "a quiet channel's stamp stops moving, so the duration grows: " + c2.quietFor);
+  s.close();
+});
+
+console.log(`${passed} sync tests passed (with 1.12)`);

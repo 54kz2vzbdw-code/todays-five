@@ -22,11 +22,16 @@
 //      `WatchDictation` for the whole argument; the short form is that `TextFieldLink`'s screen is
 //      presented by the system from the app's own hierarchy, cannot force dictation (nothing on watchOS
 //      can) and cannot be invisible, and invisible is the failure being fixed.
-//   3. **`working` is no longer a latch.** It was set before presenting and cleared only inside the
-//      completion, so a completion that never arrived disabled the control for the life of the sheet
-//      with no sentence. The `TextFieldLink` path has no such gate at all — nothing here presents
-//      anything, so there is nothing to gate — and the WatchKit path gates on a `WatchDictation.Gate`,
-//      which answers once and releases on a deadline with a sentence the person can read.
+//   3. **`working` is no longer a latch — and on the shipping path that is because the gate is gone,
+//      not because it is better.** Phase 3 set `working` before presenting and cleared it only inside
+//      the completion, so a completion that never arrived disabled the control for the life of the
+//      sheet with no sentence. The `TextFieldLink` path has **no gate at all**: nothing here presents
+//      anything, so there is nothing to latch. `WatchDictation.Gate` — the deadline, and
+//      `AddOutcome.inputTimedOut` — repairs the *seam*, and the seam is not reachable by any tap on a
+//      Release wrist (`WatchDictation.preferred`). So the gate is real code with a real test and it is
+//      **not** part of what a wrist will exercise; saying otherwise would be this round's own mistake
+//      repeated. It earns its place as the thing that is already correct if the `.watchKit` arm ever
+//      has to be turned on.
 //   4. **One primary action.** Phase 3 had `.handGestureShortcut(.primaryAction)` on *both* Today's `+`
 //      and the button inside the sheet, which is two primary actions on one screen and a defect on its
 //      own: Double Tap had no unambiguous target. There is now exactly one, on the control that *is*
@@ -37,21 +42,41 @@
 //      `.task` — during the sheet's entry animation, which is a classic swallowed presentation. And a
 //      `TextFieldLink` **cannot be triggered from code**: it is a button a person presses. So the face
 //      path is honest about what it costs: the complication opens the app on Today, and the add control
-//      is the row under the count, already on screen. **One tap.**
+//      is the row under the count. It is the row under the count *when the list is at the top*, which a
+//      resumed app need not be — so `onOpenURL` asks Today to scroll there (`AddCoordinator.focusTick`,
+//      `TodayView.addRow`). **One tap, once the list is where that call puts it**, and whether the call
+//      moves a carousel `List` is on the unverified list rather than asserted here.
 //
-// **The confirmation and the Undo are Phase 3's, unchanged.** They were never the bug, and they are the
-// half of this flow a simulator could prove; what moved is only where they are drawn.
+// **The confirmation and the Undo are Phase 3's, and moving them cost one real bug.** The five-second
+// window was a `.task` on the confirmation view, which was safe inside a sheet and is not safe inside a
+// list row that Always-On tears down; an independent review found it and `AddCoordinator.startWindow`
+// carries the whole story. The window is the coordinator's now. What a simulator could prove about the
+// sentences and the tombstone is unchanged.
 //
 // ============================================================================================
-// WHAT IT CAN SAY ABOUT ITSELF
+// WHAT IT CAN SAY ABOUT ITSELF — AND WHICH ROWS A RELEASE WRIST CAN NEVER SHOW
 // ============================================================================================
 //
-// `WatchDiagnostics` rows, in the order the path runs: `add.tap` (the control was pressed, written by
-// `AddPressStyle` — see there for why a style and not a gesture), `add.fieldlink` (which control this
-// launch offers), `add.heard` with the character count and which path it came from, `add.heard.nil`
-// (backed out), `add.timeout` with the milliseconds waited. The core's own three rows — `add.service`,
+// `WatchDiagnostics` rows, in the order the path runs: `add.style` (the custom `ButtonStyle` was asked
+// to draw — once per process), `add.tap` (the control was pressed, written by `AddPressStyle` — see
+// there for why a style and not a gesture, and for what the pair of rows can and cannot separate),
+// `add.fieldlink` (which control this launch offers), `add.heard` with the character count and which
+// path it came from, `add.heard.nil` (backed out). The core's own three rows — `add.service`,
 // `add.landed`, `add.refused` — are written in `AddToTodaysFive.swift`, because all four ways in pass
 // through there and only one of them passes through here.
+//
+// **Four of the vocabulary's rows are structurally zero on a Release wrist, and a reader who does not
+// know that will file a bug about them.** `add.present`, `add.presented`, `add.nopresenter` and
+// `add.timeout` are all written by `WatchDictation.present`, which is reached only from `begin()`, which
+// is only in the `.watchKit` arm of `addControl`, which `WatchDictation.preferred` never selects unless
+// something wrote `tf/app/watch/addinput` — and nothing in a shipping build does. The Diagnostics
+// screen's `presented` and `timed out` lines therefore read 0 on a healthy wrist. That screen is the
+// orchestrator's file; the fix for its wording is in this round's `patchSpec` rather than here.
+//
+// On the shipping path the instrumented span is `add.style` → `add.tap` → `add.heard` → `add.service` →
+// `add.landed`/`add.refused`. Between the press and the submit there is **nothing**, because there is no
+// callback of ours in between — the system owns that screen. That gap is exactly where the wrist's
+// failure lives, and the honest statement is that this trace brackets it rather than covers it.
 //
 // **Isolation.** A SwiftUI `View` and a `@MainActor @Observable` coordinator. The add itself is `async`
 // and non-isolated, so the work happens off the main actor and only the answer comes back to it.
@@ -79,9 +104,23 @@ final class AddCoordinator {
         /// is the same line twice, and so a refusal (which has no item) can be pending too.
         let id: Int
         let outcome: AddOutcome
+        /// When it was announced. The window is *also* measured against this, not only slept through —
+        /// see `startWindow`.
+        let at: Date
+
+        /// Whether the five seconds are still running, as wall-clock arithmetic rather than as a
+        /// promise a sleeping task kept.
+        func isLive(_ now: Date = Date()) -> Bool {
+            now.timeIntervalSince(at) < AddCoordinator.undoWindowSeconds
+        }
     }
 
     private(set) var pending: Pending?
+
+    /// Bumped when something outside Today asks for the add control to be **on screen**: today that is
+    /// only the Add complication's `todaysfive://add`. `TodayView` watches it and scrolls its list to
+    /// the top. See `TodayView.addRow` for why that is needed and what it is worth.
+    private(set) var focusTick = 0
 
     /// A line landed, or an Undo took one away. The Watch's model hangs a pull off this so whatever is
     /// on screen catches up; SwiftUI does not need it, since `pending` is observed.
@@ -89,15 +128,24 @@ final class AddCoordinator {
 
     private var serial = 0
 
+    /// The five seconds, held here rather than by a view. See `startWindow`.
+    private var window: Task<Void, Never>?
+
     /// How long the Undo stays. The web's own undo toast is five seconds and this is the same five.
-    static let undoWindow: Duration = .seconds(5)
+    /// One number, two types, because the window is both slept through and arithmetic.
+    ///
+    /// `nonisolated` because `Pending.isLive` reads it and a nested struct is not on this actor — an
+    /// immutable `TimeInterval` is `Sendable`, so there is nothing to protect.
+    nonisolated static let undoWindowSeconds: TimeInterval = 5
+    nonisolated static var undoWindow: Duration { .seconds(undoWindowSeconds) }
 
     private init() {}
 
     /// Announce an outcome: the haptic, the sentence, and the window.
     func note(_ outcome: AddOutcome) {
         serial += 1
-        pending = Pending(id: serial, outcome: outcome)
+        pending = Pending(id: serial, outcome: outcome, at: Date())
+        startWindow(for: serial)
         if outcome.landed != nil {
             // The same tap the check-off gets. It belongs in `WatchHaptics` next to the other four
             // moments — this call site is one line and is meant to move.
@@ -110,17 +158,62 @@ final class AddCoordinator {
         #endif
     }
 
+    /// The five seconds, owned by the coordinator.
+    ///
+    /// **This is Phase 5 repairing a Phase 5 change, and an independent review caught it.** The
+    /// countdown used to be a `.task(id: pending.id)` on the confirmation view, which was right for as
+    /// long as `AddFlowView` lived inside `.sheet(isPresented: $showAdd)`: a presented sheet stays
+    /// mounted when `RootView.content` switches branches, so the five seconds always ran out. It is a
+    /// row in Today's list now, and `content` is an `if/else` ViewBuilder — `EmptyStateView`, else
+    /// `AlwaysOnTodayView` when `isLuminanceReduced`, else the `TabView`. Lowering the wrist inside
+    /// five seconds, which is the ordinary gesture after adding a line, swaps the branch, tears the row
+    /// down and cancels the task with `pending` still set. Raise the wrist an hour later and the row
+    /// drew a *live* Undo for a line added an hour ago, and tapping it tombstoned that line.
+    ///
+    /// An App Intent is the same bug from the other end: Siri's add calls `note` with no `AddFlowView`
+    /// anywhere, so nothing ever started the window at all.
+    ///
+    /// A `Task` on the singleton is not cancelled by a view going away. It is still not a clock — a
+    /// watch app is suspended within seconds of a wrist drop and what the runtime does with the
+    /// remainder of a `Task.sleep` across that is not something any instrument here can measure — so
+    /// `Pending.isLive` is checked as well, by the view each time it draws and by `sweepExpired` each
+    /// time the row comes back. Belt and braces, because the failure this replaces was silent.
+    private func startWindow(for id: Int) {
+        window?.cancel()
+        window = Task { [weak self] in
+            try? await Task.sleep(for: Self.undoWindow)
+            guard !Task.isCancelled else { return }
+            self?.dismiss(id)
+        }
+    }
+
     /// The five seconds are up, or the person pressed Undo, or another add replaced this one.
     func dismiss(_ id: Int) {
         guard pending?.id == id else { return }
         pending = nil
+        window?.cancel()
+        window = nil
+    }
+
+    /// Drop a confirmation whose five seconds ran out while nothing was on screen to count them.
+    /// Called when the add row appears; cheap, and a no-op in the ordinary case.
+    func sweepExpired() {
+        guard let pending, !pending.isLive() else { return }
+        dismiss(pending.id)
     }
 
     /// The line has been taken back off the list.
     func noteUndone() {
         pending = nil
+        window?.cancel()
+        window = nil
         WKInterfaceDevice.current().play(.click)
         onChange?()
+    }
+
+    /// The Add complication arrived. Not a presentation — see `RootView.onOpenURL`.
+    func requestFocus() {
+        focusTick += 1
     }
 }
 
@@ -138,6 +231,18 @@ final class AddCoordinator {
 ///
 /// It also draws the row, in the plain style the rest of Today uses — `TodayRow` is `.buttonStyle(.plain)`
 /// for the same reason: a `.bordered` tint inside a carousel platter is a button drawn on a button.
+///
+/// **`add.style`, and what a review made it for.** `add.tap` is the only row the shipping path writes
+/// before `onSubmit`, and it comes from `configuration.isPressed` — so if that does not toggle for a
+/// `TextFieldLink`, a trace reading `asked 0` cannot be told apart from a launch where nobody pressed
+/// anything. This `.onAppear` is the separate, weaker question asked separately: it fires only if
+/// watchOS actually called `makeBody` and put the result in the view tree, which is the same as saying
+/// the custom style is **honoured**. Once per process, so the row costs one entry of the sixty.
+///
+/// Reading the two together: `add.style 0` means the control never drew at all; `add.style 1` with
+/// `asked 0` narrows it to "the style draws but `isPressed` never went true, **or** it was never
+/// pressed" — and those two are separated by *looking*, not by the trace: a press that reaches this
+/// style fades the row to 0.55 while the finger is down.
 private struct AddPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -146,6 +251,31 @@ private struct AddPressStyle: ButtonStyle {
                 guard pressed else { return }
                 WatchDiagnostics.shared.record(WatchDiagnostics.Code.addTap)
             }
+            .onAppear {
+                guard AddStyleWitness.shared.firstTime() else { return }
+                WatchDiagnostics.shared.record(WatchDiagnostics.Code.addStyle)
+            }
+    }
+}
+
+/// One bit, once per process, for `add.style`.
+///
+/// A `final class` behind a lock rather than a `static var`, because `ButtonStyle.makeBody` and the
+/// `onAppear` it returns are not main-actor-isolated and this target builds with
+/// `SWIFT_STRICT_CONCURRENCY = complete`: a mutable global reachable from there does not compile, and
+/// `nonisolated(unsafe)` would be a promise rather than a mechanism. Same shape as `WatchDiagnostics`
+/// itself, for the same reason.
+private final class AddStyleWitness: @unchecked Sendable {
+    static let shared = AddStyleWitness()
+    private let lock = NSLock()
+    private var seen = false
+
+    /// True exactly once.
+    func firstTime() -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        if seen { return false }
+        seen = true
+        return true
     }
 }
 
@@ -186,7 +316,11 @@ struct AddFlowView: View {
                     .font(theme.ui(12, .caption))
                     .foregroundStyle(theme.muted)
             }
-            if let pending = coordinator.pending {
+            // `isLive` as well as `pending != nil`: the countdown is the coordinator's `Task` and the
+            // app is suspended when the wrist drops, so a resumed row must not redraw a five-second
+            // Undo for something added an hour ago. The task is what normally clears it; this is what
+            // makes the stale case impossible rather than unlikely.
+            if let pending = coordinator.pending, pending.isLive() {
                 confirmation(pending)
                     .transition(dimmed ? .identity : .opacity)
             }
@@ -196,6 +330,8 @@ struct AddFlowView: View {
         // time Today comes back, and sixty trace entries is four or five passes through the add flow —
         // a row repeated on every wrist raise would push the thing Price came to look at off the end.
         .onAppear(perform: Self.announceInput)
+        // And actually clear anything that expired while no view was counting.
+        .onAppear { coordinator.sweepExpired() }
         // `AddSelfTest` is NOT run from here. Phase 3 wired it to this view's `.task` and it never ran,
         // because this view only ever existed inside a sheet nothing opened — the log was two lines
         // long. It runs from the app's root, where the app always is.
@@ -267,13 +403,11 @@ struct AddFlowView: View {
                 .font(theme.ui(13, .footnote, bold: true))
             }
         }
-        // The window is keyed on the serial, so a second add restarts it rather than inheriting the
-        // remainder of the first one's.
-        .task(id: pending.id) {
-            try? await Task.sleep(for: AddCoordinator.undoWindow)
-            guard !Task.isCancelled else { return }
-            coordinator.dismiss(pending.id)
-        }
+        // **No timer here.** It was a `.task(id: pending.id)` on this view and that is the bug
+        // `AddCoordinator.startWindow` documents: this row is torn down every time the wrist drops,
+        // which cancelled the five seconds and left the confirmation pending forever. The window is
+        // the coordinator's now, keyed on the same serial, so a second add still restarts it rather
+        // than inheriting the remainder of the first one's.
     }
 
     // ---------------------------------------------------------------- the flow
@@ -332,6 +466,10 @@ struct AddFlowView: View {
         submit(text)
     }
 
+    /// The add itself is deliberately **not** view-scoped: an unstructured `Task`, not a `.task`
+    /// modifier, so a wrist that drops while the push is in the air still lands the line and still
+    /// announces it — the coordinator is a singleton and outlives this row. Only `inFlight`, which
+    /// draws "Adding…", belongs to the view, and losing that to a teardown costs a label and no data.
     private func submit(_ text: String) {
         inFlight += 1
         Task {
@@ -373,7 +511,12 @@ struct AddFlowView: View {
 ///   * **the gate releases.** `WatchDictation.Gate` is exercised with a 50 ms deadline and with a late
 ///     completion, which is the whole of Phase 3's one-way latch, checked **without presenting
 ///     anything** — a keyboard raised on a watch simulator cannot be dismissed, because nothing here
-///     can tap.
+///     can tap. Worth knowing while reading the tally: that gate is not on the path a wrist takes, so
+///     this is a check on a seam, not on the feature;
+///   * **the five-second Undo window is the coordinator's.** Checks 10 and 10b, added after a review
+///     found that the window used to be a view's `.task` and died with the view;
+///   * **the ring caps, and keeps the newest.** Added last and rewritten after a review found the first
+///     version of it could not fail — see check 11.
 ///
 /// Everything it prints is a count or a fixed word. Never a line, never an id.
 @MainActor
@@ -515,12 +658,6 @@ enum AddSelfTest {
         check("trace", nService == 4 && nLanded == 1 && nRefused == 3 && nUndone == 1,
               "service=\(nService)/4 landed=\(nLanded)/1 refused=\(nRefused)/3 undone=\(nUndone)/1")
 
-        // 6b. and the ring itself, because the bug above was in the *reading* of it and a ring that
-        //     silently stopped capping would be the next one. Everything traced since the clear is the
-        //     whole trace, and it is under the cap, so a count is a count.
-        check("trace-ring", trace.all.count <= WatchDiagnostics.limit && trace.all.count >= nService,
-              "entries=\(trace.all.count) cap=\(WatchDiagnostics.limit)")
-
         // 7. the ordinals on `add.refused` are the table in AddToTodaysFive.swift's header, which is
         //    what a reader of a wrist screenshot decodes the digit with
         let table: [(AddOutcome, Int)] = [
@@ -550,6 +687,59 @@ enum AddSelfTest {
         quick.finish(.cancelled)
         try? await Task.sleep(for: .milliseconds(200))
         check("gate-early", early == [.cancelled], "answers=\(early.count)")
+
+        // 10. the five-second window runs in the coordinator, not in a view.
+        //
+        //     What this measures and what it does not: it shows that `note` starts a window and that the
+        //     window clears `pending` on its own. It cannot show that no *view* cleared it, because
+        //     nothing here can unmount a view — `simctl` cannot tap a watch simulator. That half is a
+        //     reading: `confirmation(_:)` has no `.task` in it any more, so the coordinator's `Task` is
+        //     the only timer left in the flow. The bug this replaces was a cancelled view task, so the
+        //     check is still worth its five seconds.
+        //
+        //     `.nothingSaid` rather than an `added`, so no haptic fires and no Undo is offered for a line
+        //     that does not exist. It does put one sentence on Today for five seconds during a self-test
+        //     launch, which is a thing to know before photographing that screen.
+        let co = AddCoordinator.shared
+        co.note(.nothingSaid)
+        let opened = co.pending != nil
+        try? await Task.sleep(for: .seconds(AddCoordinator.undoWindowSeconds + 0.5))
+        check("window", opened && co.pending == nil,
+              "opened=\(opened) cleared=\(co.pending == nil) after=\(AddCoordinator.undoWindowSeconds)s")
+
+        // 10b. and the wall-clock half of it, which is what survives a suspended process: a pending
+        //      older than the window is not live, whatever happened to the task that was sleeping on it.
+        let fresh = AddCoordinator.Pending(id: -1, outcome: .nothingSaid, at: Date())
+        let old = AddCoordinator.Pending(id: -2, outcome: .nothingSaid,
+                                         at: Date().addingTimeInterval(-600))
+        check("window-stale", fresh.isLive() && !old.isLive(),
+              "fresh=\(fresh.isLive()) ten-minutes-old=\(old.isLive())")
+
+        // 11. the ring actually caps, and keeps the newest.
+        //
+        //     **This check was rewritten after a review, and the first version of it is worth keeping in
+        //     the record as the thing it was.** It asserted `all.count <= limit && all.count >= nService`
+        //     against a trace holding about eleven rows with a cap of sixty — 11 ≤ 60 and 11 ≥ 4, both
+        //     true by construction. Deleting the `removeFirst` line from `WatchDiagnostics.record`
+        //     altogether left it printing `ok`. A cap can only be checked by going past it, so this
+        //     writes `limit + 5` rows and then asks two questions: is the count exactly `limit`, and is
+        //     what survived the **newest** end. Five of one code followed by `limit` of another answers
+        //     both — if eviction took from the wrong end, the five are what is left.
+        //
+        //     It runs last and clears afterwards, because it floods the ring on purpose and would
+        //     otherwise evict the rows checks 6 and 7 are counting. The console carries `limit + 5` trace
+        //     lines while it does; that is the check being visible rather than a fault.
+        trace.clear()
+        let cap = WatchDiagnostics.limit
+        for _ in 0..<5 { trace.record(WatchDiagnostics.Code.addUndone) }
+        for _ in 0..<cap { trace.record(WatchDiagnostics.Code.addService) }
+        let held = trace.all
+        let evictedOldest = rows(WatchDiagnostics.Code.addUndone) == 0
+            && rows(WatchDiagnostics.Code.addService) == cap
+        check("trace-ring", held.count == cap && evictedOldest,
+              "wrote=\(cap + 5) entries=\(held.count) cap=\(cap) oldest-evicted=\(evictedOldest)")
+        trace.clear()
+        print("[tfive] add self-test: the trace is left empty — the ring check filled it on purpose")
 
         print("[tfive] add self-test: end pass=\(passed)/\(checked)")
     }

@@ -45,6 +45,16 @@ struct TodaysFiveWatchApp: App {
                     // from a wrist otherwise has to be asked for twice.
                     WatchDiagnostics.shared.record(WatchDiagnostics.Code.launched,
                                                    Int(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "") ?? 0)
+                    // **The doorbell's answer, on the client where it has never been measured.** The
+                    // core logs the status `#if DEBUG`, which on a TestFlight build is nowhere — and the
+                    // Watch is the writer that matters, because every doorbell this project has observed
+                    // was rung by `tfive` on a Mac while a watchOS app is suspended seconds after the
+                    // wrist drops and the ring is an awaited round trip after the put already
+                    // succeeded. Set once, here, before any write can happen. Status and body length
+                    // only; the id is a channel name derived from a link and never crosses.
+                    SupabaseTransport.Doorbell.report = { status, n in
+                        WatchDiagnostics.shared.record(WatchDiagnostics.Code.doorbell, status, n)
+                    }
                     // Before the first sync, because a silent Helvetica is a thing you want told
                     // about whether or not there is a list to render in it.
                     #if DEBUG
@@ -81,10 +91,10 @@ struct TodaysFiveWatchApp: App {
                         // After the self-test's finale has had time to throw its volley: the meter
                         // is the only thing that can say the Canvas actually drew, and how often.
                         try? await Task.sleep(for: .seconds(3))
-                        print("[tfive] watch selftest: 10 confetti: run=\(store.finaleTick) "
+                        print("[tfive] watch selftest: 13 confetti: run=\(store.finaleTick) "
                               + ConfettiMeter.report)
 
-                        // 11. **the complication, redrawn on a theme change.** The flip goes through
+                        // 14. **the complication, redrawn on a theme change.** The flip goes through
                         //     `show(_:)` — the picker's own call — and nothing else is touched. What
                         //     is asserted is that the snapshot on disk moved: `publish()` writes it
                         //     and calls `reloadAllTimelines()` in the same breath, so a snapshot that
@@ -93,7 +103,7 @@ struct TodaysFiveWatchApp: App {
                         theme.show(theme.slot == .day ? .night : .day)
                         try? await Task.sleep(for: .milliseconds(500))
                         let after = WatchSnapshot.read()
-                        print("[tfive] watch selftest: 11 theme change: "
+                        print("[tfive] watch selftest: 14 theme change: "
                               + "\(before?.kit ?? "none")/\(before?.face ?? "none") → "
                               + "\(after?.kit ?? "none")/\(after?.face ?? "none") "
                               + "changed=\(before?.kit != after?.kit)")
@@ -163,7 +173,7 @@ struct RootView: View {
     enum Page: Hashable { case today, oneThing }
 
     #if DEBUG
-    /// `-TFShow actions|theme`.
+    /// `-TFShow actions|theme|diagnostics|lists`.
     static var debugShow: String? {
         let args = ProcessInfo.processInfo.arguments
         guard let i = args.firstIndex(of: "-TFShow"), i + 1 < args.count else { return nil }
@@ -244,6 +254,11 @@ struct RootView: View {
             case "actions": showActions = true
             case "theme": showThemeDirect = true
             case "diagnostics": showDiagnosticsDirect = true
+            // The picker, for a screenshot of it — `simctl` cannot tap a watch, so without this there
+            // is no way to put it on a simulator screen at all. Note what the screenshot does **not**
+            // say: it raises the picker through the title's own `.sheet`, which is the path under
+            // suspicion, so it proves that sheet presents in a simulator and nothing about a wrist.
+            case "lists": showPicker = true
             default: break
             }
             #endif

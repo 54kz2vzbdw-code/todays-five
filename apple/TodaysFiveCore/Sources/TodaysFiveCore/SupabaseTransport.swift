@@ -111,6 +111,29 @@ public struct SupabaseTransport: Transport, DoorbellTransport {
     /// `.catch(() => {})` and had therefore never been exercised in its life: nobody could have told
     /// you whether that request had ever been answered, because nothing anywhere wrote the answer
     /// down. One `print` is the whole cost of not being in that position again.
+    /// Where a client hears what the doorbell heard back, in a build where `print` is gone.
+    ///
+    /// **Why this exists, and it is the half of Phase 4 nobody had measured.** `ring` has logged its
+    /// status `#if DEBUG` since the round that wrote it, which on a TestFlight build is nowhere. And
+    /// the client where that matters is the Watch: **every doorbell this project has ever observed was
+    /// rung by `tfive` on a Mac** — a process macOS keeps alive until it exits — while `ringDoorbell()`
+    /// is an awaited round trip *after* the put has already succeeded, and a watchOS app is suspended
+    /// seconds after the wrist drops. A wrist that drops in between loses the bell, the page then waits
+    /// out `POLL_LIVE_MS`, and nothing anywhere says so. Phase 4 said the fix was shared by three
+    /// clients and it was right about the code; "the code is shared" is a statement about the code and
+    /// not about the hosts it runs in.
+    ///
+    /// What crosses is **an HTTP status and a body length**, and on a failure the status is `0` and the
+    /// second number is the `URLError` code. **Never the id** — it is a channel name derived from a
+    /// link — and never the URL, for the reason the `catch` below already gives: an error object
+    /// printed whole carries its failing address.
+    ///
+    /// `nonisolated(unsafe)` and set once at launch before any write, which is how `ConfettiMeter`
+    /// does the same job on the Watch. A lock here would be three lines guarding a value written once.
+    public enum Doorbell {
+        nonisolated(unsafe) public static var report: (@Sendable (Int, Int) -> Void)?
+    }
+
     public func ring(_ id: String, _ payload: JSONObject) async {
         guard let url = URL(string: base + "/realtime/v1/api/broadcast") else { return }
         let body = Self.doorbellBody(id, payload)
@@ -122,15 +145,15 @@ public struct SupabaseTransport: Transport, DoorbellTransport {
         request.httpBody = Data(body.utf8)
         do {
             let (_, response) = try await session.data(for: request)
-            #if DEBUG
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            Doorbell.report?(status, request.httpBody?.count ?? 0)
+            #if DEBUG
             // the id is a channel name derived from a link and never goes in a log — the bytes and
             // the status are the whole diagnosis
             print("[doorbell] \(status), \(request.httpBody?.count ?? 0) bytes")
-            #else
-            _ = response
             #endif
         } catch {
+            Doorbell.report?(0, (error as? URLError)?.code.rawValue ?? 0)
             #if DEBUG
             // the URLError code and nothing else: an error object printed whole carries its failing
             // URL, and no address of ours belongs in a log even when it names no list

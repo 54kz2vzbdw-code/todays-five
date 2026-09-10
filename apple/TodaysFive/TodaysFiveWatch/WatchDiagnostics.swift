@@ -135,7 +135,9 @@ final class WatchDiagnostics: @unchecked Sendable {
         static let titleTap: StaticString = "picker.title.tap"
         /// The Lists row in the long-press sheet was pressed.
         static let listsRowTap: StaticString = "picker.row.tap"
-        /// The picker presented. `a` is how many lists it is offering.
+        /// The picker's body was built and SwiftUI **inserted** the view — `.onAppear`, which is not a
+        /// promise that anything was drawn. `a` is how many lists it is offering, `b` is which door.
+        /// Enough to separate a press that never arrived from one that arrived and raised nothing.
         static let pickerShown: StaticString = "picker.shown"
         /// A different list was chosen. `a` is 1 when it is an edit link.
         static let listSelected: StaticString = "picker.selected"
@@ -148,6 +150,17 @@ final class WatchDiagnostics: @unchecked Sendable {
         static let listAlreadyOpen: StaticString = "picker.already"
 
         // the rest
+        /// The doorbell was rung after a successful write, and what the server answered. `a` is the
+        /// HTTP status (202 is the one to want) and `b` the body length — or, when the request never
+        /// got an answer, `a` is 0 and `b` is the `URLError` code.
+        ///
+        /// **This is the half of the latency fix nobody has ever measured on the client that matters.**
+        /// Every doorbell this project has observed was rung by `tfive` on a Mac; a watchOS app is
+        /// suspended seconds after the wrist drops and the ring is an awaited round trip *after* the
+        /// put has already succeeded. No row here after a check-off means the wrist wrote the list and
+        /// never told anybody — which looks exactly like the reported second-monitor symptom.
+        static let doorbell: StaticString = "sync.doorbell"
+
         static let launched: StaticString = "app.launch"
         static let snapshotPublished: StaticString = "face.published"
     }
@@ -328,6 +341,9 @@ struct DiagnosticsView: View {
     /// read moves the line somebody is looking at. Pull-to-refresh is the crown and a reopen.
     @State private var entries: [WatchDiagnostics.Entry] = []
     @State private var session = 0
+    /// Which add control is selected. Held in state rather than read inline so pressing the switch
+    /// redraws this screen as well as the one it changes.
+    @State private var input: AddInput = .fieldLink
 
     private var trace: WatchDiagnostics { .shared }
 
@@ -337,6 +353,13 @@ struct DiagnosticsView: View {
                 verdict
             }
             .listRowBackground(Color.clear)
+
+            Section {
+                inputSwitch
+            }
+            .listRowBackground(
+                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(theme.ink2)
+            )
 
             if entries.isEmpty {
                 Text("Nothing traced yet.")
@@ -397,6 +420,49 @@ struct DiagnosticsView: View {
             row("landed", trace.count(WatchDiagnostics.Code.addLanded))
             row("timed out", trace.count(WatchDiagnostics.Code.addTimedOut))
             row("title tap", trace.count(WatchDiagnostics.Code.titleTap))
+            row("bell rung", trace.count(WatchDiagnostics.Code.doorbell))
+        }
+    }
+
+    /// **Which control the add row is, and a way to change it from here.**
+    ///
+    /// The seam was built so a later round could flip the add path without redesigning anything, and it
+    /// was reachable only by editing a line and making a build. That is the mistake this whole file
+    /// exists to answer, one level along: **a diagnostic nobody can reach is worth exactly as much as
+    /// one that is only in Debug.** The round's own first unverified item is "does the input screen
+    /// offer dictation", and if the answer is no, the next thing anybody wants is to try the other path
+    /// — on the wrist that is already in the room, not after another upload.
+    ///
+    /// So it is a button, here, next to the numbers that would make somebody want it. `WatchDictation`
+    /// stays the one authority on the key; this calls its own `prefer(_:)` rather than writing the key,
+    /// so there is still one writer.
+    @ViewBuilder
+    private var inputSwitch: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(verbatim: "add control")
+                .font(theme.ui(11, .caption2))
+                .foregroundStyle(theme.muted)
+            Button {
+                WatchDictation.prefer(input == .fieldLink ? .watchKit : .fieldLink)
+                input = WatchDictation.preferred
+            } label: {
+                HStack(spacing: 4) {
+                    Text(input == .fieldLink ? "system field" : "WatchKit")
+                        .font(theme.ui(13, .caption, bold: true))
+                        .foregroundStyle(theme.accent)
+                    Spacer(minLength: 0)
+                    Image(systemName: "arrow.trianglehead.2.clockwise")
+                        .font(.system(size: 11))
+                        .foregroundStyle(theme.muted)
+                }
+            }
+            .buttonStyle(.plain)
+            Text(input == .fieldLink
+                 ? "The system raises its own input screen. Tap to try WatchKit instead."
+                 : "WatchKit's controller — what 1.12 (216) did. Tap to go back.")
+                .font(theme.ui(10, .caption2))
+                .foregroundStyle(theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -417,6 +483,7 @@ struct DiagnosticsView: View {
     private func load() {
         entries = trace.all
         session = trace.currentSession
+        input = WatchDictation.preferred
     }
 }
 

@@ -29,20 +29,34 @@
 // is what the page does once it is in that state. Whether a real page reaches it is a reading of
 // vendor/realtime.js plus `wake()`'s comment since v3, and it is on the unverified list, not in here.
 //
-// WHAT "UNFOCUSED" IS HERE, PRECISELY. It is not an OS-level unfocused window, and that is measured
-// rather than assumed. Two contexts, both headless and headed, system Chrome via Playwright 1.62.1:
-// whichever page was last `bringToFront`ed, **both** report visibilityState "visible" and hasFocus()
-// true, and a `bringToFront` round trip delivers **zero** window `focus` events to the page that lost
-// and regained the front. Playwright emulates focus so that tests are deterministic, so an unfocused
-// window is not producible here at all — which is a real limit on this harness and is why the fix is
-// argued from mechanism (`tools/socketd.mjs`, and the reading of vendor/realtime.js) and not from the
-// table alone. What IS producible is the only thing sync.js keys on: whether a `focus` event arrives.
-// sync.js has no notion of "is focused", only of "just gained focus" (onFocus), so a window focused for
-// an hour and a window unfocused for an hour are the same page to it — the difference is the transition,
-// and that is the `clicked` condition below. Everything else runs with no focus transition at all, which
-// is the second monitor's whole day. So there is no `focused` condition in CONDITIONS, and a number quoted
-// anywhere for "the focused case" is the `heard` trial — visible, no focus event, channel carrying — and
-// not a separate measurement of a focused window, because this harness cannot produce one.
+// WHAT "UNFOCUSED" IS HERE, PRECISELY — and this paragraph was wrong once, so it says how it was fixed.
+//
+// The first version of it reported that an unfocused window is "not producible here at all", on the
+// strength of `bringToFront` alone. **It is producible, and it takes two things neither of which works
+// without the other** — measured at integration, four attempts:
+//
+//   a plain headless page ................................................. visible / hasFocus TRUE
+//   Emulation.setFocusEmulationEnabled({enabled:false}) alone .............. visible / hasFocus TRUE
+//   a second page in the same context, fronted, alone ..................... visible / hasFocus TRUE
+//   both, in that order ................................................... visible / hasFocus FALSE
+//
+// Playwright turns Chromium's focus emulation *on* so headless pages behave as if frontmost, which is
+// why every single-lever attempt reports a focused page with no window manager anywhere. With both
+// levers the subject fires exactly one `blur`, never a `focus` again, and holds the state (measured
+// stable at +8 s and +38 s). Every trial below now does that, and `unfocused=` on the run's first line
+// is the harness's own evidence that it held.
+//
+// **And it changes none of the numbers, for a reason worth keeping.** sync.js has no notion of "is
+// focused", only of "just gained focus" (`onFocus`), so a window focused for an hour and a window
+// unfocused for an hour are the same page to it — the difference is the *transition*, and that is the
+// `clicked` condition below. Everything else runs with no focus transition at all, which is the second
+// monitor's whole day. So there is still no `focused` condition in CONDITIONS, and a number quoted
+// anywhere for "the focused case" is the `heard` trial — visible, no focus event, channel carrying.
+//
+// What is still not producible here is a real desktop browser's *treatment* of an unfocused window:
+// timer throttling under occlusion, a host that sleeps, and anything Safari does. That is why the fix
+// is argued from mechanism (`tools/socketd.mjs` and the reading of vendor/realtime.js) as well as from
+// the table.
 //
 // WHAT THE TRANSPORT CAN AND CANNOT SAY. ?transport=local models the app's timer arithmetic exactly and
 // the network not at all (Phase 4 wrote that down). Its channel is a BroadcastChannel in this process:
@@ -116,6 +130,7 @@ const CONDITIONS = [
 
 /* ---------------- one trial ---------------- */
 
+const heldUnfocused = [];
 const T0 = Date.UTC(2026, 8, 9, 15, 0, 0);        // mid-afternoon: no rollover inside any horizon
 const LID_MS = 8 * 3600 * 1000;
 
@@ -125,6 +140,21 @@ async function trial(browser, cond, phaseMs) {
   try {
     if (cond.mute) await ctx.addInitScript(`try { localStorage.setItem("tf/test/rtmute", "1"); } catch (e) {}`);
     const page = await ctx.newPage();
+    // The two levers above, in the order that is load-bearing: focus emulation off, then something else
+    // fronted. `unfocused` is reported on the run's first line, because a harness for a condition must
+    // print its own evidence that the condition held.
+    try {
+      const cdp = await ctx.newCDPSession(page);
+      await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: false });
+      const decoy = await ctx.newPage();
+      await decoy.goto("data:text/html,<title>decoy</title>the window that has the focus");
+      await decoy.bringToFront();
+    } catch (e) { /* an older Chromium without the CDP domain: the state below reports it */ }
+    // The harness's own evidence that the condition held. A row that says hasFocus true is not a
+    // measurement of an unfocused window, and the first version of this file made exactly that mistake.
+    const focusState = await page.evaluate(() => ({
+      visibility: document.visibilityState, hasFocus: document.hasFocus(),
+    }));
     page.setDefaultTimeout(15000);
     const errors = [];
     page.on("pageerror", e => errors.push(e.message));
@@ -210,7 +240,7 @@ async function trial(browser, cond, phaseMs) {
     // then walk the first two seconds in tenths — otherwise a win that lands in 15 ms is reported as one
     // step, which is the harness's resolution and not the number.
     let r = await seen();
-    if (r.hit) return { ms: 0, errors };
+    if (r.hit) return { ms: 0, errors, focusState };
 
     let t = 0, clicked = false;
     while (t < cond.horizon) {
@@ -226,7 +256,7 @@ async function trial(browser, cond, phaseMs) {
         // so it is on the fake clock: without a small step here the click's cost is rounded up to the
         // next 2 s slice, which would be the harness's resolution and not the number.
         for (let i = 0; i < 12; i++) { r = await seen(); if (r.hit) break; await page.clock.runFor(100); t += 100; await sleep(20); }
-        if (r.hit) return { ms: t, errors };
+        if (r.hit) return { ms: t, errors, focusState };
       }
       // real time for the pull's crypto to finish: the fake clock does not drive it and must not count it
       for (let i = 0; i < 8; i++) {
@@ -235,9 +265,9 @@ async function trial(browser, cond, phaseMs) {
         await sleep(15);
       }
       if (!r.hit) { await sleep(10); r = await seen(); }
-      if (r.hit) return { ms: t, errors };
+      if (r.hit) return { ms: t, errors, focusState };
     }
-    return { ms: null, errors };      // never, inside the horizon
+    return { ms: null, errors, focusState };      // never, inside the horizon
   } finally {
     await ctx.close();
   }
@@ -281,6 +311,7 @@ try {
       }
       pageErrors += out.errors.length;
       if (out.errors.length) console.log("\n  page error: " + out.errors[0]);
+      if (out.focusState) heldUnfocused.push(out.focusState);
       if (out.ms == null) { never.push(cond.horizon); process.stdout.write("·"); }
       else { got.push(out.ms / 1000); process.stdout.write("."); }
     }
@@ -300,6 +331,16 @@ try {
 // The distribution and the bound it is drawn against, never a median: ten draws from a uniform
 // distribution have a sampling error of tens of seconds, and Phase 4 lost three medians to that. What
 // reproduces is the shape — "inside a second" against "somewhere in the poll period".
+// What the condition actually was, printed before the numbers it produced. If this line says
+// hasFocus true, the table below is a focused window wearing an unfocused label — which this file did
+// once — and nothing in it is about a second monitor.
+{
+  const n = heldUnfocused.length;
+  const unfocused = heldUnfocused.filter(f => f.visibility === "visible" && f.hasFocus === false).length;
+  console.log(`\nthe condition, measured per trial: ${unfocused}/${n} trials ran on a page reporting`
+    + ` visibilityState "visible" with hasFocus() false`
+    + (unfocused === n ? "" : " — THE REST WERE FOCUSED AND THIS TABLE IS NOT ABOUT AN UNFOCUSED WINDOW"));
+}
 console.log("\n| condition | trials (s) | inside 1 s | max vs period |");
 console.log("| --- | --- | --- | --- |");
 for (const c of report.conditions) {

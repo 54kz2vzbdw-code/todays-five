@@ -2268,9 +2268,11 @@ for (const [label, opts, touch] of VIEWPORTS) {
       await t.page.click(`#p-menu [data-act="${act}"]`); await t.page.waitForSelector(panel + "[open]"); await wait(250);
       assert.deepEqual((await t.s()).panels, ["p-menu", panel.slice(1)], act + ": the menu is the frame below it");
       assert.ok(await t.page.$(panel + " h2 .back"), act + ": and so there is a ‹ Back");
+      const named = (await t.page.textContent("#menu-theme-k")).trim(); assert.ok(named.length > 0, act + ": the ⋯ row names a theme before we leave");
+      await t.page.evaluate(() => { document.getElementById("menu-theme-k").textContent = ""; }); // a stale row: only a repaint on the way back can put the name back
       await t.page.click(panel + " h2 .back"); await t.page.waitForSelector("#p-menu[open]"); await wait(250);
       assert.deepEqual((await t.s()).panels, ["p-menu"], act + ": Back lands on the menu with nothing under it");
-      assert.ok((await t.page.textContent("#menu-theme-k")).trim().length > 0, act + ": repainted on the way back — the row still names the theme that is on");
+      assert.equal((await t.page.textContent("#menu-theme-k")).trim(), named, act + ": repainted on the way back — the row still names the theme that is on");
       if (!touch) assert.ok(await t.page.$eval("#p-menu", e => e.classList.contains("pop")), act + ": and back under the button as a popover, not a sheet in the middle");
       await t.esc();
     }

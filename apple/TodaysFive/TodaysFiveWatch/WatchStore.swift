@@ -212,29 +212,64 @@ final class WatchStore {
     /// Show a different list. The picker's one job, and since Phase 5 three controls ask for it: the
     /// row at the top of Today, the Lists row behind the hold on the count, and the title.
     ///
-    /// **Two rules it did not have, and both are about a silent no.** The receiver is the authority on
-    /// what this Watch holds — its vault, not this list — and it refuses an id it does not hold by
-    /// returning; so did this method, for a selection that was already open. With three controls aimed
-    /// at it, a refusal that says nothing is indistinguishable from the bug this round was opened for,
-    /// which is a control that looks like it works. So the outcome is recorded: `picker.selected`
-    /// carries **whether the list that is now open can be edited** in `a` and **whether the switch
-    /// actually took** in `b`, and `b` of 0 is a tap that arrived and a list that did not change.
+    /// **Three rules it did not have, and all three are about a silent no.** This method had three
+    /// ways to do nothing and none of them said so: an id the vault does not hold, an id that is
+    /// already open, and a hand-off that did not land. With three controls aimed at it, a refusal that
+    /// says nothing is indistinguishable from the bug this round was opened for, which is a control
+    /// that looks like it works. So **every path out of here leaves a line**, and there are three to
+    /// read:
+    ///
+    ///   * `picker.selected a b` — the switch was attempted. `a` is 1 when the list that is now open
+    ///     is an edit link; `b` is 1 when `openId` moved to the id that was asked for. `b` of 0 is a
+    ///     press that arrived and a list that did not change — either the receiver declined it or the
+    ///     open failed, and those two are not separated here;
+    ///   * `picker.already a b` — the id asked for was the one already open: the row with the tick,
+    ///     or the single row on a wrist that holds one list. `a` is 1 for an edit link, `b` is how
+    ///     many lists the Watch holds. Its own code rather than a `picker.selected` with `b` of 1, so
+    ///     that `picker.selected` keeps one meaning — a list that changed;
+    ///   * `picker.selected 0 0` with no list open — the vault does not hold that id at all.
+    ///
+    /// The point of the third line is narrow and it is the round's: **a press on any of the three
+    /// controls must leave a trace, whatever it then does.** `title tap  0` on the Diagnostics screen
+    /// is only evidence about the navigation bar if a press that *did* arrive would have written
+    /// something, which is also why the title button no longer carries `.disabled` (`WatchApp.swift`).
     ///
     /// It is recorded here rather than at the three call sites because this is the only place that can
     /// know either answer — the hand-off below is synchronous (`receiver.select` calls `onChange`,
     /// which is `linksChanged`, which opens the list), so by the line after it `openId` is the truth.
+    /// That is read off the code, not measured: nothing in this round has executed this method. See
+    /// the note on `runSelfTest`'s step 12, which is the only thing that can.
     ///
-    /// **What a switch does to a pending edit: nothing, and that is not an accident.** Every local
-    /// change has already gone through `apply(local: true)`, which hands the document to the engine
-    /// and persists it inside the actor before this method can be called; `chain` awaits the *prior*
-    /// task whichever engine it belonged to, so an in-flight push finishes after the switch rather
-    /// than being dropped. What `openList` cancels is the settle — `frozenOrder`, which is the 320 ms
-    /// the view holds a row still so the strike lands on something that is not moving. That is view
-    /// state and it is deliberately not carried across: the order on the other list is the other
-    /// list's. Nothing is re-ordered by a switch either, because `rows` is `doc.todayItems`, which is
-    /// the core's own sink and not a thing this file arranges.
+    /// **What a switch does to a pending edit.** `chain` is what carries it: it awaits the *prior*
+    /// task whichever engine that task belonged to, so the old list's `update` and `push` run to
+    /// completion before the new list's `open` does, and an in-flight push finishes after the switch
+    /// rather than being dropped. What it does **not** give is the thing an earlier draft of this
+    /// comment claimed — that a local change is on disk before this method can be called.
+    /// `apply(local: true)` *enqueues* that work (`chain` makes a `Task`), and `SyncEngine.persist()`
+    /// runs inside it, so a switch can be asked for with a write still in flight, and `openList`'s
+    /// `store?.load(id)` below is a synchronous read that does not wait for it. Two things make that
+    /// safe, and both are reading rather than a measurement: `persist()` goes through
+    /// `ListStore.merge`, which is a CRDT merge and not an overwrite (`Store.swift:91`), so a late
+    /// write cannot erase a newer document; and `sync()` compares `doc.canon` before and after and
+    /// declines to apply a read that predates an edit. **Nothing in this round raced them**, and a
+    /// race is what an instrument would be for, so it stays on the unverified list rather than in a
+    /// sentence that sounds settled.
+    ///
+    /// What `openList` cancels is the settle — `frozenOrder`, which is the 320 ms the view holds a row
+    /// still so the strike lands on something that is not moving. That is view state and it is
+    /// deliberately not carried across: the order on the other list is the other list's. Nothing is
+    /// re-ordered by a switch either, because `rows` is `doc.todayItems`, which is the core's own sink
+    /// and not a thing this file arranges.
     func select(_ id: String) {
-        guard id != openId else { return }
+        // Already there. A press on the row that has the tick, or the only row on a one-list wrist:
+        // nothing to do and **that is a result**, so it is written down. Before Phase 5 this line
+        // returned in silence, which made the most reachable tap in the picker look exactly like the
+        // Button never firing — the ambiguity this round exists to remove.
+        guard id != openId else {
+            WatchDiagnostics.shared.record(WatchDiagnostics.Code.listAlreadyOpen,
+                                           canEdit ? 1 : 0, links.count)
+            return
+        }
         // A list this Watch does not hold is not a list it can open.
         guard links.contains(where: { $0.id == id }) else {
             WatchDiagnostics.shared.record(WatchDiagnostics.Code.listSelected, 0, 0)
@@ -701,8 +736,18 @@ extension WatchStore {
     /// screenshot of them to be a screenshot of.
     ///
     /// Read, not shared: the pills are independent and this one carries `view only` alone, which is
-    /// also the combination that has to keep the app honest.
-    private static let demoViewId = "TFsharedTFsharedTFshar"
+    /// also the combination that has to keep the app honest. The literal says which, because a
+    /// constant that spells *shared* for a list whose `origin` is `mine` is the kind of small
+    /// wrongness that costs somebody an afternoon later.
+    ///
+    /// It is a derivable `R` written into a public repository, which is deliberate and safe: it is
+    /// nobody's list. `init` pins `MemoryTransport` whenever `isDemo`, `demo` is a compile-time
+    /// `false` outside `DEBUG`, and `startDemo` is inside `#if DEBUG` — so this id cannot reach the
+    /// network from a shipped build, and the row it would look up is never created anywhere. Same
+    /// posture as `demoId` above. (Measured, not assumed: `swift run tfive links` in this worktree
+    /// derived a 32-character row id from this exact literal, so the `Keys.fromRead` in `openList`
+    /// does not throw and the second demo list actually opens.)
+    private static let demoViewId = "TFviewTFviewTFviewTFvi"
 
     /// Five lines, none of them anybody's. Written through `Model.addToToday` rather than assembled
     /// here, so the demo records are the same shape every other client would write.
@@ -729,6 +774,16 @@ extension WatchStore {
         // prove a refusal — there would be nothing to refuse — so it is seeded with the same five
         // lines through the same `Model.addToToday`, under its own id, saved `mode: .view` and never
         // `created`.
+        //
+        // **Expect the sync mark to go to the exclamation while this list is the one showing, and that
+        // is the demo being truthful rather than a bug.** There is no row for it on the memory
+        // transport and a view link may not create one, so the first pull takes `SyncEngine`'s `gone`
+        // path — which `SyncMark` folds to `.busy`. `markGone()` sets two flags and does not touch the
+        // document (`SyncEngine.swift:288`), so the five lines stay on screen and step 12's
+        // `writeRefused` comparison still has a document to compare. Giving it a row would mean sealing
+        // an envelope against a key derived from an `R` whose `W` nobody holds, for a cosmetic mark in
+        // a DEBUG-only demo; it was not worth the code. Read as: *this list is read-only and the
+        // server has never heard of it*, which is exactly true here.
         let viewLink = VaultedLink(id: Self.demoViewId, mode: .view, origin: "mine",
                                    nickname: "", name: "Demo (read)",
                                    addedAt: CalendarDates.now(), lastSeenAt: CalendarDates.now(),
@@ -840,7 +895,7 @@ extension WatchStore {
             say("9 snapshot: UNREADABLE (no App Group container, or nothing written)")
         }
 
-        // 10. **a switch, and whether a view-only list still refuses on the other side of one.**
+        // 12. **a switch, and whether a view-only list still refuses on the other side of one.**
         //     Phase 5 §2 gives list switching two new controls, and the thing that must not move is
         //     the refusal: switching from an edit list to a view list has to leave the Watch refusing
         //     before the document is touched.
@@ -850,11 +905,24 @@ extension WatchStore {
         //     check-off on a line that is right there change nothing. The document is compared by
         //     `canon`, so "nothing changed" is the whole document and not a flag about it.
         //
+        //     **This is the only instrument in the project that executes `select` at all**, and it
+        //     only runs under `-TFWatchDemo -TFWatchSelfTest` on a simulator: `swift test` cannot see
+        //     this target (the test target depends on `TodaysFiveCore` alone), and a Release build on
+        //     a wrist takes no launch arguments. Until somebody runs it, the compiler is the only
+        //     thing that has seen the lines below.
+        //
+        //     **Numbered 12, and the gap is deliberate.** Steps 10 (confetti) and 11 (the theme
+        //     change) are printed from `WatchApp.swift` *after* this method returns, so the console
+        //     reads 1–9, 12, then 10–11. Out of order beats three steps answering to "10": a person
+        //     grepping a step number has to get one line, and a step that silently failed to print
+        //     has to be visible as a gap. Renumbering the other two is a change to a region this
+        //     track does not own, so it is offered to the orchestrator instead.
+        //
         //     When the wrist holds one list this cannot run, and it says so rather than saying
         //     nothing: a self-test that prints a pass for a case it skipped is the failure this whole
         //     round is about.
         guard links.count > 1, let other = links.first(where: { $0.id != link?.id }) else {
-            say("10 switch: links=\(links.count) — NOT RUN (needs a second list on this device)")
+            say("12 switch: links=\(links.count) — NOT RUN (needs a second list on this device)")
             return
         }
         let cameFrom = link?.id
@@ -865,14 +933,14 @@ extension WatchStore {
         if other.mode == .view {
             let before = doc.canon
             if let line = rows.first { setDone(line.id, true) }
-            say("10 switch→view: took=\(took) wasEditable=\(editableBefore) "
+            say("12 switch→view: took=\(took) wasEditable=\(editableBefore) "
                 + "nowEditable=\(canEdit) lines=\(totalCount) "
                 + "writeRefused=\(doc.canon == before)")
         } else {
             // **No check-off here.** On the real path the second list is somebody's real list and an
             // editable one, so crossing a line off it would be this self-test writing to a document
             // nobody asked it to touch. The switch is reported and the refusal says it did not run.
-            say("10 switch→edit: took=\(took) wasEditable=\(editableBefore) "
+            say("12 switch→edit: took=\(took) wasEditable=\(editableBefore) "
                 + "nowEditable=\(canEdit) lines=\(totalCount) "
                 + "writeRefused=NOT RUN (the other list is an edit link)")
         }
@@ -880,7 +948,7 @@ extension WatchStore {
         // described and steps 1–9 are repeatable on a relaunch.
         if let cameFrom { select(cameFrom) }
         try? await Task.sleep(for: .milliseconds(300))
-        say("10 switch back: onFirst=\(link?.id == cameFrom) editable=\(canEdit) lines=\(totalCount)")
+        say("12 switch back: onFirst=\(link?.id == cameFrom) editable=\(canEdit) lines=\(totalCount)")
     }
 }
 #endif

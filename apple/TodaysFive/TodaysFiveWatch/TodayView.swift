@@ -61,10 +61,13 @@ struct TodayView: View {
     /// now presents a sheet instead of firing. Named rather than buried: a gesture that used to do a
     /// thing and now opens a menu is a small regression for the person who had learned it.
     ///
-    /// **Phase 5 puts a third thing there, and it is Lists** — on this gesture specifically, because
-    /// this is the one gesture in this app that is *proven on Price's wrist*: he reaches the theme
-    /// picker through it, so the hold works and the sheet presents. *Start again* keeps the first row
-    /// it has always had; the new row is additive rather than a re-teaching.
+    /// **Phase 5 puts a third thing there, and it is Lists** — on this gesture specifically, because it
+    /// is the one gesture in this app a wrist has reported working: Price reaches the theme picker
+    /// through it, so the hold fires and the sheet presents. That is **his report, not a measurement
+    /// taken here** — nothing on this machine can tap a watch — and it is still the best evidence the
+    /// round has about any control on this screen, which is why the new row went behind this gesture
+    /// rather than a new one. *Start again* keeps the first row it has always had; the new row is
+    /// additive rather than a re-teaching.
     ///
     /// It also fixed something. **The old hold was gated on `store.canEdit`**, so a view-only list
     /// had no long press at all — and once the theme lives behind it, that would have meant a person
@@ -641,6 +644,10 @@ struct CountActionsView: View {
             // makes a person open a screen to find out what they already had on the one they left —
             // and the count is what says whether there is anything to switch *to*. Absent below two,
             // which is the same rule the row at the top of Today follows.
+            //
+            // The name is `store.title`, which is what `ListPickerView.name(of:)` returns for the list
+            // that is open: this row and the picker's row one push away are the same string computed
+            // the same way, rather than the registry's name here and the document's name there.
             //
             // `dismiss` is handed down so that choosing a list closes the whole sheet onto it rather
             // than popping back here: the hold's menu is not where somebody wants to land after

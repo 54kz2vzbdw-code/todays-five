@@ -3,15 +3,26 @@
 // Phase 3 gave it one: the title itself was the `Button`, through the watchOS-exclusive
 // `navigationTitle { }` overload, because watchOS has no SwiftUI `Menu`. That reasoning is sound about
 // `Menu` and says nothing about whether the navigation bar's title area is hit-testable on a real
-// watch — and on a real watch, running 1.12 (216), **the caret was there and the tap did nothing**.
+// watch.
+//
+// **What is known about that, and how.** Price reports that on his own Apple Watch, running 1.12 (216)
+// from TestFlight, the title showed the list name with a down caret and pressing it did nothing. That
+// is **a report from a wrist and not a measurement taken in this round** — no Apple Watch is reachable
+// from the machine this was written on, and `simctl` cannot tap a watch simulator, so nothing here has
+// pressed that control once. It is why the round exists; it is not a finding of it, and the design
+// below is built so that it does not matter which way the diagnosis goes.
 //
 // So this view is now reached three ways, and two of them are hit-testable by construction:
 //
-//   * **`.today`** — a `List` row at the top of Today, which is the most reliably tappable thing
-//     watchOS has and what every other control in this app already is. A **push**, not a presentation;
-//   * **`.actions`** — the Lists row in the sheet behind the long press on the count. That gesture is
-//     proven on Price's wrist: he reaches the theme picker through it. Also a push, inside the sheet
-//     the hold already opened, so it shares nothing with the path under suspicion;
+//   * **`.today`** — a `List` row at the top of Today, which is the shape every control in this app
+//     that is known to work already has: the check-off, the `+`, Start again, the theme, Diagnostics.
+//     That is an argument from what this app's own rows do, not a fact about watchOS, and it is the
+//     strongest one available. A **push**, not a presentation;
+//   * **`.actions`** — the Lists row in the sheet behind the long press on the count. Price reports
+//     reaching the theme picker through that hold on his own watch, so the gesture and the sheet are
+//     the one path in this app a wrist has said works — again his report, not this round's
+//     measurement. Also a push, inside the sheet the hold already opened, so it shares nothing with
+//     the path under suspicion;
 //   * **`.title`** — the old door, kept with its caret removed and its trace intact, because it is the
 //     measurement. See `titleButton` in `WatchApp.swift`.
 //
@@ -82,8 +93,16 @@ struct ListPickerView: View {
         // string overload is drawn by the system in the system's colour, which on a light kit is
         // white on cream — the same failure as the clock, but this one has a door out of it.
         .navigationTitle { Text("Lists").foregroundStyle(theme.accent) }
-        // **The picker actually presented.** Not "something asked it to": this fires when the view is
-        // on screen, which is the half of the title's bug that reading could never settle.
+        // **The picker's body was built and the view was inserted.** That is all `.onAppear` says —
+        // it fires when SwiftUI puts the view into the hierarchy, which is not a promise that a pixel
+        // was drawn or that anything is visible; a view inserted behind a failed presentation would
+        // still fire it, and a hook that could tell the difference does not exist in this SDK.
+        //
+        // It is enough for the one job it has. The two mechanisms under suspicion are "the press never
+        // arrived" and "the press arrived and the sheet did not come up": the first writes no
+        // `picker.title.tap`, the second writes one with no `picker.shown` after it, and for the
+        // second to be wrong the sheet's content closure would have to be evaluated and inserted with
+        // nothing on screen — which is a narrower claim than "it presented" and is the one to make.
         .onAppear {
             WatchDiagnostics.shared.record(WatchDiagnostics.Code.pickerShown,
                                            store.links.count, door.rawValue)
@@ -115,10 +134,32 @@ struct ListPickerView: View {
         .padding(.vertical, 2)
     }
 
-    /// The nickname when there is one, else the list's own name, else something rather than nothing —
-    /// a list with no name at all is still a list somebody has to be able to pick.
+    /// **One name for one list, and the open one is named by its document.**
+    ///
+    /// The nickname when the phone gave one, else the list's own name, else something rather than
+    /// nothing — a list with no name at all is still a list somebody has to be able to pick.
+    ///
+    /// The middle line is the repair. `VaultedLink.name` is whatever the phone's registry last sent,
+    /// and the document carries a name the Watch may have pulled since: rename a list on a laptop and
+    /// `doc.name` moves while the registry's copy does not, so this row said *Errands* while Today's
+    /// own row — which reads `store.title`, and `store.title` prefers the document — said *Groceries*,
+    /// two taps apart. For **the list that is open** this now returns exactly `store.title`, so the
+    /// picker's row, the row at the top of Today and the Lists row behind the hold cannot disagree:
+    /// there is one expression and they all read it — its last resort included, so a list with no name
+    /// anywhere reads *Today's Five* on all three, which is what the title bar is saying at that
+    /// moment, rather than *Untitled list* on one of them and *Today's Five* on the other two.
+    ///
+    /// For every other row it is still the registry's name, because the document of a list that is not
+    /// open is on disk and a row builder on a watch is not the place to go and read five of them. A
+    /// list whose registry name is stale and which is not the one you are looking at is named by the
+    /// phone; that is the same thing the phone's own list screen shows, and it is the best this screen
+    /// has without spending I/O per row.
+    ///
+    /// `store.selected` rather than `openId` is deliberate: it is the same field the tick is drawn
+    /// from six lines up, so the name and the tick are never two opinions about which list you are on.
     private func name(of link: VaultedLink) -> String {
         if !link.nickname.isEmpty { return link.nickname }
+        if link.id == store.selected { return store.title }
         if !link.name.isEmpty { return link.name }
         return "Untitled list"
     }
@@ -129,8 +170,10 @@ struct ListPickerView: View {
 /// **The list row**, drawn only when this Watch holds more than one list.
 ///
 /// It exists because the title's caret promised a menu it could not open, and because a `List` row is
-/// the most reliably tappable thing watchOS has — it is what the check-off, the `+`, Start again, the
-/// theme and Diagnostics all already are. A `NavigationLink` rather than a `Button` raising a sheet:
+/// the shape of every control in this app that is known to work — the check-off, the `+`, Start again,
+/// the theme, Diagnostics. That is the argument and it is worth stating at its real size: it is
+/// evidence from this app's own rows, not a measured fact about watchOS hit-testing, and **nothing in
+/// this round has tapped this row either**. A `NavigationLink` rather than a `Button` raising a sheet:
 /// a push shares nothing with the presentation that is under suspicion, so this control is right
 /// whichever way the title's diagnosis goes.
 ///
@@ -165,6 +208,9 @@ struct TodayListRow: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(theme.accent)
                 VStack(alignment: .leading, spacing: 2) {
+                    // `store.title` and not a second opinion about the name: `name(of:)` above
+                    // returns this same expression for the list that is open, so this row and the
+                    // picker's row for the same list are one string computed one way.
                     Text(store.title)
                         .font(theme.ui(14, .footnote, bold: true))
                         .foregroundStyle(theme.text)

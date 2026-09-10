@@ -438,6 +438,53 @@ struct SyncTests {
         #expect(!two.contains("items") && !two.contains("doc"), "a doorbell, never the document")
     }
 
+    /// **The hook that lets a wrist say whether the bell was rung**, which nothing could before.
+    ///
+    /// `ring` logs its status `#if DEBUG`, and a TestFlight build is Release — so on the one client
+    /// where this matters the answer went nowhere. And it is the client that matters: every doorbell
+    /// this project has ever observed was rung by `tfive` on a Mac, a process macOS keeps alive, while
+    /// a watchOS app is suspended seconds after the wrist drops and the ring is an awaited round trip
+    /// *after* the put has already succeeded.
+    ///
+    /// This exercises the failure arm on purpose, because it is the one a test can reach with no
+    /// network: an unroutable host cannot answer, `ring` catches, and the report must still fire — a
+    /// hook that only reports success would be silent in exactly the case somebody is looking for.
+    /// The success arm is what the live run measured (HTTP 202) and what `Doorbell.report` passes
+    /// through unchanged.
+    @Test("the doorbell reports its answer even when there is no answer")
+    func theDoorbellReportsAFailure() async throws {
+        let seen = Reported()
+        SupabaseTransport.Doorbell.report = { status, n in Task { await seen.add(status, n) } }
+        defer { SupabaseTransport.Doorbell.report = nil }
+
+        // A host that cannot resolve, so nothing leaves this machine and `ring`'s catch is the path.
+        let transport = try SupabaseTransport(
+            config: SupabaseConfig(url: "https://tf-doorbell-test.invalid", key: "not-a-key"))
+        var payload = JSONObject()
+        payload.set("rev", Double(2))
+        payload.set("from", "abcdefghij")
+        await transport.ring(String(repeating: "L", count: 22), payload)
+
+        // The task hop above is why this waits rather than reads.
+        for _ in 0..<100 where await seen.all.isEmpty { try? await Task.sleep(for: .milliseconds(20)) }
+        let all = await seen.all
+        #expect(all.count == 1, "the report fires once per ring, answered or not")
+        #expect(all.first?.0 == 0, "status 0 is the wire form of 'there was no answer'")
+        // **URLError codes are negative**, which the first version of this assertion got wrong and
+        // this test caught: an unresolvable host reports -1003, `cannotFindHost`. It is worth the
+        // line, because the number a wrist will actually see here is one of these — -1009 for
+        // offline, -1001 for a timeout — and a reader of the Diagnostics screen should not be
+        // startled by a minus sign.
+        #expect(all.first?.1 == URLError.cannotFindHost.rawValue,
+                "and the second number is the URLError code, which is -1003 for a host that is not there")
+    }
+
+    /// A collector for the hook, because the hook is `@Sendable` and the test is not an actor.
+    actor Reported {
+        var all: [(Int, Int)] = []
+        func add(_ a: Int, _ b: Int) { all.append((a, b)) }
+    }
+
     @Test("a transport with no doorbell pushes exactly as it did before there was one")
     func aTransportWithoutADoorbellIsFine() async throws {
         let plain: any Transport = MemoryTransport()

@@ -441,12 +441,31 @@ enum AddSelfTest {
         }
         func todayCount() -> Int { store.load(editLink.id)?.doc.todayItems.count ?? -1 }
 
+        // The trace is a **ring of `WatchDiagnostics.limit` entries**, and that is why this is a clear
+        // followed by absolute counts rather than the before-and-after delta it was first written as.
+        //
+        // Measured, because it is exactly what this round is not allowed to assume: on a watch simulator
+        // whose trace was already full — 60 of 60, read out of the App Group's own plist — the delta for
+        // **every** code came back 0 and this check failed while the rows it was counting were printing
+        // on the console one line above it. A full ring evicts one old row per new row, so a run that
+        // adds four `add.service` rows to a ring already holding four of them measures a change of
+        // nothing. The first run after an install would have passed; the fifth could not. That is an
+        // instrument reporting on its own blind spot, which is the family of bug this plan opens with,
+        // so it is fixed rather than tuned.
+        //
+        // Clearing is safe **here and nowhere else**: `-TFAddSelfTest` is `#if DEBUG` and a TestFlight
+        // build takes no launch arguments, so this line can never run on the wrist whose trace matters.
+        // It says so on the console regardless, because somebody watching a simulator should know why
+        // the Diagnostics screen emptied underneath them.
+        //
+        // **The consequence for a wrist is real and is not this test's to fix:** the Diagnostics verdict
+        // counts what the last `limit` events still hold, not everything that ever happened. Pressing
+        // Clear before a deliberate attempt is what makes those numbers mean what they look like.
         let trace = WatchDiagnostics.shared
         func rows(_ code: StaticString) -> Int { trace.count(code) }
-        let service0 = rows(WatchDiagnostics.Code.addService)
-        let landed0 = rows(WatchDiagnostics.Code.addLanded)
-        let refused0 = rows(WatchDiagnostics.Code.addRefused)
-        let undone0 = rows(WatchDiagnostics.Code.addUndone)
+        print("[tfive] add self-test: clearing the trace first — it is a \(WatchDiagnostics.limit)-entry"
+            + " ring, and a delta measured across a full one is always zero")
+        trace.clear()
 
         let both = [editLink, viewLink]
         let before = todayCount()
@@ -485,13 +504,22 @@ enum AddSelfTest {
             check("undo", false, "nothing to undo")
         }
 
-        // 6. the trace was written, by the core's own path, for every one of those
-        let dService = rows(WatchDiagnostics.Code.addService) - service0
-        let dLanded = rows(WatchDiagnostics.Code.addLanded) - landed0
-        let dRefused = rows(WatchDiagnostics.Code.addRefused) - refused0
-        let dUndone = rows(WatchDiagnostics.Code.addUndone) - undone0
-        check("trace", dService == 4 && dLanded == 1 && dRefused == 3 && dUndone == 1,
-              "service=\(dService)/4 landed=\(dLanded)/1 refused=\(dRefused)/3 undone=\(dUndone)/1")
+        // 6. the trace was written, by the core's own path, for every one of those. Absolute counts off
+        //    a ring cleared a moment ago: four adds were asked for, one landed, three were refused, one
+        //    was undone. It is the check that says `WatchDiagnostics` is wired to `AddService` at all,
+        //    which is the one half of this round's instrument a simulator can confirm.
+        let nService = rows(WatchDiagnostics.Code.addService)
+        let nLanded = rows(WatchDiagnostics.Code.addLanded)
+        let nRefused = rows(WatchDiagnostics.Code.addRefused)
+        let nUndone = rows(WatchDiagnostics.Code.addUndone)
+        check("trace", nService == 4 && nLanded == 1 && nRefused == 3 && nUndone == 1,
+              "service=\(nService)/4 landed=\(nLanded)/1 refused=\(nRefused)/3 undone=\(nUndone)/1")
+
+        // 6b. and the ring itself, because the bug above was in the *reading* of it and a ring that
+        //     silently stopped capping would be the next one. Everything traced since the clear is the
+        //     whole trace, and it is under the cap, so a count is a count.
+        check("trace-ring", trace.all.count <= WatchDiagnostics.limit && trace.all.count >= nService,
+              "entries=\(trace.all.count) cap=\(WatchDiagnostics.limit)")
 
         // 7. the ordinals on `add.refused` are the table in AddToTodaysFive.swift's header, which is
         //    what a reader of a wrist screenshot decodes the digit with

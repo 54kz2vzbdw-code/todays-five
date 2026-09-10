@@ -31,6 +31,27 @@
 // was true in Phase 3 and it is true now. What changed is the *other* half of the requirement: a
 // `TextFieldLink`'s screen cannot be invisible, and invisible is the failure being fixed.
 //
+// **Read out of the SDK in Phase 5, because it is the strongest evidence this project has on the
+// question and it is one grep away rather than a recollection.** `WKInterfaceController.h` in
+// WatchOS26.5.sdk documents the two text-input methods differently, and the difference is the whole
+// argument:
+//
+//     presentTextInputControllerWithSuggestions:...          // results is nil if cancelled
+//     presentTextInputControllerWithSuggestionsForLanguage:  // will never go straight to dictation
+//                                                            // because allows for switching input language
+//
+// Apple says the *language* variant never goes straight to dictation, and says it **as the reason to
+// prefer the other one**. So the plain variant this file calls — with `withSuggestions: nil` — is the
+// one input on watchOS that is documented as able to open on dictation, and `WKTextInputModePlain` is
+// annotated `// text (no emoji) from dictation + suggestions`. Phase 3 was not wrong about the API. It
+// was wrong about the API *rendering*, which is a different failure and the one a wrist reported.
+//
+// That is why this path is kept rather than deleted, and it is the thing to reach for if the wrist
+// says `TextFieldLink` opens a keyboard and will not offer the microphone: this is the only remaining
+// call in the SDK that Apple documents as going straight to it. What it costs to reach is one line —
+// see `preferred` — and one build, and that cost is written down in this round's results rather than
+// discovered later.
+//
 // **What reversing the precedence widens, and it is worth knowing.** `allowedInputMode: .plain` kept
 // emoji and stickers out of a line. The system's own input screen has no such restriction, so a line
 // from a wrist may now carry an emoji — which is exactly what a line typed into the web already may

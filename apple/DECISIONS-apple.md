@@ -2548,3 +2548,120 @@ integration's own probe died on `/Today's%20Five/todays-five/config.js`. That is
 `fileURLToPath`-never-`URL.pathname` entry in this file, word for word, an hour after reading it.
 
 **How to apply:** a warning in a decisions file is not a defence. The path is passed in now, which is.
+
+## The Watch app's floor moves to watchOS 10
+
+Build 258 went to TestFlight with `WATCHOS_DEPLOYMENT_TARGET = 11.0` on both watch-side targets, in
+both configurations. A tester installed it, the phone app worked, and **the Watch app never appeared
+under *Available Apps*** in the phone's Watch app.
+
+That is the whole failure mode, and it is worth naming because it produces no error anywhere. A watch
+that cannot run the deployment target is not offered the app, is not listed as incompatible, and does
+not explain itself; the Watch app simply is not there. watchOS 11 dropped Series 4, Series 5 and the
+first-generation SE, so every one of those wrists saw an app with no Watch app in it. The floor was
+never argued for — `Package.swift` had said `.watchOS(.v10)` since Phase 1, and the four project lines
+were a default nobody lowered.
+
+### What the compiler said, which is the only list worth having
+
+Lowering the four lines and building `-scheme TodaysFiveWatch -destination 'generic/platform=watchOS
+Simulator'` names every watchOS 11 API in the target. It takes two passes, because a file that fails
+to compile stops naming things after its first error:
+
+```
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:359:14: error: 'handGestureShortcut(_:isEnabled:)' is only available in watchOS 11.0 or newer
+apple/TodaysFive/TodaysFiveWatch/AddFlowView.swift:366:18: error: 'handGestureShortcut(_:isEnabled:)' is only available in watchOS 11.0 or newer
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:27:33: error: 'ScrollPosition' is only available in watchOS 11.0 or newer
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:27:33: error: 'init(idType:)' is only available in watchOS 11.0 or newer
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:45:10: error: 'scrollPosition(_:anchor:)' is only available in watchOS 11.0 or newer
+apple/TodaysFive/TodaysFiveWatch/TodayView.swift:52:20: error: 'scrollTo(edge:)' is only available in watchOS 11.0 or newer
+```
+
+`WatchApp.swift:311`'s `scrollInputBehavior(.disabled, for: .handGestureShortcut)` is the seventh, and
+**the compiler never printed it** — `AddFlowView.swift` failed first and the run stopped before
+`WatchApp.swift` was reached. It was already known going in, from reading. That is the argument for
+lowering the target and letting the build talk rather than grepping for watchOS 11 API: the grep found
+three of the six sites, and the compiler found all of them including a stored property that no search
+for a modifier name would have turned up.
+
+### Three modifiers, one availability check
+
+`WatchOS11.swift` holds them. One shim rather than an `if #available` at each site, because the sites
+are asking the same question and a fourth site is how the answers start to differ.
+
+| | on watchOS 11+ | on watchOS 10 |
+| --- | --- | --- |
+| `doubleTapPrimaryAction(isEnabled:)` | `handGestureShortcut(.primaryAction, isEnabled:)` | the view, unchanged |
+| `doubleTapScrollDisabled()` | `scrollInputBehavior(.disabled, for: .handGestureShortcut)` | the view, unchanged |
+| `scrollToTop(on:)` | a `ScrollPosition`, `scrollPosition($…)`, and `scrollTo(edge: .top)` on the tick | the view, unchanged |
+
+The third needed a `ViewModifier` struct of its own, marked `@available(watchOS 11, *)`, because the
+`ScrollPosition` is **stored state** and a stored property cannot sit behind an `if`. Worth writing
+down: that is the shape every one of these takes the moment the guarded API holds state rather than
+just decorating a view.
+
+### What a watchOS 10 wrist does not get, and why it is nothing
+
+**The two Double Tap modifiers cost nothing anyone can feel, and that is a fact about hardware rather
+than a judgement about priorities.** Both configure Double Tap. Double Tap needs a Series 9, an Ultra 2
+or later, and **every watch with that sensor shipped running watchOS 11 or newer**. The set of wrists
+where these two return the view unchanged and the set of wrists that could perform the gesture do not
+intersect. Nothing is being withheld from anybody; the modifiers are simply absent on watches that
+were never going to route a pinch.
+
+**`ScrollPosition` costs one small thing**, and it is the only real cost of the whole change: when a
+`todaysfive://add` arrives from the complication on a resumed app, Today is not scrolled back to its
+top, so the add control may be a crown-turn below the count rather than under it. The person then does
+what they did before the complication existed. It is guarded rather than backfilled with a
+`ScrollViewReader` because the backfill would be new, unverifiable behaviour on the exact wrists that
+have the least of this project's attention — and because **the watchOS 11 path has never been verified
+either**: `simctl` cannot scroll a watch simulator, so nothing has ever confirmed that it moves a
+carousel `List`. Guarding an unverified behaviour off on one OS is a much smaller claim than writing a
+second unverified one.
+
+### The watchOS 10 pass
+
+`xcodebuild -downloadPlatform watchOS -buildVersion 10.5` fetched and installed the runtime from the
+command line — 3.95 GB, exit 0, no password, no Xcode → Settings → Components step. Then a paired
+**iPhone 15 / iOS 18.1** and **Apple Watch Series 4 (44mm) / watchOS 10.5**, created and paired by UDID
+rather than through `watchsim.mjs`, which picks a pair by runtime and would have chosen 11.1 or 26.5.
+
+Series 4 on purpose: it is the tester's situation exactly — a watch watchOS 11 dropped — and the
+simulator will run it, which is the closest this machine gets to the wrist that found the bug.
+
+The built product carries the fix where it counts: `MinimumOSVersion` reads **10.0** in both
+`TodaysFiveWatch.app/Info.plist` and the embedded `TodaysFiveComplications.appex/Info.plist`. That
+plist key is what the phone's Watch app consults, and it is the answer to the original question.
+
+Five self-tests, on that watch:
+
+```
+watch self-test  14 checks, all green — finale fired after 0.325 s; shuffle x10 distinct=5,
+                 sameTwiceInARow=0; haptics check=10 uncheck=2 finale=1 shuffle=10; finale run
+                 taps=8/8 in 0.711 s; appGroup=true; confetti run=1 frames=150 over 2.51 s = 59.4/s
+add self-test    pass=13/13
+font self-test   pass=96/96, bundled=33/33, familiesOnDevice=73, weights told apart by advance=12 ink=1
+confetti         pass=96/96 over all 16 kits, every field ending at frame 147
+face probe       appex reaches the app's 33 faces with ttfInAppex=0; fullColor and accented render
+                 byte-identically (#C8321F corner, #B02A1A centre)
+```
+
+Nothing about those tallies differs from what they print on watchOS 11 or 26. Which is the finding:
+**the app's behaviour is not what the floor was buying.** Three modifiers were.
+
+### What could not be photographed, and why that is not new
+
+`apple/shots/watch/today-watchos10.png` is Today on the Series 4 — the list-switch row, the count, the
+Add row and the first line, all in one 44 mm frame.
+
+**The corner complication was not photographed, and no build of this app ever has been.** Putting a
+complication on a watch face means a long press on the face, *Edit*, and a pick from a gallery;
+`simctl` cannot tap a watch simulator, and no `-TFShow` renders a complication inside the app. That is
+a constraint this project has documented since Phase 3 and `apple/shots/watch/` has no complication
+shot from any of the five phases to contradict it. It is unchanged by the floor, and `-TFFaceProbe` is
+what stands in its place: it says the appex loaded, found its fonts and rendered, on watchOS 10.5.
+
+**How to apply:** a deployment target is a compatibility decision and belongs in `COMPATIBILITY.md`'s
+world, not in a project file's defaults. When one moves, lower it and read the compiler's list —
+do not grep for the API. And when the app ships a floor, check what the floor is actually buying:
+here it was three modifiers, two of which no wrist below the floor could have used anyway.

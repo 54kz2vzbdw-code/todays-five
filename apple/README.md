@@ -345,6 +345,15 @@ network request of the app's own beyond the web view's.
 thing at a time, and four ways to put a line on the list by speaking.
 `apple/TodaysFive/TodaysFiveComplications` is the four accessory families on the face.
 
+**The minimum is watchOS 10.** Build 258 asked for 11, which quietly cost every Series 4, Series 5 and
+first-generation SE the app entirely — a watch that cannot run the deployment target is never offered
+the Watch app at all, does not appear under *Available Apps* in the phone's Watch app, and nothing
+anywhere says why. The floor came down to 10 and the three watchOS 11 modifiers went behind one
+availability check in `TodaysFiveWatch/WatchOS11.swift`. Both Double Tap modifiers are no-ops on 10 and
+lose nothing, because Double Tap needs hardware that shipped on 11 or newer; the third, `ScrollPosition`,
+costs a watchOS 10 wrist one thing, which is that a complication's `todaysfive://add` does not scroll
+Today back to its top. `DECISIONS-apple.md` has the compiler's full list and the argument.
+
 **Since 1.12 b258 the add control on Today *is* the input**, rather than a button that opens a sheet
 containing another button that asks for one. `TextFieldLink` is the path and WatchKit's
 `presentTextInputController` is a seam behind the Diagnostics screen — the reverse of Phase 3, which

@@ -356,14 +356,14 @@ struct AddFlowView: View {
             // The app's one primary action. On a Series 9 or an Ultra 2 this is what a pinch reaches.
             // There is no way to inject the gesture on a simulator, so it is written and left
             // unverified — and whether a `TextFieldLink` honours it is itself a wrist item.
-            .handGestureShortcut(.primaryAction, isEnabled: canAdd)
+            .doubleTapPrimaryAction(isEnabled: canAdd)
         case .watchKit:
             // The seam. Reachable by `-TFAddWatchKit` and by `WatchDictation.prefer`, and by nothing a
             // person can press on a Release wrist — said plainly in `WatchDictation.preferred`.
             Button(action: begin) { label }
                 .buttonStyle(AddPressStyle())
                 .disabled(!canAdd || presenting)
-                .handGestureShortcut(.primaryAction, isEnabled: canAdd && !presenting)
+                .doubleTapPrimaryAction(isEnabled: canAdd && !presenting)
         }
     }
 

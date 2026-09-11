@@ -17,6 +17,7 @@
 		TF0000000000000000000408 /* WatchDictation.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000257 /* WatchDictation.swift */; };
 		TF0000000000000000000470 /* WatchDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000298 /* WatchDiagnostics.swift */; };
 		TF0000000000000000000409 /* AddFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000258 /* AddFlowView.swift */; };
+		TF0000000000000000000471 /* WatchOS11.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000299 /* WatchOS11.swift */; };
 		TF0000000000000000000410 /* WatchSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000259 /* WatchSnapshot.swift */; };
 		TF0000000000000000000411 /* AddToTodaysFive.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000260 /* AddToTodaysFive.swift */; };
 		TF0000000000000000000412 /* TodaysFiveShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000261 /* TodaysFiveShortcuts.swift */; };
@@ -113,6 +114,7 @@
 		TF0000000000000000000257 /* WatchDictation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDictation.swift; sourceTree = "<group>"; };
 		TF0000000000000000000298 /* WatchDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDiagnostics.swift; sourceTree = "<group>"; };
 		TF0000000000000000000258 /* AddFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFlowView.swift; sourceTree = "<group>"; };
+		TF0000000000000000000299 /* WatchOS11.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchOS11.swift; sourceTree = "<group>"; };
 		TF0000000000000000000259 /* WatchSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSnapshot.swift; sourceTree = "<group>"; };
 		TF0000000000000000000260 /* AddToTodaysFive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddToTodaysFive.swift; sourceTree = "<group>"; };
 		TF0000000000000000000261 /* TodaysFiveShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodaysFiveShortcuts.swift; sourceTree = "<group>"; };
@@ -232,6 +234,7 @@
 				TF0000000000000000000252 /* OneThingView.swift */,
 				TF0000000000000000000253 /* ListPickerView.swift */,
 				TF0000000000000000000258 /* AddFlowView.swift */,
+				TF0000000000000000000299 /* WatchOS11.swift */,
 				TF0000000000000000000257 /* WatchDictation.swift */,
 				TF0000000000000000000255 /* WatchHaptics.swift */,
 				TF0000000000000000000256 /* WatchTheme.swift */,
@@ -558,6 +561,7 @@
 				TF0000000000000000000407 /* WatchTheme.swift in Sources */,
 				TF0000000000000000000408 /* WatchDictation.swift in Sources */,
 				TF0000000000000000000409 /* AddFlowView.swift in Sources */,
+				TF0000000000000000000471 /* WatchOS11.swift in Sources */,
 				TF0000000000000000000410 /* WatchSnapshot.swift in Sources */,
 				TF0000000000000000000411 /* AddToTodaysFive.swift in Sources */,
 				TF0000000000000000000412 /* TodaysFiveShortcuts.swift in Sources */,
@@ -609,7 +613,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 			};
 			name = Debug;
 		};
@@ -638,7 +642,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 			};
 			name = Release;
 		};
@@ -665,7 +669,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 			};
 			name = Debug;
 		};
@@ -692,7 +696,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 			};
 			name = Release;
 		};

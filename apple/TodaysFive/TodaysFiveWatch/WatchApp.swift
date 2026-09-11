@@ -308,7 +308,7 @@ struct RootView: View {
             // screen for it to point at. (`AddFlowView.addControl` writes it twice, but they are the
             // two arms of one `switch` and only ever one of them is in the view tree.) Phase 3 had two
             // live at once — Today's `+` and the button inside the sheet it opened.
-            .scrollInputBehavior(.disabled, for: .handGestureShortcut)
+            .doubleTapScrollDisabled()
             .onChange(of: page) { _, _ in
                 // Entering or leaving one-thing mode clears the shuffle pick eagerly, as the web does.
                 store.oneThingModeChanged()

@@ -22,10 +22,6 @@ struct TodayView: View {
     /// on the count can mean — see `CountActionsView`.
     @Binding var showActions: Bool
 
-    /// Where the list is scrolled to. Only ever written by the Add complication's arrival — see
-    /// `addRow`. A person's own crown is never overridden.
-    @State private var scroll = ScrollPosition()
-
     var body: some View {
         List {
             // **The list row**, above the count, and only when there is more than one list to switch
@@ -42,15 +38,13 @@ struct TodayView: View {
             }
         }
         .listStyle(.carousel)
-        .scrollPosition($scroll)
         // `todaysfive://add` arrived. A resumed watch app comes back with the scroll offset it had, so
         // "the add control is the row under the count" is only one tap when the list is at the top, and
         // `page = .today` does not put it there. Whether this moves a carousel `List` is on this round's
         // unverified list: `simctl` cannot scroll a watch simulator, so nothing here could leave it
-        // scrolled and then check that this brought it back.
-        .onChange(of: AddCoordinator.shared.focusTick) { _, _ in
-            scroll.scrollTo(edge: .top)
-        }
+        // scrolled and then check that this brought it back. `ScrollPosition` is watchOS 11 API, so on
+        // a watchOS 10 wrist the list is simply left where it was — see `WatchOS11.swift`.
+        .scrollToTop(on: AddCoordinator.shared.focusTick)
         .scrollContentBackground(.hidden)
         .background(theme.ink)
         // The document changes at once; only the re-order waits, and this is the wait made visible.

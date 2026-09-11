@@ -649,6 +649,34 @@ with it, so it lands on `main` under `review/`.
 *What it cannot see:* whether WidgetKit honours `.after` on the minute, whether the midnight background
 refresh lands, and what a real face draws.
 
+### The live run — one list created, one deleted, confirmed gone
+
+Against the real Supabase project, with `tfive` on one side and this branch's page on the other,
+served locally so the fix under test is the one running. **One create of the two this round allowed.**
+
+`live=true` is asserted **before** any write, on purpose: a page that never joined the channel cannot
+observe a broadcast at all, so without it the check would have no witness and would pass on a poll.
+
+| | |
+| --- | --- |
+| `tfive new` | created one list on the real backend; it asked whose list it was, once, and was answered |
+| the page | `status=synced live=true`, before anything was written |
+| **focused** — Phase 4's case, re-measured | put 440–685 ms; on the page **565, 761, 769, 810 ms** |
+| **unfocused** — visible, `hasFocus() false`, no focus event ever | put 422–758 ms; on the page **546, 630, 782, 894 ms** |
+| the unchanged poll | **29 bytes** (`{"rev": 9, "unchanged": true}`) against 845 for the document; the envelope is 817 stored, v3 A256GCM, `z=deflate-raw` |
+| page errors | 0 |
+| cleanup | deleted, and a read afterwards says **gone** |
+
+**The unfocused case is indistinguishable from the focused one** — both under a second, over a real
+network, on the state the bug was reported in. What this run does *not* do is reproduce the failure: on
+the real backend over a few minutes the channel stayed live, so what it measures is the healthy path
+working unfocused. The quiet-channel case is `quietd.js`'s, above, and it is the one the fix changes.
+
+**The create budget, honestly: one.** `tools/realsync4.js` and `apple/tools/interop.mjs` both need
+more than the two this round allowed — interop alone creates three — so neither was run, and nothing
+either of them asserts is claimed here. The 29-byte figure above is `tfive raw`'s, measured on the
+list this run made.
+
 ### What was not run, and why
 
 * **Lighthouse.** §7 step 6 could not be run: it is not on this machine, and the only `lighthouse` on
@@ -660,3 +688,118 @@ refresh lands, and what a real face draws.
 * **No real Apple Watch is reachable from this machine.** `devicectl` lists one iPhone and reports it
   `unavailable`.
 * **`apple/tools/interop.mjs`** did not run: it creates three lists, and the round's budget is two.
+
+---
+
+## What a person using this app sees change tomorrow, without touching anything
+
+**On the web, nothing they can see.** No document, key, link, RPC or registry shape moved; the version
+string is still 1.12, so the what's-new toast does not fire, and nothing in the palette, the type or
+the layout changed. The one change that reaches every device is in `sync.js`, and it is invisible
+until it is needed: a channel that has gone quiet for 95 seconds is no longer believed just because it
+says it is joined, and the four-minute safety poll is the occasion to check and rejoin.
+
+**What that is worth, on the one screen it is worth anything on:** a list left open and unfocused —
+a second monitor, a laptop propped open, a tab nobody has clicked — used to sit on a four-minute poll
+after its channel went quiet, and a line crossed off on a watch arrived somewhere in that four minutes
+or when the window was clicked. It now arrives in about a tenth of a second from the second write
+onward. The first write after a channel goes quiet still costs up to one poll period; that is the
+residue and it is measured rather than glossed.
+
+**It costs nothing at idle.** No extra request on a page whose channel is carrying, and the 29-byte
+unchanged poll does not move — the number this project has defended across four phases.
+
+**Nothing crosses between people.** The trace the Watch now keeps is on the Watch, in its own App Group,
+and cannot hold a line, an id or a link by construction. No theme, no document and no registry shape
+travels.
+
+**On the Watch — which is one person's, on TestFlight —** the add control is the input rather than a
+button that opens a sheet, list switching has two controls that are tappable, the corner complication
+reads `3/5` instead of a bare digit, the face no longer reverts to yesterday's count after midnight,
+and there is a Diagnostics screen behind the long press on the count.
+
+
+## What only a wrist can answer — the list, with a pass and a fail for each
+
+Nine things. Everything else this round claimed is measured and named with its instrument; these are
+the ones no instrument here can reach, and they are ordered so the first four can be done in one
+sitting.
+
+**Do this first, because it makes the rest readable.** Long-press the count → **Diagnostics** (last
+row, quiet, in the muted colour) → **Clear**. It exists in this build and not in 1.12 (216); it leads
+with seven counts and there is nothing on it that can carry a line of your list, so a photograph of it
+is safe to send.
+
+**Two rows are supposed to read zero:** `presented` and `timed out` belong to the WatchKit path, which
+nothing shipping selects. Do not report them as a fault.
+
+---
+
+**1 · Does pressing Add open anything at all?** Tap **Add** on Today — it is the row under the count
+now, and it is the input itself rather than a button that opens one.
+*Pass:* the screen changes to a full-screen input.
+*Fail:* the screen does not change, which is 1.12 (216) again. Then read Diagnostics: `asked 1 · heard
+0` means it was asked and nothing came back; `asked 0` with **no fade under your finger** means the
+count is not measuring presses and nothing drawn from it can be trusted — say so rather than reading it.
+
+**2 · Does that screen offer the microphone?** This is the one that decides the next round.
+*Pass:* a mic key is on it, or it opens on dictation. It may open on the keyboard; a mic key you can
+reach is a pass.
+*Fail:* keyboard or scribble with no way to reach the mic. **If so, don't wait for a new build** — in
+Diagnostics, under the counts, tap **add control** to switch to WatchKit and try again. Tell me which
+of the two worked. If neither does, the phone relay is the only thing watchOS has left and §1 says what
+it would cost.
+
+**3 · The Undo window — check this hardest, it is the bug the review caught.** Add a line, then **lower
+your wrist within five seconds** and leave it down a minute.
+*Pass:* raise it and there is no confirmation and no Undo; the line is on the list.
+*Fail:* "Added …" is still there with a live Undo. **Do not press it** — it would tombstone the line —
+and tell me.
+
+**4 · Does the title receive a tap?** Press the list name at the top of Today. Open Diagnostics.
+*Pass:* `title tap` reads **1**. The press arrives and Phase 3's control was fine; the caret can come
+back with evidence.
+*Fail:* `title tap` reads **0** after a press you are sure of. That now means what it says — the
+navigation bar did not hand the press on — because nothing in the app can swallow it first any more.
+Either way, switching lists works: the row at the top of Today, or **Lists** under the long press.
+
+---
+
+**5 · Siri, Double Tap, the Action button — separately, because none of them is assumed to share a
+working path.** *"Add milk to Today's Five."* · a pinch with Today open · Settings → Action Button →
+Shortcut → *Add to Today's Five*.
+*Pass:* the line lands. For Siri, tell me whether the confirmation was **spoken** or only shown.
+*Fail:* nothing, or the list scrolls instead of adding. Diagnostics shows `intent.ran` when the intent
+ran at all.
+
+**6 · The complications, on a real face.** Put all four on: circular, **a bottom corner**, rectangular,
+inline.
+*Pass for the corner:* you can read what the number means — it is `3/5` now with a curved label, not a
+bare digit and an arc.
+*Fail:* still unreadable, in which case your words for why are the test.
+
+**7 · Does a complication render the kit's type?** Set the Watch to **Terminal** and look at the count
+complication.
+*Pass:* the digits are mechanical and equal-width — IBM Plex Mono, the kit's own face.
+*Fail:* they are the system's rounded face, and the `3` is visibly narrower than the `5`. Phase 4
+proved every link in that chain except the widget host permitting it, and only a face can.
+
+**8 · How long is the rectangular line, really?** With *Show the line* on and something long on Today.
+*Pass (the sweep's figure):* about twenty-five characters — "Call the pharmacy about th…".
+*Fail (the plan's figure):* about ten — "Call the p…". One screenshot settles a number two rounds have
+now guessed at.
+
+---
+
+**9 · The second monitor — the one that isn't on your wrist.** Leave the list open in a browser window
+on the second display, click something else, and leave it an hour or a day. Then cross a line off **on
+the watch** and watch that screen without touching it.
+*Pass:* it strikes through within a second or two.
+*Fail:* it sits there until you click the window.
+
+**If it fails, one thing settles where the fault is** — and it is on your wrist, not the screen. Open
+Diagnostics after the tap and read **bell rung**. A row there means the watch told the world and the
+page did not hear it. **No row at all means the watch wrote your list and told nobody**, which is the
+half of this that has never been measured on any instrument: every doorbell this project has ever
+observed was rung by the Mac, and a watch app is suspended seconds after your wrist drops while the
+bell is a round trip *after* the write has already succeeded. Also tell me which browser.

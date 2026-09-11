@@ -345,7 +345,7 @@ network request of the app's own beyond the web view's.
 thing at a time, and four ways to put a line on the list by speaking.
 `apple/TodaysFive/TodaysFiveComplications` is the four accessory families on the face.
 
-**Since 1.12 b<BUILD> the add control on Today *is* the input**, rather than a button that opens a sheet
+**Since 1.12 b258 the add control on Today *is* the input**, rather than a button that opens a sheet
 containing another button that asks for one. `TextFieldLink` is the path and WatchKit's
 `presentTextInputController` is a seam behind the Diagnostics screen — the reverse of Phase 3, which
 shipped a WatchKit modal raised on `visibleInterfaceController` from underneath a SwiftUI sheet and

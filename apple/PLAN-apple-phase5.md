@@ -504,12 +504,21 @@ that is **withdrawn**. One was the assertion above.
 
 ### The suites
 
-| | |
-| --- | --- |
-| `swift test` | **133 tests in 10 suites** (130 before the round) |
-| Node | **143 tests** — model 28, theme 33, crypto 10, **sync 21** (14 before), sound 12, features 30, compat 9 |
-| `tools/e2e4.js` | *(filled at the end)* at 1440×900 and 390×844 |
-| builds | watchOS Simulator, iOS Simulator, `generic/platform=iOS` (the `arm64_32` compile), and the archive — **zero warnings** in every one |
+| | | |
+| --- | --- | --- |
+| `swift test` | **134 tests in 10 suites**, 8.1 s | 130 before the round |
+| Node | **143 tests** — model 28, theme 33, crypto 10, **sync 21**, sound 12, features 30, compat 9 | 136 before; `sync.test.js` grew by 206 lines and passes |
+| `tools/e2e4.js` | **169 passed, 0 failed** at 1440×900 and 390×844 — zero page errors, zero CSP violations, zero third-party requests, and all four `tf:*` events asserted at both viewports | the same 169 Phase 4 ran |
+| builds | `TodaysFive` and `TodaysFiveWatch`, each on its **simulator and its device destination** — four builds, `** BUILD SUCCEEDED **`, **0 `warning:` lines** in every one | |
+| the archive | `xcodebuild archive -scheme TodaysFive -destination 'generic/platform=iOS'` → `** ARCHIVE SUCCEEDED **`, 0 warnings, Watch app embedded | the only pass in the loop that compiles the Watch for a real device |
+
+**The browser suite took three runs to be worth quoting, and that is the load average rather than the
+code.** The first two gave 153/16 and 167/2 against a machine whose load average was 23 and then 21;
+every failure was a bare 6-second timeout, no assertion ever failed, and the *sets* of failing tests
+did not overlap — two tests that failed in the second run had passed in the first and passed at the
+other viewport in the same run. Run once more on a settled machine, with the simulators shut down:
+**169 passed, 0 failed.** Quoted with the load, because a suite with 6-second timeouts is an instrument
+that measures the machine as well as the code.
 
 ### The paired simulators — Apple Watch Series 11 46 mm (watchOS 26.5), one install from one path
 
@@ -581,6 +590,64 @@ longer than a schedule of absolute targets. That is a starved harness, not a los
 verdict on all three is **`NOT MEASURED`**. They cost nothing from the create limit — a Realtime
 channel is a topic, not a row — and the probe now carries a 1 Hz liveness counter that prints
 `NOT OBSERVED (starved)` where it printed `NOT HEARD`.
+
+### Two things the review asked about the Watch, checked rather than assumed
+
+Neither is a fix task and neither was fixed. Both are answers about what a wrist will show, and both
+are **readings of the code path** — named as readings, because nothing on this machine can tap a watch
+and no launch argument performs a real add against the live store. What makes them more than guesses is
+that the greps behind them are exhaustive: every call site of the two mechanisms is listed.
+
+**(a) After an add, Today does not refresh until something else syncs.** `AddCoordinator.onChange` is
+declared at `AddFlowView.swift:127` and invoked at `:153` and `:211`, and **assigned nowhere** — the
+only `onChange` assignment in the watch target is `receiver.onChange` at `WatchStore.swift:187`, which
+is `WatchLinkReceiver`'s and a different object. So the review's finding still stands at this head.
+
+Nothing else closes the gap. The add path does not go through `WatchStore` at all: `AddService` opens
+its **own** `SyncEngine` against the shared `ListStore`, which is what lets an App Intent add a line
+with no model on screen. The only thing that replaces the document `TodayView` draws is
+`WatchStore.apply(_:local:)` from inside `sync()`, and `sync()` has exactly six call sites —
+`start()`, `linksChanged()`, `select()`, `sceneBecameActive()`, `wokeInBackground()` and the self-test.
+**None of them is the add, and there is no repeating poll**: the doc comment at `WatchStore.swift:392`
+describes "a poll while the app is on screen" and no such timer exists — the occasions *are* the poll.
+
+So on a wrist: the line is written, it is pushed, the confirmation says *Added "…"* — and the row does
+not appear above it until the wrist drops and comes back (`sceneBecameActive`), or the phone sends
+links, or the daily background refresh lands. **The check-off path is unaffected**, because a tap calls
+`WatchStore.setDone` directly and that does apply to the screen.
+
+**(b) An add made offline reaches the server on the next *relaunch*, not on the next online sync.**
+`SyncEngine` holds `doc`, `rev` and `dirty` in memory, set once by `open()` (`SyncEngine.swift:84-92`),
+and `sync()` never re-reads the store. `AddService`'s engine is created per call, adds, fails to push
+while offline, and persists — and `ListStore.merge` (`Store.swift:91`) is a CRDT merge that keeps the
+line and sets `dirty` on the record **on disk**. But `SyncEngine.persist()` is
+`_ = try? store.merge(keys.id, record())` (`:314`): the merged record's `dirty` is discarded, so the
+Watch's own long-lived engine never learns there is anything to send.
+
+The next `sync()` therefore pulls, merges into an in-memory document that does not contain the line, and
+pushes nothing. What does recover it is `open()` being called again with a freshly loaded record —
+`WatchStore.openList` reads `store?.load(id)` on every open (`:312`) — which happens on a **relaunch**,
+or on switching to another list and back. The line is never lost; it is just not sent until then.
+
+### The complication after midnight — taken from the review, gated on its own probe
+
+`93cabdd` from `review-1.12`, cherry-picked because it applied cleanly and its instrument agreed here.
+`SnapshotTimeline.entries` hands WidgetKit an entry for now and one for the list's next midnight, and
+asks for a reload a minute past. That reload reads the same snapshot — the app has not run — finds
+`rollsAt` in the past, and the `midnight > now` guard returned a single entry built from the
+**unrolled** snapshot: the face showed the rolled count for sixty seconds and then went back to
+yesterday's until the app next ran. The header of that file, `PLAN-apple-phase3.md:244` and
+`DECISIONS-apple.md:742-743` all say the face is "right through the night with nothing running", and it
+was not.
+
+Gated rather than trusted: `review/tools/timeline-probe.sh` compiles the enum out of this tree's own
+`ComplicationsProvider.swift` beside `WatchSnapshot.swift` and plays 22:00 → 00:01 → 01:00 → 09:00 →
+the next evening, in two zones. **On `watch-fixes` before the pick: FAIL (8)** — every entry after
+midnight showed 3/5 where the rolled count is 0/2. **After: PASS**, exit 0. The commit brings the probe
+with it, so it lands on `main` under `review/`.
+
+*What it cannot see:* whether WidgetKit honours `.after` on the minute, whether the midnight background
+refresh lands, and what a real face draws.
 
 ### What was not run, and why
 

@@ -447,4 +447,149 @@ Written here in advance so the results cannot quietly absorb them:
 
 ## Results
 
-*(filled in at the end of the round)*
+### What running it found that reading it had not
+
+**Apple's own header says `visibleInterfaceController` is a stale cache, and that is §1's mechanism.**
+`WKApplication.h:37`: *"in the cases when queried after an app launch we will return the instance of the
+**last** visible interface controller."* Non-nil never meant *on screen*. So Phase 3's
+`visibleInterfaceController=present` — quoted for two rounds as evidence the feature worked — measured
+that the property answers, and Apple says what it answers with may not be the controller a modal would
+appear over. A modal sent to one that is not visible presents into nothing while the system, which owns
+the input UI and the microphone both, still lights the indicator.
+
+And `WKInterfaceController.h:132` says of the *other* text-input overload that it "will never go
+straight to dictation because allows for switching input language" — Apple stating in the negative that
+the overload this app calls **can**. **Phase 3 read the API correctly. The bug is not the call; it is
+what the call is sent to**, and that distinction is what stopped this round fixing the wrong thing.
+
+**The five-second Undo belonged to a view that Always-On tears down.** Track A's own change created it
+and Track A's reviewer found it: moving `AddFlowView` out of a `.sheet` and into Today's list made the
+window's `.task` view-scoped, and `RootView.content` is an if/else — a wrist drop destroys the `TabView`
+subtree and cancels every task in it, while `AddCoordinator.pending` stays set. Raise the wrist an hour
+later and Today drew a live Undo over an hour-old line. A presented sheet's content stays mounted
+across that branch switch, so Phase 3's version could not do this. The window belongs to the
+coordinator now, with a wall-clock guard, because a suspended watch app's sleeping task is not a clock
+— and **Siri's adds got a window for the first time**, having never had one.
+
+**A control that refuses in silence makes a zero a lie.** §2's fail criterion is "no `picker.title.tap`
+after a press ⇒ the navigation bar is not hit-testable". The caret came off the title and
+`.disabled(links.count < 2)` stayed — so a one-list wrist would have pressed a control SwiftUI
+declines, read `title tap 0`, and blamed watchOS. The caret had been the guard, and removing it while
+keeping the disable removed the evidence and left the trap.
+
+**A check that could not fail, and then falsified.** Track A's ring-buffer assertion compared eleven
+entries against a cap of sixty and passed by construction. Rewritten, it was then *proved* by deleting
+the eviction line and watching it go red — `wrote=65 entries=65 cap=60 oldest-evicted=false` — before
+the line was restored. It is the only assertion in this round shown to fail rather than argued to.
+
+**Three of §4's four starting readings were wrong, and a real socket said so.** `tools/socketd.mjs`
+runs the vendored client against a real phoenix WebSocket. A socket held open that answers nothing is
+noticed in one heartbeat timeout and reported as `CHANNEL_ERROR`. A socket cut rudely is reconnected
+**and** its channel rejoined, and `ch.subscribe` fires a third time — so `onState` maps that to joined,
+`setLive(true); pull()` runs, and the page was already back on the fast path with nobody touching the
+window. `removeChannel` on a joined channel marks it closed in the same tick. What is left is the
+residue — a client whose own machinery did not run at all — and **no instrument in this repository can
+produce that state**, which is why the value of the repair is a reading and its cost is a measurement.
+
+**The corner complication was diagnosable by reading, which is the useful half of that finding.**
+`CountView`'s corner arm drew `snapshot.done` — the done count, no denominator — with a `Gauge` in
+`.widgetLabel` that the host draws as a thin bezel arc. "A 1 and a dot on a line" is an accurate
+description of what that code asked for.
+
+**And the round caught itself three times.** Written up in `DECISIONS-apple.md` rather than tidied
+away, because the shapes differ and the rule is one rule: a harness must print its own evidence that it
+was measuring what it says it measured. One measured the control condition and called it the condition.
+One reported its own starvation as the server's silence and produced a confident `MISSED 4/10` table
+that is **withdrawn**. One was the assertion above.
+
+### The suites
+
+| | |
+| --- | --- |
+| `swift test` | **133 tests in 10 suites** (130 before the round) |
+| Node | **143 tests** — model 28, theme 33, crypto 10, **sync 21** (14 before), sound 12, features 30, compat 9 |
+| `tools/e2e4.js` | *(filled at the end)* at 1440×900 and 390×844 |
+| builds | watchOS Simulator, iOS Simulator, `generic/platform=iOS` (the `arm64_32` compile), and the archive — **zero warnings** in every one |
+
+### The paired simulators — Apple Watch Series 11 46 mm (watchOS 26.5), one install from one path
+
+One pass, from one derived-data path, because Phase 3's twenty-four phantom complication crashes were
+an artefact of two tracks installing the watch app repeatedly from different paths. Tracks build; the
+orchestrator installs.
+
+```
+add self-test:      end pass=13/13
+font self-test:     faces=33 end pass=98/98   (18 kits, 13 pairs — 98 rather than Phase 4's 96
+                                               because the Secret pair is unlocked on this simulator)
+confetti self-test: end pass=108/108          all eighteen kits, every field ending at frame 147
+watch selftest:     1 check · 2 uncheck · 3 finale fired after 0.334s · 4 startAgain
+                    5 shuffle x10 distinct=5 sameTwiceInARow=0 · 6 wobble
+                    7 haptics check=10 uncheck=2 finale=1 shuffle=10 · finale run taps=8/8 in 0.719s
+                    8 appGroup=true · 9 snapshot kit=harbor face=Manrope-ExtraLight-800
+                    12 switch→view: took=true nowEditable=false writeRefused=true
+                    12 switch back: onFirst=true editable=true
+                    13 confetti 53.4 frames a second · 14 theme change changed=true
+```
+
+Step 12 is the one that is new and the one §2 must not have broken: switch to a view-only list and a
+write is still refused on the other side of the switch.
+
+**Screenshots.** `diagnostics.png` (the round's own instrument, in Terminal's type: seven counts and
+the add-control switch), `list-picker.png` (the tick and the **view only** pill — raised through the
+*title's* sheet, so it says that sheet presents in a simulator and nothing about a wrist),
+`today-phase5.png` (a title with no caret, a list row that is a row, the count, and an Add control that
+is the input), plus Track A's `today-add-row.png` and `add-trace-diagnostics.png`.
+
+### §4 — the numbers, and what each instrument cannot see
+
+**`tools/quietd.js`**, ten trials per condition, system Chrome via Playwright 1.62.1 (the only engine
+installed here: no `ms-playwright` cache, so no bundled Chromium, no Firefox, **no WebKit** — and
+WebKit is the engine that matters most for iOS). `?transport=local` with `page.clock`, 1440×900.
+The run prints its own evidence that the condition held: **50/50 trials on a page reporting
+`visibilityState "visible"` with `hasFocus() false`**.
+
+| condition | after (s) | before (s) |
+| --- | --- | --- |
+| channel carrying — the doorbell is heard | 0.1 ×10 | unchanged |
+| channel gone quiet, **first** write | 18, 36, 58, 86, 124, 146, 154, 158, 164, 198 | unchanged — this is the residue, bounded by the poll |
+| channel quiet, the window is clicked 2 s after | 2.1 ×10 | unchanged |
+| **channel quiet, one poll period has passed** | **0.1 ×10** | 76, 84, 94, 96, 110, 118, 120, 136, 184, 196 |
+| **channel quiet, the lid was shut eight hours** | **0.1 ×10** | 8, 10, 12, 26, 32, 48, 70, 78, 220, 222 |
+
+*Cannot see:* the network. The local transport models the app's timer arithmetic exactly and the
+network not at all, and the dead channel is a `tf/test/rtmute` hook — the *shape* of the failure, not a
+socket. It also cannot model a real desktop browser's treatment of an unfocused window: throttling
+under occlusion, a host that sleeps, or Safari.
+
+**`tools/beatd.mjs`** — shipped by Track D having never been run, because that session had no outbound
+network. Integration ran it: `socket connected: true`, `sent, ok, sent, ok`, first "ok" after 30.6 s.
+That closes the one way the silence test could be wrong: on the live endpoint a healthy socket does
+stamp `heard`, so a channel that is fine is not replaced. *Cannot see:* a socket with a channel on it,
+a proxy, or an iOS app coming back from suspend.
+
+**`tools/ticks.mjs`** — 81 wakes across 257 s with a frozen stamp cost **one** channel join, which is
+the `heldSince` floor holding the worst case of being wrong to one per 95 s per list rather than one
+per tab switch. **`tools/socketd.mjs`** — every line "yes", and it names its own blind spot: a socket
+that answers every heartbeat while the *channel* has stopped delivering would look alive to the client
+and to the silence test both.
+
+**Withdrawn: integration's own channel probes.** Three runs against the real Realtime service produced
+a confident table of missed broadcasts with the client reporting `connected=true channel=joined`. Two
+independent browsers on two independent topics lost the *same* rings at the *same* seconds; the
+timeline showed rings five minutes apart arriving a tenth of a second apart, in runs nine minutes
+longer than a schedule of absolute targets. That is a starved harness, not a lost broadcast, and the
+verdict on all three is **`NOT MEASURED`**. They cost nothing from the create limit — a Realtime
+channel is a topic, not a row — and the probe now carries a 1 Hz liveness counter that prints
+`NOT OBSERVED (starved)` where it printed `NOT HEARD`.
+
+### What was not run, and why
+
+* **Lighthouse.** §7 step 6 could not be run: it is not on this machine, and the only `lighthouse` on
+  disk is `/System/Library/PrivateFrameworks/lighthouse_runtime.framework`, which is not the tool.
+  Phase 2 found a copy in an earlier session's scratchpad and that scratchpad is gone. **Nothing about
+  this round's performance is claimed.**
+* **Driving the Simulator app through the desktop** was requested and **declined**, so `simctl` still
+  cannot tap a watch and no complication was put on a face.
+* **No real Apple Watch is reachable from this machine.** `devicectl` lists one iPhone and reports it
+  `unavailable`.
+* **`apple/tools/interop.mjs`** did not run: it creates three lists, and the round's budget is two.

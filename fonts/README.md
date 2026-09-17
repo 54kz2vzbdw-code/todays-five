@@ -27,6 +27,7 @@ downloaded the first time a theme renders text in it and the service worker keep
 | Karla | karla-400-700 (variable) | SIL Open Font License 1.1 |
 | Fredoka | fredoka-500-700 (variable) | SIL Open Font License 1.1 |
 | Baloo 2 | baloo-2-500-800 (variable) | SIL Open Font License 1.1 |
+| Caveat | caveat-400-700 (variable; kern and liga kept, the contextual alternates dropped to fit a budget — see DECISIONS.md, 1.12 b262) | SIL Open Font License 1.1 |
 
 All families are distributed by Google Fonts under the SIL Open Font License 1.1 (https://openfontlicense.org),
 which permits bundling and redistribution with software as long as the fonts themselves are not sold on their own.

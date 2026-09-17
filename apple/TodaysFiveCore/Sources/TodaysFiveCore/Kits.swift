@@ -188,7 +188,8 @@ public enum Kits {
     /// see the file comment.
     public static var open: [Kit] { GeneratedKits.all }
 
-    /// The 13 font pairs, by id. All thirteen, including the two only the Secret kits use — a font
+    /// The 15 font pairs, by id (13 in theme.js's PAIRS and, since 1.12 b262, the 2 in its EXTRA_TYPE).
+    /// All of them, including the two only the Secret kits use and the two only the Extra pair uses — a font
     /// pair is not a secret, and a Secret kit that arrives at runtime has to be able to find its
     /// faces.
     public static var types: [String: KitType] { GeneratedKits.types }

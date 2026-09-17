@@ -278,8 +278,8 @@ test("normalizeHex", () => {
   assert.equal(normalizeHex("#12345"), null);
 });
 
-test("every family a pair names is self-hosted: declared in styles.css and present in fonts/", () => {
-  const css = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
+test("every family a pair names is self-hosted: declared in styles.css (or, for the Extra type, in extrafx.css) and present in fonts/", () => {
+  const css = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8") + fs.readFileSync(new URL("../extrafx.css", import.meta.url), "utf8"); // 1.12 b262: the Extra face is declared in the sheet that loads with the kit
   const files = new Set(fs.readdirSync(new URL("../fonts", import.meta.url)));
   assert.deepEqual(pairFamilies("lato"), ["Lato", "PT Sans"]);
   assert.deepEqual(pairFamilies("manrope"), ["Manrope"]);
@@ -294,6 +294,7 @@ test("every family a pair names is self-hosted: declared in styles.css and prese
     }
   }
   assert.ok(!/googleapis|gstatic/.test(css), "no Google Fonts left in the stylesheet");
+  assert.ok(!/Caveat/.test(fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8")), "1.12 b262: the Extra face is not in the render-blocking sheet");
 });
 
 test("pair auto-pick varies with base and warmth", () => {

@@ -2665,3 +2665,28 @@ what stands in its place: it says the appex loaded, found its fonts and rendered
 world, not in a project file's defaults. When one moves, lower it and read the compiler's list —
 do not grep for the API. And when the app ships a floor, check what the floor is actually buying:
 here it was three modifiers, two of which no wrist below the floor could have used anyway.
+
+
+## The `kits` key carries the Extra pairs too (1.12 b262)
+
+**What crosses the pairing is unchanged in shape and grew in what it names.** `WatchLinkPayload.extra["kits"]`
+is still an object of kits by id under `v` 1; since b216 it held the two Secret kits when the phone's page had
+`meta.device.secret`, and since b262 it also holds every kit of every pair in `meta.device.extras`, the web's new
+device-local list of unlocked Extra pair ids (Chalkboard and Whiteboard first). `WebViewController` reads both
+keys out of the registry JSON it already holds, hands the latch and the list to the page's own `theme.js` as
+**arguments** (never interpolated into the source: a pair id this build has never heard of reads as nothing), and
+gets back flat tokens — `Kit.init(json:)` took them without a change to the codec. What an Extra kit *is* on the
+web — a textured ground, a torn strike, a finale, a sound pack — does not cross; the wrist gets the palette, the
+faces and the confetti, exactly as it does for the Secret pair, and draws its ground flat.
+
+**Re-reads are keyed by what unlocked them.** The b216 reader read the page once and held the answer for the life
+of the web view; a phone that forgot one pair and kept another would have gone on sending both. The key is now
+the latch plus the pair ids in order, and a change re-reads; empty on both sends the empty key, which is the
+message a re-locked phone has to be able to send.
+
+**The Watch table is still the 16 open kits.** `Kits.types` is 15 pairs now — 13 in `theme.js`'s `PAIRS` and 2 in
+its `EXTRA_TYPE`, one family at two weights — because a font pair is not a secret and a kit that arrives at
+runtime has to find its faces. Caveat 500 and 700 were instanced from the repo's own subset woff2 by
+`gen-watch-fonts.py` and registered in `UIAppFonts`; the fixture reads their names out of the produced files.
+`KitFixtureTests` moved one expectation from 13 to 15 with the reason beside it, asserts neither Extra kit is in
+the table, and the b216 drift test stayed green without a change because `CURATED` did not move.

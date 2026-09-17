@@ -39,7 +39,7 @@
       "weight": 500,
       "variable": true,
       "reservedFontName": false,
-      "bytes": 113028
+      "bytes": 56948
     },
     {
       "file": "caveat-700.ttf",
@@ -49,7 +49,7 @@
       "weight": 700,
       "variable": true,
       "reservedFontName": false,
-      "bytes": 112868
+      "bytes": 56868
     },
     {
       "file": "cormorant-garamond-700.ttf",
@@ -1031,8 +1031,8 @@
   },
   "totals": {
     "faces": 35,
-    "bytes": 1464024,
+    "bytes": 1351944,
     "sourceFiles": 25,
-    "sourceBytes": 779348
+    "sourceBytes": 744668
   }
 }

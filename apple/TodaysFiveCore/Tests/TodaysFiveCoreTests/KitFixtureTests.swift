@@ -180,7 +180,12 @@ struct KitFixtureTests {
         // And the two font pairs the Secret kits use are still here, because a pair is not a secret
         // and a kit that arrives at runtime has to find its faces.
         #expect(Kits.type("fredoka") != nil && Kits.type("baloo") != nil)
-        #expect(Kits.types.count == 13)
+        // 1.12 b262: and the two the Extra category's first pair uses (chalk, marker — one family, Caveat,
+        // at two weights), which theme.js keeps in EXTRA_TYPE beside PAIRS so the kit fixture does not
+        // move; the font fixture carries all fifteen. The kits themselves are in no binary either.
+        #expect(Kits.type("chalk") != nil && Kits.type("marker") != nil)
+        #expect(Kits.types.count == 15)
+        #expect(Kits.byId("chalkboard") == nil && Kits.byId("whiteboard") == nil, "an Extra kit is not in the table")
     }
 
     // ---------------------------------------------------------------- 4. the floors, computed here

@@ -427,7 +427,7 @@ Each is `#if DEBUG` only. They exist because the Watch cannot be driven by hand 
 | `-TFWatchDemo` | seeds a local demo list over `MemoryTransport` — no phone, no network, and nothing spent from the server's create limit |
 | `-TFWatchSelfTest` | crosses a line off and back, finishes the list and reports whether the finale fired and after how long, runs Start again, **shuffles ten times and reports how many distinct lines came up and whether one ever came up twice in a row**, shuffles with one line left and reports that nothing moved, then prints the haptic tally, the finale run's duration, whether the store landed in the App Group, and the snapshot's counts |
 | `-TFAddSelfTest` | the add path with a canned string, with an empty one, against a view-only list, with no list selected, and Undo; the trace's rows and outcome ordinals; the input gate; the five-second Undo window and a stale one; and the trace ring's eviction. Thirteen checks. It also prints `visibleInterfaceController` — which since Phase 5 is printed with the sentence *"which says a branch would be taken and nothing about whether it renders"* beside it, because that line was read for two rounds as evidence the feature worked |
-| `-TFFontSelfTest` | every one of the 13 font pairs: is each family on the device, does `CTFontCreateWithName` hand back the face it was asked for rather than Helvetica, and do the pair's two ui weights actually render differently. **A wrong font name renders Helvetica with no log and no error**, so this is the only thing that turns a silent fallback into a failure. Prints a tally |
+| `-TFFontSelfTest` | every one of the 15 font pairs (13 in `PAIRS`, 2 in `EXTRA_TYPE` since 1.12 b262): is each family on the device, does `CTFontCreateWithName` hand back the face it was asked for rather than Helvetica, and do the pair's two ui weights actually render differently. **A wrong font name renders Helvetica with no log and no error**, so this is the only thing that turns a silent fallback into a failure. Prints a tally |
 | `-TFKit <id>` | render one kit for this launch, whichever slot is stored. `simctl` cannot tap a watch simulator, so this is the only way a screenshot of a given kit exists |
 | `-TFConfettiSelfTest` | steps the finale's particle field off-screen for every kit: does the whole volley arrive and arrive staggered, is more than half of it still on screen at its most spread out, does the field **end** (it does, at frame 147), and are the shapes the ones the kit asks for. Prints how each kit's `shapes` was read — see below |
 | `-TFFaceProbe` | the two things about the complication that could not be settled by reading a doc comment: whether the extension can reach the app's fonts without a copy of them, and what `WidgetRenderingMode.accented` does to a custom accent (nothing, in SwiftUI — it is the widget host's) |
@@ -483,7 +483,9 @@ because the `+` is the primary action.
 ## The kit on the wrist
 
 Every colour and every face on the Watch comes from a **kit** — the same 16 `TodaysFiveCore` carries,
-plus the two Secret kits when a phone that has unlocked them has said so. The accent, the ground, the
+plus whatever a phone that has unlocked more has said so: the two Secret kits, and since 1.12 b262 every
+**Extra** pair (Chalkboard and Whiteboard first) — all of them under the same `kits` key of the
+link payload, as flat tokens, never as a texture, a sound or a finale, which are the web's. The accent, the ground, the
 task face and the ui faces all move together; there is no `.primary`, no `.secondary` and no system
 colour left on any Watch screen, because watchOS has no light appearance and those were only ever
 right by accident.

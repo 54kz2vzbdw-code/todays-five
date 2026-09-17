@@ -140,13 +140,15 @@ def index_sources():
     """Every woff2 in fonts/, keyed by the family name **inside the file**, plus the CSS name that
     styles.css renames it to. The CSS name is what maps a pair to a file; the inner name is what
     CoreText will answer with."""
-    css = open(os.path.join(REPO, "styles.css"), encoding="utf-8").read()
+    # 1.12 b262: the Extra category's face is declared in extrafx.css, the sheet that loads with the kit, so
+    # styles.css stays byte for byte; both are read here.
+    css = open(os.path.join(REPO, "styles.css"), encoding="utf-8").read() + open(os.path.join(REPO, "extrafx.css"), encoding="utf-8").read()
     rules = re.findall(r'@font-face\{font-family:"([^"]+)";[^}]*?src:url\(fonts/([^)]+)\)', css)
     by_css = {}
     for css_name, filename in rules:
         by_css.setdefault(css_name, []).append(filename)
     if len(rules) != 27:
-        sys.exit("expected 27 @font-face rules in styles.css, found %d" % len(rules))
+        sys.exit("expected 27 @font-face rules across styles.css and extrafx.css, found %d" % len(rules))
     return by_css
 
 

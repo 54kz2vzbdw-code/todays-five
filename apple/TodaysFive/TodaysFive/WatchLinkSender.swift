@@ -35,7 +35,8 @@ final class WatchLinkSender: NSObject {
     /// rather than dropping it.
     private var pending: WatchLinkPayload?
 
-    /// The two Secret kits, when this phone's person has unlocked them — read out of the page's own
+    /// The kits this phone hands over beyond the 16 open ones: the two Secret kits when this phone's
+    /// person has unlocked them, and since 1.12 b262 every Extra pair they have unlocked — read out of the page's own
     /// theme.js by `WebViewController`, never compiled in. Empty is the ordinary state and is also
     /// what a phone that has *re-locked* says, which is how the wrist lets go of them again.
     private var secretKits: [Kit] = []

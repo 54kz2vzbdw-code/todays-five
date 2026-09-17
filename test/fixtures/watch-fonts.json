@@ -32,6 +32,26 @@
       "bytes": 44852
     },
     {
+      "file": "caveat-500.ttf",
+      "source": "fonts/caveat-400-700.woff2",
+      "family": "Caveat 500",
+      "postScriptName": "Caveat-Regular-500",
+      "weight": 500,
+      "variable": true,
+      "reservedFontName": false,
+      "bytes": 113028
+    },
+    {
+      "file": "caveat-700.ttf",
+      "source": "fonts/caveat-400-700.woff2",
+      "family": "Caveat 700",
+      "postScriptName": "Caveat-Regular-700",
+      "weight": 700,
+      "variable": true,
+      "reservedFontName": false,
+      "bytes": 112868
+    },
+    {
       "file": "cormorant-garamond-700.ttf",
       "source": "fonts/cormorant-garamond-600-700.woff2",
       "family": "Cormorant Garamond Light 700",
@@ -917,12 +937,102 @@
           }
         ]
       }
+    },
+    "chalk": {
+      "name": "Caveat + Nunito Sans",
+      "w": 500,
+      "ls": "0",
+      "lh": 1.08,
+      "task": {
+        "cssFamily": "Caveat",
+        "family": "Caveat 500",
+        "postScriptName": "Caveat-Regular-500",
+        "weights": [
+          500
+        ],
+        "faces": [
+          {
+            "weight": 500,
+            "family": "Caveat 500",
+            "postScriptName": "Caveat-Regular-500",
+            "file": "caveat-500.ttf"
+          }
+        ]
+      },
+      "ui": {
+        "cssFamily": "Nunito Sans",
+        "family": "Nunito Sans 12pt ExtraLight 12pt 400",
+        "postScriptName": "NunitoSans12ptExtraLight12pt-Regular-400",
+        "weights": [
+          400,
+          700
+        ],
+        "faces": [
+          {
+            "weight": 400,
+            "family": "Nunito Sans 12pt ExtraLight 12pt 400",
+            "postScriptName": "NunitoSans12ptExtraLight12pt-Regular-400",
+            "file": "nunito-sans-400.ttf"
+          },
+          {
+            "weight": 700,
+            "family": "Nunito Sans 12pt ExtraLight 12pt 700",
+            "postScriptName": "NunitoSans12ptExtraLight12pt-Regular-700",
+            "file": "nunito-sans-700.ttf"
+          }
+        ]
+      }
+    },
+    "marker": {
+      "name": "Caveat + Nunito Sans",
+      "w": 700,
+      "ls": "-.005em",
+      "lh": 1.08,
+      "task": {
+        "cssFamily": "Caveat",
+        "family": "Caveat 700",
+        "postScriptName": "Caveat-Regular-700",
+        "weights": [
+          700
+        ],
+        "faces": [
+          {
+            "weight": 700,
+            "family": "Caveat 700",
+            "postScriptName": "Caveat-Regular-700",
+            "file": "caveat-700.ttf"
+          }
+        ]
+      },
+      "ui": {
+        "cssFamily": "Nunito Sans",
+        "family": "Nunito Sans 12pt ExtraLight 12pt 400",
+        "postScriptName": "NunitoSans12ptExtraLight12pt-Regular-400",
+        "weights": [
+          400,
+          700
+        ],
+        "faces": [
+          {
+            "weight": 400,
+            "family": "Nunito Sans 12pt ExtraLight 12pt 400",
+            "postScriptName": "NunitoSans12ptExtraLight12pt-Regular-400",
+            "file": "nunito-sans-400.ttf"
+          },
+          {
+            "weight": 700,
+            "family": "Nunito Sans 12pt ExtraLight 12pt 700",
+            "postScriptName": "NunitoSans12ptExtraLight12pt-Regular-700",
+            "file": "nunito-sans-700.ttf"
+          }
+        ]
+      }
     }
   },
   "totals": {
-    "faces": 33,
-    "bytes": 1238128,
-    "sourceFiles": 24,
-    "sourceBytes": 704776
+    "faces": 35,
+    "bytes": 1464024,
+    "sourceFiles": 25,
+    "sourceBytes": 779348
   }
 }

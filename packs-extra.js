@@ -15,9 +15,9 @@ export function create({ tone, noiseBurst }) {
   const chalk = {
     check(env, step) {
       const { c, P } = env; const t = c.currentTime, p = P("pitch", 1) * Math.pow(2, (step || 0) / 12), dec = P("decay", 1);
-      noiseBurst(env, t, 700, 5, "bandpass", 1900 * p, 0.34 * P("bright", 1));                                   // the tap
-      tone(env, { f0: 560 * p, f1: 310 * p, t, attack: 0.002, peak: 0.13, len: 0.055, bend: 0.03 });
-      tone(env, { f0: 2500 * p, f1: 3150 * p, t: t + 0.05, attack: 0.012, peak: 0.062, len: 0.15 * dec, bend: 0.13 }); // the squeak of the stroke
+      noiseBurst(env, t, 700, 5, "bandpass", 1900 * p, 0.42 * P("bright", 1));                                   // the tap
+      tone(env, { f0: 560 * p, f1: 310 * p, t, attack: 0.002, peak: 0.16, len: 0.06, bend: 0.03 });
+      tone(env, { f0: 2500 * p, f1: 3150 * p, t: t + 0.05, attack: 0.012, peak: 0.08, len: 0.17 * dec, bend: 0.13 }); // the squeak of the stroke
       tone(env, { type: "triangle", f0: 5000 * p, f1: 6300 * p, t: t + 0.056, attack: 0.012, peak: 0.014, len: 0.11 * dec, bend: 0.1 });
       noiseBurst(env, t + 0.05, 5000, 2.4, "highpass", 5200, 0.045 * P("bright", 1));                            // the dust it leaves
     },
@@ -48,18 +48,19 @@ export function create({ tone, noiseBurst }) {
     },
     uncheck(env) {
       const { c, P } = env; const t = c.currentTime, p = P("pitch", 1);
-      noiseBurst(env, t, 11000, 1.6, "bandpass", 1450 * p, 0.14);                                                  // the eraser's swipe
+      noiseBurst(env, t, 11000, 1.6, "bandpass", 1450 * p, 0.18);                                                  // the eraser's swipe
       noiseBurst(env, t + 0.08, 9000, 2.0, "lowpass", 900 * p, 0.075);
     },
     finish(env) {
       const { c, P } = env; const t0 = c.currentTime, p = P("pitch", 1), dec = P("decay", 1);
       [[1650, 0], [2150, 0.14], [2750, 0.28]].forEach(([f, d]) => {                                                // a small flourish, three strokes rising
-        tone(env, { f0: f * p, f1: f * 1.28 * p, t: t0 + d, attack: 0.01, peak: 0.08, len: 0.15 * dec, bend: 0.12 });
-        noiseBurst(env, t0 + d, 1800, 3, "highpass", 3800, 0.03 * P("bright", 1));
+        tone(env, { f0: f * p, f1: f * 1.28 * p, t: t0 + d, attack: 0.01, peak: 0.14, len: 0.19 * dec, bend: 0.12 });
+        noiseBurst(env, t0 + d, 2600, 3, "highpass", 3800, 0.05 * P("bright", 1));
       });
-      tone(env, { f0: 1400 * p, f1: 650 * p, t: t0 + 0.52, attack: 0.002, peak: 0.24, len: 0.05, bend: 0.02 });    // the cap clicking back on
-      noiseBurst(env, t0 + 0.52, 400, 6, "highpass", 2800, 0.18 * P("bright", 1));
-      tone(env, { f0: 300 * p, f1: 180 * p, t: t0 + 0.525, attack: 0.003, peak: 0.1, len: 0.07, bend: 0.03 });
+      tone(env, { f0: 1400 * p, f1: 650 * p, t: t0 + 0.6, attack: 0.002, peak: 0.3, len: 0.06, bend: 0.02 });    // the cap clicking back on
+      noiseBurst(env, t0 + 0.6, 500, 6, "highpass", 2800, 0.22 * P("bright", 1));
+      tone(env, { f0: 300 * p, f1: 180 * p, t: t0 + 0.605, attack: 0.003, peak: 0.14, len: 0.09, bend: 0.03 });
+      tone(env, { type: "triangle", f0: 880 * p, t: t0 + 0.62, attack: 0.02, peak: 0.11, len: 0.55 * dec });                    // the board ringing under the cap
     }
   };
 

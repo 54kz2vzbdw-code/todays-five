@@ -47,10 +47,15 @@ final class WebViewController: UIViewController {
     private var bridgeReady = false
     /// A read can land before the document has an origin; one retry covers it without a loop.
     private var retriesLeft = 2
-    /// The two Secret kits, once this page has been asked for them. Held for the life of the web
+    /// The kits this phone hands the wrist beyond the 16 open ones: the two Secret kits when
+    /// `meta.device.secret` is set, and every Extra pair in `meta.device.extras` (1.12 b262) — flat
+    /// tokens read out of the page's own theme.js, never compiled in. Keyed by what unlocked them, so a
+    /// change on the page re-reads. Once this page has been asked for them. Held for the life of the web
     /// view rather than re-read on every reconcile: the palettes cannot change while a page is open,
     /// and the import is a page's own module either way.
     private var secretKits: [Kit] = []
+    /// What `secretKits` was read for: the Secret latch and the Extra pair ids, in order.
+    private var kitsKey: String = ""
 
     override var preferredStatusBarStyle: UIStatusBarStyle { statusBarStyle }
 
@@ -270,9 +275,14 @@ final class WebViewController: UIViewController {
             // already holds in hand (COMPATIBILITY.md §5: a device setting is a key inside
             // `meta.device`). No new bridge, no message handler, and nothing for the web to add.
             var unlocked = false
+            var extras: [String] = []
             if case let .present(json) = registry,
                let meta = (try? JSONReader.parse(Data(json.utf8)))?.objectValue {
-                unlocked = meta.obj("device").truthy("secret")
+                let device = meta.obj("device")
+                unlocked = device.truthy("secret")
+                // 1.12 b262: the Extra pairs this device has unlocked — a list of pair ids beside the
+                // latch, the same shape rule (§5: a new key inside meta.device), read tolerantly.
+                extras = (device["extras"]?.arrayValue ?? []).compactMap { $0.jsString?.string }
             }
 
             for link in plan.upsert { try vault.put(link) }
@@ -285,7 +295,7 @@ final class WebViewController: UIViewController {
             }
             // After the vault is written, so the send this may trigger carries the vault as it now
             // is rather than as it was a line ago.
-            await updateSecretKits(unlocked: unlocked)
+            await updateSecretKits(unlocked: unlocked, extras: extras)
             // The mark is written *after* the plan is applied, so a crash in between leaves the
             // cautious answer (an unmarked store removes nothing) rather than the destructive one.
             if plan.markStore {
@@ -327,26 +337,38 @@ final class WebViewController: UIViewController {
     ///
     /// Every failure is the same answer — no kits — and that is the safe direction: the wrist simply
     /// does not offer them.
-    private func updateSecretKits(unlocked: Bool) async {
-        guard unlocked else {
+    private func updateSecretKits(unlocked: Bool, extras: [String]) async {
+        let key = (unlocked ? "secret" : "") + "|" + extras.joined(separator: ",")
+        guard unlocked || !extras.isEmpty else {
             if !secretKits.isEmpty { log("secret: relocked") }
             secretKits = []
+            kitsKey = ""
             WatchLinkSender.shared.setSecretKits([])
             return
         }
-        if secretKits.isEmpty {
+        if key != kitsKey {
+            // The Extra pair ids go in as data, never interpolated into the source: the page's own
+            // theme.js decides what a pair id means, and an id this build has never heard of reads
+            // as nothing. `arguments` is the bridge's own JSON, so nothing here is quoted by hand.
             let js = """
             var b = document.documentElement.dataset.build || "";
             var T = await import("./theme.js" + (b ? "?v=" + b : ""));
-            return JSON.stringify(T.SECRET || []);
+            var out = secret ? (T.SECRET || []).slice() : [];
+            var extra = T.EXTRA || [], pairs = T.EXTRA_PAIRS || {};
+            for (var i = 0; i < extras.length; i++) { var p = pairs[extras[i]]; if (!p) continue;
+              for (var j = 0; j < p.kits.length; j++) { var k = extra.find(function (t) { return t.id === p.kits[j]; }); if (k) out.push(k); } }
+            return JSON.stringify(out);
             """
-            let answer = try? await webView.callAsyncJavaScript(js, arguments: [:], in: nil,
-                                                                contentWorld: .page)
+            var read: [Kit] = []
+            let answer = try? await webView.callAsyncJavaScript(js, arguments: ["secret": unlocked, "extras": extras],
+                                                                in: nil, contentWorld: .page)
             if let text = answer as? String,
                let list = (try? JSONReader.parse(Data(text.utf8)))?.arrayValue {
-                secretKits = list.compactMap(Kit.init(json:))
+                read = list.compactMap(Kit.init(json:))
             }
-            log("secret: unlocked, read \(secretKits.count) kit(s) from the page")
+            secretKits = read
+            kitsKey = key
+            log("secret: unlocked (secret=\(unlocked), extra pairs=\(extras.count)), read \(secretKits.count) kit(s) from the page")
         }
         WatchLinkSender.shared.setSecretKits(secretKits)
     }

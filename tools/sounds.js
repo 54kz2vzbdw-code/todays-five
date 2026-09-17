@@ -18,7 +18,7 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
 const page = await browser.newPage();
 await page.goto(BASE + "?transport=local");
 // the twelve, then the two the Secret pair carries (1.6): they are levelled against the same table
-const packs = await page.evaluate(async () => [...(await import("./packs.js")).PACK_ORDER, ...(await import("./packs-secret.js")).ORDER]);
+const packs = await page.evaluate(async () => [...(await import("./packs.js")).PACK_ORDER, ...(await import("./packs-secret.js")).ORDER, ...(await import("./packs-extra.js")).ORDER]); // 1.12 b262: and the Extra category's
 const wav = (pcm) => { // 16-bit mono
   const h = Buffer.alloc(44); h.write("RIFF", 0); h.writeUInt32LE(36 + pcm.length, 4); h.write("WAVE", 8); h.write("fmt ", 12); h.writeUInt32LE(16, 16); h.writeUInt16LE(1, 20); h.writeUInt16LE(1, 22);
   h.writeUInt32LE(RATE, 24); h.writeUInt32LE(RATE * 2, 28); h.writeUInt16LE(2, 32); h.writeUInt16LE(16, 34); h.write("data", 36); h.writeUInt32LE(pcm.length, 40); return Buffer.concat([h, pcm]);
@@ -27,7 +27,7 @@ const rows = [], pcmOf = {};
 for (const id of packs) {
   const r = await page.evaluate(async ({ id, RATE, SECONDS, EVENTS }) => {
     const P = await import("./packs.js");
-    const PACKS = { ...P.PACKS, ...(await import("./packs-secret.js")).create(P.HELPERS) };
+    const PACKS = { ...P.PACKS, ...(await import("./packs-secret.js")).create(P.HELPERS), ...(await import("./packs-extra.js")).create(P.HELPERS) };
     const c = new OfflineAudioContext(1, Math.ceil(RATE * SECONDS), RATE);
     const master = c.createGain(); master.gain.value = 1; master.connect(c.destination);
     const kit = { engine: id, pitch: 1, decay: 1 };

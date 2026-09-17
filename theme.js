@@ -552,7 +552,8 @@ export function isSecretKey(s) {
     would not). `cut` is how much of the band survives (0..1), `f` the grain's frequency. */
 function roughMask(f, cut, seed) {
   const table = Array.from({ length: 8 }, (_, i) => (i / 8 < 1 - cut ? 0 : 1)).join(" ");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="24"><filter id="r" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="${f}" numOctaves="2" seed="${seed}"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.9 0.9 0.9 0 -0.6"/><feComponentTransfer><feFuncA type="discrete" tableValues="${table}"/></feComponentTransfer></filter><rect width="160" height="24" fill="#fff" filter="url(#r)"/></svg>`;
+  // long along the stroke, ragged across it: the noise is stretched sixfold in x, so the edge tears and the line holds
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="24"><filter id="r" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="${f / 6} ${f}" numOctaves="2" seed="${seed}"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.9 0.9 0.9 0 -0.6"/><feComponentTransfer><feFuncA type="discrete" tableValues="${table}"/></feComponentTransfer></filter><rect width="480" height="24" fill="#fff" filter="url(#r)"/></svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 
@@ -569,9 +570,9 @@ const EXTRA_RAW = [
     glow: "radial-gradient(120% 90% at 50% 30%, rgba(51,70,63,.55), rgba(28,39,36,0) 70%)",
     strikeShadow: "0 0 6px rgba(244,241,232,.22)",
     boxDoneBg: "#22302C", boxCheck: "#F4F1E8", boxCheckW: "3.6",
-    strikeBg: "repeating-linear-gradient(90deg,rgba(244,241,232,.96) 0 3px,rgba(244,241,232,.66) 3px 5px,rgba(244,241,232,.9) 5px 9px,rgba(244,241,232,.74) 9px 12px)",
+    strikeBg: "repeating-linear-gradient(90deg,rgba(244,241,232,.94) 0 11px,rgba(244,241,232,.72) 11px 16px,rgba(244,241,232,.9) 16px 29px,rgba(244,241,232,.8) 29px 33px)",
     strikeSize: "auto", strikeAnim: "none",
-    strikeH: "max(4px,.13em)", strikeDy: "-.04em", strikeMask: roughMask(0.09, 0.78, 7), strikeExit: ".42s", strikeExitOp: "0",
+    strikeH: "max(4px,.13em)", strikeDy: "-.04em", strikeMask: roughMask(0.16, 0.86, 7), strikeExit: ".42s", strikeExitOp: "0",
     finaleStyle: "normal"
   }, { engine: "chalk" }, ["#F4F1E8", "#DADAD2", "#FFFFFF", "#BFC3BC", "#E8E4D8", "#A9B0AB"],
     { shapes: [5], lean: "night", partner: "whiteboard", extra: "chalk", grain: ["#1C2724", "#22302C", "#2A3B35", "#33463F"],
@@ -591,7 +592,7 @@ const EXTRA_RAW = [
     boxDoneBg: "#FBFBFA", boxCheck: "#2457C5", boxCheckW: "4",
     strikeBg: "linear-gradient(180deg,rgba(36,87,197,.58),rgba(36,87,197,.9) 30%,rgba(36,87,197,.76) 62%,rgba(36,87,197,.5))",
     strikeSize: "auto", strikeAnim: "none",
-    strikeH: "max(9px,.34em)", strikeDy: "-.15em", strikeMask: roughMask(0.05, 0.9, 3), strikeBlend: "multiply", strikeExit: ".5s", strikeExitOp: "0",
+    strikeH: "max(9px,.34em)", strikeDy: "-.15em", strikeMask: roughMask(0.08, 0.93, 3), strikeBlend: "multiply", strikeExit: ".5s", strikeExitOp: "0",
     finaleStyle: "normal"
   }, { engine: "marker" }, ["#2457C5", "#B02A20", "#2E9E5B", "#222831", "#6C93E6", "#E8A317"],
     { shapes: [4], lean: "day", partner: "chalkboard", extra: "chalk", grain: ["#FBFBFA", "#F4F5F3", "#ECEEEB", "#E2E5E1"],

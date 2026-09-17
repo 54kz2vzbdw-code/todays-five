@@ -103,6 +103,9 @@ def read_pairs():
     """theme.js's PAIRS, as a list of dicts. A regex over the source rather than a copy of the
     table: this script must not be a second place where the pairs are written down."""
     source = open(os.path.join(REPO, "theme.js"), encoding="utf-8").read()
+    # 1.12 b262: the Extra category's type lives in EXTRA_TYPE, a second table kept out of PAIRS so the kit
+    # fixture does not move; the Watch needs its faces exactly the way it needs the Secret pair's.
+    # EXTRA_TYPE sits between PAIRS and CUSTOM_PAIRS in the source, so one slice reads both tables.
     block = source[source.index("export const PAIRS"):source.index("export const CUSTOM_PAIRS")]
     pairs = []
     for m in PAIR_RE.finditer(block):
@@ -112,8 +115,8 @@ def read_pairs():
             "ui": {"css": m.group(6), "axes": m.group(7), "stack": m.group(8)},
             "w": int(m.group(9)), "ls": m.group(10), "lh": float(m.group(11))
         })
-    if len(pairs) != 13:
-        sys.exit("expected 13 pairs in theme.js, parsed %d — the regex and the source have parted company" % len(pairs))
+    if len(pairs) != 15:
+        sys.exit("expected 15 pairs in theme.js (13 in PAIRS, 2 in EXTRA_TYPE), parsed %d — the regex and the source have parted company" % len(pairs))
     return pairs
 
 
@@ -142,8 +145,8 @@ def index_sources():
     by_css = {}
     for css_name, filename in rules:
         by_css.setdefault(css_name, []).append(filename)
-    if len(rules) != 26:
-        sys.exit("expected 26 @font-face rules in styles.css, found %d" % len(rules))
+    if len(rules) != 27:
+        sys.exit("expected 27 @font-face rules in styles.css, found %d" % len(rules))
     return by_css
 
 

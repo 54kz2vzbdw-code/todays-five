@@ -46,6 +46,8 @@
 		TF0000000000000000000469 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000297 /* OFL.txt */; };
 		TF0000000000000000000437 /* archivo-800.ttf in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000265 /* archivo-800.ttf */; };
 		TF0000000000000000000438 /* baloo-2-700.ttf in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000266 /* baloo-2-700.ttf */; };
+		TF0000000000000000000912 /* caveat-700.ttf in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000902 /* caveat-700.ttf */; };
+		TF0000000000000000000911 /* caveat-500.ttf in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000901 /* caveat-500.ttf */; };
 		TF0000000000000000000439 /* cormorant-garamond-700.ttf in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000267 /* cormorant-garamond-700.ttf */; };
 		TF0000000000000000000440 /* dm-sans-400.ttf in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000268 /* dm-sans-400.ttf */; };
 		TF0000000000000000000441 /* dm-sans-700.ttf in Resources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000269 /* dm-sans-700.ttf */; };
@@ -144,6 +146,8 @@
 		TF0000000000000000000297 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		TF0000000000000000000265 /* archivo-800.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "archivo-800.ttf"; sourceTree = "<group>"; };
 		TF0000000000000000000266 /* baloo-2-700.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "baloo-2-700.ttf"; sourceTree = "<group>"; };
+		TF0000000000000000000902 /* caveat-700.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "caveat-700.ttf"; sourceTree = "<group>"; };
+		TF0000000000000000000901 /* caveat-500.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "caveat-500.ttf"; sourceTree = "<group>"; };
 		TF0000000000000000000267 /* cormorant-garamond-700.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "cormorant-garamond-700.ttf"; sourceTree = "<group>"; };
 		TF0000000000000000000268 /* dm-sans-400.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "dm-sans-400.ttf"; sourceTree = "<group>"; };
 		TF0000000000000000000269 /* dm-sans-700.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "dm-sans-700.ttf"; sourceTree = "<group>"; };
@@ -301,6 +305,8 @@
 				TF0000000000000000000264 /* archivo-500.ttf */,
 				TF0000000000000000000265 /* archivo-800.ttf */,
 				TF0000000000000000000266 /* baloo-2-700.ttf */,
+				TF0000000000000000000902 /* caveat-700.ttf */,
+				TF0000000000000000000901 /* caveat-500.ttf */,
 				TF0000000000000000000267 /* cormorant-garamond-700.ttf */,
 				TF0000000000000000000268 /* dm-sans-400.ttf */,
 				TF0000000000000000000269 /* dm-sans-700.ttf */,
@@ -492,6 +498,8 @@
 				TF0000000000000000000436 /* archivo-500.ttf in Resources */,
 				TF0000000000000000000437 /* archivo-800.ttf in Resources */,
 				TF0000000000000000000438 /* baloo-2-700.ttf in Resources */,
+				TF0000000000000000000912 /* caveat-700.ttf in Resources */,
+				TF0000000000000000000911 /* caveat-500.ttf in Resources */,
 				TF0000000000000000000439 /* cormorant-garamond-700.ttf in Resources */,
 				TF0000000000000000000440 /* dm-sans-400.ttf in Resources */,
 				TF0000000000000000000441 /* dm-sans-700.ttf in Resources */,

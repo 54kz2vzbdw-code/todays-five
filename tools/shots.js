@@ -158,6 +158,35 @@ for (const [label, opts, touch] of VIEWPORTS) {
     for (let i = 0; i < 6; i++) { if (!(await page.$("#list .row:not(.done) .check"))) break; await press("#list .row:not(.done) .check"); await wait(600); }
     await wait(2600); await shot("finale-birthday");                               // the candles lit, before they go out
   });
+  // 1.12 b262: the Extra category's first pair, on a version that has it (EXTRA=0 leaves it out): the picker with Extra
+  // open, both boards, both finales mid-play. The word is typed here the way the Secret one is above.
+  if (process.env.EXTRA !== "0") await step("extra", async () => {
+    if (!(await page.$("#sw-extra"))) return;
+    const refill = async () => {
+      const id = await page.evaluate(() => window.__tf().listId);
+      for (const box of await page.$$("#list .row.done .check")) { await box.click(); await wait(220); }
+      if (!(await page.$("#list .row:not(.done) .check"))) { await page.goto(BASE + "?transport=local#/l/" + id + "/add?text=Walk%20the%20dog%0ACall%20the%20engineer%20back"); await wait(1400); }
+      await page.mouse.move(2, 2); await wait(300);
+    };
+    await refill();
+    await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('[data-set="night"]'); await page.waitForSelector("#p-theme[open]");
+    if (await page.$("#sw-build")) { await page.click("#sw-build"); await page.waitForSelector("#p-builder[open]"); await wait(300); }
+    await page.fill("#c-import", "ChalkDust"); await press("#c-import-go"); await wait(1200);
+    await page.$eval("#sw-extra-h", el => el.scrollIntoView({ block: "center" })); await wait(300);
+    await shot("theme-extra");
+    await press('#sw-extra .swatch[data-code="T1:curated:chalkboard"]'); await wait(500);
+    await press("#partner-use"); await wait(500);
+    await esc(); await wait(900); await page.mouse.move(2, 2); await wait(500);
+    await shot("chalkboard");
+    for (let i = 0; i < 6; i++) { if (!(await page.$("#list .row:not(.done) .check"))) break; await press("#list .row:not(.done) .check"); await wait(600); }
+    await wait(1700); await shot("finale-chalkboard");                             // the eraser mid-sweep
+    await refill();
+    await press("#daynight"); await wait(1000); await page.mouse.move(2, 2); await wait(400);
+    await shot("whiteboard");
+    for (let i = 0; i < 6; i++) { if (!(await page.$("#list .row:not(.done) .check"))) break; await press("#list .row:not(.done) .check"); await wait(600); }
+    await wait(1300); await shot("finale-whiteboard");                             // the check drawn, the line writing itself
+    await refill();
+  });
   // 1.12: Everything finishes on its own, and Remove asks before it takes the list off this device
   await step("everything-finale", async () => {
     if (!(await page.$("#v-all"))) return;

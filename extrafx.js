@@ -44,7 +44,7 @@ export function groundSvg(kit) {
       `<filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="34"/></filter></defs>` +
       `<rect width="${W}" height="${H}" fill="url(#sheen)"/><rect width="${W}" height="${H}" fill="url(#vig)" opacity=".7"/>` +
       `<path d="M 260 720 C 520 560, 760 640, 1040 470 S 1380 380, 1500 300" fill="none" stroke="${g3}" stroke-width="150" stroke-linecap="round" opacity=".55" filter="url(#soft)"/>` +
-      `<path d="M 120 240 C 320 210, 480 300, 640 260" fill="none" stroke="${g2}" stroke-width="90" stroke-linecap="round" opacity=".6" filter="url(#soft)"/>` +
+      `<path d="M 90 250 C 300 190, 520 330, 720 250 S 980 150, 1180 210" fill="none" stroke="${g2}" stroke-width="70" stroke-linecap="round" opacity=".38" filter="url(#soft)"/>` +
       `</svg>`;
   }
   // the board: slate under a haze of dust that gathers low, the ghost of a wide erase across the middle, dust motes

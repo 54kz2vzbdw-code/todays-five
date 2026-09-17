@@ -176,7 +176,9 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await shot("theme-extra");
     await press('#sw-extra .swatch[data-code="T1:curated:chalkboard"]'); await wait(500);
     await press("#partner-use"); await wait(500);
-    await esc(); await wait(900); await page.mouse.move(2, 2); await wait(500);
+    await esc(); await wait(900);
+    if ((await page.evaluate(() => window.__tf().theme)) !== "chalkboard") { await press("#daynight"); await wait(1000); } // whichever slot is on, the board first
+    await page.mouse.move(2, 2); await wait(500);
     await shot("chalkboard");
     for (let i = 0; i < 6; i++) { if (!(await page.$("#list .row:not(.done) .check"))) break; await press("#list .row:not(.done) .check"); await wait(600); }
     await wait(1700); await shot("finale-chalkboard");                             // the eraser mid-sweep

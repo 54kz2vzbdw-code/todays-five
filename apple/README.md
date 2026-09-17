@@ -34,7 +34,7 @@ bundle, because the fixtures are the shared contract:
 | the pinned key vectors, envelopes, links, dates, the zone | `test/fixtures/vectors.json` | `test/tools/gen-vectors.mjs` |
 | golden merge / normalize / rollover cases | `test/fixtures/merge/*.json` | `tools/merge-fixtures.js` |
 | ~1,200 random document pairs and ~900 operation sequences | `test/fixtures/merge-cases.json.deflate` | `test/tools/gen-merge-cases.mjs` |
-| the 18 kits and the 13 font pairs (1.12 b216) | `test/fixtures/kits.json` | `test/tools/gen-kits.mjs` |
+| the 18 kits and the 13 font pairs (1.12 b216; the Extra type's 2 more pairs ride in the font fixture only, 1.12 b262) | `test/fixtures/kits.json` | `test/tools/gen-kits.mjs` |
 | the Watch's real family and PostScript names (1.12 b216) | `test/fixtures/watch-fonts.json` + `apple/TodaysFive/Fonts/*.ttf` | `apple/tools/gen-watch-fonts.py` |
 
 `test/fixtures/merge/`, `test/fixtures/vectors.json` and `test/fixtures/kits.json` are read by the

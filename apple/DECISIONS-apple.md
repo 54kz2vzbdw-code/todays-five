@@ -2690,3 +2690,14 @@ runtime has to find its faces. Caveat 500 and 700 were instanced from the repo's
 `gen-watch-fonts.py` and registered in `UIAppFonts`; the fixture reads their names out of the produced files.
 `KitFixtureTests` moved one expectation from 13 to 15 with the reason beside it, asserts neither Extra kit is in
 the table, and the b216 drift test stayed green without a change because `CURATED` did not move.
+
+**The harness's console capture was empty this round, and the app was not silent.** `watchsim.mjs launch`
+redirects with `--stdout=<file on the device>`, and every file it wrote was 0 bytes — for the Watch and for the
+phone, for `-TFFontSelfTest` and for `-TFWatchDemo -TFWatchSelfTest`, on the same runtimes b216 read tallies
+from. `xcrun simctl launch --console-pty … -TFFontSelfTest` printed every line at once. So a file redirect is
+block-buffered and a pty is line-buffered, and a tally shorter than the buffer never reaches the file until the
+process exits, which a simulator app does not do on its own; why b216's runs flushed is not known and not
+claimed. Every tally in PLAN.md's b262 section was read over the pty. The harness still says "the app ran and
+printed nothing", which is the third harness lie of this project (the three above) and is left as found:
+switching `cmdLaunch` to a pty means keeping a child alive for the console's life, which is a change to the
+harness's shape and not this round's. The workaround is one line and is written here.

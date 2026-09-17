@@ -1777,3 +1777,67 @@ agree at the moment a build is made: the number has to be written *before* the r
 and writing the round up is itself a commit. The build's jobs — About's label, the service worker's
 cache name, and the match between `<html data-build>` and `PANELS_BUILD` — are all about the code that
 shipped, and all three agree at 158.
+
+# Today's Five 1.12 b262 — the Extra category, pair one
+
+The brief: a second hidden category of themes beside Secret, **Extra** — materials rather than colours, in designed
+pairs, each pair behind its own word, built so six fit and shipping two: **Chalkboard** (Night) and **Whiteboard**
+(Day). The decisions are in DECISIONS.md, "1.12 b262 decisions"; the Watch side in apple/DECISIONS-apple.md. The
+version holds at 1.12; only the build moves.
+
+## What shipped
+
+- The category: a table of words (`extraKeyPair`), a device-local list of unlocked pair ids (`meta.device.extras`),
+  an Extra group in the picker with a quiet Forget per pair, and one gate (`themeShown`) for both hidden groups.
+- The material engine: `extrafx.js` (the ground as one SVG built from the kit's grain; the eraser and the marker
+  finales), `extrafx.css` (the ground's rules, the material fallbacks, the hand's `@font-face`, the line writing
+  itself), eight web-only material tokens, a sixth confetti shape, and `packs-extra.js` (Chalk, Marker).
+- The two kits, in `EXTRA` rather than `CURATED`, so `test/fixtures/kits.json` and `data-tokens-rev` did not move.
+- Caveat, one variable latin file cut to the budget, on the web and instanced onto the Watch.
+- The Watch: the phone hands every unlocked pair over under the same `kits` key as the Secret pair, flat tokens.
+
+## Screenshots
+
+`shots/extra-1/` — `desktop-theme-extra.png` and `phone-theme-extra.png` (the picker with Extra open),
+`desktop-chalkboard.png`, `phone-chalkboard.png`, `desktop-whiteboard.png`, `phone-whiteboard.png`,
+`desktop-finale-chalkboard.png` and `phone-finale-chalkboard.png` (the eraser mid-sweep),
+`desktop-finale-whiteboard.png` and `phone-finale-whiteboard.png` (the check drawn, the line writing itself),
+and the Watch in `apple/shots/watch/today-chalkboard.png` and `today-whiteboard.png`. The sound envelopes are in
+`shots/extra-1/sounds/`.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| bytes per pair, gzipped | **47.5 KB**: extrafx.js 4.66, extrafx.css 1.33, packs-extra.js 1.65, caveat-400-700.woff2 39.9 (woff2 does not compress further); budget 60 | `gzip -9` on the files in the tree |
+| the category's own cost | theme.js +3.6 KB gzipped (+10.0 KB raw, mostly comments); app.js +0.4, panels.js +0.6, sound.js +0.2, fx.js +0.05, index.html +0.02, sw.js +0.01 | `gzip -9`, this tree against `main` at 261 |
+| first paint, bytes | **styles.css is byte for byte 261's** (`git diff 1658e01 -- styles.css` empty); the material rules and the face are in the lazy sheet | `git diff` |
+| first paint, requests on a device that never unlocked | **0 new**: no request matching `extrafx`, `packs-extra` or `caveat` after the picker, Settings, How it works and About | the browser suite reads `performance.getEntriesByType("resource")` |
+| first paint, timing | see the Lighthouse stand-in below | `tools/paint.mjs` |
+| the grain, per colour | every grain hex clears the kit's floors; Chalkboard worst: dim 4.73 on `#33463F`, hairline 3.31; Whiteboard worst: dim 4.87 on `#E2E5E1`, hairline 3.37 | `test/theme.test.js`, printed |
+| the grain, as rendered | Chalkboard 0.0183…0.0452 luminance inside 0.0183…0.0544; Whiteboard 0.8337…0.9703 against 0.7764…0.9641 — one sRGB step of green over, tolerance 0.0065; text on the ground as drawn 9.77 and 12.48, hairline 3.63 and 3.60 | `tools/grain.mjs` at 1440×900 and 390×844 (1,296,000 and 329,160 pixels each), and the same code once per viewport in the browser suite |
+| the ground, per pair | Chalkboard 3,911 bytes and Whiteboard 1,820 bytes as a data: URI, built at run time from four hexes each | `tools/grain.mjs` |
+| the packs | Chalk check 0.25 peak / 0.0164 RMS, uncheck 0.074 / 0.008, finale 0.315 / 0.025 over 0.71 s; Marker 0.20 / 0.0159, 0.099 / 0.0102, 0.324 / 0.0179 over 0.89 s — all inside the twelve's ranges | `tools/sounds.js`, sixteen packs rendered through an OfflineAudioContext |
+| the old build reading the new key | a 261 page keeps `extras: ["chalk"]` and `night: T1:curated:chalkboard` through a theme change and a reload, shows two groups, raises no error; the new build then reads them back | a `git worktree` of 261 on port 8792, Playwright, the registry carried across origins |
+| idle CPU, five minutes each | IDLE_ROWS | `tools/idle.mjs` — Chrome's per-renderer `TaskDuration` over CDP, the 1.8 instrument |
+| the Watch fonts | 35 faces on disk, 1.29 MB; Caveat 500 and 700 at 56,948 and 56,868 bytes; 15 pairs in the fixture; 15 of 35 faces carry a Reserved Font Name and Caveat is not one of them | `apple/tools/gen-watch-fonts.py`, reading the names back out of the files |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36 (three this round), crypto 10, sync 14 / 21, sound 13 (one this round), features 30, compat 9; `gen-kits.mjs` regenerates `kits.json` with no diff |
+| Swift core | `swift test` — 134 tests in 10 suites, after `Kits.types` moved from 13 to 15 |
+| Browser suite, 1440×900 and 390×844 | **177 passed, 0 failed** — 169 before, eight this round, four a side: the group and its Forget beside Secret's; both kits in both slots, the flip, the hand, the ground, the strike, the check, a finale each, and reduced motion; the ground's frame count and the grain as rendered; a device that never gives a word. Zero page errors, zero CSP violations, zero third-party requests |
+| The app | `xcodebuild`: TodaysFiveCore for iOS Simulator, watchOS Simulator and macOS; TodaysFive for `generic/platform=iOS Simulator` and `generic/platform=iOS` (the App Manager key) — five builds, **BUILD SUCCEEDED, zero `warning:` lines** (the log grepped for `warning:` and `error:`) |
+| Paired simulators | `watchsim.mjs all` — iPhone 17 + Apple Watch Series 11 (46mm) on iOS 26.5 / watchOS 26.5, 9 steps ok. `-TFFontSelfTest`: **kits=16 pairs=15 files=35 bundled=35/35, pass=102/102** (was 96/96 over 33 faces at b216), Caveat 500 and 700 among them. `-TFWatchDemo -TFWatchSelfTest`: 14 checks green (finale fired after 0.342 s, shuffle ×10 distinct=5, haptics check=10 uncheck=2 finale=1 shuffle=10, appGroup=true, confetti 147 frames over 2.47 s = 59.0/s, theme change harbor→terminal). `-TFAddSelfTest` pass=13/13. `-TFConfettiSelfTest` pass=96/96. `-TFFaceProbe` facesOnDisk=35 registered=35, the two renderings identical as before. The unlock-on-the-phone check (the pair appearing in the Watch picker, a complication redrawn) can only run against the deployed site, because the phone app is a WKWebView on the live page — see the row below the tables |
+| Screenshots | `tools/shots.js` at both viewports into `shots/extra-1/` — the ten named above; the step flips to Chalkboard first whichever slot is on, which the first run did not and the phone set came out swapped |
+
+### Lighthouse, and what stands in for it
+
+**Lighthouse could not be run this round either**, for the reason 1.12 recorded: it is not in this machine's
+Node runtime and there is no `npm`, `npx` or `pnpm` to add it. `tools/paint.mjs` is the stand-in from that
+round, now committed: both builds served locally, FCP and LCP read through CDP with Lighthouse's mobile numbers
+applied (150 ms RTT, 1.6 Mbps, 4× CPU), eight runs a side, interleaved and order-flipped. Medians, with the range:
+
+PAINT_ROWS

@@ -1819,7 +1819,7 @@ and the Watch in `apple/shots/watch/today-chalkboard.png` and `today-whiteboard.
 | the ground, per pair | Chalkboard 3,911 bytes and Whiteboard 1,820 bytes as a data: URI, built at run time from four hexes each | `tools/grain.mjs` |
 | the packs | Chalk check 0.25 peak / 0.0164 RMS, uncheck 0.074 / 0.008, finale 0.315 / 0.025 over 0.71 s; Marker 0.20 / 0.0159, 0.099 / 0.0102, 0.324 / 0.0179 over 0.89 s — all inside the twelve's ranges | `tools/sounds.js`, sixteen packs rendered through an OfflineAudioContext |
 | the old build reading the new key | a 261 page keeps `extras: ["chalk"]` and `night: T1:curated:chalkboard` through a theme change and a reload, shows two groups, raises no error; the new build then reads them back | a `git worktree` of 261 on port 8792, Playwright, the registry carried across origins |
-| idle CPU, five minutes each | IDLE_ROWS | `tools/idle.mjs` — Chrome's per-renderer `TaskDuration` over CDP, the 1.8 instrument |
+| idle CPU, five minutes each | Dark 0.010 % of one core (30 ms of main-thread tasks in 300 s, 1 ms of it style recalc); **Chalkboard 0.009 %** (28 ms, 0 ms recalc); **Whiteboard 0.012 %** (35 ms, 1 ms recalc). The two simulators of the paired-Watch check were booted and idle on the same machine while this ran | `tools/idle.mjs` — Chrome's per-renderer `TaskDuration` over CDP, the 1.8 instrument |
 | the Watch fonts | 35 faces on disk, 1.29 MB; Caveat 500 and 700 at 56,948 and 56,868 bytes; 15 pairs in the fixture; 15 of 35 faces carry a Reserved Font Name and Caveat is not one of them | `apple/tools/gen-watch-fonts.py`, reading the names back out of the files |
 
 ## Verification results
@@ -1840,4 +1840,18 @@ Node runtime and there is no `npm`, `npx` or `pnpm` to add it. `tools/paint.mjs`
 round, now committed: both builds served locally, FCP and LCP read through CDP with Lighthouse's mobile numbers
 applied (150 ms RTT, 1.6 Mbps, 4× CPU), eight runs a side, interleaved and order-flipped. Medians, with the range:
 
-PAINT_ROWS
+| | FCP | LCP | on the wire (uncompressed, local server) |
+| --- | --- | --- | --- |
+| desktop 261 | 52 ms (48–68) | 52 ms (48–68) | 542.4 KB |
+| desktop b266 | 52 ms (52–64) | 52 ms (52–64) | 554.8 KB |
+| mobile 261 | 1192 ms (1188–1212) | 1192 ms (1188–1212) | 542.4 KB |
+| mobile b266 | **1232 ms** (1224–1236) | **1232 ms** (1224–1236) | 554.8 KB |
+
+**The mobile first paint is 40 ms slower at the median, and the ranges do not overlap, so it is real.** Requests
+are the same and `styles.css` is byte for byte the same; what moved is 12.4 KB more on the wire before the first
+paint (4.8 KB gzipped: theme.js +3.6, panels.js +0.6, app.js +0.4, the rest under 0.3), of which theme.js is the
+category itself — the two kits, their masks and the words have to be in the module the boot path parses, because
+a slot holding `T1:curated:chalkboard` must resolve synchronously on the next open. At Lighthouse's 1.6 Mbps
+that is about 60 ms of wire, which is what the throttled profile paid. 1.12 recorded +52 ms for 9.3 KB in the same
+place and called it the one thing it could not hold to the byte; this is the same kind of number and is said the
+same way. Moving the kit table out of the boot path is a change to how codes resolve and is not this round's.

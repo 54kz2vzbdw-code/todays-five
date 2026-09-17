@@ -300,17 +300,18 @@ test("the version is one number in three places, the build in four, and there ar
   assert.deepEqual(wn.versions.map(v => v.version), ["1.12", "1.11", "1.10", "1.9", "1.8", "1.7", "1.5", "1.4", "1.3", "1.2", "1.1", "1.0"], "the public history: 1.0 and later (4.0.0 became 1.0; the pre-releases live in CHANGELOG.md)");
   for (const v of wn.versions) { assert.match(v.version, /^\d+\.\d+(\.\d+)?$/); assert.ok(!("date" in v), v.version + ": no date field"); assert.ok(typeof v.headline === "string" && v.items.length >= 1 && v.items.length <= 3, v.version + ": a headline and one to three items"); }
   assert.ok(!/\b20\d\d-\d\d-\d\d\b/.test(fs.readFileSync(new URL("../about.html", import.meta.url), "utf8")), "no dates on the About page");
-  for (const f of ["packs.js", "packs-secret.js", "secretfx.js", "secretfx.css", "panels.js", "panels.css", "exporter.js", "version.js", "whatsnew.json"]) assert.ok(sw.includes(`"./${f}"`), "precached: " + f);
-  for (const f of ["packs-secret.js", "secretfx.js", "secretfx.css"]) assert.ok(panels.includes(`"./${f}"`), "and refreshed before the guard's one reload: " + f);
+  for (const f of ["packs.js", "packs-secret.js", "secretfx.js", "secretfx.css", "packs-extra.js", "extrafx.js", "extrafx.css", "panels.js", "panels.css", "exporter.js", "version.js", "whatsnew.json"]) assert.ok(sw.includes(`"./${f}"`), "precached: " + f);
+  for (const f of ["packs-secret.js", "secretfx.js", "secretfx.css", "packs-extra.js", "extrafx.js", "extrafx.css"]) assert.ok(panels.includes(`"./${f}"`), "and refreshed before the guard's one reload: " + f);
 });
 
 test("1.8: the Secret pair is nowhere anyone reading the app can find it — not About, not How it works, not the changelog beyond the wink", () => {
   const read = f => fs.readFileSync(new URL("../" + f, import.meta.url), "utf8");
-  const NAMES = /superpink|birthday/i;
+  const NAMES = /superpink|birthday|chalkboard|whiteboard/i; // 1.12 b262: the Extra pair is held to the same silence
   // what a reader of the app sees: the About page and the changelog it renders, the README, and the long-form help
   for (const f of ["about.html", "whatsnew.json", "CHANGELOG.md", "README.md"]) {
     assert.doesNotMatch(read(f), NAMES, f + " names one of them");
     assert.doesNotMatch(read(f), /forget the secret|secret (theme|group|pair)|unlock/i, f + " mentions the group"); // "secret" alone is what About calls the thing in a link
+    assert.doesNotMatch(read(f), /extra (theme|group|pair|kit)|chalkdust/i, f + " mentions the Extra group"); // 1.12 b262
   }
   const panels = read("panels.js");
   const helpAt = panels.indexOf("How it works");
@@ -326,6 +327,7 @@ test("1.8: the Secret pair is nowhere anyone reading the app can find it — not
   // the markup gives the group a home and a way out of it, and names neither theme: the swatches are built at render time
   const html = read("index.html");
   assert.ok(html.includes('id="sw-secret"') && html.includes('id="sw-forget"'), "the group has a home in the markup");
+  assert.ok(html.includes('id="sw-extra"') && html.includes('id="sw-extra-actions"'), "and so does the Extra group (1.12 b262), its Forget chips built per pair at render time");
   assert.doesNotMatch(html, NAMES, "and the markup names neither theme");
 });
 
@@ -380,9 +382,20 @@ test("1.12 b216: the Secret group's third door — a saved theme whose code name
   assert.deepEqual(doc.themes.r1, rec, "showing or not showing it does not touch the record");
 
   // and all three doors name the same guard, so a fourth cannot be added without one
-  assert.ok(/dev\(\)\.secret \|\| !T\.isSecretTheme\(/.test(src), "Yours");
+  // 1.12 b262: Yours goes through T.themeShown(), the one gate both hidden groups share; the group and the
+  // import field keep their own spelling of the same latch
+  assert.ok(/T\.themeShown\(t\.theme, dev\(\)\)/.test(src), "Yours");
   assert.ok(src.includes("const secret = !!dev().secret;") && src.includes('fill("#sw-secret", secret ? T.SECRET.map(t => mk(t)) : []);'), "the group");
   assert.ok(/T\.isSecretTheme\(t\) && !dev\(\)\.secret/.test(src), "the import field");
+  // and the Extra group's doors (1.12 b262): the same gate for Yours, the unlocked list for the group, the pair for the import field
+  const extraRec = { id: "r3", name: "Board", code: "T1:curated:chalkboard", updatedAt: 1000 };
+  const doc2 = M.normalize({ themes: { r3: { ...extraRec }, r2: doc.themes.r2 } }, "L");
+  assert.equal(T.isExtraCode(extraRec.code), "chalk");
+  assert.deepEqual(savedThemes({ doc: doc2 }, T, () => ({})).map(s => s.id), ["r2"], "without the word the Extra record is not among the swatches");
+  assert.deepEqual(savedThemes({ doc: doc2 }, T, () => ({ extras: ["chalk"] })).map(s => s.id).sort(), ["r2", "r3"], "with it, it is");
+  assert.deepEqual(doc2.themes.r3, extraRec, "and the record is untouched");
+  assert.ok(src.includes("const extras = T.unlockedExtras(dev());") && /fill\("#sw-extra", extras\.flatMap/.test(src), "the Extra group");
+  assert.ok(/T\.isExtraTheme\(t\) && !T\.themeShown\(t, dev\(\)\)/.test(src), "the import field, for an Extra code");
 });
 
 test("no class or id the common content-blocker lists hide everywhere (build 69: .share-block hid the whole Share sheet on a phone with a blocker)", () => {

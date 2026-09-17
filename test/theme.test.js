@@ -6,6 +6,7 @@ import {
   CURATED_DAY, CURATED_NIGHT, curated, partnerOf, makePartner, SLOT_DEFAULT, scheduledSlot, autoSlot, activeSlot, slotCode,
   flipSlot, settleHold, setSwitchMode, migrateSlots, mixHex, cssTextBetween,
   SECRET, SECRET_IDS, isSecretTheme, isSecretCode, isSecretKey, PACK_BEFORE_19, packBefore19,
+  EXTRA, EXTRA_IDS, EXTRA_PAIRS, EXTRA_TYPE, MATERIAL_TOKENS, isExtraTheme, isExtraCode, extraKeyPair, unlockedExtras, themeShown, pairOf, PALETTE_REV,
   BRAND, BRAND_ACCENT, brandColourways, brandTiles, brandDark, luminance
 } from "../theme.js";
 import fs from "node:fs";
@@ -282,7 +283,7 @@ test("every family a pair names is self-hosted: declared in styles.css and prese
   const files = new Set(fs.readdirSync(new URL("../fonts", import.meta.url)));
   assert.deepEqual(pairFamilies("lato"), ["Lato", "PT Sans"]);
   assert.deepEqual(pairFamilies("manrope"), ["Manrope"]);
-  for (const id of Object.keys(PAIRS)) for (const fam of pairFamilies(id)) {
+  for (const id of [...Object.keys(PAIRS), ...Object.keys(EXTRA_TYPE)]) for (const fam of pairFamilies(id)) { // 1.12 b262: the Extra type too
     const faces = [...css.matchAll(new RegExp('@font-face\\{font-family:"' + fam.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + '";[^}]*\\}', "g"))].map(m => m[0]);
     assert.ok(faces.length >= 1, fam + " has no @font-face in styles.css");
     for (const f of faces) {
@@ -405,6 +406,71 @@ test("the key is a key, not a theme code: trimmed, case-insensitive, and parseCo
   // nothing else a person might plausibly type collides with it
   const words = ["pink", "superpink!", "super-pink", "SuperPink1", "birthday", "secret", "sparkle", "party", "todays-five", "open sesame", "T2:d:FF3D9A:fraunces:bell:Superpink"];
   for (const w of words) assert.equal(isSecretKey(w), false, w);
+});
+
+/* ---------------- 1.12 b262: the Extra category ---------------- */
+
+test("1.12 b262: the Extra pair reaches the curated bar — two complete kits through finalize(), partners of each other, in no open group and not in CURATED", () => {
+  assert.deepEqual(EXTRA_IDS, ["chalkboard", "whiteboard"]);
+  assert.deepEqual(EXTRA_PAIRS.chalk.kits, EXTRA_IDS);
+  assert.equal(CURATED.length, 18, "CURATED is untouched: the fixture and the stamp are computed over it");
+  assert.equal(PALETTE_REV, fs.readFileSync(new URL("../index.html", import.meta.url), "utf8").match(/data-tokens-rev="([^"]+)"/)[1], "and data-tokens-rev did not move");
+  const [cb, wb] = EXTRA;
+  check(cb, "chalkboard"); check(wb, "whiteboard");
+  for (const t of EXTRA) {
+    const r = report(t);
+    for (const [k, floor] of [["accent3", 3], ["danger3", 4.5], ["accentText2", 4.5], ["done2", 4.5]]) assert.ok(r[k] >= floor - 1e-9, `${t.id}: ${k} ${r[k].toFixed(2)} < ${floor} on --ink-3`);
+    assert.equal(isExtraTheme(t), "chalk"); assert.ok(!isSecretTheme(t), t.id + " is not Secret");
+    assert.equal(themeCode(t), "T1:curated:" + t.id); assert.equal(parseCode(themeCode(t)).id, t.id, "a curated code like any other, so a slot survives a reload");
+    assert.equal(isExtraCode(themeCode(t)), "chalk"); assert.equal(isSecretCode(themeCode(t)), false);
+    assert.ok(!CURATED.includes(t) && !CURATED_DAY.includes(t) && !CURATED_NIGHT.includes(t), t.id + " is in no open group");
+    assert.ok(EXTRA_TYPE[t.pair] && pairOf(t.pair) === EXTRA_TYPE[t.pair] && !PAIRS[t.pair], t.id + ": its type is in EXTRA_TYPE, not PAIRS");
+    assert.ok(t.finaleText && /[.!?]$/.test(t.finaleText) && t.finale && t.field, t.id + " carries a line, a finale and a ground");
+    assert.ok(Array.isArray(t.grain) && t.grain.length >= 1 && t.grain.length <= 6 && t.grain[0] === t.colors.ink, t.id + ": at most six grain hexes, the first its own --ink");
+    for (const g of t.grain) assert.match(g, /^#[0-9A-F]{6}$/);
+    assert.ok(MATERIAL_TOKENS.some(k => t.colors[k]), t.id + " names at least one material token");
+  }
+  assert.equal(cb.base, "dark"); assert.equal(wb.base, "light");
+  assert.equal(cb.partner, "whiteboard"); assert.equal(wb.partner, "chalkboard");
+  assert.equal(partnerOf(cb).id, "whiteboard"); assert.equal(partnerOf(wb).id, "chalkboard");
+  assert.notEqual(cb.lean, wb.lean, "one leans day, the other night, so the sun and moon flip between them");
+  assert.equal(cb.sound.engine, "chalk"); assert.equal(wb.sound.engine, "marker");
+  assert.ok(!PACK_IDS.includes("chalk") && !PACK_IDS.includes("marker"), "their engines are never in a T2 code");
+  assert.deepEqual(cb.shapes, [5], "chalk dust is dots"); assert.ok(/multiply/.test(wb.colors.strikeBlend), "the marker is translucent where it crosses the words");
+  assert.ok(/data:image\/svg\+xml/.test(cb.colors.strikeMask) && /data:image\/svg\+xml/.test(wb.colors.strikeMask), "each strike has a torn edge, as a data: URI");
+});
+
+test("1.12 b262: the grain rule — every grain colour clears the floors the kit's own --ink and --ink-3 clear, printed", () => {
+  const rows = [];
+  for (const t of EXTRA) for (const g of t.grain) {
+    const c = t.colors, r = { text: contrast(c.text, g), muted: contrast(c.muted, g), dim: contrast(c.dim, g), done: contrast(c.done, g), muted2: contrast(c.muted2, g), dim2: contrast(c.dim2, g), done2: contrast(c.done2, g), accent: contrast(c.accent, g), accentText: contrast(c.accentText, g), danger: contrast(c.danger, g), hairSolid: contrast(c.hairSolid, g) };
+    for (const [k, floor] of [["text", 4.5], ["muted", 4.5], ["dim", 4.5], ["done", 4.5], ["muted2", 4.5], ["dim2", 4.5], ["done2", 4.5], ["accent", 3], ["accentText", 4.5], ["danger", 4.5], ["hairSolid", 3]]) assert.ok(r[k] >= floor - 1e-9, `${t.id}: ${k} on grain ${g} is ${r[k].toFixed(2)}, under ${floor}`);
+    rows.push(`     ${t.id.padEnd(11)} ${g}  text ${r.text.toFixed(2)}  muted ${r.muted.toFixed(2)}  dim ${r.dim.toFixed(2)}  accent ${r.accent.toFixed(2)}  accentText ${r.accentText.toFixed(2)}  danger ${r.danger.toFixed(2)}  hairSolid ${r.hairSolid.toFixed(2)}`);
+    // the grain sits on one side of every token that reads on it, so a mix of any two grains reads too
+    for (const k of ["text", "muted", "dim", "accent", "accentText", "danger", "hairSolid"]) assert.equal(luminance(c[k]) > luminance(g), t.base === "dark", `${t.id}: ${k} and grain ${g} are on the same side`);
+  }
+  assert.equal(contrast(EXTRA[0].colors.text, EXTRA[0].colors.ink) >= 7 && contrast(EXTRA[1].colors.text, EXTRA[1].colors.ink) >= 7, true, "7:1 on the ink itself");
+  console.log(rows.join("\n"));
+});
+
+test("1.12 b262: the words are keys, not codes: trimmed, case-insensitive, each naming its pair; the Secret word is untouched", () => {
+  assert.equal(extraKeyPair("chalkdust"), "chalk"); assert.equal(extraKeyPair("CHALKDUST"), "chalk"); assert.equal(extraKeyPair("  ChalkDust\n"), "chalk");
+  assert.equal(extraKeyPair("chalk dust"), ""); assert.equal(extraKeyPair("chalkdus"), ""); assert.equal(extraKeyPair("chalkdusts"), "");
+  assert.equal(extraKeyPair(""), ""); assert.equal(extraKeyPair(null), ""); assert.equal(extraKeyPair(42), "");
+  assert.equal(extraKeyPair("superpink"), "", "the Secret word is not an Extra word"); assert.equal(isSecretKey("chalkdust"), false, "and the Extra word is not the Secret key");
+  assert.equal(isSecretKey("superpink"), true, "the Secret word still works");
+  assert.equal(parseCode("chalkdust"), null, "typed on its own it is not a theme code");
+  for (const t of [...CURATED, ...EXTRA]) assert.equal(extraKeyPair(themeCode(t)), "", t.id + ": no code is ever mistaken for a word");
+  for (const w of ["chalk", "board", "chalkboard", "whiteboard", "extra", "eraser", "marker", "T1:curated:chalkboard", "open sesame"]) assert.equal(extraKeyPair(w), "", w);
+  // the device record: unlocked pairs are a list of ids, read tolerantly, and the gate reads it
+  assert.deepEqual(unlockedExtras({}), []); assert.deepEqual(unlockedExtras({ extras: ["chalk", "nope", 3] }), ["chalk"]); assert.deepEqual(unlockedExtras(null), []);
+  assert.equal(themeShown(EXTRA[0], {}), false); assert.equal(themeShown(EXTRA[0], { extras: ["chalk"] }), true);
+  assert.equal(themeShown(SECRET[0], { extras: ["chalk"] }), false, "an Extra unlock does not open Secret"); assert.equal(themeShown(SECRET[0], { secret: true }), true);
+  assert.equal(themeShown(curated("paper"), {}), true); assert.equal(themeShown(derive({ accent: "#3366FF" }), {}), true);
+  // the material tokens are in the CSS only for a kit that names them, so the rule the 18 write is what it was
+  assert.ok(!/--strike-h|--strike-mask|--box-check/.test(cssText(curated("paper"))), "Paper's rule carries no material token");
+  assert.ok(/--strike-h:/.test(cssText(EXTRA[0])) && /--box-check:/.test(cssText(EXTRA[0])) && /--strike-blend:multiply/.test(cssText(EXTRA[1])), "an Extra kit's does");
+  assert.ok(/--strike-mask:url\("data:image\/svg\+xml,/.test(cssText(EXTRA[1])), "the mask rides in the rule as a data: URI");
 });
 
 const at = s => new Date(s);

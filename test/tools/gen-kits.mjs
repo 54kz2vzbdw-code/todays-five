@@ -16,7 +16,7 @@
 // there are 18 kits, exactly 2 of them secret, and every kit clears its own grounds.
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { CURATED, PAIRS, CURATED_DAY, CURATED_NIGHT, SECRET_IDS, SLOT_DEFAULT, contrast } from "../../theme.js";
+import { CURATED, PAIRS, CURATED_DAY, CURATED_NIGHT, SECRET_IDS, SLOT_DEFAULT, contrast, EXTRA, EXTRA_IDS, EXTRA_PAIRS } from "../../theme.js";
 
 /* ---------------- the mapping, written down once ----------------
 
@@ -91,6 +91,20 @@ const FLOORS = [
 
 assert.equal(kits.length, 18, "18 kits");
 assert.equal(kits.filter(k => k.secret).length, 2, "exactly 2 secret kits");
+// 1.12 b262: the Extra category is NOT in this fixture — an Extra kit is web-drawn and reaches the Watch only as flat
+// tokens over the `kits` key of a phone that unlocked it — so what is asserted here is that it stays out, and that
+// the table it lives in is well-formed: pairs of two, partners within the pair, no id shared with the 18.
+assert.equal(kits.filter(k => k.extra).length, 0, "no Extra kit in the fixture");
+assert.equal(EXTRA.length, 2 * Object.keys(EXTRA_PAIRS).length, "every Extra pair is two kits");
+for (const [pid, pair] of Object.entries(EXTRA_PAIRS)) {
+  assert.equal(pair.kits.length, 2, pid + ": two kits");
+  const [a, b] = pair.kits.map(id => EXTRA.find(k => k.id === id));
+  assert.ok(a && b && a.extra === pid && b.extra === pid, pid + ": both kits name the pair");
+  assert.ok(a.partner === b.id && b.partner === a.id, pid + ": partners of each other");
+  assert.notEqual(a.lean, b.lean, pid + ": one Day, one Night");
+  assert.ok(!a.secret && !b.secret, pid + ": an Extra kit is not Secret");
+}
+assert.equal(new Set([...kits.map(k => k.id), ...EXTRA_IDS]).size, 18 + EXTRA.length, "no Extra id collides with the 18");
 assert.deepEqual(kits.filter(k => k.secret).map(k => k.id), SECRET_IDS, "the secret pair is the one theme.js names");
 assert.equal(new Set(kits.map(k => k.id)).size, 18, "ids are unique");
 assert.equal(Object.keys(PAIRS).length, 13, "13 font pairs");

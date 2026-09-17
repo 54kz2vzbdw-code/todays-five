@@ -1,7 +1,7 @@
 // fx.js — v1's canvas confetti: ribbons, and hearts/stars for kits that ask for them.
 // A kit's `shapes` is either a count (1 ribbons only, 2 ribbons and hearts, 3 ribbons, hearts and stars — v1's
 // meaning, unchanged) or, since 1.6, the list of shapes to draw from: 0 ribbon, 1 heart, 2 star, 3 sparkle,
-// 4 sprinkle. `scene()` hands the same canvas and the same frame loop to a drawing that is not particles (1.6's
+// 4 sprinkle, 5 dot (1.12 b262: chalk dust). `scene()` hands the same canvas and the same frame loop to a drawing that is not particles (1.6's
 // cake), so a finale that needs one does not need a second canvas or a second loop.
 
 export function createFx(canvas, opts) {
@@ -103,6 +103,7 @@ export function createFx(canvas, opts) {
       else if (p.sh === 2) star(g2, p.s);
       else if (p.sh === 3) sparkleShape(g2, p.s);
       else if (p.sh === 4) sprinkle(g2, p.w * 1.15, p.h * 0.62);
+      else if (p.sh === 5) { g2.beginPath(); g2.arc(0, 0, p.s * 0.28, 0, Math.PI * 2); g2.fill(); }
       else {
         const hh = p.rib ? p.h * Math.abs(Math.cos(p.r * 1.7)) : p.h;
         g2.fillRect(-p.w / 2, -hh / 2, p.w, hh);

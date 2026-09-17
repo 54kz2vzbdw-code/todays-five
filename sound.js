@@ -12,6 +12,8 @@ import { BUILD } from "./version.js"; // 1.4: the packs a page loads later come 
 
 /** The engines that live in packs-secret.js rather than packs.js (1.6). */
 export const SECRET_ENGINES = new Set(["sparkle", "party"]);
+/** The engines that live in packs-extra.js (1.12 b262: the Extra category). */
+export const EXTRA_ENGINES = new Set(["chalk", "marker"]);
 
 /* 1.12: the finale's vibration, on the volley's own rhythm (fx.js `volley()`): seven bursts at i × 65 ms, the
    centre burst at 210 ms inside the fourth, and the chord at 700 ms. navigator.vibrate alternates on/off, so each
@@ -22,6 +24,7 @@ export function createSound(opts) {
   const AC = () => (typeof window !== "undefined" && (window.AudioContext || window.webkitAudioContext)) || opts.AudioContext || null;
   let ac = null, master = null, pending = false, packs = null, packsMod = null, packsP = null, made = 0;
   let extra = null, extraP = null; // 1.6: the two engines the Secret pair carries, in a module of their own
+  let more = null, moreP = null;   // 1.12 b262: the Extra category's engines, in a module of their own
 
   function fresh() {
     if (ac) { try { ac.close(); } catch (e) { /* ignore */ } }
@@ -72,10 +75,18 @@ export function createSound(opts) {
       .catch(() => { extraP = null; });
     return extraP;
   }
-  function warm(id) { if (SECRET_ENGINES.has(id)) loadExtra(); }
+  function loadMore() {
+    if (more || moreP) return moreP;
+    moreP = Promise.all([loadPacks(), opts.loadExtra ? opts.loadExtra() : import("./packs-extra.js?v=" + BUILD)])
+      .then(([, m]) => { more = m.create((packsMod && packsMod.HELPERS) || {}); return more; })
+      .catch(() => { moreP = null; });
+    return moreP;
+  }
+  function warm(id) { if (SECRET_ENGINES.has(id)) loadExtra(); else if (EXTRA_ENGINES.has(id)) loadMore(); }
   /** The engine an id names, or null when it is one of the Secret pair's and has not arrived yet (the load starts). */
   function engineOf(id) {
     if (SECRET_ENGINES.has(id)) { if (!extra) { loadExtra(); return null; } return extra[id]; }
+    if (EXTRA_ENGINES.has(id)) { if (!more) { loadMore(); return null; } return more[id]; }
     return packs[id] || packs.knock;
   }
   function play(fn, step) {
@@ -87,7 +98,7 @@ export function createSound(opts) {
     const k = kit();
     const pack = engineOf(k.engine);
     if (!pack) { // 1.8: a Secret kit's engine is in a module of its own; play as soon as it lands, the way 1.7 does for the twelve
-      const t0 = Date.now(); const p = loadExtra(); if (p && p.then) p.then(() => { if (extra && Date.now() - t0 < 1500) play(fn, step); });
+      const t0 = Date.now(); const p = EXTRA_ENGINES.has(k.engine) ? loadMore() : loadExtra(); if (p && p.then) p.then(() => { if ((extra || more) && Date.now() - t0 < 1500) play(fn, step); });
       return false;
     }
     try { pack[fn]({ c, master, kit: k, P: (key, d) => { const v = k[key]; return typeof v === "number" ? v : d; } }, step || 0); } catch (e) { return false; }
@@ -112,7 +123,7 @@ export function createSound(opts) {
     /** Start fetching an engine's module before it is needed (app.js calls this when a kit that carries one goes on). */
     warm,
     /** Resolves once an engine can play, so a caller that wants to be heard the first time can wait for it. */
-    ready(engine) { return Promise.resolve(SECRET_ENGINES.has(engine) ? loadExtra() : loadPacks()).then(() => {}); },
+    ready(engine) { return Promise.resolve(SECRET_ENGINES.has(engine) ? loadExtra() : EXTRA_ENGINES.has(engine) ? loadMore() : loadPacks()).then(() => {}); },
     /** The page came back to the foreground: ask the context to resume (allowed outside a gesture once one has happened). */
     foreground() { if (ac && ac.state !== "running" && ac.state !== "closed") askResume(); },
     /** Play a pack's check sound regardless of the theme (Settings → Sound preview). */

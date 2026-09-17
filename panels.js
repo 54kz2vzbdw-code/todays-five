@@ -6,7 +6,7 @@ let A = null, $ = null, $$ = null, M = null, T = null, C = null;
 const PANELS_BUILD = 261; // the build whose markup this module wires; stamped with version.js, checked by test/features.test.js
 export const RELOADING = "Today's Five updated: reloading";
 /** The shell, as sw.js lists it (minus the icons): refreshed past the HTTP cache before the one reload the guard below may do. */
-const SHELL_FILES = ["./", "./index.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js", "./sound.js", "./packs.js", "./packs-secret.js", "./secretfx.js", "./secretfx.css", "./fx.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json", "./manifest.webmanifest", "./vendor/realtime.js"];
+const SHELL_FILES = ["./", "./index.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js", "./sound.js", "./packs.js", "./packs-secret.js", "./secretfx.js", "./secretfx.css", "./packs-extra.js", "./extrafx.js", "./extrafx.css", "./fx.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json", "./manifest.webmanifest", "./vendor/realtime.js"];
 
 export function init(api) {
   if (A) return;
@@ -93,7 +93,7 @@ export function openBuilder() {
     headers, and the partner lookup behind Make its partner. The record itself is untouched — a
     device without the key does not show it and never deletes it, so the device that saved it still
     has it, and a device given the key later gets it back. */
-function savedThemes() { return Object.values(A.doc ? A.doc.themes : {}).filter(t => !t.deleted).map(t => ({ ...t, theme: T.parseCode(t.code) })).filter(t => t.theme && (dev().secret || !T.isSecretTheme(t.theme))); }
+function savedThemes() { return Object.values(A.doc ? A.doc.themes : {}).filter(t => !t.deleted).map(t => ({ ...t, theme: T.parseCode(t.code) })).filter(t => t.theme && T.themeShown(t.theme, dev())); } // 1.12 b262: one gate for both hidden groups
 /** A saved theme's partner: the live saved record its `partner` field names (or the one naming it back). */
 function savedPartner(saved, rec) {
   return saved.find(s => s.id !== rec.id && ((rec.partner && s.id === rec.partner) || (s.partner && s.partner === rec.id))) || null;
@@ -138,6 +138,17 @@ function renderSwatches() {
   // the Secret group (1.6): only on a device that has been given the key, and then like any other group
   fill("#sw-secret", secret ? T.SECRET.map(t => mk(t)) : []);
   $("#sw-secret-h").hidden = !secret; $("#sw-secret").hidden = !secret; $("#sw-secret-actions").hidden = !secret;
+  // the Extra group (1.12 b262): the pairs this device has unlocked, each with a quiet Forget of its own
+  const extras = T.unlockedExtras(dev());
+  fill("#sw-extra", extras.flatMap(pid => T.EXTRA_PAIRS[pid].kits.map(id => mk(T.curated(id)))));
+  const acts = $("#sw-extra-actions"); acts.innerHTML = "";
+  for (const pid of extras) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "chip plain"; b.dataset.forget = pid;
+    b.textContent = "Forget " + T.EXTRA_PAIRS[pid].name;
+    b.addEventListener("click", () => { A.forgetExtra(pid); renderSwatches(); A.toast("Forgotten on this device. The word still works."); });
+    acts.appendChild(b);
+  }
+  $("#sw-extra-h").hidden = !extras.length; $("#sw-extra").hidden = !extras.length; acts.hidden = !extras.length;
   paintOffer();
 }
 /** A swatch was chosen for the slot; the partner (if the other slot does not hold it already) goes on offer beside it. */
@@ -173,6 +184,21 @@ function unlock() {
     const box = $("#sw-secret-h").getBoundingClientRect();
     A.fx.burst(box.left + box.width * 0.5, box.top + box.height * 0.5, 46, 13, 2.8, { palette: T.SECRET[0].confetti, shapes: [1, 2, 3] });
     A.toast(fresh ? "Found it—two themes, under Secret." : "Already yours—they're under Secret.");
+  };
+  if ($("#p-builder").open) { A.goBack(); setTimeout(reveal, 450); } else reveal();
+}
+/* A word for an Extra pair was given to Import a code (1.12 b262): the group appears, a puff goes up in the pair's
+   own colours, and the chime is the pair's own — waited for, as the Secret unlock's is. Nothing else changes. */
+function unlockExtra(pid) {
+  const fresh = A.unlockExtra(pid);
+  renderSwatches();
+  const first = T.curated(T.EXTRA_PAIRS[pid].kits[0]);
+  if (!dev().muted && !A.sound.preview(first.sound.engine)) A.sound.ready(first.sound.engine).then(() => A.sound.preview(first.sound.engine));
+  const reveal = () => {
+    try { $("#sw-extra-h").scrollIntoView({ block: "nearest" }); } catch (e) { /* ignore */ }
+    const box = $("#sw-extra-h").getBoundingClientRect();
+    A.fx.burst(box.left + box.width * 0.5, box.top + box.height * 0.5, 46, 13, 2.8, { palette: first.confetti, shapes: first.shapes });
+    A.toast(fresh ? "Found it—two more, under Extra." : "Already yours—they're under Extra.");
   };
   if ($("#p-builder").open) { A.goBack(); setTimeout(reveal, 450); } else reveal();
 }
@@ -282,9 +308,11 @@ function wireTheme() {
   $("#c-import-go").addEventListener("click", () => {
     const raw = $("#c-import").value;
     if (T.isSecretKey(raw)) { $("#c-import").value = ""; unlock(); return; } // a key, not a code (1.6)
+    const pid = T.extraKeyPair(raw); if (pid) { $("#c-import").value = ""; unlockExtra(pid); return; } // a word for an Extra pair (1.12 b262)
     const t = T.parseCode(raw);
     if (!t) { A.toast("That code doesn't parse"); return; }
     if (T.isSecretTheme(t) && !dev().secret) { unlock(); return; }           // the code names one of them: the same secret, spelled out
+    if (T.isExtraTheme(t) && !T.themeShown(t, dev())) { unlockExtra(T.isExtraTheme(t)); return; } // likewise an Extra kit's code
     if (t.kind === "custom") { custom = { accent: t.accent, base: t.base, pair: t.pair, name: t.name, pack: t.pack || "" }; paintCustom(); previewCustom(); }
     else choose(T.themeCode(t), t.name, T.partnerOf(t) ? { code: T.themeCode(T.partnerOf(t)), name: T.partnerOf(t).name } : null, null);
   });
@@ -587,7 +615,8 @@ export function openHistory(docArg, title) {
 const PACKS = [["", "Theme's pick"], ["knock", "Knock"], ["bell", "Bell"], ["blip", "Blip"], ["typewriter", "Typewriter"], ["marble", "Marble"], ["pop", "Pop"], ["kalimba", "Kalimba"], ["pencil", "Pencil"], ["whistle", "Whistle"], ["bongo", "Bongo"], ["cork", "Cork"], ["arcade", "Arcade"]]; // 1.5: twelve, mirrored in packs.js and theme.js
 const SECRET_PACKS = [["sparkle", "Sparkle"], ["party", "Party"]]; // 1.6: the Secret pair's own two, listed here only once the key has been given
 /** The device-wide override's list: the twelve, plus the Secret pair's two on a device that has unlocked them. */
-function packList() { return dev().secret ? PACKS.concat(SECRET_PACKS) : PACKS; }
+const EXTRA_PACKS = { chalk: [["chalk", "Chalk"], ["marker", "Marker"]] }; // 1.12 b262: an Extra pair's two, listed once its word has been given
+function packList() { return (dev().secret ? PACKS.concat(SECRET_PACKS) : PACKS).concat(...T.unlockedExtras(dev()).map(pid => EXTRA_PACKS[pid] || [])); }
 let importedDoc = null;
 export function openSettings() { paintSettings(); A.showPanel("p-settings"); }
 /* 1.9: a sound for Day and one for Night. The Sound pack row keeps its place in Settings; its sub-line reads both slots and

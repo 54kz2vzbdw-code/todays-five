@@ -2,7 +2,8 @@
 // A fake AudioContext models what iOS does: a fresh context starts suspended, the app goes to the background
 // (suspended, resume works), a call or Siri interrupts it (resume never lands), and closed contexts.
 import assert from "node:assert/strict";
-import { createSound, SECRET_ENGINES, FINALE_BUZZ } from "../sound.js";
+import { createSound, SECRET_ENGINES, EXTRA_ENGINES, FINALE_BUZZ } from "../sound.js";
+import * as EXTRA from "../packs-extra.js";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { PACKS, PACK_ORDER, PACK_NAMES, HELPERS } from "../packs.js";
@@ -27,9 +28,9 @@ const last = () => FakeAC.all[FakeAC.all.length - 1];
 
 function make(over = {}) {
   FakeAC.all = [];
-  let secretLoads = 0;
-  const o = { muted: () => false, volume: () => 1, kit: () => ({ engine: "knock" }), pack: () => "", haptics: false, AudioContext: FakeAC, loadPacks: () => Promise.resolve({ PACKS, HELPERS }), loadSecret: () => { secretLoads++; return Promise.resolve(SECRET); }, ...over };
-  const s = createSound(o); s.secretLoads = () => secretLoads; return s;
+  let secretLoads = 0, extraLoads = 0;
+  const o = { muted: () => false, volume: () => 1, kit: () => ({ engine: "knock" }), pack: () => "", haptics: false, AudioContext: FakeAC, loadPacks: () => Promise.resolve({ PACKS, HELPERS }), loadSecret: () => { secretLoads++; return Promise.resolve(SECRET); }, loadExtra: () => { extraLoads++; return Promise.resolve(EXTRA); }, ...over };
+  const s = createSound(o); s.secretLoads = () => secretLoads; s.extraLoads = () => extraLoads; return s;
 }
 
 await test("muted: no context is ever created", async () => {
@@ -181,6 +182,28 @@ await test("the finale's vibration keeps the volley's rhythm — read out of fx.
   const chord = onsets[onsets.length - 1];
   assert.ok(chord > bursts[count - 1], "the last buzz comes after the run, with the chord");
   assert.ok(lengths[lengths.length - 1] > lengths[0], "and it is the strongest of them");
+});
+
+await test("1.12 b262: the Extra category's two engines live in a module of their own, fetched only when one is asked for, and never with the Secret pair's", async () => {
+  assert.deepEqual([...EXTRA_ENGINES].sort(), ["chalk", "marker"]);
+  assert.deepEqual(EXTRA.ORDER, ["chalk", "marker"]);
+  for (const id of EXTRA.ORDER) assert.equal(typeof EXTRA.NAMES[id], "string", id + " has a name");
+  assert.ok(!PACK_ORDER.includes("chalk") && !PACK_ORDER.includes("marker"), "and never in the twelve");
+  const plain = make(); plain.prime(); await tick(); plain.check(0); plain.uncheck(); plain.finish();
+  assert.equal(plain.extraLoads(), 0, "no kit that carries one is on: the module is never fetched"); assert.equal(plain.secretLoads(), 0);
+  const s = make({ kit: () => ({ engine: "chalk" }) });
+  s.prime(); await tick();
+  assert.equal(s.extraLoads(), 1, "prime() warms the engine the kit that is on carries"); assert.equal(s.secretLoads(), 0, "and not the Secret pair's module");
+  for (let step = 0; step < 12; step++) assert.equal(s.check(step), true, "chalk step " + step);
+  assert.equal(s.uncheck(), true); assert.equal(s.finish(), true);
+  assert.equal(s.preview("marker"), true, "the other one plays through the same module");
+  assert.equal(s.extraLoads(), 1, "fetched once");
+  const w = make(); w.warm("marker"); await tick(); assert.equal(w.extraLoads(), 1); assert.equal(w.secretLoads(), 0);
+  await w.ready("chalk"); assert.equal(w.extraLoads(), 1);
+  // every sound of both engines renders without throwing on the fake context, at every step
+  const P = await import("../packs.js");
+  const built = EXTRA.create(P.HELPERS);
+  for (const id of EXTRA.ORDER) { const o = make({ kit: () => ({ engine: id }) }); o.prime(); await tick(); for (let i = 0; i < 6; i++) assert.equal(o.check(i), true); assert.equal(o.uncheck(), true); assert.equal(o.finish(), true); assert.equal(typeof built[id].check, "function"); }
 });
 
 console.log(`\n${passed} sound tests passed`);

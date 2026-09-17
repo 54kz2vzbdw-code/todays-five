@@ -207,7 +207,8 @@ function finaleFx() {
   const kind = theme && theme.finale;
   if (!kind) { fx.volley(); return; }
   stats.volley++; // a named finale counts as the volley it replaces
-  import("./secretfx.js?v=" + BUILD).then(m => { if (!m.finale(kind, rawFx, { w: innerWidth, h: innerHeight })) rawFx.volley(); }).catch(() => rawFx.volley());
+  const mod = theme.extra ? "./extrafx.js?v=" : "./secretfx.js?v="; // 1.12 b262: an Extra kit's finale lives in its own module
+  import(mod + BUILD).then(m => { if (!m.finale(kind, rawFx, { w: innerWidth, h: innerHeight, kit: theme })) rawFx.volley(); }).catch(() => rawFx.volley());
 }
 /* Superpink's sparkle field: a layer of twinkles behind the words, created when that kit goes on and removed when
    it goes off. CSS, not a frame loop (secretfx.js), so a list left on screen all day still costs no main thread. */
@@ -219,6 +220,12 @@ function paintField() {
   const tok = ++fieldTok;
   if (field) { field.stop(); field = null; }
   if (!want) return;
+  if (theme.extra) { // 1.12 b262: an Extra kit's ground, a still picture built from its grain
+    import("./extrafx.js?v=" + BUILD)
+      .then(m => { if (tok === fieldTok) field = m.createGround($("#field"), theme, { build: BUILD }); })
+      .catch(() => { if (tok === fieldTok) fieldKind = ""; });
+    return;
+  }
   import("./secretfx.js?v=" + BUILD)
     .then(m => { if (tok === fieldTok) field = m.createField($("#field"), { palette: theme.confetti, reduced: () => RM.matches, build: BUILD }); })
     .catch(() => { if (tok === fieldTok) fieldKind = ""; });
@@ -314,6 +321,26 @@ function unlockSecret() {
 function forgetSecret() {
   delete dev.secret;
   for (const slot of ["day", "night"]) if (T.isSecretCode(dev[slot] || T.SLOT_DEFAULT[slot])) dev[slot] = T.SLOT_DEFAULT[slot];
+  saveDevice();
+  const c = currentThemeCode();
+  if (c !== appliedCode) { appliedCode = c; applyThemeCode(c, { crossfade: true }); } else applyThemeCode(c);
+  dispatchEvent(new CustomEvent("tf:theme"));
+}
+/* The Extra category (1.12 b262): the pairs this device has unlocked, a list of pair ids in meta.device beside the
+   Secret latch (COMPATIBILITY.md §5: a new key, never in the document). Forget is per pair, and empties the key
+   rather than leaving an empty list behind. */
+function unlockExtra(pid) {
+  if (!T.EXTRA_PAIRS[pid]) return false;
+  const have = T.unlockedExtras(dev);
+  if (have.includes(pid)) return false;
+  dev.extras = have.concat(pid); saveDevice();
+  dispatchEvent(new CustomEvent("tf:theme"));
+  return true;
+}
+function forgetExtra(pid) {
+  const left = T.unlockedExtras(dev).filter(id => id !== pid);
+  if (left.length) dev.extras = left; else delete dev.extras;
+  for (const slot of ["day", "night"]) if (T.isExtraCode(dev[slot] || T.SLOT_DEFAULT[slot]) === pid) dev[slot] = T.SLOT_DEFAULT[slot];
   saveDevice();
   const c = currentThemeCode();
   if (c !== appliedCode) { appliedCode = c; applyThemeCode(c, { crossfade: true }); } else applyThemeCode(c);
@@ -2357,7 +2384,7 @@ const api = {
   afterChange, applyRemote, render, setView, paint, paintListName, paintMute, paintStatus, paintMenu, paintWho, toast, hideToast, ask, showPanel, closePanel, goBack, registerOpeners,
   focusRow, newItem, startEdit, commitEdit, deleteItem, toggle, toggleToday, notToday, pushUndo, undo, restoreItem,
   saveDevice, registerList, switchTo, openList, showWelcome, createList, parseLink, flushQuick, flushOthers, killRemote, queueKill, retryPendingKills,
-  applyThemeCode, currentThemeCode, tickTheme, setSlotTheme, flipSlot, setSwitchMode, setSwitchTimes, unlockSecret, forgetSecret, activeSlot: () => T.activeSlot(dev, envNow()), autoSlot: () => T.autoSlot(dev, envNow()),
+  applyThemeCode, currentThemeCode, tickTheme, setSlotTheme, flipSlot, setSwitchMode, setSwitchTimes, unlockSecret, forgetSecret, unlockExtra, forgetExtra, activeSlot: () => T.activeSlot(dev, envNow()), autoSlot: () => T.autoSlot(dev, envNow()),
   slotCode: slot => dev[slot] || T.SLOT_DEFAULT[slot], packFor, setSoundPack, soundPacks: () => ({ day: "", night: "", ...(dev.soundPacks || {}) }), soundPins: () => ({ day: "", night: "", ...(dev.soundPins || {}) }), setWake, toggleMute, toggleFullscreen, setOneThing, setSearch, ruleLabel, idleReset,
   editLink, viewLink, copyText, nativeShare, escapeHtml, drawQr, frag,
   resubscribePresence: () => { if (sync) sync.resubscribe(); paintWho(dev.whoOff ? 0 : whoCount); },
@@ -2367,7 +2394,7 @@ const api = {
 
 /* test hook (read-only) */
 // 1.7: the secrets only on the local transport
-window.__tf = () => ({ stats: { ...stats }, view, listId: TRANSPORT_KIND === "local" ? listId : (listId ? "held" : null), mode: listMode, lookupId: TRANSPORT_KIND === "local" && ref ? ref.lookupId : null, R: TRANSPORT_KIND === "local" && ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, secret: !!dev.secret, field: !!field, demo, soundPacks: { ...(dev.soundPacks || {}) }, soundPins: { ...(dev.soundPins || {}) }, shuffled: shuffledId, zone: doc && doc.zone ? doc.zone : null, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry(), origin: (entryOf(listId) || {}).origin || null, nickname: (entryOf(listId) || {}).nickname || null, whose: $("#whose").open, panels: panelStackIds() });
+window.__tf = () => ({ stats: { ...stats }, view, listId: TRANSPORT_KIND === "local" ? listId : (listId ? "held" : null), mode: listMode, lookupId: TRANSPORT_KIND === "local" && ref ? ref.lookupId : null, R: TRANSPORT_KIND === "local" && ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, secret: !!dev.secret, extras: T.unlockedExtras(dev), field: !!field, demo, soundPacks: { ...(dev.soundPacks || {}) }, soundPins: { ...(dev.soundPins || {}) }, shuffled: shuffledId, zone: doc && doc.zone ? doc.zone : null, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry(), origin: (entryOf(listId) || {}).origin || null, nickname: (entryOf(listId) || {}).nickname || null, whose: $("#whose").open, panels: panelStackIds() });
 // test-only controls, on the local transport: simulate what iOS does to the audio context
 if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneInView(); } }, presence: n => paintWho(n) };
 

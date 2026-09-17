@@ -93,10 +93,21 @@ export const PAIRS = {
   fredoka:   { name: "Fredoka + Quicksand",         task: ["Fredoka", "wght@500..700", `"Fredoka","Avenir Next Rounded","Helvetica Neue",Helvetica,Arial,sans-serif`], ui: ["Quicksand", "wght@500;700", `"Quicksand","Helvetica Neue",Helvetica,Arial,sans-serif`], w: 600, ls: "-.005em", lh: 1.16 },
   baloo:     { name: "Baloo 2 + Quicksand",         task: ["Baloo 2", "wght@500..800", `"Baloo 2","Avenir Next Rounded","Helvetica Neue",Helvetica,Arial,sans-serif`], ui: ["Quicksand", "wght@500;700", `"Quicksand","Helvetica Neue",Helvetica,Arial,sans-serif`], w: 700, ls: "0", lh: 1.18 }
 };
+/* 1.12 b262: the Extra category's type, kept out of PAIRS so `test/fixtures/kits.json`, which carries PAIRS whole,
+   does not move. Both are one family — Caveat, a handwriting face (SIL OFL, one variable latin file) — drawn light as
+   chalk and heavy as a marker, over a UI face the app already has. pairOf() reads both tables; nothing else needs to. */
+export const EXTRA_TYPE = {
+  chalk:  { name: "Caveat + Nunito Sans", task: ["Caveat", "wght@400..700", `"Caveat","Bradley Hand","Segoe Print",cursive`], ui: ["Nunito Sans", "wght@400;700", `"Nunito Sans","Helvetica Neue",Helvetica,Arial,sans-serif`], w: 500, ls: "0", lh: 1.08 },
+  marker: { name: "Caveat + Nunito Sans", task: ["Caveat", "wght@400..700", `"Caveat","Bradley Hand","Segoe Print",cursive`], ui: ["Nunito Sans", "wght@400;700", `"Nunito Sans","Helvetica Neue",Helvetica,Arial,sans-serif`], w: 700, ls: "-.005em", lh: 1.08 }
+};
 /** The six pairs offered for custom themes. */
 export const CUSTOM_PAIRS = ["lato", "fraunces", "grotesk", "playfair", "manrope", "dmserif"];
 
-export function pairOf(id) { return (typeof id === "string" && Object.prototype.hasOwnProperty.call(PAIRS, id)) ? PAIRS[id] : null; }
+export function pairOf(id) {
+  if (typeof id !== "string") return null;
+  if (Object.prototype.hasOwnProperty.call(PAIRS, id)) return PAIRS[id];
+  return Object.prototype.hasOwnProperty.call(EXTRA_TYPE, id) ? EXTRA_TYPE[id] : null; // 1.12 b262
+}
 /** The families a pair uses. Fonts are self-hosted (fonts/, declared in styles.css with unicode-range), so
     nothing is fetched until a theme actually renders text in a family; this list is for warming and tests. */
 export function pairFamilies(pairId) {
@@ -443,7 +454,7 @@ function hairSolidFor(ink, text) {
 }
 
 export const CURATED = RAW.map(finalize);
-export function curated(id) { return CURATED.find(t => t.id === id); }
+export function curated(id) { return CURATED.find(t => t.id === id) || EXTRA.find(t => t.id === id); } // 1.12 b262: the Extra kits answer to the same codes
 /** The pairs, day first, in the order the picker shows them (a day kit and its night partner share an index). */
 export const CURATED_DAY = ["light", "paper", "harbor", "blush", "teletype", "sunset", "cocoa", "sketch"].map(curated); // 1.9: Sketch (and Arcade, its night)
 export const CURATED_NIGHT = CURATED_DAY.map(t => curated(t.partner));
@@ -510,6 +521,114 @@ export function isSecretKey(s) {
   const w = s.trim().toLowerCase();
   if (w.length < 4 || w.length > 40) return false;
   return fnv(w, 2166136261) === 4031226008 && fnv(w, 606290984) === 1477794211;
+}
+
+/* ---------------- 1.12 b262: the Extra category ----------------
+   A second hidden group beside Secret. Where every curated kit is flat colour, an Extra kit is a **material**: a
+   textured ground drawn behind the words (extrafx.js), a strike that behaves like the tool, a check and a finale
+   drawn for it, and a sound pack of its own (packs-extra.js). They come in designed pairs, one Day and one Night,
+   each pair unlocked by its own word, and a device holds the pairs it has unlocked in `meta.device.extras`, a list
+   of pair ids beside the Secret latch (COMPATIBILITY.md §5: a new key inside meta.device, never in the document).
+
+   These kits are NOT in CURATED. CURATED is what `test/fixtures/kits.json` and `PALETTE_REV` are computed over,
+   and both are contracts with older builds and with the Swift side: an Extra kit is web-drawn, reaches the Watch
+   only as flat tokens over the `kits` key of an unlocked phone, and must not move the fixture or the stamp. So
+   they live in EXTRA, go through the same finalize() as every other kit, and answer to the same `T1:curated:<id>`
+   codes through curated(), which looks in both tables.
+
+   **The grain rule.** A texture is not a hex, and every contrast test in this repository measures against one. So
+   an Extra kit declares `grain`: at most six hexes, the only colours its ground may be built from — the base, the
+   haze, the ghost of what was erased. Every grain colour clears the floors the kit's own --ink and --ink-3 clear
+   (test/theme.test.js), and the ground is composed only of those colours, blurred and mixed with each other, so
+   every pixel it renders lies between the darkest and the lightest of them (tools/grain.mjs rasterises it and
+   says so). A texture that could not hold the floor would lose contrast, never the words.
+
+   The material tokens — strikeH, strikeDy, strikeMask, strikeBlend, strikeExit, strikeExitOp, boxCheck, boxCheckW —
+   are web-only: cssText writes them only for a kit that names them, styles.css falls back to what the 18 kits have
+   always rendered, and the fixture never sees them.                                                              */
+
+/** A rough edge for a strike: a mask whose alpha is turbulence quantised to solid or clear, so the line's edge is
+    torn rather than ruled and nothing in between is drawn. A data: URI (img-src allows it; an inline <style> the CSP
+    would not). `cut` is how much of the band survives (0..1), `f` the grain's frequency. */
+function roughMask(f, cut, seed) {
+  const table = Array.from({ length: 8 }, (_, i) => (i / 8 < 1 - cut ? 0 : 1)).join(" ");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="24"><filter id="r" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="${f}" numOctaves="2" seed="${seed}"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.9 0.9 0.9 0 -0.6"/><feComponentTransfer><feFuncA type="discrete" tableValues="${table}"/></feComponentTransfer></filter><rect width="160" height="24" fill="#fff" filter="url(#r)"/></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+
+const EXTRA_RAW = [
+  /* Chalkboard (Night): a slate green-black board under a haze of chalk dust. The type is Caveat at 500, which is a
+     stick of chalk held lightly; the strike is a chalk line with a torn edge; the box takes a chalk check rather
+     than a fill; the check-off throws dust. The accent is a pale chalk yellow so the chalk-white strike and the
+     accent are two different sticks. */
+  kit("chalkboard", "Chalkboard", "dark", "chalk", {
+    ink: "#1C2724", ink2: "#22302C", ink3: "#2A3B35",
+    text: "#F4F1E8", muted: "#BCC7C1", dim: "#A8B5AE", done: "#A8B5AE",
+    accent: "#EFE3A6", accentHi: "#FFF7D6", accentDeep: "#C9BA7A", accentText: "#F1E6AD", danger: "#FFA08C",
+    hairSolid: "#8A9791",
+    glow: "radial-gradient(120% 90% at 50% 30%, rgba(51,70,63,.55), rgba(28,39,36,0) 70%)",
+    strikeShadow: "0 0 6px rgba(244,241,232,.22)",
+    boxDoneBg: "#22302C", boxCheck: "#F4F1E8", boxCheckW: "3.6",
+    strikeBg: "repeating-linear-gradient(90deg,rgba(244,241,232,.96) 0 3px,rgba(244,241,232,.66) 3px 5px,rgba(244,241,232,.9) 5px 9px,rgba(244,241,232,.74) 9px 12px)",
+    strikeSize: "auto", strikeAnim: "none",
+    strikeH: "max(4px,.13em)", strikeDy: "-.04em", strikeMask: roughMask(0.09, 0.78, 7), strikeExit: ".42s", strikeExitOp: "0",
+    finaleStyle: "normal"
+  }, { engine: "chalk" }, ["#F4F1E8", "#DADAD2", "#FFFFFF", "#BFC3BC", "#E8E4D8", "#A9B0AB"],
+    { shapes: [5], lean: "night", partner: "whiteboard", extra: "chalk", grain: ["#1C2724", "#22302C", "#2A3B35", "#33463F"],
+      field: "chalkboard", finale: "eraser", finaleText: "Class dismissed." }),
+
+  /* Whiteboard (Day): a bright board with a faint sheen band and the ghost of a marker smudge. Caveat at 700 is the
+     same hand with a marker in it; the strike is a fat dry-erase stroke in blue, translucent (multiply) so the
+     words read through it where it overlaps them, and it smears away on uncheck. Blue rather than red: red is
+     already this app's danger colour, and a red line through a task reads as a mistake rather than a finish. */
+  kit("whiteboard", "Whiteboard", "light", "marker", {
+    ink: "#FBFBFA", ink2: "#F4F5F3", ink3: "#ECEEEB",
+    text: "#222831", muted: "#4F5762", dim: "#59626D", done: "#59626D",
+    accent: "#2457C5", accentHi: "#6C93E6", accentDeep: "#173F98", accentText: "#1E4DB3", danger: "#B02A20",
+    hairSolid: "#737B86",
+    glow: "radial-gradient(120% 90% at 50% 30%, rgba(236,238,235,.9), rgba(251,251,250,0) 70%)",
+    strikeShadow: "none",
+    boxDoneBg: "#FBFBFA", boxCheck: "#2457C5", boxCheckW: "4",
+    strikeBg: "linear-gradient(180deg,rgba(36,87,197,.58),rgba(36,87,197,.9) 30%,rgba(36,87,197,.76) 62%,rgba(36,87,197,.5))",
+    strikeSize: "auto", strikeAnim: "none",
+    strikeH: "max(9px,.34em)", strikeDy: "-.15em", strikeMask: roughMask(0.05, 0.9, 3), strikeBlend: "multiply", strikeExit: ".5s", strikeExitOp: "0",
+    finaleStyle: "normal"
+  }, { engine: "marker" }, ["#2457C5", "#B02A20", "#2E9E5B", "#222831", "#6C93E6", "#E8A317"],
+    { shapes: [4], lean: "day", partner: "chalkboard", extra: "chalk", grain: ["#FBFBFA", "#F4F5F3", "#ECEEEB", "#E2E5E1"],
+      field: "whiteboard", finale: "marker", finaleText: "Meeting's over." })
+];
+export const EXTRA = EXTRA_RAW.map(finalize);
+/** The pairs, by id: a name for the group's Forget chip, and the two kits in the order the picker shows them. */
+export const EXTRA_PAIRS = {
+  chalk: { name: "Chalkboard & Whiteboard", kits: ["chalkboard", "whiteboard"] }
+};
+export const EXTRA_IDS = EXTRA.map(t => t.id);
+/** The pair id an Extra kit belongs to, or "" for any other theme. */
+export function isExtraTheme(t) { return (t && typeof t.extra === "string" && t.extra) || ""; }
+export function isExtraCode(code) { return isExtraTheme(parseCode(code)); }
+/** The pair ids this device has unlocked, read off the device record; never written here. */
+export function unlockedExtras(dev) { return Array.isArray(dev && dev.extras) ? dev.extras.filter(id => EXTRA_PAIRS[id]) : []; }
+/** May the picker, Yours and the import field show this theme on this device? Open kits and themes you make,
+    always; a Secret kit with the key; an Extra kit with its pair unlocked. */
+export function themeShown(t, dev) {
+  if (!t) return false;
+  if (t.secret) return !!(dev && dev.secret);
+  const pid = isExtraTheme(t);
+  return !pid || unlockedExtras(dev).includes(pid);
+}
+/* The words, hashed the same two ways as the Secret key, each naming a pair. A word is trimmed and lower-cased;
+   four to forty characters. Adding a pair is one line here and one in EXTRA_PAIRS. */
+const EXTRA_KEYS = [
+  [3209900124, 1435788355, "chalk"]
+];
+/** The pair id a typed word unlocks, or "" when it is not one of the words. */
+export function extraKeyPair(s) {
+  if (typeof s !== "string") return "";
+  const w = s.trim().toLowerCase();
+  if (w.length < 4 || w.length > 40) return "";
+  const a = fnv(w, 2166136261), b = fnv(w, 606290984);
+  const hit = EXTRA_KEYS.find(k => k[0] === a && k[1] === b);
+  return hit ? hit[2] : "";
 }
 
 /* ---------------- custom derivation ---------------- */
@@ -788,8 +907,12 @@ export function cssText(t) {
     `--accent:${c.accent};--accent-hi:${c.accentHi};--accent-deep:${c.accentDeep};--accent-text:${c.accentText};--danger:${c.danger};` +
     `--hair:${c.hair};--hair-hi:${c.hairHi};--hair-solid:${c.hairSolid};--glow:${c.glow};--strike-shadow:${c.strikeShadow};` +
     `--box-done-bg:${c.boxDoneBg};--bar-bg:${c.barBg};--strike-bg:${c.strikeBg};--strike-size:${c.strikeSize};--strike-anim:${c.strikeAnim};--finale-style:${c.finaleStyle};` +
-    `--font-task:${p.task[2]};--font-ui:${p.ui[2]};--task-w:${p.w};--task-ls:${p.ls};--task-lh:${p.lh};color-scheme:${t.base}}`;
+    `--font-task:${p.task[2]};--font-ui:${p.ui[2]};--task-w:${p.w};--task-ls:${p.ls};--task-lh:${p.lh};color-scheme:${t.base}` + materialCss(c) + "}";
 }
+/** 1.12 b262: the tokens a material names, or nothing — so the rule the 18 kits write is byte for byte what it was. */
+const MATERIAL = [["strikeH", "--strike-h"], ["strikeDy", "--strike-dy"], ["strikeMask", "--strike-mask"], ["strikeBlend", "--strike-blend"], ["strikeExit", "--strike-exit"], ["strikeExitOp", "--strike-exit-op"], ["boxCheck", "--box-check"], ["boxCheckW", "--box-check-w"]];
+export const MATERIAL_TOKENS = MATERIAL.map(m => m[0]);
+function materialCss(c) { let s = ""; for (const [k, v] of MATERIAL) if (c[k] !== undefined && c[k] !== "") s += `;${v}:${c[k]}`; return s; }
 
 /** Contrast report used by tests and the picker's preview.
     1.12 b216: `accent3` and `danger3` join it — the accent and the danger colour against `--ink-3`, the

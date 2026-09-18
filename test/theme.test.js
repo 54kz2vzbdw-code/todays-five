@@ -411,9 +411,10 @@ test("the key is a key, not a theme code: trimmed, case-insensitive, and parseCo
 
 /* ---------------- 1.12 b262: the Extra category ---------------- */
 
-test("1.12 b262: the Extra pair reaches the curated bar — two complete kits through finalize(), partners of each other, in no open group and not in CURATED", () => {
-  assert.deepEqual(EXTRA_IDS, ["chalkboard", "whiteboard"]);
-  assert.deepEqual(EXTRA_PAIRS.chalk.kits, EXTRA_IDS);
+test("1.12 b262: every Extra kit reaches the curated bar — complete kits through finalize(), partners of each other, in no open group and not in CURATED", () => {
+  assert.deepEqual(EXTRA_IDS, ["chalkboard", "whiteboard", "bark", "char"]); // 1.12 b268: pair two
+  assert.deepEqual(Object.keys(EXTRA_PAIRS), ["chalk", "wood"]);
+  assert.deepEqual(EXTRA_PAIRS.chalk.kits.concat(EXTRA_PAIRS.wood.kits), EXTRA_IDS, "the pairs, in the order the picker shows them");
   assert.equal(CURATED.length, 18, "CURATED is untouched: the fixture and the stamp are computed over it");
   assert.equal(PALETTE_REV, fs.readFileSync(new URL("../index.html", import.meta.url), "utf8").match(/data-tokens-rev="([^"]+)"/)[1], "and data-tokens-rev did not move");
   const [cb, wb] = EXTRA;
@@ -421,11 +422,15 @@ test("1.12 b262: the Extra pair reaches the curated bar — two complete kits th
   for (const t of EXTRA) {
     const r = report(t);
     for (const [k, floor] of [["accent3", 3], ["danger3", 4.5], ["accentText2", 4.5], ["done2", 4.5]]) assert.ok(r[k] >= floor - 1e-9, `${t.id}: ${k} ${r[k].toFixed(2)} < ${floor} on --ink-3`);
-    assert.equal(isExtraTheme(t), "chalk"); assert.ok(!isSecretTheme(t), t.id + " is not Secret");
+    const pid = isExtraTheme(t);
+    assert.ok(EXTRA_PAIRS[pid] && EXTRA_PAIRS[pid].kits.includes(t.id), t.id + ": names a pair that names it back"); assert.ok(!isSecretTheme(t), t.id + " is not Secret");
     assert.equal(themeCode(t), "T1:curated:" + t.id); assert.equal(parseCode(themeCode(t)).id, t.id, "a curated code like any other, so a slot survives a reload");
-    assert.equal(isExtraCode(themeCode(t)), "chalk"); assert.equal(isSecretCode(themeCode(t)), false);
+    assert.equal(isExtraCode(themeCode(t)), pid); assert.equal(isSecretCode(themeCode(t)), false);
     assert.ok(!CURATED.includes(t) && !CURATED_DAY.includes(t) && !CURATED_NIGHT.includes(t), t.id + " is in no open group");
-    assert.ok(EXTRA_TYPE[t.pair] && pairOf(t.pair) === EXTRA_TYPE[t.pair] && !PAIRS[t.pair], t.id + ": its type is in EXTRA_TYPE, not PAIRS");
+    // 1.12 b262's pair brought a family of its own, in EXTRA_TYPE so kits.json (which carries PAIRS whole) did not move;
+    // b268's pair adds none and names one of the thirteen. Either way the type resolves, and an EXTRA_TYPE one is never in PAIRS.
+    assert.ok(pairOf(t.pair), t.id + ": its type resolves");
+    assert.ok(EXTRA_TYPE[t.pair] ? !PAIRS[t.pair] : !!PAIRS[t.pair], t.id + ": its type is in exactly one of the two tables");
     assert.ok(t.finaleText && /[.!?]$/.test(t.finaleText) && t.finale && t.field, t.id + " carries a line, a finale and a ground");
     assert.ok(Array.isArray(t.grain) && t.grain.length >= 1 && t.grain.length <= 6 && t.grain[0] === t.colors.ink, t.id + ": at most six grain hexes, the first its own --ink");
     for (const g of t.grain) assert.match(g, /^#[0-9A-F]{6}$/);
@@ -457,21 +462,37 @@ test("1.12 b262: the grain rule — every grain colour clears the floors the kit
 test("1.12 b262: the words are keys, not codes: trimmed, case-insensitive, each naming its pair; the Secret word is untouched", () => {
   assert.equal(extraKeyPair("chalkdust"), "chalk"); assert.equal(extraKeyPair("CHALKDUST"), "chalk"); assert.equal(extraKeyPair("  ChalkDust\n"), "chalk");
   assert.equal(extraKeyPair("chalk dust"), ""); assert.equal(extraKeyPair("chalkdus"), ""); assert.equal(extraKeyPair("chalkdusts"), "");
+  // 1.12 b268: pair two's word, and neither word opens the other's pair
+  assert.equal(extraKeyPair("sawdust"), "wood"); assert.equal(extraKeyPair("SAWDUST"), "wood"); assert.equal(extraKeyPair("  SawDust\n"), "wood");
+  assert.equal(extraKeyPair("saw dust"), ""); assert.equal(extraKeyPair("sawdus"), ""); assert.equal(extraKeyPair("sawdusts"), "");
+  assert.notEqual(extraKeyPair("chalkdust"), extraKeyPair("sawdust")); assert.equal(isSecretKey("sawdust"), false, "and it is not the Secret key");
   assert.equal(extraKeyPair(""), ""); assert.equal(extraKeyPair(null), ""); assert.equal(extraKeyPair(42), "");
   assert.equal(extraKeyPair("superpink"), "", "the Secret word is not an Extra word"); assert.equal(isSecretKey("chalkdust"), false, "and the Extra word is not the Secret key");
   assert.equal(isSecretKey("superpink"), true, "the Secret word still works");
   assert.equal(parseCode("chalkdust"), null, "typed on its own it is not a theme code");
   for (const t of [...CURATED, ...EXTRA]) assert.equal(extraKeyPair(themeCode(t)), "", t.id + ": no code is ever mistaken for a word");
-  for (const w of ["chalk", "board", "chalkboard", "whiteboard", "extra", "eraser", "marker", "T1:curated:chalkboard", "open sesame"]) assert.equal(extraKeyPair(w), "", w);
+  for (const w of ["chalk", "board", "chalkboard", "whiteboard", "extra", "eraser", "marker", "T1:curated:chalkboard", "open sesame",
+    "wood", "bark", "char", "sawdust!", "saw-dust", "SawDust1", "T1:curated:bark", "shavings", "dust"]) assert.equal(extraKeyPair(w), "", w);
   // the device record: unlocked pairs are a list of ids, read tolerantly, and the gate reads it
   assert.deepEqual(unlockedExtras({}), []); assert.deepEqual(unlockedExtras({ extras: ["chalk", "nope", 3] }), ["chalk"]); assert.deepEqual(unlockedExtras(null), []);
+  assert.deepEqual(unlockedExtras({ extras: ["wood", "chalk"] }), ["wood", "chalk"], "1.12 b268: a device holds as many pairs as it has been given, in the order it got them");
   assert.equal(themeShown(EXTRA[0], {}), false); assert.equal(themeShown(EXTRA[0], { extras: ["chalk"] }), true);
+  // one pair's word opens that pair and nothing else: a device with wood sees Bark and Char and neither board
+  assert.equal(themeShown(curated("bark"), { extras: ["chalk"] }), false); assert.equal(themeShown(curated("bark"), { extras: ["wood"] }), true);
+  assert.equal(themeShown(EXTRA[0], { extras: ["wood"] }), false, "and the board stays shut");
+  assert.equal(themeShown(curated("char"), { extras: ["wood", "chalk"] }), true); assert.equal(themeShown(EXTRA[1], { extras: ["wood", "chalk"] }), true, "both pairs at once");
+  assert.equal(themeShown(SECRET[0], { extras: ["chalk", "wood"] }), false, "and neither opens Secret");
   assert.equal(themeShown(SECRET[0], { extras: ["chalk"] }), false, "an Extra unlock does not open Secret"); assert.equal(themeShown(SECRET[0], { secret: true }), true);
   assert.equal(themeShown(curated("paper"), {}), true); assert.equal(themeShown(derive({ accent: "#3366FF" }), {}), true);
   // the material tokens are in the CSS only for a kit that names them, so the rule the 18 write is what it was
   assert.ok(!/--strike-h|--strike-mask|--box-check/.test(cssText(curated("paper"))), "Paper's rule carries no material token");
   assert.ok(/--strike-h:/.test(cssText(EXTRA[0])) && /--box-check:/.test(cssText(EXTRA[0])) && /--strike-blend:multiply/.test(cssText(EXTRA[1])), "an Extra kit's does");
   assert.ok(/--strike-mask:url\("data:image\/svg\+xml,/.test(cssText(EXTRA[1])), "the mask rides in the rule as a data: URI");
+  // 1.12 b268: the three the cooling strike needs, and the carve's, written only where they are named
+  const bark = cssText(curated("bark")), char = cssText(curated("char"));
+  assert.ok(/--strike-hot:#FF7A18/.test(char) && /--strike-cool:1\.5s/.test(char) && /--strike-hot-shadow:/.test(char), "Char's strike is born hot and told how long to cool");
+  assert.ok(!/--strike-hot|--strike-cool/.test(bark) && !/--strike-hot|--strike-cool/.test(cssText(EXTRA[0])), "and no other kit carries them");
+  assert.ok(/--task-shadow:/.test(bark) && /--task-shadow:/.test(char) && !/--task-shadow/.test(cssText(curated("paper"))), "the carve is a token too, and only the wood names it");
 });
 
 const at = s => new Date(s);

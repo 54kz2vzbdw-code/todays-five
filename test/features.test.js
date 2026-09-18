@@ -306,12 +306,12 @@ test("the version is one number in three places, the build in four, and there ar
 
 test("1.8: the Secret pair is nowhere anyone reading the app can find it — not About, not How it works, not the changelog beyond the wink", () => {
   const read = f => fs.readFileSync(new URL("../" + f, import.meta.url), "utf8");
-  const NAMES = /superpink|birthday|chalkboard|whiteboard/i; // 1.12 b262: the Extra pair is held to the same silence
+  const NAMES = /superpink|birthday|chalkboard|whiteboard|\bbark\b|\bchar\b/i; // 1.12 b262: the Extra pair is held to the same silence; b268: pair two (word-bounded, so "charAt" is not a leak)
   // what a reader of the app sees: the About page and the changelog it renders, the README, and the long-form help
   for (const f of ["about.html", "whatsnew.json", "CHANGELOG.md", "README.md"]) {
     assert.doesNotMatch(read(f), NAMES, f + " names one of them");
     assert.doesNotMatch(read(f), /forget the secret|secret (theme|group|pair)|unlock/i, f + " mentions the group"); // "secret" alone is what About calls the thing in a link
-    assert.doesNotMatch(read(f), /extra (theme|group|pair|kit)|chalkdust/i, f + " mentions the Extra group"); // 1.12 b262
+    assert.doesNotMatch(read(f), /extra (theme|group|pair|kit)|chalkdust|sawdust/i, f + " mentions the Extra group"); // 1.12 b262, b268
   }
   const panels = read("panels.js");
   const helpAt = panels.indexOf("How it works");

@@ -596,12 +596,55 @@ const EXTRA_RAW = [
     finaleStyle: "normal"
   }, { engine: "marker" }, ["#2457C5", "#B02A20", "#2E9E5B", "#222831", "#6C93E6", "#E8A317"],
     { shapes: [4], lean: "day", partner: "chalkboard", extra: "chalk", grain: ["#FBFBFA", "#F4F5F3", "#ECEEEB", "#E2E5E1"],
-      field: "whiteboard", finale: "marker", finaleText: "Meeting's over." })
+      field: "whiteboard", finale: "marker", finaleText: "Meeting's over." }),
+
+  /* Bark (Day): a pale plank with the grain running the long way. The type is Lora, a face the app already has, and
+     the carve is a one-pixel highlight over a shadow on the words; the strike is a gouged channel of fresh wood with
+     a dark edge above and a light one below; the check-off throws shavings. The accent is the blade, not the
+     fresh cut: fresh-cut wood is a lighter shade of the plank and cannot clear 3:1 on it. */
+  kit("bark", "Bark", "light", "lora", {
+    ink: "#F3E7D3", ink2: "#ECDFC8", ink3: "#E3D3B8",
+    text: "#3B2E22", muted: "#5B4835", dim: "#604C39", done: "#604C39",
+    accent: "#3F6076", accentHi: "#6E92A8", accentDeep: "#2A4354", accentText: "#33505F", danger: "#8E2F1E",
+    hairSolid: "#7D6549",
+    glow: "radial-gradient(120% 90% at 50% 28%, rgba(255,251,240,.55), rgba(243,231,211,0) 70%)",
+    strikeShadow: "0 1px 1px rgba(90,68,50,.26)",
+    boxDoneBg: "#ECDFC8", boxCheck: "#5A4432", boxCheckW: "3.4",
+    strikeBg: "linear-gradient(180deg,#9C7C55 0 20%,#F7EDD9 20% 48%,#FBF3E2 48% 76%,#FFFDF5 76% 100%)",
+    strikeSize: "auto", strikeAnim: "none",
+    strikeH: "max(6px,.18em)", strikeDy: "-.06em", strikeMask: roughMask(0.05, 0.95, 19), strikeExit: ".46s", strikeExitOp: "0",
+    taskShadow: "0 -1px 0 rgba(255,252,243,.9),0 1px 0 rgba(120,94,64,.5)",
+    finaleStyle: "normal"
+  }, { engine: "carve" }, ["#FBF3E2", "#E9D9BB", "#D8C4A4", "#FFFDF5", "#C9B189", "#EFE0C4"],
+    { shapes: [4], lean: "day", partner: "char", extra: "wood", grain: ["#F3E7D3", "#ECDFC8", "#E3D3B8", "#D8C4A4"],
+      field: "bark", finale: "carve", finaleText: "Whittled down." }),
+
+  /* Char (Night): the same plank smoked near black, the grain only just visible. Bark's hand with a hot tip: the
+     strike is born ember (strikeHot, strikeHotShadow) and cools to charcoal once over strikeCool, which is a
+     transition rather than an animation because the overlay is rebuilt on every relayout (DECISIONS.md). */
+  kit("char", "Char", "dark", "lora", {
+    ink: "#1B1512", ink2: "#221A15", ink3: "#2C221B",
+    text: "#F0E6DA", muted: "#B6A698", dim: "#A69688", done: "#A69688",
+    accent: "#FF8A3C", accentHi: "#FFC773", accentDeep: "#C2500F", accentText: "#FF9D57", danger: "#FF8F86",
+    hairSolid: "#8A7A6B",
+    glow: "radial-gradient(120% 90% at 50% 78%, rgba(255,122,24,.13), rgba(27,21,18,0) 68%)",
+    strikeShadow: "0 0 0 rgba(255,122,24,0),0 0 0 rgba(255,214,150,0)",
+    boxDoneBg: "#2C221B", boxCheck: "#FF8A3C", boxCheckW: "3.4",
+    strikeBg: "#554A41",
+    strikeSize: "auto", strikeAnim: "none",
+    strikeH: "max(5px,.15em)", strikeDy: "-.05em", strikeMask: roughMask(0.13, 0.88, 13), strikeExit: ".46s", strikeExitOp: "0",
+    strikeHot: "#FF7A18", strikeHotShadow: "0 0 16px rgba(255,122,24,.78),0 0 5px rgba(255,214,150,.9)", strikeCool: "1.5s",
+    taskShadow: "0 -1px 0 rgba(255,163,77,.14),0 1px 0 rgba(0,0,0,.5)",
+    finaleStyle: "normal"
+  }, { engine: "burn" }, ["#FF7A18", "#FFB84D", "#FFE9B0", "#FFFFFF", "#FF9A3C", "#C2500F"],
+    { shapes: [5], lean: "night", partner: "bark", extra: "wood", grain: ["#1B1512", "#221A15", "#2C221B", "#382C22"],
+      field: "char", finale: "burn", finaleText: "Burned through it." })
 ];
 export const EXTRA = EXTRA_RAW.map(finalize);
 /** The pairs, by id: a name for the group's Forget chip, and the two kits in the order the picker shows them. */
 export const EXTRA_PAIRS = {
-  chalk: { name: "Chalkboard & Whiteboard", kits: ["chalkboard", "whiteboard"] }
+  chalk: { name: "Chalkboard & Whiteboard", kits: ["chalkboard", "whiteboard"] },
+  wood: { name: "Bark & Char", kits: ["bark", "char"] }
 };
 export const EXTRA_IDS = EXTRA.map(t => t.id);
 /** The pair id an Extra kit belongs to, or "" for any other theme. */
@@ -620,7 +663,8 @@ export function themeShown(t, dev) {
 /* The words, hashed the same two ways as the Secret key, each naming a pair. A word is trimmed and lower-cased;
    four to forty characters. Adding a pair is one line here and one in EXTRA_PAIRS. */
 const EXTRA_KEYS = [
-  [3209900124, 1435788355, "chalk"]
+  [3209900124, 1435788355, "chalk"],
+  [1013551434, 1357049077, "wood"]
 ];
 /** The pair id a typed word unlocks, or "" when it is not one of the words. */
 export function extraKeyPair(s) {
@@ -911,7 +955,11 @@ export function cssText(t) {
     `--font-task:${p.task[2]};--font-ui:${p.ui[2]};--task-w:${p.w};--task-ls:${p.ls};--task-lh:${p.lh};color-scheme:${t.base}` + materialCss(c) + "}";
 }
 /** 1.12 b262: the tokens a material names, or nothing — so the rule the 18 kits write is byte for byte what it was. */
-const MATERIAL = [["strikeH", "--strike-h"], ["strikeDy", "--strike-dy"], ["strikeMask", "--strike-mask"], ["strikeBlend", "--strike-blend"], ["strikeExit", "--strike-exit"], ["strikeExitOp", "--strike-exit-op"], ["boxCheck", "--box-check"], ["boxCheckW", "--box-check-w"]];
+const MATERIAL = [["strikeH", "--strike-h"], ["strikeDy", "--strike-dy"], ["strikeMask", "--strike-mask"], ["strikeBlend", "--strike-blend"], ["strikeExit", "--strike-exit"], ["strikeExitOp", "--strike-exit-op"], ["boxCheck", "--box-check"], ["boxCheckW", "--box-check-w"],
+  /* 1.12 b268: three more, for a strike that is born hot and cools once — the colour it starts at, the glow it starts
+     with, and how long it takes to reach --strike-bg and --strike-shadow. Optional like the eight above. */
+  ["strikeHot", "--strike-hot"], ["strikeHotShadow", "--strike-hot-shadow"], ["strikeCool", "--strike-cool"],
+  ["taskShadow", "--task-shadow"]];
 export const MATERIAL_TOKENS = MATERIAL.map(m => m[0]);
 function materialCss(c) { let s = ""; for (const [k, v] of MATERIAL) if (c[k] !== undefined && c[k] !== "") s += `;${v}:${c[k]}`; return s; }
 

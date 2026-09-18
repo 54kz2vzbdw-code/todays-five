@@ -875,3 +875,128 @@ Calls made where the brief for the Extra themes left things open. The brief aske
 
 - **Zero new requests and a byte-identical `styles.css`** for a device that never unlocked — both measured, both in the suite. What could not be held is the size of `theme.js`: the kits, their strike masks and the words are in it, and it is the module the boot path parses, so a device that has never heard the word still downloads 3.6 KB more of it gzipped. `tools/paint.mjs` (Lighthouse's mobile numbers over CDP, eight runs a side, interleaved) puts that at **+40 ms of mobile first paint at the median, ranges not overlapping**; the desktop number did not move. Recorded rather than argued away; the fix — resolving a hidden kit's code lazily — changes how every code resolves and belongs to a round about that.
 - **Idle CPU over five minutes is Dark's**: 0.009 % and 0.012 % of one core against Dark's 0.010 %, because the ground is a picture and nothing on it moves. The 1.8 field cost 0.078 % for the same reason in reverse.
+
+# 1.12 b268 decisions — the Extra category, pair two
+
+Calls made where the brief for Bark and Char left things open. The category itself is b262's and every call in the
+entry above stands; this is the sequel it said would be "one line in `EXTRA_KEYS` and one in `EXTRA_PAIRS`" plus two
+kits and their material, and that is what it was. Nothing else was added.
+
+## The family, and why this pair brought none
+
+- **Both kits are Lora + Karla, one of the thirteen `PAIRS` the app already carries.** The brief said no new family,
+  and the budget is the reason it is worth saying twice: pair one's Caveat cost 39.9 KB gzipped after a subsetting
+  fight, and it is the single largest thing in the category. This pair's type costs **nothing** — no file, no
+  `@font-face`, no line in `gen-watch-fonts.py`, and the Watch bundle holds at 35 faces and 102/102, which §1 of the
+  Apple README asks for. Lora rather than the other twelve because its serifs are wedged and its stems are heavy
+  enough to hold a one-pixel highlight over a one-pixel shadow, which is the whole of the carve; Karla under it is a
+  plain workshop grotesque. Considered and not chosen: Playfair (the hairlines vanish under a relief shadow),
+  Fraunces (closer, but its wonk reads as hand-drawn rather than cut), Cormorant (far too fine), Archivo and Manrope
+  (no serifs to catch light on).
+- **The type is in `PAIRS`, not `EXTRA_TYPE`, and that is the rule rather than an exception.** `EXTRA_TYPE` exists so
+  a family an Extra kit brings does not move `test/fixtures/kits.json`, which carries `PAIRS` whole. A kit that
+  brings no family has nothing to keep out of the fixture, so it names its type where every other kit does.
+  `pairOf()` already read both tables; the suite's assertion moved from "in `EXTRA_TYPE` and not in `PAIRS`" to
+  "resolves, and is in exactly one of the two".
+- **The carve is a token, `taskShadow`.** `0 -1px 0` of near-white over `0 1px 0` of a warm dark on `.row .tx` and on
+  the finale line, written only for a kit that names it. **The floor is still text on ground**: every contrast
+  number in this round is `--text` against a grain hex, never against the shadow, which is a pixel of relief and
+  is not what makes a word readable.
+
+## The burn: what could not express "run once and hold", and what could
+
+- **Neither `strikeAnim` nor a transition on the strike survives a check-off, because the strike does not.**
+  `layoutStrikes()` throws away every `.ink` of a row whose content changed and builds new ones, and a check-off
+  changes it. Measured rather than assumed: the overlay is born at `#FF7A18`, is `rgb(222,113,32)` at 272 ms, and at
+  **477 ms is a different element**, already cold. An animation is worse than a transition here, not better: it also
+  re-fires on every later relayout — a resize, `document.fonts.ready` — and `nofx`, the one-frame guard app.js has,
+  silences transitions only.
+- **So the heat lives on `.lines`, the container, which is never replaced — only emptied.** `--burn` is a registered
+  `<number>` (`@property`, inherits) that goes 1 → 0 over `--strike-cool` on the row being struck, and `.ink::after`
+  is that much ember over the char. A rebuilt strike reads the value mid-fall and carries on; a row rendered already
+  struck never crosses the boundary, so nothing fires on a reload or a resize (the browser suite resizes the window
+  mid-test and asserts the line does not light again). Three tokens, all optional: `strikeHot` (a gradient, so the
+  band is shaded across its height), `strikeHotShadow`, `strikeCool`. The 20 kits that name none of them get an
+  `::after` that is transparent with no shadow at an opacity nothing reads, and their `:root` rule is unchanged.
+- **Where `@property` is not implemented the number is not interpolable and the line is simply born cooled** — which
+  is exactly the reduced-motion presentation, and reduced motion gets it by the same route (`transition:none`).
+- **Uncheck cannot re-light it**: the ember layer is visible only under `.row.done`, so sanding the char back is a
+  fade, not a flare. Asserted.
+
+## The accent: the blade, not the fresh cut
+
+The brief offered either. **Fresh-cut wood is a paler shade of the plank** — on Bark's lightest grain (`#F3E7D3`)
+the brightest honest fresh-cut hex reads about 1.1:1, and to clear the 3:1 an accent has to clear it would have to
+stop being fresh-cut wood. The blade can: `#3F6076`, a blued steel, **5.46:1 on the lightest grain** and 3.93:1 on
+the darkest, with `accentText` at 7.00 and 5.03. It also earns its place twice — the focus ring and the filled chip
+are the one cool thing in a warm kit, and the chisel in the finale is drawn in it. Char's accent is the ember
+(`#FF8A3C`, 7.70:1 on its own ink and 5.77:1 on its lightest grain), which is what the brief asked for and what the
+sparks and the check are.
+
+## Two engines, not one parameterised Wood
+
+`Carve` and `Burn`, both in `packs-extra.js` beside `Chalk` and `Marker`. One engine reading the kit's `pitch`,
+`decay`, `bright` and `noise` would have been fewer lines, and it was the wrong shape: **Settings → Sound offers a
+pack per slot**, independent of the kit, so a person who picks "Wood" on Char would be handed the blade. The two
+share no generator anyway — a band-passed scrape over a low resonant body against a hiss with short random crackles
+in it — so one name would have been two engines wearing it. Eighteen packs now: twelve, the Secret pair's two, and
+two per Extra pair. `tools/sounds.js` reads `ORDER` and took them without a change.
+
+## The two kits
+
+- **Names.** Bark and Char say the material and the state it is in, which is what a swatch has to do at fourteen
+  pixels. "Pine" and "Ash" were considered and dropped: Pine is a colour in a list of colours, and Ash is the thing
+  left over rather than the wood.
+- **Partners of each other**, lean day and night, so choosing one offers the other and the sun and moon flip
+  between them — the suite walks it at both viewports, and either goes in either slot.
+- **Bark's ground is a plank with the grain running the long way**, a knot low and right where it is out of the
+  words' way, and the sawn ends a shade darker. **Char's is the same plank smoked**: the grain only just there,
+  blotches of the deepest char where the fire took hold, and ash caught in the grain. Both are built at run time
+  from four grain hexes each and nothing else, which is what lets `tools/grain.mjs` hold them to flat floors.
+- **`grainLines()` is deterministic** — a fixed wobble per line, no `Math.random` — so it is the same plank every
+  open, and the rasterised measurement means the same thing twice.
+
+## What the eye caught and no test did
+
+Four passes with the page served and the images read, in the order they were found:
+
+- **The first Bark ground smeared a diagonal across the plank.** Three blurred "cathedral" arcs read as a scuff
+  rather than as figure, and the knot beside them read as a stain on the first line. Both gone.
+- **Char's soot came back olive.** SVG filters interpolate in linearRGB by default; near-black colours have almost
+  no distinct levels there in eight bits, so an 88 px blur over `#1B1512` quantised into a green-yellow cast — a
+  colour that is in no grain and that `tools/grain.mjs` would have failed on only by luminance, not by hue.
+  `color-interpolation-filters="sRGB"` on this pair's filters. `speckle()` takes it as an opt-in flag, so b262's two
+  grounds are byte for byte what they were.
+- **The gouge read as a coloured rule**, exactly the way b262's first chalk strike "read as beads": the fresh core
+  was barely paler than the plank. A deeper lip, a brighter core, `max(9px,.24em)`, and lifted to `-.13em` so it
+  crosses the words rather than the baseline.
+- **Char's ember never drew at all.** `strikeHot` became a gradient for the strike's shading and the canvas was
+  still parsing it as a hex — `rgba(NaN,NaN,NaN,…)` into `addColorStop`. The finale takes its hex from the kit's own
+  confetti now. Nothing reported it: the throw is inside a `requestAnimationFrame` callback and the suite's page
+  error count stayed at zero.
+- **The chisel was a pen nib.** Redrawn as a hand tool — a bevelled blade, a collar, a turned handle, held at an
+  angle.
+
+## The finale lines
+
+- **Bark: "Whittled down."** It is the only one of the three that is about the list as well as the wood. Not picked:
+  "Blade down." — the act, and it describes the sound rather than the person's afternoon; "Cut and dried." — a pun
+  about seasoning lumber, which is a fact about timber and not about finishing anything.
+- **Char: "Burned through it."** Not picked: "Nothing left to burn." — true and flat, the same fault b262 named in
+  "Nothing left on the board."; "Out cold." — the fire is out, but the phrase means unconscious, which is not a
+  finish.
+
+## Discretion, unchanged
+
+`test/features.test.js` reads About, the changelog, the README and the long-form help for both new names and for
+"sawdust", word-bounded so `charAt` in a script is not a leak. The version holds at 1.12, so there is no what's-new
+entry and no toast, and a person with a saved list opens this build and sees nothing new. The browser suite walks a
+device that has given one word and asserts it is told nothing of the other pair — not in the picker, not in
+Settings → Sound, not in How it works.
+
+## First paint, and the one number that is not zero
+
+The pair adds **no file**: its material is in `extrafx.js`, `extrafx.css` and `packs-extra.js`, which the category
+already had and which the service worker already precaches, so the shell's request list does not change and neither
+does `styles.css` (`git diff main -- styles.css`, empty). What grows is `theme.js`, because the kits, their masks
+and the words are in the module the boot path parses — the number and its instrument are in `PLAN.md`.

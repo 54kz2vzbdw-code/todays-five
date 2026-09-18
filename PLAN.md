@@ -1856,3 +1856,71 @@ a slot holding `T1:curated:chalkboard` must resolve synchronously on the next op
 that is about 60 ms of wire, which is what the throttled profile paid. 1.12 recorded +52 ms for 9.3 KB in the same
 place and called it the one thing it could not hold to the byte; this is the same kind of number and is said the
 same way. Moving the kit table out of the boot path is a change to how codes resolve and is not this round's.
+
+# Today's Five 1.12 b268 — the Extra category, pair two
+
+The brief: the sequel to b262's pair, built the same way — **Bark** (Day) and **Char** (Night), wood you carve and
+wood you burn, behind their own word. The decisions are in DECISIONS.md, "1.12 b268 decisions". The version holds at
+1.12; only the build moves. The Apple side did not have to move at all, which is the strongest thing this round has
+to say about b262's shape.
+
+## What shipped
+
+- The pair: one line in `EXTRA_KEYS`, one in `EXTRA_PAIRS`, two kits in `EXTRA_RAW`. `meta.device.extras` holds two
+  ids on a device that has both words; Forget is per pair and takes back only that pair's slots.
+- The material, all of it in the category's own modules: two plank grounds in `extrafx.js`, the gouge and the burn
+  in `extrafx.css`, the chisel and the ember finales, one wisp of smoke through the ground's own layer, and `Carve`
+  and `Burn` in `packs-extra.js`. **No new file** — the category already had the three, and the service worker
+  already precaches them, so the shell's request list did not change.
+- Four more optional material tokens: `strikeHot`, `strikeHotShadow`, `strikeCool` (a strike born hot that cools
+  once and holds) and `taskShadow` (the carve). The 20 kits that name none of them write the `:root` rule they
+  always wrote.
+- **No new family.** Both kits are Lora + Karla, one of the thirteen in `PAIRS`, so `test/fixtures/kits.json` and
+  `data-tokens-rev` did not move, the Watch bundle holds at 35 faces, and the pair's type costs nothing at all.
+
+## Screenshots
+
+`shots/extra-2/` — `desktop-theme-extra-2.png` and `phone-theme-extra-2.png` (the picker with both pairs open and a
+Forget for each), `desktop-bark.png`, `phone-bark.png`, `desktop-char.png`, `phone-char.png`,
+`desktop-finale-bark.png` and `phone-finale-bark.png` (the chisel mid-cut), `desktop-finale-char.png` and
+`phone-finale-char.png` (the ember mid-run, the smoke going up), and the Watch in `apple/shots/watch/`. The sound
+envelopes are in `shots/extra-2/sounds/`.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| the pair's own bytes, gzipped | **PLACEHOLDER_PAIRBYTES**; budget 60 | `gzip -9` over stdin, this tree against `main` at 266 |
+| what a device on pair one now fetches | PLACEHOLDER_PAIRONE | `gzip -9`, the three lazy modules |
+| `theme.js`, the category's shared cost | PLACEHOLDER_THEMEJS | `gzip -9` over stdin |
+| first paint, bytes | **`styles.css` is byte for byte 261's** (`git diff main -- styles.css` empty), and so are `app.js`, `fx.js`, `index.html` and `sw.js` | `git diff`, `gzip -9` |
+| first paint, requests on a device that never unlocked | **0 new** — the pair adds no file; a device on Bark fetches the same three modules a device on Chalkboard does | the browser suite reads `performance.getEntriesByType("resource")` |
+| first paint, timing | PLACEHOLDER_PAINT | `tools/paint.mjs` |
+| the grain, per colour | PLACEHOLDER_GRAINDECL | `test/theme.test.js`, printed |
+| the grain, as rendered | PLACEHOLDER_GRAINREND | `tools/grain.mjs` at 1440×900 and 390×844, and the same code once per viewport in the browser suite |
+| the ground, per kit | PLACEHOLDER_GROUNDBYTES | `tools/grain.mjs` |
+| the accent, on the lightest grain | PLACEHOLDER_ACCENT | `test/theme.test.js` |
+| the packs | PLACEHOLDER_PACKS | `tools/sounds.js`, eighteen packs rendered through an OfflineAudioContext |
+| the deployed build reading two pair ids | PLACEHOLDER_OLDBUILD | a `git worktree` of 266 on port 8792, Playwright, the registry carried across origins |
+| idle CPU, five minutes each | PLACEHOLDER_IDLE | `tools/idle.mjs` — Chrome's per-renderer `TaskDuration` over CDP, the 1.8 instrument |
+| the Watch fonts | PLACEHOLDER_FONTS | `-TFFontSelfTest` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | PLACEHOLDER_NODE |
+| Swift core | PLACEHOLDER_SWIFT |
+| Browser suite, 1440×900 and 390×844 | PLACEHOLDER_E2E |
+| The app | PLACEHOLDER_BUILDS |
+| Paired simulators | PLACEHOLDER_WATCHSIM |
+| Paired simulators, after the deploy | PLACEHOLDER_CROSSING |
+| Screenshots | PLACEHOLDER_SHOTS |
+
+### Lighthouse, and what stands in for it
+
+PLACEHOLDER_LIGHTHOUSE
+
+## The wrist list
+
+PLACEHOLDER_WRIST

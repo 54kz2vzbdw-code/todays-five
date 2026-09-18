@@ -598,10 +598,7 @@ const EXTRA_RAW = [
     { shapes: [4], lean: "day", partner: "chalkboard", extra: "chalk", grain: ["#FBFBFA", "#F4F5F3", "#ECEEEB", "#E2E5E1"],
       field: "whiteboard", finale: "marker", finaleText: "Meeting's over." }),
 
-  /* Bark (Day): a pale plank with the grain running the long way. The type is Lora, a face the app already has, and
-     the carve is a one-pixel highlight over a shadow on the words; the strike is a gouged channel of fresh wood with
-     a dark edge above and a light one below; the check-off throws shavings. The accent is the blade, not the
-     fresh cut: fresh-cut wood is a lighter shade of the plank and cannot clear 3:1 on it. */
+  /* Bark (Day): a pale plank, gouged. Lora is one of the thirteen, so this pair adds no family. (DECISIONS.md, b268) */
   kit("bark", "Bark", "light", "lora", {
     ink: "#F3E7D3", ink2: "#ECDFC8", ink3: "#E3D3B8",
     text: "#3B2E22", muted: "#5B4835", dim: "#604C39", done: "#604C39",
@@ -619,9 +616,7 @@ const EXTRA_RAW = [
     { shapes: [4], lean: "day", partner: "char", extra: "wood", grain: ["#F3E7D3", "#ECDFC8", "#E3D3B8", "#D8C4A4"],
       field: "bark", finale: "carve", finaleText: "Whittled down." }),
 
-  /* Char (Night): the same plank smoked near black, the grain only just visible. Bark's hand with a hot tip: the
-     strike is born ember (strikeHot, strikeHotShadow) and cools to charcoal once over strikeCool, which is a
-     transition rather than an animation because the overlay is rebuilt on every relayout (DECISIONS.md). */
+  /* Char (Night): the same plank burnt. The strike is born ember and cools once over strikeCool (extrafx.css). */
   kit("char", "Char", "dark", "lora", {
     ink: "#1B1512", ink2: "#221A15", ink3: "#2C221B",
     text: "#F0E6DA", muted: "#B6A698", dim: "#A69688", done: "#A69688",
@@ -956,10 +951,7 @@ export function cssText(t) {
 }
 /** 1.12 b262: the tokens a material names, or nothing — so the rule the 18 kits write is byte for byte what it was. */
 const MATERIAL = [["strikeH", "--strike-h"], ["strikeDy", "--strike-dy"], ["strikeMask", "--strike-mask"], ["strikeBlend", "--strike-blend"], ["strikeExit", "--strike-exit"], ["strikeExitOp", "--strike-exit-op"], ["boxCheck", "--box-check"], ["boxCheckW", "--box-check-w"],
-  /* 1.12 b268: three more, for a strike that is born hot and cools once — the colour it starts at, the glow it starts
-     with, and how long it takes to reach --strike-bg and --strike-shadow. Optional like the eight above. */
-  ["strikeHot", "--strike-hot"], ["strikeHotShadow", "--strike-hot-shadow"], ["strikeCool", "--strike-cool"],
-  ["taskShadow", "--task-shadow"]];
+  ["strikeHot", "--strike-hot"], ["strikeHotShadow", "--strike-hot-shadow"], ["strikeCool", "--strike-cool"], ["taskShadow", "--task-shadow"]]; // 1.12 b268
 export const MATERIAL_TOKENS = MATERIAL.map(m => m[0]);
 function materialCss(c) { let s = ""; for (const [k, v] of MATERIAL) if (c[k] !== undefined && c[k] !== "") s += `;${v}:${c[k]}`; return s; }
 

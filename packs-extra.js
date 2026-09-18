@@ -77,8 +77,8 @@ export function create({ tone, noiseBurst }) {
     },
     uncheck(env) {
       const { c, P } = env; const t = c.currentTime, p = P("pitch", 1);
-      noiseBurst(env, t, 8000, 2.0, "lowpass", 1250 * p, 0.14);                                                     // the shavings brushed back in
-      noiseBurst(env, t + 0.07, 6000, 2.6, "bandpass", 760 * p, 0.065);
+      noiseBurst(env, t, 9500, 1.7, "lowpass", 1400 * p, 0.19);                                                     // the shavings brushed back in
+      noiseBurst(env, t + 0.07, 7500, 2.2, "bandpass", 820 * p, 0.095);
     },
     finish(env) {
       const { c, P } = env; const t0 = c.currentTime, p = P("pitch", 1), dec = P("decay", 1);

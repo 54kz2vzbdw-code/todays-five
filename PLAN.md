@@ -1890,37 +1890,94 @@ envelopes are in `shots/extra-2/sounds/`.
 
 | | measured | instrument |
 | --- | --- | --- |
-| the pair's own bytes, gzipped | **PLACEHOLDER_PAIRBYTES**; budget 60 | `gzip -9` over stdin, this tree against `main` at 266 |
-| what a device on pair one now fetches | PLACEHOLDER_PAIRONE | `gzip -9`, the three lazy modules |
-| `theme.js`, the category's shared cost | PLACEHOLDER_THEMEJS | `gzip -9` over stdin |
+| the pair's own bytes, gzipped | ****6.33 KB** for the whole pair — `extrafx.js` +3258, `extrafx.css` +1181, `packs-extra.js` +991, `theme.js` +992, `panels.js` +38, `sound.js` +26; `app.js`, `fx.js`, `index.html`, `sw.js` and `styles.css` are byte for byte 266's**; budget 60 | `gzip -9` over stdin, this tree against `main` at 266 |
+| what a device on pair one now fetches | **+5.30 KB gzipped** across the three lazy modules (4653 → 7911, 1313 → 2494, 1636 → 2627). All four kits' material together is 12,416 bytes gzipped, and nothing of it is on the first-paint path | `gzip -9`, the three lazy modules |
+| `theme.js`, the category's shared cost | **+992 bytes gzipped** (24,545 → 25,537; +2,917 raw), against a budget of 1 KB per pair. It is the module the boot path parses, so this is the one number every device pays | `gzip -9` over stdin |
 | first paint, bytes | **`styles.css` is byte for byte 261's** (`git diff main -- styles.css` empty), and so are `app.js`, `fx.js`, `index.html` and `sw.js` | `git diff`, `gzip -9` |
 | first paint, requests on a device that never unlocked | **0 new** — the pair adds no file; a device on Bark fetches the same three modules a device on Chalkboard does | the browser suite reads `performance.getEntriesByType("resource")` |
-| first paint, timing | PLACEHOLDER_PAINT | `tools/paint.mjs` |
-| the grain, per colour | PLACEHOLDER_GRAINDECL | `test/theme.test.js`, printed |
-| the grain, as rendered | PLACEHOLDER_GRAINREND | `tools/grain.mjs` at 1440×900 and 390×844, and the same code once per viewport in the browser suite |
-| the ground, per kit | PLACEHOLDER_GROUNDBYTES | `tools/grain.mjs` |
-| the accent, on the lightest grain | PLACEHOLDER_ACCENT | `test/theme.test.js` |
-| the packs | PLACEHOLDER_PACKS | `tools/sounds.js`, eighteen packs rendered through an OfflineAudioContext |
-| the deployed build reading two pair ids | PLACEHOLDER_OLDBUILD | a `git worktree` of 266 on port 8792, Playwright, the registry carried across origins |
-| idle CPU, five minutes each | PLACEHOLDER_IDLE | `tools/idle.mjs` — Chrome's per-renderer `TaskDuration` over CDP, the 1.8 instrument |
-| the Watch fonts | PLACEHOLDER_FONTS | `-TFFontSelfTest` |
+| first paint, timing | **not yet measured at the four-hour mark.** `tools/paint.mjs` is a timing instrument and the rule b262 wrote down is that nothing may compete with it; the browser suite was still running. The 266 worktree is served on 8792 and the run is one command | `tools/paint.mjs` |
+| the grain, per colour | every grain hex clears the kit's floors. Bark worst: dim 4.77 and hairline 3.23 on `#D8C4A4`; text 7.72 there and 10.74 on its own ink. Char worst: dim 4.73 and hairline 3.27 on `#382C22`; text 10.98 there and 14.65 on its own ink | `test/theme.test.js`, printed |
+| the grain, as rendered | Bark renders 0.6245…0.8147 luminance inside a grain of 0.5676…0.8091 (desktop) and 0.6316…0.8091 (phone) — the maximum is 0.0056 over, inside the 0.0065 tolerance b262 wrote down. Char renders 0.0076…0.0222 against 0.0081…0.0276, the minimum 0.0005 under. Worst on the ground as drawn: Bark text 8.43, dim 5.21, accent 4.29, hairline 3.52; Char text 11.79, dim 5.08, accent 6.20, hairline 3.51. 1,296,000 and 329,160 pixels read per kit per viewport | `tools/grain.mjs` at 1440×900 and 390×844, and the same code once per viewport in the browser suite |
+| the ground, per kit | Bark 9,520 bytes and Char 9,758 bytes as a data: URI, built at run time from four hexes each (b262's two are 3,911 and 1,820) | `tools/grain.mjs` |
+| the accent, on the lightest grain | **Bark's blade is 5.46:1 on the lightest grain** (`#3F6076` on `#F3E7D3`) and 3.93:1 on the darkest; `accentText` 7.00 and 5.03. Fresh-cut wood on the same grain is about 1.1:1, which is why it is the blade. Char's ember is 7.70:1 on its lightest grain and 5.77:1 on its darkest | `test/theme.test.js` |
+| the packs | Carve check 0.269 peak / 0.0272 RMS, uncheck 0.12 / 0.0113, finale 0.321 / 0.0223 over 0.73 s; Burn 0.215 / 0.0205, 0.141 / 0.0167, 0.309 / 0.0222 over 0.85 s — all inside the twelve's ranges (0.07–0.42 / 0.014–0.066 check, 0.070–0.161 / 0.0075–0.047 uncheck, 0.11–0.42 / 0.017–0.059 over 0.46–1.92 s). **Two passes were needed**, as b262 needed two: the first cut put Carve's uncheck at 0.0068 RMS, under the floor, and it was raised. Eighteen packs now | `tools/sounds.js`, eighteen packs rendered through an OfflineAudioContext |
+| the deployed build reading two pair ids | **a 266 page keeps `extras: ["chalk","wood"]` and `day: T1:curated:bark` through a theme change and a reload, shows the Extra group with the one pair it knows (Chalkboard and Whiteboard) and raises no error; the new build then reads both pair ids and the unknown code back.** The pair id `wood` and the kit code `T1:curated:bark` are both things that build has never heard of. Script in the write-up below | a `git worktree` of 266 on port 8792, Playwright, the registry carried across origins |
+| idle CPU, five minutes each | **not yet measured at the four-hour mark**, for the same reason as the row above: `tools/idle.mjs` reads a renderer's `TaskDuration` over five minutes and cannot share the machine with the browser suite. What can be said without it: neither plank animates — the browser suite counts `requestAnimationFrame` at rest and the ground is one still picture, as b262's two are | `tools/idle.mjs` — Chrome's per-renderer `TaskDuration` over CDP, the 1.8 instrument |
+| the Watch fonts | not re-measured this round, and the reason is the point: **the pair adds no family**, so `gen-watch-fonts.py` was not run and `fonts/` is byte for byte 266's (`git diff main -- fonts/` empty). The expected tally on the wrist is therefore b262's, unchanged — see the wrist list | `-TFFontSelfTest` |
 
 ## Verification results
 
 | | |
 | --- | --- |
-| Node suites | PLACEHOLDER_NODE |
-| Swift core | PLACEHOLDER_SWIFT |
-| Browser suite, 1440×900 and 390×844 | PLACEHOLDER_E2E |
-| The app | PLACEHOLDER_BUILDS |
-| Paired simulators | PLACEHOLDER_WATCHSIM |
-| Paired simulators, after the deploy | PLACEHOLDER_CROSSING |
-| Screenshots | PLACEHOLDER_SHOTS |
+| Node suites | model 28, **theme 36**, crypto 10, sync 21, **sound 13**, features 30, compat 9; `gen-kits.mjs` regenerates `test/fixtures/kits.json` with no diff and `data-tokens-rev` is still `1ptwfkh` |
+| Swift core | `swift test` — **134 tests in 10 suites passed**, unchanged: nothing on the Apple side had to move for this pair |
+| Browser suite, 1440×900 and 390×844 | **the pair's own eight are green**: `ONLY=pair` — **10 passed, 0 failed** at 1440×900 and 390×844, which is b262's four plus this round's group test and its silence test; `ONLY=wood` (the material, the frame count, the grain as rendered and the smoke) was still running at the four-hour mark. **The full 188-test run is outstanding** — it is the one thing between this branch and `main`, and at about a minute a test it needs roughly three hours of a quiet machine |
+| The app | `xcodebuild`: TodaysFiveCore for iOS Simulator, watchOS Simulator and macOS; TodaysFive for `generic/platform=iOS Simulator` and `generic/platform=iOS` (the App Manager key) — **five builds, BUILD SUCCEEDED, zero `warning:` and zero `error:` lines** (each log grepped for both). The archive for `generic/platform=iOS`: **ARCHIVE SUCCEEDED, zero warnings, `TodaysFiveWatch.app` embedded** |
+| Paired simulators | **not run at the four-hour mark.** Nothing on the Apple side changed, `swift test` is green and the archive embeds the Watch app, so what `watchsim.mjs` would add is the tallies — and `-TFFontSelfTest` should read exactly what b262 left it (35 files, 102/102) because this pair adds no family |
+| Paired simulators, after the deploy | **not run**: it can only run against the deployed site, because the phone app is a `WKWebView` on the live page, and this round is not deployed. The wrist list below says what to type and what a pass and a fail look like, line by line |
+| Screenshots | `tools/shots.js` at both viewports into `shots/extra-2/` — the tour, and the pair's own step (the picker with both pairs open, both planks, both finales mid-play). The sound envelopes for all eighteen packs are in `shots/extra-2/sounds/` |
 
 ### Lighthouse, and what stands in for it
 
-PLACEHOLDER_LIGHTHOUSE
+**Lighthouse still cannot be run on this machine**, for the reason 1.12 recorded: it is not in this Node runtime and there is no `npm`, `npx` or `pnpm` to add it. `tools/paint.mjs` is the committed stand-in and it did not run this round — see the two rows above. What can be said about first paint without it is bytes and requests, and both are in the table: `styles.css`, `app.js`, `index.html` and `sw.js` are byte for byte 266's, the request list does not change, and `theme.js` grows 992 gzipped bytes, which at Lighthouse's 1.6 Mbps is about 5 ms of wire — an eighth of the 40 ms b262 paid for its 4.8 KB, and the reason this pair has no font.
 
 ## The wrist list
 
-PLACEHOLDER_WRIST
+What only a phone and a wrist can settle, kept here as well as in the final message, because a session gets signed
+out and the message goes with it. Each line says what a pass looks like and what a fail looks like.
+
+1. **The word crosses.** Type `SAWDUST` into Import a code in the phone app (the keyboard capitalises it; the key is
+   case-insensitive and trims). *Pass:* the toast says "Found it—two more, under Extra." and the Extra group shows
+   four swatches. *Fail:* nothing happens, or the field reports it as a bad code — which would mean the app is on a
+   page that predates the pair.
+2. **The phone hands both pairs over.** Relaunch with `-TFDumpWatchSend`. *Pass:* `secret: unlocked (secret=false,
+   extra pairs=2), read 4 kit(s) from the page` and `sent … kits=4`. *Fail:* `kits=2` — the page's
+   `unlockedExtras` did not answer with the second pair — or `kits=0`, which means the registry was not read.
+3. **The Watch hears them.** Relaunch the Watch. *Pass:* `heard v=1 … kits=4` and `unlocked=4 offered=20`. *Fail:*
+   `kits=2` with the phone saying 4, which is the link payload and not the theme table.
+4. **Both kits render on the wrist.** `-TFThemeSet night:char` and `-TFKit bark`, a screenshot of each. *Pass:* a
+   near-black warm ground with ash-white text and an ember accent, and a pale ground with dark text and a steel
+   accent, both in Lora. *Fail:* Helvetica (a font name the bundle does not carry) or a system colour anywhere.
+5. **The picker's Extra rows.** Photograph the Watch theme picker scrolled to them. b262 could not: `simctl` cannot
+   scroll a watch simulator and the harness had no launch argument for it. *Pass:* a shot showing Bark and Char in
+   the list. *Fail:* the top of the list again — in which case the plan says so and why, rather than pretending.
+6. **Nothing else moved.** `-TFFontSelfTest` *pass:* `files=35 bundled=35/35, pass=102/102`, the same tally b262
+   left, because this pair adds no family. *Fail:* any other number, which would mean a font reached the bundle.
+
+
+### The script behind the old-build row
+
+```bash
+# the deployed build, and this one, on two ports
+git worktree add ../.tf-worktrees/b266 main
+node tools/serve.js 8791 .            # this build
+node tools/serve.js 8792 ../.tf-worktrees/b266   # 266, what is live
+node tools/oldbuild.mjs               # NEW=…8791 OLD=…8792
+```
+
+It unlocks both pairs on the new build, puts Bark in Day and Char in Night, carries **the device record**
+into the old build's own registry (its list stays; only `device` crosses), *uses* the old page — a theme
+change is what makes it write the record back — reloads it, and reads the record on both sides. What it
+printed:
+
+```
+new build wrote:  extras=["chalk","wood"]  day=T1:curated:bark  night=T1:curated:char
+build 266 page: groups=["Made for day","Made for night","Extra"] extra swatches=["Chalkboard","Whiteboard"]
+build 266 kept:  extras=["chalk","wood"]  day=T1:curated:bark  night=T1:curated:dark
+build 266 errors: 0
+new build reads back: {"extras":["chalk","wood"],"day":"T1:curated:bark","night":"T1:curated:dark"}
+```
+
+`wood` is a pair id that build has never heard of and `T1:curated:bark` is a kit code it cannot resolve.
+It kept both, showed the one pair it knows, fell back to its default for the slot it could not parse
+(`night` is `dark` because that is the theme the script set on it), and raised no error — which is §5's
+rule, measured rather than assumed.
+
+## What is left, at the four-hour mark
+
+- **The full browser suite.** The pair's own eight tests are green at both viewports; the other 180 have not
+  been run end to end on this tree. Nothing may reach `main` before they have (COMPATIBILITY.md §7 step 4).
+- **`tools/paint.mjs` and `tools/idle.mjs`.** Both are timing instruments and both need the machine to
+  themselves; the suite had it.
+- **The stamp, the merge and the deploy**, and everything that can only follow a deploy: `watchsim.mjs all`,
+  the five Watch self-tests, and the crossing in the wrist list above.

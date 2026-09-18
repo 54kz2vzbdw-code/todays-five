@@ -475,7 +475,9 @@ test("1.12 b262: the words are keys, not codes: trimmed, case-insensitive, each 
     "wood", "bark", "char", "sawdust!", "saw-dust", "SawDust1", "T1:curated:bark", "shavings", "dust"]) assert.equal(extraKeyPair(w), "", w);
   // the device record: unlocked pairs are a list of ids, read tolerantly, and the gate reads it
   assert.deepEqual(unlockedExtras({}), []); assert.deepEqual(unlockedExtras({ extras: ["chalk", "nope", 3] }), ["chalk"]); assert.deepEqual(unlockedExtras(null), []);
-  assert.deepEqual(unlockedExtras({ extras: ["wood", "chalk"] }), ["wood", "chalk"], "1.12 b268: a device holds as many pairs as it has been given, in the order it got them");
+  assert.deepEqual(unlockedExtras({ extras: ["wood", "chalk"] }), ["chalk", "wood"], "1.12 b268: a device holds as many pairs as it has been given, and reads them back in the table's order whichever order it got them");
+  assert.deepEqual(unlockedExtras({ extras: ["chalk", "wood"] }), ["chalk", "wood"]);
+  assert.deepEqual(unlockedExtras({ extras: ["wood", "nope"] }), ["wood"], "and an id this build has never heard of is passed over, not kept");
   assert.equal(themeShown(EXTRA[0], {}), false); assert.equal(themeShown(EXTRA[0], { extras: ["chalk"] }), true);
   // one pair's word opens that pair and nothing else: a device with wood sees Bark and Char and neither board
   assert.equal(themeShown(curated("bark"), { extras: ["chalk"] }), false); assert.equal(themeShown(curated("bark"), { extras: ["wood"] }), true);

@@ -942,6 +942,20 @@ share no generator anyway — a band-passed scrape over a low resonant body agai
 in it — so one name would have been two engines wearing it. Eighteen packs now: twelve, the Secret pair's two, and
 two per Extra pair. `tools/sounds.js` reads `ORDER` and took them without a change.
 
+## The group with two pairs in it
+
+- **The order is the table's, not the order the words arrived.** `unlockedExtras()` answered with
+  `meta.device.extras` as stored, which is the order a device happened to be given the words in — so two devices
+  with both pairs would show the picker's Extra group, Settings → Sound's last four entries and the kits handed to
+  the Watch in two different orders. It now filters `EXTRA_PAIRS`' own keys instead. The record keeps what it was
+  given (nothing about the stored shape changed, COMPATIBILITY.md §5); only the reading is sorted. It could not have
+  come up in b262, which had one pair.
+- **Forget stays per pair, and it is now visibly per pair**: two chips, and forgetting one takes back only the slots
+  holding that pair's kits. The browser suite puts a kit from each pair in a slot, forgets one, and asserts the
+  other slot did not move.
+- **One group, not two.** Both pairs sit under the single **Extra** heading rather than one heading per pair: the
+  heading names a category, and a person who has two words has found more of the same thing, not a second thing.
+
 ## The two kits
 
 - **Names.** Bark and Char say the material and the state it is in, which is what a swatch has to do at fourteen

@@ -645,8 +645,14 @@ export const EXTRA_IDS = EXTRA.map(t => t.id);
 /** The pair id an Extra kit belongs to, or "" for any other theme. */
 export function isExtraTheme(t) { return (t && typeof t.extra === "string" && t.extra) || ""; }
 export function isExtraCode(code) { return isExtraTheme(parseCode(code)); }
-/** The pair ids this device has unlocked, read off the device record; never written here. */
-export function unlockedExtras(dev) { return Array.isArray(dev && dev.extras) ? dev.extras.filter(id => EXTRA_PAIRS[id]) : []; }
+/** The pair ids this device has unlocked, read off the device record; never written here.
+    1.12 b268: answered in EXTRA_PAIRS' own order rather than the device's, so the group, Settings → Sound and the
+    kits the phone hands the Watch are the same list on two devices that were given the same words in a different
+    order. The record keeps what it was given; only the reading is sorted. */
+export function unlockedExtras(dev) {
+  if (!Array.isArray(dev && dev.extras)) return [];
+  return Object.keys(EXTRA_PAIRS).filter(id => dev.extras.includes(id));
+}
 /** May the picker, Yours and the import field show this theme on this device? Open kits and themes you make,
     always; a Secret kit with the key; an Extra kit with its pair unlocked. */
 export function themeShown(t, dev) {

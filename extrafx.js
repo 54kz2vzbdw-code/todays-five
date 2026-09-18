@@ -15,6 +15,10 @@
 // to cover, and it does not move: nothing here animates, so a list left on screen all day costs the compositor
 // nothing and reduced motion has nothing to still. The dust, the haze and the ghost of what was erased are all
 // in the picture.
+//
+// 1.12 b268: the one exception, and it is a finale rather than a ground — Char puts a single wisp of smoke through
+// this layer when the list is finished (`smoke()`), moved by transform and opacity alone, once, and it takes itself
+// off when it has gone. At rest the layer is still one picture with no children, which is what the suite asserts.
 
 /** The module's own stylesheet, asked for with the page's build (COMPATIBILITY.md §6) and only once. */
 function linkCss(build) {
@@ -66,7 +70,7 @@ export function groundSvg(kit) {
       `</svg>`;
   }
   if (kit.field === "bark") {
-    // a pale plank: the grain running the long way, a cathedral figure off centre, one knot, and the sawn ends darker
+    // a pale plank: the grain running the long way, one knot low and right, and the sawn ends a shade darker
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice">` +
       `<defs><linearGradient id="plank" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${g1}"/><stop offset=".28" stop-color="${g0}"/><stop offset=".64" stop-color="${g0}"/><stop offset="1" stop-color="${g1}"/></linearGradient>` +
       `<linearGradient id="ends" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${g2}"/><stop offset=".12" stop-color="${g0}" stop-opacity="0"/><stop offset=".88" stop-color="${g0}" stop-opacity="0"/><stop offset="1" stop-color="${g2}"/></linearGradient>` +
@@ -277,6 +281,7 @@ function burn(fx, { w, h }, kit) {
 function smoke() {
   const host = document.getElementById("field");
   if (!host || host.hidden || !host.classList.contains("ground")) return;
+  try { if (matchMedia("(prefers-reduced-motion: reduce)").matches) return; } catch (e) { /* no matchMedia */ }
   const el = document.createElement("i"); el.className = "wisp";
   const off = () => el.remove();
   el.addEventListener("animationend", off);

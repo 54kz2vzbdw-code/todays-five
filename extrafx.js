@@ -25,9 +25,12 @@ function linkCss(build) {
 
 /* A speckle: turbulence quantised to solid-or-clear alpha, then filled with one grain colour, so the dust is that
    colour exactly where it lands and nothing where it does not. `cut` is the fraction of the field that is dust. */
-function speckle(id, f, cut, seed, colour) {
+function speckle(id, f, cut, seed, colour, srgb) {
   const table = Array.from({ length: 10 }, (_, i) => (i / 10 < 1 - cut ? 0 : 1)).join(" ");
-  return `<filter id="${id}" x="0" y="0" width="100%" height="100%" filterUnits="userSpaceOnUse"><feTurbulence type="fractalNoise" baseFrequency="${f}" numOctaves="3" seed="${seed}"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.9 0.9 0.9 0 -0.55"/><feComponentTransfer><feFuncA type="discrete" tableValues="${table}"/></feComponentTransfer><feComposite in2="SourceGraphic" operator="in"/><feFlood flood-color="${colour}"/><feComposite in2="SourceGraphic" operator="in" result="fill"/><feTurbulence type="fractalNoise" baseFrequency="${f}" numOctaves="3" seed="${seed}"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.9 0.9 0.9 0 -0.55"/><feComponentTransfer><feFuncA type="discrete" tableValues="${table}"/></feComponentTransfer><feComposite in="fill" operator="in"/></filter>`;
+  // 1.12 b268: `srgb` keeps the filter out of linearRGB. Near-black colours have almost no distinct levels there in
+  // eight bits, so a blur over them quantises into visible colour casts — measured on Char, where the soot came back
+  // olive. The two b262 grounds pass nothing and are byte for byte what they were.
+  return `<filter id="${id}" x="0" y="0" width="100%" height="100%" filterUnits="userSpaceOnUse"${srgb ? ' color-interpolation-filters="sRGB"' : ""}><feTurbulence type="fractalNoise" baseFrequency="${f}" numOctaves="3" seed="${seed}"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.9 0.9 0.9 0 -0.55"/><feComponentTransfer><feFuncA type="discrete" tableValues="${table}"/></feComponentTransfer><feComposite in2="SourceGraphic" operator="in"/><feFlood flood-color="${colour}"/><feComposite in2="SourceGraphic" operator="in" result="fill"/><feTurbulence type="fractalNoise" baseFrequency="${f}" numOctaves="3" seed="${seed}"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.9 0.9 0.9 0 -0.55"/><feComponentTransfer><feFuncA type="discrete" tableValues="${table}"/></feComponentTransfer><feComposite in="fill" operator="in"/></filter>`;
 }
 
 /* The long grain: one wavy line per entry, spread down the picture and running the whole width, each with its own
@@ -67,17 +70,16 @@ export function groundSvg(kit) {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice">` +
       `<defs><linearGradient id="plank" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${g1}"/><stop offset=".28" stop-color="${g0}"/><stop offset=".64" stop-color="${g0}"/><stop offset="1" stop-color="${g1}"/></linearGradient>` +
       `<linearGradient id="ends" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${g2}"/><stop offset=".12" stop-color="${g0}" stop-opacity="0"/><stop offset=".88" stop-color="${g0}" stop-opacity="0"/><stop offset="1" stop-color="${g2}"/></linearGradient>` +
-      `<filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter>` +
-      `<filter id="softer" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="26"/></filter></defs>` +
+      `<filter id="soft" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="9"/></filter>` +
+      `<filter id="softer" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="26"/></filter></defs>` +
       `<rect width="${W}" height="${H}" fill="url(#plank)"/>` +
-      // the long grain: fine lines the whole width, the tight ones in the figure, the open ones out at the edges
-      grainLines(W, H, [g2, g3, g2, g1, g3, g2, g1, g2, g3, g1, g2, g3, g1, g2, g3, g1, g2, g1, g3, g2, g1, g2]) +
-      // the cathedral: three nested arcs where the saw crossed a branch, and the knot it came from
-      `<g fill="none" filter="url(#soft)"><path d="M 300 980 C 560 700, 700 460, 1010 120" stroke="${g3}" stroke-width="7" opacity=".62"/>` +
-      `<path d="M 380 980 C 630 710, 760 470, 1050 140" stroke="${g3}" stroke-width="5" opacity=".5"/>` +
-      `<path d="M 470 980 C 700 720, 820 480, 1092 160" stroke="${g2}" stroke-width="4" opacity=".55"/></g>` +
-      `<g filter="url(#soft)"><ellipse cx="1218" cy="352" rx="46" ry="27" fill="${g3}" opacity=".72"/>` +
-      `<ellipse cx="1218" cy="352" rx="26" ry="14" fill="${g2}" opacity=".85"/></g>` +
+      // the long grain: fine lines the whole width, tight where the figure gathers, open out at the edges
+      grainLines(W, H, [g2, g3, g2, g1, g3, g2, g1, g2, g3, g1, g2, g3, g1, g2, g3, g1, g2, g1, g3, g2, g1, g2, g3, g1, g2, g3, g1, g2]) +
+      // the knot, low and out of the way of the words, with the grain closing round it the way it does
+      `<g fill="none"><ellipse cx="1310" cy="812" rx="92" ry="34" stroke="${g2}" stroke-width="5" opacity=".42"/>` +
+      `<ellipse cx="1310" cy="812" rx="62" ry="23" stroke="${g3}" stroke-width="5" opacity=".5"/>` +
+      `<ellipse cx="1310" cy="812" rx="36" ry="13" stroke="${g3}" stroke-width="6" opacity=".62"/></g>` +
+      `<ellipse cx="1310" cy="812" rx="17" ry="7" fill="${g3}" opacity=".7"/>` +
       `<rect width="${W}" height="${H}" fill="url(#ends)" opacity=".75" filter="url(#softer)"/>` +
       `</svg>`;
   }
@@ -86,16 +88,17 @@ export function groundSvg(kit) {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice">` +
       `<defs><linearGradient id="plank" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${g1}"/><stop offset=".34" stop-color="${g2}"/><stop offset=".78" stop-color="${g1}"/><stop offset="1" stop-color="${g0}"/></linearGradient>` +
       `<radialGradient id="soot" cx=".5" cy=".5" r=".78"><stop offset=".4" stop-color="${g0}" stop-opacity="0"/><stop offset="1" stop-color="${g0}"/></radialGradient>` +
-      `<filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="11"/></filter>` +
-      speckle("ash", 0.42, 0.1, 23, g3) + `</defs>` +
+      `<filter id="soft" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="88"/></filter>` +
+      speckle("ash", 1.4, 0.07, 23, g3, true) + `</defs>` +
       `<rect width="${W}" height="${H}" fill="url(#plank)"/>` +
-      grainLines(W, H, [g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2], 0.34) +
-      // where the fire took hold: soft blotches of the deepest char, and the ash caught in the grain
-      `<g filter="url(#soft)"><ellipse cx="420" cy="640" rx="330" ry="150" fill="${g0}" opacity=".7"/>` +
-      `<ellipse cx="1180" cy="300" rx="280" ry="130" fill="${g0}" opacity=".62"/>` +
-      `<ellipse cx="900" cy="850" rx="240" ry="100" fill="${g0}" opacity=".5"/></g>` +
-      `<rect width="${W}" height="${H}" filter="url(#ash)" opacity=".3"/>` +
-      `<rect width="${W}" height="${H}" fill="url(#soot)" opacity=".85"/>` +
+      // where the fire took hold: blotches of the deepest char, blurred past any edge of their own
+      `<g filter="url(#soft)"><ellipse cx="420" cy="640" rx="300" ry="140" fill="${g0}" opacity=".85"/>` +
+      `<ellipse cx="1180" cy="300" rx="260" ry="120" fill="${g0}" opacity=".8"/>` +
+      `<ellipse cx="900" cy="880" rx="230" ry="95" fill="${g0}" opacity=".7"/></g>` +
+      // the grain the fire did not take: still there, and only just
+      grainLines(W, H, [g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2], 0.85) +
+      `<rect width="${W}" height="${H}" filter="url(#ash)" opacity=".22"/>` +    // ash caught in it
+      `<rect width="${W}" height="${H}" fill="url(#soot)" opacity=".8"/>` +
       `</svg>`;
   }
   // the board: slate under a haze of dust that gathers low, the ghost of a wide erase across the middle, dust motes
@@ -202,7 +205,7 @@ function marker(fx, { w, h }, kit) {
     end and is set down (the knock is the pack's). The line then carves itself in (extrafx.css). */
 function carve(fx, { w, h }, kit) {
   const pal = kit.confetti || ["#FBF3E2"], dark = kit.colors.boxCheck || "#5A4432", core = pal[0], lipHi = pal[3] || pal[0];
-  const steel = kit.colors.accent || "#3F6076";
+  const steel = kit.colors.accent || "#3F6076", handle = kit.colors.dim || "#604C39";
   const T = 1.7, y = h * 0.55, x0 = w * 0.16, x1 = w * 0.86, ch = Math.max(10, Math.min(h * 0.035, 30));
   const at = t => { const p = Math.min(1, Math.max(0, t / T)), e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; return x0 + (x1 - x0) * e; };
   fx.scene((g, t) => {
@@ -212,14 +215,22 @@ function carve(fx, { w, h }, kit) {
     g.save(); g.globalAlpha = fade;
     // the channel cut so far: the dark lip above, the fresh core, the light lip below
     const grd = g.createLinearGradient(0, y - ch / 2, 0, y + ch / 2);
-    grd.addColorStop(0, dark); grd.addColorStop(0.24, core); grd.addColorStop(0.78, core); grd.addColorStop(1, lipHi);
+    grd.addColorStop(0, dark); grd.addColorStop(0.16, dark); grd.addColorStop(0.34, core); grd.addColorStop(0.8, core); grd.addColorStop(0.86, lipHi); grd.addColorStop(1, lipHi);
     g.fillStyle = grd; roundRect(g, x0, y - ch / 2, Math.max(0, x - x0), ch, ch / 2); g.fill();
-    if (lift < 1) {                                                      // the blade: a steel wedge on a dark handle
-      const bl = Math.max(26, Math.min(w * 0.05, 64)), up = ch * 0.5 + bl * 0.1 + lift * h * 0.14;
-      g.translate(x, y - up); g.globalAlpha = fade * (1 - lift * 0.8);
-      g.fillStyle = steel; g.beginPath(); g.moveTo(0, up - ch * 0.1); g.lineTo(-bl * 0.34, -bl * 0.75); g.lineTo(bl * 0.34, -bl * 0.75); g.closePath(); g.fill();
-      g.fillStyle = dark; roundRect(g, -bl * 0.3, -bl * 1.85, bl * 0.6, bl * 1.15, bl * 0.18); g.fill();
-      g.fillStyle = lipHi; g.globalAlpha = fade * 0.5 * (1 - lift); g.fillRect(-bl * 0.05, -bl * 0.72, bl * 0.06, up - ch * 0.1 + bl * 0.72);
+    if (lift < 1) {
+      // the chisel, held the way a hand holds one: a bevelled steel blade, a collar, a turned handle, all on one axis
+      const s0 = Math.max(30, Math.min(w * 0.055, 76)), up = ch * 0.18 + lift * h * 0.16;
+      g.translate(x, y - up); g.rotate(-0.42); g.globalAlpha = fade * (1 - lift * 0.75);
+      g.fillStyle = steel; g.beginPath();                                   // the blade: a long wedge to a flat edge
+      g.moveTo(-s0 * 0.16, 0); g.lineTo(s0 * 0.16, 0); g.lineTo(s0 * 0.20, -s0 * 1.05); g.lineTo(-s0 * 0.20, -s0 * 1.05); g.closePath(); g.fill();
+      g.fillStyle = lipHi; g.globalAlpha = fade * 0.42 * (1 - lift);        // the bevel catching the light
+      g.beginPath(); g.moveTo(-s0 * 0.02, 0); g.lineTo(s0 * 0.12, 0); g.lineTo(s0 * 0.15, -s0 * 1.0); g.lineTo(s0 * 0.01, -s0 * 1.0); g.closePath(); g.fill();
+      g.globalAlpha = fade * (1 - lift * 0.75);
+      g.fillStyle = dark; roundRect(g, -s0 * 0.26, -s0 * 1.22, s0 * 0.52, s0 * 0.2, s0 * 0.05); g.fill();   // the collar
+      g.fillStyle = handle; g.beginPath();                                  // the handle, wider at the shoulder
+      g.moveTo(-s0 * 0.22, -s0 * 1.2); g.lineTo(s0 * 0.22, -s0 * 1.2); g.lineTo(s0 * 0.30, -s0 * 1.9); g.lineTo(s0 * 0.20, -s0 * 2.45);
+      g.lineTo(-s0 * 0.20, -s0 * 2.45); g.lineTo(-s0 * 0.30, -s0 * 1.9); g.closePath(); g.fill();
+      g.fillStyle = dark; g.globalAlpha = fade * 0.32 * (1 - lift); g.fillRect(-s0 * 0.30, -s0 * 1.98, s0 * 0.6, s0 * 0.07);
     }
     g.restore();
     return true;
@@ -232,7 +243,9 @@ function carve(fx, { w, h }, kit) {
     smoulders, one wisp of smoke goes up through the ground's own layer (compositor-only, once), and the line
     burns itself in (extrafx.css). */
 function burn(fx, { w, h }, kit) {
-  const hot = kit.colors.strikeHot || "#FF7A18", cool = kit.colors.strikeBg || "#554A41";
+  // the ember's hex comes from the kit's own confetti (the sparks), not from --strike-hot: that token is a gradient,
+  // because the strike wants shading across its height and the canvas wants three numbers
+  const hot = (kit.confetti && kit.confetti[0]) || "#FF7A18", cool = kit.colors.strikeBg || "#554A41";
   const [hr, hg, hb] = [1, 3, 5].map(i => parseInt(hot.slice(i, i + 2), 16));
   const T = 1.8, y = h * 0.55, x0 = w * 0.14, x1 = w * 0.88, lw = Math.max(7, Math.min(h * 0.026, 22));
   const at = t => x0 + (x1 - x0) * Math.min(1, Math.max(0, t / T));

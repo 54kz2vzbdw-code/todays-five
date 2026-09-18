@@ -21,12 +21,22 @@ html[data-theme="chalkboard"] #finale.on span,html[data-theme="whiteboard"] #fin
 @keyframes tf-write{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
 @media (prefers-reduced-motion:reduce){html[data-theme="chalkboard"] #finale.on span,html[data-theme="whiteboard"] #finale.on span{animation:none}}
 /* ---------------- 1.12 b268: the wood pair ---------------- */
-/* A strike that is born hot and cools once. It is a **transition**, not an animation: layoutStrikes() rebuilds the
-   overlay on every relayout — a resize, the fonts landing — and an animation would re-fire the burn each time, while
-   `nofx` only silences transitions. A transition fires on the state change alone, and a row rendered already struck
-   never crosses it. Every fallback is the kit's own colour, so a kit that names none of the three is untouched. */
-.ink{background:var(--strike-hot,var(--strike-bg));box-shadow:var(--strike-hot-shadow,var(--strike-shadow))}
-.row.done .ink{background:var(--strike-bg);box-shadow:var(--strike-shadow);transition:transform .22s cubic-bezier(.16,1,.3,1) var(--d,0s),opacity .22s ease,background-color var(--strike-cool,0s) ease-out var(--d,0s),box-shadow var(--strike-cool,0s) ease-out var(--d,0s)}
+/* A strike that is born hot and cools once, and the one thing that made it hard: **the strike overlay does not
+   survive the check-off**. `layoutStrikes()` rebuilds every `.ink` for a row whose content changed, and a check-off
+   changes it, so the rebuild lands about 400 ms in (measured) and a transition or an animation on `.ink` is cut off
+   there and starts again from cold. What does survive is `.lines`, the container — its children are replaced, it is
+   not — so the heat is a number that lives on `.lines` and a layer on the strike that reads it.
+   `--burn` goes 1 → 0 over `--strike-cool` on the row being struck; `.ink::after` is that much ember over the char.
+   A rebuilt `.ink` reads the value mid-fall and carries on. A row rendered already struck never crosses the
+   boundary, so nothing fires on a reload, a resize or the fonts landing. Where `@property` is not implemented the
+   number is not interpolable, the line is simply born cooled, and everything else is unchanged.
+   For the 20 kits that name none of these, `--burn` is a number nothing reads: the layer is transparent with no
+   shadow, and `--strike-cool` defaults to 0s. */
+@property --burn{syntax:"<number>";inherits:true;initial-value:0}
+.lines{--burn:1}
+.row.done .lines{--burn:0;transition:--burn var(--strike-cool,0s) ease-out}
+.ink::after{content:"";position:absolute;inset:0;border-radius:inherit;opacity:0;background:var(--strike-hot,transparent);box-shadow:var(--strike-hot-shadow,none)}
+.row.done .ink::after{opacity:var(--burn,0)}
 /* the carve: a one-pixel highlight over a shadow, so the words sit in the plank rather than on it. The floor is
    still measured text on ground — the shadow is a pixel of relief, never what makes a word readable. */
 .row .tx,#finale.on span{text-shadow:var(--task-shadow,none)}
@@ -38,10 +48,8 @@ html[data-theme="bark"] #finale.on span{animation:tf-write 1.2s steps(30,end) .4
 html[data-theme="char"] #finale.on span{animation:tf-write 1.2s steps(30,end) .45s both,tf-scorch 1.9s ease-out .45s both}
 @keyframes tf-scorch{0%{text-shadow:0 0 12px rgba(255,122,24,.9),0 0 3px rgba(255,224,170,.9)}100%{text-shadow:var(--task-shadow,none)}}
 @media (prefers-reduced-motion:reduce){
-  /* the strike is born cooled, and the done row's own transition comes back to the eighth of a second every other
-     kit gets (the rule above is more specific than the one 1.12 b262 wrote, so it has to be said again here) */
-  .ink{background:var(--strike-bg);box-shadow:var(--strike-shadow)}
-  .ink,.row.done .ink{transition-duration:.08s}
+  /* the line is born cooled: there is no heat to watch fall */
+  .row.done .lines{--burn:0;transition:none}
   #field .wisp{display:none}
   html[data-theme="bark"] #finale.on span,html[data-theme="char"] #finale.on span{animation:none}
 }

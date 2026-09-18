@@ -490,7 +490,7 @@ test("1.12 b262: the words are keys, not codes: trimmed, case-insensitive, each 
   assert.ok(/--strike-mask:url\("data:image\/svg\+xml,/.test(cssText(EXTRA[1])), "the mask rides in the rule as a data: URI");
   // 1.12 b268: the three the cooling strike needs, and the carve's, written only where they are named
   const bark = cssText(curated("bark")), char = cssText(curated("char"));
-  assert.ok(/--strike-hot:#FF7A18/.test(char) && /--strike-cool:1\.5s/.test(char) && /--strike-hot-shadow:/.test(char), "Char's strike is born hot and told how long to cool");
+  assert.ok(/--strike-hot:linear-gradient/.test(char) && /--strike-cool:1\.5s/.test(char) && /--strike-hot-shadow:/.test(char), "Char's strike is born hot and told how long to cool");
   assert.ok(!/--strike-hot|--strike-cool/.test(bark) && !/--strike-hot|--strike-cool/.test(cssText(EXTRA[0])), "and no other kit carries them");
   assert.ok(/--task-shadow:/.test(bark) && /--task-shadow:/.test(char) && !/--task-shadow/.test(cssText(curated("paper"))), "the carve is a token too, and only the wood names it");
 });

@@ -184,11 +184,11 @@ await test("the finale's vibration keeps the volley's rhythm — read out of fx.
   assert.ok(lengths[lengths.length - 1] > lengths[0], "and it is the strongest of them");
 });
 
-await test("1.12 b262: the Extra category's two engines live in a module of their own, fetched only when one is asked for, and never with the Secret pair's", async () => {
-  assert.deepEqual([...EXTRA_ENGINES].sort(), ["chalk", "marker"]);
-  assert.deepEqual(EXTRA.ORDER, ["chalk", "marker"]);
+await test("1.12 b262: the Extra category's engines live in a module of their own, fetched only when one is asked for, and never with the Secret pair's", async () => {
+  assert.deepEqual([...EXTRA_ENGINES].sort(), ["burn", "carve", "chalk", "marker"]); // 1.12 b268: the wood pair's two
+  assert.deepEqual(EXTRA.ORDER, ["chalk", "marker", "carve", "burn"], "a pair at a time, in the order they shipped");
   for (const id of EXTRA.ORDER) assert.equal(typeof EXTRA.NAMES[id], "string", id + " has a name");
-  assert.ok(!PACK_ORDER.includes("chalk") && !PACK_ORDER.includes("marker"), "and never in the twelve");
+  for (const id of EXTRA.ORDER) assert.ok(!PACK_ORDER.includes(id), id + " is never in the twelve, so never in a T2 code");
   const plain = make(); plain.prime(); await tick(); plain.check(0); plain.uncheck(); plain.finish();
   assert.equal(plain.extraLoads(), 0, "no kit that carries one is on: the module is never fetched"); assert.equal(plain.secretLoads(), 0);
   const s = make({ kit: () => ({ engine: "chalk" }) });

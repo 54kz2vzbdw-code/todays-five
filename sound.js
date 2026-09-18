@@ -13,7 +13,7 @@ import { BUILD } from "./version.js"; // 1.4: the packs a page loads later come 
 /** The engines that live in packs-secret.js rather than packs.js (1.6). */
 export const SECRET_ENGINES = new Set(["sparkle", "party"]);
 /** The engines that live in packs-extra.js (1.12 b262: the Extra category). */
-export const EXTRA_ENGINES = new Set(["chalk", "marker"]);
+export const EXTRA_ENGINES = new Set(["chalk", "marker", "carve", "burn"]); // 1.12 b268: the wood pair's two
 
 /* 1.12: the finale's vibration, on the volley's own rhythm (fx.js `volley()`): seven bursts at i × 65 ms, the
    centre burst at 210 ms inside the fourth, and the chord at 700 ms. navigator.vibrate alternates on/off, so each

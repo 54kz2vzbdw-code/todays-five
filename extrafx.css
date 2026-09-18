@@ -20,3 +20,28 @@
 html[data-theme="chalkboard"] #finale.on span,html[data-theme="whiteboard"] #finale.on span{animation:tf-write 1.1s steps(30,end) .45s both}
 @keyframes tf-write{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
 @media (prefers-reduced-motion:reduce){html[data-theme="chalkboard"] #finale.on span,html[data-theme="whiteboard"] #finale.on span{animation:none}}
+/* ---------------- 1.12 b268: the wood pair ---------------- */
+/* A strike that is born hot and cools once. It is a **transition**, not an animation: layoutStrikes() rebuilds the
+   overlay on every relayout — a resize, the fonts landing — and an animation would re-fire the burn each time, while
+   `nofx` only silences transitions. A transition fires on the state change alone, and a row rendered already struck
+   never crosses it. Every fallback is the kit's own colour, so a kit that names none of the three is untouched. */
+.ink{background:var(--strike-hot,var(--strike-bg));box-shadow:var(--strike-hot-shadow,var(--strike-shadow))}
+.row.done .ink{background:var(--strike-bg);box-shadow:var(--strike-shadow);transition:transform .22s cubic-bezier(.16,1,.3,1) var(--d,0s),opacity .22s ease,background-color var(--strike-cool,0s) ease-out var(--d,0s),box-shadow var(--strike-cool,0s) ease-out var(--d,0s)}
+/* the carve: a one-pixel highlight over a shadow, so the words sit in the plank rather than on it. The floor is
+   still measured text on ground — the shadow is a pixel of relief, never what makes a word readable. */
+.row .tx,#finale.on span{text-shadow:var(--task-shadow,none)}
+/* one wisp of smoke, once, through the ground's own layer: a still gradient, moved by transform and opacity only */
+#field .wisp{position:absolute;inset:0;background:radial-gradient(21% 25% at 50% 70%,rgba(232,222,210,.34),rgba(232,222,210,0) 72%);will-change:transform,opacity;animation:tf-wisp 3.1s ease-out both}
+@keyframes tf-wisp{0%{transform:translate3d(0,9%,0) scale(.55);opacity:0}16%{opacity:1}100%{transform:translate3d(5%,-52%,0) scale(1.55);opacity:0}}
+/* the finale line: carved into the plank letter by letter, or burned in with the scorch cooling behind it */
+html[data-theme="bark"] #finale.on span{animation:tf-write 1.2s steps(30,end) .45s both}
+html[data-theme="char"] #finale.on span{animation:tf-write 1.2s steps(30,end) .45s both,tf-scorch 1.9s ease-out .45s both}
+@keyframes tf-scorch{0%{text-shadow:0 0 12px rgba(255,122,24,.9),0 0 3px rgba(255,224,170,.9)}100%{text-shadow:var(--task-shadow,none)}}
+@media (prefers-reduced-motion:reduce){
+  /* the strike is born cooled, and the done row's own transition comes back to the eighth of a second every other
+     kit gets (the rule above is more specific than the one 1.12 b262 wrote, so it has to be said again here) */
+  .ink{background:var(--strike-bg);box-shadow:var(--strike-shadow)}
+  .ink,.row.done .ink{transition-duration:.08s}
+  #field .wisp{display:none}
+  html[data-theme="bark"] #finale.on span,html[data-theme="char"] #finale.on span{animation:none}
+}

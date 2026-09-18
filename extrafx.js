@@ -30,6 +30,21 @@ function speckle(id, f, cut, seed, colour) {
   return `<filter id="${id}" x="0" y="0" width="100%" height="100%" filterUnits="userSpaceOnUse"><feTurbulence type="fractalNoise" baseFrequency="${f}" numOctaves="3" seed="${seed}"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.9 0.9 0.9 0 -0.55"/><feComponentTransfer><feFuncA type="discrete" tableValues="${table}"/></feComponentTransfer><feComposite in2="SourceGraphic" operator="in"/><feFlood flood-color="${colour}"/><feComposite in2="SourceGraphic" operator="in" result="fill"/><feTurbulence type="fractalNoise" baseFrequency="${f}" numOctaves="3" seed="${seed}"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.9 0.9 0.9 0 -0.55"/><feComponentTransfer><feFuncA type="discrete" tableValues="${table}"/></feComponentTransfer><feComposite in="fill" operator="in"/></filter>`;
 }
 
+/* The long grain: one wavy line per entry, spread down the picture and running the whole width, each with its own
+   drift and weight. Deterministic — the same plank every time — and every stroke is one of the kit's grain colours,
+   so the picture stays inside the range the grain rule holds it to. */
+function grainLines(W, H, colours, alpha = 1) {
+  let out = "";
+  for (let i = 0; i < colours.length; i++) {
+    const y = H * (0.02 + 0.96 * (i + 0.5) / colours.length);
+    const k = (i * 2654435761) % 1000 / 1000;                 // a fixed wobble per line, no Math.random
+    const a1 = H * 0.035 * (0.3 + k), a2 = H * 0.022 * (1 - k);
+    const w = 1 + (i % 4) * 1.6 + k * 2.2, op = (0.26 + 0.42 * ((i * 7) % 5) / 4) * alpha;
+    out += `<path d="M -40 ${(y + a1).toFixed(1)} C ${W * 0.22} ${(y - a2).toFixed(1)}, ${W * 0.44} ${(y + a2 * 1.6).toFixed(1)}, ${W * 0.62} ${y.toFixed(1)} S ${W * 0.88} ${(y - a1).toFixed(1)}, ${W + 40} ${(y + a2).toFixed(1)}" fill="none" stroke="${colours[i]}" stroke-width="${w.toFixed(1)}" stroke-linecap="round" opacity="${op.toFixed(2)}"/>`;
+  }
+  return out;
+}
+
 /** The ground for a kit, as an SVG document string. Exported so tools/grain.mjs and the browser suite rasterise
     exactly what the page shows. Every colour in it is one of `kit.grain`. */
 export function groundSvg(kit) {
@@ -45,6 +60,42 @@ export function groundSvg(kit) {
       `<rect width="${W}" height="${H}" fill="url(#sheen)"/><rect width="${W}" height="${H}" fill="url(#vig)" opacity=".7"/>` +
       `<path d="M 260 720 C 520 560, 760 640, 1040 470 S 1380 380, 1500 300" fill="none" stroke="${g3}" stroke-width="150" stroke-linecap="round" opacity=".55" filter="url(#soft)"/>` +
       `<path d="M 90 250 C 300 190, 520 330, 720 250 S 980 150, 1180 210" fill="none" stroke="${g2}" stroke-width="70" stroke-linecap="round" opacity=".38" filter="url(#soft)"/>` +
+      `</svg>`;
+  }
+  if (kit.field === "bark") {
+    // a pale plank: the grain running the long way, a cathedral figure off centre, one knot, and the sawn ends darker
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice">` +
+      `<defs><linearGradient id="plank" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${g1}"/><stop offset=".28" stop-color="${g0}"/><stop offset=".64" stop-color="${g0}"/><stop offset="1" stop-color="${g1}"/></linearGradient>` +
+      `<linearGradient id="ends" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${g2}"/><stop offset=".12" stop-color="${g0}" stop-opacity="0"/><stop offset=".88" stop-color="${g0}" stop-opacity="0"/><stop offset="1" stop-color="${g2}"/></linearGradient>` +
+      `<filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter>` +
+      `<filter id="softer" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="26"/></filter></defs>` +
+      `<rect width="${W}" height="${H}" fill="url(#plank)"/>` +
+      // the long grain: fine lines the whole width, the tight ones in the figure, the open ones out at the edges
+      grainLines(W, H, [g2, g3, g2, g1, g3, g2, g1, g2, g3, g1, g2, g3, g1, g2, g3, g1, g2, g1, g3, g2, g1, g2]) +
+      // the cathedral: three nested arcs where the saw crossed a branch, and the knot it came from
+      `<g fill="none" filter="url(#soft)"><path d="M 300 980 C 560 700, 700 460, 1010 120" stroke="${g3}" stroke-width="7" opacity=".62"/>` +
+      `<path d="M 380 980 C 630 710, 760 470, 1050 140" stroke="${g3}" stroke-width="5" opacity=".5"/>` +
+      `<path d="M 470 980 C 700 720, 820 480, 1092 160" stroke="${g2}" stroke-width="4" opacity=".55"/></g>` +
+      `<g filter="url(#soft)"><ellipse cx="1218" cy="352" rx="46" ry="27" fill="${g3}" opacity=".72"/>` +
+      `<ellipse cx="1218" cy="352" rx="26" ry="14" fill="${g2}" opacity=".85"/></g>` +
+      `<rect width="${W}" height="${H}" fill="url(#ends)" opacity=".75" filter="url(#softer)"/>` +
+      `</svg>`;
+  }
+  if (kit.field === "char") {
+    // the same plank after the fire: the grain only just there, soot gathered in the low corners, the char mottled
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice">` +
+      `<defs><linearGradient id="plank" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${g1}"/><stop offset=".34" stop-color="${g2}"/><stop offset=".78" stop-color="${g1}"/><stop offset="1" stop-color="${g0}"/></linearGradient>` +
+      `<radialGradient id="soot" cx=".5" cy=".5" r=".78"><stop offset=".4" stop-color="${g0}" stop-opacity="0"/><stop offset="1" stop-color="${g0}"/></radialGradient>` +
+      `<filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="11"/></filter>` +
+      speckle("ash", 0.42, 0.1, 23, g3) + `</defs>` +
+      `<rect width="${W}" height="${H}" fill="url(#plank)"/>` +
+      grainLines(W, H, [g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2, g3, g2], 0.34) +
+      // where the fire took hold: soft blotches of the deepest char, and the ash caught in the grain
+      `<g filter="url(#soft)"><ellipse cx="420" cy="640" rx="330" ry="150" fill="${g0}" opacity=".7"/>` +
+      `<ellipse cx="1180" cy="300" rx="280" ry="130" fill="${g0}" opacity=".62"/>` +
+      `<ellipse cx="900" cy="850" rx="240" ry="100" fill="${g0}" opacity=".5"/></g>` +
+      `<rect width="${W}" height="${H}" filter="url(#ash)" opacity=".3"/>` +
+      `<rect width="${W}" height="${H}" fill="url(#soot)" opacity=".85"/>` +
       `</svg>`;
   }
   // the board: slate under a haze of dust that gathers low, the ghost of a wide erase across the middle, dust motes
@@ -146,6 +197,80 @@ function marker(fx, { w, h }, kit) {
   setTimeout(() => fx.burst(C[0], C[1], 26, 10, 2.2), DRAW * 1000);
 }
 
+/** Bark: a gouge is driven across the plank left to right, cutting a channel of fresh wood behind the blade —
+    a dark edge above, a pale core, a light edge below — and throwing shavings as it goes. The blade lifts at the
+    end and is set down (the knock is the pack's). The line then carves itself in (extrafx.css). */
+function carve(fx, { w, h }, kit) {
+  const pal = kit.confetti || ["#FBF3E2"], dark = kit.colors.boxCheck || "#5A4432", core = pal[0], lipHi = pal[3] || pal[0];
+  const steel = kit.colors.accent || "#3F6076";
+  const T = 1.7, y = h * 0.55, x0 = w * 0.16, x1 = w * 0.86, ch = Math.max(10, Math.min(h * 0.035, 30));
+  const at = t => { const p = Math.min(1, Math.max(0, t / T)), e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; return x0 + (x1 - x0) * e; };
+  fx.scene((g, t) => {
+    if (t > T + 1.2) return false;
+    const fade = t > T + 0.5 ? Math.max(0, 1 - (t - T - 0.5) / 0.7) : 1;
+    const x = at(t), lift = t > T ? Math.min(1, (t - T) / 0.35) : 0;
+    g.save(); g.globalAlpha = fade;
+    // the channel cut so far: the dark lip above, the fresh core, the light lip below
+    const grd = g.createLinearGradient(0, y - ch / 2, 0, y + ch / 2);
+    grd.addColorStop(0, dark); grd.addColorStop(0.24, core); grd.addColorStop(0.78, core); grd.addColorStop(1, lipHi);
+    g.fillStyle = grd; roundRect(g, x0, y - ch / 2, Math.max(0, x - x0), ch, ch / 2); g.fill();
+    if (lift < 1) {                                                      // the blade: a steel wedge on a dark handle
+      const bl = Math.max(26, Math.min(w * 0.05, 64)), up = ch * 0.5 + bl * 0.1 + lift * h * 0.14;
+      g.translate(x, y - up); g.globalAlpha = fade * (1 - lift * 0.8);
+      g.fillStyle = steel; g.beginPath(); g.moveTo(0, up - ch * 0.1); g.lineTo(-bl * 0.34, -bl * 0.75); g.lineTo(bl * 0.34, -bl * 0.75); g.closePath(); g.fill();
+      g.fillStyle = dark; roundRect(g, -bl * 0.3, -bl * 1.85, bl * 0.6, bl * 1.15, bl * 0.18); g.fill();
+      g.fillStyle = lipHi; g.globalAlpha = fade * 0.5 * (1 - lift); g.fillRect(-bl * 0.05, -bl * 0.72, bl * 0.06, up - ch * 0.1 + bl * 0.72);
+    }
+    g.restore();
+    return true;
+  });
+  for (let i = 1; i <= 6; i++) setTimeout(() => fx.burst(at((i / 6) * T), y - ch * 0.6, 9, 6, 1.5), (i / 6) * T * 1000 - 60);  // the shavings curling off
+  setTimeout(() => fx.burst(x1, y - ch, 34, 9, 3.0), T * 1000 + 40);
+}
+
+/** Char: an ember runs the length of the last line, leaving char behind it and throwing sparks; it dies down and
+    smoulders, one wisp of smoke goes up through the ground's own layer (compositor-only, once), and the line
+    burns itself in (extrafx.css). */
+function burn(fx, { w, h }, kit) {
+  const hot = kit.colors.strikeHot || "#FF7A18", cool = kit.colors.strikeBg || "#554A41";
+  const [hr, hg, hb] = [1, 3, 5].map(i => parseInt(hot.slice(i, i + 2), 16));
+  const T = 1.8, y = h * 0.55, x0 = w * 0.14, x1 = w * 0.88, lw = Math.max(7, Math.min(h * 0.026, 22));
+  const at = t => x0 + (x1 - x0) * Math.min(1, Math.max(0, t / T));
+  fx.scene((g, t) => {
+    if (t > T + 2.0) return false;
+    const x = at(t), after = Math.max(0, t - T);
+    const glow = after ? Math.max(0, 1 - after / 1.6) : 1;                       // it dies down rather than going out
+    g.save();
+    g.fillStyle = cool; roundRect(g, x0, y - lw / 2, Math.max(0, x - x0), lw, lw / 2); g.fill();   // the char left behind
+    // the last hand's length still smouldering, brightest at the head
+    const heat = g.createLinearGradient(Math.max(x0, x - w * 0.22), 0, x, 0);
+    heat.addColorStop(0, `rgba(${hr},${hg},${hb},0)`); heat.addColorStop(1, `rgba(${hr},${hg},${hb},${0.9 * glow})`);
+    g.fillStyle = heat; roundRect(g, Math.max(x0, x - w * 0.22), y - lw / 2, Math.min(x - x0, w * 0.22), lw, lw / 2); g.fill();
+    if (t < T) {                                                                 // the ember itself
+      const r = lw * 2.6, rg = g.createRadialGradient(x, y, 0, x, y, r);
+      rg.addColorStop(0, "rgba(255,244,214,.95)"); rg.addColorStop(0.35, `rgba(${hr},${hg},${hb},.7)`); rg.addColorStop(1, `rgba(${hr},${hg},${hb},0)`);
+      g.fillStyle = rg; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill();
+    }
+    g.restore();
+    return true;
+  });
+  for (let i = 1; i <= 7; i++) setTimeout(() => fx.burst(at((i / 7) * T), y - lw, 7, 7, 1.2), (i / 7) * T * 1000 - 50);   // the sparks
+  setTimeout(() => { fx.burst((x0 + x1) / 2, y - lw, 16, 5, 2.6); smoke(); }, T * 1000 + 120);
+}
+
+/** One wisp of smoke, through the ground's own layer: a still gradient moved by transform and opacity alone
+    (extrafx.css, tf-wisp), removed when it has gone. Nothing under reduced motion — the sheet hides it, and the
+    element takes itself off either way, so the layer is empty again at rest. */
+function smoke() {
+  const host = document.getElementById("field");
+  if (!host || host.hidden || !host.classList.contains("ground")) return;
+  const el = document.createElement("i"); el.className = "wisp";
+  const off = () => el.remove();
+  el.addEventListener("animationend", off);
+  setTimeout(off, 5000);                                                   // and a belt: an animation that never runs still goes
+  host.appendChild(el);
+}
+
 function roundRect(g, x, y, w, h, r) {
   if (g.roundRect) { g.beginPath(); g.roundRect(x, y, w, h, r); return; }
   g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
@@ -157,5 +282,7 @@ export function finale(kind, fx, opts = {}) {
   const kit = opts.kit || { colors: { accent: "#2457C5" }, grain: [] };
   if (kind === "eraser") { eraser(fx, geom, kit); return true; }
   if (kind === "marker") { marker(fx, geom, kit); return true; }
+  if (kind === "carve") { carve(fx, geom, kit); return true; }   // 1.12 b268
+  if (kind === "burn") { burn(fx, geom, kit); return true; }
   return false;
 }

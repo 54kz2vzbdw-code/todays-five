@@ -615,7 +615,7 @@ export function openHistory(docArg, title) {
 const PACKS = [["", "Theme's pick"], ["knock", "Knock"], ["bell", "Bell"], ["blip", "Blip"], ["typewriter", "Typewriter"], ["marble", "Marble"], ["pop", "Pop"], ["kalimba", "Kalimba"], ["pencil", "Pencil"], ["whistle", "Whistle"], ["bongo", "Bongo"], ["cork", "Cork"], ["arcade", "Arcade"]]; // 1.5: twelve, mirrored in packs.js and theme.js
 const SECRET_PACKS = [["sparkle", "Sparkle"], ["party", "Party"]]; // 1.6: the Secret pair's own two, listed here only once the key has been given
 /** The device-wide override's list: the twelve, plus the Secret pair's two on a device that has unlocked them. */
-const EXTRA_PACKS = { chalk: [["chalk", "Chalk"], ["marker", "Marker"]] }; // 1.12 b262: an Extra pair's two, listed once its word has been given
+const EXTRA_PACKS = { chalk: [["chalk", "Chalk"], ["marker", "Marker"]], wood: [["carve", "Carve"], ["burn", "Burn"]] }; // 1.12 b262: an Extra pair's two, listed once its word has been given (b268: pair two)
 function packList() { return (dev().secret ? PACKS.concat(SECRET_PACKS) : PACKS).concat(...T.unlockedExtras(dev()).map(pid => EXTRA_PACKS[pid] || [])); }
 let importedDoc = null;
 export function openSettings() { paintSettings(); A.showPanel("p-settings"); }

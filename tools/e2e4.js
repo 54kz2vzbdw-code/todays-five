@@ -1853,6 +1853,221 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await a.close();
   });
 
+  /* ---------------- 1.12 b268: the Extra category, pair two ---------------- */
+  const WORD2 = "SawDust"; // the wood pair's word, taken the same way
+
+  await test(label + ": the second pair opens beside the first, neither word opens the other, and Forget takes one and leaves the other", async () => {
+    const t = await fresh(opts);
+    await openPicker(t);
+    await giveWord(t, "  " + WORD2.toUpperCase() + "  ");
+    assert.deepEqual((await t.s()).extras, ["wood"], "the wood pair alone"); assert.equal(await t.page.inputValue("#c-import"), "", "the field is cleared");
+    assert.equal(await t.page.textContent("#toast .msg"), "Found it—two more, under Extra.");
+    assert.deepEqual(await t.page.$$eval("#sw-extra .swatch .nm", els => els.map(e => e.textContent)), ["Bark", "Char"], "and the boards are not among them");
+    assert.deepEqual(await t.page.$$eval("#sw-extra .swatch .sm", els => els.map(e => e.textContent)), ["Day · pairs with Char", "Night · pairs with Bark"]);
+    assert.deepEqual(await t.page.$$eval("#sw-extra-actions .chip", els => els.map(e => e.textContent)), ["Forget Bark & Char"], "one Forget, for this pair");
+    assert.equal((await t.s()).secret, false, "the Secret latch is untouched");
+    // the other word now: both pairs in one group, in the order they shipped, with a Forget each
+    await giveWord(t, "chalkdust");
+    assert.deepEqual((await t.s()).extras, ["wood", "chalk"], "a device holds both");
+    assert.deepEqual(await t.page.$$eval("#sw-extra .swatch .nm", els => els.map(e => e.textContent)), ["Chalkboard", "Whiteboard", "Bark", "Char"], "four kits, a pair at a time");
+    assert.deepEqual(await t.page.$$eval("#sw-extra-actions .chip", els => els.map(e => [e.dataset.forget, e.textContent])), [["chalk", "Forget Chalkboard & Whiteboard"], ["wood", "Forget Bark & Char"]], "a Forget per pair");
+    assert.deepEqual(await t.page.$$eval("#p-theme h3:not([hidden])", els => els.map(e => e.textContent)), ["Made for day", "Made for night", "Extra"], "one group, still; Secret is opened by neither");
+    await t.esc(); await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
+    assert.deepEqual((await packOptions(t, "day")).slice(-4), ["Chalk", "Marker", "Carve", "Burn"], "Settings → Sound: both pairs' engines, and not the Secret pair's");
+    await t.page.click('[data-set="night"]'); await t.page.waitForSelector("#p-theme[open]");
+    // a slot from each pair, then forget one: only that pair's slot goes back
+    await t.press('#sw-extra .swatch[data-code="T1:curated:char"]'); await wait(500);
+    await t.press("#partner-use"); await wait(500);
+    let st = await t.s(); assert.equal(st.night, "T1:curated:char"); assert.equal(st.day, "T1:curated:bark");
+    await t.press('#sw-extra .swatch[data-code="T1:curated:chalkboard"]'); await wait(500);
+    st = await t.s(); assert.equal(st.night, "T1:curated:chalkboard"); assert.equal(st.day, "T1:curated:bark", "the day slot still holds the other pair's");
+    await t.press('#sw-extra-actions .chip[data-forget="wood"]'); await wait(900);
+    st = await t.s();
+    assert.deepEqual(st.extras, ["chalk"], "the wood pair is forgotten and the boards are not");
+    assert.equal(st.day, "T1:curated:paper", "the slot that held Bark is back to its default");
+    assert.equal(st.night, "T1:curated:chalkboard", "and the slot that held the other pair's kit is untouched");
+    assert.deepEqual(await t.page.$$eval("#sw-extra .swatch .nm", els => els.map(e => e.textContent)), ["Chalkboard", "Whiteboard"], "only the pair that is left");
+    assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device.extras.join(","), "chalk"), "chalk", "the key holds what is left rather than being emptied");
+    // and it persists, and a kit's own code re-opens its pair
+    await t.esc(); await t.reload(); await t.page.waitForSelector("#list .row"); await wait(600);
+    assert.deepEqual((await t.s()).extras, ["chalk"]);
+    await openPicker(t); await giveWord(t, "T1:curated:char");
+    assert.deepEqual((await t.s()).extras, ["chalk", "wood"], "the code unlocks its own pair and no other");
+    await t.press('#sw-extra-actions .chip[data-forget="chalk"]'); await wait(900);
+    st = await t.s(); assert.deepEqual(st.extras, ["wood"]); assert.equal(st.night, "T1:curated:terminal", "the board's slot is back");
+    await t.press('#sw-extra-actions .chip[data-forget="wood"]'); await wait(900);
+    assert.equal(await t.page.evaluate(() => "extras" in JSON.parse(localStorage.getItem("tf/v2/meta")).device), false, "the last pair forgotten removes the key");
+    assert.ok(await t.page.locator("#sw-extra").isHidden(), "and the group");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0, "csp: " + t.csp.join("; "));
+    await t.close();
+  });
+
+  await test(label + ": both wood kits in both slots, the flip, the hand, the plank, the gouge, the burn and the check — and a finale each", async () => {
+    const t = await fresh(opts);
+    await openPicker(t, "night");
+    await giveWord(t, WORD2);
+    await t.press('#sw-extra .swatch[data-code="T1:curated:bark"]'); await wait(400);
+    await t.press("#partner-use"); await wait(400);
+    await t.esc(); await wait(800);
+    if ((await t.s()).theme !== "bark") { await t.press("#daynight"); await wait(1000); }
+    let st = await t.s(); assert.equal(st.theme, "bark"); assert.equal(st.field, true, "Bark brings its plank");
+    const face = () => t.page.evaluate(() => { const c = getComputedStyle(document.querySelector("#list .row .tx")); return [c.fontFamily, c.fontWeight, c.textShadow]; });
+    let f = await face();
+    assert.ok(/Lora/.test(f[0]) && f[1] === "700", "Bark is set in Lora, one of the thirteen the app already has: " + f);
+    assert.ok(/rgba?\([^)]*\)\s+0px\s+-1px|-1px/.test(f[2]) && /1px/.test(f[2]), "and the words are carved: a highlight over a shadow — " + f[2]);
+    assert.equal(await t.page.$eval('meta[name="theme-color"]', e => e.content.toUpperCase()), "#F3E7D3");
+    const ground = await t.page.evaluate(() => { const el = document.getElementById("field"), c = getComputedStyle(el); return { cls: el.className, hidden: el.hidden, img: c.backgroundImage.slice(0, 30), z: +c.zIndex, glow: +getComputedStyle(document.getElementById("glow")).zIndex, shell: +getComputedStyle(document.getElementById("shell")).zIndex, ev: c.pointerEvents, anim: c.animationName, kids: el.children.length }; });
+    assert.equal(ground.cls, "ground"); assert.equal(ground.hidden, false); assert.ok(/^url\("data:image\/svg\+xml/.test(ground.img), "the plank is a data: picture: " + ground.img);
+    assert.ok(ground.z > ground.glow && ground.z < ground.shell && ground.ev === "none", "above the glow, behind the words: " + JSON.stringify(ground));
+    assert.equal(ground.anim, "none"); assert.equal(ground.kids, 0, "no elements, one picture");
+    // the gouge: a channel, thicker than a rule, with a torn end and no blend
+    await t.press("#list .row:first-child .check"); await wait(700);
+    let ink = await t.page.$eval("#list .row.done .ink", e => { const c = getComputedStyle(e); return { h: parseFloat(c.height), mask: (c.maskImage || c.webkitMaskImage || "").slice(0, 20), blend: c.mixBlendMode, img: c.backgroundImage.slice(0, 22), anim: c.animationName }; });
+    assert.ok(ink.h >= 9 && /^url\("data:image/.test(ink.mask) && ink.blend === "normal" && /linear-gradient/.test(ink.img) && ink.anim === "none", "a gouged channel: " + JSON.stringify(ink));
+    let box = await t.page.$eval("#list .row.done .box", e => ({ path: getComputedStyle(e.querySelector("path")).stroke, sw: getComputedStyle(e.querySelector("path")).strokeWidth, bg: getComputedStyle(e).backgroundColor }));
+    assert.equal(box.path, "rgb(90, 68, 50)", "a carved check"); assert.equal(box.sw, "3.4px"); assert.equal(box.bg, "rgb(236, 223, 200)", "on the plank a shade warmer, not a fill");
+    await t.press("#list .row:first-child .check"); await wait(80);
+    ink = await t.page.$eval("#list .row:not(.done) .ink", e => { const c = getComputedStyle(e); return { dur: c.transitionDuration, op: c.opacity }; });
+    assert.ok(/0\.46s/.test(ink.dur) && +ink.op < 1, "the shavings are brushed back over .46s: " + JSON.stringify(ink));
+    await wait(700);
+    // the finale: the chisel on the confetti canvas, and the line carving itself in
+    for (const b of await t.page.$$("#list .row:not(.done) .check")) { await b.click(); await wait(320); }
+    await wait(1500);
+    assert.equal(await t.page.textContent("#finale span"), "Whittled down.");
+    st = await t.s(); assert.ok(st.stats.finish >= 1 && st.stats.volley >= 1, "the finale fired: " + JSON.stringify(st.stats));
+    assert.equal(await t.page.$eval("#finale span", e => getComputedStyle(e).animationName), "tf-write", "the line carves itself in");
+    assert.ok(await t.page.evaluate(() => { const c = document.getElementById("fx"), g = c.getContext("2d"), d = g.getImageData(0, 0, c.width, c.height).data; for (let i = 3; i < d.length; i += 400) if (d[i] > 0) return true; return false; }), "the chisel is on the canvas mid-cut");
+    // the flip: Char, the same hand with a hot tip, a strike born ember that cools to char and holds
+    for (const b of await t.page.$$("#list .row.done .check")) { await b.click(); await wait(240); }
+    await t.press("#daynight"); await wait(900);
+    st = await t.s(); assert.equal(st.theme, "char"); assert.equal(st.field, true, "its own plank");
+    f = await face(); assert.ok(/Lora/.test(f[0]) && f[1] === "700", "Char is Bark's hand: " + f);
+    assert.equal(await t.page.$eval('meta[name="theme-color"]', e => e.content.toUpperCase()), "#1B1512");
+    const burnAt = () => t.page.$eval("#list .row.done .ink", e => { const a = getComputedStyle(e, "::after"); return { op: +a.opacity, bg: a.backgroundImage.slice(0, 22), cool: getComputedStyle(e.parentElement).transitionDuration }; });
+    await t.press("#list .row:first-child .check"); await wait(90);
+    let hot = await burnAt();
+    assert.ok(hot.op > 0.55 && /linear-gradient/.test(hot.bg) && /1\.5s/.test(hot.cool), "the line is born ember: " + JSON.stringify(hot));
+    await wait(2200);
+    let cold = await burnAt();
+    assert.equal(cold.op, 0, "and it has cooled to char: " + JSON.stringify(cold));
+    assert.equal(await t.page.$eval("#list .row.done .ink", e => getComputedStyle(e).backgroundColor), "rgb(85, 74, 65)", "the char underneath is the strike itself");
+    // and it stays cooled: a relayout rebuilds the overlay, and nothing re-fires
+    await t.page.setViewportSize(opts.viewport.width === 1440 ? { width: 1200, height: 860 } : { width: 360, height: 800 }); await wait(700);
+    assert.equal((await burnAt()).op, 0, "a resize rebuilds the strike and does not light it again");
+    await t.page.setViewportSize(opts.viewport); await wait(700);
+    box = await t.page.$eval("#list .row.done .box", e => ({ path: getComputedStyle(e.querySelector("path")).stroke, bg: getComputedStyle(e).backgroundColor }));
+    assert.equal(box.path, "rgb(255, 138, 60)", "an ember check"); assert.equal(box.bg, "rgb(44, 34, 27)");
+    await t.press("#list .row:first-child .check"); await wait(90);
+    assert.equal(await t.page.$eval("#list .row:not(.done) .ink", e => +getComputedStyle(e, "::after").opacity), 0, "and sanding it back does not light it either");
+    await wait(700);
+    const before = (await t.s()).stats.volley;
+    for (const b of await t.page.$$("#list .row:not(.done) .check")) { await b.click(); await wait(320); }
+    await wait(1400);
+    assert.equal(await t.page.textContent("#finale span"), "Burned through it.");
+    assert.ok((await t.s()).stats.volley > before, "its own ember went up");
+    assert.deepEqual(await t.page.$$eval("#finale.on span", els => els.map(e => getComputedStyle(e).animationName)), ["tf-write, tf-scorch"], "the line burns itself in and the scorch cools behind it");
+    await wait(2200);
+    // either one goes in either slot: Char for Day
+    await openPicker(t, "day");
+    await t.press('#sw-extra .swatch[data-code="T1:curated:char"]'); await wait(500);
+    await t.esc(); await wait(700);
+    assert.equal((await t.s()).day, "T1:curated:char", "a dark theme in the Day slot, like any other");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0, "csp: " + t.csp.join("; ")); assert.equal(t.thirdParty.length, 0, "third party: " + t.thirdParty);
+    await t.close();
+    // reduced motion: the plank is there, the line lands already cooled, and nothing is drawn or smoked
+    const r = await fresh(opts, { reducedMotion: "reduce" });
+    await openPicker(r); await giveWord(r, WORD2);
+    await r.press('#sw-extra .swatch[data-code="T1:curated:char"]'); await wait(400);
+    await r.esc(); await wait(700);
+    if ((await r.s()).theme !== "char") { await r.press("#daynight"); await wait(1000); }
+    assert.equal(await r.page.$eval("#field", e => e.className), "ground", "the plank is there");
+    await r.press("#list .row:first-child .check"); await wait(90);
+    assert.equal(await r.page.$eval("#list .row.done .ink", e => +getComputedStyle(e, "::after").opacity), 0, "the line is born cooled — there is no heat to watch fall");
+    await wait(600);
+    for (const b of await r.page.$$("#list .row:not(.done) .check")) { await b.click(); await wait(300); }
+    await wait(1600);
+    assert.equal(await r.page.textContent("#finale span"), "Burned through it.", "the line still lands");
+    assert.equal(await r.page.$eval("#finale span", e => getComputedStyle(e).animationName), "none", "and stands still");
+    assert.equal(await r.page.$eval("#field", e => e.children.length), 0, "no smoke under reduced motion");
+    assert.equal(await r.page.evaluate(() => { const c = document.getElementById("fx"), g = c.getContext("2d"), d = g.getImageData(0, 0, c.width, c.height).data; for (let i = 3; i < d.length; i += 4000) if (d[i] > 0) return 1; return 0; }), 0, "and nothing on the canvas, like every other effect");
+    assert.equal(r.errors.length, 0, r.errors.join("; "));
+    await r.close();
+  });
+
+  await test(label + ": the wood planks cost no frames at rest, the grain rule holds as rendered, and the smoke goes up once and takes itself off", async () => {
+    const t = await fresh(opts, { init: "window.__raf = 0; (function(){ var r = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = function (cb) { window.__raf++; return r(cb); }; })();" });
+    await openPicker(t); await giveWord(t, WORD2);
+    await t.press('#sw-extra .swatch[data-code="T1:curated:bark"]'); await wait(400);
+    await t.esc(); await wait(900);
+    if ((await t.s()).theme !== "bark") { await t.press("#daynight"); await wait(1000); }
+    assert.ok(!/#field\.ground/.test(await t.page.evaluate(() => fetch("styles.css").then(r => r.text()))), "no rule for the ground is in the render-blocking stylesheet every device waits for");
+    let settled = 0;
+    for (let i = 0; i < 40 && settled < 2; i++) { const a0 = await t.page.evaluate(() => window.__raf); await wait(500); settled = (await t.page.evaluate(() => window.__raf)) - a0 === 0 ? settled + 1 : 0; }
+    assert.ok(settled >= 2, "the page went quiet within twenty seconds");
+    const raf0 = await t.page.evaluate(() => window.__raf); await wait(3000); const raf1 = await t.page.evaluate(() => window.__raf);
+    assert.equal(raf1 - raf0, 0, "no frame loop while the plank is up: " + (raf1 - raf0) + " requestAnimationFrame calls in three seconds");
+    assert.deepEqual(await t.page.$$eval("#field, #field *", els => els.map(e => getComputedStyle(e).animationName)), ["none"], "nothing on the plank animates");
+    // the grain rule as rendered, at this viewport, for every Extra kit there is
+    const rows = await t.page.evaluate(async () => {
+      const T = await import("./theme.js"), X = await import("./extrafx.js");
+      const lum = (r, g, b) => { const f = v => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+      const hexLum = h => lum(...[1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)));
+      const out = [];
+      for (const kit of T.EXTRA) {
+        const img = new Image(); img.src = X.groundUrl(kit); await img.decode();
+        const w = innerWidth, h = innerHeight, c = document.createElement("canvas"); c.width = w; c.height = h;
+        const g = c.getContext("2d", { willReadFrequently: true }); g.fillStyle = kit.grain[0]; g.fillRect(0, 0, w, h);
+        const s = Math.max(w / img.width, h / img.height); g.drawImage(img, (w - img.width * s) / 2, (h - img.height * s) / 2, img.width * s, img.height * s);
+        const d = g.getImageData(0, 0, w, h).data; let lo = 1, hi = 0;
+        for (let i = 0; i < d.length; i += 4) { const L = lum(d[i], d[i + 1], d[i + 2]); if (L < lo) lo = L; if (L > hi) hi = L; }
+        const gl = kit.grain.map(hexLum);
+        const extreme = kit.base === "dark" ? hi : lo, cr = tok => (Math.max(hexLum(kit.colors[tok]), extreme) + 0.05) / (Math.min(hexLum(kit.colors[tok]), extreme) + 0.05);
+        out.push({ id: kit.id, lo, hi, gLo: Math.min(...gl), gHi: Math.max(...gl), text: cr("text"), accent: cr("accent"), dim: cr("dim"), hair: cr("hairSolid") });
+      }
+      return out;
+    });
+    assert.equal(rows.length, 4, "every Extra kit, both pairs");
+    for (const r of rows) {
+      assert.ok(r.lo >= r.gLo - 0.0065 && r.hi <= r.gHi + 0.0065, `${r.id}: rendered ${r.lo.toFixed(4)}…${r.hi.toFixed(4)} is outside its grain ${r.gLo.toFixed(4)}…${r.gHi.toFixed(4)}`);
+      assert.ok(r.text >= 4.5 && r.dim >= 4.5 && r.accent >= 3 && r.hair >= 3, `${r.id}: on the ground as drawn, text ${r.text.toFixed(2)} dim ${r.dim.toFixed(2)} accent ${r.accent.toFixed(2)} hairline ${r.hair.toFixed(2)}`);
+    }
+    console.log("      grain as rendered: " + rows.map(r => `${r.id} ${r.lo.toFixed(4)}…${r.hi.toFixed(4)} in ${r.gLo.toFixed(4)}…${r.gHi.toFixed(4)}, text ${r.text.toFixed(2)}`).join("; "));
+    // the smoke: Char's finale puts one wisp through the layer, moved by transform and opacity alone, and it goes
+    await openPicker(t); await t.press('#sw-extra .swatch[data-code="T1:curated:char"]'); await wait(400);
+    await t.esc(); await wait(800);
+    if ((await t.s()).theme !== "char") { await t.press("#daynight"); await wait(1000); }
+    for (const b of await t.page.$$("#list .row:not(.done) .check")) { await b.click(); await wait(320); }
+    await t.page.waitForFunction(() => document.querySelectorAll("#field .wisp").length === 1, null, { timeout: 6000, polling: 60 });
+    const wisp = await t.page.$eval("#field .wisp", e => { const c = getComputedStyle(e); return { anim: c.animationName, it: c.animationIterationCount, props: c.animationName ? "" : "none", img: c.backgroundImage.slice(0, 16) }; });
+    assert.equal(wisp.anim, "tf-wisp"); assert.equal(wisp.it, "1", "once"); assert.ok(/radial-gradient/.test(wisp.img), "a still picture moved by transform and opacity");
+    await t.page.waitForFunction(() => document.querySelectorAll("#field .wisp").length === 0, null, { timeout: 9000, polling: 100 });
+    assert.equal(await t.page.$eval("#field", e => e.children.length), 0, "the layer is empty again at rest");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0, "csp: " + t.csp.join("; "));
+    await t.close();
+  });
+
+  await test(label + ": a device with one pair's word is told nothing of the other, and fetches nothing extra for it", async () => {
+    const t = await fresh(opts);
+    await openPicker(t); await giveWord(t, WORD2);
+    assert.deepEqual(await t.page.$$eval("#p-theme", els => els.map(e => e.textContent.match(/Chalkboard|Whiteboard|Chalkdust/i) || "")), [""], "the picker never names the other pair");
+    await t.esc(); await wait(200);
+    await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
+    const packs = await packOptions(t, "day");
+    assert.equal(packs.length, 15, "Theme's pick, the twelve, and this pair's two — not the other pair's and not Secret's: " + packs.join(", "));
+    assert.ok(!packs.includes("Chalk") && !packs.includes("Marker") && !packs.includes("Sparkle"), packs.join(", "));
+    await t.esc(); await wait(200);
+    await t.press("#more"); await t.page.click('#p-menu [data-act="help"]'); await t.page.waitForSelector("#p-help[open]"); await wait(300);
+    assert.ok(!/\bBark\b|\bChar\b|Sawdust|Chalkboard|Extra theme/i.test(await t.page.textContent("#p-help")), "How it works says nothing about any of it");
+    await t.esc(); await wait(300);
+    // the pair adds no file of its own: what a device on it fetches is the two modules the category already had
+    await t.press('#sw-extra .swatch[data-code="T1:curated:bark"]').catch(() => {});
+    await openPicker(t); await t.press('#sw-extra .swatch[data-code="T1:curated:bark"]'); await wait(700); await t.esc(); await wait(900);
+    const asked = await t.page.evaluate(() => performance.getEntriesByType("resource").map(r => r.name.replace(/^.*\//, "").replace(/\?.*/, "")).filter(n => /extrafx|packs-extra|secret|caveat/.test(n)).sort());
+    assert.deepEqual([...new Set(asked)], ["extrafx.css", "extrafx.js", "packs-extra.js"], "the category's own three and nothing else — no new file, and nothing of the Secret pair: " + asked);
+    assert.equal(t.thirdParty.length, 0, "third party: " + t.thirdParty); assert.equal(t.errors.length, 0, t.errors.join("; "));
+    await t.close();
+  });
+
   if (!touch) await test(label + ": T flips, Shift+T opens Appearance; ⋯ → Theme opens the picker for the slot that is on (1.9)", async () => {
     const t = await fresh(opts);
     const s0 = (await t.s()).slot;

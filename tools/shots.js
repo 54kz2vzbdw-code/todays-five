@@ -189,6 +189,34 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await wait(1300); await shot("finale-whiteboard");                             // the check drawn, the line writing itself
     await refill();
   });
+  // 1.12 b268: the Extra category's second pair — the picker with both pairs open, both planks, both finales mid-play.
+  // The word is typed here the way the others are; the step flips to the kit first, whichever slot is on.
+  if (process.env.EXTRA !== "0") await step("extra2", async () => {
+    if (!(await page.$("#sw-extra"))) return;
+    const refill = async () => {
+      const id = await page.evaluate(() => window.__tf().listId);
+      for (const box of await page.$$("#list .row.done .check")) { await box.click(); await wait(220); }
+      if (!(await page.$("#list .row:not(.done) .check"))) { await page.goto(BASE + "?transport=local#/l/" + id + "/add?text=Walk%20the%20dog%0ACall%20the%20engineer%20back"); await wait(1400); }
+      await page.mouse.move(2, 2); await wait(300);
+    };
+    await refill();
+    await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('[data-set="night"]'); await page.waitForSelector("#p-theme[open]");
+    if (await page.$("#sw-build")) { await page.click("#sw-build"); await page.waitForSelector("#p-builder[open]"); await wait(300); }
+    await page.fill("#c-import", "SawDust"); await press("#c-import-go"); await wait(1200);
+    await page.$eval("#sw-extra-h", el => el.scrollIntoView({ block: "center" })); await wait(300);
+    await shot("theme-extra-2");                                                   // both pairs open, a Forget each
+    for (const [kit, hold] of [["bark", 1500], ["char", 1900]]) {
+      if (!(await page.$("#p-theme[open]"))) { await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('[data-set="night"]'); await page.waitForSelector("#p-theme[open]"); }
+      await press(`#sw-extra .swatch[data-code="T1:curated:${kit}"]`); await wait(500);
+      await esc(); await wait(900);
+      if ((await page.evaluate(() => window.__tf().theme)) !== kit) { await press("#daynight"); await wait(1000); }  // whichever slot is on, this kit first
+      await page.mouse.move(2, 2); await wait(500);
+      await shot(kit);
+      for (let i = 0; i < 6; i++) { if (!(await page.$("#list .row:not(.done) .check"))) break; await press("#list .row:not(.done) .check"); await wait(600); }
+      await wait(hold); await shot("finale-" + kit);                               // the chisel mid-cut; the ember mid-run
+      await refill();
+    }
+  });
   // 1.12: Everything finishes on its own, and Remove asks before it takes the list off this device
   await step("everything-finale", async () => {
     if (!(await page.$("#v-all"))) return;

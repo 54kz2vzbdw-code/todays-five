@@ -221,10 +221,14 @@ A `WKWebView` on **the live site**, not a copy of it, plus the three things a br
 haptics, a Keychain link vault, and links that open in the app. It is an old client the moment it
 stops loading the current page, which is why it never bundles one.
 
-- **The `tf:*` events are the contract.** The page dispatches four `CustomEvent`s on `window`, from
-  the same places the sound plays: **`tf:check`, `tf:uncheck`, `tf:finale`, `tf:shuffle`**. They
-  carry **no `detail`** — a haptic needs the moment, never the list. Renaming one, or dropping a
-  dispatch, silently takes a feeling away from the app; `tools/e2e4.js` asserts all four at both
+- **The `tf:*` events are the contract.** The page dispatches six `CustomEvent`s on `window`: from
+  the same places the sound plays, **`tf:check`, `tf:uncheck`, `tf:finale`, `tf:shuffle`**; and
+  since 1.12 motion-1, around a strike drawn by hand, **`tf:draw`** when the finger starts drawing
+  and **`tf:lift`** when it leaves the glass, committed or not — a commit then sends `tf:check`, so a
+  drawn strike is always `tf:draw`, `tf:lift`, `tf:check`, in that order, and a tap never sends the
+  first two. They carry **no `detail`** — a haptic needs the moment, never the list, and the drawn
+  strike's speed is the shell's own measurement of the finger, never sent. Renaming one, or dropping
+  a dispatch, silently takes a feeling away from the app; `tools/e2e4.js` asserts all six at both
   viewports so it cannot happen quietly.
 - The shell announces itself with a **user-agent token** (`TodaysFive/…`), not an injected flag, so
   the page's CSP never comes into it. `SHELL` in `app.js` reads it, and exactly two things turn on

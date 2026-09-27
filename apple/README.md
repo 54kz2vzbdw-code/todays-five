@@ -283,7 +283,7 @@ iOS refuses transparency there; the script counts the transparent pixels and fai
 
 ## What crosses the bridge
 
-Four `CustomEvent`s the page dispatches on `window`, and nothing else:
+Six `CustomEvent`s the page dispatches on `window`, and nothing else:
 
 | event | what the app does |
 | --- | --- |
@@ -291,9 +291,12 @@ Four `CustomEvent`s the page dispatches on `window`, and nothing else:
 | `tf:uncheck` | `UIImpactFeedbackGenerator(.light)` |
 | `tf:finale` | `UINotificationFeedbackGenerator(.success)` |
 | `tf:shuffle` | `UIImpactFeedbackGenerator(.light)` |
+| `tf:draw` | the scratch: a `CHHapticAdvancedPatternPlayer` with one continuous event whose intensity and sharpness follow the finger's speed, which a `UIPanGestureRecognizer` on the web view reads (motion-1) |
+| `tf:lift` | stops the scratch; a committed strike then sends `tf:check` |
 
 They carry no `detail`. The names are contract — `COMPATIBILITY.md` §8, and `tools/e2e4.js` asserts
-all four at both viewports.
+all six at both viewports. The drawn strike's speed is never sent: the page says when, the shell
+measures how fast.
 
 The app announces itself with a user-agent token rather than an injected flag, so the site's CSP
 never comes into it. In `app.js`, `SHELL` reads it and exactly two things turn on it: `HAPTIC` stands

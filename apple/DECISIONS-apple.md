@@ -2701,3 +2701,28 @@ claimed. Every tally in PLAN.md's b262 section was read over the pty. The harnes
 printed nothing", which is the third harness lie of this project (the three above) and is left as found:
 switching `cmdLaunch` to a pty means keeping a child alive for the console's life, which is a change to the
 harness's shape and not this round's. The workaround is one line and is written here.
+
+## The drawn strike in the hand (1.12 motion-1)
+
+The web's new gesture — a swipe across a line draws its strike under the finger — has a scratch in the phone: the
+Taptic Engine runs one continuous event for as long as the finger draws, and its intensity and sharpness follow the
+finger's speed. Three calls, each with the reason.
+
+**The speed is measured in the shell, not sent by the page.** `COMPATIBILITY.md` §8 says the `tf:*` events carry no
+`detail`, and the obvious design — the page posting the finger's speed sixty times a second — would have changed that
+shape and put a stream on the bridge. Instead the page adds two plain names, `tf:draw` and `tf:lift`, and a
+`UIPanGestureRecognizer` on the web view reads the velocity itself: `cancelsTouchesInView = false`, no delays,
+recognising simultaneously through the delegate the touch-down press already uses, so the page still receives every
+touch and a scroll is untouched. `Haptics` only listens to it between the two names, so an ordinary pan costs nothing.
+UIKit's velocity is also a better reading than a page could make from coalesced pointer events.
+
+**One advanced player, driven by dynamic parameters.** A thirty-second continuous event starts on `tf:draw` with its
+intensity control at zero (silent until the finger moves), `.hapticIntensityControl` and `.hapticSharpnessControl`
+follow the speed at no more than 60 updates a second (1,400 pt/s is full), and `tf:lift` stops it. The commit's own
+impact still comes from `tf:check`, which the page sends after `tf:lift`, so the scratch has stopped before the knock
+lands. No engine — an old phone, System Haptics off — means no scratch and changes nothing else. `-TFSelfTest` builds
+the pattern where it cannot be felt (`drawSelfCheck()`), as it does the finale's, and its tally names all six moments.
+
+**The Watch is left alone.** It has no drawn strike — a line on the wrist is crossed off by a tap — so `WatchHaptics`
+does not gain the two names, and nothing on the Watch changes.
+

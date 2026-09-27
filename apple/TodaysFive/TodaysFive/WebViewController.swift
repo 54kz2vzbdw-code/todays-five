@@ -88,6 +88,7 @@ final class WebViewController: UIViewController {
 
         observeWebView()
         prepareHapticsOnTouchDown()
+        measureDrawingFinger()
         Audio.begin()
         WatchLinkSender.shared.start()
 
@@ -124,14 +125,15 @@ final class WebViewController: UIViewController {
         return config
     }
 
-    /// Four names, and nothing that identifies a list. `ready` carries no `tf:` prefix because it is
-    /// the bridge announcing itself, not one of the page's events.
+    /// Six names, and nothing that identifies a list. `ready` carries no `tf:` prefix because it is
+    /// the bridge announcing itself, not one of the page's events. motion-1 added `tf:draw` and
+    /// `tf:lift`, still with no detail: the drawn strike's speed is measured here, never sent.
     static let bridgeSource = """
     (function () {
       var send = function (name) {
         try { window.webkit.messageHandlers.tf.postMessage(name); } catch (e) { /* nothing to do */ }
       };
-      ["tf:check", "tf:uncheck", "tf:finale", "tf:shuffle"].forEach(function (name) {
+      ["tf:check", "tf:uncheck", "tf:finale", "tf:shuffle", "tf:draw", "tf:lift"].forEach(function (name) {
         window.addEventListener(name, function () { send(name); }, { passive: true });
       });
       send("ready");
@@ -177,6 +179,24 @@ final class WebViewController: UIViewController {
 
     @objc private func touchDown(_ recognizer: UILongPressGestureRecognizer) {
         if recognizer.state == .began { haptics.prepare() }
+    }
+
+    /// motion-1: the drawn strike's speed, read by the shell rather than sent by the page, so the
+    /// page's events stay what COMPATIBILITY.md §8 says they are — a moment and nothing else. Like the
+    /// touch-down press it sees every pan and swallows none; Haptics only listens between `tf:draw`
+    /// and `tf:lift`, so a scroll or an edge swipe costs nothing.
+    private func measureDrawingFinger() {
+        let pan = UIPanGestureRecognizer(target: self, action: #selector(fingerMoved(_:)))
+        pan.cancelsTouchesInView = false
+        pan.delaysTouchesBegan = false
+        pan.delaysTouchesEnded = false
+        pan.delegate = self
+        webView.addGestureRecognizer(pan)
+    }
+
+    @objc private func fingerMoved(_ recognizer: UIPanGestureRecognizer) {
+        guard haptics.drawing, recognizer.state == .changed else { return }
+        haptics.drawSpeed(abs(recognizer.velocity(in: webView).x))
     }
 
     // ---------------------------------------------------------------- links in
@@ -392,8 +412,9 @@ final class WebViewController: UIViewController {
         }
         try? await Task.sleep(for: .milliseconds(400))
         let fired = Haptics.Moment.allCases.filter { (haptics.counts[$0] ?? 0) > (before[$0] ?? 0) }
-        log("selftest: bridge=\(bridgeReady ? "ready" : "SILENT") heard=\(fired.count)/4 \(haptics.tally)")
+        log("selftest: bridge=\(bridgeReady ? "ready" : "SILENT") heard=\(fired.count)/\(Haptics.Moment.allCases.count) \(haptics.tally)")
         log("selftest: finale pattern \(haptics.finaleSelfCheck())") // 1.12: the volley's rhythm, built even where it cannot be felt
+        log("selftest: draw pattern \(haptics.drawSelfCheck())")     // motion-1: the scratch, built even where it cannot be felt
 
         // and what the page will key on in 1.10
         let ua = (try? await webView.evaluateJavaScript(

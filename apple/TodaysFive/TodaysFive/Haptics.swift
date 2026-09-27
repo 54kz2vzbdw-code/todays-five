@@ -1,7 +1,8 @@
 // Haptics.swift — the reason the app exists.
 //
-// Four moments, and nothing else. No haptic on an ordinary tap; the page's own sound still plays,
-// and muting the sound does not mute these — they are different senses.
+// Six moments, and nothing else. No haptic on an ordinary tap; the page's own sound still plays,
+// and muting the sound does not mute these — they are different senses. motion-1 added the two
+// around a drawn strike, `tf:draw` and `tf:lift`: the scratch in the hand while a finger draws.
 //
 // The web has fired an iOS haptic on check-off since before this app, through a hidden
 // <input type="checkbox" switch>. It is one tick: no distinct un-check, no finale, no control of
@@ -24,6 +25,8 @@ final class Haptics {
         case uncheck = "tf:uncheck"
         case finale = "tf:finale"
         case shuffle = "tf:shuffle"
+        case draw = "tf:draw"   // motion-1: a finger has started drawing a strike
+        case lift = "tf:lift"   // …and has left the glass, committed or not (a commit then sends tf:check)
     }
 
     /// The volley, from `fx.js`: `for (let i = 0; i < 7; i++) … i * 65` along the bottom, then one
@@ -62,9 +65,68 @@ final class Haptics {
         case .check: medium.impactOccurred()
         case .uncheck, .shuffle: light.impactOccurred()
         case .finale: if !playFinale() { notice.notificationOccurred(.success) } // 1.10's tap, where there is no engine
+        case .draw: startScratch()
+        case .lift: stopScratch()
         }
         // keep them warm for the next line in the same burst
         prepare()
+    }
+
+    // ---------------------------------------------------------------- the scratch (motion-1)
+
+    /// The drawn strike, in the hand: one continuous event for as long as the finger draws, its
+    /// intensity and sharpness following the finger's speed. The page says only when a strike begins
+    /// and ends — never how fast, never what — and the speed is the shell's own reading of the finger,
+    /// from a pan recogniser on the web view (`WebViewController.measureDrawingFinger`). Silent until
+    /// the finger moves; the commit's impact (`tf:check`) still lands after `tf:lift`.
+    private var scratch: CHHapticAdvancedPatternPlayer?
+    private var lastScratchSend: CFTimeInterval = 0
+    private(set) var drawing = false
+
+    private func scratchPattern() throws -> CHHapticPattern {
+        // thirty seconds is longer than anyone draws one line; `tf:lift` stops it long before
+        try CHHapticPattern(events: [CHHapticEvent(eventType: .hapticContinuous, parameters: [
+            CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.55),
+            CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.7)
+        ], relativeTime: 0, duration: 30)], parameters: [])
+    }
+
+    private func startScratch() {
+        stopScratch()
+        drawing = true
+        guard supportsHaptics, !engineDead else { return }
+        startEngine()
+        guard let engine else { return }
+        do {
+            let player = try engine.makeAdvancedPlayer(with: try scratchPattern())
+            try player.start(atTime: CHHapticTimeImmediate)
+            try player.sendParameters([CHHapticDynamicParameter(parameterID: .hapticIntensityControl, value: 0, relativeTime: 0)],
+                                      atTime: CHHapticTimeImmediate)
+            scratch = player
+        } catch {
+            scratch = nil // no scratch this time; the check-off's impact is unaffected
+        }
+    }
+
+    /// The finger's speed across the line in points a second (the recogniser's own units). At most
+    /// sixty updates a second reach the engine: a still finger is silent, a fast one full and bright.
+    func drawSpeed(_ pointsPerSecond: CGFloat) {
+        guard drawing, let scratch else { return }
+        let now = CACurrentMediaTime()
+        guard now - lastScratchSend >= 1.0 / 60 else { return }
+        lastScratchSend = now
+        let n = Float(min(1, max(0, pointsPerSecond / 1400)))
+        try? scratch.sendParameters([
+            CHHapticDynamicParameter(parameterID: .hapticIntensityControl, value: n, relativeTime: 0),
+            CHHapticDynamicParameter(parameterID: .hapticSharpnessControl, value: -0.3 + 0.6 * n, relativeTime: 0)
+        ], atTime: CHHapticTimeImmediate)
+    }
+
+    private func stopScratch() {
+        drawing = false
+        guard let player = scratch else { return }
+        scratch = nil
+        try? player.stop(atTime: CHHapticTimeImmediate)
     }
 
     // ---------------------------------------------------------------- the finale
@@ -128,6 +190,17 @@ final class Haptics {
     }
 
     #if DEBUG
+    /// `-TFSelfTest`, motion-1: the scratch's pattern, built where it cannot be felt, the way the
+    /// finale's is, so a malformed one is found on a simulator rather than in someone's hand.
+    func drawSelfCheck() -> String {
+        do {
+            let p = try scratchPattern()
+            return String(format: "ok duration=%.0fs hardware=%@", p.duration, supportsHaptics ? "yes" : "no")
+        } catch {
+            return "INVALID: \(error)"
+        }
+    }
+
     /// `-TFSelfTest`. The pattern is only ever *played* where there is a Taptic Engine, so on a
     /// simulator nothing would touch it and a malformed one would not be found until it reached a
     /// phone. Build it regardless and say whether it came out, and how long it runs.

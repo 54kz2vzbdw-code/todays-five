@@ -86,13 +86,34 @@ async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: 
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await cdp.detach(); await wait(350);
     return during;
   };
+  /** motion-1: a strike drawn by hand across a line's words to `frac` of their width (1 = a little past the end) —
+      a finger on the phone (CDP touch, 16 ms steps), the mouse on the desktop. `mid` runs while the finger is still down
+      (a screenshot, a read of the ink), so a test can see the stroke before it lands. */
+  const draw = async (sel, frac = 1, { steps = 18, mid = null } = {}) => {
+    const hint = await page.$("#install:not([hidden])"); if (hint) { await page.click("#install-x"); await wait(150); }
+    const el = await page.$(sel + " .tx"); if (!el) throw new Error("no " + sel); const b = await el.boundingBox();
+    const y = b.y + Math.min(b.height, 30) / 2, x0 = b.x + 4, x1 = b.x + 4 + (b.width + 16) * frac;
+    if (opts.hasTouch) {
+      const cdp = await ctx.newCDPSession(page);
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: x0, y }] });
+      for (let i = 1; i <= steps; i++) { await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x0 + (x1 - x0) * i / steps, y }] }); await wait(16); }
+      if (mid) await mid();
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await cdp.detach();
+    } else {
+      await page.mouse.move(x0, y); await page.mouse.down();
+      for (let i = 1; i <= steps; i++) { await page.mouse.move(x0 + (x1 - x0) * i / steps, y); await wait(16); }
+      if (mid) await mid();
+      await page.mouse.up();
+    }
+    await wait(80);
+  };
   /** the line's menu: ⋯ on hover on the desktop, a hold on the phone (Edit is its first row) */
   const lineMenu = async rowSel => { if (opts.hasTouch) await hold(rowSel + " .tx"); else { await page.hover(rowSel + " .tx"); await wait(120); await page.click(rowSel + " .tool.lmenu"); } await page.waitForSelector("#p-line[open]"); };
   const away = async () => { await page.mouse.move(2, 2); await wait(350); };
   /** the row tools a person can see: rendered, opaque, not clipped away */
   const visibleTools = (scope = "") => page.$$eval(scope + " .row .tool", els => els.filter(e => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 2 && cs.opacity !== "0" && cs.visibility !== "hidden" && cs.display !== "none"; }).map(e => e.className.replace("tool ", "")));
   const front = () => page.bringToFront();
-  return { ctx, page, errors, csp, thirdParty, consoleErrors, s, press, hold, lineMenu, away, visibleTools, front, esc, reload, close: () => shared ? page.close() : ctx.close() };
+  return { ctx, page, errors, csp, thirdParty, consoleErrors, s, press, hold, draw, lineMenu, away, visibleTools, front, esc, reload, close: () => shared ? page.close() : ctx.close() };
 }
 const rect = (page, sel) => page.$eval(sel, e => { const r = e.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; });
 const { seedScript } = await import("./audit/harness.mjs"); // 1.7: the long-time fixture (four lists, repeats, history, saved themes)
@@ -431,13 +452,13 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": 1.10: the four moments the iPhone shell listens for fire, once each, and nothing about them shows on the web", async () => {
+  await test(label + ": 1.10 + motion-1: the six moments the iPhone shell listens for fire, once each and in order, and nothing about them shows on the web", async () => {
     const t = await fresh(opts);
     // The shell hears these through a WKUserScript in a client content world; here the page listens
     // to itself, which is the same contract (COMPATIBILITY.md §8) seen from the other side.
     await t.page.evaluate(() => {
       window.__moments = [];
-      for (const n of ["tf:check", "tf:uncheck", "tf:finale", "tf:shuffle"]) {
+      for (const n of ["tf:check", "tf:uncheck", "tf:finale", "tf:shuffle", "tf:draw", "tf:lift"]) {
         addEventListener(n, e => window.__moments.push([n, e.detail === null]));
       }
     });
@@ -449,6 +470,13 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.deepEqual(await seen(), ["tf:check"], "a check-off says so");
     await t.press(`#list .row[data-id="${firstId}"] .tx`); await wait(450);
     assert.deepEqual(await seen(), ["tf:check", "tf:uncheck"], "and taking it back says so");
+
+    // motion-1: a strike drawn by hand is tf:draw, tf:lift, tf:check, in that order — the shell's scratch stops before
+    // the knock — and the two taps above sent neither of the first two
+    const drawId = await t.page.$eval("#list .row:not(.done)", e => e.dataset.id);
+    await t.draw(`#list .row[data-id="${drawId}"]`, 1); await wait(450);
+    assert.deepEqual(await seen(), ["tf:check", "tf:uncheck", "tf:draw", "tf:lift", "tf:check"], "a drawn strike says when it starts and ends, then checks off");
+    await t.press(`#list .row[data-id="${drawId}"] .tx`); await wait(450); // back, so the finale below still has every line to do
 
     // shuffle: the page ticks for it today through the hidden switch, and the shell must not lose it
     if (touch) await t.page.tap("#count"); else await t.page.keyboard.press("o");

@@ -17,7 +17,7 @@ class FakeAC {
   constructor() { this.state = "suspended"; this.resumes = 0; this.resumeWorks = true; this.sampleRate = 48000; this.currentTime = 0; this.destination = {}; this.nodes = 0; FakeAC.all.push(this); }
   resume() { this.resumes++; if (this.resumeWorks && this.state !== "closed") this.state = "running"; return Promise.resolve(); }
   close() { this.state = "closed"; return Promise.resolve(); }
-  createGain() { this.nodes++; return { gain: { value: 1, setValueAtTime() {}, exponentialRampToValueAtTime() {}, setTargetAtTime() {}, cancelScheduledValues() {} }, connect() {} }; } // motion-1: the scratch glides its level
+  createGain() { this.nodes++; return { gain: { value: 1, setValueAtTime() {}, exponentialRampToValueAtTime() {}, setTargetAtTime() {}, cancelScheduledValues() {} }, connect() {} }; } // 1.12 b279: the scratch glides its level
   createOscillator() { this.nodes++; return { type: "sine", frequency: { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {}, start() {}, stop() {} }; }
   createBuffer(ch, len) { return { getChannelData: () => new Float32Array(len) }; }
   createBufferSource() { this.nodes++; return { buffer: null, loop: false, playbackRate: { value: 1 }, connect() {}, start() {}, stop() {} }; }
@@ -206,7 +206,7 @@ await test("1.12 b262: the Extra category's engines live in a module of their ow
   for (const id of EXTRA.ORDER) { const o = make({ kit: () => ({ engine: id }) }); o.prime(); await tick(); for (let i = 0; i < 6; i++) assert.equal(o.check(i), true); assert.equal(o.uncheck(), true); assert.equal(o.finish(), true); assert.equal(typeof built[id].check, "function"); }
 });
 
-await test("motion-1: every engine the app can play has a scratch — the twelve, the Secret pair's, the Extra kits' — and each row is a filter the Web Audio API takes, a centre inside hearing, a level under the check-off and some grain", async () => {
+await test("1.12 b279: every engine the app can play has a scratch — the twelve, the Secret pair's, the Extra kits' — and each row is a filter the Web Audio API takes, a centre inside hearing, a level under the check-off and some grain", async () => {
   const engines = [...PACK_ORDER, ...SECRET_ENGINES, ...EXTRA_ENGINES];
   assert.deepEqual(engines.filter(id => !SCRATCH[id]), [], "a scratch for every engine");
   assert.deepEqual(Object.keys(SCRATCH).filter(id => !engines.includes(id)), [], "and none for an engine that does not exist");
@@ -217,7 +217,7 @@ await test("motion-1: every engine the app can play has a scratch — the twelve
     assert.ok(grain > 0 && grain <= 1.5, id + ": grain " + grain);
   }
 });
-await test("motion-1: sound.scratch() is null when muted and before the engines land, and a voice that follows speed and stops once when they have", async () => {
+await test("1.12 b279: sound.scratch() is null when muted and before the engines land, and a voice that follows speed and stops once when they have", async () => {
   FakeAC.all = [];
   let muted = true; const o = make({ muted: () => muted, kit: () => ({ engine: "chalk" }), loadPacks: () => Promise.resolve({ PACKS, HELPERS, scratch }) }); // the module import() hands over, scratch and all
   assert.equal(o.scratch(), null, "muted: nothing");

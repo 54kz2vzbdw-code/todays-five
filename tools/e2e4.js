@@ -86,7 +86,7 @@ async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: 
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await cdp.detach(); await wait(350);
     return during;
   };
-  /** motion-1: a strike drawn by hand across a line's words to `frac` of their width (1 = a little past the end) —
+  /** 1.12 b279: a strike drawn by hand across a line's words to `frac` of their width (1 = a little past the end) —
       a finger on the phone (CDP touch, 16 ms steps), the mouse on the desktop. `mid` runs while the finger is still down
       (a screenshot, a read of the ink), so a test can see the stroke before it lands. */
   const draw = async (sel, frac = 1, { steps = 18, mid = null } = {}) => {
@@ -452,7 +452,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": 1.10 + motion-1: the six moments the iPhone shell listens for fire, once each and in order, and nothing about them shows on the web", async () => {
+  await test(label + ": 1.10 + 1.12 b279: the six moments the iPhone shell listens for fire, once each and in order, and nothing about them shows on the web", async () => {
     const t = await fresh(opts);
     // The shell hears these through a WKUserScript in a client content world; here the page listens
     // to itself, which is the same contract (COMPATIBILITY.md §8) seen from the other side.
@@ -471,7 +471,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press(`#list .row[data-id="${firstId}"] .tx`); await wait(450);
     assert.deepEqual(await seen(), ["tf:check", "tf:uncheck"], "and taking it back says so");
 
-    // motion-1: a strike drawn by hand is tf:draw, tf:lift, tf:check, in that order — the shell's scratch stops before
+    // 1.12 b279: a strike drawn by hand is tf:draw, tf:lift, tf:check, in that order — the shell's scratch stops before
     // the knock — and the two taps above sent neither of the first two
     const drawId = await t.page.$eval("#list .row:not(.done)", e => e.dataset.id);
     await t.draw(`#list .row[data-id="${drawId}"]`, 1); await wait(450);
@@ -510,14 +510,14 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  /* ---------------- motion-1: the strike drawn by hand ---------------- */
+  /* ---------------- 1.12 b279: the strike drawn by hand ---------------- */
   const pinKit = (kit, extra = "") => `try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: { day: "T1:curated:${kit}", night: "T1:curated:${kit}", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }${extra} } })); } catch (e) {}`;
   const isDone = (t, id) => t.page.$eval(`.row[data-id="${id}"]`, e => e.classList.contains("done"));
   /** how far each line's ink is drawn right now, read off the inline style motion.js writes while a finger is down */
   const drawnTo = (t, sel) => t.page.$$eval(sel + " .lines .ink", els => els.map(e => { const s = e.style, c = /inset\(\S+ ([\d.]+)%/.exec(s.clipPath || ""), m = /scaleX\(([\d.]+)\)/.exec(s.transform || ""); return c ? 1 - c[1] / 100 : m ? +m[1] : 0; }));
   const clean = (t, sel) => t.page.$$eval(sel + " .lines .ink", els => els.every(e => !/transform|clip-path|opacity|transition|--hot|--tip/.test(e.getAttribute("style") || "")));
 
-  await test(label + ": motion-1: a strike drawn " + (touch ? "by a finger" : "with the mouse") + " past 55 % crosses the line off; one at 40 % pulls back and writes nothing; a quick short flick writes nothing; none of them opens the menu", async () => {
+  await test(label + ": 1.12 b279: a strike drawn " + (touch ? "by a finger" : "with the mouse") + " past 55 % crosses the line off; one at 40 % pulls back and writes nothing; a quick short flick writes nothing; none of them opens the menu", async () => {
     const t = await fresh(opts); await wait(900); // motion.js arrives at idle
     const id = await t.page.$eval("#list .row:not(.done)", e => e.dataset.id), sel = `#list .row[data-id="${id}"]`;
     const before = (await t.s()).stats.check;
@@ -535,7 +535,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  if (touch) await test(label + ": motion-1: a line that wraps is struck as one stroke in reading order — the first line full before the next begins — drawn or tapped, and unchecking unwinds it from the last line", async () => {
+  if (touch) await test(label + ": 1.12 b279: a line that wraps is struck as one stroke in reading order — the first line full before the next begins — drawn or tapped, and unchecking unwinds it from the last line", async () => {
     const t = await fresh(opts, { init: pinKit("terminal") }); await wait(900); // a mono face at 390 wraps the second seed line
     const id = await t.page.evaluate(() => { const r = [...document.querySelectorAll("#list .row:not(.done)")].find(r => r.querySelectorAll(".lines .ink").length > 1); return r ? r.dataset.id : null; });
     assert.ok(id, "a seed line wraps on a phone");
@@ -559,7 +559,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": motion-1: a strike drawn by hand lands exactly where a tap's does — the same computed ink, nothing inline left behind — and a done line does not draw", async () => {
+  await test(label + ": 1.12 b279: a strike drawn by hand lands exactly where a tap's does — the same computed ink, nothing inline left behind — and a done line does not draw", async () => {
     const t = await fresh(opts); await wait(900);
     const ids = await t.page.$$eval("#list .row:not(.done)", els => els.map(e => e.dataset.id));
     await t.press(`#list .row[data-id="${ids[0]}"] .tx`); await wait(700);
@@ -576,7 +576,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  if (touch) await test(label + ": motion-1: a textured ink is revealed by a clip while it is drawn, never squashed, and held visible — Pink's gradient, Chalkboard's chalk", async () => {
+  if (touch) await test(label + ": 1.12 b279: a textured ink is revealed by a clip while it is drawn, never squashed, and held visible — Pink's gradient, Chalkboard's chalk", async () => {
     for (const [kit, extra] of [["pink", ""], ["chalkboard", ', extras: ["chalk"]']]) {
       const t = await fresh(opts, { init: pinKit(kit, extra) }); await wait(900);
       assert.equal((await t.s()).theme, kit);
@@ -590,7 +590,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     }
   });
 
-  if (touch) await test(label + ": motion-1: a device that knew the old swipe-right menu is told once, on its first drawn strike, that a swipe crosses off now — and a new device is not told at all", async () => {
+  if (touch) await test(label + ": 1.12 b279: a device that knew the old swipe-right menu is told once, on its first drawn strike, that a swipe crosses off now — and a new device is not told at all", async () => {
     let t = await fresh(opts, { init: pinKit("light", ", hints: { today: true, drag: true, menu: true }") }); await wait(900);
     const ids = await t.page.$$eval("#list .row:not(.done)", els => els.map(e => e.dataset.id));
     await t.draw(`#list .row[data-id="${ids[0]}"]`, 1); await wait(500);
@@ -606,7 +606,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": motion-1: under reduced motion the ink still follows the finger, and the landing is instant", async () => {
+  await test(label + ": 1.12 b279: under reduced motion the ink still follows the finger, and the landing is instant", async () => {
     const t = await fresh(opts, { reducedMotion: "reduce" }); await wait(900);
     const id = await t.page.$eval("#list .row:not(.done)", e => e.dataset.id), sel = `#list .row[data-id="${id}"]`;
     let mid = null;
@@ -618,7 +618,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  if (!touch) await test(label + ": motion-1: the mouse — a click that wobbles a few pixels is still a click, and a drag that is mostly up or down draws nothing", async () => {
+  if (!touch) await test(label + ": 1.12 b279: the mouse — a click that wobbles a few pixels is still a click, and a drag that is mostly up or down draws nothing", async () => {
     const t = await fresh(opts); await wait(900);
     const ids = await t.page.$$eval("#list .row:not(.done)", els => els.map(e => e.dataset.id));
     const at = async id => (await t.page.$(`.row[data-id="${id}"] .tx`)).boundingBox();
@@ -662,7 +662,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": the line menu opens by " + (touch ? "a hold released in place, Edit first — a swipe right crosses the line off instead (motion-1); a hold that moves drags" : "⋯, Edit first; dragging ⋯ moves the line; the popover sits by the row"), async () => {
+  await test(label + ": the line menu opens by " + (touch ? "a hold released in place, Edit first — a swipe right crosses the line off instead (1.12 b279); a hold that moves drags" : "⋯, Edit first; dragging ⋯ moves the line; the popover sits by the row"), async () => {
     const t = await fresh(opts);
     await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])"); await wait(300); await t.esc(); await wait(200);
     await t.lineMenu("#all .row:nth-child(2)");
@@ -672,7 +672,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.esc(); await wait(300);
     const first = await t.page.$eval("#all .row:first-child .tx", e => e.dataset.text);
     if (touch) {
-      // motion-1: a swipe right no longer opens the menu — it draws the strike, and this one is long enough to land
+      // 1.12 b279: a swipe right no longer opens the menu — it draws the strike, and this one is long enough to land
       await wait(600); // motion.js arrives at idle
       const r3 = await t.page.$eval("#all .row:nth-child(3)", e => e.dataset.id);
       await t.draw(`#all .row[data-id="${r3}"]`, 1); await wait(500);
@@ -1442,7 +1442,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.ok((await t.page.inputValue("#help-body input.link")).includes("/add?text="));
     await t.press("#help-keys"); await t.page.waitForSelector("#p-keys[open]");
     assert.equal((await t.page.textContent("#p-keys-h")).trim(), touch ? "Gestures" : "Keys");
-    assert.ok(new RegExp(touch ? "Swipe across a line" : "⌘ Z").test(await t.page.textContent("#keys-body"))); // motion-1: the gesture that took swipe right's place
+    assert.ok(new RegExp(touch ? "Swipe across a line" : "⌘ Z").test(await t.page.textContent("#keys-body"))); // 1.12 b279: the gesture that took swipe right's place
     await t.esc();
     await t.close();
   });

@@ -288,7 +288,7 @@ export const PACK_ORDER = ["knock", "bell", "blip", "typewriter", "marble", "pop
     same way without importing this module a second time under a different URL. */
 export const HELPERS = { tone, noiseBurst };
 
-/* motion-1: the scratch under a drawing finger. One voice for every engine — the twelve here, the Secret pair's and the
+/* 1.12 b279: the scratch under a drawing finger. One voice for every engine — the twelve here, the Secret pair's and the
    Extra kits' — so each kit draws with a surface of its own without a new engine: looped noise through the engine's
    filter, a slow random swell riding on it for the grain, the level and the brightness following the finger's speed
    (smoothed over ~25 ms), panned with the finger. Silent until the finger moves; gone 150 ms after it lifts. Each row is

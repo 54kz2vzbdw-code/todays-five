@@ -60,7 +60,7 @@ for (const id of packs) {
 }
 console.log(["pack", "check peak", "check rms", "uncheck peak", "uncheck rms", "finale peak", "finale rms", "finale s", ""].join("\t"));
 for (const r of rows) console.log(r.join("\t"));
-// motion-1: the scratch under a drawing finger, per engine, held at three speeds (px/ms) for half a second each, measured
+// 1.12 b279: the scratch under a drawing finger, per engine, held at three speeds (px/ms) for half a second each, measured
 // in its steady state (0.15–0.7 s). It should sit at or under the engine's own check-off, peak and loudness both.
 const SPEEDS = { slow: 0.35, medium: 0.8, fast: 1.6 };
 console.log("\n" + ["scratch", ...Object.keys(SPEEDS).flatMap(k => [k + " peak", k + " rms"]), "vs check", ""].join("\t"));

@@ -1,4 +1,4 @@
-// tools/draw.mjs — GIFs of the strike drawn by hand (motion-1), at 390×844 with a real finger (CDP touch), recorded from
+// tools/draw.mjs — GIFs of the strike drawn by hand (1.12 b279), at 390×844 with a real finger (CDP touch), recorded from
 // Chrome's own screencast so they play at the speed the app runs, and cropped to the lines. One GIF per scene:
 //   paper       a slow stroke, a fast one on the next line, and a short one that pulls back
 //   terminal    the line that wraps, drawn in one pass (both lines struck at the finger's x), then a fast one

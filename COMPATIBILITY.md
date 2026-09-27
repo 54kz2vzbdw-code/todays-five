@@ -223,7 +223,7 @@ stops loading the current page, which is why it never bundles one.
 
 - **The `tf:*` events are the contract.** The page dispatches six `CustomEvent`s on `window`: from
   the same places the sound plays, **`tf:check`, `tf:uncheck`, `tf:finale`, `tf:shuffle`**; and
-  since 1.12 motion-1, around a strike drawn by hand, **`tf:draw`** when the finger starts drawing
+  since 1.12 b279, around a strike drawn by hand, **`tf:draw`** when the finger starts drawing
   and **`tf:lift`** when it leaves the glass, committed or not — a commit then sends `tf:check`, so a
   drawn strike is always `tf:draw`, `tf:lift`, `tf:check`, in that order, and a tap never sends the
   first two. They carry **no `detail`** — a haptic needs the moment, never the list, and the drawn

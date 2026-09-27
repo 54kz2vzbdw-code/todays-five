@@ -183,7 +183,7 @@ function panels() {
   });
   return panelsP;
 }
-/** motion-1: motion.js, at idle after load or on the first press on a line; pinned like panels.js, never thrown into a gesture. */
+/** 1.12 b279: motion.js, at idle after load or on the first press on a line; pinned like panels.js, never thrown into a gesture. */
 let motionMod = null, motionP = null;
 function loadMotion() {
   if (!motionP) motionP = import("./motion.js?v=" + BUILD).then(m => (motionMod = m)).catch(() => { motionP = null; return null; });
@@ -827,7 +827,7 @@ function makeRow(it) {
   const tools = li.querySelector(".tools");
   // quiet rows (1.1): the checkbox and the words, plus a small star in Everything. The one control, ⋯, appears on hover
   // on the desktop (click: the line's menu, Edit at the top; drag: move the line). On the phone it is kept for assistive
-  // tech only; a hold lifts the line (drag to move, let go for the menu), and since motion-1 a swipe right draws the strike.
+  // tech only; a hold lifts the line (drag to move, let go for the menu), and since 1.12 b279 a swipe right draws the strike.
   if (view === "all") {
     const today = document.createElement("button"); today.type = "button"; today.className = "tool today";
     today.innerHTML = ICONS.star; today.setAttribute("aria-pressed", "false"); today.setAttribute("aria-label", "Today");
@@ -1098,7 +1098,7 @@ function layoutStrikes(el, instant) {
   const base = el.getBoundingClientRect();
   if (instant) el.classList.add("nofx");
   wrap.innerHTML = "";
-  // motion-1: a wrapped line's strike is one stroke in reading order (1.9 started each line .08 s after the last); one line
+  // 1.12 b279: a wrapped line's strike is one stroke in reading order (1.9 started each line .08 s after the last); one line
   // keeps .22 s, two take .28, more .32, inside the knock; unchecking unwinds from the last line. One-line rows set nothing.
   const lines = Array.from(rects).filter(r => r.width >= 1), n = lines.length;
   const T = n > 1 ? Math.min(0.32, 0.22 + 0.06 * (n - 1)) : 0, sum = lines.reduce((a, r) => a + r.width, 0);
@@ -1331,7 +1331,7 @@ document.addEventListener("pointerup", e => {
 }, true);
 document.addEventListener("pointercancel", () => { press = null; }, true);
 
-/* swipes across a line: leftwards is "Not today" (touch only; off in Settings → Behavior). motion-1: rightwards draws the
+/* swipes across a line: leftwards is "Not today" (touch only; off in Settings → Behavior). 1.12 b279: rightwards draws the
    strike (motion.js), landing by distance and never by speed, since a swipe right used to open the menu; a done line
    only gives a little. The menu keeps the hold; the check-off is toggle()'s, unchanged. */
 function swipeStart(li, e) {

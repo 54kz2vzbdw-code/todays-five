@@ -2702,7 +2702,7 @@ printed nothing", which is the third harness lie of this project (the three abov
 switching `cmdLaunch` to a pty means keeping a child alive for the console's life, which is a change to the
 harness's shape and not this round's. The workaround is one line and is written here.
 
-## The drawn strike in the hand (1.12 motion-1)
+## The drawn strike in the hand (1.12 b279)
 
 The web's new gesture — a swipe across a line draws its strike under the finger — has a scratch in the phone: the
 Taptic Engine runs one continuous event for as long as the finger draws, and its intensity and sharpness follow the

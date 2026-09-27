@@ -1,4 +1,4 @@
-// motion.js — how things move (1.12 motion-1). Fetched at idle after first paint, or on the first press on a line,
+// motion.js — how things move (1.12 b279). Fetched at idle after first paint, or on the first press on a line,
 // whichever comes first; never at first paint. Pinned to the page's build like panels.js (COMPATIBILITY.md §6).
 //
 // Round one holds three things, and later rounds (the materials, the menus, the unseal) build on them:

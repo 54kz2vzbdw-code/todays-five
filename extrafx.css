@@ -37,7 +37,7 @@ html[data-theme="chalkboard"] #finale.on span,html[data-theme="whiteboard"] #fin
 .row.done .lines{--burn:0;transition:--burn var(--strike-cool,0s) ease-out}
 .ink::after{content:"";position:absolute;inset:0;border-radius:inherit;opacity:0;background:var(--strike-hot,transparent);box-shadow:var(--strike-hot-shadow,none)}
 .row.done .ink::after{opacity:var(--burn,0)}
-/* motion-1: a strike drawn by hand burns only at the tip and cools behind the finger (motion.js sets --hot on the line
+/* 1.12 b279: a strike drawn by hand burns only at the tip and cools behind the finger (motion.js sets --hot on the line
    the tip is on and --tip where it is); after the lift the tip cools too, and the line is not reheated (--burn:0 on
    .lines while it is drawn). A kit that names no --strike-hot draws nothing here. */
 .row.drawing .ink::after{opacity:var(--hot,0);transition:opacity .9s ease-out;-webkit-mask-image:linear-gradient(90deg,transparent calc(var(--tip,100%) - 3.4em),#000 var(--tip,100%),transparent calc(var(--tip,100%) + 1px));mask-image:linear-gradient(90deg,transparent calc(var(--tip,100%) - 3.4em),#000 var(--tip,100%),transparent calc(var(--tip,100%) + 1px))}

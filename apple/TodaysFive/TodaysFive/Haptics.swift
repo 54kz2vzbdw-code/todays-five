@@ -1,7 +1,7 @@
 // Haptics.swift — the reason the app exists.
 //
 // Six moments, and nothing else. No haptic on an ordinary tap; the page's own sound still plays,
-// and muting the sound does not mute these — they are different senses. motion-1 added the two
+// and muting the sound does not mute these — they are different senses. 1.12 b279 added the two
 // around a drawn strike, `tf:draw` and `tf:lift`: the scratch in the hand while a finger draws.
 //
 // The web has fired an iOS haptic on check-off since before this app, through a hidden
@@ -25,7 +25,7 @@ final class Haptics {
         case uncheck = "tf:uncheck"
         case finale = "tf:finale"
         case shuffle = "tf:shuffle"
-        case draw = "tf:draw"   // motion-1: a finger has started drawing a strike
+        case draw = "tf:draw"   // 1.12 b279: a finger has started drawing a strike
         case lift = "tf:lift"   // …and has left the glass, committed or not (a commit then sends tf:check)
     }
 
@@ -72,7 +72,7 @@ final class Haptics {
         prepare()
     }
 
-    // ---------------------------------------------------------------- the scratch (motion-1)
+    // ---------------------------------------------------------------- the scratch (1.12 b279)
 
     /// The drawn strike, in the hand: one continuous event for as long as the finger draws, its
     /// intensity and sharpness following the finger's speed. The page says only when a strike begins
@@ -190,7 +190,7 @@ final class Haptics {
     }
 
     #if DEBUG
-    /// `-TFSelfTest`, motion-1: the scratch's pattern, built where it cannot be felt, the way the
+    /// `-TFSelfTest`, 1.12 b279: the scratch's pattern, built where it cannot be felt, the way the
     /// finale's is, so a malformed one is found on a simulator rather than in someone's hand.
     func drawSelfCheck() -> String {
         do {

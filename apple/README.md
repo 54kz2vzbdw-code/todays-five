@@ -291,7 +291,7 @@ Six `CustomEvent`s the page dispatches on `window`, and nothing else:
 | `tf:uncheck` | `UIImpactFeedbackGenerator(.light)` |
 | `tf:finale` | a `CHHapticPattern` on the volley's rhythm (1.12); `UINotificationFeedbackGenerator(.success)` where there is no engine |
 | `tf:shuffle` | `UIImpactFeedbackGenerator(.light)` |
-| `tf:draw` | the scratch: a `CHHapticAdvancedPatternPlayer` with one continuous event whose intensity and sharpness follow the finger's speed, which a `UIPanGestureRecognizer` on the web view reads (motion-1) |
+| `tf:draw` | the scratch: a `CHHapticAdvancedPatternPlayer` with one continuous event whose intensity and sharpness follow the finger's speed, which a `UIPanGestureRecognizer` on the web view reads (1.12 b279) |
 | `tf:lift` | stops the scratch; a committed strike then sends `tf:check` |
 
 They carry no `detail`. The names are contract — `COMPATIBILITY.md` §8, and `tools/e2e4.js` asserts

@@ -1018,3 +1018,69 @@ and the words are in the module the boot path parses — the number and its inst
 **Landed as build 278.** The full browser suite ran end to end on this tree before the stamp (185 passed, 0
 failed), and first paint measured unchanged against 266 (desktop FCP 56 → 52 ms, mobile 1216 → 1212 ms, medians of
 eight a side). Idle CPU was not measured: Price skipped it at landing. The pair runs nothing at rest by construction.
+
+# 1.12 b279 decisions — motion, round one: cross it off by hand
+
+The brief is `L3/todays-five-1.12-motion-1-prompt.md`, the first of six rounds meant to give the app a moat. Price
+changed two things at the checkpoint: a wrapped line is struck as one stroke in reading order, and "make all your
+suggested changes." The brief asked for Fable; this round ran on Opus.
+
+**The gesture.** A horizontal drag on an undone line draws its strike. It is recognised the way `swipeStart` already
+recognised a swipe: 14 px sideways before 12 px down, never while dragging or editing. Touch, pen and mouse all draw.
+On release the strike lands when 55 % of the stroke is drawn. That is by distance and never by speed: swipe right used
+to open the line's menu, and a flick meant for that must not cross a line off. Landing is `toggle()`'s check-off,
+unchanged. Short of 55 %, the ink pulls back on a critically damped spring (~275 ms) and nothing is written. A done
+line gives up to 14 px and springs back. Swipe left is untouched. The menu keeps the hold.
+
+**The mouse draws.** `DRAW_MOUSE` is on, because a trackpad drag across a line's words is the same gesture, and it
+survived the checkpoint. Two tests guard it: a click that wobbles a few pixels is still a click, and a drag out of the
+row draws nothing. A press released on its own row's words has always been a click (1.9), so a drag that ends there is
+a click, not a strike.
+
+**The wrap (Price's call).** The first cut struck every wrapped line at once at the finger's x, like a rake. Now a strike
+is one stroke through the text in reading order.
+- *Drawn:* the finger's sweep across the row is the whole stroke, so a wrapped line is crossed off in one pass without
+  the finger having to wrap. The ink runs ahead of the finger on the early lines and meets it on the last.
+- *Tapped:* `layoutStrikes` gives each line a delay, a share of the time in proportion to its width, and an easing
+  (the last line eases out). One line keeps 1.9's .22 s and sets no variables. Two lines take .28 s and three or more
+  .32 s, so the ink still lands inside the knock. Unchecking unwinds the stroke from the last line (`--dr`).
+
+**The ink while it is drawn.** A flat ink grows with `scaleX`, as a tapped strike always has. A textured ink would
+squash under a scale — a gradient (Pink, Blush, Sunset, the Secret pair) or a mask (the Extra kits) — so it is shown
+whole and revealed with a clip. The Extra kits fade an unstruck ink out (`--strike-exit-op`), so a line being drawn is
+held at opacity 1. Chalkboard drew nothing mid-stroke until that was found, and it was found by looking. Every inline
+style is gone when the ink lands, and a test compares the computed ink of a drawn strike with a tapped one.
+
+**The landing carries the finger.** The rest of the stroke runs at the finger's release speed: 0.8–3.2 px/ms, landing in
+70–240 ms, so a flick lands faster than a slow hand.
+
+**Char's hot tip.** While a strike is being drawn, Char's burn glows only at the tip and cools behind the finger.
+`extrafx.css` reads `--hot` and `--tip`, and since that is the Extra module's own stylesheet, no other kit pays for it.
+After the lift, the tip cools over .9 s, and the check-off does not reheat the line: `--burn` is set to 0 on `.lines`
+while the strike is drawn. A tapped strike on Char still burns and cools over 1.5 s, as b268 designed it.
+
+**The scratch.** One shaped-noise voice serves all eighteen engines, each with a row of filter settings. Its level and
+brightness follow the finger's speed, and it pans with the finger. It was levelled with `tools/sounds.js` at three
+speeds. The first render had fifteen engines louder than their own check-off: a continuous hiss measured against a
+knock's decaying window. So each level was scaled to 80 % of its check-off's loudness and 90 % of its peak. The whistle
+and the coin get more margin, because a pure tone peaks low and noise does not. Result: 0 of 18 over, on three
+renders. It is levelled by the numbers, not by ear; `shots/motion-1/strokes.m4a` is for the ear.
+
+**The hand.** The page sends `tf:draw` and `tf:lift` and never a speed; the shell measures the finger itself. The three
+Apple calls are in `apple/DECISIONS-apple.md`.
+
+**The hint.** A device that saw the old menu hint (`dev.hints.menu`) gets one mark on its first drawn strike: "A swipe
+across a line crosses it off now—hold it for the menu." The wording went through the voice skill. A new device is never
+told, because it never knew the old gesture.
+
+**`motion.js`.** It is fetched 600 ms after load, or on the first press on a row. It is version-pinned and in `SHELL`.
+`spring()` solves a spring once into a CSS `linear()` easing and ends it when it is settled to the eye (within 0.4 %),
+because a longer tail is time nobody sees. It weighs 3.9 KB gzipped.
+
+**Budgets.**
+- `app.js`: +1,158 bytes gzipped against a 1 KB budget, 134 over. The overage is the wrapped tap strike, which has to
+  be in `app.js` because strikes are laid out at first render, before `motion.js` is fetched.
+- `styles.css`: +95 bytes.
+- `motion.js`: 3,890 bytes gzipped, under its 4 KB.
+- Idle CPU: not measured, because Price said to skip the idle tests. Nothing in the round runs at rest.
+

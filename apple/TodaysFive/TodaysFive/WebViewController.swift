@@ -126,7 +126,7 @@ final class WebViewController: UIViewController {
     }
 
     /// Six names, and nothing that identifies a list. `ready` carries no `tf:` prefix because it is
-    /// the bridge announcing itself, not one of the page's events. motion-1 added `tf:draw` and
+    /// the bridge announcing itself, not one of the page's events. 1.12 b279 added `tf:draw` and
     /// `tf:lift`, still with no detail: the drawn strike's speed is measured here, never sent.
     static let bridgeSource = """
     (function () {
@@ -181,7 +181,7 @@ final class WebViewController: UIViewController {
         if recognizer.state == .began { haptics.prepare() }
     }
 
-    /// motion-1: the drawn strike's speed, read by the shell rather than sent by the page, so the
+    /// 1.12 b279: the drawn strike's speed, read by the shell rather than sent by the page, so the
     /// page's events stay what COMPATIBILITY.md §8 says they are — a moment and nothing else. Like the
     /// touch-down press it sees every pan and swallows none; Haptics only listens between `tf:draw`
     /// and `tf:lift`, so a scroll or an edge swipe costs nothing.
@@ -414,7 +414,7 @@ final class WebViewController: UIViewController {
         let fired = Haptics.Moment.allCases.filter { (haptics.counts[$0] ?? 0) > (before[$0] ?? 0) }
         log("selftest: bridge=\(bridgeReady ? "ready" : "SILENT") heard=\(fired.count)/\(Haptics.Moment.allCases.count) \(haptics.tally)")
         log("selftest: finale pattern \(haptics.finaleSelfCheck())") // 1.12: the volley's rhythm, built even where it cannot be felt
-        log("selftest: draw pattern \(haptics.drawSelfCheck())")     // motion-1: the scratch, built even where it cannot be felt
+        log("selftest: draw pattern \(haptics.drawSelfCheck())")     // 1.12 b279: the scratch, built even where it cannot be felt
 
         // and what the page will key on in 1.10
         let ua = (try? await webView.evaluateJavaScript(

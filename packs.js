@@ -287,3 +287,68 @@ export const PACK_ORDER = ["knock", "bell", "blip", "typewriter", "marble", "pop
 /** The two builders every engine here is made of, so a pack that loads later (packs-secret.js, 1.6) is built the
     same way without importing this module a second time under a different URL. */
 export const HELPERS = { tone, noiseBurst };
+
+/* motion-1: the scratch under a drawing finger. One voice for every engine — the twelve here, the Secret pair's and the
+   Extra kits' — so each kit draws with a surface of its own without a new engine: looped noise through the engine's
+   filter, a slow random swell riding on it for the grain, the level and the brightness following the finger's speed
+   (smoothed over ~25 ms), panned with the finger. Silent until the finger moves; gone 150 ms after it lifts. Each row is
+   the surface: [filter, centre Hz, Q, level, grain]. Levelled by tools/sounds.js against the check-offs. */
+export const SCRATCH = {
+  knock: ["bandpass", 2600, 0.8, 0.40, 0.8],      // a dry pen on card
+  bell: ["bandpass", 5600, 1.2, 0.24, 0.6],       // a fingertip on glass
+  blip: ["highpass", 2300, 0.7, 0.26, 1.0],       // static
+  typewriter: ["bandpass", 3300, 0.8, 0.46, 0.9], // ribbon ink on paper
+  marble: ["lowpass", 1500, 0.7, 0.46, 0.7],      // a marble rolled across wood
+  pop: ["bandpass", 4800, 1.0, 0.28, 0.7],        // fizz
+  kalimba: ["bandpass", 2200, 0.9, 0.34, 0.6],    // a thumbnail along the plate
+  pencil: ["bandpass", 2800, 0.6, 0.55, 1.0],     // graphite
+  whistle: ["bandpass", 3600, 1.4, 0.24, 0.5],    // breath
+  bongo: ["lowpass", 1200, 0.6, 0.46, 0.9],       // a palm across the skin
+  cork: ["bandpass", 1800, 0.9, 0.36, 0.8],       // a cork pushed along a table
+  arcade: ["bandpass", 900, 4.0, 0.26, 1.0],      // a coin rolling down the chute
+  sparkle: ["bandpass", 6400, 1.3, 0.22, 0.5],
+  party: ["bandpass", 5200, 1.0, 0.26, 0.6],
+  chalk: ["bandpass", 3800, 0.5, 0.58, 1.2],      // chalk, with grit
+  marker: ["bandpass", 1500, 2.2, 0.36, 0.5],     // felt, with a squeak in it
+  carve: ["bandpass", 1900, 0.6, 0.54, 1.1],      // a blade in soft wood
+  burn: ["highpass", 3200, 0.6, 0.32, 1.3]        // a hot tip, crackling
+};
+const noiseLoops = new WeakMap(); // one second of noise per audio context, shared by every scratch it plays
+function loopNoise(c) {
+  let b = noiseLoops.get(c);
+  if (!b) { const n = Math.floor(c.sampleRate * 1.3); b = c.createBuffer(1, n, c.sampleRate); const d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; noiseLoops.set(c, b); }
+  return b;
+}
+/** { speed(v, x), stop() }: v in px/ms, x the finger's place across the screen from 0 to 1. */
+export function scratch({ c, master, kit }) {
+  const [type, f0, q, level, grain] = SCRATCH[kit && kit.engine] || SCRATCH.knock;
+  const buf = loopNoise(c), t0 = c.currentTime;
+  const src = c.createBufferSource(); src.buffer = buf; src.loop = true;
+  const f = c.createBiquadFilter(); f.type = type; f.frequency.value = f0; f.Q.value = q;
+  const speed = c.createGain(); speed.gain.value = 0;
+  const surface = c.createGain(); surface.gain.value = 1;       // the grain rides on this, around 1
+  const gr = c.createBufferSource(); gr.buffer = buf; gr.loop = true; gr.playbackRate.value = 0.37;
+  const gl = c.createBiquadFilter(); gl.type = "lowpass"; gl.frequency.value = 38;
+  const depth = c.createGain(); depth.gain.value = 5 * grain;  // noise under 38 Hz is quiet: this makes the swell about ±0.35
+  const pan = c.createStereoPanner ? c.createStereoPanner() : null;
+  gr.connect(gl); gl.connect(depth); depth.connect(surface.gain);
+  src.connect(f); f.connect(speed); speed.connect(surface);
+  if (pan) { surface.connect(pan); pan.connect(master); } else surface.connect(master);
+  src.start(t0); gr.start(t0, 0.31);                             // the swell starts elsewhere in the loop than the hiss
+  let done = false;
+  return {
+    speed(v, x) {
+      if (done) return;
+      const n = Math.max(0, Math.min(1, v / 1.4)), t = c.currentTime;
+      speed.gain.setTargetAtTime(n * level, t, 0.025);
+      f.frequency.setTargetAtTime(f0 * (0.75 + n * 0.6), t, 0.05);
+      if (pan && typeof x === "number") pan.pan.setTargetAtTime(Math.max(-0.7, Math.min(0.7, (x - 0.5) * 1.3)), t, 0.05);
+    },
+    stop() {
+      if (done) return; done = true;
+      const t = c.currentTime;
+      speed.gain.cancelScheduledValues(t); speed.gain.setTargetAtTime(0, t, 0.03);
+      try { src.stop(t + 0.15); gr.stop(t + 0.15); } catch (e) { /* already stopped */ }
+    }
+  };
+}

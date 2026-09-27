@@ -116,6 +116,9 @@ export function createSound(opts) {
     // Change fx.js's volley() and this changes with it; test/sound.test.js holds the two together.
     finish() { const ok = play("finish"); buzz(FINALE_BUZZ); return ok; },
     tick() { return play("uncheck"); },
+    /** motion-1: the scratch under a drawing finger, for whichever engine is on — { speed(v, x), stop() }, or null when
+        muted or before the engines have landed (then the strike is silent, and the check-off still sounds). */
+    scratch() { const c = ctx(); if (!c) return null; if (!packsMod) { loadPacks(); return null; } try { return packsMod.scratch({ c, master, kit: kit() }); } catch (e) { return null; } },
     /** Warm the context up inside a user gesture and start loading the engines, so the first real sound is not swallowed. */
     prime() { ctx(); loadPacks(); warm(kit().engine); },
     /** 1.7: fetch the engines at idle, outside any gesture (no context is made), so the first check-off finds them loaded. */

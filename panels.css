@@ -19,7 +19,7 @@ dialog.panel h2{ /* 1.9: a step above the h3s under it — larger, a shade stron
 }
 dialog.panel h2 .x{margin-left:auto}
 #p-repeat-h{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-dialog.panel{touch-action:pan-y} /* 1.4: a horizontal touch stays with the page (the edge swipe back); vertical pans scroll as before */
+dialog.panel,dialog.panel .body{touch-action:pan-y} /* 1.4: a horizontal touch stays with the page (the edge swipe back); vertical pans scroll as before. The body is a scroller, and a scroller starts the chain touch-action is read along, so it says so too (1.12 b315: a swipe begun inside a sheet went to the browser) */
 /* 1.4: the way back — one button the stack moves into whichever panel sits on a parent */
 dialog.panel h2 .back{font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--accent-text);background:transparent;border:0;padding:.2em .5em .2em .1em;margin:0 .1rem 0 -.1rem;cursor:pointer;display:inline-flex;align-items:center;gap:.15em;min-height:32px;border-radius:8px}
 dialog.panel h2 .back .chev{font-size:1.7em;line-height:.8;font-weight:400;position:relative;top:-.06em}

@@ -156,6 +156,9 @@ const STATUS_LABEL = {
 let lastCat = "", lastLimitToast = "";
 const viewCollapsed = new Set(); // view-only mode: a viewer's collapse must never win a merge against the editors
 let press = null, tapped = null, swipe = null;
+// 1.12 b293: above the boot block: a render at boot reaches them
+let unsealT = 0, kept = false, zoomingTo = "", lifted = null, pendingFold = null, morphFrom = null, panelOrigin = null, pressedAt = null;
+const exits = new Map(), leavingEls = new Map();
 let reloading = false;
 let toastAction = null, reviewDismissed = false, whatsNewShown = false, rz = 0, settling = false, killing = false;
 let dragEndedAt = -1e9; // no drag has ended yet
@@ -189,7 +192,7 @@ function loadMotion() {
   if (!motionP) motionP = import("./motion.js?v=" + BUILD).then(m => (motionMod = m)).catch(() => { motionP = null; return null; });
   return motionP;
 }
-/** 1.12 b293: finale.js, each curated kit's own ending, fetched in the same idle beat; without it the volley plays as before. */
+/** 1.12 b293: finale.js, each curated kit's own ending, fetched in the same idle beat. */
 let finaleMod = null;
 const loadFinale = () => import("./finale.js?v=" + BUILD).then(m => (finaleMod = m)).catch(() => null);
 { const go = () => setTimeout(() => { loadMotion(); loadFinale(); }, 600); if (document.readyState === "complete") go(); else addEventListener("load", go, { once: true }); }
@@ -200,7 +203,7 @@ const HAPTIC = IOS && !SHELL && (() => { const h = document.getElementById("hapt
 
 /* ---------------- sound & fx ---------------- */
 const stats = { check: 0, uncheck: 0, finish: 0, burst: 0, volley: 0, tick: 0 }; // read by the test hook
-const rawSound = createSound({ muted: () => !!dev.muted, volume: () => dev.volume, kit: () => theme && theme.sound, pack: () => packFor(T.activeSlot(dev, envNow())) }); // 1.9: the slot's own pack
+const rawSound = createSound({ muted: () => !!dev.muted, volume: () => dev.volume, kit: () => theme && theme.sound, pack: () => packFor(T.activeSlot(dev, envNow())), mat: () => document.documentElement.dataset.mat }); // 1.9: the slot's own pack; 1.12 b293: the material's room
 /** 1.9: this device's pack for a slot ("" = the theme's pick). */
 function packFor(slot) { return (dev.soundPacks && dev.soundPacks[slot]) || ""; }
 function setSoundPack(slot, id) {
@@ -209,7 +212,7 @@ function setSoundPack(slot, id) {
   dev.soundPacks[slot] = id || ""; dev.soundPins[slot] = ""; // a choice of your own replaces a pin
   saveDevice();
 }
-const sound = { ...rawSound, check: s => { stats.check++; return rawSound.check(s); }, uncheck: () => { stats.uncheck++; return rawSound.uncheck(); }, finish: () => { stats.finish++; return rawSound.finish(); }, tick: () => { stats.tick++; return rawSound.tick(); } };
+const sound = { ...rawSound, check: (s, x) => { stats.check++; return rawSound.check(s, x); }, uncheck: x => { stats.uncheck++; return rawSound.uncheck(x); }, finish: () => { stats.finish++; return rawSound.finish(); }, tick: () => { stats.tick++; return rawSound.tick(); } };
 const rawFx = createFx($("#fx"), { palette: () => theme ? theme.confetti : ["#A86014"], shapes: () => theme ? theme.shapes : 1, reduced: () => RM.matches });
 const fx = { burst: (...a) => { stats.burst++; return rawFx.burst(...a); }, volley: () => { stats.volley++; return rawFx.volley(); } };
 /** The finale's confetti: the volley every kit throws, or the bloom or the cake a Secret kit names (1.6). That
@@ -217,7 +220,7 @@ const fx = { burst: (...a) => { stats.burst++; return rawFx.burst(...a); }, voll
 function finaleFx() {
   const kind = theme && theme.finale;
   if (!kind) { // 1.12 b293: a curated kit's own ending (finale.js), on the volley's rhythm; the volley itself if that is not here yet
-    if (finaleMod && finaleMod.finale(theme, rawFx, { span: $("#finale span"), w: innerWidth, h: innerHeight, reduced: RM.matches, spring: motionMod && motionMod.spring, shell: $("#shell") })) { stats.volley++; return; }
+    if (finaleMod && finaleMod.finale(theme, rawFx, { span: $("#finale span"), w: innerWidth, h: innerHeight, reduced: RM.matches, spring: motionMod && motionMod.spring, shell: $("#shell"), mat: document.documentElement.dataset.mat, emit: motionMod && motionMod.emit })) { stats.volley++; return; }
     fx.volley(); return;
   }
   stats.volley++; // a named finale counts as the volley it replaces
@@ -278,8 +281,12 @@ function applyThemeCode(code, { crossfade = false } = {}) {
   paintField();
   sound.warm(next.sound.engine); // a kit whose engine lives in its own module (1.6): start fetching it now
   paintDayNight();
+  relayMat();
   dispatchEvent(new CustomEvent("tf:theme"));
 }
+/** 1.12 b293: a new material strikes in its own hand, so the strikes are laid out again. */
+let laidMat = "";
+function relayMat() { const m = document.documentElement.dataset.mat || ""; if (m === laidMat) return; const was = laidMat; laidMat = m; if (was && doc) layoutAll(); }
 function stopFade() { if (!fadeRaf) return; cancelAnimationFrame(fadeRaf); fadeRaf = 0; const g = $("#glow"); g.style.transition = ""; g.style.opacity = ""; document.body.classList.remove("fading"); }
 /** The whole palette crossfades from one slot's theme to the other's: the colour tokens interpolated in OKLab over
     about 400 ms, the fonts, gradients and shadows swapped at the midpoint, the glow dipping through it. Instant
@@ -294,7 +301,7 @@ function crossfadeTo(prev, next) {
   let swapped = false;
   const step = now => {
     const p = Math.min(1, (now - t0) / FADE_MS);
-    if (p >= 0.5 && !swapped) { swapped = true; root.dataset.base = next.base; root.dataset.theme = next.id; glow.style.opacity = ""; }
+    if (p >= 0.5 && !swapped) { swapped = true; root.dataset.base = next.base; root.dataset.theme = next.id; root.dataset.mat = T.materialOf(next); glow.style.opacity = ""; relayMat(); }
     if (p < 1) { T.setTokenCss(style, T.cssTextBetween(prev, next, ease(p))); fadeRaf = requestAnimationFrame(step); }
     else { fadeRaf = 0; glow.style.transition = ""; T.applyTheme(next); document.body.classList.remove("fading"); }
   };
@@ -308,12 +315,20 @@ function paintDayNight() {
   b.title = (next === "night" ? "Night" : "Day") + " · T";
   b.setAttribute("aria-label", "Switch to " + next);
 }
-/** A tap on the sun or moon: the other slot, with the crossfade and the incoming theme's soft tick. */
+/** A tap on the sun or moon (or T): the other slot, opening from it (1.12 b293), and the incoming theme's soft tick. */
 function flipSlot() {
   T.flipSlot(dev, envNow()); saveDevice();
-  appliedCode = currentThemeCode();
-  applyThemeCode(appliedCode, { crossfade: true });
-  if (!dev.muted) sound.tick();
+  const code = appliedCode = currentThemeCode();
+  if (!dev.muted) sound.prime(); // in a reveal the tick lands a frame later, outside the tap
+  let revealed = false;
+  const now = () => { applyThemeCode(code, { crossfade: !revealed }); if (!dev.muted) sound.tick(); };
+  revealed = reveal($("#daynight"), now); if (!revealed) now();
+}
+/** 1.12 b293: a theme the person picked opens from what they touched (motion.js); false when it cannot. */
+function reveal(from, change) {
+  let ran = false; const once = () => { if (!ran) { ran = true; change(); } };
+  if (!motionMod || !motionMod.reveal(from, once)) return false;
+  setTimeout(once, 1000); return true; // should the transition never call back
 }
 /** Settings → Appearance: a theme for a slot (applied at once when that slot is on), the switch, its times. */
 function setSlotTheme(slot, code) {
@@ -526,7 +541,7 @@ async function openList(r) {
   if (drag) abortDrag();
   undoStack = []; hideToast();
   setSearch("", { silent: true });
-  const gen = ++openGen;
+  const gen = ++openGen, fromDemo = demo || kept; kept = false; // a kept welcome list is already on screen
   demo = false; shuffledId = null; $("#demo-foot").hidden = true; $("#w-keep").hidden = true;
   listId = r.id; listMode = mode; ref = null;
   meta.current = r.id; meta.currentMode = mode;
@@ -557,6 +572,7 @@ async function openList(r) {
   wasAll = allDoneInView();
   paintWho(0);
   try { setView(view, { force: true }); } catch (e) { console.error("render at open", e); } // 1.7: a bad row must not stop the engine
+  if (!fromDemo) unseal();
   paintListName();
   syncLive = false; lastCat = ""; paintStatus(transport || TRANSPORT_KIND ? "syncing" : "off");
   if (legacy) {
@@ -616,6 +632,19 @@ async function openList(r) {
   maybeWhatsNew();
 }
 
+/** 1.12 b293: a list opened here, cold or switched to, unseals in its material as the lock over the dot opens (html.unseal). */
+function unseal() {
+  const root = document.documentElement;
+  endUnseal();
+  if (RM.matches || demo) return;
+  let i = 0; for (const li of $$("#main .row")) if (li.offsetParent) li.style.setProperty("--i", Math.min(i++, 10));
+  void root.offsetWidth; root.classList.add("unseal");
+  unsealT = setTimeout(endUnseal, 1700 + Math.min(i, 10) * 150);
+  if (!dev.muted && sound.cue) setTimeout(() => sound.cue("unlock", 0.1, { running: true }), 420); // no context is made for it
+}
+function endUnseal() { clearTimeout(unsealT); document.documentElement.classList.remove("unseal"); }
+addEventListener("pointerdown", endUnseal, true); addEventListener("keydown", endUnseal, true);
+
 /** The welcome (1.3) is a live list: the title and one sentence, then three lines rendered by the Today renderer from
     a local document that has no id, no secret and no server row, then Keep / Skip / Paste. A tap strikes, knocks and
     throws confetti as on any list; adding a line or crossing off all three offers Keep, which turns the document
@@ -659,7 +688,7 @@ function keepDemo() {
   if (editing) commitEdit();
   const id = M.newId();
   const d = M.normalize(doc, id); d.updatedAt = M.now();
-  demo = false;
+  demo = false; kept = true;
   createList(d, id);
 }
 /** Skip (1.9): the welcome was not touched, so the first list starts empty — nothing to delete, nothing that reads as junk. */
@@ -667,7 +696,7 @@ function skipDemo() {
   if (!demo || !doc) return;
   if (editing) cancelEdit(true);
   const id = M.newId();
-  demo = false;
+  demo = false; kept = true;
   createList(M.emptyDoc(id, ""), id);
 }
 /** Skip's label says what it does right now: an empty list until the person has made the welcome theirs, then the lines as they stand. */
@@ -820,9 +849,20 @@ function setView(v, { force } = {}) {
   if (v === "all") hintToday();
 }
 
+/** 1.12 b293: the tabs and A zoom between the views (motion.js); every other switch is instant, as it was. */
+function zoomTo(v) {
+  if (zoomingTo) { zoomingTo = v; return; } // a switch already on its way lands on the latest press
+  const lines = () => todayList().map((it, i) => [rows.get(it.id), "tf-r" + i]);
+  const land = () => { const to = zoomingTo; zoomingTo = ""; if (to) setView(to); };
+  zoomingTo = v;
+  if (v === view || demo || !doc || !motionMod || !motionMod.zoom(v === "all", lines, land)) { zoomingTo = ""; setView(v); }
+  else setTimeout(land, 1000); // should the transition never call back
+}
+
 function render({ animate = true, quiet = false } = {}) {
   if (!doc) return;
   if (view === "today") renderToday({ animate, quiet }); else renderAll({ animate, quiet });
+  exits.clear(); // spent, or named for a line that stayed
   paint();
   if (pendingFocus) { const li = rows.get(pendingFocus.id); const el = li && li.querySelector(pendingFocus.sel); pendingFocus = null; if (el && document.activeElement !== el) { try { el.focus({ preventScroll: true }); } catch (e) { /* ignore */ } } }
 }
@@ -938,7 +978,7 @@ function renderToday({ animate, quiet }) {
     if (updateRow(li, it) || fresh || (one && first && first.id === it.id && !was)) relayout.push(li);
     if (!li.parentNode) list.appendChild(li);
   }
-  for (const [id, li] of rows) if (!keep.has(id)) { rows.delete(id); if (editing && editing.id === id) cancelEdit(true); li.remove(); }
+  for (const [id, li] of rows) if (!keep.has(id)) { rows.delete(id); if (editing && editing.id === id) cancelEdit(true); leave(li, id); }
   orderInto(list, items.map(i => i.id), animate);
   let more = list.parentNode.querySelector(".one-more");
   if (one) {
@@ -982,7 +1022,7 @@ function renderAll({ animate, quiet }) {
     moves.push(["order", list, items.map(i => i.id)]);
   }
   for (const s of $$("#all .sec")) if (!keepSec.has(s.dataset.id)) s.remove();
-  for (const [id, li] of rows) if (!keep.has(id)) { rows.delete(id); if (editing && editing.id === id) cancelEdit(true); li.remove(); }
+  for (const [id, li] of rows) if (!keep.has(id)) { rows.delete(id); if (editing && editing.id === id) cancelEdit(true); leave(li, id); }
   // FLIP across sections
   const first = new Map();
   if (animate && !RM.matches) for (const li of rows.values()) first.set(li, li.getBoundingClientRect().top);
@@ -1031,6 +1071,7 @@ function restoreItem(id) {
   const t = doc.items[id]; if (!t || !t.deleted) return;
   doc = M.restoreItem(doc, id);
   afterChange({ animate: true });
+  if (motionMod && rows.has(id)) motionMod.arrive(rows.get(id)); // 1.12 b293
   toast(`Restored “${t.text.length > 40 ? t.text.slice(0, 40) + "…" : t.text}”`);
   focusRow(id);
 }
@@ -1054,6 +1095,33 @@ function updateSection(sec, g) {
   sec.querySelector(".sec-more").dataset.unsorted = g.id === "" ? "1" : "";
 }
 
+/* 1.12 b293: deleteItem, notToday and toggleToday name how a line leaves (exits); the render hands it to motion.js. */
+function leave(li, id) {
+  const x = exits.get(id); exits.delete(id);
+  if (!x || !motionMod || RM.matches || !li.isConnected || !li.offsetParent) { li.remove(); return; }
+  leavingEls.set(id, li);
+  motionMod.leave(li, { ...x, fx: rawFx, tab: $("#v-all"), done: () => { if (leavingEls.get(id) === li) leavingEls.delete(id); } });
+  if (x.how === "erase" && !dev.muted) sound.tick();
+}
+/** Undo while a line is leaving: it goes at once and comes back in place. */
+function recall(ids) { for (const id of ids) { const g = leavingEls.get(id); if (g) { g.getAnimations().forEach(a => a.cancel()); g.remove(); leavingEls.delete(id); } } }
+/* On a phone a line's words rise into its menu's title, and go back, or on to where the action sends them. */
+function liftLine(id, d) {
+  lifted = null;
+  const li = rows.get(id), h = $("#p-line-h");
+  if (!li || !motionMod || RM.matches || d.classList.contains("pop") || !h) return;
+  lifted = { id, li, h, hr: motionMod.rest(h, d) };
+  motionMod.carry(motionMod.wordsOf(li), li.querySelector(".tx"), motionMod.textRect(li), h, lifted.hr);
+  li.classList.add("lifted");
+}
+function landLine(act) {
+  const l = lifted; lifted = null; if (!l) return;
+  const { id, li, h, hr } = l, it = doc && doc.items[id], x = { el: h, r: hr };
+  if (act !== "delete") li.classList.remove("lifted");
+  if (act === "delete" || act === "nottoday" || (act === "today" && view === "today" && it && it.today)) exits.set(id, { ...x, how: act === "delete" ? "erase" : act === "today" ? "all" : "off" });
+  else if (act === "today" && it && !it.today) exits.set(id, { ...x, how: "today" }); // toggleToday flies them to the tab
+  else if (li.isConnected) motionMod.carry(motionMod.wordsOf(li), h, hr, li.querySelector(".tx"), motionMod.textRect(li));
+}
 /** 1.9: one row on its way to a new place — a done line sinking, a remote reorder — is a 300 ms FLIP that starts as the last
     of the ink lands (it was 520, after 170 ms of dead air). While it travels the row carries the page's ground and sits above
     the rows it passes (`.moving`, styles.css), so the reorder reads as one object moving past another; the displaced rows follow
@@ -1072,7 +1140,7 @@ function orderInto(container, ids, animate) {
   const wanted = ids.filter(id => rows.has(id));
   const els = wanted.map(id => rows.get(id));
   for (const el of els) if (el.parentNode !== container) container.appendChild(el);
-  const current = Array.from(container.children).filter(el => el.classList && el.classList.contains("row")).map(el => el.dataset.id);
+  const current = Array.from(container.children).filter(el => el.classList && el.classList.contains("row") && !el.classList.contains("leaving")).map(el => el.dataset.id);
   const plan = M.reorderPlan(current, wanted);
   if (!plan.length) return;
   const first = new Map();
@@ -1108,6 +1176,7 @@ function layoutStrikes(el, instant) {
   // 1.12 b279: a wrapped line's strike is one stroke in reading order (1.9 started each line .08 s after the last); one line
   // keeps .22 s, two take .28, more .32, inside the knock; unchecking unwinds from the last line. One-line rows set nothing.
   const lines = Array.from(rects).filter(r => r.width >= 1), n = lines.length;
+  const scr = document.documentElement.dataset.mat === "pencil"; let seed = 0; for (const ch of el.dataset.id || "") seed = Math.imul(seed ^ ch.charCodeAt(0), 16777619); // 1.12 b293
   const T = n > 1 ? Math.min(0.32, 0.22 + 0.06 * (n - 1)) : 0, sum = lines.reduce((a, r) => a + r.width, 0);
   let at = 0;
   lines.forEach((r, i) => {
@@ -1115,10 +1184,18 @@ function layoutStrikes(el, instant) {
     let timing = "";
     if (n > 1) { const t = T * r.width / sum; timing = `;--d:${at.toFixed(3)}s;--t:${t.toFixed(3)}s;--dr:${Math.max(0, T - at - t).toFixed(3)}s;--e:${i === n - 1 ? "cubic-bezier(.2,.8,.3,1)" : "linear"}`; at += t; }
     const g = document.createElement("i"); g.className = "ghost"; g.style.cssText = pos;
-    const k = document.createElement("i"); k.className = "ink"; k.style.cssText = pos + timing;
+    const k = document.createElement("i"); k.className = scr ? "ink scr" : "ink"; k.style.cssText = pos + timing;
+    if (scr) k.innerHTML = scribble(r.width, r.height * 0.5, seed + i);
     wrap.appendChild(g); wrap.appendChild(k);
   });
   if (instant) { void el.offsetHeight; requestAnimationFrame(() => el.classList.remove("nofx")); }
+}
+/** 1.12 b293: Sketch's scribble, the same one every time for a line. */
+function scribble(w, h, seed) {
+  let s = seed >>> 0, x = 0, up = true, d = `M0 ${(h * 0.55).toFixed(1)}`;
+  const rnd = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
+  while (x < w) { x = Math.min(w, x + 6 + rnd() * 4); d += `L${x.toFixed(1)} ${(h * (up ? 0.12 + rnd() * 0.12 : 0.76 + rnd() * 0.14)).toFixed(1)}`; up = !up; }
+  return `<svg viewBox="0 0 ${w.toFixed(1)} ${h.toFixed(1)}" preserveAspectRatio="none"><path d="${d}"/></svg>`;
 }
 function layoutAll(only) {
   const els = only && only.length ? only : Array.from(rows.values());
@@ -1132,8 +1209,13 @@ if (document.fonts) document.fonts.addEventListener("loadingdone", () => layoutA
 
 function paint() {
   const t = viewList(), n = t.length, d = t.filter(i => i.done).length;
-  const countHtml = `<b>${d}</b>/${n}<span class="sr-only"> done</span>`;
-  if ($("#count").innerHTML !== countHtml) $("#count").innerHTML = countHtml;
+  const countHtml = `<b><i>${d}</i></b>/${n}<span class="sr-only"> done</span>`, c = $("#count"), k = view + "/" + n + "/" + openGen;
+  const same = c.dataset.k === k; c.dataset.k = k; // 1.12 b293: a check-off rolls the number; a new view or list does not
+  if (c.dataset.html !== countHtml) {
+    const was = c.dataset.d;
+    c.innerHTML = countHtml; c.dataset.html = countHtml; c.dataset.d = d;
+    if (same && was !== undefined && +was !== d && motionMod) motionMod.roll(c.querySelector("i"), was);
+  }
   $("#count").setAttribute("aria-pressed", dev.oneThing && listMode === "edit" ? "true" : "false");
   const fill = $("#fill");
   fill.style.width = (n ? (d / n * 100) : 0) + "%";
@@ -1268,7 +1350,7 @@ function toggle(id, px, py, fromPointer) {
   it.done = !it.done; it.doneAt = it.done ? ts : 0; it.updatedAt = ts; // one stamp: a rollover elsewhere is recognisable by it
   if (li) { li.classList.toggle("done", it.done); li.querySelector(".check").setAttribute("aria-checked", it.done ? "true" : "false"); }
   if (it.done) {
-    const played = sound.check(Math.max(0, (view === "today" ? doneCountToday() : M.itemsInSection(doc, it.sectionId).filter(i => i.done).length) - 1));
+    const played = sound.check(Math.max(0, (view === "today" ? doneCountToday() : M.itemsInSection(doc, it.sectionId).filter(i => i.done).length) - 1), typeof px === "number" ? px / innerWidth : undefined); // 1.12 b293: heard where it was struck
     moment("tf:check");
     haptic();
     if (played && IOS && !dev.muted && !dev.silentHint) { dev.silentHint = true; saveDevice(); setTimeout(() => toast("Hearing nothing? The ring/silent switch mutes the app's sounds too."), 900); }
@@ -1287,7 +1369,7 @@ function toggle(id, px, py, fromPointer) {
     toast("Done", { undo: true });
     { const tl = todayList(), d = tl.filter(i => i.done).length; announce(`${d} of ${tl.length} done${d && d === tl.length ? ". That's the list." : ""}`); }
   } else {
-    sound.uncheck();
+    sound.uncheck(typeof px === "number" ? px / innerWidth : undefined);
     moment("tf:uncheck");
   }
   // 1.9: the sink starts as the last of the ink lands (320 after a check-off, 160 after an uncheck; it was 520 and 200, with dead air between the strike and the move)
@@ -1387,7 +1469,7 @@ function swipeStart(li, e) {
     if (!swipe || ev.pointerId !== swipe.pointerId) return;
     const s = swipe; end();
     if (s.stroke) liftStroke(s, ev, false);
-    else if (s.moving && s.dir === "left" && s.dx < -90 && !s.li.classList.contains("done")) { s.li.classList.add("swipe-out"); s.li.style.transform = "translateX(-110%)"; setTimeout(() => { s.li.classList.remove("swipe-out"); s.li.style.transform = ""; s.li.style.opacity = ""; notToday(s.id); }, RM.matches ? 0 : 180); }
+    else if (s.moving && s.dir === "left" && s.dx < -90 && !s.li.classList.contains("done")) { s.li.classList.add("swipe-out"); s.li.style.transform = "translateX(-110%)"; setTimeout(() => { s.li.classList.remove("swipe-out"); s.li.style.transform = ""; s.li.style.opacity = motionMod ? "0" : ""; notToday(s.id, { swiped: true }); }, RM.matches ? 0 : 180); }
     else { s.li.style.transform = ""; s.li.style.opacity = ""; }
     if (s.moving) { dragEndedAt = performance.now(); } // the click that follows must not toggle
   };
@@ -1407,12 +1489,13 @@ function liftStroke(s, ev, cancelled) {
   } else s.stroke.retract();
 }
 /** Take a line off Today until tomorrow's rollover. */
-function notToday(id) {
+function notToday(id, { swiped = false } = {}) {
   if (!canEdit()) return;
   const it = doc.items[id]; if (!it || it.deleted) return;
   if (editing) commitEdit();
   if (!it.today && M.returnOf(doc, id)) { toast("Already off until tomorrow"); return; }
   pushUndo("Not today", [id]);
+  if (!exits.has(id)) exits.set(id, { how: swiped ? "moon" : "off" }); // 1.12 b293
   doc = M.notToday(doc, id);
   sound.tick();
   afterChange({ animate: true });
@@ -1424,6 +1507,8 @@ function toggleToday(id) {
   const it = doc.items[id]; if (!it || it.deleted) return;
   if (!it.today && M.returnOf(doc, id)) { pushUndo("On Today", [id]); doc = M.backToday(doc, id); sound.tick(); afterChange(); toast("On Today"); return; }
   it.today = !it.today;
+  if (!it.today && view === "today" && !exits.has(id)) exits.set(id, { how: "all" }); // 1.12 b293
+  else if (it.today && view === "all" && motionMod && rows.has(id)) { const li = rows.get(id), x = exits.get(id) || {}; exits.delete(id); motionMod.flyTo(motionMod.wordsOf(li), x.el || li.querySelector(".tx"), x.r || motionMod.textRect(li), $("#v-today")); }
   if (it.today) it.todayOrder = M.lastOrder(todayList(), i => i.todayOrder);
   it.updatedAt = M.now();
   if (it.today) { const r = M.ruleOf(doc, id); if (r) doc.rules[id] = { ...r, placed: M.todayFor(doc), updatedAt: M.now() }; }
@@ -1477,6 +1562,7 @@ function deleteItem(id, { silent = false } = {}) {
   doc.items[id] = text ? M.tombstone(it, ts) : { id, deleted: true, updatedAt: ts }; // a line with words is remembered in Recently deleted
   if (M.ruleOf(doc, id)) doc.rules[id] = { id, deleted: true, updatedAt: ts };
   if (M.returnOf(doc, id)) doc.returns[id] = { id, deleted: true, updatedAt: ts };
+  if (!silent && !exits.has(id)) exits.set(id, { how: "erase" }); // 1.12 b293: erased in its material (leave)
   afterChange({ animate: true });
   if (hadFocus) { if (next && rows.has(next)) focusRow(next); else { const add = view === "today" ? $("#addtoday") : $("#all .add"); if (add) add.focus(); } }
   if (!silent) toast(`Deleted “${text.length > 40 ? text.slice(0, 40) + "…" : text}”`, { undo: true });
@@ -1506,7 +1592,9 @@ function undo() {
   for (const [id, rec] of u.sections) doc.sections[id] = rec ? { ...rec, updatedAt: ts } : { id, deleted: true, updatedAt: ts };
   sound.uncheck();
   moment("tf:uncheck");
+  const back = u.items.map(([id]) => id).filter(id => !rows.has(id)); recall(back);
   afterChange();
+  if (motionMod) for (const id of back) if (rows.has(id)) motionMod.arrive(rows.get(id)); // 1.12 b293: back in its place
   wasAll = allDoneInView();
   toast("Undone");
   // 1.7: focus to the line the undo touched
@@ -1584,7 +1672,7 @@ function startEdit(id, { isNew = false } = {}) {
 }
 /** Ids of the rows the user can currently see, top to bottom. */
 function visibleRowIds() {
-  const sel = view === "today" ? (dev.oneThing && listMode === "edit" ? "#list .row.one-now" : "#list .row") : "#all .sec:not([hidden]):not(.collapsed):not(.nohit) .row:not(.miss)";
+  const sel = view === "today" ? (dev.oneThing && listMode === "edit" ? "#list .row.one-now" : "#list .row:not(.leaving)") : "#all .sec:not([hidden]):not(.collapsed):not(.nohit) .row:not(.miss):not(.leaving)"; // 1.12 b293: not a line on its way out
   return $$(sel).map(li => li.dataset.id);
 }
 function neighbourOf(id) {
@@ -1672,7 +1760,7 @@ function openRepeat(id) { if (!canEdit()) return; panels().then(p => p.openRepea
 /* ---------------- keyboard move ---------------- */
 /** 1.7: where the line landed, for a screen reader. */
 function announceMove(dir) {
-  setTimeout(() => { const li = document.activeElement && document.activeElement.closest(".row"); if (!li) return; const all = Array.from(li.parentNode.querySelectorAll(".row:not(.done)")); announce(`Moved ${dir < 0 ? "up" : "down"}, ${all.indexOf(li) + 1} of ${all.length}`); }, 350);
+  setTimeout(() => { const li = document.activeElement && document.activeElement.closest(".row"); if (!li) return; const all = Array.from(li.parentNode.querySelectorAll(".row:not(.done):not(.leaving)")); announce(`Moved ${dir < 0 ? "up" : "down"}, ${all.indexOf(li) + 1} of ${all.length}`); }, 350);
 }
 function moveFocused(dir) {
   if (!canEdit()) return;
@@ -1882,6 +1970,10 @@ function showPanel(id, { anchor = null, restack = false } = {}) {
   if (!panelCssReady) { panelCss.then(() => showPanel(id, { anchor, restack })); return; } // never paint a dialog before its stylesheet
   const d = document.getElementById(id);
   hideMark();
+  // 1.12 b293: it grows from the panel it replaces (a push, a Back, ⋯ launching it), else from its control
+  const fromFold = pendingFold; pendingFold = null; if (fromFold) fromFold.cancel();
+  let src = fromFold ? fromFold.rect : null, dir = "", step = false;
+  if (morphFrom) { src = morphFrom.rect || null; dir = morphFrom.dir; step = !!morphFrom.step; morphFrom = null; }
   // 1.12: `restack` is a panel that is a flow of steps (⋯ → Theme is Day, then Night) asking for the step it is
   // leaving to become the frame below it, so ‹ Back walks the steps with the one primitive rather than a second
   // idea of "back". The dialog is the one already open, so it is pushed as a frame and never closed.
@@ -1889,8 +1981,9 @@ function showPanel(id, { anchor = null, restack = false } = {}) {
   const parent = openPanel && (!same || restack) ? openPanel : null;
   if (parent) {
     if (!panelRestoring) { const pb = parent.querySelector(".body"); panelStack.push({ id: parent.id, scroll: pb ? pb.scrollTop : 0 }); }
-    if (!same) { panelSwitching = true; parent.close(); panelSwitching = false; }
-  }
+    if (!same) { src = parent.getBoundingClientRect(); dir = dir || "fwd"; panelSwitching = true; parent.close(); panelSwitching = false; }
+    else { step = true; dir = dir || "fwd"; }
+  } else if (!fromFold && !panelRestoring) panelOrigin = anchor || lastControl();
   openPanel = d;
   d.classList.remove("closing"); d.style.transform = ""; d.removeAttribute("data-drag");
   const pop = !!anchor && !sheetUi() && anchor.isConnected;
@@ -1907,6 +2000,8 @@ function showPanel(id, { anchor = null, restack = false } = {}) {
   const h2 = d.querySelector("h2");
   if (h2) { if (panelStack.length) h2.prepend(backBtn); else if (backBtn.parentNode) backBtn.remove(); }
   d.classList.toggle("nested", panelStack.length > 0);
+  if (motionMod) motionMod.panelIn(d, { sheet: !pop && d.classList.contains("sheet") && sheetUi(), anchor: pop ? anchor : panelOrigin, src, dir, step });
+  if (!dev.muted && sound.cue) sound.cue(src || dir ? "tick" : "whoosh", undefined, { running: true }); // a panel can open by itself: no context for it
   if (!panelRestoring) { const depth = panelStack.length + 1; if (depth > panelDepth) { if (historyGuard) pendingPush = depth; else { history.pushState({ tfPanel: depth }, "", location.href); panelDepth = depth; } } }
   idleReset();
 }
@@ -1927,21 +2022,37 @@ function popPanel() {
   // here arrives *after* panelSwitching has gone back to false and after the reopen has set openPanel to this same
   // dialog — and the listener reads that as a close from somewhere else and takes the whole stack with it.
   const stepping = !!cur && cur.id === frame.id;
+  morphFrom = { rect: cur && cur.open && !stepping ? cur.getBoundingClientRect() : null, dir: "back", step: stepping }; // 1.12 b293
   if (cur && cur.open && !stepping) { panelSwitching = true; cur.close(); panelSwitching = false; }
   panelRestoring = true;
-  try { if (openers[frame.id]) openers[frame.id](); else showPanel(frame.id); } finally { panelRestoring = false; }
+  try { if (openers[frame.id]) openers[frame.id](); else showPanel(frame.id); } finally { panelRestoring = false; morphFrom = null; }
   const restore = () => { const body = openPanel && openPanel.querySelector(".body"); if (body && body.scrollTop !== frame.scroll) body.scrollTop = frame.scroll; };
   restore(); requestAnimationFrame(restore); setTimeout(restore, 60); // showModal's focus lands a beat later and scrolls the row it picks into view; the parent's own place wins
 }
 /** The whole stack closes (×, the backdrop, a swipe down, a done action), and its history entries go with it. */
 function closeAll({ unwind = true } = {}) {
   const cur = openPanel; openPanel = null; panelStack.length = 0;
-  if (cur && cur.open) { panelSwitching = true; cur.close(); panelSwitching = false; }
+  if (cur && cur.open) { foldPanel(cur); panelSwitching = true; cur.close(); panelSwitching = false; }
   if (backBtn.parentNode) backBtn.remove();
   if (unwind && panelDepth > 0 && historyGuard === 0 && !backPending) { historyGuard++; history.go(-panelDepth); } // one traversal at a time: a second would leave the page
   panelDepth = 0;
 }
 function closePanel() { closeAll(); } // forget it now, not when the close event lands: what follows may need the panel gone
+/* 1.12 b293: a closing panel closes at once; a copy folds back into its control (motion.js), unless a panel opens in the
+   same moment and grows from it instead (showPanel). */
+function foldPanel(d) {
+  if (!motionMod || RM.matches || d.classList.contains("closing") || d.hasAttribute("data-drag")) return;
+  const f = motionMod.fold(d, { sheet: !d.classList.contains("pop") && d.classList.contains("sheet") && sheetUi(), to: panelOrigin });
+  if (!f) return;
+  pendingFold = f; requestAnimationFrame(() => { if (pendingFold === f) pendingFold = null; });
+}
+/** The control just pressed, or focused: where a panel comes from and folds back to. */
+function lastControl() {
+  const ok = el => !!el && el.isConnected && !el.closest("dialog") && !!el.closest(".rail, #foot, .tools, #all-head");
+  if (pressedAt && performance.now() - pressedAt.t < 1500 && ok(pressedAt.el)) return pressedAt.el;
+  const a = document.activeElement; return ok(a) ? a : null;
+}
+document.addEventListener("pointerdown", e => { const b = e.target.closest && e.target.closest("button, [role=tab]"); if (b && !b.closest("dialog")) pressedAt = { el: b, t: performance.now() }; }, true);
 /** The app's own place, written back over whatever URL a history traversal brought up. */
 function fixUrl() { history.replaceState(null, "", BASE + SEARCH + (listId && !demo ? frag({ id: listId, mode: listMode }) : "")); }
 /** Resolves once a pending history unwind has landed (at once when none is pending): a reload must not race it. */
@@ -2310,8 +2421,8 @@ $("#wn-more").addEventListener("click", () => { $("#whatsnew").hidden = true; lo
 
 /* ---------------- rail controls ---------------- */
 function wireUi() {
-  $("#v-today").addEventListener("click", () => setView("today"));
-  $("#v-all").addEventListener("click", () => setView("all"));
+  $("#v-today").addEventListener("click", () => zoomTo("today"));
+  $("#v-all").addEventListener("click", () => zoomTo("all"));
   $("#again").addEventListener("click", startAgain);
   $("#addtoday").addEventListener("click", () => newItem({ today: true }));
   $("#daynight").addEventListener("click", flipSlot);
@@ -2372,7 +2483,7 @@ document.addEventListener("keydown", e => {
   else if ((k === "f" || k === "F") && document.fullscreenEnabled) { e.preventDefault(); toggleFullscreen(); }
   else if (k === "e" || k === "E") { if (!edit) return; e.preventDefault(); const id = focusedRowId(); if (id) startEdit(id); }
   else if (k === "n" || k === "N") { if (!edit) return; e.preventDefault(); newItem({ today: view === "today", sectionId: view === "all" ? sectionOfFocused() : "" }); }
-  else if (k === "a" || k === "A") { e.preventDefault(); setView(view === "today" ? "all" : "today"); }
+  else if (k === "a" || k === "A") { e.preventDefault(); zoomTo(view === "today" ? "all" : "today"); }
   else if (k === "o" || k === "O") { if (!edit) return; e.preventDefault(); setOneThing(!dev.oneThing); }
   else if (k === "/") { e.preventDefault(); openSearch(); }
   else if (k === "-") { if (!edit) return; e.preventDefault(); const id = focusedRowId(); if (id && doc.items[id] && doc.items[id].today) notToday(id); }
@@ -2442,6 +2553,7 @@ const api = {
   afterChange, applyRemote, render, setView, paint, paintListName, paintMute, paintStatus, paintMenu, paintWho, toast, hideToast, ask, showPanel, closePanel, goBack, registerOpeners,
   focusRow, newItem, startEdit, commitEdit, deleteItem, toggle, toggleToday, notToday, pushUndo, undo, restoreItem,
   saveDevice, registerList, switchTo, openList, showWelcome, createList, parseLink, flushQuick, flushOthers, killRemote, queueKill, retryPendingKills,
+  reveal, liftLine, landLine, get motion() { return motionMod; }, rawFx,
   applyThemeCode, currentThemeCode, tickTheme, setSlotTheme, flipSlot, setSwitchMode, setSwitchTimes, unlockSecret, forgetSecret, unlockExtra, forgetExtra, activeSlot: () => T.activeSlot(dev, envNow()), autoSlot: () => T.autoSlot(dev, envNow()),
   slotCode: slot => dev[slot] || T.SLOT_DEFAULT[slot], packFor, setSoundPack, soundPacks: () => ({ day: "", night: "", ...(dev.soundPacks || {}) }), soundPins: () => ({ day: "", night: "", ...(dev.soundPins || {}) }), setWake, toggleMute, toggleFullscreen, setOneThing, setSearch, ruleLabel, idleReset,
   editLink, viewLink, copyText, nativeShare, escapeHtml, drawQr, frag,

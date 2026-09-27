@@ -291,3 +291,30 @@ dialog.panel.pop .menu .lb .sub{font-size:11px}
   #p-menu .menu{display:grid;grid-template-columns:1fr 1fr;gap:2px .4rem}
   #p-menu .menu button,#p-menu .menu a.item{min-height:44px}
 }
+
+/* ---------------- 1.12 b293: what motion.js moves ----------------
+   A panel motion.js has brought in (.mo) leaves the entrances above to it; a closing panel's copy (.folding) folds back
+   into its control over a fading copy of the backdrop; words in flight (.tghost) are popovers, above any open sheet. */
+dialog.panel.mo,dialog.panel.mo.sheet[open],dialog.panel.mo.pop{animation:none}
+dialog.panel.mo{overflow-x:hidden}
+dialog.panel.folding{display:block;position:fixed;margin:0;max-height:none;max-width:none;z-index:2147483600;pointer-events:none;overflow:hidden;transition:none}
+.fold-scrim{position:fixed;inset:0;z-index:2147483599;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none}
+.tghost{position:fixed;inset:auto;margin:0;padding:0;border:0;background:none;overflow:visible;z-index:2147483601;pointer-events:none;transform-origin:0 0;white-space:normal}
+.moon-f{position:fixed;z-index:70;width:22px;height:22px;pointer-events:none;color:var(--accent)}
+.moon-f svg{display:block;width:100%;height:100%;fill:currentColor}
+.sweep{position:fixed;left:0;right:0;top:0;height:38%;z-index:70;pointer-events:none;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--accent) 16%,transparent),transparent)}
+.row.lifted{opacity:0;transition:opacity .15s ease} /* its words are the line menu's title for now */
+.row.leaving{pointer-events:none}
+.row .caret{display:inline-block;width:.55em;height:1em;margin-left:2px;vertical-align:-.12em;background:currentColor}
+/* the two view transitions (motion.js): a theme opens from what was touched (the new root's clip is animated); the tabs
+   zoom, the lines on Today named so they travel and the chosen tab's pill sliding. The page takes no input while one runs
+   (Chrome sends every tap to the root, whatever pointer-events says), so both stay short: a zoom is over in 0.34 s */
+html.vt-theme::view-transition-old(root),html.vt-theme::view-transition-new(root){animation:none;mix-blend-mode:normal}
+html.vt-zoom::view-transition-group(*){animation-duration:.34s;animation-timing-function:cubic-bezier(.22,1,.36,1)}
+html.vt-zoom::view-transition-old(root){animation:tf-zoom-old .2s ease-in both}
+html.vt-zoom::view-transition-new(root){animation:tf-zoom-new .34s cubic-bezier(.22,1,.36,1) both}
+html.zoom-out{--zo:.94;--zn:1.05}
+html.zoom-in{--zo:1.05;--zn:.94}
+@keyframes tf-zoom-old{to{opacity:0;transform:scale(var(--zo,.94))}}
+@keyframes tf-zoom-new{from{opacity:0;transform:scale(var(--zn,1.05))}}
+html.vt-zoom .seg [aria-selected="true"]{view-transition-name:tf-seg}

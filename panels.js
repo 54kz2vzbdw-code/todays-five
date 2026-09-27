@@ -153,6 +153,11 @@ function renderSwatches() {
 }
 /** A swatch was chosen for the slot; the partner (if the other slot does not hold it already) goes on offer beside it. */
 function choose(code, name, partner, swatch) {
+  // 1.12 b293: the theme opens from the swatch (app.js reveal); the choice itself lands inside the reveal, a frame later
+  if (swatch && swatch.isConnected && T.parseCode(code) && A.reveal(swatch, () => chosen(code, name, partner, swatch))) return;
+  chosen(code, name, partner, swatch);
+}
+function chosen(code, name, partner, swatch) {
   const group = swatch && swatch.parentNode; // read before the re-render detaches the swatch
   A.setSlotTheme(pickSlot, code);
   previewSlot(code); // setSlotTheme only paints when this slot is the one that is on; the picker shows it either way
@@ -353,25 +358,29 @@ export async function openShare() {
   const sheet = A.sheetUi();
   $("#qr").hidden = sheet; $("#qr-mine").hidden = sheet; $("#qr-private").hidden = true; // the codes have room on the desktop; elsewhere a QR code button beside Copy shows one
   for (const [btn, always] of [["#share-qr-mine", false], ["#share-qr", false], ["#share-qr-private", true]]) { const b = $(btn); b.hidden = !(sheet || always); b.setAttribute("aria-pressed", "false"); }
-  $("#share-link").value = A.viewLink();
-  if (!view) { $("#share-link-mine").value = M.hintLink(A.editLink(), "mine"); $("#share-link-private").value = M.hintLink(A.editLink(), "shared"); }
+  setLink("#share-link", A.viewLink());
+  if (!view) { setLink("#share-link-mine", M.hintLink(A.editLink(), "mine")); setLink("#share-link-private", M.hintLink(A.editLink(), "shared")); }
   A.showPanel("p-share");
-  if (!A.sheetUi()) { if (!view) A.drawQr($("#qr-mine-c"), $("#share-link-mine").value).catch(() => {}); A.drawQr($("#qr-c"), A.viewLink()).catch(() => {}); }
+  if (A.motion) [["#share-link", 0], ["#share-link-mine", 90], ["#share-link-private", 180]].forEach(([sel, d]) => { const el = $(sel); if (!el.closest("[hidden]")) A.motion.decode(el, el.dataset.v, 560, 160 + d); }); // 1.12 b293
+  if (!A.sheetUi()) { if (!view) A.drawQr($("#qr-mine-c"), linkOf("#share-link-mine")).catch(() => {}); A.drawQr($("#qr-c"), A.viewLink()).catch(() => {}); }
 }
+/** 1.12 b293: a link field says what it holds in data-v, so a Copy in the middle of its decode copies the link. */
+function setLink(sel, v) { const el = $(sel); el.value = v; el.dataset.v = v; }
+const linkOf = sel => { const el = $(sel); return el.dataset.v || el.value; };
 function wireShare() {
-  $("#share-copy-mine").addEventListener("click", () => A.copyText($("#share-link-mine").value, "Link copied—open it on your other device"));
+  $("#share-copy-mine").addEventListener("click", () => A.copyText(linkOf("#share-link-mine"), "Link copied—open it on your other device"));
   // a QR code of the link, on request: the box opens above the link and the code is drawn into it
   const qrToggle = (btn, box, canvas, link) => $(btn).addEventListener("click", async () => {
     const b = $(btn), q = $(box), on = q.hidden;
     q.hidden = !on; b.setAttribute("aria-pressed", String(on));
     if (on) { await A.drawQr($(canvas), link()).catch(() => {}); q.scrollIntoView({ block: "nearest" }); }
   });
-  qrToggle("#share-qr-mine", "#qr-mine", "#qr-mine-c", () => $("#share-link-mine").value);
-  qrToggle("#share-qr", "#qr", "#qr-c", () => $("#share-link").value);
-  qrToggle("#share-qr-private", "#qr-private", "#qr-private-c", () => $("#share-link-private").value);
-  $("#share-copy").addEventListener("click", () => A.copyText($("#share-link").value, "View link copied"));
-  $("#share-native").addEventListener("click", () => A.nativeShare($("#share-link").value));
-  $("#share-copy-private").addEventListener("click", () => A.copyText($("#share-link-private").value, "Private link copied—it's the key"));
+  qrToggle("#share-qr-mine", "#qr-mine", "#qr-mine-c", () => linkOf("#share-link-mine"));
+  qrToggle("#share-qr", "#qr", "#qr-c", () => linkOf("#share-link"));
+  qrToggle("#share-qr-private", "#qr-private", "#qr-private-c", () => linkOf("#share-link-private"));
+  $("#share-copy").addEventListener("click", () => A.copyText(linkOf("#share-link"), "View link copied"));
+  $("#share-native").addEventListener("click", () => A.nativeShare(linkOf("#share-link")));
+  $("#share-copy-private").addEventListener("click", () => A.copyText(linkOf("#share-link-private"), "Private link copied—it's the key"));
   $("#share-save").addEventListener("click", () => showSaveLink());
   $("#share-friend-go").addEventListener("click", () => {
     const n = friendNote();
@@ -385,6 +394,7 @@ function wireShare() {
     if (A.syncStatus !== "synced") { A.toast("New keys need a live connection—try again once synced"); return; }
     const ok = await A.ask({ title: "New keys?", msg: "A new View link and a new Private link replace the current ones. The old links stop working everywhere—your other devices and anyone watching included. Open the new link there.", confirm: "New keys", danger: true });
     if (!ok) return;
+    if (A.motion) A.motion.sweep(); // 1.12 b293: sealed again under the new key; the list unseals as it opens (app.js)
     await rotateLink();
   });
 }
@@ -432,10 +442,11 @@ export function showSaveLink({ migrated = false } = {}) {
   $("#save-steps").hidden = !(phone && A.IOS); $("#save-lead-home-how").hidden = !(phone && !A.IOS); // iOS: the three steps with the glyphs (Share may sit behind ⋯ in iOS 26's compact layout); other phones: their browser's menu
   $("#save-bm-key").textContent = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘D" : "Ctrl+D";
   $("#save-link").hidden = !desktop; // the phone has Copy; the desktop shows what the bookmark holds
-  $("#save-link").value = link;
+  $("#save-link").value = link; $("#save-link").dataset.v = link;
   $("#save-phone").hidden = !desktop; $("#save-phone").open = false;
   if (desktop) A.drawQr($("#save-qr-c"), link).catch(() => {});
   A.showPanel("p-save");
+  if (migrated && desktop && A.motion) A.motion.decode($("#save-link"), link, 700, 260); // 1.12 b293: the new key, decoded
   $("#save-body").focus({ preventScroll: true }); // reading starts at the title and the message, not at the link field
 }
 function markSaved() {
@@ -443,7 +454,7 @@ function markSaved() {
   if (e) { e.linkSaved = true; e.migrated = false; A.saveDevice(); }
 }
 function wireSave() {
-  $("#save-copy").addEventListener("click", async () => { await A.copyText($("#save-link").value, "Link copied"); markSaved(); A.closePanel(); });
+  $("#save-copy").addEventListener("click", async () => { await A.copyText($("#save-link").dataset.v || $("#save-link").value, "Link copied"); markSaved(); A.closePanel(); });
   $("#save-done").addEventListener("click", () => { markSaved(); A.closePanel(); });
   $("#save-later").addEventListener("click", () => A.closePanel()); // 1.9: Not yet — the sheet closes and the nudge stays on (⋯ carries Save your link until Copy or I've saved it), like the × beside the title
   $("#p-save").addEventListener("close", () => {
@@ -904,11 +915,13 @@ export function openLineMenu(id) {
   $('#p-line [data-lact="move"]').hidden = !(M.liveSections(A.doc).length || meta().lists.some(l => l.id !== A.listId && l.mode !== "view"));
   const li = A.rows.get(id);
   A.showPanel("p-line", { anchor: li ? li.querySelector(".tool.lmenu") : null });
+  A.liftLine(id, $("#p-line")); // 1.12 b293: on a phone the line's words rise out of the list and become the title
 }
 function wireLine() {
+  $("#p-line").addEventListener("close", () => A.landLine(null)); // closed with nothing chosen: the words go back into the line
   $("#p-line").addEventListener("click", e => {
     const b = e.target.closest("[data-lact]"); if (!b) return;
-    const id = lineId; A.closePanel();
+    const id = lineId; A.landLine(b.dataset.lact); A.closePanel(); // 1.12 b293: the words go where the action sends them
     if (!A.canEdit() || !A.doc.items[id] || A.doc.items[id].deleted) return;
     const act = b.dataset.lact;
     if (act === "edit") A.startEdit(id);

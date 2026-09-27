@@ -464,6 +464,14 @@ export const CURATED_NIGHT = CURATED_DAY.map(t => curated(t.partner));
 export const PACK_BEFORE_19 = { harbor: "pop", sunset: "bell", ember: "knock", cocoa: "knock", blush: "bell" };
 export function packBefore19(code) { const t = parseCode(code); return t && t.kind === "curated" && PACK_BEFORE_19[t.id] ? PACK_BEFORE_19[t.id] : ""; }
 export function partnerOf(t) { return t && t.kind === "curated" && t.partner ? curated(t.partner) || null : null; }
+/** 1.12 b293: each kit's material — how its lines are struck, arrive and leave, the room its sounds play in, how its
+    day ends. The page carries it as html[data-mat] (applyTheme). A theme you make is Clean; an Extra kit is its pair's. */
+export const MATERIALS = {
+  light: "clean", dark: "clean", paper: "ink", cocoa: "ink", midnight: "glass", harbor: "tide", forest: "tide",
+  pink: "candy", blush: "candy", superpink: "candy", birthday: "candy", terminal: "phosphor", teletype: "phosphor",
+  sunset: "glow", dusk: "glow", ember: "ember", sketch: "pencil", arcade: "pixel"
+};
+export function materialOf(t) { return !t ? "clean" : (t.kind === "curated" && MATERIALS[t.id]) || t.extra || "clean"; }
 
 /** The brand palette. Everything here is a getter onto the kits, so it cannot drift from them;
     `test/theme.test.js` also asserts the constants and the kits agree. */
@@ -1035,6 +1043,7 @@ export function applyTheme(t, doc = document, { persist = true } = {}) {
   setTokenCss(style, css);
   doc.documentElement.dataset.base = t.base;
   doc.documentElement.dataset.theme = t.id;
+  doc.documentElement.dataset.mat = materialOf(t);
   const meta = doc.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", t.colors.ink);
   const bar = doc.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');

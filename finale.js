@@ -6,52 +6,11 @@
 // the finales they were designed with (secretfx.js, extrafx.js); a theme you make ends Clean. Everything here ends by
 // itself: a line is restored to plain text when its letters land, and every particle falls off the screen.
 
-/** Each curated kit's material: how the day's last line arrives, and what goes up with it. */
-export const MATERIAL = {
-  light: "clean", dark: "clean", paper: "ink", cocoa: "ink", midnight: "glass", harbor: "tide", forest: "tide",
-  pink: "candy", blush: "candy", terminal: "phosphor", teletype: "phosphor", sunset: "glow", dusk: "glow",
-  ember: "ember", sketch: "pencil", arcade: "pixel"
-};
-/** What each material throws: an fx.js shape list, or a particle of this module's own. */
+/** What each material throws: an fx.js shape list, or one of motion.js's own particles (handed over as `emit`). */
 const THROW = {
   clean: null, ink: null, candy: null,                 // the kit's own confetti, as it always was
   glass: "shard", tide: "bubble", phosphor: "pixel", pixel: "pixel", glow: [3, 5], ember: "spark", pencil: [4, 0]
 };
-
-const PX = { pixel: 1, shard: 1, spark: 1, bubble: 1 };
-
-/** Particles fx.js does not draw: pixels on a 3 px grid, glass shards, rising sparks, rising bubbles. One scene per burst. */
-function particles(fx, kind, x, y, n, power, spread, pal) {
-  const ps = [];
-  for (let i = 0; i < n; i++) {
-    const a = -Math.PI / 2 + (Math.random() - 0.5) * spread, sp = power * (0.55 + Math.random() * 0.8);
-    ps.push({ x, y, vx: Math.cos(a) * sp + (Math.random() - 0.5) * 1.3, vy: Math.sin(a) * sp, s: 3 + Math.random() * 4, r: Math.random() * 6.3, vr: (Math.random() - 0.5) * 0.3,
-      c: pal[(Math.random() * pal.length) | 0], life: 1, dec: 0.008 + Math.random() * 0.008, ph: Math.random() * 6.3 });
-  }
-  const g = kind === "spark" ? -0.05 : kind === "bubble" ? -0.07 : kind === "shard" ? 0.26 : 0.3;
-  let last = 0;
-  fx.scene((c, t, w, h) => {
-    const k = Math.min(3, Math.max(0.5, (t - last) * 60)); last = t;
-    let alive = false;
-    for (const p of ps) {
-      if (p.life <= 0) continue;
-      p.vy += g * k; p.vx *= Math.pow(0.992, k); p.vy *= Math.pow(0.992, k); p.x += p.vx * k; p.y += p.vy * k; p.r += p.vr * k; p.life -= p.dec * k;
-      if (p.life <= 0 || p.y > h + 60 || p.y < -60) { p.life = 0; continue; }
-      alive = true;
-      c.save(); c.globalAlpha = Math.max(0, Math.min(1, p.life * 1.7)); c.fillStyle = c.strokeStyle = p.c;
-      if (kind === "pixel") { const s = Math.round(p.s * 0.9 + 2); c.fillRect(Math.round(p.x / 3) * 3, Math.round(p.y / 3) * 3, s, s); }
-      else if (kind === "spark") { c.globalAlpha *= 0.55 + 0.45 * Math.abs(Math.sin(t * 22 + p.ph)); c.beginPath(); c.arc(p.x, p.y, 1.1 + p.s * 0.22, 0, 6.3); c.fill(); }
-      else if (kind === "bubble") { c.lineWidth = 1.4; c.beginPath(); c.arc(p.x + Math.sin(t * 5 + p.ph) * 3, p.y, 2 + p.s * 0.6, 0, 6.3); c.stroke(); }
-      else { c.translate(p.x, p.y); c.rotate(p.r); c.beginPath(); c.moveTo(0, -p.s); c.lineTo(p.s * 0.6, p.s * 0.7); c.lineTo(-p.s * 0.4, p.s * 0.4); c.closePath(); c.fill(); }
-      c.restore();
-    }
-    return alive || t < 0.05;
-  });
-}
-function emit(fx, what, x, y, n, power, spread, pal) {
-  if (what && PX[what]) particles(fx, what, x, y, n, power, spread, pal);
-  else fx.burst(x, y, n, power, spread, what ? { palette: pal, shapes: what } : null);
-}
 
 /** The line, a letter at a time: each letter its own box for the length of the move, plain text again once it lands. */
 function letters(span, text) {
@@ -89,16 +48,17 @@ function typeOut(span, text, ms) {
 }
 
 /** Play kit `kit`'s finale: the line in `span`, the confetti through `fx`. False when there is nothing of this module's to play. */
-export function finale(kit, fx, { span, w, h, reduced, spring, shell } = {}) {
+export function finale(kit, fx, { span, w, h, reduced, spring, shell, mat = "clean", emit = null } = {}) {
   if (!kit || kit.finale || reduced) return false;
-  const mat = MATERIAL[kit.id] || "clean", pal = kit.confetti || [];
+  const pal = kit.confetti || [];
+  const throwIt = (what, x, y, n, power, spread) => { if (emit) emit(fx, what, x, y, n, power, spread, pal); else fx.burst(x, y, n, power, spread, Array.isArray(what) ? { palette: pal, shapes: what } : null); };
   const text = span ? span.textContent : "";
   const pop = spring ? spring(420, 17) : { duration: 520, easing: "cubic-bezier(.3,1.5,.5,1)" };
   const soft = spring ? spring(170, 22) : { duration: 700, easing: "cubic-bezier(.22,1,.36,1)" };
   // the volley's rhythm, in the material's own particles
   const what = THROW[mat];
-  for (let i = 0; i < 7; i++) setTimeout(() => emit(fx, what, w * (0.08 + 0.14 * i), h * 0.97, 22, 17, 1.15, pal), i * 65);
-  setTimeout(() => emit(fx, what, w * 0.5, h * 0.6, 36, 13, 2.6, pal), 210);
+  for (let i = 0; i < 7; i++) setTimeout(() => throwIt(what, w * (0.08 + 0.14 * i), h * 0.97, 22, 17, 1.15), i * 65);
+  setTimeout(() => throwIt(what, w * 0.5, h * 0.6, 36, 13, 2.6), 210);
   if (!span || !text) return true;
   if (mat === "phosphor" || mat === "pixel") {
     if (mat === "phosphor" && kit.id === "terminal" && shell) shell.animate([{ filter: "brightness(1)" }, { filter: "brightness(1.35)", offset: 0.3 }, { filter: "brightness(1)" }], { duration: 240, delay: 40 });

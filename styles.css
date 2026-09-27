@@ -67,7 +67,10 @@ button{font:inherit;color:inherit}
 .rail-l{flex:1 1 auto}
 #date{white-space:nowrap}
 #count,#shuffle{color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.09em;white-space:nowrap;background:transparent;border:0;padding:.3em .2em;font:inherit;letter-spacing:.09em;text-transform:inherit;cursor:pointer;min-height:32px;border-radius:999px}
-#count b{color:var(--accent-text);font-weight:700}
+#count b{color:var(--accent-text);font-weight:700;display:inline-block;clip-path:inset(0 -.3em)} /* 1.12 b293: the odometer's window */
+#count b i{display:inline-block;font-style:normal;position:relative}
+#count b i[data-was]::before{content:attr(data-was);position:absolute;left:0;top:-100%} /* the old number, riding along */
+#count b i.down[data-was]::before{top:100%}
 #count:focus-visible,#shuffle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #count[aria-pressed="true"]{color:var(--accent-text)}
 
@@ -96,7 +99,8 @@ button{font:inherit;color:inherit}
   background:transparent;border:0;padding:.45em .85em;cursor:pointer;min-height:32px;
   transition:color .18s ease,background-color .18s ease;
 }
-.seg button+button{border-left:1px solid var(--hair)}
+.seg button+button{border-left:0}
+.seg button{border-radius:999px} /* 1.12 b293: the chosen view is a pill the tabs slide across (panels.css) */
 .seg button:hover{color:var(--text);background:var(--ink-2)}
 .seg button[aria-selected="true"]{color:var(--accent-text);background:var(--ink-2)}
 .seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
@@ -108,6 +112,9 @@ button{font:inherit;color:inherit}
   background:transparent;border:0;padding:.3em .2em;min-height:32px;
 }
 .dot:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:999px}
+.dot{position:relative}
+.dot .lock{position:absolute;left:calc(.2em - 3px);top:50%;width:12px;height:12px;margin-top:-6px;opacity:0;fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linecap:round;overflow:visible;pointer-events:none} /* 1.12 b293: the unseal's */
+.dot .lock .shackle{transform-box:fill-box;transform-origin:100% 100%}
 .dot::before{
   content:"";width:6px;height:6px;border-radius:50%;
   background:var(--accent);box-shadow:0 0 0 0 var(--accent);
@@ -211,6 +218,15 @@ button{font:inherit;color:inherit}
    only: an overlay at scaleX(0) was invisible and cost the same (DECISIONS.md, "The sparkle field") */
 .row.done .ink{transform:scaleX(1);animation:var(--strike-anim)}
 .row.nofx .ink,.row.nofx .ghost{transition:none}
+/* 1.12 b293: the strike in the material's hand (html[data-mat]): Ink a pen, Pixel square and stepped, Pencil a scribble (layoutStrikes) revealed by a clip */
+html[data-mat="ink"] .ink{height:max(3px,.078em);border-radius:40% 60% 55% 45%/65% 45% 55% 35%;opacity:.93;rotate:.45deg}
+html[data-mat="ink"] .ink:nth-child(4n){rotate:-.6deg}
+html[data-mat="pixel"] .ink{height:max(4px,.11em);border-radius:0;transition-timing-function:steps(6,end)}
+.ink.scr{height:.5em;margin-top:-.22em;background:none;box-shadow:none;transform:none;clip-path:inset(-60% 100% -60% 0);transition:clip-path var(--t,.3s) var(--e,cubic-bezier(.5,0,.3,1)) var(--d,0s)}
+.row.done .ink.scr{clip-path:inset(-60% 0 -60% 0)}
+.row:not(.done) .ink.scr{transition-delay:var(--dr,0s)}
+.ink.scr svg{display:block;width:100%;height:100%;overflow:visible}
+.ink.scr path{fill:none;stroke:var(--strike-bg);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
 @keyframes shimmer{to{background-position:-300% 0}}
 @keyframes candy{to{background-position:-40px 0}}
 
@@ -475,7 +491,36 @@ dialog.panel #toast{z-index:60} /* 1.7: a toast raised while a sheet is open mov
   .row .tool{opacity:1}
 }
 
+/* 1.12 b293: the unseal — a list opened here arrives in its material while the lock over the dot opens (app.js unseal, --i per row) */
+html.unseal #main .row{animation:var(--us,tf-us-rise) var(--us-d,.5s) var(--us-e,cubic-bezier(.22,1,.36,1)) calc(80ms + var(--i,0) * var(--us-s,70ms)) backwards}
+html[data-mat="ink"]{--us:tf-us-develop;--us-d:.78s;--us-s:120ms;--us-e:cubic-bezier(.3,.1,.2,1)}
+html[data-mat="glass"]{--us:tf-us-focus;--us-d:.64s;--us-s:90ms}
+html.unseal[data-mat="glass"] #main .row{transform-origin:0 50%}
+html[data-mat="tide"]{--us:tf-us-mist;--us-d:.95s;--us-s:150ms;--us-e:cubic-bezier(.2,.7,.2,1)}
+html[data-mat="candy"]{--us:tf-us-pop;--us-d:.52s;--us-s:110ms;--us-e:cubic-bezier(.3,1.5,.5,1)}
+html[data-mat="phosphor"]{--us:tf-us-type;--us-d:.46s;--us-s:110ms;--us-e:steps(16,end)}
+html[data-mat="pixel"]{--us:tf-us-type;--us-d:.5s;--us-s:120ms;--us-e:steps(7,end)}
+html[data-mat="glow"]{--us:tf-us-dawn;--us-d:1.05s;--us-s:130ms;--us-e:cubic-bezier(.3,.1,.2,1)}
+html[data-mat="ember"]{--us:tf-us-kindle;--us-d:1.15s;--us-s:120ms;--us-e:ease-out}
+html[data-mat="pencil"],html[data-mat="chalk"]{--us:tf-us-sketch;--us-d:.62s;--us-s:170ms;--us-e:cubic-bezier(.5,0,.3,1)}
+@keyframes tf-us-rise{from{opacity:0;transform:translateY(16px)}}
+@keyframes tf-us-develop{from{opacity:.1;filter:blur(10px) sepia(1)}45%{opacity:.7;filter:blur(3px) sepia(.6)}}
+@keyframes tf-us-focus{from{opacity:.15;filter:blur(12px) brightness(1.7);transform:scale(1.05)}}
+@keyframes tf-us-mist{from{opacity:0;filter:blur(6px);transform:translateY(26px)}}
+@keyframes tf-us-pop{from{opacity:0;transform:scale(.6)}}
+@keyframes tf-us-type{from{clip-path:inset(-20% 100% -20% 0)}to{clip-path:inset(-20% 0 -20% 0)}}
+@keyframes tf-us-dawn{from{opacity:0;filter:blur(5px) brightness(2)}50%{opacity:.85;filter:blur(1px) brightness(1.4)}}
+@keyframes tf-us-kindle{from{opacity:.2;color:var(--accent-hi);text-shadow:0 0 22px rgba(255,120,40,.95)}40%{opacity:1;color:var(--accent-hi);text-shadow:0 0 14px rgba(255,120,40,.7)}}
+@keyframes tf-us-sketch{from{clip-path:inset(-20% 100% -20% 0);filter:blur(1.5px)}to{clip-path:inset(-20% 0 -20% 0);filter:blur(0)}}
+html.unseal .dot .lock{animation:tf-lock 1.5s both}
+html.unseal .dot .lock .shackle{animation:tf-shackle 1.5s cubic-bezier(.3,1.4,.5,1) both}
+html.unseal .dot::before{animation:tf-dot 1.5s both}
+@keyframes tf-lock{8%,86%{opacity:1}}
+@keyframes tf-shackle{30%{transform:none}48%,to{transform:translate(2px,-1.5px) rotate(32deg)}}
+@keyframes tf-dot{8%,86%{opacity:0}}
+
 @media (prefers-reduced-motion:reduce){
+  html.unseal #main .row,html.unseal .dot .lock,html.unseal .dot .lock .shackle,html.unseal .dot::before{animation:none}
   .ink,.ghost{transition-duration:.08s}
   .row{transition:background-color .08s ease,color .08s ease}
   .box,.box path{transition-duration:.08s}

@@ -66,20 +66,23 @@ const settle = (span, ls, text, anims) => Promise.all(anims.map(a => a.finished.
   span.insertBefore(document.createTextNode(text), first); ls.forEach(l => l.remove()); span.removeAttribute("aria-label");
 });
 
-/** Type a line out, a character at a time, a block caret riding it; the caret blinks three times and goes. */
+/** Type a line out, a character at a time, a block caret riding it; the caret blinks three times and goes. The line
+    keeps its full width from the first frame (what is not typed yet is there, invisible), so the card never reflows
+    under it: its chip does not jump, and a card that wraps has its final shape before the first letter lands. */
 function typeOut(span, text, ms) {
-  span.textContent = "";
-  const caret = document.createElement("span");
-  caret.setAttribute("aria-hidden", "true");
-  caret.style.cssText = "display:inline-block;width:.55em;height:1em;margin-left:.08em;vertical-align:-.12em;background:currentColor";
+  const part = css => { const e = document.createElement("span"); e.setAttribute("aria-hidden", "true"); e.style.cssText = css; return e; };
+  const shown = part("font:inherit;color:inherit"), rest = part("font:inherit;visibility:hidden");
+  const caret = part("display:inline-block;width:.55em;height:1em;margin-right:-.55em;vertical-align:-.12em;background:currentColor");
+  span.textContent = ""; span.setAttribute("aria-label", text); rest.textContent = text; span.append(shown, caret, rest);
   let i = 0;
+  const finish = () => { if (span.isConnected) { span.textContent = text; span.removeAttribute("aria-label"); } };
   return new Promise(done => {
     const step = () => {
       if (!span.isConnected) return done();
-      span.textContent = text.slice(0, ++i); span.appendChild(caret);
+      i++; shown.textContent = text.slice(0, i); rest.textContent = text.slice(i);
       if (i < text.length) { setTimeout(step, ms); return; }
       caret.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, iterations: 6, direction: "alternate", easing: "steps(1,end)" }).finished
-        .then(() => { if (span.isConnected) span.textContent = text; done(); }, () => done());
+        .then(() => { finish(); done(); }, () => { finish(); done(); });
     };
     setTimeout(step, 160);
   });

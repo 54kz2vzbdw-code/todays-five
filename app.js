@@ -1146,6 +1146,10 @@ function paint() {
   const finale = allDoneInView() && !editing && !finaleHold; // 1.9: the card waits for the chord; 1.12: each view finishes on its own
   if (finale) { fin.classList.add("on"); hint.classList.add("off"); }
   else { fin.classList.remove("on"); hint.classList.remove("off"); }
+  { // 1.12 b293: a finale card that wraps (a mono kit's line and its chip on a phone) lifts the toast by its extra row, as --shake-h does
+    const extra = finale ? fin.offsetHeight - $("#again").offsetHeight : 0, tall = extra > 12;
+    document.body.classList.toggle("fin-tall", tall); if (tall) document.body.style.setProperty("--fin-extra", extra + "px");
+  }
   if (finale !== finaleOn) { finaleOn = finale; idleReset(); } // the controls never fade during the finale
   paintReview(finale && view === "today"); // the review is a day's — a streak, this week, today's lines — so Everything's finale does not carry it
 }

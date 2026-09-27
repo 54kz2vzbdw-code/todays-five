@@ -26,6 +26,13 @@ Two bugs turned up while building it. A second tab could hand back a list this o
 because the registry merges rather than replaces. And *Delete this list everywhere* has been
 promising ten seconds to undo with an invisible Undo chip whenever there was another list to open.
 
+Later in 1.12 the list learned to move. A line can be crossed off by hand—the ink follows the finger—and
+each theme ends the day its own way. Menus come from what was touched and go back to it: on a phone a
+line's words rise into its menu, Delete erases the line the way its theme would, and Undo puts it back
+where it was. The tabs zoom between Today and Everything, the sun or moon opens the other theme from
+itself, and the count rolls like an odometer. A list opened on a device unseals as it arrives, sounds
+play in their theme's own room, and on the iPhone the app switcher shows a card instead of the list.
+
 ## 1.11 — A look of its own.
 
 - **New** — The same check, in colours of its own instead of borrowed ones.

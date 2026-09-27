@@ -1088,7 +1088,7 @@ because a longer tail is time nobody sees. It weighs 3.9 KB gzipped.
 
 Price's call after round one's checkpoint: "Feel free to experiment with the celebratory endings differently per
 theme and add a nice little animation if it makes sense to do so." This is bet 5 of the moat proposal, the finish
-line, pulled forward. It ships on its own build because it changes every curated kit's ending on everyone's screen.
+line, pulled forward. It ships with the rest of the round below on one build, at Price's word.
 
 **Where it lives.** `finale.js` is new and lazy. It is fetched in the same idle beat as `motion.js`, pinned to the
 build, and in `sw.js`'s `SHELL`. `finaleFx()` hands a curated kit to it; until it has arrived, the volley plays as it
@@ -1117,7 +1117,8 @@ the list.", because it is the night default and that is the brand's line.
 **The confetti, in the material's own particles, on the volley's own rhythm.** Terminal and Arcade throw pixels on a
 3 px grid, Midnight glass shards, Harbor and Forest rising bubbles, Ember rising sparks, Sunset and Dusk sparkles, and
 Sketch graphite. Paper, Cocoa, Pink, Blush, Light and Dark keep their own ribbons and hearts. The new particles are
-drawn by `finale.js` through `fx.scene()`, so `fx.js`, which is on the first-paint path, does not grow. Every burst
+drawn through `fx.scene()` by `motion.js`, which hands `emit` to `finale.js` (a line a material erases throws the same
+ones), so `fx.js`, which is on the first-paint path, does not grow. Every burst
 keeps the volley's timing: seven along the bottom 65 ms apart, one through the middle at 210 ms. The iPhone's finale
 pattern is that rhythm, so the hand still lands with the eye. Nothing native changed.
 
@@ -1128,4 +1129,102 @@ reduced motion, as it never has.
 wraps and its line sits under the Done toast the last check-off raises. Terminal's finale, the night default, was
 drawn half under "Done · Undo". `paint()` now measures the card's extra row (`--fin-extra`), and `body.fin-tall` lifts
 the toast by it, the pattern of `--shake-h` and `--install-h`.
+
+# 1.12 b293 decisions — the materials, the menus, the unseal
+
+Price's word at the checkpoint: "Love it, keep going. Make all your suggested changes." Then: "Let's do this whole
+build and then run the tests at the end rather than a bunch of tests as we build." So bets 2, 3 and 4 of the moat
+proposal and the sound refinements were built straight through on the branch the endings began, with syntax checks
+only, and the battery ran once at the end. TV and the widgets (bet 6) wait for a round of their own.
+
+**One build, and what that costs.** The rule is that a change that moves other people's screens ships on its own build,
+so a report can be pinned to it. This round moves nearly everything that moves, on one build, at Price's word. The
+cost: a report against this build names the build and not the piece, and most of the pieces share `app.js`, so the
+entry below is the map from what someone saw to where it lives.
+
+**The material is a kit token.** `theme.js` names each kit's material (`MATERIALS`, `materialOf`): Clean (Light, Dark),
+Ink (Paper, Cocoa), Glass (Midnight), Tide (Harbor, Forest), Candy (Pink, Blush and the Secret pair), Phosphor
+(Terminal, Teletype), Glow (Sunset, Dusk), Ember, Pencil (Sketch), Pixel (Arcade). A theme you make is Clean; an Extra
+kit is its pair's (chalk, wood), whose inks extrafx.css already draws. `applyTheme` writes it as `html[data-mat]`, and
+the crossfade swaps it at its midpoint with the fonts. It is not in the theme code, the kit fixture or the Swift kit
+table: nothing outside this page reads it, and a device that never loads this build never needs it. Each material has
+three springs (move, snap, pop) and a tempo in `motion.js`, solved into `linear()` easings once; Pixel has none and
+moves in steps.
+
+**The strike in the material's own hand.** Ink is a pen: heavier, uneven, each wrapped line a hair off level (the
+independent `rotate` property, so every transform on the ink is untouched). Pixel is square and thick and lands in
+steps, drawn by hand in tenths. Pencil is a scribble: `layoutStrikes` draws a zigzag through the words as an SVG,
+seeded by the line's id so a line always gets the same one, and it is revealed by a clip rather than stretched —
+`motion.js` treats it as it treats a gradient. Every other material keeps the kit's bar. The struck row at rest is
+still what a tap leaves.
+
+**Surfaces come from what you touched and go back to it.** Dialogs still open and close synchronously, as the panel
+stack and everything that calls it expect; `motion.js` only animates them. A panel grows out of its control (⋯, a
+line's ⋯, Share) by a clip and a short translate, or out of the panel it replaces — a push, a Back, the ⋯ menu turning
+into what it launched — and a sheet with neither rises on the material's spring. Menus deal their rows in. Closing,
+the real dialog closes at once and an inert copy folds back into its control over a fading copy of the backdrop (a
+sheet drops away), and the control bumps as it lands. A panel opened in the same moment the last one closed takes the
+copy's place and grows from it, which is how the ⋯ menu becomes Settings instead of folding away and reappearing. A
+sheet dragged down keeps its own drag. The copy never holds focus, never reads as open (`[open]` is not on it) and is
+gone in under 300 ms.
+
+**A line's menu comes from the line.** On a phone its words rise out of the list into the menu's title (a popover, so
+the sheet's backdrop does not cover them) and go back into the line when the menu closes with nothing chosen. The
+actions send them where they go: Take off Today flies them to the Everything tab, Put on Today to the Today tab (a
+star's tap in Everything does the same); Not today sends them off to the right while a moon rises where they were
+(a swipe left, which has already carried them off, gets only the moon); Delete takes them home and the line is erased
+in its material — Clean folds it away, Ink smears it, Glass shatters it, Tide sinks it, Candy bursts it, Phosphor
+backspaces it, Glow dissolves it, Ember burns it, Pencil rubs it out, Pixel explodes it. The data changes at once, the
+toast and Undo with it; only the row waits, out of the renderer's hands, and the lines below close the gap after it
+has gone. Undo while a line is still leaving takes the copy away and brings the line back in its place.
+
+**Today is a close-up of Everything, so the tabs zoom.** The View Transitions API, only for the tabs and A: the lines on
+Today are named for the moment of the switch, so they travel between their places in the two views, the rest scales
+away and in, and the chosen tab's pill (the seg's tabs are pills now) slides across. The names are taken off when it
+ends. Every other switch of view is instant, as it was. A view transition takes no input while it runs — Chrome sends
+every tap to the page's root, whatever `pointer-events` says, which a hold 400 ms after a tab caught — so the zoom is
+over in 0.34 s and the theme's reveal in 0.46 s, both under the time a person takes to look and then tap.
+
+**A theme you pick opens from what you touched.** The sun or moon, T, and a swatch in the picker: the new theme grows as
+a circle from the control over the old one (Phosphor arrives as a raster sweeping down, Pixel in steps). The change
+itself lands inside the transition, a frame later, and the sun or moon's tick with it (the tap primes the audio
+first). The clock's and the system's switches keep the crossfade.
+
+**The count rolls like an odometer.** Its text is the count from the first frame; the old number rides above or below
+the new one in a window one line tall, from `data-was` and a pseudo-element, so nothing that reads the count ever reads
+two numbers. A new view or a new list does not roll.
+
+**The unseal.** The list is ciphertext until it reaches the device, so a list opened here — cold, or switched to —
+arrives in its material's way while a lock over the sync dot opens: Clean rises, Ink develops, Glass comes into
+focus, Tide lifts out of a mist, Candy pops, Phosphor and Pixel type out, Glow dawns, Ember kindles, Pencil is
+sketched in. It is CSS (`html.unseal`, a stagger per row) so a cold open needs no module; a touch or a key ends it at
+once, and the welcome's list, a list just kept from the welcome, and reduced motion never see it. The lock's click is a
+cue that plays only on an audio context that is already running, so a cold open makes none.
+
+**The keys.** Share's links come up as ciphertext the length of the link and decode into it; Copy, the QR code and
+Share read what the field holds (`data-v`), which is the link from the first frame. New keys, confirmed, sweeps a band
+of the accent down the screen as the list is sealed under its new key; the list unseals as it opens, and on the desktop
+the new link decodes in the save sheet. The prototype's crossing-off of the old links is not here: production asks
+first, and a strike through links that a No keeps would say the wrong thing.
+
+**Sound.** The engines are unchanged; the stage around them is new. A room per material, an impulse response of
+decaying noise made the first time a sound plays in it (Glass rings, Tide and Glow are long, Phosphor and Pixel nearly
+dry). Each check-off and uncheck is placed in stereo where it was struck. A limiter sits in front of the volume, at
+-3 dB with a hard knee, so a check-off on a finale's tail never clips. The day's check-offs climb a major pentatonic
+into the finale's chord, in each engine's own units of pitch (a knock's steps are quarter tones, a blip's semitones,
+a marble's thirds of one); the kalimba already did, and the rest keep their own steps. Four cues of the app's own, the
+same for every pack and quieter than any of them: a whoosh for a surface opening, a tick for a step inside one, a key,
+and the lock. A context without a limiter, a convolver or a panner plays dry, as before. `tools/sounds.js` renders the
+engines dry, so the level table stands.
+
+**The app switcher.** On the iPhone the switcher's picture of the app is now a card, the theme's own ink and a lock,
+put in place as the scene resigns active and lifted as it comes back. Nothing is read or kept; it is a colour and a
+symbol. It is not a setting.
+
+**What waits.** Static grounds per kit (the prototype's paper grain, scan lines and waves) need the grain rule's
+contrast measurements on every surface first. TV and the widgets are bet 6. The prototype's ten-second undo for Delete
+everywhere touches the server's side of deletion and is not motion.
+
+**Reduced motion.** Everything above is off: panels are simply there and simply gone, lines simply leave, the count
+simply changes, no unseal, no reveal, no zoom. The drawn strike still follows the finger, as round one decided.
 

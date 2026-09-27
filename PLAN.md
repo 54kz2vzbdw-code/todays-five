@@ -2054,3 +2054,71 @@ frame timing.
 3. **The long-press still prepares the engine.** Tap a line cold after a minute idle. *Pass:* the check-off's haptic
    lands with the tap. *Fail:* it lands late, which would mean the new recogniser starved the touch-down press.
 
+
+# Today's Five 1.12 b293 — the materials, the menus, the unseal
+
+*Shipped as build 306. b293 is the round's first commit, and the tag its code carries.*
+
+Bets 2 through 5 of the moat proposal and the sound refinements, on one build. Price's words at round one's
+checkpoint: "Love it, keep going. Make all your suggested changes," and "experiment with the celebratory endings
+differently per theme." Then: "Let's do this whole build and then run the tests at the end rather than a bunch of tests
+as we build." So it was built straight through with syntax checks, and the battery ran once at the end. The decisions
+are in DECISIONS.md under "1.12 b293 decisions" (the endings, then the rest) and apple/DECISIONS-apple.md under "The app
+switcher shows a card, not the list". The version holds at 1.12. TV and the widgets (bet 6) wait.
+
+## What shipped
+
+- **Each kit ends its own way** (finale.js): the day's last line in the material's hand, its own confetti on the
+  volley's rhythm, Arcade's line "Level clear."
+- **A material per kit**, carried as `html[data-mat]`, with its own springs. The strike in its hand: Ink a pen, Pixel
+  square and stepped, Pencil a scribble.
+- **Surfaces come from what you touched.** Panels grow out of their control or the panel they replace and fold back into
+  it; ⋯ becomes what it launched. On a phone a line's words rise into its menu's title and go where the action sends
+  them: Take off Today to the Everything tab, Not today off under a rising moon, Delete home while the line is erased in
+  its material. Undo brings a line back into its place.
+- **The tabs zoom**, the sun or moon (or a swatch) **reveals** the new theme from itself, and **the count rolls**.
+- **The unseal:** a list opened here arrives in its material while a lock over the dot opens.
+- **The keys:** Share's links decode as they arrive; New keys sweeps the list sealed again.
+- **Sound on a stage:** a room per material, each sound where it was struck, a limiter, the day's pentatonic climb, and
+  four quiet cues of the app's own.
+- **The iPhone's app switcher** shows a card (the theme's ink and a lock), not the list.
+
+## Recordings
+
+`shots/endings/` has each curated kit's finale; `shots/moat-2/` has the rest: the reveal, the zoom, Delete in four
+materials, the line menu, the panels and the unseal. All recorded by `tools/endings.mjs` and `tools/moves.mjs` at
+390×844 with a real finger (CDP touch) from Chrome's own screencast.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| `app.js` | **+3,054 bytes gzipped** (51,612 → 54,666) against a 1 KB budget per round. The endings are 402 of it; this round is the other 2,652, the glue each piece needs where the renderer and the panel stack live: the exits, the unseal, the odometer, the scribble, the panels' origins, the view-transition entry points | `gzip -9` |
+| the rest of the first-paint path | `styles.css` **+1,262** (the unseal, which a cold open needs before any module; the material strikes; the lock; the odometer's window), `sound.js` **+823** (imported by `app.js`), `theme.js` +288, `index.html` +75 | `gzip -9` |
+| lazy | `motion.js` 3,902 → 12,878, `finale.js` 3,258 (new), `packs.js` +1,290, `panels.js` +896, `panels.css` +841. None loads before first paint | `gzip -9` |
+| first paint | the first cut: mobile FCP **1252 → 1316 ms** (ranges apart). Serving it with 292's stylesheet changed nothing, so the cost was script; the sound stage, the line menu's lift and land and the press tracking moved into the lazy modules. After: desktop FCP **60 → 56 ms** (56–68, 48–60); mobile FCP **1268 → 1276 ms** (+8 at the median, ranges 1236–1280 and 1268–1292 overlap); LCP the same as FCP on both. On the wire 570.6 → 624.7 KB, which counts the lazy modules and the service worker's precache | `tools/paint.mjs 8`, 292 served from a worktree on :8792 |
+| a view transition's input | Chrome 153 sends every tap to the page's root while one runs, whatever `pointer-events` says (tested on a bare page). A hold 400 ms after a tab was swallowed at 0.46 s; the zoom is now 0.34 s and the reveal 0.46 s, and the same hold lands | a probe, `ONLY` runs |
+| idle CPU | **not measured**, at Price's word. Nothing in the round runs at rest: every animation ends, the unseal is CSS that is taken off, and the rooms are built once | — |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, **sound 17** (the phrase and the rooms; the stage has no loop; a cue never makes a context), features 30, compat 9 |
+| Browser suite, 1440×900 and 390×844 | **214 passed, 0 failed** end to end, with the ten new tests. The first full run had 17 failures: the new tests' own bugs, older tests that measured a panel mid-arrival or read Share's links mid-decode, the suite tapping inside a view transition (a press, a hold and a stroke now wait for one to end), and the 1.2 flip test, which encoded the crossfade a tap on the sun or moon made. Then, after the green run, the code moved off the first-paint path: its tests re-ran, **29 passed**, and sound 17 |
+| The rewritten flip test | run against 292: **fails there** at both viewports, as it must ("a view transition opens it") |
+| One flaky old test | "a fresh device on a light system" failed once in the first full run (which PT Sans faces a first frame fetches is a race under load); alone it passes on 292 and on this build, twice each, and it passed in the clean run |
+| Swift core | `swift test`: 134 tests in 10 suites passed |
+| The app | TodaysFive for `generic/platform=iOS Simulator` and TodaysFiveWatch for `generic/platform=watchOS Simulator`: BUILD SUCCEEDED, 0 warnings. `xcodebuild archive` for `generic/platform=iOS` with the App Manager key: **ARCHIVE SUCCEEDED**, 0 warnings, build 306, the Watch embedded, in Organizer's folder |
+
+## What only a real iPhone can settle
+
+1. **The switcher card.** Swipe up to the app switcher. *Pass:* the app's card is the theme's ink with a lock, and the
+   list is back the moment the app is. *Fail:* the list in the switcher, or a card that stays over the list.
+2. **The view transitions in the web view.** Tap the sun or moon, then the tabs. *Pass:* the new theme opens as a circle
+   from the sun or moon; the lines travel between Today and Everything. *Fail:* nothing (a WebKit without them gets the
+   crossfade and an instant switch, which is also acceptable), or a flash.
+3. **The unseal's cost on an older phone.** Force-quit and reopen on Paper and on Midnight. *Pass:* the lines develop
+   or come into focus smoothly. *Fail:* a stutter, which would put the blur's cost on the list.
+4. **The room.** Cross off five lines on Midnight, then on Terminal. *Pass:* Midnight's bell rings in a room, climbing a
+   pentatonic phrase into the finale; Terminal's blips stay dry. *Fail:* a clip, or a check-off that sounds late.

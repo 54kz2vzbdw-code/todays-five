@@ -618,6 +618,32 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  /* ---------------- 1.12 b293: each kit ends its own way ---------------- */
+  await test(label + ": 1.12 b293: each curated kit ends its own way — the line lands as plain text, Arcade's reads Level clear., nothing errors — and on a phone a finale card that wraps lifts the toast clear of it", async () => {
+    for (const kit of ["paper", "terminal", "arcade", "midnight", "ember"]) {
+      const t = await fresh(opts, { init: pinKit(kit) }); await wait(1300); // finale.js arrives at idle
+      for (let k = 0; k < 2; k++) { await t.press("#list .row:not(.done) .tx"); await wait(650); }
+      const before = (await t.s()).stats.volley;
+      await t.press("#list .row:not(.done) .tx"); await wait(900);
+      assert.ok(await t.page.$eval("#finale", e => e.classList.contains("on")), kit + ": the finale is up");
+      assert.equal((await t.s()).stats.volley, before + 1, kit + ": one finale, counted as the volley it replaces");
+      if (touch && kit === "terminal") {
+        const toast = await rect(t.page, "#toast"), line = await rect(t.page, "#finale span");
+        assert.ok(toast.bottom <= line.top + 2, "the toast sits clear of a wrapped card: " + JSON.stringify({ toast, line }));
+      }
+      await wait(2600); // past the typing, the caret's three blinks and the swash
+      const line = await t.page.$eval("#finale span", e => ({ text: e.textContent, spans: e.querySelectorAll("span").length }));
+      assert.equal(line.text, kit === "arcade" ? "Level clear." : "That's the list.", kit + ": its line");
+      assert.equal(line.spans, 0, kit + ": plain text again once it has landed");
+      assert.deepEqual([t.errors, t.csp, t.thirdParty], [[], [], []]);
+      await t.close();
+    }
+    const t = await fresh(opts, { init: pinKit("paper"), reducedMotion: "reduce" }); await wait(1300);
+    for (let k = 0; k < 3; k++) { await t.press("#list .row:not(.done) .tx"); await wait(650); }
+    assert.equal(await t.page.$eval("#finale span", e => e.querySelectorAll("span, svg").length), 0, "under reduced motion the card is the quiet card it always was");
+    await t.close();
+  });
+
   if (!touch) await test(label + ": 1.12 b279: the mouse — a click that wobbles a few pixels is still a click, and a drag that is mostly up or down draws nothing", async () => {
     const t = await fresh(opts); await wait(900);
     const ids = await t.page.$$eval("#list .row:not(.done)", els => els.map(e => e.dataset.id));

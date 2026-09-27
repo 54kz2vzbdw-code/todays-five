@@ -288,6 +288,20 @@ export const PACK_ORDER = ["knock", "bell", "blip", "typewriter", "marble", "pop
     same way without importing this module a second time under a different URL. */
 export const HELPERS = { tone, noiseBurst };
 
+/** 1.12 b293: small sounds the packs never needed, the same whatever pack is on and quieter than any of them — a whoosh
+    for a surface opening, a tick for a step inside one, a key for a character, the lock opening as a list unseals. A
+    digital material (Phosphor, Pixel) hears square waves. sound.js plays them (cue). */
+export const CUES = {
+  whoosh(env) { noiseShape(env, env.c.currentTime, { attack: 0.05, hold: 0.04, release: 0.12, filt: "bandpass", freq: 600, f1: 2400, q: 0.6, gain: 0.05 }); },
+  tick(env, digital) { const t = env.c.currentTime; if (digital) tone(env, { type: "square", f0: 1600, t, attack: 0.001, peak: 0.018, len: 0.018 }); else noiseBurst(env, t, 140, 5, "bandpass", 3800, 0.09); },
+  key(env, digital) { const t = env.c.currentTime; if (digital) tone(env, { type: "square", f0: 1180 + Math.random() * 160, t, attack: 0.002, peak: 0.025, len: 0.025 }); else noiseBurst(env, t, 320, 6, "highpass", 3000, 0.12); },
+  unlock(env, digital) {
+    const t = env.c.currentTime;
+    if (digital) { tone(env, { type: "square", f0: 880, t, attack: 0.003, peak: 0.06, len: 0.05 }); tone(env, { type: "square", f0: 1320, t: t + 0.09, attack: 0.003, peak: 0.06, len: 0.07 }); }
+    else { noiseBurst(env, t, 260, 5, "bandpass", 2600, 0.22); noiseBurst(env, t + 0.11, 380, 5, "bandpass", 1900, 0.26); }
+  }
+};
+
 /* 1.12 b279: the scratch under a drawing finger. One voice for every engine — the twelve here, the Secret pair's and the
    Extra kits' — so each kit draws with a surface of its own without a new engine: looped noise through the engine's
    filter, a slow random swell riding on it for the grain, the level and the brightness following the finger's speed

@@ -2,11 +2,11 @@
 // A fake AudioContext models what iOS does: a fresh context starts suspended, the app goes to the background
 // (suspended, resume works), a call or Siri interrupts it (resume never lands), and closed contexts.
 import assert from "node:assert/strict";
-import { createSound, SECRET_ENGINES, EXTRA_ENGINES, FINALE_BUZZ } from "../sound.js";
+import { createSound, SECRET_ENGINES, EXTRA_ENGINES, FINALE_BUZZ, phrase, ROOM } from "../sound.js";
 import * as EXTRA from "../packs-extra.js";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { PACKS, PACK_ORDER, PACK_NAMES, HELPERS, SCRATCH, scratch } from "../packs.js";
+import { PACKS, PACK_ORDER, PACK_NAMES, HELPERS, SCRATCH, scratch, CUES } from "../packs.js";
 import * as SECRET from "../packs-secret.js";
 
 let passed = 0;
@@ -225,6 +225,45 @@ await test("1.12 b279: sound.scratch() is null when muted and before the engines
   o.prime(); await tick();
   const v = o.scratch(); assert.ok(v && typeof v.speed === "function" && typeof v.stop === "function", "a voice");
   v.speed(0.8, 0.2); v.speed(5, 1.4); v.stop(); v.stop(); v.speed(1, 0.5); // out of range, twice stopped, spoken to after: none of it throws
+});
+
+await test("1.12 b293: the day's check-offs climb a major pentatonic, in each engine's own units of pitch; the others keep their own steps", async () => {
+  assert.deepEqual([0, 1, 2, 3, 4, 5].map(s => phrase("knock", s)), [0, 4, 8, 14, 18, 24], "a knock's steps are quarter tones");
+  assert.deepEqual([0, 1, 2, 3, 4].map(s => phrase("blip", s)), [0, 2, 4, 7, 9], "a blip's are semitones");
+  assert.deepEqual([0, 1, 2, 3, 4].map(s => phrase("marble", s)), [0, 6, 12, 21, 27], "a marble's are thirds of one");
+  assert.deepEqual([0, 3, 7].map(s => phrase("kalimba", s)), [0, 3, 7], "the kalimba climbs its own pentatonic already");
+  assert.deepEqual(Object.keys(ROOM).sort(), ["candy", "clean", "ember", "glass", "glow", "ink", "pencil", "phosphor", "pixel", "tide"], "a room for each of the ten materials");
+});
+await test("1.12 b293: the stage — a limiter and a room where the context has them, each sound panned where it came from — has no loop in it; a cue plays only on a context that is already running", async () => {
+  const edges = [];
+  class StageAC extends FakeAC {
+    constructor() { super(); this.state = "running"; }
+    track(n, kind) { n.kind = kind; n.connect = to => { edges.push([n, to]); return to; }; return n; }
+    createGain() { return this.track(super.createGain(), "gain"); }
+    createOscillator() { return this.track(super.createOscillator(), "osc"); }
+    createBufferSource() { return this.track(super.createBufferSource(), "src"); }
+    createBiquadFilter() { return this.track(super.createBiquadFilter(), "filter"); }
+    createDynamicsCompressor() { this.nodes++; const p = () => ({ value: 0 }); return this.track({ threshold: p(), knee: p(), ratio: p(), attack: p(), release: p() }, "limiter"); }
+    createConvolver() { this.nodes++; return this.track({ buffer: null }, "room"); }
+    createStereoPanner() { this.nodes++; return this.track({ pan: { value: 0 } }, "pan"); }
+  }
+  const s = make({ AudioContext: StageAC, mat: () => "glass", loadPacks: () => Promise.resolve({ PACKS, HELPERS, CUES }) });
+  s.prime(); await tick();
+  assert.equal(s.check(0, 0.9), true); assert.equal(s.uncheck(0.1), true); assert.equal(s.finish(), true);
+  const pans = edges.filter(([n]) => n.kind === "pan").map(([n]) => n.pan.value);
+  assert.ok(pans.length === 2 && pans[0] > 0.4 && pans[1] < -0.4, "the check-off heard on the right, the uncheck on the left: " + pans);
+  const next = new Map(); for (const [a, b] of edges) { if (!next.has(a)) next.set(a, []); next.get(a).push(b); }
+  const seen = new Set(), on = new Set();
+  const loops = n => { if (on.has(n)) return true; if (seen.has(n)) return false; seen.add(n); on.add(n); for (const m of next.get(n) || []) if (loops(m)) return true; on.delete(n); return false; };
+  assert.equal([...next.keys()].some(loops), false, "no sound feeds back into itself");
+  assert.ok(edges.some(([n]) => n.kind === "room") && edges.some(([n, to]) => n.kind === "limiter" && to.kind === "gain"), "a room, and a limiter in front of the volume");
+  assert.equal(s.cue("whoosh", 0.5, { running: true }), true, "a cue on a running context");
+  assert.equal(s.cue("nothing"), false, "a cue that does not exist is nothing");
+  const cold = make({ loadPacks: () => Promise.resolve({ PACKS, HELPERS, CUES }) });
+  assert.equal(cold.cue("unlock", 0.1, { running: true }), false, "a cue never makes a context");
+  assert.equal(FakeAC.all.length, 0, "no context was made");
+  const dry = make(); dry.prime(); await tick(); await tick();
+  assert.equal(dry.check(0, 0.2), true, "a context with no limiter, room or panner plays dry, as before");
 });
 
 console.log(`\n${passed} sound tests passed`);

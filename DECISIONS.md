@@ -1014,3 +1014,7 @@ The pair adds **no file**: its material is in `extrafx.js`, `extrafx.css` and `p
 already had and which the service worker already precaches, so the shell's request list does not change and neither
 does `styles.css` (`git diff main -- styles.css`, empty). What grows is `theme.js`, because the kits, their masks
 and the words are in the module the boot path parses — the number and its instrument are in `PLAN.md`.
+
+**Landed as build 278.** The full browser suite ran end to end on this tree before the stamp (185 passed, 0
+failed), and first paint measured unchanged against 266 (desktop FCP 56 → 52 ms, mobile 1216 → 1212 ms, medians of
+eight a side). Idle CPU was not measured: Price skipped it at landing. The pair runs nothing at rest by construction.

@@ -218,6 +218,7 @@ const fx = { burst: (...a) => { stats.burst++; return rawFx.burst(...a); }, voll
 /** The finale's confetti: the volley every kit throws, or the bloom or the cake a Secret kit names (1.6). That
     module is fetched the first time one of those two finales runs — never on a device that has not unlocked them. */
 function finaleFx() {
+  if (field && field.finale) field.finale(); // 1.12 b318: a scene has its own moment under the kit's
   const kind = theme && theme.finale;
   if (!kind) { // 1.12 b293: a curated kit's own ending (finale.js), on the volley's rhythm; the volley itself if that is not here yet
     if (finaleMod && finaleMod.finale(theme, rawFx, { span: $("#finale span"), w: innerWidth, h: innerHeight, reduced: RM.matches, spring: motionMod && motionMod.spring, shell: $("#shell"), mat: document.documentElement.dataset.mat, emit: motionMod && motionMod.emit, line: theme.finaleText || FINALE_LINES[theme.id] || FINALE_LINE })) { stats.volley++; return; }
@@ -230,13 +231,26 @@ function finaleFx() {
 /* Superpink's sparkle field: a layer of twinkles behind the words, created when that kit goes on and removed when
    it goes off. CSS, not a frame loop (secretfx.js), so a list left on screen all day still costs no main thread. */
 let field = null, fieldKind = "", fieldTok = 0;
+/* 1.12 b318: Scenes. With this device's Scenes setting on, Forest and Harbor carry a moving picture in the same layer
+   (scenes.js, asked for only then: a page with the setting off never loads or runs a line of it; the worker precaches
+   it like every module, COMPATIBILITY.md §6). Neither kit has a field of its own, so a scene and a field never compete
+   for it. */
+const SCENE_KITS = new Set(["forest", "harbor"]);
+const sceneFor = t => (dev.scenes && t && SCENE_KITS.has(t.id) ? t.id : "");
+function setScenes(on) { if (on) dev.scenes = true; else delete dev.scenes; saveDevice(); paintField(); }
 function paintField() {
-  const want = (theme && theme.field) || "";
+  const scene = sceneFor(theme), want = scene ? "scene:" + scene : (theme && theme.field) || "";
   if (want === fieldKind) return;
   fieldKind = want;
   const tok = ++fieldTok;
   if (field) { field.stop(); field = null; }
   if (!want) return;
+  if (scene) {
+    import("./scenes.js?v=" + BUILD)
+      .then(m => { if (tok === fieldTok) field = m.createScene($("#field"), scene, { build: BUILD, reduced: () => RM.matches, ink: theme.colors.ink, busy: view === "all" }); })
+      .catch(() => { if (tok === fieldTok) fieldKind = ""; });
+    return;
+  }
   if (theme.extra) { // 1.12 b262: an Extra kit's ground, a still picture built from its grain
     import("./extrafx.js?v=" + BUILD)
       .then(m => { if (tok === fieldTok) field = m.createGround($("#field"), theme, { build: BUILD }); })
@@ -386,6 +400,7 @@ function tickTheme() {
   else paintDayNight();
 }
 DARK_MQ.addEventListener("change", tickTheme);
+RM.addEventListener("change", () => { if (field && field.motion) field.motion(); }); // 1.12 b318: a scene goes still, or moves again
 
 /* ---------------- boot ---------------- */
 // Everything boot() can reach is declared above this line: a const below it is in its temporal dead zone while boot runs (1.7: DAY_NAMES was).
@@ -836,6 +851,7 @@ function setView(v, { force } = {}) {
   hideMark();
   if (v !== view || force) { rows.clear(); $("#list").innerHTML = ""; clearAll(); }
   view = v;
+  if (field && field.busy) field.busy(v === "all"); // 1.12 b318: a scene steps back behind Everything's words
   // 1.12: the two views have their own numbers, so a switch is a different bar rather than progress being made —
   // it lands at its width with no slide. One frame is enough: paint() runs inside render() below.
   const fill = $("#fill"); fill.classList.add("nofade"); requestAnimationFrame(() => requestAnimationFrame(() => fill.classList.remove("nofade")));
@@ -2531,6 +2547,7 @@ const api = {
   focusRow, newItem, startEdit, commitEdit, deleteItem, toggle, toggleToday, notToday, pushUndo, undo, restoreItem,
   saveDevice, registerList, switchTo, openList, showWelcome, createList, parseLink, flushQuick, flushOthers, killRemote, queueKill, retryPendingKills,
   reveal, exits, get motion() { return motionMod; }, rawFx,
+  setScenes, scenesOn: () => !!dev.scenes, sceneKits: SCENE_KITS, // 1.12 b318
   applyThemeCode, currentThemeCode, tickTheme, setSlotTheme, flipSlot, setSwitchMode, setSwitchTimes, unlockSecret, forgetSecret, unlockExtra, forgetExtra, activeSlot: () => T.activeSlot(dev, envNow()), autoSlot: () => T.autoSlot(dev, envNow()),
   slotCode: slot => dev[slot] || T.SLOT_DEFAULT[slot], packFor, setSoundPack, soundPacks: () => ({ day: "", night: "", ...(dev.soundPacks || {}) }), soundPins: () => ({ day: "", night: "", ...(dev.soundPins || {}) }), setWake, toggleMute, toggleFullscreen, setOneThing, setSearch, ruleLabel, idleReset,
   editLink, viewLink, copyText, nativeShare, escapeHtml, drawQr, frag,
@@ -2541,9 +2558,9 @@ const api = {
 
 /* test hook (read-only) */
 // 1.7: the secrets only on the local transport
-window.__tf = () => ({ stats: { ...stats }, view, listId: TRANSPORT_KIND === "local" ? listId : (listId ? "held" : null), mode: listMode, lookupId: TRANSPORT_KIND === "local" && ref ? ref.lookupId : null, R: TRANSPORT_KIND === "local" && ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, secret: !!dev.secret, extras: T.unlockedExtras(dev), field: !!field, demo, soundPacks: { ...(dev.soundPacks || {}) }, soundPins: { ...(dev.soundPins || {}) }, shuffled: shuffledId, zone: doc && doc.zone ? doc.zone : null, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry(), origin: (entryOf(listId) || {}).origin || null, nickname: (entryOf(listId) || {}).nickname || null, whose: $("#whose").open, panels: panelStackIds() });
+window.__tf = () => ({ stats: { ...stats }, view, listId: TRANSPORT_KIND === "local" ? listId : (listId ? "held" : null), mode: listMode, lookupId: TRANSPORT_KIND === "local" && ref ? ref.lookupId : null, R: TRANSPORT_KIND === "local" && ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, secret: !!dev.secret, extras: T.unlockedExtras(dev), field: !!field, demo, soundPacks: { ...(dev.soundPacks || {}) }, soundPins: { ...(dev.soundPins || {}) }, shuffled: shuffledId, zone: doc && doc.zone ? doc.zone : null, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry(), origin: (entryOf(listId) || {}).origin || null, nickname: (entryOf(listId) || {}).nickname || null, whose: $("#whose").open, panels: panelStackIds(), scene: field && field.state ? field.state() : null });
 // test-only controls, on the local transport: simulate what iOS does to the audio context
-if (TRANSPORT_KIND === "local") window.__tfTest = { suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneInView(); } }, presence: n => paintWho(n) };
+if (TRANSPORT_KIND === "local") window.__tfTest = { sceneIdle: () => { if (field && field.leaveAlone) field.leaveAlone(); }, suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneInView(); } }, presence: n => paintWho(n) };
 
 /* debug badge (?debug=1): the audio state machine, readable from a simulator screenshot */
 if (new URLSearchParams(SEARCH).get("debug") === "1") {

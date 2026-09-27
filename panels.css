@@ -568,5 +568,7 @@ dialog.panel .btn:focus-visible{outline:2px solid var(--accent);outline-offset:3
 dialog.panel .toc .chip{min-height:34px;padding:.3rem .8rem;font-size:12.5px;font-weight:600;letter-spacing:0;text-transform:none}
 dialog.panel.page .help h3{margin-left:0;margin-right:0}
 .help h3{scroll-margin-top:60px}
+/* 1.12 b318: the kits that carry a scene say so on their swatch */
+.swatch .scene-tag{position:absolute;top:.5rem;right:.55rem;font-size:8.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.8}
 @media (hover:none){ .toc .chip{min-height:40px} }
 @media (prefers-reduced-motion:reduce){ dialog.panel.page h2>[id$="-h"],dialog.panel.page .big,.qt,.hero{transition:none} }

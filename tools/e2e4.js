@@ -3243,12 +3243,138 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 
+  /* 1.12 b318: Scenes. A device that has them on, Forest in Night and Harbor in Day (a dark system: Forest on) */
+  const sceneDevice = (on = true) => `try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: { day: "T1:curated:harbor", night: "T1:curated:forest", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }${on ? ", scenes: true" : ""} } })); } catch (e) {}`;
+  const sceneUp = (t, id) => t.page.waitForFunction(id => { const s = window.__tf().scene; return !!s && s.id === id && s.frames > 0; }, id, { timeout: 8000, polling: 100 });
+  const sceneFiles = t => t.page.evaluate(() => [...new Set(performance.getEntriesByType("resource").map(e => new URL(e.name).pathname.split("/").pop()).filter(n => /^scene/.test(n)))]);
+  const openAppear = async t => { await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-appear[open]"); await wait(250); };
+
+  await test(label + ": 1.12 b318: Scenes are off on a new device and the page asks for none of them; on in Appearance, Forest brings its picture and only its own module, behind the words and not in the way; a flip to Harbor swaps it, a theme without one takes it down and says where one shows, and the setting is the device's", async () => {
+    const t = await fresh(opts, { init: sceneDevice(false) });
+    assert.equal((await t.s()).theme, "forest", "Forest is on");
+    assert.equal((await t.s()).scene, null, "and no scene on a new device");
+    assert.deepEqual(await sceneFiles(t), [], "with it off, the page asks for none of it");
+    assert.ok(await t.page.$eval("#field", e => e.hidden && !e.children.length), "the layer is empty");
+    await openAppear(t);
+    assert.equal(await t.page.getAttribute("#ap-scenes", "aria-pressed"), "false", "the switch is off");
+    assert.equal(await t.page.textContent("#ap-scenes-sub"), "A moving picture behind Forest and Harbor");
+    if (opts.hasTouch) assert.ok((await t.page.$eval("#ap-scenes", e => e.getBoundingClientRect().height)) >= 44, "44 px on touch");
+    await t.page.click("#ap-scenes"); await wait(200);
+    assert.equal(await t.page.getAttribute("#ap-scenes", "aria-pressed"), "true", "on");
+    assert.ok(!(await t.page.$eval("#toast", e => e.classList.contains("on"))), "Forest has one, so nothing needs saying");
+    await sceneUp(t, "forest");
+    assert.deepEqual((await sceneFiles(t)).sort(), ["scene-forest.js", "scenes.css", "scenes.js"], "the stage, its stylesheet and Forest's own, nothing else");
+    assert.equal(await t.page.evaluate(() => document.documentElement.dataset.scene), "forest", "the page knows a scene is up (scenes.css)");
+    assert.ok(await t.page.evaluate(() => performance.getEntriesByType("resource").filter(e => /\/scene/.test(e.name)).every(e => /[?&]v=\d+$/.test(e.name))), "each by build, answered from its own build's cache");
+    await t.esc(); await wait(900);
+    const sc = (await t.s()).scene; assert.equal(sc.running, true, "running: " + JSON.stringify(sc));
+    assert.ok(sc.size[1] >= 150 && sc.size[1] <= 240 && sc.px >= 3, "about 190 pixels tall, scaled up whole: " + JSON.stringify(sc));
+    const z = await t.page.evaluate(() => { const f = document.getElementById("field"), cs = getComputedStyle(f), c = f.querySelector("canvas"), r = c.getBoundingClientRect(); return { field: +cs.zIndex, glow: +getComputedStyle(document.getElementById("glow")).zIndex, shell: +getComputedStyle(document.getElementById("shell")).zIndex, ev: cs.pointerEvents, pos: cs.position, op: cs.opacity, cover: r.left <= 0 && r.top <= 0 && r.right >= innerWidth && r.bottom >= innerHeight, px: getComputedStyle(c).imageRendering, aria: f.getAttribute("aria-hidden") }; });
+    assert.ok(z.field > z.glow && z.field < z.shell && z.ev === "none" && z.pos === "fixed", "above the glow, behind the words, and not in the way: " + JSON.stringify(z));
+    assert.ok(z.cover && z.px === "pixelated" && z.aria === "true" && z.op === "1", "the whole screen, in crisp pixels, faded in, silent to a screen reader: " + JSON.stringify(z));
+    const washes = await t.page.$eval("#field", f => getComputedStyle(f.children[1]).backgroundImage);
+    assert.ok((washes.match(/radial-gradient/g) || []).length === 2 && (washes.match(/linear-gradient/g) || []).length === 1, "the words' three washes are all there (one value the parser rejects drops the lot): " + washes.slice(0, 80));
+    const hit = await t.page.evaluate(() => { const r = document.querySelector("#list .row .tx").getBoundingClientRect(); return document.elementFromPoint(r.left + 10, r.top + r.height / 2).closest(".row") !== null; });
+    assert.ok(hit, "a tap on a line lands on the line");
+    // the flip: Harbor in Day brings its own, and only then
+    await t.press("#daynight"); await wait(400);
+    await sceneUp(t, "harbor"); assert.equal((await t.s()).theme, "harbor");
+    assert.deepEqual((await sceneFiles(t)).sort(), ["scene-forest.js", "scene-harbor.js", "scenes.css", "scenes.js"], "Harbor's module, now Harbor is on");
+    assert.equal(await t.page.$$eval("#field canvas", els => els.length), 1, "one picture at a time");
+    // Harbor's small words are dark on light with no room to spare: on Everything, the plain ground, and nothing drawn under it
+    await t.press("#v-all"); await t.page.waitForSelector("#all .row"); await wait(1100);
+    assert.equal(await t.page.$eval("#field", f => getComputedStyle(f.lastElementChild).opacity), "1", "Harbor's veil covers it on Everything");
+    assert.equal((await t.s()).scene.running, false, "and it stops drawing under it");
+    await t.press("#v-today"); await t.page.waitForSelector("#list .row"); await wait(400);
+    assert.equal((await t.s()).scene.running, true, "back on Today, it moves again"); assert.equal(await t.page.$eval("#field", f => getComputedStyle(f.lastElementChild).opacity), "0");
+    // the picker tags the two kits that have one; a theme without one takes the scene down
+    await openPicker(t, "day");
+    assert.deepEqual(await t.page.$$eval("#p-theme .swatch .scene-tag", els => els.map(e => e.closest(".swatch").dataset.code + ":" + e.textContent).sort()), ["T1:curated:forest:Scene", "T1:curated:harbor:Scene"], "Forest and Harbor, tagged");
+    await t.page.click('#sw-light .swatch[data-code="T1:curated:light"]'); await wait(500); await t.esc(); await wait(300);
+    assert.equal((await t.s()).theme, "light"); assert.equal((await t.s()).scene, null, "Light has none: the scene goes");
+    assert.ok(await t.page.$eval("#field", e => e.hidden && !e.children.length && !e.style.cssText), "and leaves the layer as it found it");
+    assert.equal(await t.page.evaluate(() => "scene" in document.documentElement.dataset), false, "and the page without its mark");
+    // off, then on again with nothing to show on the theme that is on: a word on where one shows
+    await openAppear(t);
+    await t.page.click("#ap-scenes"); await wait(200); assert.equal(await t.page.getAttribute("#ap-scenes", "aria-pressed"), "false");
+    assert.equal(await t.page.evaluate(() => "scenes" in JSON.parse(localStorage.getItem("tf/v2/meta")).device), false, "off is no key at all, as on a new device");
+    await t.page.click("#ap-scenes"); await wait(300);
+    assert.equal(await t.page.textContent("#toast .msg"), "Scenes are on. Forest and Harbor each have one.", "on, on a theme without one, it says where one shows");
+    await t.esc(); await wait(200);
+    // this device's, and kept
+    await t.press("#daynight"); await wait(400); await sceneUp(t, "forest");
+    await t.reload(); await t.page.waitForSelector("#list .row"); await sceneUp(t, "forest");
+    assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device.scenes), true, "on after a reload");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0, "csp: " + t.csp.join("; ")); assert.equal(t.thirdParty.length, 0, "third party: " + t.thirdParty); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join("; "));
+    await t.close();
+  });
+
+  await test(label + ": 1.12 b318: a scene is nearly still at fifteen frames a second while the list is in use, plays its loop at thirty after twenty seconds alone and eases back at a touch, has its own moment at the finale, stops with the tab, and under reduced motion is one still frame", async () => {
+    const t = await fresh(opts, { init: sceneDevice() });
+    await sceneUp(t, "forest"); await t.page.keyboard.press("Shift"); await wait(300);
+    const rate = async ms => { const a = (await t.s()).scene.frames; await wait(ms); return ((await t.s()).scene.frames - a) / (ms / 1000); };
+    let sc = (await t.s()).scene; assert.equal(sc.fps, 15, "in use: fifteen: " + JSON.stringify(sc)); assert.equal(sc.t, 0, "the loop waits at its start");
+    const amb = await rate(2000); assert.ok(amb > 4 && amb <= 16.5, "and no more than that: " + amb);
+    // left alone
+    await t.page.evaluate(() => window.__tfTest.sceneIdle());
+    await t.page.waitForFunction(() => window.__tf().scene.idle, null, { timeout: 4000, polling: 100 });
+    sc = (await t.s()).scene; assert.equal(sc.fps, 30, "the loop at thirty");
+    const loop = await rate(2000); assert.ok(loop > amb && loop <= 31.5, "drawn at that: " + loop + " against " + amb);
+    assert.ok((await t.s()).scene.t > 1, "with its clock running");
+    // a touch, and it eases back to the start of its loop
+    await t.page.keyboard.press("Shift");
+    await t.page.waitForFunction(() => !window.__tf().scene.idle, null, { timeout: 3000, polling: 50 });
+    await t.page.waitForFunction(() => { const s = window.__tf().scene; return s.level === 0 && s.t === 0 && s.fps === 15; }, null, { timeout: 5000, polling: 100 });
+    // Everything is a page of words: the picture steps back behind a veil and its loop waits for Today
+    await t.press("#v-all"); await t.page.waitForSelector("#all .row"); await wait(700);
+    assert.equal((await t.s()).scene.busy, true, "Everything is busy");
+    assert.equal(await t.page.$eval("#field", f => getComputedStyle(f.lastElementChild).opacity), "0.5", "the veil is up");
+    await t.page.evaluate(() => window.__tfTest.sceneIdle()); await wait(1500);
+    sc = (await t.s()).scene; assert.ok(!sc.idle && sc.fps === 15, "left alone on Everything, it stays quiet: " + JSON.stringify(sc));
+    await t.press("#v-today"); await t.page.waitForSelector("#list .row"); await wait(700);
+    assert.equal((await t.s()).scene.busy, false); assert.equal(await t.page.$eval("#field", f => getComputedStyle(f.lastElementChild).opacity), "0", "and down again on Today");
+    await t.page.evaluate(() => window.__tfTest.sceneIdle());
+    await t.page.waitForFunction(() => window.__tf().scene.idle, null, { timeout: 4000, polling: 100 });
+    await t.page.keyboard.press("Shift"); await t.page.waitForFunction(() => window.__tf().scene.fps === 15, null, { timeout: 5000, polling: 100 });
+    // the finale: its own moment, then back
+    for (const box of await t.page.$$("#list .row:not(.done) .check")) { await box.click(); await wait(300); }
+    await t.page.waitForFunction(() => window.__tf().scene.finale, null, { timeout: 4000, polling: 50 });
+    await t.page.waitForFunction(() => { const s = window.__tf().scene; return s.finale && s.fps === 30; }, null, { timeout: 1500, polling: 20 }); // at thirty through it, from its next frame
+    await t.page.waitForFunction(() => !window.__tf().scene.finale, null, { timeout: 8000, polling: 100 });
+    // the tab hidden: nothing at all
+    await t.page.evaluate(() => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" }); document.dispatchEvent(new Event("visibilitychange")); });
+    await wait(200); sc = (await t.s()).scene; assert.equal(sc.running, false, "stopped with the tab");
+    await wait(1000); assert.equal((await t.s()).scene.frames, sc.frames, "not a frame drawn while hidden");
+    await t.page.evaluate(() => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" }); document.dispatchEvent(new Event("visibilitychange")); });
+    await wait(300); assert.equal((await t.s()).scene.running, true, "and back with it");
+    // reduced motion turned on: one still frame, and left alone it stays still
+    await t.page.emulateMedia({ reducedMotion: "reduce" }); await wait(300);
+    sc = (await t.s()).scene; assert.equal(sc.running, false, "reduced motion stops it");
+    await wait(1000); assert.equal((await t.s()).scene.frames, sc.frames, "on a still frame");
+    await t.page.evaluate(() => window.__tfTest.sceneIdle()); await wait(600); assert.equal((await t.s()).scene.running, false, "left alone, still");
+    await t.page.emulateMedia({ reducedMotion: "no-preference" }); await wait(300); assert.equal((await t.s()).scene.running, true, "and moving again when it is off");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0, "csp: " + t.csp.join("; "));
+    await t.close();
+    // a device that asks for reduced motion from the start: a whole picture, and nothing after it, the finale included
+    const r = await fresh(opts, { init: sceneDevice(), reducedMotion: "reduce" });
+    await sceneUp(r, "forest"); await wait(600);
+    const still = (await r.s()).scene; assert.equal(still.running, false, "a still frame: " + JSON.stringify(still));
+    const opaque = await r.page.evaluate(() => { const c = document.querySelector("#field canvas"), d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] === 255) n++; return n / (d.length / 4); });
+    assert.ok(opaque > .99, "the whole picture: " + opaque);
+    for (const box of await r.page.$$("#list .row:not(.done) .check")) { await box.click(); await wait(300); }
+    await wait(1400);
+    assert.equal(await r.page.textContent("#finale span") !== "", true, "the finale's line lands");
+    assert.equal((await r.s()).scene.finale, false, "with no moment of the scene's own"); assert.equal((await r.s()).scene.running, false);
+    assert.equal(r.errors.length, 0, r.errors.join("; "));
+    await r.close();
+  });
+
   await test(label + ": no page errors, CSP violations or third-party requests across a full session", async () => {
     const t = await fresh(opts);
     await t.press("#v-all"); await t.esc(); await t.press("#v-today");
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="appearance"]'); await t.page.waitForSelector("#p-appear[open]"); await t.page.click('#p-appear .slot[data-slot="night"]');
     await t.page.waitForSelector("#p-theme[open]"); await t.page.click("#sw-dark .swatch:nth-child(4)"); await wait(200); await t.page.click("#partner-use"); await t.esc(); await wait(200);
-    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-appear[open]"); await wait(250); await t.page.click("#ap-pairs-go"); await t.page.waitForSelector("#p-pairs[open]"); await wait(250); await t.press('#ap-pairs .pair[aria-label="Harbor by day, Forest by night"]'); await wait(300); await t.page.click("#p-pairs h2 .back"); await t.page.waitForSelector("#p-appear[open]"); await wait(250); await t.page.click('#ap-switch [data-mode="schedule"]'); await wait(300); await t.page.click('#ap-switch [data-mode="system"]'); await wait(300); await t.esc(); await wait(200);
+    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-appear[open]"); await wait(250); await t.page.click("#ap-pairs-go"); await t.page.waitForSelector("#p-pairs[open]"); await wait(250); await t.press('#ap-pairs .pair[aria-label="Harbor by day, Forest by night"]'); await wait(300); await t.page.click("#p-pairs h2 .back"); await t.page.waitForSelector("#p-appear[open]"); await wait(250); await t.page.click("#ap-scenes"); await wait(300); await t.page.click('#ap-switch [data-mode="schedule"]'); await wait(300); await t.page.click('#ap-switch [data-mode="system"]'); await wait(300); await t.esc(); await wait(200);
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="sound"]'); await t.page.waitForSelector("#p-sound[open]"); await wait(200); await t.page.click('#snd-slot [data-slot="day"]'); await t.page.click('#snd-packs [data-pack="bell"]'); await wait(200); await t.page.click('#snd-packs [data-pack=""]'); await wait(200);
     await t.page.click("#p-sound h2 .back"); await t.page.waitForSelector("#p-settings[open]"); await wait(200); await t.page.click('[data-set="addurl"]'); await t.page.waitForSelector("#p-addurl[open]"); await wait(200); await t.esc(); await wait(200);
     await t.press("#daynight"); await wait(500); await t.press("#daynight"); await wait(500);

@@ -40,6 +40,10 @@ side, with the designed pairs one row away. Every page has its title in the list
 and × in reach as it scrolls. The theme picker groups themes by light and dark, so Sunset and Cocoa—dark themes that
 used to be filed under day—sit with the other dark ones.
 
+Scenes: turn them on in Appearance, and Forest and Harbor each get a moving picture behind the list—a moonlit forest
+with fireflies and a doe, a harbor with gulls and a lighthouse. They stay nearly still while you use the list and play
+out when you leave it alone. Off by default—with them off, the app runs exactly as before.
+
 ## 1.11 — A look of its own.
 
 - **New** — The same check, in colours of its own instead of borrowed ones.

@@ -125,6 +125,7 @@ function renderSwatches() {
     const sm = document.createElement("span"); sm.className = "sm"; sm.style.color = t.colors.dim;
     sm.textContent = rec ? "Yours" + (pName ? " · pairs with " + pName : "") : pName ? "Pairs with " + pName : ""; // 1.12 b309: what it pairs with; the group says what it is
     b.append(bar, nm, sm);
+    if (!rec && A.sceneKits.has(t.id)) { const tag = document.createElement("span"); tag.className = "scene-tag"; tag.textContent = "Scene"; tag.style.color = t.colors.accentText || t.colors.accent; b.appendChild(tag); } // 1.12 b318
     b.dataset.code = code;
     b.addEventListener("click", () => choose(code, name, partner ? { code: rec ? partner.code : T.themeCode(partner), name: pName } : null, b));
     if (rec && A.canEdit()) {
@@ -729,6 +730,7 @@ function paintAppearance() {
     tile.setAttribute("aria-label", cap(slot) + " theme: " + t.name + (active === slot ? ", on now" : ""));
   }
   paintSwitch();
+  $("#ap-scenes").setAttribute("aria-pressed", A.scenesOn() ? "true" : "false"); // 1.12 b318
 }
 /** 1.12 b315: the designed pairs, a page one row away from Appearance. */
 export function openPairs() { paintPairs(); A.showPanel("p-pairs"); }
@@ -795,6 +797,8 @@ function wireAppearance() {
   ["#sch-day-at", "#sch-night-at"].forEach(id => $(id).addEventListener("change", sch));
   $("#ap-build").addEventListener("click", () => { pickSlot = A.activeSlot(); openBuilder(); });
   $("#ap-pairs-go").addEventListener("click", openPairs);
+  // 1.12 b318: Scenes, this device's to choose; a toast says where one shows when the theme on screen has none
+  $("#ap-scenes").addEventListener("click", () => { const on = !A.scenesOn(); A.setScenes(on); paintAppearance(); if (on && !(A.theme && A.sceneKits.has(A.theme.id))) A.toast("Scenes are on. Forest and Harbor each have one."); });
   // the pill follows its button's size — the viewport, a theme's font arriving late, a pair that brings another face
   const refit = () => { if ($("#p-appear").open) pickSeg($("#ap-switch"), b => b.dataset.mode === ((dev().switch || {}).mode || "hand"), false); if ($("#p-sound").open) pickSeg($("#snd-slot"), b => b.dataset.slot === (sndSlot || A.activeSlot()), false); };
   if ("ResizeObserver" in window) { const ro = new ResizeObserver(refit); for (const b of $$("#ap-switch button, #snd-slot button")) ro.observe(b); } else addEventListener("resize", refit);
@@ -1237,7 +1241,7 @@ export function openHelp(section) {
     <input class="link" type="text" readonly value="${esc(bm)}" aria-label="Bookmarklet code" spellcheck="false">
     <h3 id="h-who" data-toc="Day and night">Day and night, sound, who's here</h3>
     <p>Every device has a <b>Day theme</b> and a <b>Night theme</b>. ⋯ → <b>Theme</b> shows both side by side: tap either to pick its theme, or tap a designed pair to set both at once. The sun or moon in the top bar flips between them${touch ? "" : " (T does too; Shift+T opens Appearance)"}. Under them is the switch: by hand, with the device's light or dark setting, or on a schedule with a day time and a night time. Under either automation a tap on the sun or moon holds until the next automatic switch, then the automation takes over again.</p>
-    <p>Any theme can go in either slot—light, dark, or one of yours; the slot is about when, not what. Every theme names a partner for the other side, one tap away when you pick it, and the builder can make a partner for a theme of your own: same accent, same sound, flipped base. Every theme picks one of the twelve sound packs, a theme you make can carry its own, and Settings → Sound overrides it on this device. On an iPhone, the ring/silent switch mutes the app's sounds too.</p>
+    <p>Any theme can go in either slot—light, dark, or one of yours; the slot is about when, not what. Every theme names a partner for the other side, one tap away when you pick it, and the builder can make a partner for a theme of your own: same accent, same sound, flipped base. Every theme picks one of the twelve sound packs, a theme you make can carry its own, and Settings → Sound overrides it on this device. On an iPhone, the ring/silent switch mutes the app's sounds too. Scenes, on Appearance, puts a moving picture behind Forest and Harbor—leave the list alone a while and it plays out.</p>
     <p>A small dot beside the sync dot marks each other device that has the list open right now—a random session id, nothing else, and Settings → Other devices turns it off.${touch ? "" : " Leave the mouse alone for a few seconds and the top bar and the footer fade to the date and the count; move it and they're back (Settings → Screen turns that off)."}</p>`;
   { // 1.12 b315: the page's sections as chips at its top
     const toc = document.createElement("nav"); toc.className = "toc"; toc.setAttribute("aria-label", "On this page");

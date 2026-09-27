@@ -1,0 +1,16 @@
+/* scenes.css — 1.12 b318: the app with a scene behind it. scenes.js links this with the page's build when a scene goes
+   up, so the render-blocking stylesheet every device waits for is byte for byte what it was, and a page with Scenes
+   off never asks for it. The scene lies under washes of the kit's own ink (scenes.js); what is left is done here and
+   measured with tools/contrast.mjs against the plain ground. The pills (the view tabs, the chips, + New line) carry the
+   kit's own ground, so the words in them read exactly as they do without a scene; the small loose words (the date, the
+   count, the keyboard line, a caption) carry a soft halo of it, and Today's lines sit on a pad of it. Over the plain
+   ground all three are invisible. */
+html[data-scene]{--halo:0 0 2px var(--ink),0 0 6px var(--ink),0 0 14px var(--ink)}
+html[data-scene] #shell{text-shadow:var(--halo)}
+html[data-scene] #shell .row .tx{text-shadow:none} /* the lines are big and sit on the washes; a halo on them read as a smudge */
+html[data-scene] #shell .row .tx :is(.rep,.cap,.note){text-shadow:var(--halo)} /* the small print that rides in a line keeps it */
+/* Today's lines on a pad of the same ground, soft at the edges and always the size of the list, so a long list's last
+   lines (down where the doe walks and the waves break) are as quiet behind as its first */
+html[data-scene] #today{background-color:color-mix(in srgb,var(--ink) 45%,transparent);box-shadow:0 0 32px 18px color-mix(in srgb,var(--ink) 45%,transparent);border-radius:28px}
+html[data-scene] #shell .chip,html[data-scene] #shell .seg,html[data-scene] #shell .add{background-color:var(--ink)}
+html[data-scene] #shell .chip:hover{background-color:var(--ink-2)}

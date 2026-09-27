@@ -2122,3 +2122,15 @@ materials, the line menu, the panels and the unseal. All recorded by `tools/endi
    or come into focus smoothly. *Fail:* a stutter, which would put the blur's cost on the list.
 4. **The room.** Cross off five lines on Midnight, then on Terminal. *Pass:* Midnight's bell rings in a room, climbing a
    pentatonic phrase into the finale; Terminal's blips stay dry. *Fail:* a clip, or a check-off that sounds late.
+
+# Today's Five 1.12 b307 — the finale's line, once
+
+*Shipped as build 308, on its own, the day after 306.*
+
+Price's phone showed "That's the list.That's the list." on the Dark kit with a one-line list. A finale started again
+before the last one had landed (check, uncheck, check inside a second, which a one-line list makes easy) left the
+first one's cleanup appending its line after the second one's letters. The newest finale now owns the line and an
+older cleanup stands down; the line is passed in, so a doubled one cannot be read back. The regression test fails on
+306 with the phone's exact text and passes here at both viewports; the 25 finale tests and the seven Node suites pass.
+The full browser suite was not rerun for a change confined to `finale.js` and one argument in `app.js`. Web only: the
+app loads the live site, so no new archive is needed for this one.

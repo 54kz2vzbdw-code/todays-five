@@ -2186,3 +2186,46 @@ Five commits, so each can go back alone:
 The pill's spring and the tiles' press under a thumb; that a row's press fill shows in the iPhone's WKWebView (WebKit
 applies `:active` only where touch or pointer listeners are registered, and the app registers them on the document);
 the reveal from a pair card there, which falls back to an instant change where View Transitions are missing.
+
+# Today's Five 1.12 b315 — the menu, round two
+
+*Shipped as build 317. b315 is the round's first commit.*
+
+Price, after 314: the Appearance landing was cluttered with the eight pairs, and "Make the menu amazing, the whole
+thing, and you have freedom to fix whatever. But I want it incredible." The decisions are in DECISIONS.md under "1.12
+b315 decisions — the menu, round two". Web only; the version holds at 1.12, and nothing in `apple/` changed but the
+stamp, so no archive: the app loads the live site.
+
+## What shipped
+
+1. **A swipe back from inside a page** (b315). The panel body says `touch-action: pan-y` as the dialog did, so a
+   left-edge swipe that begins inside a sheet goes back a level; before, only one begun on the backdrop did.
+2. **The menu** (b316). Fourteen panels are pages with a bar that keeps ‹ Back and × in reach and a large title in the
+   list's own face; rows sit on cards with icon tiles, each group explained in one line under it. The ⋯ menu leads with
+   four tiles over the places, Delete everywhere apart. Settings has Appearance as its hero. Appearance is the slots,
+   the switch and two rows; the pairs are a page of their own. The builder, Share, Lists and the rest take the same
+   shape.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `index.html` **+1,148 bytes** gzipped (the icons and the new pages' markup), `app.js` **+51**, `motion.js` **+17**; `styles.css` and `sound.js` unchanged | `gzip -9` |
+| lazy | `panels.js` **+832**, `panels.css` **+2,883**; both load with the first panel | `gzip -9` |
+| first paint | desktop FCP **60 → 48 ms** (48–72 against 44–60); mobile FCP **1292 → 1284 ms** (1276–1316 against 1268–1296). Both ranges overlap: no cost to measure | `tools/paint.mjs 8`, 314 (port 8800) and this build side by side, Lighthouse's mobile throttling |
+| idle CPU | **not measured**, at Price's word. Nothing new runs at rest; the bar's title and the big title's fade are transitions that end | — |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30 (the five homes at 317), compat 9 |
+| Focused run first | 25 passed, 1 failed: the edge swipe on a list's detail, which is how the `touch-action` gap showed |
+| Browser suite, 1440×900 and 390×844 | all **216** in ten slices (`SHARD=i/10`, new, so each fits a command's time): **210 passed, 6 failed** on the first pass. Two were the product: phone landscape overflowed the ⋯ menu by 34 px (the tiles are one-line chips there now) and the hub had lost "the only backup there is" (back on Export & import's row). Four were the suite reading the old shapes (Share's heading text behind its new icon, New list as a chip, the menu's icons as `svg.ic`). Each was rerun after its fix: **12 passed, 0 failed** |
+| Looked at | every page on the phone in Terminal, Paper and Dusk and on the desktop in Terminal, and the ⋯ menu in phone landscape, before the battery |
+| Screenshots | `shots/menu-2/`: the menu pages before (314) and after, both viewports, by `tools/shots.js`, which takes the pairs page now. The Secret and Extra shots are left out |
+
+## What only a real iPhone can settle
+
+The bar's title coming and going under a thumb's scroll; the tiles' press; that the left-edge swipe from inside a
+page goes back in the WKWebView as it does in Chrome's touch emulation.

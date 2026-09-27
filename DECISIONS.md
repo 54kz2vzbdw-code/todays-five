@@ -1296,3 +1296,55 @@ whose font arrives after the pill was measured does not leave it a few pixels of
 migrates, and an older build reading this device's settings finds what it wrote. `COMPATIBILITY.md` does not mention
 Settings. The iPhone shell and the Watch read nothing from these screens. The version stays 1.12.
 
+# 1.12 b315 decisions — the menu, round two
+
+Price, after 314: "the landing looks a little cluttered now with the suggested themes. I like the idea of suggesting
+pairs but putting all of them in that landing is a little cluttered… Make the menu amazing, the whole thing, and you
+have freedom to fix whatever. But I want it incredible." So this round takes the whole menu — ⋯ and everything it
+opens — to one design, and moves the pairs off the landing.
+
+**The pairs, a page of their own.** Appearance is the two slots, the switch, and two rows: Theme pairs and Make your
+own. The eight designed pairs (and a Secret or Extra pair where a device holds its word) are on the Theme pairs page,
+one tap for both slots as before. The suggestion stays one row away instead of eight cards deep.
+
+**Every page, one shape.** Fourteen panels are pages now (Settings, Appearance, Theme pairs, Add from anywhere, Sound,
+Export & import, the picker, the builder, Share, Lists, a list's detail, History, How it works, Keys). A page has a bar
+that keeps ‹ Back and × in reach while it scrolls, and its title large in the list's own face — Paper's serif, Terminal's
+mono — so the menu reads like the list it belongs to. When the large title scrolls under the bar, the bar shows it
+small. The large one is a copy the reader skips; the heading is still the h2, so every name and test that reads it
+reads the same thing. Menus (⋯, a line's, a section's) are not pages and keep their shape.
+
+**Rows on cards, explanations under the group.** A row is an icon on a tile tinted with the theme's accent, a name, what
+is set, and a chevron or a switch; rows sit on cards, a hairline between them that starts where the words do. A
+switch's explanation moved from under every row to one line under its group, and each switch it explains points at it
+(`aria-describedby`), so a screen reader still hears it. The one warning that matters stayed on its row: Export &
+import is "The only backup there is".
+
+**Settings.** Appearance is the hero: both slots in miniature, their names, a chevron. Then Sound, then Screen, Other
+devices, Gestures or Keyboard, and This list, as before.
+
+**The ⋯ menu.** Four tiles for what is reached for most — Share, Theme (naming the theme that is on), Sound (filled and
+naming its state; it still toggles in place, and shows the speaker muted when off) and Full screen, which a phone
+without the API does not show — then the places as rows (Lists, Settings, How it works, About & privacy), then Delete
+this list everywhere on a card of its own, and no empty card where it is hidden. Save your link, while the link is
+unsaved, heads it all. On a computer the tiles carry their keys (M, F); in phone landscape they become one-line chips
+and the rows two columns, so it is one glance, as 1.9 made it.
+
+**The builder.** The theme first, as it will look; then Accent (the well, the hex, and a die for Surprise me), Base,
+Fonts, Sound and Name as rows of one card; then Use for Day or Night as the one filled button, with Save to this list
+and Make its partner beside each other under it; the code last, Import and Copy this theme's code together.
+
+**Share, Lists, the rest.** Share's five blocks are cards, each headed by an icon and what it is for; the Private link
+marked as shared keeps its warning, and its card is tinted toward danger. Lists is a card per list with its initial
+on a tile (the current one filled), New list as a row, and Open a link as a field. A list's detail, Export & import and
+Add from anywhere take the same rows and cards. How it works opens with its sections as chips.
+
+**A swipe back from inside a page.** The left-edge swipe that goes back a level only worked when it began on the
+backdrop: the page's scrolling body reset `touch-action` to auto, so the browser took a sideways touch that began
+inside a sheet. The taller pages put the test's touch inside one, which is how it showed. The body says `pan-y` too
+now; a volume drag still works. It predates the round and is its own commit.
+
+**What did not change.** No setting is stored differently, no id a test or the shell reads went away (the new ones are
+additions), and nothing in `apple/` changed but the stamp. `whatsnew.json` keeps its three 1.12 lines, which are still
+true; the changelog's last paragraph now describes this menu.
+

@@ -651,6 +651,20 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  await test(label + ": 1.12 b307: a finale started again before the last one has landed — check, uncheck, check inside a second — still reads its line once, in Dark, Terminal and Paper", async () => {
+    for (const kit of ["dark", "terminal", "paper"]) {
+      const t = await fresh(opts, { init: pinKit(kit) }); await wait(1300); // finale.js arrives at idle
+      for (let k = 0; k < 2; k++) { await t.press("#list .row:not(.done) .tx"); await wait(650); }
+      await t.press("#list .row:not(.done) .tx"); await wait(520); // the finale is 300 ms after the check: its letters are mid-flight
+      await t.press("#list .row.done .tx"); await wait(150); await t.press("#list .row:not(.done) .tx");
+      await wait(3000); // past both finales, the caret's blinks and the swash
+      const line = await t.page.$eval("#finale span", e => ({ text: e.textContent, spans: e.querySelectorAll("span").length }));
+      assert.deepEqual(line, { text: "That's the list.", spans: 0 }, kit + ": the line once, as plain text");
+      assert.deepEqual([t.errors, t.csp, t.thirdParty], [[], [], []]);
+      await t.close();
+    }
+  });
+
   /* ---------------- 1.12 b293: the materials, the menus, the unseal ---------------- */
   const cls = (t, c) => t.page.evaluate(c => document.documentElement.classList.contains(c), c);
   const clear = t => assert.deepEqual([t.errors, t.csp, t.thirdParty], [[], [], []]);

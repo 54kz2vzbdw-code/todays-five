@@ -220,7 +220,7 @@ const fx = { burst: (...a) => { stats.burst++; return rawFx.burst(...a); }, voll
 function finaleFx() {
   const kind = theme && theme.finale;
   if (!kind) { // 1.12 b293: a curated kit's own ending (finale.js), on the volley's rhythm; the volley itself if that is not here yet
-    if (finaleMod && finaleMod.finale(theme, rawFx, { span: $("#finale span"), w: innerWidth, h: innerHeight, reduced: RM.matches, spring: motionMod && motionMod.spring, shell: $("#shell"), mat: document.documentElement.dataset.mat, emit: motionMod && motionMod.emit })) { stats.volley++; return; }
+    if (finaleMod && finaleMod.finale(theme, rawFx, { span: $("#finale span"), w: innerWidth, h: innerHeight, reduced: RM.matches, spring: motionMod && motionMod.spring, shell: $("#shell"), mat: document.documentElement.dataset.mat, emit: motionMod && motionMod.emit, line: theme.finaleText || FINALE_LINES[theme.id] || FINALE_LINE })) { stats.volley++; return; }
     fx.volley(); return;
   }
   stats.volley++; // a named finale counts as the volley it replaces

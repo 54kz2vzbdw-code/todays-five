@@ -18,9 +18,10 @@ function letters(span, text) {
   span.setAttribute("aria-label", text);
   return [...text].map(ch => { const s = document.createElement("span"); s.textContent = ch; s.setAttribute("aria-hidden", "true"); s.style.cssText = "display:inline-block;white-space:pre;font:inherit;color:inherit"; span.appendChild(s); return s; });
 }
-/** Once every letter has landed, the letters become one plain text node again; anything else in the line (the swash) stays. */
-const settle = (span, ls, text, anims) => Promise.all(anims.map(a => a.finished.catch(() => {}))).then(() => {
-  if (!span.isConnected) return;
+/** Once every letter has landed, the letters become one plain text node again; anything else in the line (the swash) stays.
+    Only for the finale that still owns the line: an older one's letters are already gone. */
+const settle = (span, ls, text, anims, mine) => Promise.all(anims.map(a => a.finished.catch(() => {}))).then(() => {
+  if (!mine()) return;
   const first = ls[0] && ls[0].parentNode === span ? ls[0] : null;
   span.insertBefore(document.createTextNode(text), first); ls.forEach(l => l.remove()); span.removeAttribute("aria-label");
 });
@@ -28,16 +29,16 @@ const settle = (span, ls, text, anims) => Promise.all(anims.map(a => a.finished.
 /** Type a line out, a character at a time, a block caret riding it; the caret blinks three times and goes. The line
     keeps its full width from the first frame (what is not typed yet is there, invisible), so the card never reflows
     under it: its chip does not jump, and a card that wraps has its final shape before the first letter lands. */
-function typeOut(span, text, ms) {
+function typeOut(span, text, ms, mine) {
   const part = css => { const e = document.createElement("span"); e.setAttribute("aria-hidden", "true"); e.style.cssText = css; return e; };
   const shown = part("font:inherit;color:inherit"), rest = part("font:inherit;visibility:hidden");
   const caret = part("display:inline-block;width:.55em;height:1em;margin-right:-.55em;vertical-align:-.12em;background:currentColor");
   span.textContent = ""; span.setAttribute("aria-label", text); rest.textContent = text; span.append(shown, caret, rest);
   let i = 0;
-  const finish = () => { if (span.isConnected) { span.textContent = text; span.removeAttribute("aria-label"); } };
+  const finish = () => { if (mine()) { span.textContent = text; span.removeAttribute("aria-label"); } };
   return new Promise(done => {
     const step = () => {
-      if (!span.isConnected) return done();
+      if (!mine()) return done();
       i++; shown.textContent = text.slice(0, i); rest.textContent = text.slice(i);
       if (i < text.length) { setTimeout(step, ms); return; }
       caret.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, iterations: 6, direction: "alternate", easing: "steps(1,end)" }).finished
@@ -48,9 +49,14 @@ function typeOut(span, text, ms) {
 }
 
 /** Play kit `kit`'s finale: the line in `span`, the confetti through `fx`. False when there is nothing of this module's to play. */
-export function finale(kit, fx, { span, w, h, reduced, spring, shell, mat = "clean", emit = null } = {}) {
+export function finale(kit, fx, { span, w, h, reduced, spring, shell, mat = "clean", emit = null, line = "" } = {}) {
   if (!kit || kit.finale || reduced) return false;
   const pal = kit.confetti || [];
+  // 1.12 b307: a finale can start again before the last one has landed (check, uncheck, check a one-line list inside a
+  // second). The newer one owns the line: it cancels the older one's letters and starts from the plain line, and the
+  // older one's cleanup stands down (mine) instead of appending the line a second time.
+  const tok = span ? (span._fin = (span._fin || 0) + 1) : 0, mine = () => !!span && span._fin === tok && span.isConnected;
+  if (span) { span.getAnimations({ subtree: true }).forEach(a => a.cancel()); span.textContent = line || span.getAttribute("aria-label") || span.textContent; span.removeAttribute("aria-label"); span.style.position = ""; }
   const throwIt = (what, x, y, n, power, spread) => { if (emit) emit(fx, what, x, y, n, power, spread, pal); else fx.burst(x, y, n, power, spread, Array.isArray(what) ? { palette: pal, shapes: what } : null); };
   const text = span ? span.textContent : "";
   const pop = spring ? spring(420, 17) : { duration: 520, easing: "cubic-bezier(.3,1.5,.5,1)" };
@@ -62,7 +68,7 @@ export function finale(kit, fx, { span, w, h, reduced, spring, shell, mat = "cle
   if (!span || !text) return true;
   if (mat === "phosphor" || mat === "pixel") {
     if (mat === "phosphor" && kit.id === "terminal" && shell) shell.animate([{ filter: "brightness(1)" }, { filter: "brightness(1.35)", offset: 0.3 }, { filter: "brightness(1)" }], { duration: 240, delay: 40 });
-    typeOut(span, text, mat === "pixel" ? 55 : 38);
+    typeOut(span, text, mat === "pixel" ? 55 : 38, mine);
     return true;
   }
   if (mat === "pencil") {
@@ -86,8 +92,9 @@ export function finale(kit, fx, { span, w, h, reduced, spring, shell, mat = "cle
     path.setAttribute("d", "M4 8C52 1 118 13 196 4"); path.setAttribute("fill", "none"); path.setAttribute("stroke", "currentColor"); path.setAttribute("stroke-width", "2.2"); path.setAttribute("stroke-linecap", "round"); path.setAttribute("vector-effect", "non-scaling-stroke");
     svg.appendChild(path); span.style.position = "relative"; span.appendChild(svg);
     const L = 200, a = path.animate([{ strokeDasharray: L, strokeDashoffset: L }, { strokeDasharray: L, strokeDashoffset: 0 }], { duration: 440, delay: 140 + n * 30 + 160, easing: "cubic-bezier(.6,0,.2,1)", fill: "both" });
-    a.finished.then(() => new Promise(r => setTimeout(r, 1600))).then(() => svg.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: "forwards" }).finished).then(() => { svg.remove(); span.style.position = ""; }, () => { svg.remove(); span.style.position = ""; });
+    const off = () => { svg.remove(); if (mine()) span.style.position = ""; };
+    a.finished.then(() => new Promise(r => setTimeout(r, 1600))).then(() => svg.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: "forwards" }).finished).then(off, off);
   }
-  settle(span, ls, text, run);
+  settle(span, ls, text, run, mine);
   return true;
 }

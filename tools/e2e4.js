@@ -282,6 +282,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     if (opts.hasTouch) { for (const sel of ['#p-settings [data-set="appearance"]', '#p-settings [data-set="sound"]', '#p-settings [data-set="export"]']) assert.ok((await t.page.$eval(sel, e => e.getBoundingClientRect().height)) >= 44, sel + " is 44 px on touch"); }
     // 1.12 b309: the volume and the slot switch live on the Sound page; the Appearance switch on its own
     await t.page.click('#p-settings [data-set="sound"]'); await t.page.waitForSelector("#p-sound[open]"); await wait(250);
+    if (opts.hasTouch) { await t.page.hover("#p-sound label.item"); await wait(150); assert.equal(await t.page.$eval("#p-sound label.item", e => getComputedStyle(e).backgroundColor), "rgba(0, 0, 0, 0)", "a row fills under a resting pointer only where a pointer can hover: on a phone the fill stuck under the finger when a page opened there"); }
     await rings(["#volume", '#snd-slot [aria-checked="true"]', '#snd-packs [aria-checked="true"]']);
     if (opts.hasTouch) { for (const sel of ["#volume", '#snd-slot [aria-checked="true"]', '#snd-packs [aria-checked="true"]']) assert.ok((await t.page.$eval(sel, e => e.getBoundingClientRect().height)) >= 44, sel + " is 44 px on touch"); }
     await t.page.click("#p-sound h2 .back"); await t.page.waitForSelector("#p-settings[open]"); await wait(250);

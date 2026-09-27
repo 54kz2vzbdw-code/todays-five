@@ -1348,3 +1348,90 @@ now; a volume drag still works. It predates the round and is its own commit.
 additions), and nothing in `apple/` changed but the stamp. `whatsnew.json` keeps its three 1.12 lines, which are still
 true; the changelog's last paragraph now describes this menu.
 
+# 1.12 b318 decisions — Scenes
+
+Price, after 317: "I want to add ambient animations and background scenes to some of the themes. We can keep it gated
+behind a setting for simple themes so they'll be fast-loading for people who aren't interested in the idle animations.
+But my thought is to have a just absolutely stunning theme for people who want the stuff turned on. Like for forest I'm
+picturing some sort of pixel art forest in the background with an idle animation paired to the theme… Make it elegant
+and in the background like it should be (and is). For the idle animation: make a dynamic 15-second motion graphics
+video that shows what an incredible motion designer you are." A prototype came first, as a page of its own (both
+scenes, the loop and the finale, at phone and desktop sizes); his answer was "Love it. Incredible." This round builds
+it into the app: Forest, and Harbor, its Day partner.
+
+**A setting, off, and nothing paid for it on the page.** Scenes is a switch on Appearance, the first row of its lower
+card, and it is this device's, like the other device settings: a phone can have it and a laptop not. Off is no key at
+all, as on a new device. With it off the page never asks for any of it or runs a line of it: the stage (`scenes.js`), a
+scene (`scene-forest.js`, `scene-harbor.js`) and the words' side (`scenes.css`) are asked for with the page's build
+only when a scene goes up. The first paint carries one row of markup and the switch's wiring; `styles.css` is
+untouched. The service worker precaches the four like every module — 16 KB, in the background, never on the first
+paint — because COMPATIBILITY.md §6 asks it to, for a reason this app has more than most: a list left open all day
+flips to Harbor at seven, and a page open across a deploy has to be answered from its own build's cache, not handed the
+next build's scene. (The round's first cut left them out of the precache to keep "nothing extra loaded" literal; that
+is not what "fast-loading for people who aren't interested" was about, and it would have cost the open page its scene.)
+The picker marks the two kits that have a scene, and turning Scenes on while a theme without one is on says where one
+shows.
+
+**Where a scene lives, and how it draws.** In `#field`, the layer between the glow and the words that Superpink's
+sparkles and the Extra grounds use; Forest and Harbor have no field of their own, so nothing competes for it. A scene
+is a canvas about 190 pixels tall — five screen pixels to one on a 900-pixel desktop, four on a phone — scaled up
+crisp, its still layers composited once and a moving layer redrawn only when what is in it moves. Two moods, as in the
+prototype: while the list is in use, nearly still at 15 frames a second (stars, a firefly now and then, crests
+breathing); left alone twenty seconds on Today, the fifteen-second loop at 30, beat by beat, easing back the moment
+anything is touched. The finale has a moment of its own (Forest's fireflies swirl up to the moon, Harbor's gulls lift
+off the pier). Reduced motion gets one still frame, and a hidden page nothing at all. Each scene hands the stage a
+draw function and a layout; a new pair is a module each and its name in three lists (the stage's, app.js's, the
+worker's).
+
+**Two ways of asking for frames, each where it is cheaper.** The first build asked for a frame on every display
+refresh and drew one in four (quiet) or one in two (the loop). The instrument (`tools/idle.mjs`, brought up to date
+this round; it now reads every Chrome process as well as the renderer, because raster and compositing happen outside
+it) showed that at 15 a second the refreshes cost more than the drawing. An A against B on the same build settled it:
+quiet, a timer that wakes half a refresh before the next frame is due and asks for that one frame costs 1.6 % of a
+core against 2.4 %; in the loop the refresh-by-refresh callback stays, 2.8 % against 4.1 % for the timer, whose
+stopping and starting of Chrome's frame pipeline thirty times a second cost more than it saved. Harbor's crests and
+glints and Forest's stars had each built a colour string per dot per frame (a few hundred); they set a colour once
+and vary the alpha now. With both, Harbor's loop went from 5.8 % of a core to 2.9 %. The final numbers are in PLAN.md.
+
+**The words stay on a quiet ground.** The grain rule holds a still ground to the kit's ink; a scene moves, so the rule
+for it is measured instead, by a new instrument, `tools/contrast.mjs`: every piece of text on screen against the
+pixels actually behind it, frame by frame, through the quiet mode, the whole loop and the finale, beside the same text
+on the plain ground on the same clock. It counts a frame for a text only while that text is showing (the tools' own
+idle fade and a line fading in are not being read), and it holds each text to its 1st percentile of pixels, so a
+firefly passing under the edge of one letter is not a line nobody can read. What it found, and what answers each:
+
+- The ground behind the list: the prototype's single wash of the kit's ink, an ellipse where the list sits, kept the
+  big lines above 7:1. Kept.
+- The bar along the top and the footer's row sit outside that ellipse, and on desktop the keyboard line fell to 3.5:1
+  on Forest's grass. A band of the same ink along the top and a pool of it at the bottom's centre answer it; the
+  corners keep the most picture.
+- Harbor is a light kit whose small words (the date, the tabs, + New line, the keyboard line) are 4.6:1 on their own
+  ground, so any picture under them at all costs AA. Its scene weighs its two bands (`wash`) nearly to the ink, like a
+  morning haze at the top and a pale near sea, and the pills — the view tabs, the chips, + New line — carry the kit's
+  own ground whenever a scene is up (`scenes.css`), so what is in them reads exactly as without one.
+- The small loose words (the date, the count, the keyboard line, and the notes, captions and repeat marks that ride
+  in a line) carry a soft halo of the ink. On the big lines a halo read as a smudge — a dark outline around every
+  letter where the picture was lighter than the ink — so they have none.
+- Today's lines sit on a pad of the ink at 45 %, soft-edged and always the size of the list (a background on the
+  list's own container, so it grows and scrolls with it), which is what keeps a long list's last lines — down where the
+  doe walks and the waves break — as quiet behind as its first. Harbor tried 70 % to win the last few hundredths on a
+  repeat mark; on a desktop the pad is as wide as the page, and it read as a pale card across the lighthouse, so it
+  went back to 45 %.
+- The footer's pool is at least 360 pixels across, because a phone's footer row is as wide as the phone and the
+  finale's line sits at its left end. It is computed in pixels by the stage: written as `max(70%, 360px)` inside the
+  gradient, the parser refused the value, and a refused value drops the whole declaration — all three washes went at
+  once, which only the instrument noticed. The suite now checks the three are there.
+- Everything is a page of words from top to bottom, over every part of the picture, the moon included. There the scene
+  steps back behind a veil of the ink and its loop waits for Today: half for Forest, and all the way for Harbor, whose
+  small section words had no room for any picture at all — and a veil that covers the picture stops the drawing under
+  it too, so Harbor costs nothing on Everything.
+
+The finale is the one moment that dips: Forest's fireflies rise through the list on their way to the moon, for a
+moment, over lines that are all crossed off. It is the moment Price approved in the prototype, and it stays.
+The numbers, per text, phase and kit, are in PLAN.md.
+
+**What did not change.** No stored setting moved and no id went away; `styles.css`, the first paint's stylesheet, is
+byte for byte what it was. Nothing in `apple/` changed but the stamp: the app loads the live site, so the iPhone gets
+Scenes with the deploy. `whatsnew.json` keeps its three 1.12 lines — the suite holds a version to three — so Scenes is
+in the changelog, How it works and Appearance, and not on What's new; which line it should replace, if any, is
+Price's call.

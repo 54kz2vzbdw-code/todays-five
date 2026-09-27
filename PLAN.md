@@ -2229,3 +2229,74 @@ stamp, so no archive: the app loads the live site.
 
 The bar's title coming and going under a thumb's scroll; the tiles' press; that the left-edge swipe from inside a
 page goes back in the WKWebView as it does in Chrome's touch emulation.
+
+# Today's Five 1.12 b318 — Scenes
+
+*Shipped as build 320. b318 is the round's first commit.*
+
+Price, after 317: ambient animation and background scenes for some themes, behind a setting so everyone else stays
+fast, "a just absolutely stunning theme for people who want the stuff turned on", pixel art for Forest, and a
+fifteen-second idle loop "like it's your showreel". The prototype went first and he approved it ("Love it.
+Incredible."); this builds it in, Forest and Harbor. The decisions are in DECISIONS.md under "1.12 b318 decisions —
+Scenes". Web only; the version holds at 1.12, and nothing in `apple/` changed but the stamp, so no archive: the app
+loads the live site.
+
+## What shipped
+
+1. **The idle instrument, up to date** (b318). `tools/idle.mjs` chose its kit through Settings → Night, a row that
+   went in 309; it opens ⋯ → Theme's Night tile now, and reads every Chrome process beside the renderer, because a
+   picture that moves costs mostly in raster and compositing, outside the renderer's main thread.
+2. **Scenes** (b319). A switch on Appearance, off by default and this device's. With it on, Forest and Harbor carry a
+   moving picture in pixels behind the list: nearly still while the list is in use, the fifteen-second loop when it is
+   left alone on Today, a moment of their own at the finale, one still frame under reduced motion, nothing while the
+   page is hidden. The words stay on a quiet ground: washes of the kit's ink where the app keeps words, the pills on
+   the kit's own ground, a halo on the small words, a pad under Today's lines, and a veil on Everything. The picker tags
+   the two kits; How it works and the changelog say what it is. `tools/idle.mjs` learns `SCENES=1` and `USE=5`, and
+   `tools/contrast.mjs` is new: the words over a moving picture, frame by frame.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `index.html` **+79 bytes** gzipped (the switch's row), `app.js` **+516**; `styles.css` unchanged; `sw.js` **+22** (the four files in its list) | `gzip -9 -n` |
+| lazy, everyone | `panels.js` **+262**, `panels.css` **+64**; both load with the first panel | `gzip -9 -n` |
+| lazy, asked for only with Scenes on | `scenes.js` **5,786**, `scenes.css` **801**, `scene-forest.js` **5,715**, `scene-harbor.js` **4,261**: 12.3 KB for Forest, 16.6 KB with Harbor. The worker precaches the four in the background like every module (COMPATIBILITY.md §6) | `gzip -9 -n` |
+| first paint | desktop FCP **60 → 56 ms** (48–64 against 48–60): no cost. Mobile FCP **1276 → 1304 ms** (1296–1312 against 1272–1292), and traced: nothing of Scenes runs at first paint (no new request, no new task, the same garbage collection, and `app.js` runs in the same 72–77 ms); `app.js` is the last file on the emulated 1.6 Mbps link and arrives ~30 ms later for its 516 more bytes, which the emulator's chunking turns into one step (at the link's speed they are 2.5 ms). Bisected to be sure: the markup alone costs nothing, each third of the `app.js` change alone costs nothing, the same bytes as a comment compress to nothing and cost nothing | `tools/paint.mjs 8`, 317 (port 8800) and this build side by side, Lighthouse's mobile throttling; a CDP trace of each |
+| CPU, Scenes off | Dark **0.03 %** of a core on the renderer (1.68 % for every Chrome process); Forest **0.03 %** (1.62 %); Harbor **0.04 %** (1.71 %): as before | `tools/idle.mjs 60`, desktop |
+| CPU, Scenes on | the loop at 30: Forest **2.8 %** (13.5 %), Harbor **2.9 %** (14.0 %); in use at 15: Forest **1.6 %** (9.5 %), Harbor **1.9 %** (10.0 %). The A against B that chose the scheduler: quiet, a timer 1.6 % against a callback per vsync 2.4 %; the loop, the callback 2.8 % against the timer 4.1 % | `tools/idle.mjs 60`, desktop, `SCENES=1` (left alone) and `SCENES=1 USE=5` (a key every five seconds) |
+| contrast | the table below | `tools/contrast.mjs`: the seed lines, `FIXTURE=1` (seven lines with notes, captions and repeats) and `FIXTURE=1 VIEW=all` (Everything's eighty-four), both viewports |
+
+Contrast, the 1st percentile of the pixels behind each text at its worst frame, plain ground → scene (in use / left
+alone; one number is the worse of the two), WCAG ratios:
+
+| | Forest | Harbor |
+| --- | --- | --- |
+| Today's lines, three (desktop, phone) | 13.1 → 12.2 / 10.9; 13.2 → 13.3 / 11.1 | 10.5 → 10.5 / 10.5; 10.6 → 11.0 / 11.0 |
+| Today's lines, seven (desktop, phone) | 13.4 → 12.4 / 11.0; 13.1 → 14.1 / 11.6 | 10.6 → 10.6 / 10.5; 10.5 → 10.9 / 10.9 |
+| small words in use: tabs, chips, + New line, count (desktop) | 6.2–10.0 → 6.5–10.8 | 4.6–5.4 → 4.7–5.5 |
+| the date, the keyboard line (desktop) | 6.2 → 6.5; 6.5 → 5.7 | 4.60 → 4.60; 4.69 → 4.57 |
+| small print in a line: note, caption, ↻ (desktop, seven lines) | 8.3 → 7.5; 5.8 → 5.2; 5.9 → 5.3 | 5.2 → 4.7; 4.4 → 4.1; 4.5 → 4.2 (↻ is 28 px bold: large) |
+| Everything's rows and section words (both viewports) | at or above plain (rows 13.5 → 13.4 / 13.2) | at or above plain: the plain ground |
+| the finale's line (desktop, phone) | 8.3 → 8.3; 8.0 → 6.2 | 4.45 → 4.40; 4.22 → 3.73 (23 px bold: large) |
+| struck lines through the finale (phone) | 5.4 → 3.7 as the fireflies rise through them, for about half a second | 4.3 → 4.3 |
+
+Left alone, the tools' own idle fade takes the chips down on both grounds; their readings in that window move run to
+run (Harbor's chips read 4.66, 4.31 and 3.96 on the same code), so they are not in the table. The instrument hides the
+toasts and one-time hints, which are not the words over the picture, and counts a letter only once it has landed.
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30 (the five homes at 320, and the four files in the precache), compat 9 |
+| Focused runs | the Scenes tests, both viewports, through every change to the stage: 4 passed |
+| Browser suite, 1440×900 and 390×844 | all **220** in ten slices, **220 passed, 0 failed** on the first pass (the four new tests: Scenes' setting, files, layer and swaps; their motion, Everything, the finale, the tab and reduced motion; the full session now turns Scenes on). After it, the footer pool's width and a check that the three washes are there: the Scenes tests, the full session and the sparkle field rerun, 8 passed |
+| Looked at | both scenes on both viewports, in use and mid-loop, the finale's frames on the phone, and the washes at every step of the contrast work (the embossed halo and Harbor's pale card were found by looking, not by the numbers) |
+| Screenshots | `shots/scenes/`: both scenes, both viewports, in use and mid-loop, and Appearance's switch with the picker's tags |
+
+## What only a real iPhone can settle
+
+What it costs on the phone — WebKit, not Chrome, and a battery rather than an M4 Max; the instrument's numbers are
+Chrome's. That the pixels stay crisp in the WKWebView (`image-rendering: pixelated`). The loop on a ProMotion screen,
+where the refresh-by-refresh callback runs twice as often for the same thirty frames, and under Low Power Mode, which
+caps it at thirty. And the loop with Keep awake on, where it plays until the phone is picked up.

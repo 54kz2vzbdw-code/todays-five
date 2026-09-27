@@ -176,7 +176,7 @@ const panelCss = new Promise(res => {
 });
 /** What the person asked for last (a panel's name), so a page that has to reload itself can reopen it (COMPATIBILITY.md §6). */
 let askedPanel = null;
-const RESUME = { share: p => p.openShare(), lists: p => p.openLists(), settings: p => p.openSettings(), help: p => p.openHelp(), theme: p => p.openTheme(), history: p => p.openHistory(), keys: p => p.openKeys(), export: p => p.openExport(), save: p => p.showSaveLink(), menu: () => { paintMenu(); showPanel("p-menu", { anchor: $("#more") }); } };
+const RESUME = { share: p => p.openShare(), lists: p => p.openLists(), settings: p => p.openSettings(), help: p => p.openHelp(), theme: p => p.openAppearance(), history: p => p.openHistory(), keys: p => p.openKeys(), export: p => p.openExport(), save: p => p.showSaveLink(), menu: () => { paintMenu(); showPanel("p-menu", { anchor: $("#more") }); } };
 /** The lazy module with every panel. Loaded on first use, then kept; pinned to this page's build. */
 function panels() {
   if (!panelsP) panelsP = Promise.all([import("./panels.js?v=" + BUILD), panelCss]).then(([m]) => { m.init(api); return m; }).catch(e => {
@@ -2149,7 +2149,7 @@ $("#p-menu").addEventListener("click", e => {
   if (act === "full" || act === "delete") closePanel();
   if (act === "save") panels().then(p => p.showSaveLink());
   else if (act === "share") panels().then(p => p.openShare());
-  else if (act === "theme") panels().then(p => p.openThemeFlow()); // 1.12: Day, then Night — picking a theme for "whichever slot is on" meant switching to night to choose a night theme
+  else if (act === "theme") panels().then(p => p.openAppearance()); // 1.12 b309: both slots side by side, how they switch, and the pairs
   else if (act === "full") toggleFullscreen();
   else if (act === "help") panels().then(p => p.openHelp());
   else if (act === "lists") panels().then(p => p.openLists());
@@ -2455,7 +2455,7 @@ document.addEventListener("keydown", e => {
   }
   else if (k === "s" || k === "S") { if (!edit || !dev.oneThing) return; e.preventDefault(); shuffle(); }
   else if (k === "m" || k === "M") { e.preventDefault(); toggleMute(); }
-  else if (k === "t" || k === "T") { e.preventDefault(); if (e.shiftKey) panels().then(p => p.openSettings()); else flipSlot(); } // T flips Day and Night; Shift+T opens Appearance
+  else if (k === "t" || k === "T") { e.preventDefault(); if (e.shiftKey) panels().then(p => p.openAppearance()); else flipSlot(); } // T flips Day and Night; Shift+T opens Appearance
   else if ((k === "f" || k === "F") && document.fullscreenEnabled) { e.preventDefault(); toggleFullscreen(); }
   else if (k === "e" || k === "E") { if (!edit) return; e.preventDefault(); const id = focusedRowId(); if (id) startEdit(id); }
   else if (k === "n" || k === "N") { if (!edit) return; e.preventDefault(); newItem({ today: view === "today", sectionId: view === "all" ? sectionOfFocused() : "" }); }

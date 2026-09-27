@@ -31,12 +31,12 @@ export function init(api) {
     }
   }
   A = api; $ = api.$; $$ = api.$$; M = api.M; T = api.T; C = api.C;
-  wireTheme(); wireShare(); wireSave(); wireLists(); wireSettings(); wireSound(); wireSection(); wireLine(); wireRepeat(); wireKeys(); wireMisc();
+  wireTheme(); wireShare(); wireSave(); wireLists(); wireSettings(); wireSound(); wireAppearance(); wireSection(); wireLine(); wireRepeat(); wireKeys(); wireMisc();
   // 1.4: how each panel repaints itself when ‹ Back lands on it (one primitive in app.js, no per-panel buttons)
   if (A.registerOpeners) A.registerOpeners({
-    // 1.12: Back on step two of ⋯ → Theme is step one again, with the day theme it kept
-    "p-theme": () => { if (flow) { flow.step = 1; return openTheme("day", { inFlow: true }); } return openTheme(pickSlot, { keepOffer: true }); },
-    "p-builder": openBuilder, "p-settings": openSettings, "p-sound": openSound, "p-lists": () => openLists(), "p-list": () => { if (detailId) openListDetail(detailId); },
+    "p-theme": () => openTheme(pickSlot, { keepOffer: true }),
+    "p-builder": openBuilder, "p-settings": openSettings, "p-sound": openSound, "p-appear": openAppearance, "p-addurl": openAddUrl, // 1.12 b309
+    "p-lists": () => openLists(), "p-list": () => { if (detailId) openListDetail(detailId); },
     "p-share": () => { openShare(); }, "p-save": () => showSaveLink(), "p-help": () => openHelp(lastHelp), "p-keys": openKeys, "p-export": openExport, "p-history": () => openHistory(historyOf ? historyOf.doc : undefined, historyOf ? historyOf.title : undefined),
     "p-pick": () => { if (lastPick) openPick(lastPick); }, "p-line": () => { if (lineId) openLineMenu(lineId); }, "p-sec": () => { if (secMenuId !== null && secMenuId !== undefined) openSectionMenu(secMenuId); }, "p-repeat": () => { if (lineId) openRepeat(lineId); }
   });
@@ -45,20 +45,20 @@ let lastHelp, lastPick = null, detailId = null;
 const dev = () => A.dev, meta = () => A.meta;
 
 /* ---------------- the theme picker: one slot at a time (1.2) ----------------
-   Opened from Settings → Appearance's Day theme or Night theme row (or ⋯ → Theme → Appearance). Every theme is on
-   offer for either slot: the curated kits grouped by their lean, then the list's saved ones; picking one names its
-   partner for the other slot as a one-tap chip. The builder below fills the same slot, and can make a partner. */
+   Opened from a slot's tile on the Appearance page (⋯ → Theme, or Settings → Appearance). Every theme is on offer for
+   either slot: the curated kits grouped by what they are, light or dark, the slot's own kind first (1.12 b309: by their
+   lean, Sunset and Cocoa were dark themes under day), then the list's saved ones; picking one names its partner for the
+   other slot as a one-tap chip. The builder below fills the same slot, and can make a partner. */
 let custom = { accent: "#A86014", base: "dark", pair: "", name: "", pack: "" };
 let keepPreview = false;
 let pickSlot = "day"; // the slot the picker fills
 let offer = null;     // { code, name, slot }: the partner on offer for the other slot after a choice, if any
-// 1.12: ⋯ → Theme is two steps, Day then Night. Null when the picker was opened from Settings → Appearance for one
-// slot, which is unchanged. The step is a frame in the 1.4 stack (showPanel's `restack`), so ‹ Back walks it.
-let flow = null;      // { step: 1 | 2 }
 const cap = s => (s === "day" ? "Day" : "Night");
 const otherSlot = s => (s === "day" ? "night" : "day");
-export function openTheme(slot, { keepOffer = false, restack = false, inFlow = false } = {}) {
-  if (!inFlow) flow = null; // opened for one slot (Settings → Appearance, a resume, the builder stepping back): not the two-step flow
+/** 1.12 b309: the designed pairs, light-by-day ones first, and every curated kit by what it is, in that order. */
+const DESIGNED = () => { const ps = T.CURATED_DAY.map((d, i) => ({ day: d, night: T.CURATED_NIGHT[i] })); return [...ps.filter(p => p.day.base === "light"), ...ps.filter(p => p.day.base !== "light")]; };
+const BY_KIND = () => { const k = { light: [], dark: [] }; for (const p of DESIGNED()) for (const t of [p.day, p.night]) k[t.base === "light" ? "light" : "dark"].push(t); return k; };
+export function openTheme(slot, { keepOffer = false, restack = false } = {}) {
   pickSlot = slot === "night" ? "night" : slot === "day" ? "day" : A.activeSlot();
   if (!keepOffer) offer = null; // 1.9: Back from the builder repaints the picker and keeps the partner it offered
   const t = T.parseCode(A.slotCode(pickSlot));
@@ -66,13 +66,6 @@ export function openTheme(slot, { keepOffer = false, restack = false, inFlow = f
   $("#p-theme-h").textContent = cap(pickSlot) + " theme";
   renderSwatches();
   A.showPanel("p-theme", { restack });
-}
-/** ⋯ → Theme: Day first, then Night. Opening the picker for "whichever slot is on" meant that choosing a night
-    theme started with switching to night, which is the wrong way round — the slot is about when, not what. */
-export function openThemeFlow() {
-  flow = { step: 1 };
-  offer = null;
-  openTheme("day", { inFlow: true });
 }
 /** What the person is picking, on screen, whichever slot is actually on — without moving the slot itself, which
     would leave someone who opened this at two in the afternoon sitting in their night theme. The picker's own
@@ -112,7 +105,7 @@ function renderSwatches() {
     const partner = rec ? savedPartner(saved, rec) : T.partnerOf(t);
     const pName = partner ? partner.name : "";
     const sm = document.createElement("span"); sm.className = "sm"; sm.style.color = t.colors.dim;
-    sm.textContent = (rec ? "Yours" : cap(t.lean === "day" ? "day" : "night")) + (pName ? " · pairs with " + pName : "");
+    sm.textContent = rec ? "Yours" + (pName ? " · pairs with " + pName : "") : pName ? "Pairs with " + pName : ""; // 1.12 b309: what it pairs with; the group says what it is
     b.append(bar, nm, sm);
     b.dataset.code = code;
     b.addEventListener("click", () => choose(code, name, partner ? { code: rec ? partner.code : T.themeCode(partner), name: pName } : null, b));
@@ -131,8 +124,11 @@ function renderSwatches() {
     return b;
   };
   const fill = (id, list) => { const root = $(id); root.innerHTML = ""; list.forEach(x => root.appendChild(x)); };
-  fill("#sw-day", T.CURATED_DAY.map(t => mk(t)));
-  fill("#sw-night", T.CURATED_NIGHT.map(t => mk(t)));
+  const kinds = BY_KIND(); // 1.12 b309: light and dark, the slot's own kind first
+  fill("#sw-light", kinds.light.map(t => mk(t))); fill("#sw-dark", kinds.dark.map(t => mk(t)));
+  const lightFirst = pickSlot === "day", a = $(lightFirst ? "#swg-light" : "#swg-dark"), b = $(lightFirst ? "#swg-dark" : "#swg-light");
+  if (a.nextElementSibling !== b) a.after(b); if (b.previousElementSibling !== a) b.before(a);
+  $("#sw-light-h").classList.toggle("first", lightFirst); $("#sw-dark-h").classList.toggle("first", !lightFirst);
   fill("#sw-yours", saved.map(s => mk(s.theme, s)));
   $("#sw-yours-h").hidden = !saved.length; $("#sw-yours").hidden = !saved.length;
   // the Secret group (1.6): only on a device that has been given the key, and then like any other group
@@ -163,13 +159,6 @@ function chosen(code, name, partner, swatch) {
   previewSlot(code); // setSlotTheme only paints when this slot is the one that is on; the picker shows it either way
   const other = otherSlot(pickSlot);
   offer = partner && A.slotCode(other) !== partner.code ? { ...partner, slot: other } : null;
-  if (flow && flow.step === 1) { // Day is chosen: on to Night, with this theme's partner at the top
-    flow.step = 2;
-    openTheme("night", { keepOffer: true, restack: true, inFlow: true });
-    A.toast(`${name} for Day`);
-    return;
-  }
-  if (flow && flow.step === 2) { flow = null; A.closePanel(); A.toast(`${name} for Night`); return; } // both slots set
   renderSwatches();
   if (group) group.after($("#partner-offer")); // the chip sits under the group the choice came from
   if (offer) { try { $("#partner-offer").scrollIntoView({ block: "nearest" }); } catch (e) { /* ignore */ } } // and on screen, on a phone too
@@ -209,9 +198,6 @@ function unlockExtra(pid) {
 }
 function paintOffer() {
   const box = $("#partner-offer");
-  // 1.12: on step two the partner of the day theme just chosen is the likeliest answer, so it goes above the
-  // groups rather than under whichever one the last choice came from.
-  if (flow && flow.step === 2) { const msg = $("#theme-msg"); if (box.previousElementSibling !== msg) msg.after(box); }
   if (!offer) { box.hidden = true; return; }
   $("#partner-use").textContent = `Use ${offer.name} for ${cap(offer.slot)}`;
   box.hidden = false;
@@ -260,7 +246,6 @@ function wireTheme() {
   $("#partner-use").addEventListener("click", () => {
     if (!offer) return; const o = offer; offer = null;
     A.setSlotTheme(o.slot, o.code); previewSlot(o.code);
-    if (flow && flow.step === 2) { flow = null; A.closePanel(); A.toast(`${o.name} for ${cap(o.slot)}`); return; } // the one tap that finishes ⋯ → Theme
     renderSwatches(); A.toast(`${o.name} for ${cap(o.slot)}`);
   });
   $("#c-color").addEventListener("input", e => setCustom({ accent: T.normalizeHex(e.target.value) || custom.accent }));
@@ -329,7 +314,7 @@ function wireTheme() {
   $("#sw-build").addEventListener("click", openBuilder); // 1.9: the builder behind one row
   // a preview left on screen goes when the builder closes (Back, ×, Escape, a swipe) unless a name is being asked for; the picker's own close does the same
   for (const id of ["#p-theme", "#p-builder"]) $(id).addEventListener("close", () => { if (!keepPreview) A.applyThemeCode(A.currentThemeCode()); });
-  addEventListener("tf:theme", () => { if ($("#p-theme").open) renderSwatches(); if ($("#p-settings").open) paintSettings(); });
+  addEventListener("tf:theme", () => { if ($("#p-theme").open) renderSwatches(); if ($("#p-settings").open) paintSettings(); if ($("#p-appear").open) paintAppearance(); });
 }
 
 /* ---------------- share sheet (1.3) ----------------
@@ -630,75 +615,200 @@ const EXTRA_PACKS = { chalk: [["chalk", "Chalk"], ["marker", "Marker"]], wood: [
 function packList() { return (dev().secret ? PACKS.concat(SECRET_PACKS) : PACKS).concat(...T.unlockedExtras(dev()).map(pid => EXTRA_PACKS[pid] || [])); }
 let importedDoc = null;
 export function openSettings() { paintSettings(); A.showPanel("p-settings"); }
+/* 1.12 b309: the parts the new pages share. A small switch whose pill slides to the choice (Appearance's Switch, the
+   Sound page's slot), measured once its panel is on screen; and a theme in miniature, for the slot tiles and the pairs:
+   its ground and glow, three lines in its colours, the middle one crossed off in its own ink. */
+function pickSeg(segs, isOn, animate) {
+  let on = null;
+  for (const b of segs.querySelectorAll("button")) { const y = !!isOn(b); b.setAttribute("aria-checked", y ? "true" : "false"); b.tabIndex = y ? 0 : -1; if (y) on = b; }
+  const th = segs.querySelector(".thumb"); if (!on || !th || !on.offsetWidth) return;
+  segs.classList.toggle("still", !animate || A.RM.matches);
+  th.style.width = on.offsetWidth + "px"; th.style.transform = `translateX(${on.offsetLeft}px)`;
+  if (!animate) requestAnimationFrame(() => requestAnimationFrame(() => segs.classList.remove("still")));
+}
+function segKeys(segs) {
+  segs.addEventListener("keydown", e => {
+    if (!/^Arrow(Left|Right|Up|Down)$/.test(e.key)) return;
+    const bs = [...segs.querySelectorAll("button")], i = bs.findIndex(b => b.getAttribute("aria-checked") === "true"), d = /Left|Up/.test(e.key) ? -1 : 1, next = bs[(i + d + bs.length) % bs.length];
+    e.preventDefault(); next.click(); next.focus();
+  });
+}
+function preview(t, el = document.createElement("span")) {
+  const c = t.colors, st = el.style;
+  el.className = "pv"; el.setAttribute("aria-hidden", "true"); el.textContent = "";
+  st.setProperty("--pv-ink", c.ink); st.setProperty("--pv-text", c.text); st.setProperty("--pv-accent", c.accent); st.setProperty("--pv-hair", c.hairSolid || c.hairHi);
+  st.setProperty("--pv-strike", c.strikeBg || c.accent); st.setProperty("--pv-glow", c.glow || "none"); st.setProperty("--pv-box", c.boxDoneBg || c.accent);
+  for (const [w, done] of [[78, false], [56, true], [66, false]]) {
+    const i = document.createElement("i"); i.style.setProperty("--w", w + "%"); if (done) i.className = "done";
+    i.append(document.createElement("u"), document.createElement("s")); if (done) i.appendChild(document.createElement("b"));
+    el.appendChild(i);
+  }
+  return el;
+}
+const fontOf = t => (T.pairOf(t.pair) || T.PAIRS.lato).task[2];
 /* 1.9: a sound for Day and one for Night. The Sound pack row keeps its place in Settings; its sub-line reads both slots and
    opens this sheet — two pickers, each defaulting to the theme's pick with the theme's pack named, each previewing on select.
    The builder's own Sound choice is the theme's pick for a theme you made; a pick here plays instead of it, for that slot. */
 const packName = id => id ? (packList().find(p => p[0] === id)?.[1] || "") : ""; // "" is the theme's pick, not a pack
 function slotTheme(slot) { return T.parseCode(A.slotCode(slot)); }
 function slotThemePack(slot) { const th = slotTheme(slot); return (th && th.sound && packName(th.sound.engine)) || "Knock"; }
-function slotPackLabel(slot) { const o = packName(A.soundPacks()[slot]); return o || "Theme's pick (" + slotThemePack(slot) + ")"; }
-export function openSound() { paintSound(); A.showPanel("p-sound"); }
-function paintSound() {
-  const packs = packList();
-  for (const slot of ["day", "night"]) {
-    const sel = $("#snd-" + slot);
-    if (sel.options.length !== packs.length) { sel.innerHTML = ""; packs.forEach(([v, n]) => { const o = document.createElement("option"); o.value = v; o.textContent = n; sel.appendChild(o); }); }
-    const th = slotTheme(slot), themePack = slotThemePack(slot), name = th ? th.name : "The theme";
-    sel.options[0].textContent = "Theme's pick (" + themePack + ")";
-    const chosen = A.soundPacks()[slot], override = packName(chosen), when = slot === "day" ? "by day" : "at night";
-    sel.value = override ? chosen : "";
-    $("#snd-" + slot + "-sub").textContent = !override ? name + " picks " + themePack + ", and that's what plays " + when
-      : A.soundPins()[slot] ? name + " picks " + themePack + " since 1.9; this device keeps " + override + " " + when + ", as before"
-      : name + " picks " + themePack + "; this device plays " + override + " " + when;
-  }
+/* 1.12 b309: the Sound page — the switch and the volume, then a pack for each slot: the slot on a small switch (the one
+   that is on, to begin with), the packs as rows that play as they are chosen. 1.9's two selects said the same things. */
+let sndSlot = "";
+export function openSound() { sndSlot = A.activeSlot(); paintSound(); A.showPanel("p-sound"); pickSeg($("#snd-slot"), b => b.dataset.slot === sndSlot, false); }
+function paintSound(animate = false) {
+  const d = dev(), slot = sndSlot || A.activeSlot(), packs = packList().filter(([v]) => v);
+  $('#p-sound [data-snd="on"]').setAttribute("aria-pressed", d.muted ? "false" : "true");
+  $("#volume").value = Math.round(d.volume * 100);
+  pickSeg($("#snd-slot"), b => b.dataset.slot === slot, animate);
+  const th = slotTheme(slot), themePack = slotThemePack(slot), name = th ? th.name : "The theme";
+  const chosen = A.soundPacks()[slot], override = packName(chosen), when = slot === "day" ? "by day" : "at night";
+  $("#snd-note").textContent = !override ? name + " picks " + themePack + ", and that's what plays " + when
+    : A.soundPins()[slot] ? name + " picks " + themePack + " since 1.9; this device keeps " + override + " " + when + ", as before"
+    : name + " picks " + themePack + "; this device plays " + override + " " + when;
+  const box = $("#snd-packs"), was = box.contains(document.activeElement) ? document.activeElement.dataset.pack : undefined; // a rebuild keeps the keyboard's place
+  let back = null; box.textContent = "";
+  const row = (id, label, sub) => {
+    const b = document.createElement("button"), on = id ? override && chosen === id : !override;
+    if (id === was) back = b;
+    b.type = "button"; b.setAttribute("role", "radio"); b.dataset.pack = id; b.setAttribute("aria-checked", on ? "true" : "false");
+    const lb = document.createElement("span"); lb.className = "lb"; lb.textContent = label;
+    if (sub) { const sb = document.createElement("span"); sb.className = "sub"; sb.textContent = sub; lb.appendChild(sb); }
+    const k = document.createElement("span"); k.className = "k state"; k.setAttribute("aria-hidden", "true"); k.textContent = on ? "✓" : "";
+    b.append(lb, k); box.appendChild(b);
+  };
+  row("", "Theme's pick", themePack);
+  for (const [id, n] of packs) row(id, n);
+  if (back) back.focus({ preventScroll: true });
 }
 function wireSound() {
-  for (const slot of ["day", "night"]) $("#snd-" + slot).addEventListener("change", e => {
-    A.setSoundPack(slot, e.target.value); paintSound(); paintSettings();
-    const th = slotTheme(slot), eng = e.target.value || (th && th.sound && th.sound.engine) || "knock";
+  $('#p-sound [data-snd="on"]').addEventListener("click", () => { A.toggleMute(); paintSound(); });
+  segKeys($("#snd-slot"));
+  $("#snd-slot").addEventListener("click", e => { const b = e.target.closest("button[data-slot]"); if (!b) return; sndSlot = b.dataset.slot; paintSound(true); });
+  $("#snd-packs").addEventListener("click", e => {
+    const b = e.target.closest("button[data-pack]"); if (!b) return;
+    const slot = sndSlot || A.activeSlot(); A.setSoundPack(slot, b.dataset.pack); paintSound();
+    const th = slotTheme(slot), eng = b.dataset.pack || (th && th.sound && th.sound.engine) || "knock";
     if (!dev().muted) A.sound.preview(eng);
+    if ($("#p-settings").open) paintSettings();
   });
 }
-/** Appearance (1.2): Day theme · Night theme · Switch. The rows name what fills each slot and which one is on; the
-    Switch row says how the flip happens and whether a tap on the sun or moon is holding an automation off. */
-function paintAppearance(d) {
-  const active = A.activeSlot(), auto = A.autoSlot(), sw = d.switch || {}, mode = sw.mode || "hand";
-  const nameOf = slot => { const t = T.parseCode(A.slotCode(slot)); return t ? t.name : "Custom"; };
-  $("#set-day-k").textContent = nameOf("day") + (active === "day" ? " · on" : "");
-  $("#set-night-k").textContent = nameOf("night") + (active === "night" ? " · on" : "");
-  $("#set-switch").value = mode;
+/* 1.12 b309: Appearance, the page ⋯ → Theme and Settings → Appearance open. The two slots side by side, each its theme in
+   miniature (the one on now marked), a tap on either for its picker; how they switch, on a small switch whose note says
+   what each way does (and whether a tap on the sun or moon is holding an automation off), the schedule's two times under
+   it when that is the way; then the designed pairs, one tap for both slots — the six that are light by day and dark by
+   night, then the two that are always dark, then any pair this device has been given. */
+export function openAppearance() { paintAppearance(); A.showPanel("p-appear"); pickSeg($("#ap-switch"), b => b.dataset.mode === ((dev().switch || {}).mode || "hand"), false); }
+function paintAppearance() {
+  const active = A.activeSlot();
+  for (const slot of ["day", "night"]) {
+    const t = slotTheme(slot) || T.curated(slot === "day" ? "paper" : "terminal"), tile = $(`#p-appear .slot[data-slot="${slot}"]`), nm = $("#ap-" + slot + "-nm");
+    preview(t, tile.querySelector(".pv"));
+    nm.textContent = t.name; nm.style.fontFamily = fontOf(t);
+    $("#ap-" + slot + "-on").hidden = active !== slot;
+    tile.setAttribute("aria-current", active === slot ? "true" : "false");
+    tile.setAttribute("aria-label", cap(slot) + " theme: " + t.name + (active === slot ? ", on now" : ""));
+  }
+  paintSwitch();
+  paintPairs();
+}
+function paintSwitch(animate = false) {
+  const d = dev(), active = A.activeSlot(), auto = A.autoSlot(), sw = d.switch || {}, mode = sw.mode || "hand";
+  pickSeg($("#ap-switch"), b => b.dataset.mode === mode, animate);
   const hold = !!(d.holdAuto && auto && d.holdAuto === auto);
   const tap = A.touchUi() ? "A tap on the sun or moon" : "A tap on the sun or moon (or T)";
-  $("#set-switch-sub").textContent = mode === "system"
+  $("#ap-switch-note").textContent = mode === "system"
     ? (hold ? `${cap(active)} by hand for now. The device's light or dark setting takes over when it next changes.` : `Follows the device's light or dark setting. ${tap} holds until it next changes.`)
     : mode === "schedule"
       ? (hold ? `${cap(active)} by hand for now. The schedule takes over at its next switch.` : `Day from ${sw.dayAt || "07:00"}, night from ${sw.nightAt || "19:00"}. ${tap} holds until the next switch.`)
       : (A.touchUi() ? "The sun and moon in the top bar flip it." : "The sun and moon in the top bar flip it, and so does T.");
-  $("#schedule-block").hidden = mode !== "schedule";
+  const box = $("#schedule-block"), show = mode === "schedule";
+  if (box.hidden === show) { box.hidden = !show; if (show && animate && !A.RM.matches) box.animate([{ opacity: 0, transform: "translateY(-6px)" }, { opacity: 1, transform: "none" }], { duration: 260, easing: "cubic-bezier(.22,1,.36,1)" }); }
   $("#sch-day-at").value = sw.dayAt || "07:00"; $("#sch-night-at").value = sw.nightAt || "19:00";
 }
+/** The pairs this device can offer: the eight designed ones, then the Secret pair and any Extra pair it has been given. */
+function pairGroups() {
+  const code = t => T.themeCode(t), duo = (a, b) => (a.base === "light" || (a.lean === "day" && b.lean !== "day") ? { day: a, night: b } : { day: b, night: a });
+  const all = DESIGNED(), gs = [["Light by day, dark by night", all.filter(p => p.day.base === "light")], ["Always dark", all.filter(p => p.day.base !== "light")]];
+  if (dev().secret && T.SECRET.length === 2) gs.push(["Secret", [duo(T.SECRET[0], T.SECRET[1])]]);
+  const extras = T.unlockedExtras(dev());
+  if (extras.length) gs.push(["Extra", extras.map(pid => { const [a, b] = T.EXTRA_PAIRS[pid].kits.map(id => T.curated(id)); return duo(a, b); })]);
+  return gs.map(([h, ps]) => [h, ps.map(p => ({ ...p, dayCode: code(p.day), nightCode: code(p.night) }))]);
+}
+function paintPairs() {
+  const root = $("#ap-pairs"), dayCode = A.slotCode("day"), nightCode = A.slotCode("night");
+  const was = root.contains(document.activeElement) ? document.activeElement.getAttribute("aria-label") : null; // as the pack rows
+  let back = null; root.textContent = "";
+  for (const [h, ps] of pairGroups()) {
+    const hd = document.createElement("p"); hd.className = "pairs-h"; hd.textContent = h; root.appendChild(hd);
+    const grid = document.createElement("div"); grid.className = "pairs"; root.appendChild(grid);
+    for (const p of ps) {
+      const b = document.createElement("button"), cur = p.dayCode === dayCode && p.nightCode === nightCode;
+      b.type = "button"; b.className = "pair"; b.setAttribute("aria-pressed", cur ? "true" : "false");
+      b.setAttribute("aria-label", p.day.name + " by day, " + p.night.name + " by night");
+      const two = document.createElement("span"); two.className = "two"; two.setAttribute("aria-hidden", "true"); two.append(preview(p.day), preview(p.night));
+      const nm = document.createElement("span"); nm.className = "nm"; nm.setAttribute("aria-hidden", "true");
+      const a = document.createElement("span"), mid = document.createElement("span"), z = document.createElement("span");
+      a.textContent = p.day.name; a.style.fontFamily = fontOf(p.day); mid.textContent = " · "; z.textContent = p.night.name; z.style.fontFamily = fontOf(p.night);
+      nm.append(a, mid, z); b.append(two, nm);
+      b.addEventListener("click", () => setPair(p, b));
+      grid.appendChild(b);
+      if (was && b.getAttribute("aria-label") === was) back = b;
+    }
+  }
+  if (back) back.focus({ preventScroll: true });
+}
+/** Both slots at once; the theme that is on changes inside a reveal from the pair that was tapped. */
+function setPair(p, card) {
+  const act = A.activeSlot(), next = act === "day" ? p.dayCode : p.nightCode;
+  const go = () => { A.setSlotTheme("day", p.dayCode); A.setSlotTheme("night", p.nightCode); paintAppearance(); A.toast(`${p.day.name} by day, ${p.night.name} by night`); if ($("#p-settings").open) paintSettings(); };
+  if (A.slotCode(act) === next || !A.reveal(card, go)) go();
+}
+function wireAppearance() {
+  $("#p-appear").addEventListener("click", e => { const tile = e.target.closest(".slot"); if (tile) openTheme(tile.dataset.slot); });
+  segKeys($("#ap-switch"));
+  $("#ap-switch").addEventListener("click", e => {
+    const b = e.target.closest("button[data-mode]"); if (!b || b.getAttribute("aria-checked") === "true") return;
+    A.setSwitchMode(b.dataset.mode); paintSwitch(true); paintAppearance(); if ($("#p-settings").open) paintSettings();
+  });
+  const sch = () => { A.setSwitchTimes($("#sch-day-at").value, $("#sch-night-at").value); paintSwitch(); paintAppearance(); };
+  ["#sch-day-at", "#sch-night-at"].forEach(id => $(id).addEventListener("change", sch));
+  $("#ap-build").addEventListener("click", () => { pickSlot = A.activeSlot(); openBuilder(); });
+  // the pill follows its button's size — the viewport, a theme's font arriving late, a pair that brings another face
+  const refit = () => { if ($("#p-appear").open) pickSeg($("#ap-switch"), b => b.dataset.mode === ((dev().switch || {}).mode || "hand"), false); if ($("#p-sound").open) pickSeg($("#snd-slot"), b => b.dataset.slot === (sndSlot || A.activeSlot()), false); };
+  if ("ResizeObserver" in window) { const ro = new ResizeObserver(refit); for (const b of $$("#ap-switch button, #snd-slot button")) ro.observe(b); } else addEventListener("resize", refit);
+}
+/* 1.12 b309: Add from anywhere, a page of its own behind one row in This list: the link, Copy, and the way to set one up. */
+export function openAddUrl() {
+  const W = A.ref && A.ref.mode === "edit" ? A.ref.W : null;
+  $("#set-addurl").value = W ? M.addUrl(A.BASE, W) : "Open a Private link to get its URL";
+  $("#set-addurl-copy").disabled = !W;
+  A.showPanel("p-addurl");
+}
+/** 1.12 b309: the hub. Appearance and Sound say what is set; the switches stand where they are; This list is headed by
+    the list's name. A row that cannot work here is not shown (screen wake without the API, the idle fade and the keys on
+    a phone, the swipe on a computer, Templates on a list that has sections). */
 function paintSettings() {
   const d = dev(), set = (name, on) => { const b = $(`#p-settings [data-set="${name}"]`); if (b) b.setAttribute("aria-pressed", on ? "true" : "false"); };
-  paintAppearance(d);
-  set("sound", !d.muted);
-  // 1.9: one row, both slots — "Day: Theme's pick (Knock) · Night: Kalimba"; the sheet behind it holds a picker for each
-  $("#set-pack-sub").textContent = A.theme ? "Day: " + slotPackLabel("day") + " · Night: " + slotPackLabel("night") : "Each theme picks its own";
-  $("#volume").value = Math.round(d.volume * 100);
+  const nameOf = slot => { const t = slotTheme(slot); return t ? t.name : "Custom"; };
+  const ak = $("#set-appear-k"); ak.textContent = "";
+  for (const slot of ["day", "night"]) { const t = slotTheme(slot); if (t) { const dot = document.createElement("i"); dot.className = "tdot"; dot.style.background = t.colors.ink; dot.style.boxShadow = `inset 0 0 0 3px ${t.colors.accent}`; ak.appendChild(dot); } }
+  ak.append(nameOf("day") + " · " + nameOf("night"));
+  const act = A.activeSlot();
+  $("#set-sound-k").textContent = d.muted ? "Off" : "On · " + (packName(A.soundPacks()[act]) || slotThemePack(act));
   set("celebrate", !!d.celebrateRemote);
   set("review", !!d.review);
   set("wake", !!d.wake); $('#p-settings [data-set="wake"]').hidden = !("wakeLock" in navigator);
   set("swipe", !d.swipeOff); $("#set-swipe").hidden = !A.touchUi();
   set("keys", !d.keysOff); $("#set-keys").hidden = A.touchUi();
   set("fade", !d.idleFadeOff); $("#set-fade").hidden = A.touchUi();
-  // 1.9: Templates only for a list with no sections, the case the row was written for (a section's ⋯ carries them otherwise);
-  // Removed lists left (Lists shows the removed group itself) and History moved into a list's detail (proposal 5)
+  set("who", !d.whoOff);
+  $("#set-input-h").textContent = A.touchUi() ? "Gestures" : "Keyboard";
+  // 1.9: Templates only for a list with no sections, the case the row was written for (a section's ⋯ carries them otherwise)
   const tpls = A.doc ? M.liveTemplates(A.doc).length : 0;
   $("#set-tpl-k").textContent = tpls ? String(tpls) : "";
   $('#p-settings [data-set="templates"]').hidden = !A.doc || M.liveSections(A.doc).length > 0;
-  const W = A.ref && A.ref.mode === "edit" ? A.ref.W : null;
-  $("#set-addurl").value = W ? M.addUrl(A.BASE, W) : "Open a Private link to get its URL";
-  $("#set-addurl-copy").disabled = !W;
-  set("who", !d.whoOff);
+  $("#set-list-h").textContent = A.doc && A.doc.name ? "This list · " + A.doc.name : "This list";
   $("#set-version").textContent = `Today's Five ${A.VERSION_LABEL}. What's new is on the About page.`;
 }
 function wireSettings() {
@@ -706,9 +816,9 @@ function wireSettings() {
   $("#p-settings").addEventListener("click", async e => {
     const b = e.target.closest("[data-set]"); if (!b) return;
     const k = b.dataset.set;
-    if (k === "day" || k === "night") openTheme(k);
-    else if (k === "sound") { A.toggleMute(); paintSettings(); }
-    else if (k === "pack") openSound(); // 1.9
+    if (k === "appearance") openAppearance(); // 1.12 b309
+    else if (k === "sound") openSound();
+    else if (k === "addurl") openAddUrl();
     else if (k === "celebrate") { d.celebrateRemote = !d.celebrateRemote; A.saveDevice(); paintSettings(); }
     else if (k === "review") { d.review = !d.review; A.saveDevice(); paintSettings(); A.paint(); }
     else if (k === "wake") { await A.setWake(!d.wake); paintSettings(); }
@@ -719,9 +829,7 @@ function wireSettings() {
     else if (k === "who") { d.whoOff = !d.whoOff; A.saveDevice(); A.resubscribePresence(); paintSettings(); }
     else if (k === "export") openExport();
   });
-  $("#set-switch").addEventListener("change", e => { A.setSwitchMode(e.target.value); paintSettings(); });
-  const sch = () => { A.setSwitchTimes($("#sch-day-at").value, $("#sch-night-at").value); paintSettings(); };
-  ["#sch-day-at", "#sch-night-at"].forEach(s => $(s).addEventListener("change", sch));
+  $("#addurl-help").addEventListener("click", () => openHelp("add"));
   $("#set-addurl-copy").addEventListener("click", () => A.copyText($("#set-addurl").value, "URL copied. Put text after text= and open it."));
   $("#set-export-json").addEventListener("click", () => exportList("json"));
   $("#set-export-md").addEventListener("click", () => exportList("md"));
@@ -757,7 +865,7 @@ function wireSettings() {
     importedDoc = null; A.closePanel();
     A.toast(`Merged: ${after - before} new line${after - before === 1 ? "" : "s"}${renamed ? ". The list keeps its name." : ""}`);
   });
-  addEventListener("tf:settings", () => { if ($("#p-settings").open) paintSettings(); });
+  addEventListener("tf:settings", () => { if ($("#p-settings").open) paintSettings(); if ($("#p-sound").open) paintSound(); if ($("#p-appear").open) paintAppearance(); });
 }
 /** 1.7: a link that died (New keys elsewhere) with unsynced edits on this device, whose successor this device already holds (the new link
     arrived by a tap, not a paste): the edits are merged into the successor's copy and pushed with it. Kin means sharing a line id, which
@@ -1105,7 +1213,7 @@ export function openHelp(section) {
     <p><a class="chip" href="${esc(bm)}" onclick="return false" draggable="true" title="Drag me to the bookmarks bar">+ Today's Five</a></p>
     <input class="link" type="text" readonly value="${esc(bm)}" aria-label="Bookmarklet code" spellcheck="false">
     <h3 id="h-who">Day and night, sound, who's here</h3>
-    <p>Every device has a <b>Day theme</b> and a <b>Night theme</b>. ⋯ → <b>Theme</b> asks for both, in that order: pick the day one and it moves straight on to night, with that theme's partner offered first. The sun or moon in the top bar flips between them${touch ? "" : " (T does too; Shift+T opens Appearance)"}. Settings → Appearance holds both slots one at a time, and the switch: by hand, with the device's light or dark setting, or on a schedule with a day time and a night time. Under either automation a tap on the sun or moon holds until the next automatic switch, then the automation takes over again.</p>
+    <p>Every device has a <b>Day theme</b> and a <b>Night theme</b>. ⋯ → <b>Theme</b> shows both side by side: tap either to pick its theme, or tap a designed pair to set both at once. The sun or moon in the top bar flips between them${touch ? "" : " (T does too; Shift+T opens Appearance)"}. Under them is the switch: by hand, with the device's light or dark setting, or on a schedule with a day time and a night time. Under either automation a tap on the sun or moon holds until the next automatic switch, then the automation takes over again.</p>
     <p>Any theme can go in either slot—light, dark, or one of yours; the slot is about when, not what. Every theme names a partner for the other side, one tap away when you pick it, and the builder can make a partner for a theme of your own: same accent, same sound, flipped base. Every theme picks one of the twelve sound packs, a theme you make can carry its own, and Settings → Sound overrides it on this device. On an iPhone, the ring/silent switch mutes the app's sounds too.</p>
     <p>A small dot beside the sync dot marks each other device that has the list open right now—a random session id, nothing else, and Settings → Advanced turns it off.${touch ? "" : " Leave the mouse alone for a few seconds and the top bar and the footer fade to the date and the count; move it and they're back (Settings → Behavior turns that off)."}</p>`;
   $("#help-keys").addEventListener("click", () => openKeys());

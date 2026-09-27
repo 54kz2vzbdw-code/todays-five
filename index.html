@@ -242,56 +242,85 @@
 <dialog class="panel sheet" id="p-settings" aria-labelledby="p-settings-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
   <h2 aria-labelledby="p-settings-h"><span id="p-settings-h">Settings</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
-
-  <h3>Appearance</h3>
-  <div class="menu">
-    <button type="button" class="row-set" data-set="day" aria-haspopup="dialog"><span class="lb">Day theme<span class="sub" id="set-day-sub">What's on by day. Any theme, light or dark.</span></span><span class="k state" id="set-day-k">Light</span></button>
-    <button type="button" class="row-set" data-set="night" aria-haspopup="dialog"><span class="lb">Night theme<span class="sub" id="set-night-sub">What's on after dark. Any theme, light or dark.</span></span><span class="k state" id="set-night-k">Dark</span></button>
-    <label class="item" for="set-switch"><span class="lb">Switch<span class="sub" id="set-switch-sub">The sun and moon in the top bar flip it.</span></span><select id="set-switch" aria-label="How the switch happens"><option value="hand">By hand</option><option value="system">With the system</option><option value="schedule">On a schedule</option></select></label>
-    <div class="sub-block" id="schedule-block" hidden>
-      <div class="grid2">
-        <label>Day from<input type="time" id="sch-day-at" step="300"></label>
-        <label>Night from<input type="time" id="sch-night-at" step="300"></label>
-      </div>
-    </div>
+  <!-- 1.12 b309: a hub. What the list looks and sounds like lead to pages of their own, each row saying what is set; the
+       rest are switches in place, grouped by what they are for; this list's own things last, under its name -->
+  <div class="menu card">
+    <button type="button" class="row-set nav" data-set="appearance" aria-haspopup="dialog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-.9 2-1.8 0-.8-.5-1.2-.5-2 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.5 17 3 12 3z"/><circle cx="7.5" cy="11" r="1" fill="currentColor" stroke="none"/><circle cx="10.5" cy="7.5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="7.5" r="1" fill="currentColor" stroke="none"/></svg><span class="lb">Appearance</span><span class="k state" id="set-appear-k"></span><span class="chev" aria-hidden="true">›</span></button>
+    <button type="button" class="row-set nav" data-set="sound" aria-haspopup="dialog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span class="lb">Sound</span><span class="k state" id="set-sound-k"></span><span class="chev" aria-hidden="true">›</span></button>
   </div>
-
-  <!-- 1.9: three groups — Appearance, this device's habits, this list's own things (the audit's proposals 5 and 8) -->
-  <h3>This device</h3>
-  <div class="menu">
-    <button type="button" class="row-toggle" data-set="sound" aria-pressed="true"><span class="lb">Sound<span class="sub">The knock, the bell, the finale</span></span><span class="sw" aria-hidden="true"></span></button>
-    <button type="button" class="row-set" data-set="pack" id="set-pack" aria-haspopup="dialog"><span class="lb">Sound pack<span class="sub" id="set-pack-sub">Day: Theme's pick · Night: Theme's pick</span></span></button><!-- 1.9: one row, a sheet with a picker for each slot -->
-    <label class="item" for="volume"><span class="lb">Volume</span><input type="range" id="volume" min="0" max="100" step="5" aria-label="Volume"></label>
-    <button type="button" class="row-toggle" data-set="celebrate" aria-pressed="false"><span class="lb">Celebrate changes from other devices<span class="sub">Sound and confetti when someone else crosses a line off</span></span><span class="sw" aria-hidden="true"></span></button>
-    <button type="button" class="row-toggle" data-set="review" aria-pressed="false"><span class="lb">Day review<span class="sub">A quiet card under the finale: streak, the week, today's lines</span></span><span class="sw" aria-hidden="true"></span></button>
+  <h3>Screen</h3>
+  <div class="menu card">
     <button type="button" class="row-toggle" data-set="wake" aria-pressed="false"><span class="lb">Keep screen awake<span class="sub">While this list is on screen</span></span><span class="sw" aria-hidden="true"></span></button>
+    <button type="button" class="row-toggle" data-set="review" aria-pressed="false"><span class="lb">Day review<span class="sub">A quiet card under the finale: streak, the week, today's lines</span></span><span class="sw" aria-hidden="true"></span></button>
+    <button type="button" class="row-toggle" data-set="fade" aria-pressed="true" id="set-fade"><span class="lb">Fade controls when idle<span class="sub">A few seconds without the mouse and the top bar and footer step back to the date and the count. Any move brings them back</span></span><span class="sw" aria-hidden="true"></span></button>
+  </div>
+  <h3>Other devices</h3>
+  <div class="menu card">
+    <button type="button" class="row-toggle" data-set="who" aria-pressed="true"><span class="lb">Show who's here<span class="sub">A dot per other device with this list open. Off: this device neither shows nor counts</span></span><span class="sw" aria-hidden="true"></span></button>
+    <button type="button" class="row-toggle" data-set="celebrate" aria-pressed="false"><span class="lb">Celebrate their check-offs<span class="sub">Sound and confetti when someone else crosses a line off</span></span><span class="sw" aria-hidden="true"></span></button>
+  </div>
+  <h3 id="set-input-h">Gestures</h3>
+  <div class="menu card">
     <button type="button" class="row-toggle" data-set="swipe" aria-pressed="true" id="set-swipe"><span class="lb">Swipe left for “Not today”<span class="sub">The line comes back tomorrow</span></span><span class="sw" aria-hidden="true"></span></button>
     <button type="button" class="row-toggle" data-set="keys" aria-pressed="true" id="set-keys"><span class="lb">Single-key shortcuts<span class="sub">N, E, A, T, M, F, O, S, 1–9. Cmd/Ctrl+Z and Esc always work</span></span><span class="sw" aria-hidden="true"></span></button>
-    <button type="button" class="row-toggle" data-set="fade" aria-pressed="true" id="set-fade"><span class="lb">Fade controls when idle<span class="sub">A few seconds without the mouse and the top bar and footer step back to the date and the count. Any move brings them back</span></span><span class="sw" aria-hidden="true"></span></button>
-    <button type="button" class="row-toggle" data-set="who" aria-pressed="true"><span class="lb">Show who's here<span class="sub">A dot per other device with this list open. Off: this device neither shows nor counts</span></span><span class="sw" aria-hidden="true"></span></button>
   </div>
-
-  <h3>This list</h3>
-  <div class="menu">
-    <div class="sub-block">
-      <span class="lb">Add from anywhere<span class="sub">Open this URL with text on the end and the line lands on Today. How it works has a Shortcut and a bookmarklet.</span></span>
-      <div class="inline"><input class="link" id="set-addurl" type="text" readonly aria-label="Add-from-anywhere URL" spellcheck="false"><button class="chip" id="set-addurl-copy" type="button">Copy</button></div>
-    </div>
-    <button type="button" class="row-set" data-set="export"><span class="lb">Export &amp; import<span class="sub">The only backup there is. Export a file, and import one back.</span></span><span class="k state">›</span></button>
-    <button type="button" class="row-set" data-set="templates" hidden><span class="lb">Templates<span class="sub">Saved lines to insert. A section's ⋯ has them once the list has sections.</span></span><span class="k state" id="set-tpl-k"></span></button>
+  <h3 id="set-list-h">This list</h3>
+  <div class="menu card">
+    <button type="button" class="row-set nav" data-set="addurl" aria-haspopup="dialog"><span class="lb">Add from anywhere<span class="sub">A link that puts a line on Today</span></span><span class="chev" aria-hidden="true">›</span></button>
+    <button type="button" class="row-set nav" data-set="export" aria-haspopup="dialog"><span class="lb">Export &amp; import<span class="sub">The only backup there is. Export a file, and import one back.</span></span><span class="chev" aria-hidden="true">›</span></button>
+    <button type="button" class="row-set nav" data-set="templates" hidden><span class="lb">Templates<span class="sub">Saved lines to insert. A section's ⋯ has them once the list has sections.</span></span><span class="k state" id="set-tpl-k"></span><span class="chev" aria-hidden="true">›</span></button>
   </div>
+  <p class="fine" id="set-note">Settings stay on this device. This list's travel with the list.</p>
   <p class="fine" id="set-version"></p>
 </div></dialog>
 
-<!-- 1.9: a sound for Day and one for Night, behind Settings › Sound pack -->
+<dialog class="panel sheet" id="p-appear" aria-labelledby="p-appear-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
+  <h2 aria-labelledby="p-appear-h"><span id="p-appear-h">Appearance</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <!-- 1.12 b309: what ⋯ → Theme and Settings → Appearance open: the two slots side by side, how they switch, and the pairs -->
+  <div class="slots">
+    <button type="button" class="slot" data-slot="day" aria-haspopup="dialog"><span class="pv" aria-hidden="true"></span><span class="sl"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.5 1.5M17.2 17.2l1.5 1.5M5.3 18.7l1.5-1.5M17.2 6.8l1.5-1.5"/></svg>Day</span><span class="nm" id="ap-day-nm"></span><span class="on" id="ap-day-on" hidden>On now</span></button>
+    <button type="button" class="slot" data-slot="night" aria-haspopup="dialog"><span class="pv" aria-hidden="true"></span><span class="sl"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6z"/></svg>Night</span><span class="nm" id="ap-night-nm"></span><span class="on" id="ap-night-on" hidden>On now</span></button>
+  </div>
+  <h3>Switch</h3>
+  <div class="segs" id="ap-switch" role="radiogroup" aria-label="How Day and Night switch"><span class="thumb" aria-hidden="true"></span><button type="button" role="radio" data-mode="hand">By hand</button><button type="button" role="radio" data-mode="system">With the system</button><button type="button" role="radio" data-mode="schedule">On a schedule</button></div>
+  <p class="fine seg-note" id="ap-switch-note" aria-live="polite"></p>
+  <div class="sub-block" id="schedule-block" hidden>
+    <div class="grid2">
+      <label>Day from<input type="time" id="sch-day-at" step="300"></label>
+      <label>Night from<input type="time" id="sch-night-at" step="300"></label>
+    </div>
+  </div>
+  <h3>Designed pairs</h3>
+  <p class="fine">One tap sets both.</p>
+  <div id="ap-pairs"></div>
+  <div class="menu card">
+    <button type="button" class="row-set nav" id="ap-build" aria-haspopup="dialog"><span class="lb">Make your own<span class="sub">An accent, a base, fonts and a sound; save it to this list, or import a code</span></span><span class="chev" aria-hidden="true">›</span></button>
+  </div>
+</div></dialog>
+
+<dialog class="panel sheet" id="p-addurl" aria-labelledby="p-addurl-h"><div class="body">
+  <div class="grip" aria-hidden="true"></div>
+  <h2 aria-labelledby="p-addurl-h"><span id="p-addurl-h">Add from anywhere</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <p>Open this URL with text on the end and the line lands on Today. How it works has a Shortcut and a bookmarklet.</p>
+  <div class="inline"><input class="link" id="set-addurl" type="text" readonly aria-label="Add-from-anywhere URL" spellcheck="false"><button class="chip accent" id="set-addurl-copy" type="button">Copy</button></div>
+  <div class="menu card"><button type="button" class="row-set nav" id="addurl-help"><span class="lb">Set one up</span><span class="chev" aria-hidden="true">›</span></button></div>
+</div></dialog>
+
+<!-- 1.9: a sound for Day and one for Night; 1.12 b309: Settings → Sound, a page with the switch and the volume too -->
 <dialog class="panel sheet" id="p-sound" aria-labelledby="p-sound-h"><div class="body">
   <div class="grip" aria-hidden="true"></div>
-  <h2><span id="p-sound-h">Sound pack</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
-  <p>Theme's pick plays what the theme chose. Anything else plays instead of it, for that slot alone.</p>
-  <div class="menu">
-    <label class="item" for="snd-day"><span class="lb">Day<span class="sub" id="snd-day-sub"></span></span><select id="snd-day"><option value="">Theme's pick</option></select></label>
-    <label class="item" for="snd-night"><span class="lb">Night<span class="sub" id="snd-night-sub"></span></span><select id="snd-night"><option value="">Theme's pick</option></select></label>
+  <h2><span id="p-sound-h">Sound</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
+  <!-- 1.12 b309: the switch and the volume, then a pack for each slot: the slot picked on a small switch, the packs as rows
+       that play as they are chosen (1.9's two pickers were selects) -->
+  <div class="menu card">
+    <button type="button" class="row-toggle" data-snd="on" aria-pressed="true"><span class="lb">Sound<span class="sub">The knock, the bell, the finale</span></span><span class="sw" aria-hidden="true"></span></button>
+    <label class="item" for="volume"><span class="lb">Volume</span><input type="range" id="volume" min="0" max="100" step="5" aria-label="Volume"></label>
   </div>
+  <h3>Sound pack</h3>
+  <div class="segs" id="snd-slot" role="radiogroup" aria-label="Which slot's sound pack"><span class="thumb" aria-hidden="true"></span><button type="button" role="radio" data-slot="day">By day</button><button type="button" role="radio" data-slot="night">At night</button></div>
+  <p class="fine seg-note" id="snd-note" aria-live="polite"></p>
+  <div class="menu card packs" id="snd-packs" role="radiogroup" aria-label="Sound pack"></div>
 </div></dialog>
 
 <dialog class="panel sheet" id="p-export" aria-labelledby="p-export-h"><div class="body">
@@ -314,10 +343,9 @@
   <div class="grip" aria-hidden="true"></div>
   <h2 aria-labelledby="p-theme-h"><span id="p-theme-h">Day theme</span> <button class="x" data-close type="button" aria-label="Close">×</button></h2>
   <p class="fine" id="theme-msg">Any theme can go in either slot: the slot is about when, not what. Each one names its partner for the other side.</p>
-  <h3 class="first" id="sw-day-h">Made for day</h3>
-  <div class="swatches" id="sw-day"></div>
-  <h3 id="sw-night-h">Made for night</h3>
-  <div class="swatches" id="sw-night"></div>
+  <!-- 1.12 b309: grouped by what the themes are, the slot's own kind first (Sunset and Cocoa are dark, and were under day) -->
+  <div class="sw-group" id="swg-light"><h3 class="first" id="sw-light-h">Light</h3><div class="swatches" id="sw-light"></div></div>
+  <div class="sw-group" id="swg-dark"><h3 id="sw-dark-h">Dark</h3><div class="swatches" id="sw-dark"></div></div>
   <h3 id="sw-secret-h" hidden>Secret</h3>
   <div class="swatches" id="sw-secret" hidden></div>
   <div class="row-actions" id="sw-secret-actions" hidden><button class="chip plain" id="sw-forget" type="button">Forget the secret</button></div>

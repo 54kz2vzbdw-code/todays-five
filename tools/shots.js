@@ -32,6 +32,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
   const step = async (name, fn) => { try { await fn(); } catch (e) { console.log("skip", label, name, "—", (e.message || e).split("\n")[0]); try { await page.keyboard.press("Escape"); } catch (x) { /* ignore */ } } };
   const esc = async () => { for (let i = 0; i < 5; i++) { if (!(await page.$("dialog[open]"))) break; await page.keyboard.press("Escape"); await wait(250); } }; // 1.4: Escape goes back a level, so keep going until the stack is closed
   const mark = async name => { if (await page.$("#mark:not([hidden])")) await shot(name); };
+  /** the Night slot's picker: through Appearance's tile from 1.12 b309, through Settings' row before it */
+  const nightPicker = async () => { await openMore("settings"); await page.waitForSelector("#p-settings[open]"); if (await page.$('#p-settings [data-set="appearance"]')) { await page.click('#p-settings [data-set="appearance"]'); await page.waitForSelector("#p-appear[open]"); await wait(250); await page.click('#p-appear .slot[data-slot="night"]'); } else await page.click('[data-set="night"]'); await page.waitForSelector("#p-theme[open]"); };
   const openMore = async act => { await press("#more"); await page.waitForSelector("#p-menu[open]"); if (act) { await page.click(`#p-menu [data-act="${act}"]`); } };
   const hold = async (sel, ms) => { const b = await (await page.$(sel)).boundingBox(); const cdp = await ctx.newCDPSession(page); const x = b.x + Math.min(60, b.width / 2), y = b.y + b.height / 2; await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] }); await wait(ms); return async () => { await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await cdp.detach(); }; };
 
@@ -76,15 +78,17 @@ for (const [label, opts, touch] of VIEWPORTS) {
   });
   await step("settings", async () => { await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await wait(400); await shot("settings"); await page.$eval("#p-settings h3:last-of-type", el => el.scrollIntoView({ block: "start" })); await wait(300); await shot("settings-advanced"); await esc(); });
   await step("settings-sound", async () => { await openMore("settings"); await page.waitForSelector("#p-settings[open]"); if (!(await page.$("#set-pack"))) { await esc(); return; } const fresh = await page.$("#set-pack option[value=kalimba]"); if (fresh) { await page.selectOption("#set-pack", "kalimba"); await wait(300); } await page.evaluate(() => { const h = Array.from(document.querySelectorAll("#p-settings h3")).find(x => x.textContent.trim() === "Sound"); if (h) h.scrollIntoView({ block: "start" }); }); await wait(300); await shot("settings-sound"); if (fresh) { await page.selectOption("#set-pack", ""); await wait(150); } await esc(); }); // 1.5: the Sound section, with one of the new packs picked for this device
-  await step("settings-theme-back", async () => { if (!(await page.$("#p-theme h2"))) return; await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('#p-settings [data-set="day"]'); await page.waitForSelector("#p-theme[open]"); await wait(400); if (!(await page.$("#p-theme h2 .back"))) { await esc(); return; } await shot("settings-theme-back"); await esc(); }); // 1.4: ‹ Back at the top-left of a sub-panel
+  await step("settings-theme-back", async () => { if (!(await page.$("#p-theme h2"))) return; await openMore("settings"); await page.waitForSelector("#p-settings[open]"); if (await page.$('#p-settings [data-set="appearance"]')) { await page.click('#p-settings [data-set="appearance"]'); await page.waitForSelector("#p-appear[open]"); await wait(300); await page.click('#p-appear .slot[data-slot="day"]'); } else await page.click('#p-settings [data-set="day"]'); await page.waitForSelector("#p-theme[open]"); await wait(400); if (!(await page.$("#p-theme h2 .back"))) { await esc(); return; } await shot("settings-theme-back"); await esc(); }); // 1.4: ‹ Back at the top-left of a sub-panel
   await step("export-back", async () => { await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('#p-settings [data-set="export"]'); await page.waitForSelector("#p-export[open]"); await wait(400); if (!(await page.$("#p-export h2 .back"))) { await esc(); return; } await shot("export-back"); await esc(); });
   await step("theme", async () => {
     const chip = await page.$("#theme:not([hidden])");
     if (chip && await chip.isVisible()) await press("#theme");
+    else if (await page.$("#p-appear")) { await openMore("theme"); await page.waitForSelector("#p-appear[open]"); await wait(400); await page.click('#p-appear .slot[data-slot="night"]'); } // 1.12 b309: through Appearance's Night tile
     else if (await page.$('#p-menu [data-act="settings"]')) { await openMore("settings"); if (await page.$('[data-set="night"]')) { await page.waitForSelector("#p-settings[open]"); await wait(300); await shot("appearance"); await page.click('[data-set="night"]'); } }
     else { await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('[data-set="theme"]'); }
     await page.waitForSelector("#p-theme[open]"); await wait(400); await shot("theme");
-    if (await page.$("#sw-night")) { await page.click('#sw-night .swatch[data-code="T1:curated:dusk"]'); await wait(400); await shot("theme-partner"); }
+    const dusk = (await page.$("#sw-dark")) ? "#sw-dark" : (await page.$("#sw-night")) ? "#sw-night" : null; // 1.12 b309: grouped Light and Dark
+    if (dusk) { await page.click(dusk + ' .swatch[data-code="T1:curated:dusk"]'); await wait(400); await shot("theme-partner"); }
     if (await page.$("#sw-build")) { await page.click("#sw-build"); await page.waitForSelector("#p-builder[open]"); await wait(400); await shot("theme-builder"); } else { await page.$eval("#p-theme h3", el => el.scrollIntoView({ block: "start" })); await wait(300); await shot("theme-builder"); } await esc(); // 1.9: the builder is a sheet behind one row
   });
   // 1.12: ‹ Back on a panel the ⋯ menu opened, and the two-step picker it opens for Theme. Both skip on a build
@@ -98,6 +102,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   });
   await step("theme-flow", async () => {
     if (!(await page.$('#p-menu [data-act="theme"]')) && !(await page.$("#theme:not([hidden])"))) return;
+    if (await page.$("#p-appear")) return; // 1.12 b309 replaced the two steps with the Appearance page (the next step)
     await openMore("theme"); await page.waitForSelector("#p-theme[open]"); await wait(400);
     const head = () => page.textContent("#p-theme-h");
     if ((await head()) !== "Day theme") { await esc(); return; } // before 1.12 this opened on whichever slot was on
@@ -106,6 +111,22 @@ for (const [label, opts, touch] of VIEWPORTS) {
     if ((await head()) !== "Night theme") { await esc(); return; }
     await shot("theme-night");
     await esc();
+  });
+  // 1.12 b309: Settings as a hub, and the pages it opens: Appearance (⋯ → Theme too), Sound, Add from anywhere
+  await step("appear", async () => {
+    if (!(await page.$("#p-appear"))) return;
+    await openMore("theme"); await page.waitForSelector("#p-appear[open]"); await wait(500); await shot("appear");
+    await page.$eval("#ap-pairs", e => e.scrollIntoView({ block: "start" })); await wait(300); await shot("appear-pairs");
+    await page.$eval("#p-appear .body", e => { e.scrollTop = 0; }); await page.click('#ap-switch [data-mode="schedule"]'); await wait(700); await shot("appear-schedule");
+    await page.click('#ap-switch [data-mode="system"]'); await wait(300); await esc();
+  });
+  await step("sound-page", async () => {
+    if (!(await page.$("#snd-packs"))) return;
+    await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('#p-settings [data-set="sound"]'); await page.waitForSelector("#p-sound[open]"); await wait(500); await shot("sound-page"); await esc();
+  });
+  await step("addurl-page", async () => {
+    if (!(await page.$("#p-addurl"))) return;
+    await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('#p-settings [data-set="addurl"]'); await page.waitForSelector("#p-addurl[open]"); await wait(400); await shot("addurl-page"); await esc();
   });
   await step("share", async () => { const chip = await page.$("#share"); if (chip && await chip.isVisible()) await press("#share"); else await openMore("share"); await page.waitForSelector("#p-share[open]"); await wait(500); await shot("share"); if (await page.$("#share-friend")) { await page.$eval("#p-share .body", e => { e.scrollTop = e.scrollHeight; }); await wait(300); await shot("share-bottom"); } await esc(); });
   await step("one-thing", async () => { if (!(await page.$("#shuffle"))) return; if (touch) await page.tap("#count"); else await page.keyboard.press("o"); await wait(500); await shot("one-thing"); if (touch) await page.tap("#count"); else await page.keyboard.press("o"); await wait(300); }); // 1.3: ↻ beside the count
@@ -134,7 +155,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   // mid-flight; the run ends here because the device keeps the key and the themes it chose.
   if (process.env.SECRET !== "0") await step("secret", async () => {
     if (!(await page.$("#sw-secret"))) return;
-    await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('[data-set="night"]'); await page.waitForSelector("#p-theme[open]");
+    await nightPicker();
     if (await page.$("#sw-build")) { await page.click("#sw-build"); await page.waitForSelector("#p-builder[open]"); await wait(300); } // 1.9
     await page.fill("#c-import", "SuperPink"); await press("#c-import-go"); await wait(1200);
     await page.$eval("#sw-secret-h", el => el.scrollIntoView({ block: "center" })); await wait(300);
@@ -169,7 +190,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
       await page.mouse.move(2, 2); await wait(300);
     };
     await refill();
-    await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('[data-set="night"]'); await page.waitForSelector("#p-theme[open]");
+    await nightPicker();
     if (await page.$("#sw-build")) { await page.click("#sw-build"); await page.waitForSelector("#p-builder[open]"); await wait(300); }
     await page.fill("#c-import", "ChalkDust"); await press("#c-import-go"); await wait(1200);
     await page.$eval("#sw-extra-h", el => el.scrollIntoView({ block: "center" })); await wait(300);
@@ -200,13 +221,13 @@ for (const [label, opts, touch] of VIEWPORTS) {
       await page.mouse.move(2, 2); await wait(300);
     };
     await refill();
-    await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('[data-set="night"]'); await page.waitForSelector("#p-theme[open]");
+    await nightPicker();
     if (await page.$("#sw-build")) { await page.click("#sw-build"); await page.waitForSelector("#p-builder[open]"); await wait(300); }
     await page.fill("#c-import", "SawDust"); await press("#c-import-go"); await wait(1200);
     await page.$eval("#sw-extra-h", el => el.scrollIntoView({ block: "center" })); await wait(300);
     await shot("theme-extra-2");                                                   // both pairs open, a Forget each
     for (const [kit, hold] of [["bark", 1500], ["char", 1900]]) {
-      if (!(await page.$("#p-theme[open]"))) { await openMore("settings"); await page.waitForSelector("#p-settings[open]"); await page.click('[data-set="night"]'); await page.waitForSelector("#p-theme[open]"); }
+      if (!(await page.$("#p-theme[open]"))) { await nightPicker(); }
       await press(`#sw-extra .swatch[data-code="T1:curated:${kit}"]`); await wait(500);
       await esc(); await wait(900);
       if ((await page.evaluate(() => window.__tf().theme)) !== kit) { await press("#daynight"); await wait(1000); }  // whichever slot is on, this kit first

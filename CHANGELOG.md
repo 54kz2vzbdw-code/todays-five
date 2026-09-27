@@ -33,6 +33,11 @@ where it was. The tabs zoom between Today and Everything, the sun or moon opens 
 itself, and the count rolls like an odometer. A list opened on a device unseals as it arrives, sounds
 play in their theme's own room, and on the iPhone the app switcher shows a card instead of the list.
 
+Settings became a short hub. Appearance and Sound have pages of their own, the switches now group by what they're
+for, and ⋯ → Theme shows Day and Night side by side with the designed pairs a tap away. The theme picker groups
+themes by light and dark, so Sunset and Cocoa—dark themes that used to be filed under day—sit with the other dark
+ones.
+
 ## 1.11 — A look of its own.
 
 - **New** — The same check, in colours of its own instead of borrowed ones.

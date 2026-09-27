@@ -189,7 +189,10 @@ function loadMotion() {
   if (!motionP) motionP = import("./motion.js?v=" + BUILD).then(m => (motionMod = m)).catch(() => { motionP = null; return null; });
   return motionP;
 }
-{ const go = () => setTimeout(loadMotion, 600); if (document.readyState === "complete") go(); else addEventListener("load", go, { once: true }); }
+/** 1.12 b293: finale.js, each curated kit's own ending, fetched in the same idle beat; without it the volley plays as before. */
+let finaleMod = null;
+const loadFinale = () => import("./finale.js?v=" + BUILD).then(m => (finaleMod = m)).catch(() => null);
+{ const go = () => setTimeout(() => { loadMotion(); loadFinale(); }, 600); if (document.readyState === "complete") go(); else addEventListener("load", go, { once: true }); }
 const DRAW_COMMIT = 0.55, DRAW_MOUSE = true; // the drawn strike (swipeStart) lands at 55 % of the stroke; a mouse draws too
 // The hidden switch is this page's only way to fire a haptic, and it is one tick. The shell has the
 // real generators and a distinct feel per moment, so inside it this stands down rather than doubling up.
@@ -213,7 +216,10 @@ const fx = { burst: (...a) => { stats.burst++; return rawFx.burst(...a); }, voll
     module is fetched the first time one of those two finales runs — never on a device that has not unlocked them. */
 function finaleFx() {
   const kind = theme && theme.finale;
-  if (!kind) { fx.volley(); return; }
+  if (!kind) { // 1.12 b293: a curated kit's own ending (finale.js), on the volley's rhythm; the volley itself if that is not here yet
+    if (finaleMod && finaleMod.finale(theme, rawFx, { span: $("#finale span"), w: innerWidth, h: innerHeight, reduced: RM.matches, spring: motionMod && motionMod.spring, shell: $("#shell") })) { stats.volley++; return; }
+    fx.volley(); return;
+  }
   stats.volley++; // a named finale counts as the volley it replaces
   const mod = theme.extra ? "./extrafx.js?v=" : "./secretfx.js?v="; // 1.12 b262: an Extra kit's finale lives in its own module
   import(mod + BUILD).then(m => { if (!m.finale(kind, rawFx, { w: innerWidth, h: innerHeight, kit: theme })) rawFx.volley(); }).catch(() => rawFx.volley());
@@ -260,6 +266,7 @@ function currentThemeCode() { return T.slotCode(dev, envNow()); }
 let appliedCode = "", fadeRaf = 0;
 const FADE_MS = 400;
 const FINALE_LINE = "That's the list."; // index.html's default; a kit may name its own (theme.js, finaleText)
+const FINALE_LINES = { arcade: "Level clear." }; // 1.12 b293: the one curated kit whose ending is a game's
 function applyThemeCode(code, { crossfade = false } = {}) {
   const next = T.parseCode(code) || T.curated("dark"), prev = theme;
   theme = next;
@@ -267,7 +274,7 @@ function applyThemeCode(code, { crossfade = false } = {}) {
   if (crossfade && prev && !RM.matches && T.cssText(prev) !== T.cssText(next)) crossfadeTo(prev, next);
   else { stopFade(); T.applyTheme(next); }
   $("#menu-theme-k").textContent = next.name;
-  const fin = $("#finale").firstElementChild; if (fin) fin.textContent = next.finaleText || FINALE_LINE;
+  const fin = $("#finale").firstElementChild; if (fin) fin.textContent = next.finaleText || FINALE_LINES[next.id] || FINALE_LINE;
   paintField();
   sound.warm(next.sound.engine); // a kit whose engine lives in its own module (1.6): start fetching it now
   paintDayNight();

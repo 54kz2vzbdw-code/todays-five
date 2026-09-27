@@ -1,0 +1,130 @@
+// finale.js — the day's last strike, finished in each kit's own hand. Fetched at idle beside motion.js, never at first
+// paint, pinned to the page's build (COMPATIBILITY.md §6). Until now the sixteen curated kits ended the same way: the
+// card faded in and the volley went up. Here each kit's material writes its line its own way and throws its own
+// confetti — on the volley's own rhythm (seven bursts along the bottom 65 ms apart, one through the middle at 210 ms),
+// so the iPhone's finale pattern, which is that rhythm, still lands with what you see. The Secret and Extra kits keep
+// the finales they were designed with (secretfx.js, extrafx.js); a theme you make ends Clean. Everything here ends by
+// itself: a line is restored to plain text when its letters land, and every particle falls off the screen.
+
+/** Each curated kit's material: how the day's last line arrives, and what goes up with it. */
+export const MATERIAL = {
+  light: "clean", dark: "clean", paper: "ink", cocoa: "ink", midnight: "glass", harbor: "tide", forest: "tide",
+  pink: "candy", blush: "candy", terminal: "phosphor", teletype: "phosphor", sunset: "glow", dusk: "glow",
+  ember: "ember", sketch: "pencil", arcade: "pixel"
+};
+/** What each material throws: an fx.js shape list, or a particle of this module's own. */
+const THROW = {
+  clean: null, ink: null, candy: null,                 // the kit's own confetti, as it always was
+  glass: "shard", tide: "bubble", phosphor: "pixel", pixel: "pixel", glow: [3, 5], ember: "spark", pencil: [4, 0]
+};
+
+const PX = { pixel: 1, shard: 1, spark: 1, bubble: 1 };
+
+/** Particles fx.js does not draw: pixels on a 3 px grid, glass shards, rising sparks, rising bubbles. One scene per burst. */
+function particles(fx, kind, x, y, n, power, spread, pal) {
+  const ps = [];
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + (Math.random() - 0.5) * spread, sp = power * (0.55 + Math.random() * 0.8);
+    ps.push({ x, y, vx: Math.cos(a) * sp + (Math.random() - 0.5) * 1.3, vy: Math.sin(a) * sp, s: 3 + Math.random() * 4, r: Math.random() * 6.3, vr: (Math.random() - 0.5) * 0.3,
+      c: pal[(Math.random() * pal.length) | 0], life: 1, dec: 0.008 + Math.random() * 0.008, ph: Math.random() * 6.3 });
+  }
+  const g = kind === "spark" ? -0.05 : kind === "bubble" ? -0.07 : kind === "shard" ? 0.26 : 0.3;
+  let last = 0;
+  fx.scene((c, t, w, h) => {
+    const k = Math.min(3, Math.max(0.5, (t - last) * 60)); last = t;
+    let alive = false;
+    for (const p of ps) {
+      if (p.life <= 0) continue;
+      p.vy += g * k; p.vx *= Math.pow(0.992, k); p.vy *= Math.pow(0.992, k); p.x += p.vx * k; p.y += p.vy * k; p.r += p.vr * k; p.life -= p.dec * k;
+      if (p.life <= 0 || p.y > h + 60 || p.y < -60) { p.life = 0; continue; }
+      alive = true;
+      c.save(); c.globalAlpha = Math.max(0, Math.min(1, p.life * 1.7)); c.fillStyle = c.strokeStyle = p.c;
+      if (kind === "pixel") { const s = Math.round(p.s * 0.9 + 2); c.fillRect(Math.round(p.x / 3) * 3, Math.round(p.y / 3) * 3, s, s); }
+      else if (kind === "spark") { c.globalAlpha *= 0.55 + 0.45 * Math.abs(Math.sin(t * 22 + p.ph)); c.beginPath(); c.arc(p.x, p.y, 1.1 + p.s * 0.22, 0, 6.3); c.fill(); }
+      else if (kind === "bubble") { c.lineWidth = 1.4; c.beginPath(); c.arc(p.x + Math.sin(t * 5 + p.ph) * 3, p.y, 2 + p.s * 0.6, 0, 6.3); c.stroke(); }
+      else { c.translate(p.x, p.y); c.rotate(p.r); c.beginPath(); c.moveTo(0, -p.s); c.lineTo(p.s * 0.6, p.s * 0.7); c.lineTo(-p.s * 0.4, p.s * 0.4); c.closePath(); c.fill(); }
+      c.restore();
+    }
+    return alive || t < 0.05;
+  });
+}
+function emit(fx, what, x, y, n, power, spread, pal) {
+  if (what && PX[what]) particles(fx, what, x, y, n, power, spread, pal);
+  else fx.burst(x, y, n, power, spread, what ? { palette: pal, shapes: what } : null);
+}
+
+/** The line, a letter at a time: each letter its own box for the length of the move, plain text again once it lands. */
+function letters(span, text) {
+  span.textContent = "";
+  span.setAttribute("aria-label", text);
+  return [...text].map(ch => { const s = document.createElement("span"); s.textContent = ch; s.setAttribute("aria-hidden", "true"); s.style.cssText = "display:inline-block;white-space:pre;font:inherit;color:inherit"; span.appendChild(s); return s; });
+}
+/** Once every letter has landed, the letters become one plain text node again; anything else in the line (the swash) stays. */
+const settle = (span, ls, text, anims) => Promise.all(anims.map(a => a.finished.catch(() => {}))).then(() => {
+  if (!span.isConnected) return;
+  const first = ls[0] && ls[0].parentNode === span ? ls[0] : null;
+  span.insertBefore(document.createTextNode(text), first); ls.forEach(l => l.remove()); span.removeAttribute("aria-label");
+});
+
+/** Type a line out, a character at a time, a block caret riding it; the caret blinks three times and goes. */
+function typeOut(span, text, ms) {
+  span.textContent = "";
+  const caret = document.createElement("span");
+  caret.setAttribute("aria-hidden", "true");
+  caret.style.cssText = "display:inline-block;width:.55em;height:1em;margin-left:.08em;vertical-align:-.12em;background:currentColor";
+  let i = 0;
+  return new Promise(done => {
+    const step = () => {
+      if (!span.isConnected) return done();
+      span.textContent = text.slice(0, ++i); span.appendChild(caret);
+      if (i < text.length) { setTimeout(step, ms); return; }
+      caret.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, iterations: 6, direction: "alternate", easing: "steps(1,end)" }).finished
+        .then(() => { if (span.isConnected) span.textContent = text; done(); }, () => done());
+    };
+    setTimeout(step, 160);
+  });
+}
+
+/** Play kit `kit`'s finale: the line in `span`, the confetti through `fx`. False when there is nothing of this module's to play. */
+export function finale(kit, fx, { span, w, h, reduced, spring, shell } = {}) {
+  if (!kit || kit.finale || reduced) return false;
+  const mat = MATERIAL[kit.id] || "clean", pal = kit.confetti || [];
+  const text = span ? span.textContent : "";
+  const pop = spring ? spring(420, 17) : { duration: 520, easing: "cubic-bezier(.3,1.5,.5,1)" };
+  const soft = spring ? spring(170, 22) : { duration: 700, easing: "cubic-bezier(.22,1,.36,1)" };
+  // the volley's rhythm, in the material's own particles
+  const what = THROW[mat];
+  for (let i = 0; i < 7; i++) setTimeout(() => emit(fx, what, w * (0.08 + 0.14 * i), h * 0.97, 22, 17, 1.15, pal), i * 65);
+  setTimeout(() => emit(fx, what, w * 0.5, h * 0.6, 36, 13, 2.6, pal), 210);
+  if (!span || !text) return true;
+  if (mat === "phosphor" || mat === "pixel") {
+    if (mat === "phosphor" && kit.id === "terminal" && shell) shell.animate([{ filter: "brightness(1)" }, { filter: "brightness(1.35)", offset: 0.3 }, { filter: "brightness(1)" }], { duration: 240, delay: 40 });
+    typeOut(span, text, mat === "pixel" ? 55 : 38);
+    return true;
+  }
+  if (mat === "pencil") {
+    span.animate([{ clipPath: "inset(-20% 100% -20% 0)" }, { clipPath: "inset(-20% 0% -20% 0)" }], { duration: 1000, delay: 180, easing: "steps(26,end)", fill: "backwards" });
+    return true;
+  }
+  const ls = letters(span, text), n = ls.length, run = [];
+  const each = (from, sp, gap, extra = {}) => ls.forEach((l, i) => run.push(l.animate([typeof from === "function" ? from(i) : from, { opacity: 1, transform: "none", filter: "blur(0px)" }], { duration: sp.duration, easing: sp.easing, delay: 140 + i * gap, fill: "backwards", ...extra })));
+  if (mat === "ink") each({ opacity: 0, transform: "translateY(.35em) rotate(-6deg)" }, pop, 30);
+  else if (mat === "candy") each({ opacity: 0, transform: "scale(0)" }, pop, 34);
+  else if (mat === "tide") each(i => ({ opacity: 0, transform: `translateY(${0.7 + 0.25 * Math.sin(i * 0.9)}em)`, filter: "blur(3px)" }), soft, 45);
+  else if (mat === "glass") each({ opacity: 0, transform: "scale(1.15)", filter: "blur(8px)" }, soft, 22);
+  else if (mat === "glow" || mat === "ember") {
+    each({ opacity: 0, transform: "translateY(.5em)", filter: "blur(6px)" }, { duration: 700, easing: "cubic-bezier(.2,.8,.2,1)" }, 38);
+    if (mat === "ember") { const cool = getComputedStyle(span).color; ls.forEach((l, i) => run.push(l.animate([{ color: "#FFB02E", textShadow: "0 0 14px rgba(255,140,40,.95)" }, { color: "#FFB02E", textShadow: "0 0 10px rgba(255,140,40,.7)", offset: 0.35 }, { color: cool, textShadow: "0 0 0 rgba(255,140,40,0)" }], { duration: 1400, delay: 140 + i * 38 }))); } // it kindles, then cools to the kit's own colour
+  } else each({ opacity: 0, transform: "translateY(-.7em)" }, pop, 26); // clean
+  if (mat === "ink") { // a pen's swash under the line, drawn once the last letter is down
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"), path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    svg.setAttribute("viewBox", "0 0 200 12"); svg.setAttribute("preserveAspectRatio", "none"); svg.setAttribute("aria-hidden", "true");
+    svg.style.cssText = "position:absolute;left:0;right:0;bottom:-.32em;width:100%;height:.4em;overflow:visible;pointer-events:none";
+    path.setAttribute("d", "M4 8C52 1 118 13 196 4"); path.setAttribute("fill", "none"); path.setAttribute("stroke", "currentColor"); path.setAttribute("stroke-width", "2.2"); path.setAttribute("stroke-linecap", "round"); path.setAttribute("vector-effect", "non-scaling-stroke");
+    svg.appendChild(path); span.style.position = "relative"; span.appendChild(svg);
+    const L = 200, a = path.animate([{ strokeDasharray: L, strokeDashoffset: L }, { strokeDasharray: L, strokeDashoffset: 0 }], { duration: 440, delay: 140 + n * 30 + 160, easing: "cubic-bezier(.6,0,.2,1)", fill: "both" });
+    a.finished.then(() => new Promise(r => setTimeout(r, 1600))).then(() => svg.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: "forwards" }).finished).then(() => { svg.remove(); span.style.position = ""; }, () => { svg.remove(); span.style.position = ""; });
+  }
+  settle(span, ls, text, run);
+  return true;
+}

@@ -1084,3 +1084,48 @@ because a longer tail is time nobody sees. It weighs 3.9 KB gzipped.
 - `motion.js`: 3,890 bytes gzipped, under its 4 KB.
 - Idle CPU: not measured, because Price said to skip the idle tests. Nothing in the round runs at rest.
 
+# 1.12 b293 decisions — each kit ends its own way
+
+Price's call after round one's checkpoint: "Feel free to experiment with the celebratory endings differently per
+theme and add a nice little animation if it makes sense to do so." This is bet 5 of the moat proposal, the finish
+line, pulled forward. It ships on its own build because it changes every curated kit's ending on everyone's screen.
+
+**Where it lives.** `finale.js` is new and lazy. It is fetched in the same idle beat as `motion.js`, pinned to the
+build, and in `sw.js`'s `SHELL`. `finaleFx()` hands a curated kit to it; until it has arrived, the volley plays as it
+always did. The Secret and Extra kits keep the finales they were designed with. A theme you make ends Clean.
+
+**The line, in the material's hand.** "That's the list." arrives a letter at a time, each material its own way:
+- Ink (Paper, Cocoa): written in, with a pen's swash drawn under it.
+- Phosphor (Terminal, Teletype): typed, a caret blinking three times. Terminal adds a CRT flash.
+- Candy (Pink, Blush): popped in.
+- Tide (Harbor, Forest): floated up in a wave.
+- Glass (Midnight): brought into focus.
+- Glow (Sunset, Dusk): risen into light.
+- Ember: kindled orange, then cooled to the kit's colour.
+- Pencil (Sketch): scribbled in.
+- Pixel (Arcade): typed like a game.
+- Clean (Light, Dark): dropped in.
+
+Every letter lands as plain text again, so the card at rest is what it always was. A typed line keeps its full width
+from the first frame, with the untyped part invisible, so the card never reflows as it types.
+
+**One line changes: Arcade's, to "Level clear."** It is the one kit whose ending is a game's. It lives in `app.js`
+(`FINALE_LINES`), where `applyThemeCode` sets the line, and not in `theme.js`. Adding `finaleText` to a curated kit
+would move `test/fixtures/kits.json` and the Swift kit table, a cross-client change for a joke. Terminal keeps "That's
+the list.", because it is the night default and that is the brand's line.
+
+**The confetti, in the material's own particles, on the volley's own rhythm.** Terminal and Arcade throw pixels on a
+3 px grid, Midnight glass shards, Harbor and Forest rising bubbles, Ember rising sparks, Sunset and Dusk sparkles, and
+Sketch graphite. Paper, Cocoa, Pink, Blush, Light and Dark keep their own ribbons and hearts. The new particles are
+drawn by `finale.js` through `fx.scene()`, so `fx.js`, which is on the first-paint path, does not grow. Every burst
+keeps the volley's timing: seven along the bottom 65 ms apart, one through the middle at 210 ms. The iPhone's finale
+pattern is that rhythm, so the hand still lands with the eye. Nothing native changed.
+
+**Reduced motion** keeps the quiet card: `finale()` returns false, and the volley it falls back to does nothing under
+reduced motion, as it never has.
+
+**An older overlap, fixed on its own commit.** On a phone, a mono kit's line and its chip don't fit one row, so the card
+wraps and its line sits under the Done toast the last check-off raises. Terminal's finale, the night default, was
+drawn half under "Done · Undo". `paint()` now measures the card's extra row (`--fin-extra`), and `body.fin-tall` lifts
+the toast by it, the pattern of `--shake-h` and `--install-h`.
+

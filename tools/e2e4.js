@@ -1281,7 +1281,11 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.click("#pick-menu button"); await wait(400);
     assert.equal(await t.page.locator("#all .row").count(), 6, "three template lines inserted into Work");
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await wait(200);
-    assert.ok(await t.page.$eval('[data-set="templates"]', e => e.hidden), "1.9: with sections, templates are a section's business (its ⋯ inserts them), not a Settings row (proposal 5)");
+    assert.ok(!(await t.page.$eval('[data-set="templates"]', e => e.hidden)), "1.12 b309: a list with sections shows Templates once it has one, since this is the only place one can be deleted");
+    assert.equal((await t.page.textContent("#set-tpl-k")).trim(), "1");
+    await t.page.click('#p-settings [data-set="templates"]'); await t.page.waitForSelector("#p-pick[open]"); await wait(200);
+    assert.equal(await t.page.textContent("#p-pick-h"), "Templates"); assert.equal(await t.page.locator('#pick-menu [aria-label="Delete Five"]').count(), 1, "with its Delete");
+    await t.esc();
     await t.close();
   });
 

@@ -787,7 +787,7 @@ export function openAddUrl() {
 }
 /** 1.12 b309: the hub. Appearance and Sound say what is set; the switches stand where they are; This list is headed by
     the list's name. A row that cannot work here is not shown (screen wake without the API, the idle fade and the keys on
-    a phone, the swipe on a computer, Templates on a list that has sections). */
+    a phone, the swipe on a computer, Templates on a list with sections and none saved). */
 function paintSettings() {
   const d = dev(), set = (name, on) => { const b = $(`#p-settings [data-set="${name}"]`); if (b) b.setAttribute("aria-pressed", on ? "true" : "false"); };
   const nameOf = slot => { const t = slotTheme(slot); return t ? t.name : "Custom"; };
@@ -804,10 +804,11 @@ function paintSettings() {
   set("fade", !d.idleFadeOff); $("#set-fade").hidden = A.touchUi();
   set("who", !d.whoOff);
   $("#set-input-h").textContent = A.touchUi() ? "Gestures" : "Keyboard";
-  // 1.9: Templates only for a list with no sections, the case the row was written for (a section's ⋯ carries them otherwise)
+  // 1.9: Templates for a list with no sections, the case the row was written for (a section's ⋯ saves and inserts them
+  // otherwise). 1.12 b309: and for any list that has some, since this is the only place one can be deleted
   const tpls = A.doc ? M.liveTemplates(A.doc).length : 0;
   $("#set-tpl-k").textContent = tpls ? String(tpls) : "";
-  $('#p-settings [data-set="templates"]').hidden = !A.doc || M.liveSections(A.doc).length > 0;
+  $('#p-settings [data-set="templates"]').hidden = !A.doc || (M.liveSections(A.doc).length > 0 && !tpls);
   $("#set-list-h").textContent = A.doc && A.doc.name ? "This list · " + A.doc.name : "This list";
   $("#set-version").textContent = `Today's Five ${A.VERSION_LABEL}. What's new is on the About page.`;
 }

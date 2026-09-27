@@ -1228,3 +1228,71 @@ everywhere touches the server's side of deletion and is not motion.
 **Reduced motion.** Everything above is off: panels are simply there and simply gone, lines simply leave, the count
 simply changes, no unseal, no reveal, no zoom. The drawn strike still follows the finger, as round one decided.
 
+# 1.12 b309 decisions — Settings as a hub
+
+Price, after 308: the page between Settings and the picker that showed the Day and Night choices with a sliding switch
+(the prototype had it; 306 did not build it), and then "re-do my settings menu as you see fit … Combine where it makes
+sense to combine, separate where things that shouldn't be combined are … you can also reorganize the suggested day and
+night themes if there's any that seem to be in the wrong spot." Total freedom, in his words. Nothing moves on anyone's
+screen until they open Settings or ⋯ → Theme, so it shares a build.
+
+**A hub, not a form.** 1.9's Settings was one long sheet: Appearance with a select for the switch, then "This device",
+ten unrelated rows (sound, its pack, a volume slider, celebrate, day review, wake, swipe, keys, fade, who's here), then
+This list with the add-from-anywhere URL field open between rows. It is now a short hub. Two rows at the top say what
+is set and open pages of their own — Appearance ("Paper · Terminal", with a dot of each where there is room) and Sound
+("On · Kalimba", or "Off"). Then the switches stay switches, grouped by what they are about: **Screen** (keep awake,
+the day review, the idle fade), **Other devices** (who's here, and celebrating their check-offs, which 1.9 kept apart),
+**Gestures** on a phone or **Keyboard** on a computer (the swipe or the single keys; each only exists on one, so the
+heading follows). Last, **This list · its name**, because those three rows belong to the list and travel with it:
+Add from anywhere, Export & import, Templates. A line under them says which is which. No select, slider or field is
+left on the hub; every row is a switch or a way in.
+
+**Appearance is a page, and it is what ⋯ → Theme opens.** 1.12's ⋯ → Theme was two steps, Day and then Night, which
+walked through both slots to change one. The page shows both at once: two tiles, each its theme in miniature — its
+ground and glow, three lines in its colours, the middle one crossed off in its own ink, the name in its own face — the
+one on now marked. A tile opens the picker for that slot, and Back comes back to the tiles. Under them, how the two
+switch: By hand, With the system, On a schedule, as a small switch whose pill slides to the choice (a radio group to
+a screen reader, arrow keys on a computer), with a note saying what that way does and whether a tap on the sun or moon
+is holding an automation off; the times show only for a schedule. Then the designed pairs, one tap for both slots,
+the change revealed from the pair that was tapped — the six that are light by day and dark by night, then the two that
+are always dark, then a Secret or Extra pair on a device that holds its word, as the picker already does. Make your own
+is the last row. Shift+T opens it too, and a page that has to reload itself on the way to ⋯ → Theme comes back to it
+(§6's resume). The two-step flow and its state are gone.
+
+**The picker groups themes by what they are.** It grouped by `lean`, "Made for day" and "Made for night", and so filed
+Sunset and Cocoa — both dark — under day, because each is the day half of a dark pair. Those were the two in the wrong
+spot. The groups are now Light and Dark, by base, with the slot's own kind first (a Day picker opens on Light, a Night
+picker on Dark), and every swatch says what it pairs with instead of repeating its group. Only the web's grouping moved.
+`lean` stays in the kit data, the fixture and the Swift kit table, because it still says which half of a pair is the
+day one — the pairs above, the partner the picker offers, the Watch's order. The Watch's picker has no headings: it
+lists the slot's eight by lean, then the other eight, so Sunset and Cocoa come early in its Day list and nothing there
+calls them light. Changing that order is a Watch build, and is not in this one.
+
+**Sound is one page.** The switch and the volume moved in with the packs, since they are one subject. The pack is per
+slot, as 1.9 made it: a small switch for By day or At night (it opens on the slot that is on), the same note as before
+saying what the slot's theme picks and what this device plays instead, and the packs as rows — Theme's pick naming its
+pack, the twelve, and any unlocked by a word — that play as they are chosen. 1.9 did this with two selects.
+
+**Add from anywhere is a page.** The URL and Copy one level down, with a row that opens How it works at the section that
+sets one up. A View link's page says to open the Private link, and Copy is off, as the row was.
+
+**Templates shows when a list has one.** 1.9 showed the row only on a list with no sections, because a section's ⋯
+saves and inserts templates. But the row is the only place one can be deleted, so a list with sections had no way to
+delete a template at all. It now shows on any list that has templates, too. Its own commit.
+
+**A row lit under the finger.** The menu rows' fill was a plain `:hover`, which a touch screen leaves on whatever row
+ends up under the last tap. The new pages open where the finger was, so Sound's Volume row arrived lit. The fill is now
+for a pointer that can hover, and a finger has it while it presses. It predates the round — 1.9's Settings did the same
+to Sound pack, which the before shots show — and it is its own commit.
+
+**The keyboard keeps its place.** Choosing a pair or a pack repaints its rows, which dropped focus to the page; the row
+that was chosen takes it back. The switch's pill follows its button's size rather than only the window's, so a theme
+whose font arrives after the pill was measured does not leave it a few pixels off.
+
+**Paths that had gone stale.** How it works, the gestures reference and About still sent people to Settings → Advanced,
+→ Behavior and → Lists, none of which has existed since 1.9. They name the new places.
+
+**What did not change.** No setting is stored differently: the device record has the same keys and values, so nothing
+migrates, and an older build reading this device's settings finds what it wrote. `COMPATIBILITY.md` does not mention
+Settings. The iPhone shell and the Watch read nothing from these screens. The version stays 1.12.
+

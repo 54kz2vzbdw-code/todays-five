@@ -2134,3 +2134,55 @@ older cleanup stands down; the line is passed in, so a doubled one cannot be rea
 306 with the phone's exact text and passes here at both viewports; the 25 finale tests and the seven Node suites pass.
 The full browser suite was not rerun for a change confined to `finale.js` and one argument in `app.js`. Web only: the
 app loads the live site, so no new archive is needed for this one.
+
+# Today's Five 1.12 b309 — Settings as a hub
+
+*Shipped as build 314. b309 is the round's first commit.*
+
+Price, after 308: the page between Settings and the picker, with the Day and Night choices side by side and a sliding
+switch, which the moat prototype had and 306 did not build; and then "re-do my settings menu as you see fit to make it
+super amazingly user friendly," combining what belongs together and separating what does not, with leave to
+"reorganize the suggested day and night themes if there's any that seem to be in the wrong spot." The decisions are
+in DECISIONS.md under "1.12 b309 decisions — Settings as a hub". Web only; the version holds at 1.12, and nothing in
+`apple/` changed but the stamp, so no archive: the app loads the live site.
+
+## What shipped
+
+Five commits, so each can go back alone:
+
+1. **The hub and its pages** (b309). Settings is two rows that say what is set and open pages (Appearance, Sound), the
+   switches grouped as Screen, Other devices, and Gestures or Keyboard, and This list under the list's name with Add
+   from anywhere, Export & import and Templates one level down. Appearance — also ⋯ → Theme and Shift+T — shows both
+   slots as tiles with the theme in miniature, the switch as a sliding pill, and the eight designed pairs a tap from
+   both slots. Sound holds the switch, the volume and a pack per slot as rows. The picker groups Light and Dark, so
+   Sunset and Cocoa sit with the dark themes. The two-step ⋯ → Theme is gone.
+2. **Templates on a list with sections** (b310). The row shows once such a list has a template, since it is the only
+   place one can be deleted.
+3. **Stale paths** (b311). How it works, the gestures reference and About named Settings → Advanced, → Behavior and
+   → Lists.
+4. **A row lit under the finger** (b312). Row fills are for a pointer that can hover; a finger gets one while pressing.
+5. **On now off the miniature** (b313). The badge sits on the tile's Day or Night row.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `index.html` **+431 bytes** gzipped (the new pages' markup), `app.js` **−21**, `styles.css` and `sound.js` unchanged | `gzip -9` |
+| lazy | `panels.js` **+3,158** (28,281 → 31,439), `panels.css` **+1,227** (6,618 → 7,845); both load with the first panel, never before first paint | `gzip -9` |
+| first paint | desktop FCP **56 → 56 ms** (48–64 against 48–60); mobile FCP **1276 → 1284 ms** (1260–1308 against 1268–1304, ranges overlapping). On the wire +9.3 KB, which is `index.html` (+3.4 KB raw) and `panels.css` (+6.2 KB raw), the latter fetched after load | `tools/paint.mjs 8`, 308 (port 8800) and this build (8802) side by side, interleaved and order-flipped, Lighthouse's mobile throttling |
+| idle CPU | **not measured**, at Price's word. Nothing new runs at rest: the pill's slide and the schedule's fade end | — |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30 (the five homes at 314), compat 9 |
+| Browser suite, 1440×900 and 390×844 | **216 passed, 0 failed** end to end on the round before its last three changes. 22 of the 112 test definitions changed: 17 now reach the new pages, and 5 were rewritten around them and renamed (Settings' shape, the Sound page, the picker's groups, Shift+T, and ⋯ → Theme, which is now the Appearance test). None was added or dropped. A focused run of every test that touches Settings, 49/0, came first |
+| After the full run | the keyboard fix: 18/0 over the nine tests on those pages, and its two checks **fail without it** (focus lands on the page). The hover fix: 8/0, and the phone check **fails on the old rule** with the stuck colour. The badge: 9/0 over the Appearance and switch tests. The full suite was not rerun for these three, which are confined to those pages |
+| Screenshots | `shots/settings-hub/`: 16 before (308) and 20 after, both viewports, by `tools/shots.js`, which now walks the new pages. Taken before the stamp, so the version line in them reads 308. The Secret and Extra shots are left out |
+
+## What only a real iPhone can settle
+
+The pill's spring and the tiles' press under a thumb; that a row's press fill shows in the iPhone's WKWebView (WebKit
+applies `:active` only where touch or pointer listeners are registered, and the app registers them on the document);
+the reveal from a pair card there, which falls back to an instant change where View Transitions are missing.

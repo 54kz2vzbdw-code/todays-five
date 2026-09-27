@@ -510,6 +510,129 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  /* ---------------- motion-1: the strike drawn by hand ---------------- */
+  const pinKit = (kit, extra = "") => `try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: { day: "T1:curated:${kit}", night: "T1:curated:${kit}", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }${extra} } })); } catch (e) {}`;
+  const isDone = (t, id) => t.page.$eval(`.row[data-id="${id}"]`, e => e.classList.contains("done"));
+  /** how far each line's ink is drawn right now, read off the inline style motion.js writes while a finger is down */
+  const drawnTo = (t, sel) => t.page.$$eval(sel + " .lines .ink", els => els.map(e => { const s = e.style, c = /inset\(\S+ ([\d.]+)%/.exec(s.clipPath || ""), m = /scaleX\(([\d.]+)\)/.exec(s.transform || ""); return c ? 1 - c[1] / 100 : m ? +m[1] : 0; }));
+  const clean = (t, sel) => t.page.$$eval(sel + " .lines .ink", els => els.every(e => !/transform|clip-path|opacity|transition|--hot|--tip/.test(e.getAttribute("style") || "")));
+
+  await test(label + ": motion-1: a strike drawn " + (touch ? "by a finger" : "with the mouse") + " past 55 % crosses the line off; one at 40 % pulls back and writes nothing; a quick short flick writes nothing; none of them opens the menu", async () => {
+    const t = await fresh(opts); await wait(900); // motion.js arrives at idle
+    const id = await t.page.$eval("#list .row:not(.done)", e => e.dataset.id), sel = `#list .row[data-id="${id}"]`;
+    const before = (await t.s()).stats.check;
+    await t.draw(sel, 0.4); await wait(500);
+    assert.equal(await isDone(t, id), false, "40 % pulls back");
+    assert.ok(await clean(t, sel), "and leaves no ink behind");
+    await t.draw(sel, 0.3, { steps: 3 }); await wait(500);
+    assert.equal(await isDone(t, id), false, "a quick short flick is not a commit: distance, never speed");
+    assert.equal((await t.s()).stats.check, before, "and neither made the check-off sound");
+    await t.draw(sel, 1); await wait(600);
+    assert.equal(await isDone(t, id), true, "past 55 % it lands");
+    assert.equal((await t.s()).stats.check, before + 1, "one check-off, with its sound");
+    assert.equal(await t.page.locator("#p-line[open]").count(), 0, "and no menu");
+    assert.deepEqual([t.errors, t.csp, t.thirdParty], [[], [], []]);
+    await t.close();
+  });
+
+  if (touch) await test(label + ": motion-1: a line that wraps is struck as one stroke in reading order — the first line full before the next begins — drawn or tapped, and unchecking unwinds it from the last line", async () => {
+    const t = await fresh(opts, { init: pinKit("terminal") }); await wait(900); // a mono face at 390 wraps the second seed line
+    const id = await t.page.evaluate(() => { const r = [...document.querySelectorAll("#list .row:not(.done)")].find(r => r.querySelectorAll(".lines .ink").length > 1); return r ? r.dataset.id : null; });
+    assert.ok(id, "a seed line wraps on a phone");
+    const sel = `#list .row[data-id="${id}"]`;
+    let mid = null;
+    await t.draw(sel, 0.45, { mid: async () => { mid = await drawnTo(t, sel); } }); // short of the 55 % that would land it
+    const say = mid.map(v => v.toFixed(2)).join(" ");
+    for (let i = 1; i < mid.length; i++) if (mid[i] > 0.001) assert.ok(mid[i - 1] > 0.99, "line " + (i + 1) + " began before line " + i + " was done: " + say);
+    assert.ok(mid[0] > 0.55, "under halfway through the stroke the first line is well along: " + say);
+    await wait(700);
+    assert.equal(await isDone(t, id), false, "that stroke was short and pulled back");
+    await t.press(sel + " .tx"); await wait(600);
+    const on = await t.page.$$eval(sel + " .lines .ink", els => els.map(e => { const c = getComputedStyle(e); return { d: parseFloat(c.transitionDelay), t: parseFloat(c.transitionDuration) }; }));
+    for (let i = 1; i < on.length; i++) assert.ok(Math.abs(on[i].d - (on[i - 1].d + on[i - 1].t)) < 0.002, "a tap: line " + (i + 1) + " starts as line " + i + " ends: " + JSON.stringify(on));
+    assert.ok(on.reduce((a, x) => Math.max(a, x.d + x.t), 0) <= 0.3201, "and the whole stroke lands inside .32 s: " + JSON.stringify(on));
+    await t.press(sel + " .tx"); await wait(600);
+    const off = await t.page.$$eval(sel + " .lines .ink", els => els.map(e => parseFloat(getComputedStyle(e).transitionDelay)));
+    assert.equal(off[off.length - 1], 0, "unchecking starts with the last line: " + off);
+    for (let i = 0; i < off.length - 1; i++) assert.ok(off[i] > off[i + 1], "and unwinds towards the first: " + off);
+    assert.deepEqual([t.errors, t.csp, t.thirdParty], [[], [], []]);
+    await t.close();
+  });
+
+  await test(label + ": motion-1: a strike drawn by hand lands exactly where a tap's does — the same computed ink, nothing inline left behind — and a done line does not draw", async () => {
+    const t = await fresh(opts); await wait(900);
+    const ids = await t.page.$$eval("#list .row:not(.done)", els => els.map(e => e.dataset.id));
+    await t.press(`#list .row[data-id="${ids[0]}"] .tx`); await wait(700);
+    await t.draw(`#list .row[data-id="${ids[1]}"]`, 1); await wait(1500); // past the landing and the cooling
+    const look = id => t.page.$eval(`.row[data-id="${id}"] .lines .ink`, e => { const c = getComputedStyle(e); return [c.transform, c.clipPath, c.opacity, c.backgroundImage, c.boxShadow, c.height].join(" | "); });
+    assert.equal(await look(ids[1]), await look(ids[0]), "the same computed ink as a tap");
+    assert.ok(await clean(t, `.row[data-id="${ids[1]}"]`), "nothing inline left");
+    assert.equal(await t.page.$eval(`.row[data-id="${ids[1]}"]`, e => e.classList.contains("drawing") || e.classList.contains("cooling")), false, "no drawing class left");
+    await t.page.evaluate(() => { window.__m = []; for (const n of ["tf:draw", "tf:lift", "tf:uncheck"]) addEventListener(n, () => window.__m.push(n)); });
+    await t.draw(`.row[data-id="${ids[1]}"]`, 1); await wait(500);
+    assert.equal(await isDone(t, ids[1]), true, "a done line stays done");
+    assert.deepEqual(await t.page.evaluate(() => window.__m), [], "and a drag across it says nothing to the shell");
+    assert.deepEqual([t.errors, t.csp, t.thirdParty], [[], [], []]);
+    await t.close();
+  });
+
+  if (touch) await test(label + ": motion-1: a textured ink is revealed by a clip while it is drawn, never squashed, and held visible — Pink's gradient, Chalkboard's chalk", async () => {
+    for (const [kit, extra] of [["pink", ""], ["chalkboard", ', extras: ["chalk"]']]) {
+      const t = await fresh(opts, { init: pinKit(kit, extra) }); await wait(900);
+      assert.equal((await t.s()).theme, kit);
+      const sel = `#list .row[data-id="${await t.page.$eval("#list .row:not(.done)", e => e.dataset.id)}"]`;
+      let mid = null;
+      await t.draw(sel, 0.5, { mid: async () => { mid = await t.page.$eval(sel + " .lines .ink", e => ({ clip: e.style.clipPath, transform: e.style.transform, opacity: getComputedStyle(e).opacity })); } });
+      assert.ok(/inset/.test(mid.clip) && /scaleX\(1\)/.test(mid.transform), kit + ": clipped, not scaled: " + JSON.stringify(mid));
+      assert.equal(mid.opacity, "1", kit + ": held visible while it is drawn");
+      assert.deepEqual([t.errors, t.csp, t.thirdParty], [[], [], []]);
+      await t.close();
+    }
+  });
+
+  if (touch) await test(label + ": motion-1: a device that knew the old swipe-right menu is told once, on its first drawn strike, that a swipe crosses off now — and a new device is not told at all", async () => {
+    let t = await fresh(opts, { init: pinKit("light", ", hints: { today: true, drag: true, menu: true }") }); await wait(900);
+    const ids = await t.page.$$eval("#list .row:not(.done)", els => els.map(e => e.dataset.id));
+    await t.draw(`#list .row[data-id="${ids[0]}"]`, 1); await wait(500);
+    assert.equal((await t.s()).mark, "draw", "the hint is on screen");
+    assert.equal((await t.page.textContent("#mark-text")).trim(), "A swipe across a line crosses it off now—hold it for the menu.");
+    assert.equal((await t.s()).hints.draw, true, "and marked as shown");
+    await t.draw(`#list .row[data-id="${ids[1]}"]`, 1); await wait(500);
+    assert.notEqual((await t.s()).mark, "draw", "once only");
+    await t.close();
+    t = await fresh(opts); await wait(900);
+    await t.draw(`#list .row[data-id="${await t.page.$eval("#list .row:not(.done)", e => e.dataset.id)}"]`, 1); await wait(500);
+    assert.notEqual((await t.s()).mark, "draw", "a device that never had the old menu hint is not told");
+    await t.close();
+  });
+
+  await test(label + ": motion-1: under reduced motion the ink still follows the finger, and the landing is instant", async () => {
+    const t = await fresh(opts, { reducedMotion: "reduce" }); await wait(900);
+    const id = await t.page.$eval("#list .row:not(.done)", e => e.dataset.id), sel = `#list .row[data-id="${id}"]`;
+    let mid = null;
+    await t.draw(sel, 1, { mid: async () => { mid = await drawnTo(t, sel); } });
+    assert.ok(mid.some(v => v > 0.5), "the ink followed the " + (touch ? "finger" : "mouse") + ": " + mid);
+    assert.equal(await t.page.$$eval(sel + " .lines .ink", els => els.reduce((n, e) => n + e.getAnimations().length, 0)), 0, "nothing animating once it is up");
+    assert.equal(await isDone(t, id), true);
+    assert.deepEqual([t.errors, t.csp, t.thirdParty], [[], [], []]);
+    await t.close();
+  });
+
+  if (!touch) await test(label + ": motion-1: the mouse — a click that wobbles a few pixels is still a click, and a drag that is mostly up or down draws nothing", async () => {
+    const t = await fresh(opts); await wait(900);
+    const ids = await t.page.$$eval("#list .row:not(.done)", els => els.map(e => e.dataset.id));
+    const at = async id => (await t.page.$(`.row[data-id="${id}"] .tx`)).boundingBox();
+    let b = await at(ids[0]);
+    await t.page.mouse.move(b.x + 20, b.y + 10); await t.page.mouse.down(); await t.page.mouse.move(b.x + 26, b.y + 12, { steps: 3 }); await t.page.mouse.up(); await wait(600);
+    assert.equal(await isDone(t, ids[0]), true, "a wobbly click is a click");
+    b = await at(ids[1]);
+    await t.page.mouse.move(b.x + 20, b.y + 6); await t.page.mouse.down(); await t.page.mouse.move(b.x + 34, b.y + b.height + 90, { steps: 8 }); await t.page.mouse.up(); await wait(600); // out of the row: a release on its own words has always been a click
+    assert.equal(await isDone(t, ids[1]), false, "a drag down is not a strike");
+    assert.ok(await clean(t, `.row[data-id="${ids[1]}"]`), "and leaves no ink");
+    assert.deepEqual([t.errors, t.csp, t.thirdParty], [[], [], []]);
+    await t.close();
+  });
+
   await test(label + ": quiet rows — " + (touch ? "nothing on a row at rest but the checkbox, the words and (in Everything) a small star" : "nothing at rest, hover reveals exactly one control, the star stays"), async () => {
     const t = await fresh(opts);
     assert.equal((await t.visibleTools("#list")).length, 0, "Today at rest: no per-row buttons");
@@ -539,7 +662,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": the line menu opens by " + (touch ? "a hold released in place and by a swipe right, Edit first; a hold that moves drags" : "⋯, Edit first; dragging ⋯ moves the line; the popover sits by the row"), async () => {
+  await test(label + ": the line menu opens by " + (touch ? "a hold released in place, Edit first — a swipe right crosses the line off instead (motion-1); a hold that moves drags" : "⋯, Edit first; dragging ⋯ moves the line; the popover sits by the row"), async () => {
     const t = await fresh(opts);
     await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])"); await wait(300); await t.esc(); await wait(200);
     await t.lineMenu("#all .row:nth-child(2)");
@@ -549,8 +672,13 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.esc(); await wait(300);
     const first = await t.page.$eval("#all .row:first-child .tx", e => e.dataset.text);
     if (touch) {
-      // swipe right → the menu
-      await t.hold("#all .row:nth-child(3) .tx", 60, 120); await t.page.waitForSelector("#p-line[open]"); await t.esc(); await wait(300);
+      // motion-1: a swipe right no longer opens the menu — it draws the strike, and this one is long enough to land
+      await wait(600); // motion.js arrives at idle
+      const r3 = await t.page.$eval("#all .row:nth-child(3)", e => e.dataset.id);
+      await t.draw(`#all .row[data-id="${r3}"]`, 1); await wait(500);
+      assert.equal(await t.page.locator("#p-line[open]").count(), 0, "a swipe right opens no menu now");
+      assert.ok(await t.page.$eval(`#all .row[data-id="${r3}"]`, e => e.classList.contains("done")), "it crossed the line off");
+      await t.press(`#all .row[data-id="${r3}"] .tx`); await wait(450); // back, so the drag below starts where it always did
       // a hold that moves: row 1 dragged below row 2
       const b1 = await rect(t.page, "#all .row:nth-child(1) .tx"), b2 = await rect(t.page, "#all .row:nth-child(2)");
       const cdp = await t.ctx.newCDPSession(t.page); const x = b1.left + 40, y0 = b1.top + b1.height / 2;
@@ -1314,7 +1442,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.ok((await t.page.inputValue("#help-body input.link")).includes("/add?text="));
     await t.press("#help-keys"); await t.page.waitForSelector("#p-keys[open]");
     assert.equal((await t.page.textContent("#p-keys-h")).trim(), touch ? "Gestures" : "Keys");
-    assert.ok(new RegExp(touch ? "Swipe right" : "⌘ Z").test(await t.page.textContent("#keys-body")));
+    assert.ok(new RegExp(touch ? "Swipe across a line" : "⌘ Z").test(await t.page.textContent("#keys-body"))); // motion-1: the gesture that took swipe right's place
     await t.esc();
     await t.close();
   });

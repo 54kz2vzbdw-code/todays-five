@@ -60,6 +60,35 @@ for (const id of packs) {
 }
 console.log(["pack", "check peak", "check rms", "uncheck peak", "uncheck rms", "finale peak", "finale rms", "finale s", ""].join("\t"));
 for (const r of rows) console.log(r.join("\t"));
+// motion-1: the scratch under a drawing finger, per engine, held at three speeds (px/ms) for half a second each, measured
+// in its steady state (0.15–0.7 s). It should sit at or under the engine's own check-off, peak and loudness both.
+const SPEEDS = { slow: 0.35, medium: 0.8, fast: 1.6 };
+console.log("\n" + ["scratch", ...Object.keys(SPEEDS).flatMap(k => [k + " peak", k + " rms"]), "vs check", ""].join("\t"));
+for (const row of rows) {
+  const id = row[0];
+  const r = await page.evaluate(async ({ id, RATE, SPEEDS }) => {
+    const P = await import("./packs.js");
+    const out = {}, parts = [];
+    for (const [name, v] of Object.entries(SPEEDS)) {
+      const c = new OfflineAudioContext(1, Math.ceil(RATE * 0.9), RATE);
+      const master = c.createGain(); master.gain.value = 1; master.connect(c.destination);
+      const s = P.scratch({ c, master, kit: { engine: id } });
+      s.speed(v, 0.5);
+      const stop = c.suspend(0.7).then(() => { s.stop(); return c.resume(); });
+      const buf = await c.startRendering(); await stop;
+      const d = buf.getChannelData(0); let peak = 0, sum = 0, n = 0;
+      for (let i = Math.floor(0.15 * RATE); i < Math.floor(0.7 * RATE); i++) { const x = Math.abs(d[i]); if (x > peak) peak = x; sum += d[i] * d[i]; n++; }
+      out[name] = { peak: +peak.toFixed(3), rms: +Math.sqrt(sum / n).toFixed(4) }; parts.push(d);
+    }
+    const len = parts.reduce((a, p) => a + p.length, 0), pcm = new Int16Array(len); let o = 0;
+    for (const p of parts) { for (let i = 0; i < p.length; i++) pcm[o + i] = Math.max(-32768, Math.min(32767, Math.round(p[i] * 32767))); o += p.length; }
+    const bytes = new Uint8Array(pcm.buffer); let bin = ""; for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+    return { out, b64: btoa(bin) };
+  }, { id, RATE, SPEEDS });
+  fs.writeFileSync(path.join(OUT, id + "-scratch.wav"), wav(Buffer.from(r.b64, "base64")));
+  const f = r.out.fast, over = f.peak > row[1] || f.rms > row[2];
+  console.log([id, ...Object.keys(SPEEDS).flatMap(k => [r.out[k].peak, r.out[k].rms]), `${row[1]} / ${row[2]}`, over ? "OVER" : ""].join("\t"));
+}
 if (JOIN.length) {
   const gap = Buffer.alloc(RATE * 2 * 0.6);
   const parts = []; for (const id of JOIN) { if (!pcmOf[id]) throw new Error("no pack " + id); parts.push(pcmOf[id], gap); }

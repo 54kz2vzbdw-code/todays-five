@@ -6,7 +6,7 @@ import { createSound, SECRET_ENGINES, EXTRA_ENGINES, FINALE_BUZZ } from "../soun
 import * as EXTRA from "../packs-extra.js";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { PACKS, PACK_ORDER, PACK_NAMES, HELPERS } from "../packs.js";
+import { PACKS, PACK_ORDER, PACK_NAMES, HELPERS, SCRATCH, scratch } from "../packs.js";
 import * as SECRET from "../packs-secret.js";
 
 let passed = 0;
@@ -17,11 +17,11 @@ class FakeAC {
   constructor() { this.state = "suspended"; this.resumes = 0; this.resumeWorks = true; this.sampleRate = 48000; this.currentTime = 0; this.destination = {}; this.nodes = 0; FakeAC.all.push(this); }
   resume() { this.resumes++; if (this.resumeWorks && this.state !== "closed") this.state = "running"; return Promise.resolve(); }
   close() { this.state = "closed"; return Promise.resolve(); }
-  createGain() { this.nodes++; return { gain: { value: 1, setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} }; }
+  createGain() { this.nodes++; return { gain: { value: 1, setValueAtTime() {}, exponentialRampToValueAtTime() {}, setTargetAtTime() {}, cancelScheduledValues() {} }, connect() {} }; } // motion-1: the scratch glides its level
   createOscillator() { this.nodes++; return { type: "sine", frequency: { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {}, start() {}, stop() {} }; }
   createBuffer(ch, len) { return { getChannelData: () => new Float32Array(len) }; }
-  createBufferSource() { this.nodes++; return { buffer: null, connect() {}, start() {}, stop() {} }; }
-  createBiquadFilter() { this.nodes++; return { type: "", Q: { value: 0 }, frequency: { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {}, linearRampToValueAtTime() {} }, connect() {} }; }
+  createBufferSource() { this.nodes++; return { buffer: null, loop: false, playbackRate: { value: 1 }, connect() {}, start() {}, stop() {} }; }
+  createBiquadFilter() { this.nodes++; return { type: "", Q: { value: 0 }, frequency: { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {}, linearRampToValueAtTime() {}, setTargetAtTime() {} }, connect() {} }; }
 }
 FakeAC.all = [];
 const last = () => FakeAC.all[FakeAC.all.length - 1];
@@ -204,6 +204,27 @@ await test("1.12 b262: the Extra category's engines live in a module of their ow
   const P = await import("../packs.js");
   const built = EXTRA.create(P.HELPERS);
   for (const id of EXTRA.ORDER) { const o = make({ kit: () => ({ engine: id }) }); o.prime(); await tick(); for (let i = 0; i < 6; i++) assert.equal(o.check(i), true); assert.equal(o.uncheck(), true); assert.equal(o.finish(), true); assert.equal(typeof built[id].check, "function"); }
+});
+
+await test("motion-1: every engine the app can play has a scratch — the twelve, the Secret pair's, the Extra kits' — and each row is a filter the Web Audio API takes, a centre inside hearing, a level under the check-off and some grain", async () => {
+  const engines = [...PACK_ORDER, ...SECRET_ENGINES, ...EXTRA_ENGINES];
+  assert.deepEqual(engines.filter(id => !SCRATCH[id]), [], "a scratch for every engine");
+  assert.deepEqual(Object.keys(SCRATCH).filter(id => !engines.includes(id)), [], "and none for an engine that does not exist");
+  for (const [id, [type, f, q, level, grain]] of Object.entries(SCRATCH)) {
+    assert.ok(["bandpass", "lowpass", "highpass"].includes(type), id + ": " + type);
+    assert.ok(f >= 200 && f <= 8000 && q > 0 && q <= 6, id + ": " + f + " Hz, Q " + q);
+    assert.ok(level > 0 && level <= 0.3, id + ": level " + level + " (tools/sounds.js keeps a fast stroke under the check-off)");
+    assert.ok(grain > 0 && grain <= 1.5, id + ": grain " + grain);
+  }
+});
+await test("motion-1: sound.scratch() is null when muted and before the engines land, and a voice that follows speed and stops once when they have", async () => {
+  FakeAC.all = [];
+  let muted = true; const o = make({ muted: () => muted, kit: () => ({ engine: "chalk" }), loadPacks: () => Promise.resolve({ PACKS, HELPERS, scratch }) }); // the module import() hands over, scratch and all
+  assert.equal(o.scratch(), null, "muted: nothing");
+  muted = false; assert.equal(o.scratch(), null, "the engines have not landed yet: nothing, and they are asked for");
+  o.prime(); await tick();
+  const v = o.scratch(); assert.ok(v && typeof v.speed === "function" && typeof v.stop === "function", "a voice");
+  v.speed(0.8, 0.2); v.speed(5, 1.4); v.stop(); v.stop(); v.speed(1, 0.5); // out of range, twice stopped, spoken to after: none of it throws
 });
 
 console.log(`\n${passed} sound tests passed`);

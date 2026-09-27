@@ -292,26 +292,27 @@ export const HELPERS = { tone, noiseBurst };
    Extra kits' — so each kit draws with a surface of its own without a new engine: looped noise through the engine's
    filter, a slow random swell riding on it for the grain, the level and the brightness following the finger's speed
    (smoothed over ~25 ms), panned with the finger. Silent until the finger moves; gone 150 ms after it lifts. Each row is
-   the surface: [filter, centre Hz, Q, level, grain]. Levelled by tools/sounds.js against the check-offs. */
+   the surface: [filter, centre Hz, Q, level, grain]. Levelled by tools/sounds.js: a fast stroke sits at or under the
+   engine's own check-off, 80 % of its loudness and 90 % of its peak, so the strike never drowns the knock that ends it. */
 export const SCRATCH = {
-  knock: ["bandpass", 2600, 0.8, 0.40, 0.8],      // a dry pen on card
-  bell: ["bandpass", 5600, 1.2, 0.24, 0.6],       // a fingertip on glass
-  blip: ["highpass", 2300, 0.7, 0.26, 1.0],       // static
-  typewriter: ["bandpass", 3300, 0.8, 0.46, 0.9], // ribbon ink on paper
-  marble: ["lowpass", 1500, 0.7, 0.46, 0.7],      // a marble rolled across wood
-  pop: ["bandpass", 4800, 1.0, 0.28, 0.7],        // fizz
-  kalimba: ["bandpass", 2200, 0.9, 0.34, 0.6],    // a thumbnail along the plate
-  pencil: ["bandpass", 2800, 0.6, 0.55, 1.0],     // graphite
-  whistle: ["bandpass", 3600, 1.4, 0.24, 0.5],    // breath
-  bongo: ["lowpass", 1200, 0.6, 0.46, 0.9],       // a palm across the skin
-  cork: ["bandpass", 1800, 0.9, 0.36, 0.8],       // a cork pushed along a table
-  arcade: ["bandpass", 900, 4.0, 0.26, 1.0],      // a coin rolling down the chute
-  sparkle: ["bandpass", 6400, 1.3, 0.22, 0.5],
-  party: ["bandpass", 5200, 1.0, 0.26, 0.6],
-  chalk: ["bandpass", 3800, 0.5, 0.58, 1.2],      // chalk, with grit
-  marker: ["bandpass", 1500, 2.2, 0.36, 0.5],     // felt, with a squeak in it
-  carve: ["bandpass", 1900, 0.6, 0.54, 1.1],      // a blade in soft wood
-  burn: ["highpass", 3200, 0.6, 0.32, 1.3]        // a hot tip, crackling
+  knock: ["bandpass", 2600, 0.8, 0.163, 0.8],      // a dry pen on card
+  bell: ["bandpass", 5600, 1.2, 0.240, 0.6],       // a fingertip on glass
+  blip: ["highpass", 2300, 0.7, 0.026, 1.0],       // static
+  typewriter: ["bandpass", 3300, 0.8, 0.088, 0.9], // ribbon ink on paper
+  marble: ["lowpass", 1500, 0.7, 0.146, 0.7],      // a marble rolled across wood
+  pop: ["bandpass", 4800, 1.0, 0.085, 0.7],        // fizz
+  kalimba: ["bandpass", 2200, 0.9, 0.296, 0.6],    // a thumbnail along the plate
+  pencil: ["bandpass", 2800, 0.6, 0.169, 1.0],     // graphite
+  whistle: ["bandpass", 3600, 1.4, 0.150, 0.5],    // breath (a whistle peaks low: noise needs the margin)
+  bongo: ["lowpass", 1200, 0.6, 0.230, 0.9],       // a palm across the skin
+  cork: ["bandpass", 1800, 0.9, 0.180, 0.8],       // a cork pushed along a table
+  arcade: ["bandpass", 900, 4.0, 0.180, 1.0],      // a coin rolling down the chute (the coin peaks low too)
+  sparkle: ["bandpass", 6400, 1.3, 0.103, 0.5],
+  party: ["bandpass", 5200, 1.0, 0.090, 0.6],
+  chalk: ["bandpass", 3800, 0.5, 0.048, 1.2],      // chalk, with grit
+  marker: ["bandpass", 1500, 2.2, 0.122, 0.5],     // felt, with a squeak in it
+  carve: ["bandpass", 1900, 0.6, 0.114, 1.1],      // a blade in soft wood
+  burn: ["highpass", 3200, 0.6, 0.041, 1.3]        // a hot tip, crackling
 };
 const noiseLoops = new WeakMap(); // one second of noise per audio context, shared by every scratch it plays
 function loopNoise(c) {

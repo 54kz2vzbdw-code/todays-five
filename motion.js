@@ -39,6 +39,9 @@ export const SPRINGS = {
   settle: spring(900, 60) // ζ 1.0: a single line pulled back to nothing in ~275 ms, never past its start
 };
 
+/** The one hint a device that knew the old swipe-right menu is shown, once, on its first drawn strike (app.js, showMark). */
+export const HINT = "A swipe across a line crosses it off now—hold it for the menu.";
+
 const px = s => parseFloat(s) || 0;
 const textured = cs => (cs.backgroundImage && cs.backgroundImage !== "none") || (cs.maskImage && cs.maskImage !== "none") || (cs.webkitMaskImage && cs.webkitMaskImage !== "none");
 const clipAt = p => `inset(-80% ${((1 - p) * 100).toFixed(3)}% -80% 0)`;

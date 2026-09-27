@@ -183,19 +183,14 @@ function panels() {
   });
   return panelsP;
 }
-/** motion-1: the module that moves things (motion.js), fetched at idle after load or on the first press on a line,
-    whichever comes first. Pinned to this page's build like panels.js; a drag that starts before it has landed starts
-    drawing the moment it does. It never throws into a gesture: a failed fetch leaves the tap and the hold as they were. */
+/** motion-1: motion.js, at idle after load or on the first press on a line; pinned like panels.js, never thrown into a gesture. */
 let motionMod = null, motionP = null;
 function loadMotion() {
   if (!motionP) motionP = import("./motion.js?v=" + BUILD).then(m => (motionMod = m)).catch(() => { motionP = null; return null; });
   return motionP;
 }
 { const go = () => setTimeout(loadMotion, 600); if (document.readyState === "complete") go(); else addEventListener("load", go, { once: true }); }
-/** The drawn strike (swipeStart): it commits when this much of the stroke is drawn; a mouse draws too; and the one
-    hint a device that knew the old swipe-right menu is shown, once, on its first drawn strike. */
-const DRAW_COMMIT = 0.55, DRAW_MOUSE = true;
-const DRAW_HINT = "A swipe across a line crosses it off now—hold it for the menu.";
+const DRAW_COMMIT = 0.55, DRAW_MOUSE = true; // the drawn strike (swipeStart) lands at 55 % of the stroke; a mouse draws too
 // The hidden switch is this page's only way to fire a haptic, and it is one tick. The shell has the
 // real generators and a distinct feel per moment, so inside it this stands down rather than doubling up.
 const HAPTIC = IOS && !SHELL && (() => { const h = document.getElementById("haptic"); return !!h && "switch" in h; })();
@@ -1103,10 +1098,8 @@ function layoutStrikes(el, instant) {
   const base = el.getBoundingClientRect();
   if (instant) el.classList.add("nofx");
   wrap.innerHTML = "";
-  // motion-1: the strike wraps the way the words do — one stroke through the lines in reading order, at one speed, the
-  // last line easing out — where 1.9 started every line .08 s after the one before. One line keeps 1.9's .22 s exactly;
-  // two take .28 s and three or more .32 s, so the ink still lands inside the knock. Unchecking unwinds it, last line
-  // first (--dr). styles.css reads --t, --e, --d and --dr; a one-line row sets none of them.
+  // motion-1: a wrapped line's strike is one stroke in reading order (1.9 started each line .08 s after the last); one line
+  // keeps .22 s, two take .28, more .32, inside the knock; unchecking unwinds from the last line. One-line rows set nothing.
   const lines = Array.from(rects).filter(r => r.width >= 1), n = lines.length;
   const T = n > 1 ? Math.min(0.32, 0.22 + 0.06 * (n - 1)) : 0, sum = lines.reduce((a, r) => a + r.width, 0);
   let at = 0;
@@ -1338,12 +1331,9 @@ document.addEventListener("pointerup", e => {
 }, true);
 document.addEventListener("pointercancel", () => { press = null; }, true);
 
-/* swipes across a line. Leftwards is "Not today" (touch only; off in Settings → Behavior). motion-1: rightwards draws
-   the strike under the finger — touch and pen, and a mouse (DRAW_MOUSE) — through the text in reading order, and it
-   commits on release when at least DRAW_COMMIT of the stroke is drawn: by distance, never by speed, because a swipe
-   right used to open the line's menu
-   and a flick meant for that must not cross a line off. The menu keeps the hold. A done line does not draw: a
-   rightward drag gives a little and springs back. The ink is motion.js's; the check-off is toggle()'s, unchanged. */
+/* swipes across a line: leftwards is "Not today" (touch only; off in Settings → Behavior). motion-1: rightwards draws the
+   strike (motion.js), landing by distance and never by speed, since a swipe right used to open the menu; a done line
+   only gives a little. The menu keeps the hold; the check-off is toggle()'s, unchanged. */
 function swipeStart(li, e) {
   const kind = e.pointerType, draws = kind === "touch" || kind === "pen" || (DRAW_MOUSE && kind === "mouse");
   if (!canEdit() || !draws || e.button !== 0 || editing || drag) return;
@@ -1352,7 +1342,7 @@ function swipeStart(li, e) {
   loadMotion();
   swipe = { id: li.dataset.id, li, x: e.clientX, y: e.clientY, pointerId: e.pointerId, moving: false, dx: 0, dir: "", stroke: null, scratch: null, left: 0, lx: e.clientX, lt: performance.now(), v: 0 };
   const startStroke = () => {
-    if (!motionMod) { loadMotion(); return false; } // the first frames wait on the module; nothing is lost or thrown
+    if (!motionMod) { loadMotion(); return false; } // the first frames wait on the module
     const s = motionMod.draw(li); if (!s) return false;
     swipe.stroke = s; swipe.left = li.getBoundingClientRect().left;
     swipe.scratch = sound.scratch ? sound.scratch() : null;
@@ -1394,9 +1384,7 @@ function swipeStart(li, e) {
   const cancel = ev => { if (!swipe) return; const s = swipe; s.li.style.transform = ""; s.li.style.opacity = ""; end(); if (s.stroke) liftStroke(s, ev, true); };
   li.addEventListener("pointermove", move); li.addEventListener("pointerup", up); li.addEventListener("pointercancel", cancel);
 }
-/** The finger left the glass after drawing. Past DRAW_COMMIT it is a check-off made exactly as a tap makes it, with the
-    ink landing from where the finger left it; short of that, or when the system took the touch, the ink pulls back and
-    nothing is written. tf:lift goes out either way, before tf:check, so the shell's scratch stops first. */
+/** The finger is up: past DRAW_COMMIT a tap's check-off, else the ink pulls back and nothing is written. tf:lift goes first. */
 function liftStroke(s, ev, cancelled) {
   if (s.scratch) s.scratch.stop();
   moment("tf:lift");
@@ -1404,7 +1392,7 @@ function liftStroke(s, ev, cancelled) {
   if (!cancelled && s.stroke.progress() >= DRAW_COMMIT && it && !it.deleted && !it.done && canEdit() && !editing) {
     toggle(s.id, ev.clientX, ev.clientY, true);
     s.stroke.finish(s.v);
-    if (dev.hints && dev.hints.menu && touchUi()) showMark("draw", s.li, DRAW_HINT);
+    if (dev.hints && dev.hints.menu && touchUi()) showMark("draw", s.li, motionMod.HINT);
   } else s.stroke.retract();
 }
 /** Take a line off Today until tomorrow's rollover. */

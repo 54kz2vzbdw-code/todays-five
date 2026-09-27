@@ -68,14 +68,19 @@ async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: 
   const esc = async () => { await page.keyboard.press("Escape"); for (let i = 0; i < 4; i++) { await wait(150); if (!(await page.$("dialog.panel[open]"))) break; await page.keyboard.press("Escape"); } await wait(120); };
   /** a reload that lets the history unwind of a closing stack land first (a same-document traversal right before a reload aborts it) */
   const reload = async o => { await wait(180); await page.reload(o); };
+  /** 1.12 b293: a view transition (the tabs' zoom, a theme's reveal) takes no input while it runs, and a person does not
+      tap faster than one ends; the suite does, so a press, a hold and a stroke wait for one to be over first */
+  const settled = () => page.waitForFunction(() => !/\bvt-/.test(document.documentElement.className), null, { timeout: 3000 }).catch(() => {});
   const press = async sel => {
-    await page.bringToFront();
+    await page.bringToFront(); await settled();
     // the one-time iOS install hint sits over the footer; a person would dismiss it, so does the suite
     const hint = await page.$("#install:not([hidden])"); if (hint) { await page.click("#install-x"); await wait(150); }
     const h = await page.$(sel); if (!h) throw new Error("no " + sel); if (opts.hasTouch) await h.tap(); else { await h.hover(); await h.click(); }
+    await settled();
   };
   /** a finger held on an element (CDP touch) for `ms`, then lifted; returns the test hook's state mid-hold */
   const hold = async (sel, ms = 650, dx = 0) => {
+    await settled();
     const hint = await page.$("#install:not([hidden])"); if (hint) { await page.click("#install-x"); await wait(150); }
     const el = await page.$(sel); if (!el) throw new Error("no " + sel); const b = await el.boundingBox();
     const x = b.x + Math.min(60, b.width / 2), y = b.y + b.height / 2;
@@ -90,6 +95,7 @@ async function fresh(opts, { url = BASE + "?transport=local", list = true, ctx: 
       a finger on the phone (CDP touch, 16 ms steps), the mouse on the desktop. `mid` runs while the finger is still down
       (a screenshot, a read of the ink), so a test can see the stroke before it lands. */
   const draw = async (sel, frac = 1, { steps = 18, mid = null } = {}) => {
+    await settled();
     const hint = await page.$("#install:not([hidden])"); if (hint) { await page.click("#install-x"); await wait(150); }
     const el = await page.$(sel + " .tx"); if (!el) throw new Error("no " + sel); const b = await el.boundingBox();
     const y = b.y + Math.min(b.height, 30) / 2, x0 = b.x + 4, x1 = b.x + 4 + (b.width + 16) * frac;
@@ -435,6 +441,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": the ⋯ menu is nine rows in order, " + (touch ? "a bottom sheet" : "a popover under the button") + ", and Sound toggles in place", async () => {
     const t = await fresh(opts);
     await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await wait(300);
+    await t.page.waitForFunction(() => !document.getElementById("p-menu").getAnimations({ subtree: true }).length); // 1.12 b293: it rises (or grows out of ⋯) first
     const labels = await t.page.$$eval("#menu > *:not([hidden]) .lb", els => els.map(e => e.textContent.trim()));
     assert.equal(labels.join("|"), "Share this list|Theme|Sound|Full screen|How it works|Lists|Settings|About & privacy|Delete this list everywhere");
     assert.ok(await t.page.$("#menu-delete.danger"));
@@ -644,6 +651,142 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  /* ---------------- 1.12 b293: the materials, the menus, the unseal ---------------- */
+  const cls = (t, c) => t.page.evaluate(c => document.documentElement.classList.contains(c), c);
+  const clear = t => assert.deepEqual([t.errors, t.csp, t.thirdParty], [[], [], []]);
+  await test(label + ": 1.12 b293: each kit carries its material — html[data-mat] follows the theme — and strikes in its own hand: Paper's pen is a hair off level, Arcade's ink is square, Sketch's is a scribble revealed by a clip", async () => {
+    for (const [kit, mat] of [["paper", "ink"], ["arcade", "pixel"], ["sketch", "pencil"], ["terminal", "phosphor"], ["light", "clean"]]) {
+      const t = await fresh(opts, { init: pinKit(kit) }); await wait(900);
+      assert.equal(await t.page.evaluate(() => document.documentElement.dataset.mat), mat, kit + "'s material");
+      await t.press("#list .row:not(.done) .tx"); await wait(700);
+      const ink = await t.page.$eval("#list .row.done .lines .ink", e => { const cs = getComputedStyle(e); return { scr: e.classList.contains("scr"), svg: !!e.querySelector("svg path"), clip: cs.clipPath, radius: cs.borderTopLeftRadius, rotate: cs.rotate }; });
+      if (kit === "sketch") { assert.ok(ink.scr && ink.svg, "a scribble"); assert.ok(/^inset\(-60% 0(px)?( -60% 0(px)?)?\)$/.test(ink.clip), "whole once struck: " + ink.clip); }
+      else assert.ok(!ink.scr && !ink.svg, kit + ": a bar");
+      if (kit === "arcade") assert.equal(ink.radius, "0px", "square");
+      if (kit === "paper") assert.notEqual(ink.rotate, "none", "a hair off level");
+      clear(t); await t.close();
+    }
+  });
+  await test(label + ": 1.12 b293: the count rolls like an odometer — its text is the count from the first frame, the old number rides alongside only while it rolls, and a new view does not roll", async () => {
+    const t = await fresh(opts); await wait(900);
+    await t.press("#list .row:not(.done) .tx"); await wait(40);
+    assert.deepEqual(await t.page.$eval("#count b", b => [b.textContent, b.querySelector("i").dataset.was]), ["1", "0"], "1, with 0 rolling away");
+    await wait(900);
+    assert.equal(await t.page.$eval("#count b i", i => i.dataset.was === undefined), true, "and the old one goes");
+    assert.equal((await t.page.textContent("#count")).replace(/\s+/g, " ").trim(), "1/3 done");
+    await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])"); await wait(60);
+    assert.equal(await t.page.$eval("#count b i", i => i.dataset.was === undefined), true, "a new view is not a roll");
+    clear(t); await t.close();
+  });
+  await test(label + ": 1.12 b293: Delete erases the line where it is, in its material, and only then do the others close up; Undo brings it back", async () => {
+    for (const kit of ["paper", "terminal", "midnight"]) {
+      const t = await fresh(opts, { init: pinKit(kit) }); await wait(900);
+      const id = await t.page.$eval("#list .row:nth-child(2)", e => e.dataset.id);
+      const top3 = (await rect(t.page, "#list .row:nth-child(3)")).top;
+      await t.lineMenu(`#list .row[data-id="${id}"]`); await t.page.click('#p-line [data-lact="delete"]'); await wait(60);
+      assert.ok(await t.page.$(`#list .row.leaving[data-id="${id}"]`), kit + ": still there, on its way out");
+      assert.ok(/^Deleted/.test(await t.page.textContent("#toast .msg")), kit + ": deleted at once all the same");
+      await wait(1700);
+      assert.equal(await t.page.$$eval("#list .row", els => els.length), 2, kit + ": gone once erased");
+      assert.ok((await rect(t.page, "#list .row:nth-child(2)")).top < top3 - 4, kit + ": the line below closed the gap");
+      await t.press("#toast-undo"); await wait(800);
+      assert.ok(await t.page.$(`#list .row[data-id="${id}"]:not(.leaving)`), kit + ": Undo brings it back");
+      assert.equal(await t.page.$$eval("#list .row", els => els.length), 3);
+      clear(t); await t.close();
+    }
+  });
+  await test(label + ": 1.12 b293: Not today sends a line's words off with a moon rising where they were, Take off Today flies them to Everything, and each line leaves Today", async () => {
+    const t = await fresh(opts); await wait(900);
+    const [a, b] = await t.page.$$eval("#list .row", els => els.map(e => e.dataset.id));
+    await t.lineMenu(`#list .row[data-id="${a}"]`); await t.page.click('#p-line [data-lact="nottoday"]'); await wait(80);
+    assert.ok(await t.page.$(".moon-f"), "a moon rises");
+    await wait(1200);
+    assert.deepEqual([await t.page.$(".moon-f"), await t.page.$(`#list .row[data-id="${a}"]`)], [null, null], "the moon has set and the line has left Today");
+    await t.lineMenu(`#list .row[data-id="${b}"]`); await t.page.click('#p-line [data-lact="today"]'); await wait(80);
+    assert.ok(await t.page.$(".tghost"), "its words are in flight");
+    await wait(1100);
+    assert.deepEqual([await t.page.$(".tghost"), await t.page.$(`#list .row[data-id="${b}"]`)], [null, null], "they have landed and the line has left Today");
+    clear(t); await t.close();
+  });
+  await test(label + ": 1.12 b293: a panel comes from what opened it and goes back — ⋯ " + (touch ? "rises" : "grows out of itself") + ", Settings grows out of the menu rather than the menu folding away, × closes at once while a copy folds off — and under reduced motion nothing moves", async () => {
+    const t = await fresh(opts); await wait(900);
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]");
+    assert.ok(await t.page.$eval("#p-menu", d => d.classList.contains("mo") && d.getAnimations().length > 0), "motion.js brings it in");
+    await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
+    assert.equal(await t.page.$$eval(".folding", els => els.length), 0, "the menu became Settings");
+    await wait(700);
+    await t.page.click("#p-settings h2 .x"); await wait(30);
+    assert.equal(await t.page.$("dialog.panel[open]"), null, "closed at once");
+    assert.equal(await t.page.$$eval(".folding", els => els.length), 1, "a copy folds off");
+    await wait(800);
+    assert.equal(await t.page.$$eval(".folding, .fold-scrim", els => els.length), 0, "and is gone");
+    clear(t); await t.close();
+    const r = await fresh(opts, { reducedMotion: "reduce" }); await wait(900);
+    await r.press("#more"); await r.page.waitForSelector("#p-menu[open]");
+    assert.equal(await r.page.$eval("#p-menu", d => d.getAnimations().length), 0, "reduced motion: it is simply there");
+    await r.esc(); await wait(30);
+    assert.equal(await r.page.$$eval(".folding", els => els.length), 0, "and nothing folds");
+    clear(r); await r.close();
+  });
+  await test(label + ": 1.12 b293: the tabs zoom and leave nothing named behind, and the sun or moon opens the other theme from itself", async () => {
+    const t = await fresh(opts); await wait(900);
+    const vt = await t.page.evaluate(() => typeof document.startViewTransition === "function");
+    const watch = () => t.page.evaluate(() => { window.__cls = []; new MutationObserver(() => window.__cls.push(document.documentElement.className)).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] }); });
+    const had = c => t.page.evaluate(c => window.__cls.some(x => x.split(" ").includes(c)), c);
+    await watch(); await t.press("#v-all");
+    if (vt) assert.ok(await had("vt-zoom"), "a zoom");
+    await t.page.waitForSelector("#all:not([hidden])"); await wait(700);
+    assert.deepEqual(await t.page.evaluate(() => [/vt-|zoom-/.test(document.documentElement.className), [...document.querySelectorAll(".row")].filter(r => r.style.viewTransitionName).length]), [false, 0], "nothing left named");
+    await t.press("#v-today"); await t.page.waitForSelector("#today:not([hidden])"); await wait(700);
+    const before = await t.page.evaluate(() => document.documentElement.dataset.theme);
+    await watch(); await t.press("#daynight");
+    if (vt) assert.ok(await had("vt-theme"), "a reveal");
+    await wait(900);
+    assert.notEqual(await t.page.evaluate(() => document.documentElement.dataset.theme), before, "the other theme is on");
+    assert.equal(await cls(t, "vt-theme"), false);
+    clear(t); await t.close();
+  });
+  await test(label + ": 1.12 b293: a list unseals as it opens cold, the lock over the dot opening, and ends by itself — a touch ends it at once; the welcome's list never does, nor anything under reduced motion", async () => {
+    const w = await fresh(opts, { list: false }); await w.page.waitForSelector("#welcome:not([hidden])"); await wait(200);
+    assert.equal(await cls(w, "unseal"), false, "the welcome's list is nobody's yet"); await w.close();
+    const t = await fresh(opts); await wait(300);
+    assert.equal(await cls(t, "unseal"), false, "keeping the welcome's list is not an unseal");
+    await t.reload(); await t.page.waitForSelector("#list .row");
+    assert.ok(await cls(t, "unseal"), "a cold open unseals");
+    assert.equal(await t.page.$eval("#dot .lock", e => getComputedStyle(e).animationName), "tf-lock", "the lock opens");
+    await wait(2800);
+    assert.equal(await cls(t, "unseal"), false, "and it ends by itself");
+    assert.ok(await t.page.$$eval("#list .row", els => els.every(e => getComputedStyle(e).opacity === "1" && getComputedStyle(e).filter === "none")), "every line fully there");
+    await t.reload(); await t.page.waitForSelector("#list .row");
+    await t.page.evaluate(() => document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })));
+    assert.equal(await cls(t, "unseal"), false, "a touch ends it at once");
+    clear(t); await t.close();
+    const r = await fresh(opts, { reducedMotion: "reduce" }); await r.reload(); await r.page.waitForSelector("#list .row");
+    assert.equal(await cls(r, "unseal"), false, "reduced motion: the list is simply there"); await r.close();
+  });
+  if (touch) await test(label + ": 1.12 b293: on a phone a line's words rise into its menu's title, and go back into the line when the menu closes with nothing chosen", async () => {
+    const t = await fresh(opts); await wait(900);
+    const id = await t.page.$eval("#list .row", e => e.dataset.id);
+    await t.lineMenu(`#list .row[data-id="${id}"]`);
+    assert.ok(await t.page.$eval(`#list .row[data-id="${id}"]`, e => e.classList.contains("lifted")), "the words have left the line");
+    await t.page.click("#p-line h2 .x"); await wait(80);
+    assert.ok(await t.page.$(".tghost"), "they travel back");
+    await wait(900);
+    assert.deepEqual([await t.page.$eval(`#list .row[data-id="${id}"]`, e => e.classList.contains("lifted")), await t.page.$(".tghost")], [false, null], "and are home");
+    clear(t); await t.close();
+  });
+  await test(label + ": 1.12 b293: Share's links come up as ciphertext the length of the link and decode into it; what the field holds (data-v) is the link from the first frame", async () => {
+    const t = await fresh(opts); await wait(900);
+    if (touch) { await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await t.page.click('#p-menu [data-act="share"]'); } else await t.press("#share"); // the phone's rail has no Share
+    await t.page.waitForSelector("#p-share[open]"); await wait(20);
+    const early = await t.page.$eval("#share-link", e => ({ v: e.value, real: e.dataset.v }));
+    const head = early.real.slice(0, early.real.indexOf("://") + 3);
+    assert.ok(early.real && early.v !== early.real && early.v.length === early.real.length && early.v.startsWith(head), "ciphertext after the scheme, the length of the link");
+    await wait(1100);
+    assert.equal(await t.page.$eval("#share-link", e => e.value === e.dataset.v), true, "then the link itself");
+    clear(t); await t.close();
+  });
+
   if (!touch) await test(label + ": 1.12 b279: the mouse — a click that wobbles a few pixels is still a click, and a drag that is mostly up or down draws nothing", async () => {
     const t = await fresh(opts); await wait(900);
     const ids = await t.page.$$eval("#list .row:not(.done)", els => els.map(e => e.dataset.id));
@@ -693,6 +836,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#v-all"); await t.page.waitForSelector("#all:not([hidden])"); await wait(300); await t.esc(); await wait(200);
     await t.lineMenu("#all .row:nth-child(2)");
     assert.equal((await t.page.textContent("#p-line .menu button:first-child .lb")).trim(), "Edit", "Edit at the top");
+    await t.page.waitForFunction(() => !document.getElementById("p-line").getAnimations().length); // 1.12 b293: it grows out of ⋯ first
     if (!touch) { assert.ok(await t.page.$eval("#p-line", e => e.classList.contains("pop")), "popover"); const d = await rect(t.page, "#p-line"), g = await rect(t.page, "#all .row:nth-child(2) .tool.lmenu"); assert.ok(d.top >= g.bottom - 1 && Math.abs(d.right - g.right) < 8, "under ⋯: " + JSON.stringify({ d, g })); }
     else assert.ok(!(await t.page.$eval("#p-line", e => e.classList.contains("pop"))), "a sheet on the phone");
     await t.esc(); await wait(300);
@@ -978,7 +1122,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(await t.page.locator("#all .row:first-child .rep").count(), 1, "repeat glyph");
     const id = await t.page.getAttribute("#all .row:first-child", "data-id");
     // check it off, roll over to tomorrow: it is in History and back undone on Today
-    await t.press("#v-today"); await t.press(`#list .row[data-id="${id}"] .check`); await wait(800);
+    await t.press("#v-today"); await t.page.waitForSelector("#today:not([hidden])"); await t.press(`#list .row[data-id="${id}"] .check`); await wait(800); // 1.12 b293: the tabs zoom, so the view lands a frame later
     const tomorrow = await t.page.evaluate(async () => { const M = await import("./model.js"); return M.addDays(M.localDate(), 1); });
     await t.page.evaluate(d => window.__tfTest.rollover(d), tomorrow); await wait(500);
     const st = await t.page.evaluate(id => { const d = JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc; return { done: d.items[id].done, today: d.items[id].today, deleted: !!d.items[id].deleted, hist: Object.values(d.history).flat().some(e => e.id === id), rule: !!(d.rules[id] && !d.rules[id].deleted) }; }, id);
@@ -1477,32 +1621,27 @@ for (const [label, opts, touch] of VIEWPORTS) {
   const inkOf = page => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--ink").trim().toUpperCase());
   const INK = { dark: "#070A08", terminal: "#070A08", light: "#FAF8F4", midnight: "#0E1424", paper: "#F7F2E8", harbor: "#EEF5F4", forest: "#10201A" };  // 1.11: Dark was recoloured onto Terminal's grounds, so the two share an ink
 
-  await test(label + ": the flip — " + (touch ? "a tap on the sun/moon" : "T, or a click on the sun/moon") + " crossfades the whole palette (~400 ms, tokens interpolated) with the incoming theme's tick; instant under reduced motion", async () => {
+  await test(label + ": the flip — " + (touch ? "a tap on the sun/moon" : "T, or a click on the sun/moon") + " opens the other theme from the sun or moon (1.12 b293; it crossfaded before, and the clock's and the system's switches still do) with the incoming theme's tick; instant under reduced motion", async () => {
     const t = await fresh(opts);
     assert.equal((await t.s()).theme, "dark", "a dark system: Night = Dark is on"); assert.equal(await inkOf(t.page), INK.dark);
     const tick0 = (await t.s()).stats.tick;
     if (touch) await t.page.tap("#daynight"); else await t.page.keyboard.press("t");
     await wait(110);
-    const mid = await inkOf(t.page), midState = await t.s();
-    assert.ok(midState.fading, "a crossfade is running"); assert.equal(midState.theme, "light", "the theme is already the incoming one (its kit plays)");
-    assert.ok(mid !== INK.dark && mid !== INK.light, "the ink is in between mid-flip: " + mid);
-    assert.ok(await t.page.$eval("#glow", e => +getComputedStyle(e).opacity < 0.6), "the glow dips through the flip");
-    assert.ok(await t.page.evaluate(() => document.body.classList.contains("fading")), "the rows' own colour transitions are off while the tokens move");
-    assert.equal(await t.page.$eval("#list .row", e => getComputedStyle(e).color), await t.page.evaluate(() => getComputedStyle(document.body).color), "the row text is at the token, not trailing it");
+    const midState = await t.s();
+    assert.ok(await t.page.evaluate(() => document.documentElement.classList.contains("vt-theme")), "a view transition opens it");
+    assert.ok(!midState.fading, "not the crossfade"); assert.equal(midState.theme, "light", "the theme is already the incoming one (its kit plays)");
     await wait(600);
-    assert.equal(await inkOf(t.page), INK.light, "Day = Light at the end"); assert.ok(!(await t.s()).fading); assert.ok(!(await t.page.evaluate(() => document.body.classList.contains("fading"))), "transitions are back once it lands");
+    assert.equal(await inkOf(t.page), INK.light, "Day = Light at the end"); assert.ok(!(await t.page.evaluate(() => document.documentElement.classList.contains("vt-theme"))), "and it is over");
     assert.equal((await t.s()).stats.tick, tick0 + 1, "the incoming theme's soft tick played");
     assert.equal(await t.page.$eval("#daynight", e => e.dataset.next + "|" + e.title + "|" + e.getAttribute("aria-label")), "night|Night · T|Switch to night", "the glyph now offers Night");
     assert.equal(await t.page.$eval("html", e => e.dataset.base + "/" + e.dataset.theme), "light/light"); assert.equal(await t.page.$eval('meta[name="theme-color"]', e => e.content), INK.light, "theme-color follows the slot's theme");
     assert.equal(await t.page.evaluate(() => localStorage.getItem("tf/v2/themecss").includes("--ink:#FAF8F4")), true, "the boot cache holds the theme that is on");
-    // flip back with the control itself, then check the fonts swapped at the midpoint (Light and Dark share Lato; use Paper for Day)
+    // flip back with the control itself; Paper's own fonts arrive with it
     await t.press("#daynight"); await wait(700); assert.equal(await inkOf(t.page), INK.dark);
     await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device.day = "T1:curated:paper"; localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
     await t.reload(); await t.page.waitForSelector("#list .row"); await wait(300);
-    await t.press("#daynight"); await wait(90);
-    assert.ok(/Lato/.test(await t.page.$eval("#list .row", e => getComputedStyle(e).fontFamily)), "before the midpoint: the outgoing fonts");
-    await wait(600);
-    assert.ok(/Playfair/.test(await t.page.$eval("#list .row", e => getComputedStyle(e).fontFamily)), "after: Paper's"); assert.equal(await inkOf(t.page), INK.paper);
+    await t.press("#daynight"); await wait(700);
+    assert.ok(/Playfair/.test(await t.page.$eval("#list .row", e => getComputedStyle(e).fontFamily)), "Paper's fonts"); assert.equal(await inkOf(t.page), INK.paper);
     assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join(" | "));
     await t.close();
     const r = await fresh(opts, { reducedMotion: "reduce" });
@@ -2688,6 +2827,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const viewMsg = await t.page.textContent("#share-view .share-msg"); assert.ok(/can't change it/.test(viewMsg) && /second screen/.test(viewMsg) && /someone who should watch/.test(viewMsg), "both uses in one breath: " + viewMsg);
     assert.ok(/sound and the confetti/.test(await t.page.textContent("#share-view-more")));
     assert.ok(!/for your other devices|for anyone|who should be able to edit/i.test(await t.page.textContent("#p-share")), "what the link does, never who it is for");
+    await t.page.waitForFunction(() => [...document.querySelectorAll("#p-share .link[data-v]")].every(e => e.value === e.dataset.v)); // 1.12 b293: the links decode in first
     assert.equal(await t.page.$eval("#share-link-mine", e => e.value), BASE + "#/l/" + listId + "/mine"); assert.equal(await t.page.$eval("#share-link", e => e.value), BASE + "#/r/" + R); assert.equal(await t.page.$eval("#share-link-private", e => e.value), BASE + "#/l/" + listId + "/shared");
     assert.equal(await t.page.$eval("#qr-mine", e => e.hidden), touch, "the code where the sheet has room"); assert.equal(await t.page.$eval("#qr", e => e.hidden), touch);
     if (!touch) assert.ok(await t.page.evaluate(() => document.getElementById("qr-mine").getBoundingClientRect().top < document.getElementById("share-copy-mine").getBoundingClientRect().top), "the code first, then Copy");

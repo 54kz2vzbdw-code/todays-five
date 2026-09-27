@@ -2130,12 +2130,13 @@ registerOpeners({ "p-menu": () => { paintMenu(); showPanel("p-menu", { anchor: $
 function unsavedEntry() { const e = listId && meta.lists.find(l => l.id === listId); return e && e.created && e.linkSaved === false && e.origin !== "shared" && listMode === "edit" ? e : null; }
 function paintMenu() {
   $("#menu-save").hidden = !doc || !unsavedEntry();
-  $("#menu-share-lb").textContent = listMode === "view" ? "Share the View link" : "Share this list";
-  $('#p-menu [data-act="share"] .k').hidden = sheetUi();
+  const share = listMode === "view" ? "Share the View link" : "Share this list"; // 1.12 b315: the tile says Share; its name says which
+  $("#menu-share").setAttribute("aria-label", share); $("#menu-share").title = share;
   $("#menu-theme-k").textContent = theme ? theme.name : "";
   paintMute();
   $("#menu-full").hidden = !document.fullscreenEnabled;
   $("#menu-delete").hidden = !doc || listMode !== "edit" || isShared(); // 1.4: never for a list shared with this device
+  $("#menu-end").hidden = $("#menu-delete").hidden; // and no empty card where it stood
   $("#settings-k").textContent = "";
 }
 $("#p-menu").addEventListener("click", e => {

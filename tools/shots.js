@@ -116,7 +116,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await step("appear", async () => {
     if (!(await page.$("#p-appear"))) return;
     await openMore("theme"); await page.waitForSelector("#p-appear[open]"); await wait(500); await shot("appear");
-    await page.$eval("#ap-pairs", e => e.scrollIntoView({ block: "start" })); await wait(300); await shot("appear-pairs");
+    if (await page.$("#ap-pairs-go")) { await page.click("#ap-pairs-go"); await page.waitForSelector("#p-pairs[open]"); await wait(500); await shot("appear-pairs"); await page.click("#p-pairs h2 .back"); await page.waitForSelector("#p-appear[open]"); await wait(400); } // 1.12 b315: a page of their own
+    else { await page.$eval("#ap-pairs", e => e.scrollIntoView({ block: "start" })); await wait(300); await shot("appear-pairs"); }
     await page.$eval("#p-appear .body", e => { e.scrollTop = 0; }); await page.click('#ap-switch [data-mode="schedule"]'); await wait(700); await shot("appear-schedule");
     await page.click('#ap-switch [data-mode="system"]'); await wait(300); await esc();
   });

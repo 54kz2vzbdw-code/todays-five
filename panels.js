@@ -31,11 +31,11 @@ export function init(api) {
     }
   }
   A = api; $ = api.$; $$ = api.$$; M = api.M; T = api.T; C = api.C;
-  wireTheme(); wireShare(); wireSave(); wireLists(); wireSettings(); wireSound(); wireAppearance(); wireSection(); wireLine(); wireRepeat(); wireKeys(); wireMisc();
+  wireTheme(); wireShare(); wireSave(); wireLists(); wireSettings(); wireSound(); wireAppearance(); wireSection(); wireLine(); wireRepeat(); wireKeys(); wireMisc(); wirePages();
   // 1.4: how each panel repaints itself when ‹ Back lands on it (one primitive in app.js, no per-panel buttons)
   if (A.registerOpeners) A.registerOpeners({
     "p-theme": () => openTheme(pickSlot, { keepOffer: true }),
-    "p-builder": openBuilder, "p-settings": openSettings, "p-sound": openSound, "p-appear": openAppearance, "p-addurl": openAddUrl, // 1.12 b309
+    "p-builder": openBuilder, "p-settings": openSettings, "p-sound": openSound, "p-appear": openAppearance, "p-addurl": openAddUrl, "p-pairs": openPairs, // 1.12 b309, b315
     "p-lists": () => openLists(), "p-list": () => { if (detailId) openListDetail(detailId); },
     "p-share": () => { openShare(); }, "p-save": () => showSaveLink(), "p-help": () => openHelp(lastHelp), "p-keys": openKeys, "p-export": openExport, "p-history": () => openHistory(historyOf ? historyOf.doc : undefined, historyOf ? historyOf.title : undefined),
     "p-pick": () => { if (lastPick) openPick(lastPick); }, "p-line": () => { if (lineId) openLineMenu(lineId); }, "p-sec": () => { if (secMenuId !== null && secMenuId !== undefined) openSectionMenu(secMenuId); }, "p-repeat": () => { if (lineId) openRepeat(lineId); }
@@ -43,6 +43,24 @@ export function init(api) {
 }
 let lastHelp, lastPick = null, detailId = null;
 const dev = () => A.dev, meta = () => A.meta;
+/* 1.12 b315: a page (dialog.page) shows its title large, in the list's own face, under a bar that keeps ‹ Back and × in
+   reach while it scrolls; once the large title has scrolled under the bar, the bar shows it small. The large one is a
+   copy the reader skips (the heading is still the h2), kept in step with the h2 whenever a page renames itself. */
+function wirePages() {
+  for (const d of $$("dialog.page")) {
+    const h = d.querySelector("h2 [id$='-h']"); if (!h) continue;
+    const big = document.createElement("p"); big.className = "big"; big.setAttribute("aria-hidden", "true");
+    d.querySelector("h2").after(big);
+    const sync = () => { big.textContent = h.textContent; }; sync();
+    new MutationObserver(sync).observe(h, { childList: true, characterData: true, subtree: true });
+    d.addEventListener("close", () => d.classList.remove("scrolled"));
+  }
+  document.addEventListener("scroll", e => {
+    const b = e.target; if (!b || !b.classList || !b.classList.contains("body")) return;
+    const d = b.closest("dialog.page"), big = d && d.querySelector(".big"); if (!big) return;
+    d.classList.toggle("scrolled", b.scrollTop > big.offsetTop + big.offsetHeight * 0.6 - 48);
+  }, { capture: true, passive: true });
+}
 
 /* ---------------- the theme picker: one slot at a time (1.2) ----------------
    Opened from a slot's tile on the Appearance page (⋯ → Theme, or Settings → Appearance). Every theme is on offer for
@@ -314,7 +332,7 @@ function wireTheme() {
   $("#sw-build").addEventListener("click", openBuilder); // 1.9: the builder behind one row
   // a preview left on screen goes when the builder closes (Back, ×, Escape, a swipe) unless a name is being asked for; the picker's own close does the same
   for (const id of ["#p-theme", "#p-builder"]) $(id).addEventListener("close", () => { if (!keepPreview) A.applyThemeCode(A.currentThemeCode()); });
-  addEventListener("tf:theme", () => { if ($("#p-theme").open) renderSwatches(); if ($("#p-settings").open) paintSettings(); if ($("#p-appear").open) paintAppearance(); });
+  addEventListener("tf:theme", () => { if ($("#p-theme").open) renderSwatches(); if ($("#p-settings").open) paintSettings(); if ($("#p-appear").open) paintAppearance(); if ($("#p-pairs").open) paintPairs(); });
 }
 
 /* ---------------- share sheet (1.3) ----------------
@@ -461,7 +479,8 @@ export function openLists() {
     const name = nick || docName || "Untitled list";
     const tags = [l.mode === "view" ? "View only" : ""].filter(Boolean).map(t => `<span class="sub">${t}</span>`).join(" ");
     const own = nick && docName && docName !== nick ? `<span class="sub name">${A.escapeHtml(docName)}</span>` : ""; // a nickname shows with the list's own name under it
-    b.innerHTML = `<span class="lb ${l.id === A.listId ? "cur" : ""}">${A.escapeHtml(name)} ${tags}${own}</span>`; // 1.9: no id fragment on a row — six characters that mean nothing to a person (proposal 21); the › says there is more
+    const ini = (Array.from(name.trim())[0] || "·").toUpperCase(); // 1.12 b315: the list's initial, on a tile of its own
+    b.innerHTML = `<span class="ava${l.id === A.listId ? " cur" : ""}" aria-hidden="true">${A.escapeHtml(ini)}</span><span class="lb ${l.id === A.listId ? "cur" : ""}">${A.escapeHtml(name)} ${tags}${own}</span>`; // 1.9: no id fragment on a row — six characters that mean nothing to a person (proposal 21); the › says there is more
     b.addEventListener("click", () => { A.closePanel(); A.switchTo({ id: l.id, mode: l.mode === "view" ? "view" : "edit" }); });
     row.appendChild(b);
     const d = document.createElement("button"); d.type = "button"; d.className = "more"; d.setAttribute("aria-label", "Details: " + name); d.textContent = "›"; d.addEventListener("click", () => openListDetail(l.id)); row.appendChild(d);
@@ -710,8 +729,9 @@ function paintAppearance() {
     tile.setAttribute("aria-label", cap(slot) + " theme: " + t.name + (active === slot ? ", on now" : ""));
   }
   paintSwitch();
-  paintPairs();
 }
+/** 1.12 b315: the designed pairs, a page one row away from Appearance. */
+export function openPairs() { paintPairs(); A.showPanel("p-pairs"); }
 function paintSwitch(animate = false) {
   const d = dev(), active = A.activeSlot(), auto = A.autoSlot(), sw = d.switch || {}, mode = sw.mode || "hand";
   pickSeg($("#ap-switch"), b => b.dataset.mode === mode, animate);
@@ -761,7 +781,7 @@ function paintPairs() {
 /** Both slots at once; the theme that is on changes inside a reveal from the pair that was tapped. */
 function setPair(p, card) {
   const act = A.activeSlot(), next = act === "day" ? p.dayCode : p.nightCode;
-  const go = () => { A.setSlotTheme("day", p.dayCode); A.setSlotTheme("night", p.nightCode); paintAppearance(); A.toast(`${p.day.name} by day, ${p.night.name} by night`); if ($("#p-settings").open) paintSettings(); };
+  const go = () => { A.setSlotTheme("day", p.dayCode); A.setSlotTheme("night", p.nightCode); paintPairs(); if ($("#p-appear").open) paintAppearance(); A.toast(`${p.day.name} by day, ${p.night.name} by night`); if ($("#p-settings").open) paintSettings(); };
   if (A.slotCode(act) === next || !A.reveal(card, go)) go();
 }
 function wireAppearance() {
@@ -774,6 +794,7 @@ function wireAppearance() {
   const sch = () => { A.setSwitchTimes($("#sch-day-at").value, $("#sch-night-at").value); paintSwitch(); paintAppearance(); };
   ["#sch-day-at", "#sch-night-at"].forEach(id => $(id).addEventListener("change", sch));
   $("#ap-build").addEventListener("click", () => { pickSlot = A.activeSlot(); openBuilder(); });
+  $("#ap-pairs-go").addEventListener("click", openPairs);
   // the pill follows its button's size — the viewport, a theme's font arriving late, a pair that brings another face
   const refit = () => { if ($("#p-appear").open) pickSeg($("#ap-switch"), b => b.dataset.mode === ((dev().switch || {}).mode || "hand"), false); if ($("#p-sound").open) pickSeg($("#snd-slot"), b => b.dataset.slot === (sndSlot || A.activeSlot()), false); };
   if ("ResizeObserver" in window) { const ro = new ResizeObserver(refit); for (const b of $$("#ap-switch button, #snd-slot button")) ro.observe(b); } else addEventListener("resize", refit);
@@ -786,14 +807,14 @@ export function openAddUrl() {
   A.showPanel("p-addurl");
 }
 /** 1.12 b309: the hub. Appearance and Sound say what is set; the switches stand where they are; This list is headed by
-    the list's name. A row that cannot work here is not shown (screen wake without the API, the idle fade and the keys on
+    the list's name (b315: Appearance is the hero, both slots in miniature; each group's explanation is one line under
+    it). A row that cannot work here is not shown (screen wake without the API, the idle fade and the keys on
     a phone, the swipe on a computer, Templates on a list with sections and none saved). */
 function paintSettings() {
   const d = dev(), set = (name, on) => { const b = $(`#p-settings [data-set="${name}"]`); if (b) b.setAttribute("aria-pressed", on ? "true" : "false"); };
   const nameOf = slot => { const t = slotTheme(slot); return t ? t.name : "Custom"; };
-  const ak = $("#set-appear-k"); ak.textContent = "";
-  for (const slot of ["day", "night"]) { const t = slotTheme(slot); if (t) { const dot = document.createElement("i"); dot.className = "tdot"; dot.style.background = t.colors.ink; dot.style.boxShadow = `inset 0 0 0 3px ${t.colors.accent}`; ak.appendChild(dot); } }
-  ak.append(nameOf("day") + " · " + nameOf("night"));
+  for (const slot of ["day", "night"]) { const t = slotTheme(slot) || T.curated(slot === "day" ? "paper" : "terminal"); preview(t, $("#set-pv-" + slot)); } // 1.12 b315: the hero shows both slots
+  $("#set-appear-k").textContent = nameOf("day") + " · " + nameOf("night");
   const act = A.activeSlot();
   $("#set-sound-k").textContent = d.muted ? "Off" : "On · " + (packName(A.soundPacks()[act]) || slotThemePack(act));
   set("celebrate", !!d.celebrateRemote);
@@ -804,6 +825,7 @@ function paintSettings() {
   set("fade", !d.idleFadeOff); $("#set-fade").hidden = A.touchUi();
   set("who", !d.whoOff);
   $("#set-input-h").textContent = A.touchUi() ? "Gestures" : "Keyboard";
+  $("#set-input-foot").textContent = A.touchUi() ? "A line swiped left comes back tomorrow." : "N, E, A, T, M, F, O, S and 1–9 work on their own. ⌘Z and Esc always work.";
   // 1.9: Templates for a list with no sections, the case the row was written for (a section's ⋯ saves and inserts them
   // otherwise). 1.12 b309: and for any list that has some, since this is the only place one can be deleted
   const tpls = A.doc ? M.liveTemplates(A.doc).length : 0;
@@ -866,7 +888,7 @@ function wireSettings() {
     importedDoc = null; A.closePanel();
     A.toast(`Merged: ${after - before} new line${after - before === 1 ? "" : "s"}${renamed ? ". The list keeps its name." : ""}`);
   });
-  addEventListener("tf:settings", () => { if ($("#p-settings").open) paintSettings(); if ($("#p-sound").open) paintSound(); if ($("#p-appear").open) paintAppearance(); });
+  addEventListener("tf:settings", () => { if ($("#p-settings").open) paintSettings(); if ($("#p-sound").open) paintSound(); if ($("#p-appear").open) paintAppearance(); if ($("#p-pairs").open) paintPairs(); });
 }
 /** 1.7: a link that died (New keys elsewhere) with unsynced edits on this device, whose successor this device already holds (the new link
     arrived by a tap, not a paste): the edits are merged into the successor's copy and pushed with it. Kin means sharing a line id, which
@@ -1183,40 +1205,45 @@ export function openHelp(section) {
   const esc = A.escapeHtml;
   const bm = `javascript:(function(){var t=prompt("Line for Today's Five");if(t)open(${JSON.stringify(add)}+encodeURIComponent(t))})()`;
   $("#help-body").innerHTML = `
-    <h3 id="h-basics">The basics</h3>
+    <h3 id="h-basics" data-toc="The basics">The basics</h3>
     <p>Today is the short list you keep on screen. Everything is the backlog, in sections, with a star on every line that puts it on Today or takes it off. Cross a line off and it sinks; finish them all and the finale plays. Finished lines move to History at the start of the next day; unfinished ones carry over.</p>
     <p>A line is the checkbox and the words, nothing else. ${touch
       ? "Hold a line and it lifts: drag to move it, or let go for its menu—edit, repeat, not today, move to another list, delete. Swipe across a line to cross it off by hand (let go early and the ink comes back off). Swipe left is Not today."
       : "Hover a line and ⋯ appears at its end: click it for the menu—edit, repeat, not today, move to another list, delete—or drag it to move the line. E edits the focused line. Drag across a line's words to cross it off by hand."}</p>
     <p>There's no tour. The first list you make is the tutorial, and a one-line hint turns up the first time you open Everything, ${touch ? "hold a line" : "hover a line's ⋯"}, or edit one—once each, then never again. Everything else is on the reference sheet:</p>
     <div class="row-actions"><button class="chip accent" id="help-keys" type="button">${touch ? "Gestures" : "Keys and gestures"}</button></div>
-    <h3 id="h-repeat">Repeat, and not today</h3>
+    <h3 id="h-repeat" data-toc="Repeat">Repeat, and not today</h3>
     <p>A line can repeat every day, on weekdays, on days you pick, or monthly on a date: set it from the line's menu or the Repeat chip in the editor. A finished repeating line goes to History at the start of the next day and comes back undone on its next day. It never gets deleted by finishing it. A ↻ on the line marks it.</p>
     <p><b>Not today</b> (${touch ? "swipe left, or the line's menu" : "press - with a line focused, or the line's menu"}) takes a line off Today until tomorrow. Everything shows a small “tomorrow” tag on it meanwhile.</p>
-    <h3 id="h-one">One thing at a time</h3>
+    <h3 id="h-one" data-toc="One thing">One thing at a time</h3>
     <p>${touch ? "Tap the count in the top bar" : "Press O, or click the count in the top bar"}: only the top undone line, as big as the screen allows. Cross it off and the next one slides in. The finale ends it; ${touch ? "the count" : "O"} brings the whole list back. It's remembered on this device.</p>
     <p><b>Shuffle</b>: ${touch ? "shake the phone, or tap ↻ beside the count" : "press S, or click ↻ beside the count"}, and a different undone line takes the screen—never the same one twice in a row, and the list itself doesn't move. It stays until you cross it off or shuffle again; after a check-off the top line is back.${touch ? " The first time, the phone asks once whether shaking may count; say no and ↻ still works." : ""}</p>
-    <h3 id="h-lists">Lists, sections, templates</h3>
+    <h3 id="h-lists" data-toc="Lists">Lists, sections, templates</h3>
     <p>Sections live in Everything; the ⋯ in a section's header can rename it, put every line on Today or take them off, save the section as a <b>template</b> (its lines, no done state), or insert a template. Templates are kept in the list itself, so they sync, and Settings → This list → Templates manages them. A line's menu can <b>move it to another list</b> on this device. Past eight lines, Search shows up at the top of Everything${touch ? "" : "; / opens it any time"}.</p>
     <p><b>Remove from this device</b> (a list's › in Lists) takes it off this device and forgets its link. The server and your other devices keep the list, so the link is the way back—the sheet offers to copy it before it asks, and says so plainly if you've never saved it. Ten seconds to undo, and then it's gone from here. <b>Delete this list everywhere</b> (bottom of ⋯) removes it from the server and from here, with ten seconds to undo. Deleted lines sit in <b>Recently deleted</b> at the bottom of Everything for 30 days, with Restore.</p>
-    <h3 id="h-links">Links</h3>
+    <h3 id="h-links" data-toc="Links">Links</h3>
     <p>Two links, named for what they do. The <b>Private link</b> is your list's only key: anyone holding it can open the list, and there is no spare. Lose it, lose the list—nobody can recover it, and Settings → This list → Export &amp; import is the only backup there is. The <b>View link</b> shows the list and can't change it; anything that should show the list but not change it gets that one.</p>
     <p><b>Second screen:</b> open the View link on the work computer or a TV, keep the Private link on your phone, and cross things off from the phone—each check-off lands on the big screen with the sound and the confetti.</p>
     <p><b>Let someone watch:</b> hand them the View link and they see the list as it stands, live, without being able to touch it—the same check-offs, the same sound and confetti when you finish.</p>
     <p><b>New keys</b> (in Share) replaces both links at once; the old links stop working everywhere, your other devices included, so open the new one there.</p>
     <p><b>Mine and shared with me.</b> A list you make here is yours. A link opened from anywhere else asks once whose list it is—yours from another device, or someone else's—unless the link already says: Share's <b>Open on my other device</b> marks the Private link as yours and <b>Let someone edit</b> marks it as shared. A shared list sits under Shared with me, takes a nickname of its own here (the name inside the list stays as it is), and never offers New keys or Delete everywhere—Remove from this device is the way out. The › beside a list in Lists changes whose it is.</p>
     <p><b>Share</b> is laid out by what you're doing: Open on my other device (the Private link marked as yours, with a code to scan), Show it somewhere (the View link), Let someone edit (the Private link marked as shared, under the warning), Tell a friend (a note about the app), and New keys at the bottom.</p>
-    <h3 id="h-add">Add from anywhere</h3>
+    <h3 id="h-add" data-toc="Add from anywhere">Add from anywhere</h3>
     <p>Open this URL with text on the end and the line lands on Today${W ? "" : " (open a Private link to see yours)"}. Several lines: put a newline between them. Optional <code>&amp;section=Name</code> files it under a section.</p>
     <input class="link" type="text" readonly value="${esc(add)}" aria-label="Add-from-anywhere URL" spellcheck="false">
     <p><b>An iOS Shortcut:</b> Shortcuts → + → add <i>Ask for Input</i> (Text) → <i>URL Encode</i> the input → <i>Open URLs</i> with the address above followed by the encoded text. Name it, add it to the Home Screen or Siri, and every run adds a line.</p>
     <p><b>A Mac bookmarklet:</b> drag this to the bookmarks bar, or make a bookmark whose address is the code below. Click it, type the line, done.</p>
     <p><a class="chip" href="${esc(bm)}" onclick="return false" draggable="true" title="Drag me to the bookmarks bar">+ Today's Five</a></p>
     <input class="link" type="text" readonly value="${esc(bm)}" aria-label="Bookmarklet code" spellcheck="false">
-    <h3 id="h-who">Day and night, sound, who's here</h3>
+    <h3 id="h-who" data-toc="Day and night">Day and night, sound, who's here</h3>
     <p>Every device has a <b>Day theme</b> and a <b>Night theme</b>. ⋯ → <b>Theme</b> shows both side by side: tap either to pick its theme, or tap a designed pair to set both at once. The sun or moon in the top bar flips between them${touch ? "" : " (T does too; Shift+T opens Appearance)"}. Under them is the switch: by hand, with the device's light or dark setting, or on a schedule with a day time and a night time. Under either automation a tap on the sun or moon holds until the next automatic switch, then the automation takes over again.</p>
     <p>Any theme can go in either slot—light, dark, or one of yours; the slot is about when, not what. Every theme names a partner for the other side, one tap away when you pick it, and the builder can make a partner for a theme of your own: same accent, same sound, flipped base. Every theme picks one of the twelve sound packs, a theme you make can carry its own, and Settings → Sound overrides it on this device. On an iPhone, the ring/silent switch mutes the app's sounds too.</p>
     <p>A small dot beside the sync dot marks each other device that has the list open right now—a random session id, nothing else, and Settings → Other devices turns it off.${touch ? "" : " Leave the mouse alone for a few seconds and the top bar and the footer fade to the date and the count; move it and they're back (Settings → Screen turns that off)."}</p>`;
+  { // 1.12 b315: the page's sections as chips at its top
+    const toc = document.createElement("nav"); toc.className = "toc"; toc.setAttribute("aria-label", "On this page");
+    for (const h of $$("#help-body h3[data-toc]")) { const c = document.createElement("button"); c.type = "button"; c.className = "chip"; c.textContent = h.dataset.toc; c.addEventListener("click", () => h.scrollIntoView({ block: "start", behavior: A.RM.matches ? "auto" : "smooth" })); toc.appendChild(c); }
+    $("#help-body").prepend(toc);
+  }
   $("#help-keys").addEventListener("click", () => openKeys());
   $$("#help-body .link").forEach(el => el.addEventListener("focus", () => { try { el.select(); } catch (e) { /* ignore */ } }));
   A.showPanel("p-help");

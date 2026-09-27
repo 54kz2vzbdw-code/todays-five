@@ -421,7 +421,7 @@ export function panelIn(d, { sheet = false, anchor = null, src = null, dir = "",
   else run(d, [{ opacity: 0, transform: "scale(.96)" }, { opacity: 1, transform: "none" }], f.snap);
   if (body && dir) run(body, [{ opacity: 0, transform: `translateX(${dir === "back" ? -28 : 28}px)` }, { opacity: 1, transform: "none" }], f.move);
   else if (body && A && !sheet) run(body, [{ opacity: 0 }, { opacity: 0, offset: 0.2 }, { opacity: 1 }], { duration: f.move.duration, easing: "ease-out" });
-  if (!src && !dir) d.querySelectorAll(".menu > :not([hidden])").forEach((el, i) => run(el, [{ opacity: 0, transform: `translateY(${sheet ? 10 : -6}px)` }, { opacity: 1, transform: "none" }], { duration: 280, delay: 40 + i * 22, easing: "cubic-bezier(.22,1,.36,1)", fill: "backwards" }));
+  if (!src && !dir) d.querySelectorAll(".save-row:not([hidden]), .qtiles > :not([hidden]), .menu > :not([hidden])").forEach((el, i) => run(el, [{ opacity: 0, transform: `translateY(${sheet ? 10 : -6}px)` }, { opacity: 1, transform: "none" }], { duration: 280, delay: 40 + i * 22, easing: "cubic-bezier(.22,1,.36,1)", fill: "backwards" }));
 }
 /** Hand a closing dialog to this before it closes: a copy of it folds into `to`, or drops away as a sheet. Returns
     { rect, cancel } — cancel() takes the copy away before it is painted, for a panel that turns into another. */

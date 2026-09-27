@@ -22,8 +22,10 @@ const browser = await chromium.launch({ channel: "chrome", headless: true, args:
 let passed = 0, failed = 0; const failures = [];
 const ONLY = process.env.ONLY || ""; // run only the tests whose name contains this (or any of "a||b")
 const open = new Set(); // contexts a failed test left behind are closed before the next test runs
+const SHARD = (process.env.SHARD || "").split("/").map(Number); let testNo = 0; // SHARD="i/n": every nth test from the ith, so a full run can go in slices
 async function test(name, fn) {
   if (ONLY && !ONLY.split("||").some(o => name.includes(o))) return; // "a||b" runs both
+  if (SHARD.length === 2 && SHARD[1] > 0 && (testNo++ % SHARD[1]) !== SHARD[0]) return;
   try { await fn(); passed++; console.log("ok -", name); } catch (e) { failed++; failures.push(name + ": " + (e.message || e).split("\n")[0]); console.log("FAIL -", name, "\n    ", (e.message || String(e)).split("\n")[0]); if (process.env.DEBUG && e.stack) console.log("     " + e.stack.split("\n").filter(l => /e2e4/.test(l)).slice(0, 3).join("\n     ")); }
   for (const c of open) { try { await c.close(); } catch (x) { /* already closed */ } }
   open.clear();
@@ -287,8 +289,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
     if (opts.hasTouch) { for (const sel of ["#volume", '#snd-slot [aria-checked="true"]', '#snd-packs [aria-checked="true"]']) assert.ok((await t.page.$eval(sel, e => e.getBoundingClientRect().height)) >= 44, sel + " is 44 px on touch"); }
     await t.page.click("#p-sound h2 .back"); await t.page.waitForSelector("#p-settings[open]"); await wait(250);
     await t.page.click('#p-settings [data-set="appearance"]'); await t.page.waitForSelector("#p-appear[open]"); await wait(250);
-    await rings(['#ap-switch [aria-checked="true"]', '#p-appear .slot[data-slot="day"]', "#ap-pairs .pair"]);
-    if (opts.hasTouch) { for (const sel of ['#ap-switch [aria-checked="true"]', "#ap-pairs .pair", "#ap-build"]) assert.ok((await t.page.$eval(sel, e => e.getBoundingClientRect().height)) >= 44, sel + " is 44 px on touch"); }
+    await rings(['#ap-switch [aria-checked="true"]', '#p-appear .slot[data-slot="day"]', "#ap-pairs-go"]);
+    if (opts.hasTouch) { for (const sel of ['#ap-switch [aria-checked="true"]', "#ap-pairs-go", "#ap-build"]) assert.ok((await t.page.$eval(sel, e => e.getBoundingClientRect().height)) >= 44, sel + " is 44 px on touch"); }
     await t.page.click("#p-appear h2 .back"); await t.page.waitForSelector("#p-settings[open]"); await wait(250);
     assert.equal(await t.page.$eval("#set-addurl-copy", e => getComputedStyle(e).textTransform), "uppercase", "a chip outside a row of actions carries the chip type");
     { // 1.9: the panel's title is a step above its section headings (proposal 24)
@@ -297,8 +299,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
     }
     if (!opts.hasTouch) { // 1.9: one hover treatment — the × fills the way a menu row does (proposal 25)
       const ink3 = (await t.page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--ink-3").trim())).toUpperCase();
-      await t.page.hover('#p-settings [data-set="appearance"]'); await wait(200);
-      assert.equal(hex(await t.page.$eval('#p-settings [data-set="appearance"]', e => getComputedStyle(e).backgroundColor)), ink3, "a menu row fills");
+      await t.page.hover('#p-settings [data-set="sound"]'); await wait(200);
+      assert.equal(hex(await t.page.$eval('#p-settings [data-set="sound"]', e => getComputedStyle(e).backgroundColor)), ink3, "a menu row fills");
       await t.page.hover("#p-settings h2 .x"); await wait(200);
       assert.equal(hex(await t.page.$eval("#p-settings h2 .x", e => getComputedStyle(e).backgroundColor)), ink3, "the × fills the same way");
       assert.equal(await t.page.$eval("#p-settings h2 .x", e => getComputedStyle(e).borderTopColor.replace(/\s/g, "")), "rgba(0,0,0,0)", "and draws no border");
@@ -450,20 +452,26 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": the ⋯ menu is nine rows in order, " + (touch ? "a bottom sheet" : "a popover under the button") + ", and Sound toggles in place", async () => {
+  await test(label + ": 1.12 b315: the ⋯ menu is four tiles, then four rows, then Delete everywhere on its own, " + (touch ? "a bottom sheet" : "a popover under the button") + ", and the Sound tile toggles in place", async () => {
     const t = await fresh(opts);
     await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await wait(300);
     await t.page.waitForFunction(() => !document.getElementById("p-menu").getAnimations({ subtree: true }).length); // 1.12 b293: it rises (or grows out of ⋯) first
-    const labels = await t.page.$$eval("#menu > *:not([hidden]) .lb", els => els.map(e => e.textContent.trim()));
-    assert.equal(labels.join("|"), "Share this list|Theme|Sound|Full screen|How it works|Lists|Settings|About & privacy|Delete this list everywhere");
-    assert.ok(await t.page.$("#menu-delete.danger"));
+    const tiles = await t.page.$$eval("#menu-tiles > *:not([hidden]) .lb", els => els.map(e => e.textContent.trim()));
+    assert.equal(tiles.join("|"), "Share|Theme|Sound|Full screen", "the four reached for most, as tiles");
+    const rows = await t.page.$$eval("#menu > *:not([hidden]) .lb", els => els.map(e => e.textContent.trim()));
+    assert.equal(rows.join("|"), "Lists|Settings|How it works|About & privacy", "the places, as rows");
+    assert.ok(await t.page.$("#menu-end #menu-delete.danger") && await t.page.locator("#menu-delete").isVisible(), "Delete everywhere, on a card of its own");
+    assert.equal(await t.page.getAttribute("#menu-share", "aria-label"), "Share this list", "the tile says Share; its name says which");
+    const tr = await t.page.$$eval("#menu-tiles > *:not([hidden])", els => els.map(e => e.getBoundingClientRect()).map(r => ({ top: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) })));
+    assert.ok(tr.every(r => r.top === tr[0].top && Math.abs(r.w - tr[0].w) <= 1 && r.h >= 44), "one row of equal tiles, each a real target: " + JSON.stringify(tr));
     const d = await rect(t.page, "#p-menu"), more = await rect(t.page, "#more");
     const pop = await t.page.$eval("#p-menu", e => e.classList.contains("pop"));
     if (touch) { assert.ok(!pop, "a sheet on the phone"); assert.ok(Math.abs(d.bottom - opts.viewport.height) < 2 && d.width >= opts.viewport.width - 1, "bottom sheet: " + JSON.stringify(d)); }
     else { assert.ok(pop, "a popover on the desktop"); assert.ok(d.top >= more.bottom && d.top < more.bottom + 20 && Math.abs(d.right - more.right) < 4, "anchored under ⋯: " + JSON.stringify({ d, more })); assert.equal(await t.page.$eval("#p-menu", e => getComputedStyle(e, "::backdrop").backgroundColor), "rgba(0, 0, 0, 0)", "no dim behind a popover"); }
     assert.equal(await t.page.textContent("#menu-theme-k"), "Dark");
     await t.press('#p-menu [data-act="sound"]'); await wait(200);
-    assert.ok(await t.page.$("#p-menu[open]"), "the menu stays open for a toggle row"); assert.equal(await t.page.textContent("#menu-sound-k"), "Off");
+    assert.ok(await t.page.$("#p-menu[open]"), "the menu stays open for a toggle"); assert.equal(await t.page.textContent("#menu-sound-k"), "Off");
+    assert.ok(await t.page.locator('#menu-tiles [data-act="sound"] .off-ic').isVisible() && await t.page.locator('#menu-tiles [data-act="sound"] .on-ic').isHidden(), "the tile shows the speaker muted");
     assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device.muted), true);
     await t.press('#p-menu [data-act="sound"]'); assert.equal(await t.page.textContent("#menu-sound-k"), "On");
     await t.esc(); await wait(200);
@@ -898,7 +906,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(await t.page.$eval("#p-sec", e => e.classList.contains("pop")), !touch, "section menu: popover on the desktop, sheet on the phone");
     // 1.9: the three popovers share one anatomy — an icon, a label (with a sub-line where it helps), the state or key slot (proposal 23)
     for (const id of ["#p-menu", "#p-line", "#p-sec"]) {
-      const rows = await t.page.$eval(id + " .menu", m => [...m.querySelectorAll("button")].map(b => [!!b.querySelector("svg.ic"), !!b.querySelector(".lb")]));
+      const rows = await t.page.$eval(id + " .menu", m => [...m.querySelectorAll("button")].map(b => [!!b.querySelector("svg.ic, .ico svg"), !!b.querySelector(".lb")])); // 1.12 b315: the ⋯ menu's icons sit on tiles
       assert.ok(rows.length >= 3 && rows.every(r => r[0] && r[1]), id + ": every row has an icon and a label: " + JSON.stringify(rows));
     }
     assert.ok(await t.page.$("#p-sec .menu button.danger") && await t.page.$("#p-line .menu button.danger"), "the destructive row is red in each");
@@ -955,7 +963,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#list .row:first-child .check"); await wait(700);
     const c = await t.page.evaluate(() => { const r = document.querySelector("#list .row.done"); const rest = getComputedStyle(r).color; r.classList.add("dragging"); const lifted = getComputedStyle(r).color; r.classList.remove("dragging"); const cs = getComputedStyle(document.documentElement); return { rest, lifted, done: cs.getPropertyValue("--done").trim(), done2: cs.getPropertyValue("--done-2").trim() }; });
     assert.equal(hex(c.rest), c.done.toUpperCase(), "at rest a done line reads in --done"); assert.equal(hex(c.lifted), c.done2.toUpperCase(), "lifted, in --done-2"); assert.ok(c.done2 && c.done2 !== c.done || opts.hasTouch, "the two differ on the kit where it matters: " + JSON.stringify(c));
-    const cols = async p => p.evaluate(() => { const rows = [...document.querySelectorAll("#p-menu .menu > *")].filter(e => !e.hidden && getComputedStyle(e).display !== "none"); const body = document.querySelector("#p-menu .body"); return { cols: new Set(rows.map(r => Math.round(r.getBoundingClientRect().left))).size, scroll: body.scrollHeight - body.clientHeight, minH: Math.min(...rows.map(r => r.getBoundingClientRect().height)), n: rows.length }; });
+    const cols = async p => p.evaluate(() => { const vis = e => !e.hidden && getComputedStyle(e).display !== "none"; const rows = [...document.querySelectorAll("#p-menu .menu > *")].filter(vis), tiles = [...document.querySelectorAll("#menu-tiles > *")].filter(vis); const body = document.querySelector("#p-menu .body"); return { cols: new Set(rows.map(r => Math.round(r.getBoundingClientRect().left))).size, scroll: body.scrollHeight - body.clientHeight, minH: Math.min(...rows.concat(tiles).map(r => r.getBoundingClientRect().height)), n: rows.length + tiles.length }; }); // 1.12 b315: the tiles and the rows, nine in all
     await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await wait(400);
     const m1 = await cols(t.page); assert.equal(m1.cols, 1, "one column here: " + JSON.stringify(m1)); await t.esc();
     if (opts.hasTouch) {
@@ -1112,11 +1120,15 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const name = await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v3/list/" + window.__tf().listId)).doc.name || "");
     const heads = await t.page.$$eval("#p-settings h3", els => els.map(e => e.textContent.trim()));
     assert.equal(heads.join("|"), ["Screen", "Other devices", touch ? "Gestures" : "Keyboard", "This list" + (name ? " · " + name : "")].join("|"));
+    assert.equal(await t.page.$eval("#p-settings .body > .hero", e => e.dataset.set), "appearance", "1.12 b315: Appearance is the hero");
+    assert.equal(await t.page.$$eval("#set-pv-day i, #set-pv-night i", els => els.length), 6, "both slots in miniature");
     const cards = await t.page.$$eval("#p-settings .body > .menu.card", cs => cs.map(c => [...c.children].filter(e => !e.hidden).map(e => (e.querySelector(".lb") || e).firstChild.textContent.trim())));
     const wake = (await t.page.locator('[data-set="wake"]:not([hidden])').count()) ? ["Keep screen awake"] : [];
-    assert.deepEqual(cards, [["Appearance", "Sound"], [...wake, "Day review", ...(touch ? [] : ["Fade controls when idle"])], ["Show who's here", "Celebrate their check-offs"], [touch ? "Swipe left for “Not today”" : "Single-key shortcuts"], ["Add from anywhere", "Export & import", "Templates"]], JSON.stringify(cards));
+    assert.deepEqual(cards, [["Sound"], [...wake, "Day review", ...(touch ? [] : ["Fade controls when idle"])], ["Show who's here", "Celebrate their check‑offs"], [touch ? "Swipe left for “Not today”" : "Single-key shortcuts"], ["Add from anywhere", "Export & import", "Templates"]], JSON.stringify(cards));
     assert.equal((await t.page.textContent("#set-appear-k")).trim(), "Light · Dark", "Appearance names both slots");
-    assert.equal(await t.page.locator("#set-appear-k .tdot").count(), 2, "with a dot of each (shown where there is room)");
+    assert.ok(/quiet card under the finale/.test(await t.page.textContent("#set-screen-foot")) && /neither shows nor counts/.test(await t.page.textContent("#set-others-foot")), "a line under each group says what its switches do");
+    assert.ok((touch ? /swiped left/ : /1–9 work on their own/).test(await t.page.textContent("#set-input-foot")), await t.page.textContent("#set-input-foot"));
+    assert.equal(await t.page.getAttribute('[data-set="review"]', "aria-describedby"), "set-screen-foot", "and the switch it explains points at it");
     assert.equal((await t.page.textContent("#set-sound-k")).trim(), "On · Knock", "Sound says it is on, and what plays now");
     assert.equal(await t.page.locator('#p-settings select, #p-settings input, #set-full, #p-settings [data-set="removed"], #p-settings [data-set="history"]').count(), 0, "no pickers or fields on the hub; Full screen, Removed lists and History left long ago");
     assert.equal(await t.page.locator('[data-set="follow"], [data-set="schedule"], [data-set="theme"], [data-set="day"], [data-set="night"], [data-set="pack"], #set-switch, #set-pack, #sch-day, #sch-night').count(), 0, "the 1.1 and 1.9 rows are gone");
@@ -1604,7 +1616,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#more"); await t.page.click('#p-menu [data-act="lists"]'); await t.page.waitForSelector("#p-lists[open]");
     // 1.9: Remove and Rename live in the list's detail only (proposal 5); the shelf keeps New list and the paste field
     assert.equal(await t.page.locator("#l-archive, #l-rename").count(), 0, "no second Rename or Remove at the bottom of Lists");
-    assert.equal(await t.page.$$eval("#p-lists .row-actions .chip", els => els.map(e => e.textContent.trim()).join("|")), "New list");
+    assert.equal((await t.page.textContent("#l-new")).trim(), "New list"); assert.ok(await t.page.locator("#l-paste").isVisible(), "and the paste field"); // 1.12 b315: New list is a row
     await t.page.click("#lists-menu .row .more"); await t.page.waitForSelector("#p-list[open]"); await wait(200);
     assert.equal((await t.page.textContent('#list-detail-menu [data-lact="remove"] .lb')).trim(), "Remove from this device");
     await t.page.click('#list-detail-menu [data-lact="remove"]'); await t.page.waitForSelector("#ask[open]"); await wait(200);
@@ -1760,7 +1772,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   await test(label + ": the picker fills one slot — 1.12 b309: Light and Dark, the slot's own kind first, then Yours; every theme for either slot, each naming its partner, and the one-tap partner", async () => {
     const t = await fresh(opts);
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]");
-    assert.equal(await t.page.$eval("#p-settings .body > .menu.card button", e => e.dataset.set), "appearance", "Settings opens at Appearance");
+    assert.equal(await t.page.$eval("#p-settings .body > .hero", e => e.dataset.set), "appearance", "Settings opens at Appearance");
     await t.page.click('[data-set="appearance"]'); await t.page.waitForSelector("#p-appear[open]"); await t.page.click('#p-appear .slot[data-slot="day"]'); await t.page.waitForSelector("#p-theme[open]");
     assert.equal((await t.page.textContent("#p-theme-h")).trim(), "Day theme");
     const heads = await t.page.$$eval("#p-theme h3:not([hidden])", els => els.map(e => e.textContent));
@@ -2627,14 +2639,14 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.esc(); await wait(300); // closed without saving
     assert.ok((await t.s()).unsaved, "not saved yet");
     await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await wait(200);
-    let rows = await t.page.$$eval("#menu > *:not([hidden]) .lb", els => els.map(e => e.firstChild.textContent.trim()));
-    assert.equal(rows.length, 10); assert.equal(rows[0], "Save your link"); assert.equal(await t.page.$eval("#menu-save .dot-k", e => e.textContent.trim()), "●", "with a dot");
+    assert.ok(await t.page.locator("#menu-save").isVisible(), "Save your link heads the menu"); assert.equal(await t.page.$eval("#menu-save .lb", e => e.firstChild.textContent.trim()), "Save your link"); assert.equal(await t.page.$eval("#menu-save .dot-k", e => e.textContent.trim()), "●", "with a dot");
+    assert.ok((await rect(t.page, "#menu-save")).bottom <= (await rect(t.page, "#menu-tiles")).top + 1, "above the tiles");
     await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await wait(200);
     assert.ok(await t.page.locator("#share-unsaved").isVisible(), "the Share sheet repeats the key line"); assert.ok(/only key/.test(await t.page.textContent("#share-unsaved")));
     await t.page.click("#share-save"); await t.page.waitForSelector("#p-save[open]");
     await t.page.click("#save-done"); await wait(300);
     assert.equal(await t.page.locator("#p-save[open]").count(), 0, "I've saved it closes the sheet"); assert.ok(!(await t.s()).unsaved);
-    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); rows = await t.page.$$eval("#menu > *:not([hidden]) .lb", els => els.map(e => e.firstChild.textContent.trim())); assert.equal(rows.length, 9, "nine rows again: " + rows[0]);
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); assert.ok(await t.page.locator("#menu-save").isHidden(), "gone once it is saved");
     await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); assert.ok(await t.page.locator("#share-unsaved").isHidden(), "the notice is gone"); await t.esc(); await wait(200);
     await t.reload(); await t.page.waitForSelector("#list .row"); assert.ok(!(await t.s()).unsaved, "remembered");
     // Copy counts too (a second list, made from Lists)
@@ -2645,7 +2657,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.evaluate(() => { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device.seenVersion = "1.2"; delete m.device.savedGrandfathered; m.lists.forEach(l => { l.linkSaved = false; }); localStorage.setItem("tf/v2/meta", JSON.stringify(m)); });
     await t.reload(); await t.page.waitForFunction(() => window.__tf && window.__tf().listId, null, { polling: 100 }); await wait(1800); // the second list is empty: no rows to wait for
     assert.ok(!(await t.s()).unsaved, "grandfathered"); assert.ok(await t.page.locator("#whatsnew").isVisible(), "the toast is the only new thing");
-    await t.press("#wn-x"); await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); assert.equal((await t.page.$$eval("#menu > *:not([hidden])", els => els.length)), 9); await t.esc();
+    await t.press("#wn-x"); await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); assert.ok(await t.page.locator("#menu-save").isHidden(), "grandfathered: no row"); await t.esc();
     assert.equal(t.errors.length, 0, t.errors.join("; "));
     await t.close();
   });
@@ -2880,7 +2892,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const { listId, R } = await t.s();
     await t.press("#more"); await t.page.click('#p-menu [data-act="share"]'); await t.page.waitForSelector("#p-share[open]"); await wait(300);
     assert.deepEqual(await t.page.$$eval("#p-share .lk-block:not([hidden])", els => els.map(e => e.id)), ["share-view", "share-mine", "share-private", "share-friend", "share-keys"], "the order");
-    assert.deepEqual(await t.page.$$eval("#p-share .lk-block:not([hidden]) h3", els => els.map(e => e.firstChild.textContent.trim())), ["Show it somewhere", "Open on my other device", "Let someone edit", "Tell a friend", "Replace both links"]);
+    assert.deepEqual(await t.page.$$eval("#p-share .lk-block:not([hidden]) h3", els => els.map(e => e.querySelector(":scope > span:not(.ico)").firstChild.textContent.trim())), ["Show it somewhere", "Open on my other device", "Let someone edit", "Tell a friend", "Replace both links"]);
     assert.equal(await t.page.$eval("#share-view h3 .sub-h", e => e.textContent), "view only");
     assert.equal(await t.page.$eval("#share-mine h3 .sub-h", e => e.textContent), "the same list, with full control", "1.9: the first block's qualifier says what the link does (proposal 9)");
     assert.ok(await t.page.evaluate(() => document.getElementById("share-copy").getBoundingClientRect().top < document.getElementById("share-copy-mine").getBoundingClientRect().top), "the View link's Copy is the first Copy");
@@ -2917,7 +2929,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.keyboard.press("Escape"); await wait(250);
     const v = await fresh(opts, { url: BASE + "?transport=local#/r/" + R, list: false, ctx: t.ctx });
     await v.page.waitForSelector("#ro:not([hidden])"); await v.page.evaluate(() => document.getElementById("more").click()); await v.page.waitForSelector("#p-menu[open]");
-    assert.equal((await v.page.textContent("#menu-share-lb")).trim(), "Share the View link");
+    assert.equal(await v.page.getAttribute("#menu-share", "aria-label"), "Share the View link");
     await v.page.click('#p-menu [data-act="share"]'); await v.page.waitForSelector("#p-share[open]");
     assert.deepEqual(await v.page.$$eval("#p-share .lk-block:not([hidden])", els => els.map(e => e.id)), ["share-view", "share-friend"], "a View link holder: Show it somewhere and Tell a friend only");
     assert.equal((await v.page.$eval("#ro", e => e.textContent.replace(/\s+/g, " ").trim())), "View link · view only", "the pill names the link");
@@ -2931,20 +2943,23 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await wait(300);
     assert.equal((await t.s()).panels.join(","), "p-menu,p-settings", "1.12: the ⋯ menu is the root and stays under what it opens"); assert.equal(await t.page.locator("#p-settings h2 .back").count(), 1, "1.12: so a panel from ⋯ has ‹ Back too");
     assert.equal(await t.page.evaluate(() => history.state && history.state.tfPanel), 2, "an entry for the menu and one for the panel");
+    await t.page.evaluate(() => { document.querySelector("#p-settings .body").scrollTop = 60; }); await wait(150); // the hero stays in view, clear of the bar: a click that had to scroll it into view would move the parent before it is left
+    const scrolled = await t.page.evaluate(() => document.querySelector("#p-settings .body").scrollTop); assert.ok(scrolled >= 30, "scrolled: " + scrolled);
+    const dayBefore = (await t.page.textContent("#set-appear-k")).trim();
     await t.page.click('#p-settings [data-set="appearance"]'); await t.page.waitForSelector("#p-appear[open]"); await wait(300);
     assert.equal((await t.s()).panels.join(","), "p-menu,p-settings,p-appear"); assert.equal((await t.page.textContent("#p-appear h2 .back")).replace(/\s+/g, " ").trim(), "‹ Back");
-    await t.page.evaluate(() => { document.querySelector("#p-appear .body").scrollTop = 40; }); await wait(100); // the tiles stay in view: a click that had to scroll one into view would move the parent before it is left
-    const scrolled = await t.page.evaluate(() => document.querySelector("#p-appear .body").scrollTop); assert.ok(scrolled >= 30, "scrolled: " + scrolled);
-    const dayBefore = (await t.page.textContent("#ap-day-nm")).trim();
     await t.page.click('#p-appear .slot[data-slot="day"]'); await t.page.waitForSelector("#p-theme[open]"); await wait(300);
     assert.equal((await t.s()).panels.join(","), "p-menu,p-settings,p-appear,p-theme"); assert.equal(await t.page.locator("#p-theme h2 .back").count(), 1, "‹ Back on the sub-panel"); assert.equal((await t.page.textContent("#p-theme h2 .back")).replace(/\s+/g, " ").trim(), "‹ Back");
     assert.equal(await t.page.evaluate(() => history.state && history.state.tfPanel), 4, "an entry for each level");
     const sw = await t.page.$$("#p-theme .swatch"); const pressed = await Promise.all(sw.map(s => s.getAttribute("aria-pressed"))); await sw[pressed.indexOf("false")].click(); await wait(500);
     await t.page.click("#p-theme h2 .back"); await t.page.waitForSelector("#p-appear[open]"); await wait(400);
     assert.equal((await t.s()).panels.join(","), "p-menu,p-settings,p-appear", "Back lands on the parent");
-    assert.notEqual((await t.page.textContent("#ap-day-nm")).trim(), dayBefore, "the value changed below is in place");
-    assert.ok(Math.abs(await t.page.evaluate(() => document.querySelector("#p-appear .body").scrollTop) - scrolled) <= 2, "the parent's scroll position");
     assert.equal(await t.page.evaluate(() => history.state && history.state.tfPanel), 3, "the level's entry went with it");
+    await t.page.click("#p-appear h2 .back"); await t.page.waitForSelector("#p-settings[open]"); await wait(400);
+    assert.equal((await t.s()).panels.join(","), "p-menu,p-settings", "and again, to Settings");
+    assert.notEqual((await t.page.textContent("#set-appear-k")).trim(), dayBefore, "the value changed below is in place");
+    assert.ok(Math.abs(await t.page.evaluate(() => document.querySelector("#p-settings .body").scrollTop) - scrolled) <= 2, "the parent's scroll position");
+    await t.page.click('#p-settings [data-set="appearance"]'); await t.page.waitForSelector("#p-appear[open]"); await wait(300);
     await t.page.click('#p-appear .slot[data-slot="day"]'); await t.page.waitForSelector("#p-theme[open]"); await wait(200);
     await t.page.keyboard.press("Escape"); await wait(350); assert.equal((await t.s()).panels.join(","), "p-menu,p-settings,p-appear", "Escape goes back one level");
     await t.page.keyboard.press("Escape"); await wait(350); assert.equal((await t.s()).panels.join(","), "p-menu,p-settings", "and again");
@@ -3122,7 +3137,10 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.click("#p-theme h2 .back"); await t.page.waitForSelector("#p-appear[open]"); await wait(300);
     assert.deepEqual((await t.s()).panels, ["p-menu", "p-appear"], "Back lands on Appearance");
     assert.equal(await t.page.textContent("#ap-day-nm"), "Paper", "with the choice in place");
-    // the pairs: the six that are light by day, then the two that are always dark; one tap sets both
+    // the pairs, a page one row away (1.12 b315): the six that are light by day, then the two that are always dark; one tap sets both
+    assert.equal(await t.page.locator("#p-appear .pair").count(), 0, "not on the landing");
+    await t.page.click("#ap-pairs-go"); await t.page.waitForSelector("#p-pairs[open]"); await wait(300);
+    assert.deepEqual((await t.s()).panels, ["p-menu", "p-appear", "p-pairs"], "a page under Appearance");
     assert.deepEqual(await t.page.$$eval("#ap-pairs .pairs-h", els => els.map(e => e.textContent)), ["Light by day, dark by night", "Always dark"]);
     assert.deepEqual(await t.page.$$eval("#ap-pairs .pair", els => els.map(e => e.getAttribute("aria-label"))), ["Light by day, Dark by night", "Paper by day, Midnight by night", "Harbor by day, Forest by night", "Blush by day, Pink by night", "Teletype by day, Terminal by night", "Sketch by day, Arcade by night", "Sunset by day, Dusk by night", "Cocoa by day, Ember by night"]);
     assert.equal(await t.page.locator('#ap-pairs .pair[aria-pressed="true"]').count(), 0, "Paper with Dark is no designed pair, so none is marked");
@@ -3130,12 +3148,14 @@ for (const [label, opts, touch] of VIEWPORTS) {
     let st = await t.s(); assert.equal(st.day, "T1:curated:harbor"); assert.equal(st.night, "T1:curated:forest", "one tap, both slots"); assert.equal(st.theme, "forest", "and the one on shows it");
     assert.equal(await t.page.textContent("#toast .msg"), "Harbor by day, Forest by night");
     assert.equal(await t.page.$eval('#ap-pairs .pair[aria-pressed="true"]', e => e.getAttribute("aria-label")), "Harbor by day, Forest by night", "the pair that is set is marked");
-    assert.equal(await t.page.textContent("#ap-day-nm") + "|" + await t.page.textContent("#ap-night-nm"), "Harbor|Forest");
     if (!touch) { // a keyboard that chose a pair is still on it after the pairs repaint
       await t.page.focus('#ap-pairs .pair[aria-label="Paper by day, Midnight by night"]'); await t.page.keyboard.press("Enter"); await wait(900);
       assert.equal((await t.s()).night, "T1:curated:midnight"); assert.equal(await t.page.evaluate(() => document.activeElement.getAttribute("aria-label")), "Paper by day, Midnight by night", "focus stays on the pair");
       await t.page.focus('#ap-pairs .pair[aria-label="Harbor by day, Forest by night"]'); await t.page.keyboard.press("Enter"); await wait(900);
     }
+    await t.page.click("#p-pairs h2 .back"); await t.page.waitForSelector("#p-appear[open]"); await wait(300);
+    assert.deepEqual((await t.s()).panels, ["p-menu", "p-appear"], "Back comes back to the tiles");
+    assert.equal(await t.page.textContent("#ap-day-nm") + "|" + await t.page.textContent("#ap-night-nm"), "Harbor|Forest", "with the pair in them");
     // the switch: three ways, the pill under the one chosen, the times only for a schedule
     const pill = () => t.page.$eval("#ap-switch", s => { const th = s.querySelector(".thumb").getBoundingClientRect(), on = s.querySelector('[aria-checked="true"]').getBoundingClientRect(); return Math.abs(th.left - on.left) < 2 && Math.abs(th.width - on.width) < 2; });
     assert.equal(await t.page.$eval('#ap-switch [aria-checked="true"]', e => e.dataset.mode), "system"); assert.ok(await pill(), "the pill sits under With the system");
@@ -3228,7 +3248,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#v-all"); await t.esc(); await t.press("#v-today");
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="appearance"]'); await t.page.waitForSelector("#p-appear[open]"); await t.page.click('#p-appear .slot[data-slot="night"]');
     await t.page.waitForSelector("#p-theme[open]"); await t.page.click("#sw-dark .swatch:nth-child(4)"); await wait(200); await t.page.click("#partner-use"); await t.esc(); await wait(200);
-    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-appear[open]"); await wait(250); await t.press('#ap-pairs .pair[aria-label="Harbor by day, Forest by night"]'); await wait(300); await t.page.click('#ap-switch [data-mode="schedule"]'); await wait(300); await t.page.click('#ap-switch [data-mode="system"]'); await wait(300); await t.esc(); await wait(200);
+    await t.press("#more"); await t.page.click('#p-menu [data-act="theme"]'); await t.page.waitForSelector("#p-appear[open]"); await wait(250); await t.page.click("#ap-pairs-go"); await t.page.waitForSelector("#p-pairs[open]"); await wait(250); await t.press('#ap-pairs .pair[aria-label="Harbor by day, Forest by night"]'); await wait(300); await t.page.click("#p-pairs h2 .back"); await t.page.waitForSelector("#p-appear[open]"); await wait(250); await t.page.click('#ap-switch [data-mode="schedule"]'); await wait(300); await t.page.click('#ap-switch [data-mode="system"]'); await wait(300); await t.esc(); await wait(200);
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await t.page.click('[data-set="sound"]'); await t.page.waitForSelector("#p-sound[open]"); await wait(200); await t.page.click('#snd-slot [data-slot="day"]'); await t.page.click('#snd-packs [data-pack="bell"]'); await wait(200); await t.page.click('#snd-packs [data-pack=""]'); await wait(200);
     await t.page.click("#p-sound h2 .back"); await t.page.waitForSelector("#p-settings[open]"); await wait(200); await t.page.click('[data-set="addurl"]'); await t.page.waitForSelector("#p-addurl[open]"); await wait(200); await t.esc(); await wait(200);
     await t.press("#daynight"); await wait(500); await t.press("#daynight"); await wait(500);

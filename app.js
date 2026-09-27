@@ -157,7 +157,7 @@ let lastCat = "", lastLimitToast = "";
 const viewCollapsed = new Set(); // view-only mode: a viewer's collapse must never win a merge against the editors
 let press = null, tapped = null, swipe = null;
 // 1.12 b293: above the boot block: a render at boot reaches them
-let unsealT = 0, kept = false, zoomingTo = "", lifted = null, pendingFold = null, morphFrom = null, panelOrigin = null, pressedAt = null;
+let unsealT = 0, kept = false, zoomingTo = "", pendingFold = null, morphFrom = null, panelOrigin = null;
 const exits = new Map(), leavingEls = new Map();
 let reloading = false;
 let toastAction = null, reviewDismissed = false, whatsNewShown = false, rz = 0, settling = false, killing = false;
@@ -1105,23 +1105,6 @@ function leave(li, id) {
 }
 /** Undo while a line is leaving: it goes at once and comes back in place. */
 function recall(ids) { for (const id of ids) { const g = leavingEls.get(id); if (g) { g.getAnimations().forEach(a => a.cancel()); g.remove(); leavingEls.delete(id); } } }
-/* On a phone a line's words rise into its menu's title, and go back, or on to where the action sends them. */
-function liftLine(id, d) {
-  lifted = null;
-  const li = rows.get(id), h = $("#p-line-h");
-  if (!li || !motionMod || RM.matches || d.classList.contains("pop") || !h) return;
-  lifted = { id, li, h, hr: motionMod.rest(h, d) };
-  motionMod.carry(motionMod.wordsOf(li), li.querySelector(".tx"), motionMod.textRect(li), h, lifted.hr);
-  li.classList.add("lifted");
-}
-function landLine(act) {
-  const l = lifted; lifted = null; if (!l) return;
-  const { id, li, h, hr } = l, it = doc && doc.items[id], x = { el: h, r: hr };
-  if (act !== "delete") li.classList.remove("lifted");
-  if (act === "delete" || act === "nottoday" || (act === "today" && view === "today" && it && it.today)) exits.set(id, { ...x, how: act === "delete" ? "erase" : act === "today" ? "all" : "off" });
-  else if (act === "today" && it && !it.today) exits.set(id, { ...x, how: "today" }); // toggleToday flies them to the tab
-  else if (li.isConnected) motionMod.carry(motionMod.wordsOf(li), h, hr, li.querySelector(".tx"), motionMod.textRect(li));
-}
 /** 1.9: one row on its way to a new place — a done line sinking, a remote reorder — is a 300 ms FLIP that starts as the last
     of the ink lands (it was 520, after 170 ms of dead air). While it travels the row carries the page's ground and sits above
     the rows it passes (`.moving`, styles.css), so the reorder reads as one object moving past another; the displaced rows follow
@@ -1983,7 +1966,7 @@ function showPanel(id, { anchor = null, restack = false } = {}) {
     if (!panelRestoring) { const pb = parent.querySelector(".body"); panelStack.push({ id: parent.id, scroll: pb ? pb.scrollTop : 0 }); }
     if (!same) { src = parent.getBoundingClientRect(); dir = dir || "fwd"; panelSwitching = true; parent.close(); panelSwitching = false; }
     else { step = true; dir = dir || "fwd"; }
-  } else if (!fromFold && !panelRestoring) panelOrigin = anchor || lastControl();
+  } else if (!fromFold && !panelRestoring) panelOrigin = anchor || (motionMod && motionMod.origin());
   openPanel = d;
   d.classList.remove("closing"); d.style.transform = ""; d.removeAttribute("data-drag");
   const pop = !!anchor && !sheetUi() && anchor.isConnected;
@@ -2046,13 +2029,6 @@ function foldPanel(d) {
   if (!f) return;
   pendingFold = f; requestAnimationFrame(() => { if (pendingFold === f) pendingFold = null; });
 }
-/** The control just pressed, or focused: where a panel comes from and folds back to. */
-function lastControl() {
-  const ok = el => !!el && el.isConnected && !el.closest("dialog") && !!el.closest(".rail, #foot, .tools, #all-head");
-  if (pressedAt && performance.now() - pressedAt.t < 1500 && ok(pressedAt.el)) return pressedAt.el;
-  const a = document.activeElement; return ok(a) ? a : null;
-}
-document.addEventListener("pointerdown", e => { const b = e.target.closest && e.target.closest("button, [role=tab]"); if (b && !b.closest("dialog")) pressedAt = { el: b, t: performance.now() }; }, true);
 /** The app's own place, written back over whatever URL a history traversal brought up. */
 function fixUrl() { history.replaceState(null, "", BASE + SEARCH + (listId && !demo ? frag({ id: listId, mode: listMode }) : "")); }
 /** Resolves once a pending history unwind has landed (at once when none is pending): a reload must not race it. */
@@ -2553,7 +2529,7 @@ const api = {
   afterChange, applyRemote, render, setView, paint, paintListName, paintMute, paintStatus, paintMenu, paintWho, toast, hideToast, ask, showPanel, closePanel, goBack, registerOpeners,
   focusRow, newItem, startEdit, commitEdit, deleteItem, toggle, toggleToday, notToday, pushUndo, undo, restoreItem,
   saveDevice, registerList, switchTo, openList, showWelcome, createList, parseLink, flushQuick, flushOthers, killRemote, queueKill, retryPendingKills,
-  reveal, liftLine, landLine, get motion() { return motionMod; }, rawFx,
+  reveal, exits, get motion() { return motionMod; }, rawFx,
   applyThemeCode, currentThemeCode, tickTheme, setSlotTheme, flipSlot, setSwitchMode, setSwitchTimes, unlockSecret, forgetSecret, unlockExtra, forgetExtra, activeSlot: () => T.activeSlot(dev, envNow()), autoSlot: () => T.autoSlot(dev, envNow()),
   slotCode: slot => dev[slot] || T.SLOT_DEFAULT[slot], packFor, setSoundPack, soundPacks: () => ({ day: "", night: "", ...(dev.soundPacks || {}) }), soundPins: () => ({ day: "", night: "", ...(dev.soundPins || {}) }), setWake, toggleMute, toggleFullscreen, setOneThing, setSearch, ruleLabel, idleReset,
   editLink, viewLink, copyText, nativeShare, escapeHtml, drawQr, frag,

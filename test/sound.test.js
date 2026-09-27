@@ -2,11 +2,11 @@
 // A fake AudioContext models what iOS does: a fresh context starts suspended, the app goes to the background
 // (suspended, resume works), a call or Siri interrupts it (resume never lands), and closed contexts.
 import assert from "node:assert/strict";
-import { createSound, SECRET_ENGINES, EXTRA_ENGINES, FINALE_BUZZ, phrase, ROOM } from "../sound.js";
+import { createSound, SECRET_ENGINES, EXTRA_ENGINES, FINALE_BUZZ } from "../sound.js";
 import * as EXTRA from "../packs-extra.js";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { PACKS, PACK_ORDER, PACK_NAMES, HELPERS, SCRATCH, scratch, CUES } from "../packs.js";
+import { PACKS, PACK_ORDER, PACK_NAMES, HELPERS, SCRATCH, scratch, CUES, phrase, ROOM, room, stage } from "../packs.js";
 import * as SECRET from "../packs-secret.js";
 
 let passed = 0;
@@ -247,7 +247,7 @@ await test("1.12 b293: the stage — a limiter and a room where the context has 
     createConvolver() { this.nodes++; return this.track({ buffer: null }, "room"); }
     createStereoPanner() { this.nodes++; return this.track({ pan: { value: 0 } }, "pan"); }
   }
-  const s = make({ AudioContext: StageAC, mat: () => "glass", loadPacks: () => Promise.resolve({ PACKS, HELPERS, CUES }) });
+  const s = make({ AudioContext: StageAC, mat: () => "glass", loadPacks: () => Promise.resolve({ PACKS, HELPERS, CUES, room, phrase, stage }) });
   s.prime(); await tick();
   assert.equal(s.check(0, 0.9), true); assert.equal(s.uncheck(0.1), true); assert.equal(s.finish(), true);
   const pans = edges.filter(([n]) => n.kind === "pan").map(([n]) => n.pan.value);
@@ -259,7 +259,7 @@ await test("1.12 b293: the stage — a limiter and a room where the context has 
   assert.ok(edges.some(([n]) => n.kind === "room") && edges.some(([n, to]) => n.kind === "limiter" && to.kind === "gain"), "a room, and a limiter in front of the volume");
   assert.equal(s.cue("whoosh", 0.5, { running: true }), true, "a cue on a running context");
   assert.equal(s.cue("nothing"), false, "a cue that does not exist is nothing");
-  const cold = make({ loadPacks: () => Promise.resolve({ PACKS, HELPERS, CUES }) });
+  const cold = make({ loadPacks: () => Promise.resolve({ PACKS, HELPERS, CUES, stage }) });
   assert.equal(cold.cue("unlock", 0.1, { running: true }), false, "a cue never makes a context");
   assert.equal(FakeAC.all.length, 0, "no context was made");
   const dry = make(); dry.prime(); await tick(); await tick();

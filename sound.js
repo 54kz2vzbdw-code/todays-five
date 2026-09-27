@@ -19,15 +19,8 @@ export const EXTRA_ENGINES = new Set(["chalk", "marker", "carve", "burn"]); // 1
    centre burst at 210 ms inside the fourth, and the chord at 700 ms. navigator.vibrate alternates on/off, so each
    pair below is a buzz and the gap to the next burst. test/sound.test.js derives the same numbers from fx.js. */
 export const FINALE_BUZZ = [14, 51, 14, 51, 14, 51, 30, 35, 14, 51, 14, 51, 14, 296, 60];
-/* 1.12 b293: the stage the packs play on. A room per material — an impulse response of decaying noise, darker at its
-   tail, [wet, seconds] — so Glass rings and Pixel stays dry; each sound placed in stereo where it came from on the
-   screen; a limiter in front of the volume, so a check-off landing on a finale's tail never clips; and the day's
-   check-offs climbing a major pentatonic, the nth on the nth note, in each engine's own units of pitch (a knock's
-   steps are quarter tones, a blip's semitones, a marble's thirds of one). The engines themselves are unchanged. */
-export const ROOM = { clean: [0.12, 0.9], ink: [0.1, 0.7], glass: [0.28, 1.8], tide: [0.3, 2.4], candy: [0.18, 1.2], phosphor: [0.04, 0.5], glow: [0.32, 2.8], ember: [0.18, 1.4], pencil: [0.08, 0.6], pixel: [0.03, 0.4] };
-export const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
-export const PHRASE = { knock: 2, bell: 2, pop: 2, blip: 1, marble: 3 };
-export function phrase(engine, step) { return PHRASE[engine] ? PENTA[(step || 0) % PENTA.length] * PHRASE[engine] : step || 0; }
+/* 1.12 b293: the stage the packs play on — a limiter in front of the volume, a room per material, each sound panned
+   where it was struck; the room's shape and the day's pentatonic climb live in packs.js (ROOM, room, phrase). */
 export function createSound(opts) {
   const get = k => (typeof opts[k] === "function" ? opts[k]() : opts[k]);
   const AC = () => (typeof window !== "undefined" && (window.AudioContext || window.webkitAudioContext)) || opts.AudioContext || null;
@@ -41,13 +34,7 @@ export function createSound(opts) {
     ac = new C(); made++;
     master = ac.createGain();
     master.connect(ac.destination);
-    bus = master; room = null; roomMat = "";
-    try { // 1.12 b293: the limiter and the room, where the browser has them (a context without them plays dry, as before)
-      let into = master; // what the dry sound and the room's return both feed: the limiter, or the volume itself (never upstream of bus)
-      if (ac.createDynamicsCompressor) { const lim = ac.createDynamicsCompressor(); lim.threshold.value = -3; lim.knee.value = 3; lim.ratio.value = 20; lim.attack.value = 0.002; lim.release.value = 0.12; lim.connect(master); into = lim; }
-      bus = ac.createGain(); bus.connect(into);
-      if (ac.createConvolver) { room = { conv: ac.createConvolver(), wet: ac.createGain() }; room.wet.gain.value = 0; bus.connect(room.conv); room.conv.connect(room.wet); room.wet.connect(into); }
-    } catch (e) { bus = master; room = null; }
+    bus = null; room = null; roomMat = ""; // 1.12 b293: the stage is built with the first sound (stage)
     pending = false;
     return ac;
   }
@@ -72,24 +59,22 @@ export function createSound(opts) {
       return ac;
     } catch (e) { return null; }
   }
-  /** The room for the material that is on, built just after the first sound that wants it (that one plays dry): up to
-      2.8 s of noise is not made inside a tap. */
+  /** The material's room, built just after the first sound that wants it (that one plays dry): not inside a tap. */
   function roomFor() {
     const m = (opts.mat && get("mat")) || "clean", c = ac, r = room;
-    if (!r || m === roomMat) return; roomMat = m;
-    setTimeout(() => {
-      if (ac !== c || roomMat !== m) return;
-      try {
-        const [wet, secs] = ROOM[m] || ROOM.clean, n = Math.floor(c.sampleRate * secs), ir = c.createBuffer(2, n, c.sampleRate);
-        for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); let lp = 0; for (let i = 0; i < n; i++) { const t = i / n; lp += (Math.random() * 2 - 1 - lp) * (0.9 - t * 0.7); d[i] = lp * Math.pow(1 - t, 2.6); } }
-        r.conv.buffer = ir; r.wet.gain.setTargetAtTime(wet, c.currentTime, 0.05);
-      } catch (e) { /* dry, then */ }
-    }, 0);
+    if (!r || m === roomMat || !packsMod || !packsMod.room) return; roomMat = m;
+    setTimeout(() => { if (ac === c && roomMat === m) try { packsMod.room(c, r, m); } catch (e) { /* dry, then */ } }, 0);
   }
-  /** Where a sound plays into: panned to where it came from on the screen (x, 0 to 1), or straight to the bus. */
+  /** The limiter and the room's send in front of the volume (packs.js stage), once the engines are here; else the volume. */
+  function stage() {
+    if (!bus && packsMod && packsMod.stage) try { ({ bus, room } = packsMod.stage(ac, master)); } catch (e) { bus = master; room = null; }
+    return bus || master;
+  }
+  /** Where a sound plays into: panned to where it came from on the screen (x, 0 to 1), or straight to the stage. */
   function out(x) {
-    if (typeof x !== "number" || !ac.createStereoPanner) return bus || master;
-    try { const p = ac.createStereoPanner(); p.pan.value = Math.max(-0.7, Math.min(0.7, (x - 0.5) * 1.3)); p.connect(bus || master); return p; } catch (e) { return bus || master; }
+    const to = stage();
+    if (typeof x !== "number" || !ac.createStereoPanner) return to;
+    try { const p = ac.createStereoPanner(); p.pan.value = Math.max(-0.7, Math.min(0.7, (x - 0.5) * 1.3)); p.connect(to); return p; } catch (e) { return to; }
   }
   function kit() {
     const k = get("kit") || { engine: "knock" };
@@ -137,7 +122,7 @@ export function createSound(opts) {
       return false;
     }
     roomFor();
-    try { pack[fn]({ c, master: out(x), kit: k, P: (key, d) => { const v = k[key]; return typeof v === "number" ? v : d; } }, fn === "check" ? phrase(k.engine, step) : step || 0); } catch (e) { return false; }
+    try { pack[fn]({ c, master: out(x), kit: k, P: (key, d) => { const v = k[key]; return typeof v === "number" ? v : d; } }, fn === "check" && packsMod.phrase ? packsMod.phrase(k.engine, step) : step || 0); } catch (e) { return false; }
     return true;
   }
   function buzz(pattern) {
@@ -154,7 +139,7 @@ export function createSound(opts) {
     tick() { return play("uncheck"); },
     /** 1.12 b279: the scratch under a drawing finger, for whichever engine is on — { speed(v, x), stop() }, or null when
         muted or before the engines have landed (then the strike is silent, and the check-off still sounds). */
-    scratch() { const c = ctx(); if (!c) return null; if (!packsMod) { loadPacks(); return null; } roomFor(); try { return packsMod.scratch({ c, master: bus || master, kit: kit() }); } catch (e) { return null; } },
+    scratch() { const c = ctx(); if (!c) return null; if (!packsMod) { loadPacks(); return null; } const to = stage(); roomFor(); try { return packsMod.scratch({ c, master: to, kit: kit() }); } catch (e) { return null; } },
     /** 1.12 b293: one of the app's own small sounds (packs.js CUES: whoosh, tick, key, unlock), placed at x. With
         `running`, only on a context that is already playing: a cue never makes one (a cold open's unseal has had no tap). */
     cue(name, x, { running = false } = {}) {

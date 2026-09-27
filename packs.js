@@ -158,7 +158,7 @@ function noiseShape({ c, master }, t, { attack = 0.01, hold = 0.04, release = 0.
 
 /* kalimba — a thumb-piano tine: a warm fundamental, one high partial that dies first, the thumb's tick. Check-offs
    climb a major pentatonic scale; the finale rolls up it and lands on a chord. */
-const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
+export const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21]; // 1.12 b293: the day's climb (phrase) uses it too
 function tine(env, t, f, gain, dec) {
   tone(env, { f0: f, t, attack: 0.003, peak: 0.26 * gain, len: 0.9 * dec });
   tone(env, { f0: f * 5.4, t, attack: 0.002, peak: 0.055 * gain, len: 0.18 * dec });
@@ -287,6 +287,29 @@ export const PACK_ORDER = ["knock", "bell", "blip", "typewriter", "marble", "pop
 /** The two builders every engine here is made of, so a pack that loads later (packs-secret.js, 1.6) is built the
     same way without importing this module a second time under a different URL. */
 export const HELPERS = { tone, noiseBurst };
+
+/** 1.12 b293: the stage in front of the volume — a limiter at -3 dB, so a check-off on a finale's tail never clips, and
+    the room's send — where the browser has them; a context without them plays dry, as before. sound.js keeps the bus. */
+export function stage(c, master) {
+  let into = master, room = null; // the dry sound and the room's return both feed the limiter (never upstream of the bus)
+  if (c.createDynamicsCompressor) { const lim = c.createDynamicsCompressor(); lim.threshold.value = -3; lim.knee.value = 3; lim.ratio.value = 20; lim.attack.value = 0.002; lim.release.value = 0.12; lim.connect(master); into = lim; }
+  const bus = c.createGain(); bus.connect(into);
+  if (c.createConvolver) { room = { conv: c.createConvolver(), wet: c.createGain() }; room.wet.gain.value = 0; bus.connect(room.conv); room.conv.connect(room.wet); room.wet.connect(into); }
+  return { bus, room };
+}
+/** 1.12 b293: a room per material, [wet, seconds] — Glass rings, Tide and Glow are long, Phosphor and Pixel nearly dry —
+    as an impulse response of decaying noise, darker at its tail. sound.js builds it just after the first sound in it. */
+export const ROOM = { clean: [0.12, 0.9], ink: [0.1, 0.7], glass: [0.28, 1.8], tide: [0.3, 2.4], candy: [0.18, 1.2], phosphor: [0.04, 0.5], glow: [0.32, 2.8], ember: [0.18, 1.4], pencil: [0.08, 0.6], pixel: [0.03, 0.4] };
+export function room(c, { conv, wet }, mat) {
+  const [level, secs] = ROOM[mat] || ROOM.clean, n = Math.floor(c.sampleRate * secs), ir = c.createBuffer(2, n, c.sampleRate);
+  for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); let lp = 0; for (let i = 0; i < n; i++) { const t = i / n; lp += (Math.random() * 2 - 1 - lp) * (0.9 - t * 0.7); d[i] = lp * Math.pow(1 - t, 2.6); } }
+  conv.buffer = ir; wet.gain.setTargetAtTime(level, c.currentTime, 0.05);
+}
+/** The day's check-offs climb a major pentatonic (PENTA, the kalimba's) into the finale's chord, the nth on the nth note,
+    in each engine's own units of pitch (a knock's steps are quarter tones, a blip's semitones, a marble's thirds of
+    one); the kalimba already did, and the rest keep their own steps. */
+const PHRASE = { knock: 2, bell: 2, pop: 2, blip: 1, marble: 3 };
+export function phrase(engine, step) { return PHRASE[engine] ? PENTA[(step || 0) % PENTA.length] * PHRASE[engine] : step || 0; }
 
 /** 1.12 b293: small sounds the packs never needed, the same whatever pack is on and quieter than any of them — a whoosh
     for a surface opening, a tick for a step inside one, a key for a character, the lock opening as a list unseals. A

@@ -915,13 +915,32 @@ export function openLineMenu(id) {
   $('#p-line [data-lact="move"]').hidden = !(M.liveSections(A.doc).length || meta().lists.some(l => l.id !== A.listId && l.mode !== "view"));
   const li = A.rows.get(id);
   A.showPanel("p-line", { anchor: li ? li.querySelector(".tool.lmenu") : null });
-  A.liftLine(id, $("#p-line")); // 1.12 b293: on a phone the line's words rise out of the list and become the title
+  liftLine(id, $("#p-line"));
+}
+/* 1.12 b293: on a phone a line's words rise out of the list into its menu's title, and go back when it closes — or on
+   to where the action sends them, as the line's exit (app.js leave, motion.js). */
+let lifted = null;
+function liftLine(id, d) {
+  lifted = null;
+  const li = A.rows.get(id), h = $("#p-line-h"), mo = A.motion;
+  if (!li || !mo || A.RM.matches || d.classList.contains("pop")) return;
+  lifted = { id, li, h, hr: mo.rest(h, d) };
+  mo.carry(mo.wordsOf(li), li.querySelector(".tx"), mo.textRect(li), h, lifted.hr);
+  li.classList.add("lifted");
+}
+function landLine(act) {
+  const l = lifted; lifted = null; if (!l) return;
+  const { id, li, h, hr } = l, it = A.doc && A.doc.items[id], x = { el: h, r: hr }, mo = A.motion;
+  if (act !== "delete") li.classList.remove("lifted");
+  if (act === "delete" || act === "nottoday" || (act === "today" && A.view === "today" && it && it.today)) A.exits.set(id, { ...x, how: act === "delete" ? "erase" : act === "today" ? "all" : "off" });
+  else if (act === "today" && it && !it.today) A.exits.set(id, { ...x, how: "today" }); // toggleToday flies them to the tab
+  else if (li.isConnected) mo.carry(mo.wordsOf(li), h, hr, li.querySelector(".tx"), mo.textRect(li));
 }
 function wireLine() {
-  $("#p-line").addEventListener("close", () => A.landLine(null)); // closed with nothing chosen: the words go back into the line
+  $("#p-line").addEventListener("close", () => landLine(null)); // closed with nothing chosen: the words go back into the line
   $("#p-line").addEventListener("click", e => {
     const b = e.target.closest("[data-lact]"); if (!b) return;
-    const id = lineId; A.landLine(b.dataset.lact); A.closePanel(); // 1.12 b293: the words go where the action sends them
+    const id = lineId; landLine(b.dataset.lact); A.closePanel(); // 1.12 b293: the words go where the action sends them
     if (!A.canEdit() || !A.doc.items[id] || A.doc.items[id].deleted) return;
     const act = b.dataset.lact;
     if (act === "edit") A.startEdit(id);

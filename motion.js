@@ -388,6 +388,15 @@ export function zoom(toAll, lines, apply) {
    back into its control (a sheet drops away) while the real one is already gone. */
 const cl = (v, a, b) => Math.max(a, Math.min(b, v));
 const OPEN = "inset(-80px round 18px)";
+let pressed = null;
+if (typeof document !== "undefined") document.addEventListener("pointerdown", e => { const b = e.target.closest && e.target.closest("button, [role=tab]"); if (b && !b.closest("dialog")) pressed = { el: b, t: performance.now() }; }, true);
+/** The control on the rail, a line's ⋯ or Everything's head that was just pressed or has focus: where a panel comes
+    from, and folds back to. Null for anything else (a panel that opened by itself scales in and out in place). */
+export function origin() {
+  const ok = el => !!el && el.isConnected && !el.closest("dialog") && !!el.closest(".rail, #foot, .tools, #all-head");
+  if (pressed && performance.now() - pressed.t < 1500 && ok(pressed.el)) return pressed.el;
+  const a = document.activeElement; return ok(a) ? a : null;
+}
 /** The start of a grow from rect A into the element's rect R: a translate that keeps A inside R, moving as little as it
     can, and A as a clip in R's own box. */
 function grownFrom(A, R) {

@@ -1,4 +1,4 @@
-// exporter.js — hands an export to the user and reads an import back. Loaded on first use (Settings → Advanced).
+// exporter.js — hands an export to the user and reads an import back. Loaded on first use (Settings → This list → Export & import).
 // iOS: the share sheet takes a File (Files, AirDrop, Mail…); elsewhere a download; the clipboard is the fallback.
 
 export async function handOff({ text, filename, mime, ios }) {

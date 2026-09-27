@@ -1407,7 +1407,7 @@ document.addEventListener("pointerup", e => {
 }, true);
 document.addEventListener("pointercancel", () => { press = null; }, true);
 
-/* swipes across a line: leftwards is "Not today" (touch only; off in Settings → Behavior). 1.12 b279: rightwards draws the
+/* swipes across a line: leftwards is "Not today" (touch only; off in Settings → Gestures). 1.12 b279: rightwards draws the
    strike (motion.js), landing by distance and never by speed, since a swipe right used to open the menu; a done line
    only gives a little. The menu keeps the hold; the check-off is toggle()'s, unchanged. */
 function swipeStart(li, e) {
@@ -2160,7 +2160,7 @@ $("#p-menu").addEventListener("click", e => {
 /* ---------------- idle fade (desktop) ----------------
    About four seconds without the mouse or a key and the rail and the footer fade to the date and the count (the
    presence dots stay). Any move or key brings them back. Off while a panel is open, off during the finale, off under
-   prefers-reduced-motion, and Settings → Behavior turns it off for good.                                        */
+   prefers-reduced-motion, and Settings → Screen turns it off for good.                                          */
 const IDLE_MS = 4000;
 function idleAllowed() { return HOVER.matches && !dev.idleFadeOff && !RM.matches && !!doc && !openPanel && !finaleOn && !drag; }
 function idleReset() {
@@ -2445,7 +2445,7 @@ document.addEventListener("keydown", e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key;
   if (k === "Escape") { hideToast(); if (query) setSearch(""); return; }
-  if (dev.keysOff) return; // single-character shortcuts can be switched off (Settings → Behavior)
+  if (dev.keysOff) return; // single-character shortcuts can be switched off (Settings → Keyboard)
   if (demo && ["a", "A", "o", "O", "/", "-", "s", "S"].includes(k)) return; // the welcome's list is Today, whole, and nothing else
   if (k >= "1" && k <= "9") {
     if (!edit) return;

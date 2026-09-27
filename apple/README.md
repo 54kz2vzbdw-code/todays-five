@@ -289,7 +289,7 @@ Six `CustomEvent`s the page dispatches on `window`, and nothing else:
 | --- | --- |
 | `tf:check` | `UIImpactFeedbackGenerator(.medium)` |
 | `tf:uncheck` | `UIImpactFeedbackGenerator(.light)` |
-| `tf:finale` | `UINotificationFeedbackGenerator(.success)` |
+| `tf:finale` | a `CHHapticPattern` on the volley's rhythm (1.12); `UINotificationFeedbackGenerator(.success)` where there is no engine |
 | `tf:shuffle` | `UIImpactFeedbackGenerator(.light)` |
 | `tf:draw` | the scratch: a `CHHapticAdvancedPatternPlayer` with one continuous event whose intensity and sharpness follow the finger's speed, which a `UIPanGestureRecognizer` on the web view reads (motion-1) |
 | `tf:lift` | stops the scratch; a committed strike then sends `tf:check` |

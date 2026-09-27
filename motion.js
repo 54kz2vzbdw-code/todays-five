@@ -27,7 +27,7 @@ export function spring(stiffness, damping) {
   let x = 0, v = 0, t = 0; const dt = 1 / 600, xs = [];
   while (t < 3) {
     v += (-stiffness * (x - 1) - damping * v) * dt; x += v * dt; t += dt; xs.push(x);
-    if (t > 0.03 && Math.abs(x - 1) < 0.001 && Math.abs(v) < 0.01) break;
+    if (t > 0.03 && Math.abs(x - 1) < 0.004 && Math.abs(v) < 0.08) break; // settled to the eye: a longer tail is time nobody sees
   }
   const n = 32, pts = [];
   for (let i = 0; i <= n; i++) pts.push(+xs[Math.min(xs.length - 1, Math.round(i / n * (xs.length - 1)))].toFixed(4));
@@ -36,7 +36,7 @@ export function spring(stiffness, damping) {
 }
 
 export const SPRINGS = {
-  settle: spring(420, 44) // ζ 1.07: a single line pulled back to nothing in ~300 ms, never past its start
+  settle: spring(900, 60) // ζ 1.0: a single line pulled back to nothing in ~275 ms, never past its start
 };
 
 const px = s => parseFloat(s) || 0;
@@ -61,6 +61,8 @@ export function draw(li) {
     return l;
   });
   const total = acc;
+  // only a strike born hot (Char) has a tip to cool after the lift; every other kit is tidied the moment its ink settles
+  const hot = lines.some(l => { const a = getComputedStyle(l.el, "::after"); return a.content !== "none" && ((a.backgroundImage && a.backgroundImage !== "none") || (a.backgroundColor && a.backgroundColor !== "rgba(0, 0, 0, 0)" && a.backgroundColor !== "transparent")); });
   const start = Math.min(...lines.map(l => l.left)), sweep = Math.max(1, Math.max(...lines.map(l => l.left + l.width)) - start);
   li.classList.add("drawing");
   box.style.setProperty("--burn", "0"); // a strike drawn by hand is cooled behind the finger: the check-off must not reheat it
@@ -102,7 +104,7 @@ export function draw(li) {
       runs.push(l.el.animate([frame(l, l.p), frame(l, to)], { duration: sp.duration, easing: sp.easing, delay: t, fill: "backwards" }).finished.catch(() => {}));
       t += d;
     });
-    const cooled = new Promise(r => setTimeout(r, RM.matches ? 0 : COOL_MS));
+    const cooled = hot && !RM.matches ? new Promise(r => setTimeout(r, COOL_MS)) : null;
     return Promise.all(runs).then(() => { for (const l of lines) release(l); return cooled; }).then(tidy);
   };
   return {

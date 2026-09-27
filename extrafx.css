@@ -10,7 +10,7 @@
 /* the material tokens (theme.js, MATERIAL): a thickness, a lift, a torn edge, a blend, how the strike leaves on uncheck,
    and the box's own check. Every fallback is what styles.css renders, so a kit that names none of them — every one of
    the 18 — is untouched even while this sheet is loaded. */
-.ink{height:var(--strike-h,max(3px,.058em));margin-top:var(--strike-dy,0);-webkit-mask-image:var(--strike-mask,none);mask-image:var(--strike-mask,none);-webkit-mask-size:auto 100%;mask-size:auto 100%;mix-blend-mode:var(--strike-blend,normal);transition:transform .22s cubic-bezier(.16,1,.3,1) var(--d,0s),opacity .22s ease}
+.ink{height:var(--strike-h,max(3px,.058em));margin-top:var(--strike-dy,0);-webkit-mask-image:var(--strike-mask,none);mask-image:var(--strike-mask,none);-webkit-mask-size:auto 100%;mask-size:auto 100%;mix-blend-mode:var(--strike-blend,normal);transition:transform var(--t,.22s) var(--e,cubic-bezier(.16,1,.3,1)) var(--d,0s),opacity .22s ease}
 .row:not(.done) .ink{transition-duration:var(--strike-exit,.22s);opacity:var(--strike-exit-op,1)}
 .row.nofx .ink{transition:none}
 .box path{stroke:var(--box-check,var(--ink));stroke-width:var(--box-check-w,3)}
@@ -37,6 +37,11 @@ html[data-theme="chalkboard"] #finale.on span,html[data-theme="whiteboard"] #fin
 .row.done .lines{--burn:0;transition:--burn var(--strike-cool,0s) ease-out}
 .ink::after{content:"";position:absolute;inset:0;border-radius:inherit;opacity:0;background:var(--strike-hot,transparent);box-shadow:var(--strike-hot-shadow,none)}
 .row.done .ink::after{opacity:var(--burn,0)}
+/* motion-1: a strike drawn by hand burns only at the tip and cools behind the finger (motion.js sets --hot on the line
+   the tip is on and --tip where it is); after the lift the tip cools too, and the line is not reheated (--burn:0 on
+   .lines while it is drawn). A kit that names no --strike-hot draws nothing here. */
+.row.drawing .ink::after{opacity:var(--hot,0);transition:opacity .9s ease-out;-webkit-mask-image:linear-gradient(90deg,transparent calc(var(--tip,100%) - 3.4em),#000 var(--tip,100%),transparent calc(var(--tip,100%) + 1px));mask-image:linear-gradient(90deg,transparent calc(var(--tip,100%) - 3.4em),#000 var(--tip,100%),transparent calc(var(--tip,100%) + 1px))}
+.row.drawing.cooling .ink::after{opacity:0}
 /* the carve: a one-pixel highlight over a shadow, so the words sit in the plank rather than on it. The floor is
    still measured text on ground — the shadow is a pixel of relief, never what makes a word readable. */
 .row .tx,#finale.on span{text-shadow:var(--task-shadow,none)}

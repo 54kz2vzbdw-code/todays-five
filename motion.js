@@ -4,15 +4,20 @@
 // Round one holds three things, and later rounds (the materials, the menus, the unseal) build on them:
 //  · spring(stiffness, damping) — a spring solved once into a CSS linear() easing and the time it takes to settle. A
 //    moving thing is then an ordinary compositor animation with real physics, and nothing runs a frame loop.
-//  · SPRINGS — the few the app names. Round one: `finish` (the ink landing when a drawn strike commits) and `retract`
-//    (the ink pulling back when the finger lets go early). Critically damped or over: a strike never overshoots its line.
+//  · SPRINGS — the few the app names. Round one: `settle`, the ink pulling back into a single line.
 //  · draw(li) — the ink under a finger. app.js measures the lines (layoutStrikes) and owns the check-off; this only
-//    moves the ink that is already there, and says how much of the line is struck.
+//    moves the ink that is already there, and says how much of the stroke is drawn.
 //
-// A strike is one `.ink` per rendered line. A flat ink grows with scaleX, as a tapped strike always has. An ink with a
-// texture — a gradient (Pink, Blush, Sunset, the Secret pair) or a mask (the Extra kits) — would squash under a scale,
-// so while it is being drawn it is shown whole and revealed with a clip instead. Either way the inline styles this
-// module sets are gone when it finishes, so a struck row at rest is exactly what a tap leaves.
+// A strike wraps the way the words do: one stroke through the text in reading order, across the first line and on
+// from the start of the next (Price's call, after the first cut struck every line at once like a rake). The finger's
+// sweep across the row is the whole stroke, so a line that wraps is crossed off in one pass without the finger having
+// to wrap too; the ink runs ahead of the finger on the early lines and meets it on the last.
+//
+// A flat ink grows with scaleX, as a tapped strike always has. An ink with a texture — a gradient (Pink, Blush, Sunset,
+// the Secret pair) or a mask (the Extra kits) — would squash under a scale, so while it is drawn it is shown whole and
+// revealed with a clip instead. A kit whose strike is born hot (Char) burns only at the tip while a finger draws and
+// cools behind it (extrafx.css reads --hot and --tip); after the lift the tip cools too, and the line is not reheated.
+// Every inline style this module sets is gone when it finishes, so a struck row at rest is exactly what a tap leaves.
 
 const RM = typeof matchMedia === "function" ? matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
 const LINEAR = typeof CSS !== "undefined" && CSS.supports && CSS.supports("transition-timing-function", "linear(0, 1)");
@@ -31,58 +36,86 @@ export function spring(stiffness, damping) {
 }
 
 export const SPRINGS = {
-  finish: spring(900, 60),   // ζ 1.0: lands in ~180 ms, inside the check-off's own sound
-  retract: spring(420, 44)   // ζ 1.07: back to nothing in ~300 ms, no bounce past the line's start
+  settle: spring(420, 44) // ζ 1.07: a single line pulled back to nothing in ~300 ms, never past its start
 };
 
 const px = s => parseFloat(s) || 0;
 const textured = cs => (cs.backgroundImage && cs.backgroundImage !== "none") || (cs.maskImage && cs.maskImage !== "none") || (cs.webkitMaskImage && cs.webkitMaskImage !== "none");
 const clipAt = p => `inset(-80% ${((1 - p) * 100).toFixed(3)}% -80% 0)`;
+const COOL_MS = 900; // how long the tip takes to cool after the lift (Char); the classes go after it
 
 /** Start drawing on a row. Returns null when the row has no measured lines (app.js lays them out first). */
 export function draw(li) {
   const inks = Array.from(li.querySelectorAll(".lines .ink"));
   if (!inks.length) return null;
+  const box = li.querySelector(".lines");
+  let acc = 0;
   const lines = inks.map(el => {
     const clip = textured(getComputedStyle(el));
     el.getAnimations().forEach(a => a.cancel());
     el.style.transition = "none";
     el.style.opacity = "1"; // an Extra kit fades an unstruck ink out (--strike-exit-op); a line being drawn is on its way in
-    if (clip) { el.style.transform = "scaleX(1)"; el.style.clipPath = clipAt(0); }
-    else el.style.transform = "scaleX(0)";
-    return { el, clip, left: px(el.style.left), width: Math.max(1, px(el.style.width)), p: 0 };
+    if (clip) { el.style.transform = "scaleX(1)"; el.style.clipPath = clipAt(0); } else el.style.transform = "scaleX(0)";
+    const width = Math.max(1, px(el.style.width)), l = { el, clip, left: px(el.style.left), width, from: acc, p: 0 };
+    acc += width;
+    return l;
   });
-  const total = lines.reduce((s, l) => s + l.width, 0);
-  const longest = lines.reduce((a, l) => (l.width > a.width ? l : a), lines[0]);
+  const total = acc;
+  const start = Math.min(...lines.map(l => l.left)), sweep = Math.max(1, Math.max(...lines.map(l => l.left + l.width)) - start);
+  li.classList.add("drawing");
+  box.style.setProperty("--burn", "0"); // a strike drawn by hand is cooled behind the finger: the check-off must not reheat it
+  let P = 0, settled = false;
   const set = (l, p) => { l.p = p; if (l.clip) l.el.style.clipPath = clipAt(p); else l.el.style.transform = `scaleX(${p})`; };
+  const heat = () => { // only the line the tip is on is hot, and only near the tip; nothing reads this but a hot kit
+    const at = total * P;
+    const tip = P > 0 && P < 1 ? lines.find(l => at >= l.from && at <= l.from + l.width) : null;
+    for (const l of lines) {
+      l.el.style.setProperty("--hot", l === tip ? "1" : "0");
+      if (l === tip) l.el.style.setProperty("--tip", l.clip ? (l.p * l.width).toFixed(1) + "px" : "100%");
+    }
+  };
+  const put = p => { P = p; const at = total * p; for (const l of lines) set(l, Math.max(0, Math.min(1, (at - l.from) / l.width))); heat(); };
   // a textured ink is held whole for as long as it animates: underneath, an unstruck row's ink is at scaleX(0)
   const frame = (l, p) => (l.clip ? { clipPath: clipAt(p), transform: "scaleX(1)", opacity: 1 } : { transform: `scaleX(${p})`, opacity: 1 });
-  let settled = false;
-  const clean = l => { l.el.style.transform = ""; l.el.style.clipPath = ""; l.el.style.opacity = ""; };
+  const clean = l => { const s = l.el.style; s.transform = ""; s.clipPath = ""; s.opacity = ""; };
   const release = l => { l.el.style.transition = ""; };
-  /** Animate every line to `to`, then leave the ink to the stylesheet (whose state is already the end state underneath). */
-  const go = (to, sp) => {
+  const tidy = () => {
+    li.classList.remove("drawing", "cooling"); box.style.removeProperty("--burn");
+    for (const l of lines) { l.el.style.removeProperty("--hot"); l.el.style.removeProperty("--tip"); }
+  };
+  /** Run the ink to `to` (1 lands it, 0 pulls it back) as one stroke through the lines — forwards through them when it
+      lands, backwards when it pulls back — in `ms`, the last segment easing out. Each line waits its turn showing
+      where it was (fill: backwards); underneath, the stylesheet already holds the end state. */
+  const run = (to, ms) => {
     if (settled) return Promise.resolve(); settled = true;
-    const runs = lines.map(l => {
-      const from = l.p;
-      clean(l);                                 // the stylesheet's own state is underneath from here on
-      if (RM.matches || from === to) { release(l); return Promise.resolve(); }
-      const a = l.el.animate([frame(l, from), frame(l, to)], { duration: sp.duration, easing: sp.easing });
-      return a.finished.then(() => release(l), () => release(l));
+    li.classList.add("cooling");
+    const order = to === 1 ? lines : lines.slice().reverse();
+    const moving = order.filter(l => l.p !== to);
+    const dist = moving.reduce((s, l) => s + Math.abs(to - l.p) * l.width, 0) || 1;
+    const runs = []; let t = 0;
+    for (const l of lines) clean(l);
+    moving.forEach((l, i) => {
+      const d = Math.abs(to - l.p) * l.width / dist * ms, last = i === moving.length - 1;
+      if (RM.matches || d < 1) return;
+      const single = moving.length === 1 && to === 0;
+      const sp = single ? SPRINGS.settle : { duration: d, easing: last ? "cubic-bezier(.2,.8,.3,1)" : "linear" };
+      runs.push(l.el.animate([frame(l, l.p), frame(l, to)], { duration: sp.duration, easing: sp.easing, delay: t, fill: "backwards" }).finished.catch(() => {}));
+      t += d;
     });
-    return Promise.all(runs).then(() => {});
+    const cooled = new Promise(r => setTimeout(r, RM.matches ? 0 : COOL_MS));
+    return Promise.all(runs).then(() => { for (const l of lines) release(l); return cooled; }).then(tidy);
   };
   return {
-    /** The finger is at `x`, in the row's own coordinates: every line is struck up to it at once. */
-    to(x) { if (settled) return; for (const l of lines) set(l, Math.max(0, Math.min(1, (x - l.left) / l.width))); },
-    /** How much of the longest line is struck (the commit rule), and how much of all of it (for the scratch). */
-    progress() { return longest.p; },
-    covered() { return lines.reduce((s, l) => s + l.width * l.p, 0) / total; },
-    /** The strike commits: call after the row has its `done` class, so the stylesheet underneath is already struck. */
-    finish() { return go(1, SPRINGS.finish); },
-    /** The finger let go early: the ink pulls back and the row is as it was. */
-    retract() { return go(0, SPRINGS.retract); },
+    /** The finger is at `x`, in the row's own coordinates: the stroke is drawn that far through the text. */
+    to(x) { if (!settled) put(Math.max(0, Math.min(1, (x - start) / sweep))); },
+    /** How much of the whole stroke is drawn: the commit rule reads it. */
+    progress() { return P; },
+    /** The strike commits: call after the row has its `done` class, so the stylesheet underneath is already struck. The
+        ink carries on from where the finger left it at the finger's own speed (px/ms), faster for a flick. */
+    finish(speed = 1) { const v = Math.max(0.8, Math.min(3.2, speed || 0)); return run(1, Math.max(70, Math.min(240, total * (1 - P) / v))); },
+    /** The finger let go early: the stroke pulls back the way it came and the row is as it was. */
+    retract() { return run(0, Math.max(140, Math.min(320, total * P / 1.1))); },
     /** Something else took the row (a render, a cancel): drop the ink where the stylesheet says, now. */
-    cancel() { if (settled) return; settled = true; for (const l of lines) { clean(l); release(l); } }
+    cancel() { if (settled) return; settled = true; for (const l of lines) { clean(l); release(l); } tidy(); }
   };
 }

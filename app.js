@@ -192,10 +192,10 @@ function loadMotion() {
   return motionP;
 }
 { const go = () => setTimeout(loadMotion, 600); if (document.readyState === "complete") go(); else addEventListener("load", go, { once: true }); }
-/** The drawn strike (swipeStart): it commits when the longest line is this far drawn; a mouse draws too; and the one
+/** The drawn strike (swipeStart): it commits when this much of the stroke is drawn; a mouse draws too; and the one
     hint a device that knew the old swipe-right menu is shown, once, on its first drawn strike. */
 const DRAW_COMMIT = 0.55, DRAW_MOUSE = true;
-const DRAW_HINT = "Swiping across a line crosses it off now. Hold a line for its menu.";
+const DRAW_HINT = "A swipe across a line crosses it off now—hold it for the menu.";
 // The hidden switch is this page's only way to fire a haptic, and it is one tick. The shell has the
 // real generators and a distinct feel per moment, so inside it this stands down rather than doubling up.
 const HAPTIC = IOS && !SHELL && (() => { const h = document.getElementById("haptic"); return !!h && "switch" in h; })();
@@ -1103,14 +1103,21 @@ function layoutStrikes(el, instant) {
   const base = el.getBoundingClientRect();
   if (instant) el.classList.add("nofx");
   wrap.innerHTML = "";
-  for (let i = 0; i < rects.length; i++) {
-    const r = rects[i];
-    if (r.width < 1) continue;
+  // motion-1: the strike wraps the way the words do — one stroke through the lines in reading order, at one speed, the
+  // last line easing out — where 1.9 started every line .08 s after the one before. One line keeps 1.9's .22 s exactly;
+  // two take .28 s and three or more .32 s, so the ink still lands inside the knock. Unchecking unwinds it, last line
+  // first (--dr). styles.css reads --t, --e, --d and --dr; a one-line row sets none of them.
+  const lines = Array.from(rects).filter(r => r.width >= 1), n = lines.length;
+  const T = n > 1 ? Math.min(0.32, 0.22 + 0.06 * (n - 1)) : 0, sum = lines.reduce((a, r) => a + r.width, 0);
+  let at = 0;
+  lines.forEach((r, i) => {
     const pos = `left:${r.left - base.left}px;top:${(r.top - base.top) + r.height * 0.555}px;width:${r.width}px`;
+    let timing = "";
+    if (n > 1) { const t = T * r.width / sum; timing = `;--d:${at.toFixed(3)}s;--t:${t.toFixed(3)}s;--dr:${Math.max(0, T - at - t).toFixed(3)}s;--e:${i === n - 1 ? "cubic-bezier(.2,.8,.3,1)" : "linear"}`; at += t; }
     const g = document.createElement("i"); g.className = "ghost"; g.style.cssText = pos;
-    const k = document.createElement("i"); k.className = "ink"; k.style.cssText = pos + `;--d:${i * 0.08}s`; // 1.9: wrapped lines follow at .08s, not .13s
+    const k = document.createElement("i"); k.className = "ink"; k.style.cssText = pos + timing;
     wrap.appendChild(g); wrap.appendChild(k);
-  }
+  });
   if (instant) { void el.offsetHeight; requestAnimationFrame(() => el.classList.remove("nofx")); }
 }
 function layoutAll(only) {
@@ -1332,8 +1339,9 @@ document.addEventListener("pointerup", e => {
 document.addEventListener("pointercancel", () => { press = null; }, true);
 
 /* swipes across a line. Leftwards is "Not today" (touch only; off in Settings → Behavior). motion-1: rightwards draws
-   the strike under the finger — touch and pen, and a mouse (DRAW_MOUSE) — and it commits on release when the longest
-   line is at least DRAW_COMMIT drawn: by distance, never by speed, because a swipe right used to open the line's menu
+   the strike under the finger — touch and pen, and a mouse (DRAW_MOUSE) — through the text in reading order, and it
+   commits on release when at least DRAW_COMMIT of the stroke is drawn: by distance, never by speed, because a swipe
+   right used to open the line's menu
    and a flick meant for that must not cross a line off. The menu keeps the hold. A done line does not draw: a
    rightward drag gives a little and springs back. The ink is motion.js's; the check-off is toggle()'s, unchanged. */
 function swipeStart(li, e) {
@@ -1395,7 +1403,7 @@ function liftStroke(s, ev, cancelled) {
   const it = doc && doc.items[s.id];
   if (!cancelled && s.stroke.progress() >= DRAW_COMMIT && it && !it.deleted && !it.done && canEdit() && !editing) {
     toggle(s.id, ev.clientX, ev.clientY, true);
-    s.stroke.finish();
+    s.stroke.finish(s.v);
     if (dev.hints && dev.hints.menu && touchUi()) showMark("draw", s.li, DRAW_HINT);
   } else s.stroke.retract();
 }

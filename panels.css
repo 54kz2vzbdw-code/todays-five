@@ -340,11 +340,11 @@ dialog.panel .k.state .tdot+.tdot{margin-left:-5px}
 .slot:active{transform:scale(.985)}
 .slot[aria-current="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .slot:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.slot .sl{display:flex;align-items:center;gap:.4em;padding:0 .3rem;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.slot .sl{display:flex;align-items:center;gap:.4em;min-height:18px;padding:0 .3rem;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
 .slot .sl svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 .slot[data-slot="night"] .sl svg{fill:currentColor;stroke:none}
 .slot .nm{padding:0 .3rem;font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.slot .on{position:absolute;top:.85rem;right:.85rem;font-family:var(--font-ui);font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:.3em .65em;border-radius:999px;background:var(--accent);color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.slot .on{margin-left:auto;font-family:var(--font-ui);font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:.25em .6em;border-radius:999px;background:var(--accent);color:var(--ink)} /* on the label's row, off the miniature */
 
 /* a theme in miniature (panels.js preview): its ground and glow, three lines, the middle one crossed off in its ink */
 .pv{position:relative;display:flex;flex-direction:column;justify-content:center;gap:8px;height:88px;padding:0 14px;border-radius:11px;background:var(--pv-glow),var(--pv-ink);background-color:var(--pv-ink);border:1px solid var(--pv-hair);overflow:hidden}

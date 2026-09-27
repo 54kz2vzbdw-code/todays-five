@@ -1989,3 +1989,68 @@ can settle is below.
   themselves; the suite had it.
 - **The stamp, the merge and the deploy**, and everything that can only follow a deploy: `watchsim.mjs all`,
   the five Watch self-tests, and the crossing in the wrist list above.
+
+# Today's Five 1.12 b279 — motion, round one: cross it off by hand
+
+*Shipped as build 292. b279 is the round's first commit, and the tag its code carries.*
+
+The brief is `L3/todays-five-1.12-motion-1-prompt.md`, the first of six rounds meant to give the app a moat. Price made
+two calls at the checkpoint: a wrapped line is struck as one stroke in reading order, and "make all your suggested
+changes." The decisions are in DECISIONS.md under "1.12 b279 decisions" and apple/DECISIONS-apple.md under "The drawn
+strike in the hand." The version holds at 1.12.
+
+## What shipped
+
+- **A strike drawn by hand.** Swipe across an undone line and the ink goes down under the finger, with touch, pen or
+  mouse. It lands at 55 % of the stroke, by distance and never by speed. The landing is a tap's check-off, unchanged.
+  Short of 55 % the ink pulls back and nothing is written. Swipe right no longer opens the menu; the hold does, as it
+  already did. Swipe left is still Not today.
+- **The wrap.** A line that wraps is struck as one stroke in reading order, whether drawn or tapped, and unchecking
+  unwinds it from the last line. A one-line row is struck exactly as before.
+- **The scratch.** Each of the eighteen engines has a voice that follows the finger's speed and position, levelled
+  under its own check-off.
+- **The hand.** On the iPhone, the Taptic Engine scratches while the finger draws. The page sends `tf:draw` and
+  `tf:lift`; the shell measures the speed itself.
+- **Char's hot tip.** It burns at the tip and cools behind the finger. The landing carries the finger's release speed.
+- **`motion.js`.** New, lazy, and pinned to the build: the spring solver and the draw engine that later rounds build on.
+- **Copy.** How it works, the gestures sheet and the one-time hint, all through the voice skill.
+
+## Recordings
+
+The checkpoint set is in `shots/motion-1/`: paper, terminal, pink, chalkboard, gestures. The same scenes on the final
+build are in `shots/motion-1/final/`. `shots/motion-1/strokes.m4a` is a drawn strike in each of the eighteen engines.
+All of them were recorded by `tools/draw.mjs`: a real finger (CDP touch) at 390×844, Chrome's own screencast, real
+frame timing.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| `app.js` | **+1,158 bytes gzipped** (50,453 → 51,611) against a 1 KB budget, 134 over. The overage is the wrapped tap strike, which has to be laid out at first render | `gzip -9` |
+| `motion.js` | **3,890 bytes gzipped** (budget 4 KB). Fetched 600 ms after load, or on the first press on a row | `gzip -9` |
+| `styles.css` | **+95 bytes gzipped**: the strike's per-line timing variables | `gzip -9` |
+| the scratch code | `packs.js` +1,612 bytes gzipped, `sound.js` +151. Lazy, never at first paint | `gzip -9` |
+| first paint | desktop FCP **56 → 56 ms**; mobile FCP **1232 → 1252 ms** (+20 ms at the median, ranges 1208–1252 and 1240–1268). This is `app.js` parsing ~3.6 KB more source at the 4× CPU slowdown; `motion.js` arrives after first paint. On the wire 558.0 → 570.6 KB, most of it `motion.js` fetched at idle inside the window | `tools/paint.mjs 8`, 278 served on :8792 |
+| the scratch, levelled | **0 of 18 engines over** their own check-off at a fast stroke (1.6 px/ms), on three renders. The first render had 15 over | `tools/sounds.js` |
+| idle CPU | **not measured**, because Price said to skip the idle tests. Nothing in the round runs at rest: pointer events drive the ink, and every animation ends | — |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, **sound 15** (the scratch table and `sound.scratch()`), features 30, compat 9 |
+| Browser suite, 1440×900 and 390×844 | **195 passed, 0 failed** end to end. That includes the 13 new tests and the moments test asserting draw, lift, check in order |
+| The two tests that encoded the old swipe right | rewritten, and run once against 278: both **fail there** as they must ("a swipe right opens no menu now: expected 0 got 1"; no "Swipe across a line" on the gestures sheet) |
+| Swift core | `swift test`: 134 tests in 10 suites passed |
+| The app | TodaysFive for `generic/platform=iOS Simulator` and TodaysFiveWatch for `generic/platform=watchOS Simulator`: BUILD SUCCEEDED, 0 warnings. `xcodebuild archive` for `generic/platform=iOS` with the App Manager key: **ARCHIVE SUCCEEDED, 0 warnings**, CFBundleVersion 292, the Watch app embedded (the pass that compiles the Watch for `arm64_32`), in `~/Library/Developer/Xcode/Archives/2026-09-26/` |
+
+## What only a real iPhone can settle
+
+1. **The scratch in the hand.** Draw a line slowly, then fast. *Pass:* a fine texture that swells with speed and stops
+   the moment the finger lifts, then the check-off's knock. *Fail:* nothing (the engine didn't start), a buzz that
+   outlives the finger (`tf:lift` not heard), or a knock with no scratch before it.
+2. **A strike drawn while scrolling.** Start a vertical scroll on a line, then drift sideways. *Pass:* the list
+   scrolls and nothing is struck. *Fail:* a strike, or a scroll that stutters because the pan recogniser held the touch.
+3. **The long-press still prepares the engine.** Tap a line cold after a minute idle. *Pass:* the check-off's haptic
+   lands with the tap. *Fail:* it lands late, which would mean the new recogniser starved the touch-down press.
+

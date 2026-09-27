@@ -340,6 +340,9 @@ No URL, fragment or secret is ever printed — the one `print` in the app is `#i
 site passes a fixed string with counts. No analytics, no crash reporting, no `NSUserActivity`, and no
 network request of the app's own beyond the web view's.
 
+The app switcher's picture of the app is a card, not the list (1.12 b293): the theme's own ink and a lock,
+put in place as the scene resigns active and lifted as it comes back. It reads nothing from the page.
+
 ---
 
 # The Watch app

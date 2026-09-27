@@ -49,4 +49,13 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneWillEnterForeground(_ scene: UIScene) {
         root.cameToForeground()
     }
+
+    /// 1.12 b293: the app switcher's picture is a card, not the list (WebViewController).
+    func sceneWillResignActive(_ scene: UIScene) {
+        root.coverForSwitcher()
+    }
+
+    func sceneDidBecomeActive(_ scene: UIScene) {
+        root.uncoverForSwitcher()
+    }
 }

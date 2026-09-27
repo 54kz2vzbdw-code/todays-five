@@ -2726,3 +2726,21 @@ the pattern where it cannot be felt (`drawSelfCheck()`), as it does the finale's
 **The Watch is left alone.** It has no drawn strike — a line on the wrist is crossed off by a tap — so `WatchHaptics`
 does not gain the two names, and nothing on the Watch changes.
 
+
+## The app switcher shows a card, not the list (1.12 b293)
+
+The list is encrypted everywhere but the screen it is open on, and the app switcher kept one more copy of that screen:
+iOS photographs the app as it leaves, and the picture sits in the switcher for anyone who swipes up. The moat round made
+the privacy something you can see on the web (the unseal, the keys decoding); this is the same promise where the web
+cannot reach.
+
+**Where.** `SceneDelegate.sceneWillResignActive` puts a card over the web view, and `sceneDidBecomeActive` fades it off
+in 0.18 s. Resigning active is the moment that matters: the switcher's picture is taken after it, and so is the one
+Control Center and a notification pulled down would show behind them. The card goes in without an animation so it is
+there for the picture.
+
+**What.** The theme's own ink — `view.backgroundColor`, which already follows the page's `theme-color` — and an SF
+Symbol lock, light on a dark ink and dark on a light one. Nothing is read from the page and nothing is kept: it is a
+colour and a symbol, so the web contract (COMPATIBILITY.md §8) does not move. It is iPhone-only, as the app is
+(`TARGETED_DEVICE_FAMILY = 1`), so there is no Split View in which it would cover a list someone is looking at. It is
+not a setting.

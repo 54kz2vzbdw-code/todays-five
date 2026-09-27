@@ -235,6 +235,56 @@ final class WebViewController: UIViewController {
         Task { await reconcileVault() }
     }
 
+    // ---------------------------------------------------------------- the app switcher (1.12 b293)
+
+    /// The app switcher keeps a picture of the app, and here that picture is the list. The list is encrypted
+    /// everywhere but the screen it is open on; this keeps the switcher from being one more screen. While the
+    /// app is not active a card covers it — the theme's own ink and a lock — and it lifts as the app comes
+    /// back. Nothing is read, sent or kept: the card is a colour and a symbol.
+    private lazy var privacyCard: UIView = {
+        let card = UIView()
+        card.isUserInteractionEnabled = false
+        card.translatesAutoresizingMaskIntoConstraints = false
+        card.accessibilityElementsHidden = true
+        let lock = UIImageView(image: UIImage(systemName: "lock.fill"))
+        lock.translatesAutoresizingMaskIntoConstraints = false
+        lock.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 30, weight: .semibold)
+        card.addSubview(lock)
+        NSLayoutConstraint.activate([
+            lock.centerXAnchor.constraint(equalTo: card.centerXAnchor),
+            lock.centerYAnchor.constraint(equalTo: card.centerYAnchor)
+        ])
+        return card
+    }()
+
+    /// Called as the scene resigns active: in place before the switcher takes its picture, with no animation.
+    func coverForSwitcher() {
+        let card = privacyCard, ink = view.backgroundColor ?? .black
+        var white: CGFloat = 0, alpha: CGFloat = 0
+        ink.getWhite(&white, alpha: &alpha)
+        card.backgroundColor = ink
+        (card.subviews.first as? UIImageView)?.tintColor = UIColor(white: white > 0.6 ? 0.3 : 0.82, alpha: 1)
+        card.layer.removeAllAnimations()
+        card.alpha = 1
+        guard card.superview == nil else { view.bringSubviewToFront(card); return }
+        view.addSubview(card)
+        NSLayoutConstraint.activate([
+            card.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            card.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            card.topAnchor.constraint(equalTo: view.topAnchor),
+            card.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+    }
+
+    /// Called as the scene becomes active again: the card fades off the list.
+    func uncoverForSwitcher() {
+        let card = privacyCard
+        guard card.superview != nil else { return }
+        UIView.animate(withDuration: 0.18, animations: { card.alpha = 0 }, completion: { finished in
+            if finished, card.alpha == 0 { card.removeFromSuperview() }
+        })
+    }
+
     /// Read `tf/v2/meta` — storage this app already hosts — and make the vault agree with it. No
     /// bridge message, no web change, no new contract: the page's *Remove from this device* and
     /// *Delete this list* are observed rather than relayed.

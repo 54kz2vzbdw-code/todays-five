@@ -3244,7 +3244,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   });
 
   /* 1.12 b321: the kits that carry a scene, and the module each one's is in (a pair can share one) */
-  const SCENE_MODS = { forest: "scene-forest.js", harbor: "scene-harbor.js", paper: "scene-papercut.js", midnight: "scene-papercut.js", teletype: "scene-teletype.js", terminal: "scene-terminal.js", light: "scene-orbit.js", dark: "scene-orbit.js", sunset: "scene-bay.js", dusk: "scene-bay.js" };
+  const SCENE_MODS = { forest: "scene-forest.js", harbor: "scene-harbor.js", paper: "scene-papercut.js", midnight: "scene-papercut.js", teletype: "scene-teletype.js", terminal: "scene-terminal.js", light: "scene-orbit.js", dark: "scene-orbit.js", sunset: "scene-bay.js", dusk: "scene-bay.js", arcade: "scene-arcade.js", sketch: "scene-sketch.js" };
   const SCENE_KITS = Object.keys(SCENE_MODS);
   /* 1.12 b318: Scenes. A device that has them on, Forest in Night and Harbor in Day (a dark system: Forest on) */
   const sceneDevice = (on = true) => `try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: { day: "T1:curated:harbor", night: "T1:curated:forest", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }${on ? ", scenes: true" : ""} } })); } catch (e) {}`;
@@ -3395,19 +3395,19 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": 1.12 b328: Light's and Dark's liquid keeps to the empty part of the page — no pad under the words, and wherever it settles it is clear of every line, before and after a long line is added", async () => {
+  await test(label + ": 1.12 b328: Light's and Dark's liquid (and, from b332, Sketch's balloon) keeps to the empty part of the page — no pad under the words, and wherever it settles it is clear of every line, before and after a long line is added", async () => {
     const t = await fresh(opts, { init: sceneDevice() });
     await sceneUp(t, "forest");
-    const clear = () => t.page.evaluate(() => { const s = window.__tf().scene, [x, y, r] = s.spot, range = document.createRange(), hits = [];
+    const clear = () => t.page.evaluate(() => { const s = window.__tf().scene, [x, y, r] = s.spot || [-1e4, -1e4, 0], range = document.createRange(), hits = [];
       for (const el of document.querySelectorAll("#today .row .tx")) { range.selectNodeContents(el); const b = range.getBoundingClientRect(); const dx = Math.max(b.left - x, 0, x - b.right), dy = Math.max(b.top - y, 0, y - b.bottom); if (Math.hypot(dx, dy) < r) hits.push(el.textContent.slice(0, 20)); }
       return { spot: s.spot, hits, flag: document.documentElement.dataset.sceneClear !== undefined, pad: getComputedStyle(document.getElementById("today")).backgroundColor }; });
-    for (const kit of ["light", "dark"]) {
+    for (const kit of ["light", "dark", "sketch"]) {
       await openPicker(t, "night"); await t.page.click(`#p-theme .swatch[data-code="T1:curated:${kit}"]`); await wait(300); await t.esc(); await wait(200);
       await sceneUp(t, kit); await wait(2500);
       let c = await clear(); assert.ok(c.flag, kit + ": the stage knows it keeps clear"); assert.ok(/rgba\(0, 0, 0, 0\)|transparent/.test(c.pad), kit + ": no pad under the words: " + c.pad);
       assert.deepEqual(c.hits, [], kit + ": clear of every line, at " + JSON.stringify(c.spot));
       await t.press("#addtoday"); await t.page.keyboard.type("A line long enough to reach across most of the page and then some more"); await t.page.keyboard.press("Enter"); await t.page.keyboard.press("Escape"); await wait(2800);
-      c = await clear(); assert.deepEqual(c.hits, [], kit + ": still clear after a long line, now at " + JSON.stringify(c.spot));
+      c = await clear(); assert.deepEqual(c.hits, [], kit + ": still clear after a long line (or gone, with no room), now at " + JSON.stringify(c.spot));
     }
     await openPicker(t, "night"); await t.page.click(`#p-theme .swatch[data-code="T1:curated:forest"]`); await wait(300); await t.esc(); await sceneUp(t, "forest");
     assert.equal(await t.page.evaluate(() => document.documentElement.dataset.sceneClear), undefined, "a scene that doesn't keep clear has its pad back");

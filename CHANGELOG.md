@@ -44,9 +44,10 @@ Scenes: turn them on in Appearance, and the themes tagged Scene get a moving pic
 with fireflies and a doe for Forest; a harbor with gulls and a lighthouse for Harbor; one pop-up paper town for Paper
 and Midnight, by day and by night; one coast for Teletype and Terminal, typed in characters on green-bar paper by day
 and drawn in glowing green lines at night; for Light and Dark, a ring of glossy liquid drops that spins like a loader
-and keeps to the empty part of the page; and one bay for Sunset and Dusk, a striped sun going down by day and paper
-lanterns rising at blue hour. They stay nearly still while you use the list and play out when you leave it alone. Off by
-default—with them off, the app runs exactly as before.
+and keeps to the empty part of the page; one bay for Sunset and Dusk, a striped sun going down by day and paper lanterns
+rising at blue hour; a neon pixel-art game playing its attract mode for Arcade; and for Sketch, a pencil and a brush
+drawing a hot-air balloon in watercolor. They stay nearly still while you use the list and play out when you leave it
+alone. Off by default—with them off, the app runs exactly as before.
 
 ## 1.11 — A look of its own.
 

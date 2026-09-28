@@ -11,7 +11,7 @@
 
 export const LOOP = 15;
 const IDLE_AFTER = 20000;
-const MODS = { forest: "./scene-forest.js", harbor: "./scene-harbor.js", paper: "./scene-papercut.js", midnight: "./scene-papercut.js", teletype: "./scene-teletype.js", terminal: "./scene-terminal.js", light: "./scene-orbit.js", dark: "./scene-orbit.js", sunset: "./scene-bay.js", dusk: "./scene-bay.js" }; // a pair can share one world
+const MODS = { forest: "./scene-forest.js", harbor: "./scene-harbor.js", paper: "./scene-papercut.js", midnight: "./scene-papercut.js", teletype: "./scene-teletype.js", terminal: "./scene-terminal.js", light: "./scene-orbit.js", dark: "./scene-orbit.js", sunset: "./scene-bay.js", dusk: "./scene-bay.js", arcade: "./scene-arcade.js", sketch: "./scene-sketch.js" }; // a pair can share one world
 export const SCENE_IDS = Object.keys(MODS);
 
 /* ---------------- the drawing kit a scene is handed ---------------- */
@@ -147,12 +147,12 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     for (const el of shell.querySelectorAll(".row .tx, .row .tool, .chip, .seg, .add, #date, #count, #hint, #finale > span")) {
       if (el.classList.contains("tx")) range.selectNodeContents(el);
       const b = el.classList.contains("tx") ? range.getBoundingClientRect() : el.getBoundingClientRect();
-      if (b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < innerHeight) out.push([b.left, b.top, b.right, b.bottom]);
-      if (scene.hug && el.classList.contains("tx") && b.width > 0) lines.push(b);
+      if (b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < innerHeight) out.push([b.left, b.top, b.right, b.bottom, el.classList.contains("tx") ? 1 : 0]); /* the fifth: 1 for a line's words */
+      if (scene.hug && b.width > 0 && (el.classList.contains("tx") || (scene.hugFinale && el.matches("#finale > span")))) lines.push(b); /* a scene can have the finale's words hugged too */
     }
     if (scene.words) scene.words(out);
     if (scene.hug) {
-      while (hugs.children.length < lines.length) { const d = document.createElement("div"), st = d.style; st.position = "absolute"; st.borderRadius = "40px"; st.background = k(.72); st.filter = "blur(14px)"; hugs.appendChild(d); }
+      while (hugs.children.length < lines.length) { const d = document.createElement("div"), st = d.style; st.position = "absolute"; st.borderRadius = "40px"; st.background = k(typeof scene.hug === "number" ? scene.hug : .72); st.filter = "blur(14px)"; /* a scene can ask for a darker pad */ hugs.appendChild(d); }
       [...hugs.children].forEach((d, i) => { const b = lines[i], st = d.style; if (!b) { st.display = "none"; return; } st.display = ""; st.left = b.left - 30 + "px"; st.top = b.top - 14 + "px"; st.width = b.width + 60 + "px"; st.height = b.height + 28 + "px"; });
     }
   };

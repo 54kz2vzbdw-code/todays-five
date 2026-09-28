@@ -2564,3 +2564,47 @@ holds at 1.12, and nothing in `apple/` changed but the stamp.
 ## What only a real iPhone can settle
 
 Arcade's bloom and scanlines at the phone's density, and what each of the two costs on the phone itself.
+
+# Today's Five 1.12 b334 — Scenes for every theme, round six: Blush and Pink
+
+*Shipped as build 335. b334 is the round's commit.*
+
+One candy heart for the pair, in the largest open space on the page: a glossy gummy heart by day, the same heart as a
+neon sign on a brick wall at night. The parked fairground was replaced. The decisions are in DECISIONS.md under "1.12
+b334 decisions — Scenes for every theme, round six: Blush and Pink". Web only; the version holds at 1.12, and nothing in
+`apple/` changed but the stamp.
+
+## What shipped
+
+1. **Blush and Pink** (b334). `scene-heart.js`, one module for the pair; the stage maps both, the swatches tag both, the
+   worker precaches it; the changelog names the heart (through Price's voice); the b318 test's theme without a scene
+   moves to Cocoa or Ember.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `app.js` **+9 bytes** gzipped; `index.html`, `styles.css` unchanged; `sw.js` +5 | `gzip -9 -n` |
+| lazy, Scenes on only | `scene-heart.js` **7,834**; `scenes.js` 8,272 → **8,287** | `gzip -9 -n` |
+| first paint | desktop FCP **48 → 48 ms** (48–60 against 48–64); mobile **1304 → 1308 ms** (1292–1320 against 1296–1328): no cost | `tools/paint.mjs 8`, 333 (port 8800) beside this build |
+| CPU, desktop | the loop: Blush **2.6 %** of a core (12.5 % for every Chrome process), Pink **2.9 %** (12.3 %); in use: **2.0 %** (9.7 %) and **2.2 %** (9.7 %) | `tools/idle.mjs 60`, `SCENES=1` and `SCENES=1 USE=5` |
+| CPU, phone (390×844 at 2×) | the loop: Blush **2.5 %** (12.3 %), Pink **3.1 %** (12.8 %) | `tools/idle.mjs 45`, `VP=phone SCENES=1` |
+| contrast | every reading at or above plain but one (Blush's footer hint in the long list, left alone, 5.85 → 5.04, the app's idle fade); the table below | `tools/contrast.mjs`: the seed lines, `FIXTURE=1`, `FIXTURE=1 VIEW=all` |
+
+| p1, plain → scene (in use / left alone) | Blush | Pink |
+| --- | --- | --- |
+| Today's lines, three (desktop, phone) | 13.68 → 14.88 / 14.88; 13.66 → 14.88 / 14.88 | 13.11 → 15.99 / 15.91; 13.03 → 15.90 / 15.05 |
+| Today's lines, long list (desktop, phone) | 13.96 → 14.75 / 14.75; 13.68 → 14.88 / 14.88 | 13.54 → 16.13 / 16.08; 13.03 → 16.12 / 16.12 |
+| small print in a long list (desktop caption; phone ↻) | 5.74 → 6.08; 5.70 → 6.08 | 4.72 → 5.73; 4.69 → 5.72 |
+| a struck line (the finale; the long list) | 5.36 → 5.64, 5.35 → 5.64; 5.91 → 6.16, 5.86 → 6.12 | 3.95 → 5.05, 3.94 → 5.05; 4.95 → 5.74, 4.89 → 5.72 |
+| the finale's line (desktop, phone) | 5.20 → 5.37; 5.40 → 5.17 | 4.68 → 5.37; 4.95 → 5.50 |
+| Everything's rows (desktop, phone) | 13.90 → 14.88; 13.68 → 14.88 | 13.39 → 16.19; 13.11 → 16.13 |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30 (the precache list has the module), compat 9 |
+| Focused runs | the Scenes tests, the walk through every kit with a scene (now fourteen), the keep-clear and pads' tests, the full session and the worker's two tests, both viewports: 16 passed |
+| Looked at | both kits on both viewports: lab sheets through every beat, then the app with the seed lines and the finale |
+| Screenshots | `shots/scenes-7/`: each kit mid-loop, phone and desktop (JPEG) |

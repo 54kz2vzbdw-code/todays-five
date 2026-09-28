@@ -1741,3 +1741,42 @@ check as `.mjs` caught it before anything ran.
 **What did not change.** First paint (`app.js` +8 bytes gzipped; `index.html`, `styles.css` unchanged); no stored
 setting; the other scenes (the stage's new options do nothing for a scene that doesn't ask, and the fifth number in each
 rect is ignored by the ones that don't read it); nothing in `apple/` but the stamp.
+
+
+# 1.12 b334 decisions — Scenes for every theme, round six: Blush and Pink
+
+**The fairground went, for a heart.** The plan had a clay pastel fairground by day and a neon carnival by night, and the
+parked module drew it: in the app Blush was a pale pink wash with a faint Ferris wheel, a box for a booth and a hot-air
+balloon (Sketch's, the round before), and bunting strung right across the header's small words; Pink was a ring of dim
+bulbs in the dark. Both were redrawn around one subject the two kits share — a candy heart — in `scene-heart.js`, which
+keeps to the largest open space on the page like the liquid and the balloon.
+
+**Blush, by day: a gummy heart.** Glossy, lit from the upper left: a gradient through the jelly, the rim darker, a
+bounce of light along the lower right, a broad glint on the left lobe and a small one on the right, a soft shadow on the
+page that shrinks as it rises. Gumballs and candy sprinkles orbit it in depth, behind it and in front. The loop: it
+crouches, hops, flips over in the air (its back a darker, flatter pink) and lands with a wobble that dies away; a ribbon
+swirls in and winds round it, twisting as it goes, and flies off; the gumballs close into a halo, the heart swells and
+pops into sprinkles that swirl and settle back into its shape before the gloss comes back; it beats twice. The finale: a
+fountain of small hearts.
+
+**Pink, by night: the same heart in neon.** A brick wall, dark plum, uneven, lit by nothing but the sign. Each tube is
+drawn the way neon looks: the dark glass always there, and when lit a wide faint bloom, a narrower one, the tube's
+colour and a near-white core; the sign's glow falls on the bricks. An arrow in gold through the heart, sparkles round
+it. The loop: the power cuts; the heart relights a stretch at a time from one electrode, stuttering, then the arrow,
+whose chase lights run along it, then the sparkles one by one; it beats twice, twice; small neon hearts float up; its
+colour cycles. The finale: neon hearts burst round it like fireworks.
+
+**The words.** Both keep to the empty page; Pink's wall is behind the words and its lines sit on pads (.72). Every
+reading is at or above its plain value, in the seed lines, the long list and Everything, on both viewports — the lines
+13.1–14.0 plain, 14.8–16.2 over the scenes — but one: Blush's footer hint in the long list, left alone, 5.85 → 5.04,
+which follows the app's own idle fade. The cleanest round of the seven.
+
+**What it costs.** The cheapest pair yet: the loop 2.6 % (Blush) and 2.9 % (Pink) of a core on a wide screen, in use 2.0
+% and 2.2 %, on a phone 2.5 % and 3.1 %.
+
+**Blush and Pink were the last light kits without a scene.** The b318 test's "a theme without one takes it down" now
+takes the first kit still without a scene from Cocoa and Ember, in the picker's dark group; after the last round it will
+want a theme you make.
+
+**What did not change.** First paint (`app.js` +9 bytes gzipped; `index.html`, `styles.css` unchanged); no stored
+setting; the other scenes; the stage but for two names in its map; nothing in `apple/` but the stamp.

@@ -138,17 +138,18 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
   const onResize = () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (alive && scene) { size(); draw(); } }, 150); };
   addEventListener("resize", onResize);
   /* 1.12 b328: a scene that keeps to the empty part of the page (its `words(rects)`) is told where the words are: each
-     line's text and its tools, the pills, the date, the count, the keyboard line and the finale's words, in CSS pixels, measured again (once a frame at
-     most) whenever the page's words change, move or scroll. */
+     line's text and its tools, the pills, the date, the count, a section's name and count in Everything (b339), the keyboard line and the finale's
+     words, in CSS pixels, measured again (once a frame at most) whenever the page's words change, move or scroll. */
   let wordsF = 0, watch = null;
   const measure = () => {
     wordsF = 0; if (!alive || !scene || !(scene.words || scene.hug)) return;
     const out = [], lines = [], range = document.createRange(), shell = document.getElementById("shell"); if (!shell) return;
-    for (const el of shell.querySelectorAll(".row .tx, .row .tool, .chip, .seg, .add, #date, #count, #hint, #finale > span")) {
+    for (const el of shell.querySelectorAll(".row .tx, .row .tool, .chip, .seg, .add, .sec-toggle, .sec-count, #date, #count, #hint, #finale > span")) {
       if (el.classList.contains("tx")) range.selectNodeContents(el);
       const b = el.classList.contains("tx") ? range.getBoundingClientRect() : el.getBoundingClientRect();
-      if (b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < innerHeight) out.push([b.left, b.top, b.right, b.bottom, el.classList.contains("tx") ? 1 : el.classList.contains("tool") ? 2 : 0]); /* the fifth: 1 for a line's words, 2 for its tools (there when it is hovered), 0 the rest */
-      if (scene.hug && b.width > 0 && (el.classList.contains("tx") || (scene.hugFinale && el.matches("#finale > span")))) lines.push(b); /* a scene can have the finale's words hugged too */
+      const kind = el.matches(".tx, .sec-toggle, .sec-count") ? 1 : el.classList.contains("tool") ? 2 : 0; /* 1 for a line's words, and a section's name and count, which read like one (b339); 2 for a line's tools (there when it is hovered); 0 the rest */
+      if (b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < innerHeight) out.push([b.left, b.top, b.right, b.bottom, kind]);
+      if (scene.hug && b.width > 0 && (kind === 1 || (scene.hugFinale && el.matches("#finale > span")))) lines.push(b); /* a scene can have the finale's words hugged too */
     }
     if (scene.words) scene.words(out);
     if (scene.hug) {

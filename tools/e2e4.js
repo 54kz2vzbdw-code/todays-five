@@ -3436,6 +3436,20 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  await test(label + ": 1.12 b339: in Everything a section's name and count read like a line's words — the stage measures them, and Dusk lays a pad under each", async () => {
+    const dev = `;try { if (!sessionStorage.getItem("tf-b339")) { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device = Object.assign(m.device || {}, { day: "T1:curated:harbor", night: "T1:curated:dusk", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }, scenes: true }); localStorage.setItem("tf/v2/meta", JSON.stringify(m)); sessionStorage.setItem("tf-b339", "1"); } } catch (e) {}`;
+    const SAT = new Date("2026-09-12T14:00:00"); // the long-time fixture's Saturday
+    const t = await fresh(opts, { list: false, init: seedScript({ now: +SAT }) + dev, clock: SAT });
+    await t.page.waitForSelector("#list .row"); await sceneUp(t, "dusk");
+    await t.press("#v-all"); await t.page.waitForSelector("#all .row"); await wait(900);
+    const heads = await t.page.evaluate(() => { const vis = b => b.width > 0 && b.bottom > 0 && b.top < innerHeight, names = [...document.querySelectorAll("#all .sec-toggle, #all .sec-count")].map(e => e.getBoundingClientRect()).filter(vis);
+      const hugs = [...document.querySelectorAll("#field > div")].find(d => d.children.length && [...d.children].every(c => c.style.filter)), shown = hugs ? [...hugs.children].filter(c => c.style.display !== "none").map(c => c.getBoundingClientRect()) : [];
+      return { names: names.length, padded: names.filter(b => shown.some(p => p.left <= b.left && p.right >= b.right && p.top <= b.top && p.bottom >= b.bottom)).length }; });
+    assert.ok(heads.names >= 2 && heads.padded === heads.names, "a pad under each section's name and count on screen: " + JSON.stringify(heads));
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join("; "));
+    await t.close();
+  });
+
   await test(label + ": no page errors, CSP violations or third-party requests across a full session", async () => {
     const t = await fresh(opts);
     await t.press("#v-all"); await t.esc(); await t.press("#v-today");

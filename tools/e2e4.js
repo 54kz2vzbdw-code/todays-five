@@ -3244,7 +3244,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   });
 
   /* 1.12 b321: the kits that carry a scene, and the module each one's is in (a pair can share one) */
-  const SCENE_MODS = { forest: "scene-forest.js", harbor: "scene-harbor.js", paper: "scene-papercut.js", midnight: "scene-papercut.js", teletype: "scene-teletype.js", terminal: "scene-terminal.js", light: "scene-orbit.js", dark: "scene-orbit.js" };
+  const SCENE_MODS = { forest: "scene-forest.js", harbor: "scene-harbor.js", paper: "scene-papercut.js", midnight: "scene-papercut.js", teletype: "scene-teletype.js", terminal: "scene-terminal.js", light: "scene-orbit.js", dark: "scene-orbit.js", sunset: "scene-bay.js", dusk: "scene-bay.js" };
   const SCENE_KITS = Object.keys(SCENE_MODS);
   /* 1.12 b318: Scenes. A device that has them on, Forest in Night and Harbor in Day (a dark system: Forest on) */
   const sceneDevice = (on = true) => `try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: { day: "T1:curated:harbor", night: "T1:curated:forest", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }${on ? ", scenes: true" : ""} } })); } catch (e) {}`;
@@ -3411,6 +3411,25 @@ for (const [label, opts, touch] of VIEWPORTS) {
     }
     await openPicker(t, "night"); await t.page.click(`#p-theme .swatch[data-code="T1:curated:forest"]`); await wait(300); await t.esc(); await sceneUp(t, "forest");
     assert.equal(await t.page.evaluate(() => document.documentElement.dataset.sceneClear), undefined, "a scene that doesn't keep clear has its pad back");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join("; "));
+    await t.close();
+  });
+
+  await test(label + ": 1.12 b330: Sunset's and Dusk's pad hugs each line — no pad across the list, one soft pad over each line's words, and they follow the words when a line is added", async () => {
+    const t = await fresh(opts, { init: sceneDevice() });
+    await sceneUp(t, "forest");
+    const pads = () => t.page.evaluate(() => { const range = document.createRange(), lines = [...document.querySelectorAll("#today .row .tx")].map(el => { range.selectNodeContents(el); return range.getBoundingClientRect(); }).filter(b => b.width > 0);
+      const hugs = [...document.querySelectorAll("#field > div")].find(d => d.children.length && [...d.children].every(c => c.style.filter)), shown = hugs ? [...hugs.children].filter(c => c.style.display !== "none").map(c => c.getBoundingClientRect()) : [];
+      const covered = lines.every(b => shown.some(p => p.left <= b.left && p.right >= b.right && p.top <= b.top && p.bottom >= b.bottom));
+      return { lines: lines.length, pads: shown.length, covered, pad: getComputedStyle(document.getElementById("today")).backgroundColor }; });
+    for (const kit of ["sunset", "dusk"]) {
+      await openPicker(t, "night"); await t.page.click(`#p-theme .swatch[data-code="T1:curated:${kit}"]`); await wait(300); await t.esc(); await wait(200);
+      await sceneUp(t, kit); await wait(600);
+      let p = await pads(); assert.ok(/rgba\(0, 0, 0, 0\)|transparent/.test(p.pad), kit + ": no pad across the list: " + p.pad);
+      assert.ok(p.lines > 0 && p.pads === p.lines && p.covered, kit + ": a pad over each line's words: " + JSON.stringify(p));
+      await t.press("#addtoday"); await t.page.keyboard.type("One more line, to see the pads follow"); await t.page.keyboard.press("Enter"); await t.page.keyboard.press("Escape"); await wait(800);
+      p = await pads(); assert.ok(p.pads === p.lines && p.covered, kit + ": still one over each after a line is added: " + JSON.stringify(p));
+    }
     assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join("; "));
     await t.close();
   });

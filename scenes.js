@@ -11,7 +11,7 @@
 
 export const LOOP = 15;
 const IDLE_AFTER = 20000;
-const MODS = { forest: "./scene-forest.js", harbor: "./scene-harbor.js", paper: "./scene-papercut.js", midnight: "./scene-papercut.js", teletype: "./scene-teletype.js", terminal: "./scene-terminal.js", light: "./scene-orbit.js", dark: "./scene-orbit.js" }; // a pair can share one world
+const MODS = { forest: "./scene-forest.js", harbor: "./scene-harbor.js", paper: "./scene-papercut.js", midnight: "./scene-papercut.js", teletype: "./scene-teletype.js", terminal: "./scene-terminal.js", light: "./scene-orbit.js", dark: "./scene-orbit.js", sunset: "./scene-bay.js", dusk: "./scene-bay.js" }; // a pair can share one world
 export const SCENE_IDS = Object.keys(MODS);
 
 /* ---------------- the drawing kit a scene is handed ---------------- */
@@ -122,7 +122,10 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
   const veil = document.createElement("div"), vs = veil.style; vs.position = "absolute"; vs.inset = "0"; vs.background = ink; vs.transition = "opacity .5s ease";
   const paintVeil = () => { vs.opacity = crowd ? String(veilAt) : "0"; };
   wash(); paintVeil();
-  host.append(bd, cv, scrim, veil);
+  // 1.12 b330: a scene that asks (`hug`) has the pad under the list hug each line's words instead of spanning the page, so
+  // the rest of its picture keeps its colour; the pads are laid here, over the picture and under the veil
+  const hugs = document.createElement("div"), hsd = hugs.style; hsd.position = "absolute"; hsd.inset = "0";
+  host.append(bd, cv, scrim, hugs, veil);
   linkCss(build); document.documentElement.dataset.scene = id;
 
   const touched = () => { lastInput = performance.now(); };
@@ -139,14 +142,19 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
      most) whenever the page's words change, move or scroll. */
   let wordsF = 0, watch = null;
   const measure = () => {
-    wordsF = 0; if (!alive || !scene || !scene.words) return;
-    const out = [], range = document.createRange(), shell = document.getElementById("shell"); if (!shell) return;
+    wordsF = 0; if (!alive || !scene || !(scene.words || scene.hug)) return;
+    const out = [], lines = [], range = document.createRange(), shell = document.getElementById("shell"); if (!shell) return;
     for (const el of shell.querySelectorAll(".row .tx, .row .tool, .chip, .seg, .add, #date, #count, #hint, #finale > span")) {
       if (el.classList.contains("tx")) range.selectNodeContents(el);
       const b = el.classList.contains("tx") ? range.getBoundingClientRect() : el.getBoundingClientRect();
       if (b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < innerHeight) out.push([b.left, b.top, b.right, b.bottom]);
+      if (scene.hug && el.classList.contains("tx") && b.width > 0) lines.push(b);
     }
-    scene.words(out);
+    if (scene.words) scene.words(out);
+    if (scene.hug) {
+      while (hugs.children.length < lines.length) { const d = document.createElement("div"), st = d.style; st.position = "absolute"; st.borderRadius = "40px"; st.background = k(.72); st.filter = "blur(14px)"; hugs.appendChild(d); }
+      [...hugs.children].forEach((d, i) => { const b = lines[i], st = d.style; if (!b) { st.display = "none"; return; } st.display = ""; st.left = b.left - 30 + "px"; st.top = b.top - 14 + "px"; st.width = b.width + 60 + "px"; st.height = b.height + 28 + "px"; });
+    }
   };
   const remeasure = () => { if (!wordsF && alive) wordsF = requestAnimationFrame(measure); };
 
@@ -202,9 +210,10 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     if (!alive) return;
     scene = m.default(KIT, id); scene.bind(g);
     if (scene.clear) { listW = 0; document.documentElement.dataset.sceneClear = ""; } else if (scene.list) listW = scene.list; // it keeps out of the words' way
+    if (scene.hug) document.documentElement.dataset.sceneClear = ""; // the list's pad gives way to one hugging each line
     wash(scene.wash || weight); if (scene.veil) { veilAt = scene.veil; paintVeil(); }
     size();
-    if (scene.words) { const shell = document.getElementById("shell"); if (shell) { watch = new MutationObserver(remeasure); watch.observe(shell, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["class", "hidden", "style"] }); } addEventListener("resize", remeasure); addEventListener("scroll", remeasure, opt); measure(); }
+    if (scene.words || scene.hug) { const shell = document.getElementById("shell"); if (shell) { watch = new MutationObserver(remeasure); watch.observe(shell, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["class", "hidden", "style"] }); } addEventListener("resize", remeasure); addEventListener("scroll", remeasure, opt); measure(); }
     draw();
     requestAnimationFrame(() => { if (alive) hs.opacity = "1"; });
     run();

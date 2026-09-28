@@ -1552,3 +1552,20 @@ off behind it, and stays far above the floor.
 
 **What did not change.** First paint (`app.js` +13 bytes gzipped, `index.html` +0); `styles.css`; `scenes.css`; the
 stage but for two names in its map; no stored setting; nothing in `apple/` but the stamp.
+
+# 1.12 b326 decisions — The repeat mark on the soft cloud
+
+Round two left one thing for its own build. Over a long list the ↻ beside a line is small print, like a note or a
+caption, and those have sat on a soft cloud of the ground whenever a scene is up since round one; the ↻ had only the
+halo. In Teletype's scene that was not enough: 3.8 on a wide screen over the typed ridge, and 3.6 on a phone on the frame
+where the boat's mast passed behind it. Now it sits on the same cloud (`scenes.css`, one selector). A shadow, not
+padding, so nothing moves; over the plain ground it is invisible.
+
+**On its own build.** It changes how every kit with a scene draws a list that has a repeating line, on screens that
+already have Scenes on, with nothing done on them, so it ships alone, after the round it came out of: if someone says
+their list looks different, it is this one commit.
+
+**What it did.** The ↻ over the long list, left alone, on a wide screen: Forest 5.28 → 5.78, Harbor 4.24 → 4.37 (its
+plain ground is 4.51), Paper 4.81 → 4.98, Midnight 5.19 → 5.71, Teletype 3.76 → 4.87, Terminal 5.71 → 6.06; on a phone
+Forest 4.60 → 5.64, Harbor 4.44 → 4.54, Paper 4.51 → 4.82, Midnight 5.74 → 6.00, Teletype 3.62–5.15 → 5.05, Terminal
+6.29 → 6.78. Notes and captions unchanged. `scenes.css` +17 bytes gzipped; nothing on the first-paint path.

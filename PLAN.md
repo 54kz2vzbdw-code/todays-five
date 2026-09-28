@@ -2404,3 +2404,17 @@ two: Teletype and Terminal". Web only; the version holds at 1.12, and nothing in
 
 The glyph atlas and the stamped pictures at the phone's density (the stage caps it at 2), the phosphor bloom in WebKit's
 canvas, and what the two cost on the phone itself.
+
+# Today's Five 1.12 b326 — The repeat mark on the soft cloud
+
+*Shipped as build 327. b326 is its one commit.*
+
+The ↻ beside a line joins notes and captions on the soft cloud of the ground whenever a scene is up. Found in round two
+(Teletype's long list, 3.6–3.8), and shipped alone because it reaches every kit with a scene. The decisions are in
+DECISIONS.md under "1.12 b326 decisions — The repeat mark on the soft cloud". Web only; nothing in `apple/` but the stamp.
+
+| | measured | instrument |
+| --- | --- | --- |
+| the ↻ over the long list, left alone (desktop; phone) | Forest 5.28 → **5.78**; 4.60 → **5.64**. Harbor 4.24 → **4.37**; 4.44 → **4.54**. Paper 4.81 → **4.98**; 4.51 → **4.82**. Midnight 5.19 → **5.71**; 5.74 → **6.00**. Teletype 3.76 → **4.87**; 3.62–5.15 → **5.05**. Terminal 5.71 → **6.06**; 6.29 → **6.78** | `tools/contrast.mjs`, `FIXTURE=1`, all six kits, both viewports |
+| bytes | `scenes.css` 975 → **992** gzipped, lazy, Scenes on only | `gzip -9 -n` |
+| tests | the Scenes tests, the walk through every kit with a scene, the full session and a page open across a deploy, both viewports | `tools/e2e4.js` |

@@ -1435,3 +1435,55 @@ byte for byte what it was. Nothing in `apple/` changed but the stamp: the app lo
 Scenes with the deploy. `whatsnew.json` keeps its three 1.12 lines — the suite holds a version to three — so Scenes is
 in the changelog, How it works and Appearance, and not on What's new; which line it should replace, if any, is
 Price's call.
+
+# 1.12 b321 decisions — Scenes for every theme, round one: Paper and Midnight
+
+Price, after 320: "Let's do this for every theme now. First, create a plan for what each theme's idle scene will be,
+then plan an accompanying dynamic 15-second motion graphics video… Use pixel art where it makes sense (but in other
+themes, feel free to experiment with the art style where another makes sense for the theme). Give me a plan (not for my
+approval, just so I can see the plan) and then let's start building." The plan: one art style per designed pair and
+one pair per build — Paper/Midnight, Teletype/Terminal, Light/Dark, Sunset/Dusk, Arcade/Sketch, Blush/Pink, Cocoa/Ember
+— each pair's world, loop and finale written out before the first one was drawn. This is the first.
+
+**One town, two moods, one module.** Paper and Midnight are a designed pair, so they share a world: a pop-up paper town
+— hills in layers, a river under an arched bridge, houses with red roofs, a windmill, lollipop trees — cream by day and
+navy by night. One module (`scene-papercut.js`) draws both; the stage now tells a scene which kit it is drawing. Cut
+paper: flat shapes in paper colours, each laying a soft shadow on the layer behind, a hairline catching the light along
+each cut edge, a grain over all of it. The day's loop: a breeze through the trees and the windmill; a paper plane loops
+the loop and leaves a dotted line; a house pops up out of the hill like a page turning, overshooting a little; a red kite
+climbs, its bows following where it has been; kraft-paper birds cross as the sun's rays turn one notch (twelve rays, so a
+notch looks like none when the loop comes round); the house folds away. Its finale: origami cranes in four papers fly up
+past the sun. The night's loop: the windows light across the town and go out again; a paper train crosses the bridge, its
+reflection wobbling in the river; a cloud on a wire slides over the moon and dims it; fireworks in the colours of glass,
+Midnight's material, as streaks flying out in two rings; a star on a wire. Its finale: a fan of paper stars opens out of
+the moon.
+
+**The stage learns a smooth mode.** Forest and Harbor are pixel art: a canvas about 190 pixels tall, redrawn whole every
+frame. Cut paper wants crisp edges and soft shadows at the screen's own density, so a scene can now name its `res`
+(canvas pixels per CSS pixel, or "dpr", at most 2): it draws in CSS pixels, lays what never moves on a backdrop canvas
+once, at layout, and each frame clears and redraws only what moves — the clouds on their threads, the sails, the trees,
+the plane, the kite, the train, the fireworks. On a phone at twice the density it costs what pixel art does: Paper's loop
+2.4 % of a core, Midnight's 3.0 %, Forest's 2.8 %. Canvas shadows are in device pixels whatever the transform, so every
+blur and offset is scaled by the density by hand; unscaled, a phone's shadows came out half a desktop's.
+
+**The words.** Paper is a light kit, weighed like Harbor (washes near the ink, the plain ground on Everything); Midnight
+a dark one (half a veil). The instrument now takes any kit. The lines hold at 12:1 and better and the small words at or
+above their plain values. It found three things. On a wide screen the town sat right under the list's last line, so the
+land lies lower there. Midnight's finale fan flew up behind the count, which on a wide screen is plain text (on a phone
+it sits on a pill), so there the fan opens right and down; the count went from 4.19 back to 9.26. And with seven lines, a
+long list's small print sat over the town and dipped under 4.5 — Paper's caption 4.86 → 4.10, a note on the phone 6.03
+→ 4.44 — so notes and captions now sit on a soft cloud of the ground whenever a scene is up, a shadow and not padding,
+so nothing moves: 4.75 and 5.79. That reaches Forest and Harbor too, so it is a commit of its own.
+
+**A frame lab.** Fourteen scenes are too many to judge in real time, fifteen seconds at a go. `tools/scene-lab.html`
+mounts one through the real stage beside three sample lines in its kit's colours, and the stage's new
+`seek(t, i, a, f)` holds any moment; `tools/scene-frames.mjs` tiles the quiet picture, the loop at the seconds asked for
+and three points of the finale onto one sheet per kit and viewport. Every revision of this round was judged that way
+first and in the app second.
+
+**Copy, and the screenshots.** With four kits and more to come, the Appearance line, the toast and How it works say "the
+themes tagged Scene", and the changelog names the town; each went through Price's voice. The round's screenshots are
+JPEG from here: cut paper's grain is noise, and noise is 1.3 MB a frame as PNG against 150 KB.
+
+**What did not change.** First paint (`index.html` +3 bytes gzipped, `app.js` +25; the ranges overlap); `styles.css`;
+no stored setting; nothing in `apple/` but the stamp.

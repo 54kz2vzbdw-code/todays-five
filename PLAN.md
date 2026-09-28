@@ -2300,3 +2300,57 @@ What it costs on the phone — WebKit, not Chrome, and a battery rather than an 
 Chrome's. That the pixels stay crisp in the WKWebView (`image-rendering: pixelated`). The loop on a ProMotion screen,
 where the refresh-by-refresh callback runs twice as often for the same thirty frames, and under Low Power Mode, which
 caps it at thirty. And the loop with Keep awake on, where it plays until the phone is picked up.
+
+# Today's Five 1.12 b321 — Scenes for every theme, round one: Paper and Midnight
+
+*Shipped as build 323. b321 is the round's first commit.*
+
+Price, after 320: Scenes for every theme, one art style per pair, pixel art where it fits and other styles where they
+fit better, and the plan shown rather than approved. This round: Paper and Midnight, one pop-up paper town by day and by
+night. The decisions are in DECISIONS.md under "1.12 b321 decisions — Scenes for every theme, round one: Paper and
+Midnight". Web only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Small print on a soft cloud** (b321). With a scene up, a line's note or caption sits on a soft backing of the kit's
+   ground (a shadow, not padding). It reaches Forest and Harbor too, so it is its own commit.
+2. **Paper and Midnight** (b322). `scene-papercut.js`, one module for the pair; the stage's smooth mode (a scene's `res`,
+   a backdrop drawn once, CSS-pixel drawing at the screen's density), the kit's id handed to its scene, and `seek` for
+   the lab; `tools/scene-lab.html` and `tools/scene-frames.mjs`; `tools/contrast.mjs` takes any kit, `tools/idle.mjs`
+   takes `VP=phone`. The Appearance line, the toast and How it works say "the themes tagged Scene"; the changelog names
+   the town. The suite walks every kit with a scene (its module, its frames, its loop, its finale's moment).
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `index.html` **+3 bytes** gzipped, `app.js` **+25**; `styles.css` unchanged; `sw.js` +8 | `gzip -9 -n` |
+| lazy, Scenes on only | `scenes.js` 5,786 → **7,020** (the smooth mode), `scenes.css` 801 → **975**, `scene-papercut.js` **10,746** for both kits | `gzip -9 -n` |
+| first paint | desktop FCP **52 → 56 ms** (48–64 against 52–60); mobile **1304 → 1300 ms** (1292–1328 against 1292–1316): no cost | `tools/paint.mjs 8`, 320 (port 8800) beside this build |
+| CPU, desktop | the loop: Paper **2.7 %** of a core (14.1 % for every Chrome process), Midnight **2.8 %** (13.6 %); in use: Paper **1.8 %** (10.2 %), Midnight **2.0 %** (10.3 %) | `tools/idle.mjs 60`, `SCENES=1` and `SCENES=1 USE=5` |
+| CPU, phone (390×844 at 2×) | the loop: Forest (pixels) **2.8 %** (13.8 %), Paper **2.4 %** (12.1 %), Midnight **3.0 %** (13.5 %) | `tools/idle.mjs 45`, `VP=phone SCENES=1` |
+| contrast | the table below | `tools/contrast.mjs`: the seed lines, `FIXTURE=1`, `FIXTURE=1 VIEW=all` |
+
+| p1, plain → scene (in use / left alone) | Paper | Midnight |
+| --- | --- | --- |
+| Today's lines, three (desktop, phone) | 14.6 → 12.1 / 12.1; 14.7 → 14.6 / 14.4 | 14.0 → 14.6 / 14.6; 14.1 → 14.6 / 14.6 |
+| Today's lines, seven (desktop, phone) | 14.6 → 12.5 / 12.0; 14.6 → 13.9 / 10.3 | 14.1 → 14.1 / 8.9; 14.0 → 15.0 / 9.8 |
+| small words in use (desktop) | 5.1–6.6 → 5.0–6.6 (the date 5.05 → 4.99, the keyboard line 5.17 → 4.93) | 6.1–9.0 → 5.9–9.3 |
+| small print in a long list (desktop caption; phone note) | 4.86 → 4.75; 6.03 → 5.79 | 5.65 → 5.90; 7.78 → 8.09 |
+| Everything's rows and section words | at or above plain: the plain ground | rows 14.4 → 12.7, section words ≥ 5.1 |
+| the finale's line (desktop, phone) | 5.9 → 5.7; 5.5 → 5.6 | 7.7 → 7.5; 7.5 → 7.2 |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30 (the precache list has the new module), compat 9 |
+| Focused runs | the Scenes tests and the walk through every kit, both viewports: 6 passed |
+| Browser suite, 1440×900 and 390×844 | all **222** in ten slices: **222 passed, 0 failed** on the first pass (the new test walks every kit with a scene, on both viewports) |
+| Looked at | both kits on both viewports through every revision, first as contact sheets from the lab, then in the app with its washes, pads and halos, and with the long-time fixture's seven lines |
+| Screenshots | `shots/scenes-2/`: each kit mid-loop, phone and desktop (JPEG) |
+
+## What only a real iPhone can settle
+
+The smooth canvas at the phone's own density (the stage caps it at 2, so a 3× iPhone draws at 2 and scales), the paper
+grain and the shadows in WebKit's canvas, and what the two moods cost on the phone itself.

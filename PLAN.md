@@ -2699,3 +2699,30 @@ at 1.12, and nothing in `apple/` changed but the stamp.
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | the Scenes tests, the walk through every kit with a scene, the keep-clear and pads' tests, the new section-names test, the full session and the worker's two tests, both viewports: 18 passed; the new test fails on 338 |
 | Looked at | Arcade's Today on both viewports with the cut-back tried and dropped (the boxes in the floor), and Everything's headings |
+
+# Today's Five 1.12 b341 — Scenes for every theme: the last word
+
+*Shipped as build 342. b341 is the change's commit.*
+
+Every built-in theme has a scene since 338, so the copy says so: Appearance's row, How it works, the changelog, and the
+toast that shows when Scenes are turned on under a theme you make. The decisions are in DECISIONS.md under "1.12 b341
+decisions — Scenes for every theme: the last word". Web only; the version holds at 1.12, and nothing in `apple/`
+changed but the stamp.
+
+## What shipped
+
+1. **The copy** (b341). "The themes tagged Scene" becomes "every built-in theme" in `index.html` (the row's sub-line),
+   `panels.js` (the toast, How it works) and `CHANGELOG.md`, through Price's voice; the suite's two assertions follow.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `index.html` 14,881 → **14,875** bytes gzipped; `panels.js` 32,533 → 32,529 | `gzip -9 -n` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Browser suite | the whole of it, in four slices (`SHARD=0/4` … `3/4`), both viewports: 228 passed, 0 failed |

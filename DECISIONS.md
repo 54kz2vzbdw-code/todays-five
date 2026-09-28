@@ -1883,3 +1883,20 @@ on a build of its own, after round seven.
 screen. It fails on 338 (four on screen, none padded) and passes here.
 
 **What did not change.** Today; any scene's code; first paint; no stored setting; nothing in `apple/` but the stamp.
+
+# 1.12 b341 decisions — Scenes for every theme: the last word
+
+**Every built-in theme has a scene, so the copy says so.** "The themes tagged Scene" was right while the rounds were
+under way; after 338 it describes all sixteen. Appearance's row reads "A moving picture behind every built-in theme",
+How it works says the same, and the changelog opens "every built-in theme gets a moving picture behind the list". The
+toast shows only when Scenes are turned on under a theme with none — now only a theme you make — and says "Scenes are
+on. Every built-in theme has one." All four went through Price's voice and came back as drafted.
+
+**The tags stay.** The picker's Scene tag now sits on every built-in swatch, and no theme you make carries one. Whether
+it still earns its place is Price's call; nothing here removes it.
+
+**The whole suite, at the end of the rounds.** The browser suite ran in full on this change, in four slices, both
+viewports: 228 passed, none failed. The Node suites passed.
+
+**What did not change.** Anything but the four strings and the two tests that read them; nothing in `apple/` but the
+stamp.

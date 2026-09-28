@@ -1487,3 +1487,68 @@ JPEG from here: cut paper's grain is noise, and noise is 1.3 MB a frame as PNG a
 
 **What did not change.** First paint (`index.html` +3 bytes gzipped, `app.js` +25; the ranges overlap); `styles.css`;
 no stored setting; nothing in `apple/` but the stamp.
+
+# 1.12 b324 decisions — Scenes for every theme, round two: Teletype and Terminal
+
+The second pair of the plan in "1.12 b321 decisions". Teletype and Terminal are one design in two moods (the same mono
+pair, the same blip), so, like Paper and Midnight, they share a world: a coast with two ranges of mountains, a sea, a
+shore with a railway along it, and something round in the sky. Both are seeded alike, so the night's ridge is the day's.
+
+**Two modules this time, because two media.** Paper and Midnight are one material lit two ways, so one module draws
+both. Teletype and Terminal are two machines. Teletype (`scene-teletype.js`) types its coast: every mark is a character
+in the kit's own mono face on green-bar continuous paper, tractor holes down both edges, and everything moves the way a
+printer can—a character at a time, a cell at a time, the print head sliding along a row. Terminal (`scene-terminal.js`)
+draws the same coast at night on a vector display in green phosphor: every line a bright core over a faint wide bloom,
+and what moves leaves a trail. The day's loop: the head types a flight of gulls across the sky; a boat made of
+characters sails the sea, typing its wake; the sun flares from o to @ as its rays turn round it a turn and a quarter,
+retyped cell by cell, while its reflection is typed down the sea in green; a train chugs along the shore puffing o O (
+); a cloud decodes into noise and settles; the head backs over the gulls and erases them. Its finale: the head types a
+row of stars along the shore and each pops up and falls like chad from a tape. The night's loop: a scan beam sweeps the
+ridge and it burns brighter where it has passed; a ship banks round the planet; the rings tilt and a moon comes round;
+an oscilloscope blooms on the horizon, its figure turning through its ratios down to a dot; the stars stretch into warp
+lines toward the planet as the grid races, and snap back in a flash. Its finale: fireworks in the sky, the last one
+behind the planet, and a shock ring running out across the grid.
+
+**Around the words, not through them.** Round one's rule, that the busy parts live around the list, held here, and the
+first drafts broke it. Terminal's oscilloscope and its finale's firework both sat on the list's last line, and the warp
+streaked stars through the words. Now the oscilloscope sits on the horizon under the list (with a graticule, so it reads
+as a screen); the warp streaks only above the list's band and stops at its edge; the fireworks go off in the band above
+the list; and the ring runs out across the grid below it. On a wide screen the horizon sits a little lower and the ridge
+a little flatter, so it clears the last line. Teletype counts its rows up from the foot of the page, so its shore and
+its train clear the pool of ground the footer's small words sit in.
+
+**Teletype had to be legible as a picture.** The first draft typed in 11-pixel characters at weight 500, most at half
+strength, and under a light kit's washes it read as a faint texture, not a coast. Now 12.5 pixels on a phone and 15 on a
+wide screen, at 600 in IBM Plex Mono (the kit's own UI face, already loaded), the ridge at full strength, the faces
+turned from the sun shaded denser, a second, fainter range behind the first, the sea thicker toward you, and the sun a
+ring of rays round a body. Its first flare changed every ray's character in place, the old spinner trick, and a ring of
+`|` or `-` all at once read as scattered marks, not a sun; the rays now move round, each keeping the character for its
+own direction. Each glyph is drawn once, at the screen's density, and stamped per cell, never set as text per frame; a
+cell that changes is laid over with its own paper first (a green bar or plain), so the backdrop's character under it
+goes. The face may still be loading the first time the scene lays out, so it lays out again when the face arrives.
+
+**What never moves is typed in the kit's dim.** In the text's own near-black, the landscape cost the long list's quieter
+marks: a struck line fell to 3.1 (Paper's is 3.5), and the ↻ beside a line to 3.4, where every other kit holds 4.2 or
+better. What never moves is now typed in the kit's dim (#4B6753)—a ribbon wearing thin—and whatever is being typed right
+now is fresh and black, which also makes it the thing you look at. The struck line came back to 3.6–3.9 and the ↻ to 3.8
+on a wide screen. On a phone a ↻ in the long list's fourth line sits in the sea's rows, and when the boat's mast passes
+behind it the one frame that catches it reads 3.6 (another run, 5.2). The ↻ is small print riding in a line, like a note
+or a caption, and those sit on a soft cloud of the ground; the ↻ doesn't. It will, but that reaches every kit with a
+scene on screens that already have Scenes on, so it goes out on its own build, right after this one.
+
+**What it costs.** First measured, the loops on a wide screen ran at 4.0 % (Teletype) and 4.4 % (Terminal) of a core,
+half again round one's 2.7–2.8 %. Neither needed a new frame rate. Terminal was drawing a whole ridge as ninety separate
+strokes every frame, plus the far ridge, the grid's rails and the planet's rim, none of which move; they now lie on the
+backdrop, drawn once, and the moving canvas has only what changes (the beam's burn and the finale's flare lie over the
+ridge while they last). Teletype was typing three clouds and its sun glyph by glyph every frame; a picture of cells that
+holds still for seconds is now typed once into its own canvas and stamped whole, and the sea turns over a quarter of the
+cells it did, which is calmer too. After: the loops 2.7 % and 3.0 %, in use 1.9 % and 2.3 %; on a phone 2.6 % and 2.7 %.
+
+**The words.** Teletype is a light kit, weighed like Paper (washes near the ink, the plain ground on Everything);
+Terminal a dark one, at the defaults (half a veil). The lines hold at 10.3 and better (Teletype's long list left alone,
+over the mountains; round one's floor was Midnight's 8.9), and the small words at their plain values, give or take the
+keyboard line over Terminal's grid (7.08 → 6.38). The finale's line on a phone dips from 13.4 to 6.8 as the fireworks go
+off behind it, and stays far above the floor.
+
+**What did not change.** First paint (`app.js` +13 bytes gzipped, `index.html` +0); `styles.css`; `scenes.css`; the
+stage but for two names in its map; no stored setting; nothing in `apple/` but the stamp.

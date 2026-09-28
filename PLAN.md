@@ -2354,3 +2354,53 @@ Midnight". Web only; the version holds at 1.12, and nothing in `apple/` changed 
 
 The smooth canvas at the phone's own density (the stage caps it at 2, so a 3× iPhone draws at 2 and scales), the paper
 grain and the shadows in WebKit's canvas, and what the two moods cost on the phone itself.
+
+# Today's Five 1.12 b324 — Scenes for every theme, round two: Teletype and Terminal
+
+*Shipped as build 325. b324 is the round's commit.*
+
+The second pair of the plan in "1.12 b321 decisions": one coast, typed in characters on green-bar paper by day and drawn
+in green phosphor at night. The decisions are in DECISIONS.md under "1.12 b324 decisions — Scenes for every theme, round
+two: Teletype and Terminal". Web only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Teletype and Terminal** (b324). `scene-teletype.js` and `scene-terminal.js`, one module each; the stage maps both,
+   the swatches tag both, the worker precaches both. The changelog's Scenes paragraph names the coast (through Price's
+   voice). The suite's walk through every kit with a scene takes both, on both viewports.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `app.js` **+13 bytes** gzipped (two names in a set); `index.html`, `styles.css` unchanged; `sw.js` +13 | `gzip -9 -n` |
+| lazy, Scenes on only | `scene-teletype.js` **6,312**, `scene-terminal.js` **4,981**; `scenes.js` 7,020 → **7,040** (two names in its map) | `gzip -9 -n` |
+| first paint | desktop FCP **56 → 52 ms** (48–60 against 48–60); mobile **1312 → 1304 ms** (1300–1324 against 1300–1320): no cost | `tools/paint.mjs 8`, 323 (port 8800) beside this build |
+| CPU, desktop | the loop: Teletype **2.7 %** of a core (14.2 % for every Chrome process), Terminal **3.0 %** (13.1 %); in use: Teletype **1.9 %** (9.3 %), Terminal **2.3 %** (9.7 %). First measured at 4.0 % and 4.4 % for the loops, before what never moves went onto the backdrop (Terminal) and into stamped pictures (Teletype) | `tools/idle.mjs 60`, `SCENES=1` and `SCENES=1 USE=5` |
+| CPU, phone (390×844 at 2×) | the loop: Teletype **2.6 %** (13.3 %), Terminal **2.7 %** (12.0 %) | `tools/idle.mjs 45`, `VP=phone SCENES=1` |
+| contrast | the table below | `tools/contrast.mjs`: the seed lines, `FIXTURE=1`, `FIXTURE=1 VIEW=all` |
+
+| p1, plain → scene (in use / left alone) | Teletype | Terminal |
+| --- | --- | --- |
+| Today's lines, three (desktop, phone) | 13.9 → 12.0 / 11.3; 14.0 → 14.0 / 14.0 | 17.0 → 17.1 / 15.9; 17.0 → 18.2 / 17.3 |
+| Today's lines, seven (desktop, phone) | 13.9 → 12.2 / 10.9; 13.9 → 14.0 / 10.3 | 17.1 → 18.0 / 16.1; 17.0 → 15.0 / 13.9 |
+| small words in use (desktop) | 5.2–6.8 → 5.2–6.9 (the keyboard line 5.72 → 5.61) | 6.9–13.8 → 6.4–14.1 (the keyboard line over the grid 7.08 → 6.38) |
+| small print in a long list (desktop caption; phone note) | 5.47 → 5.47; 6.67 → 6.83 | 6.63 → 6.50; 9.57 → 9.72 |
+| the ↻ in a long list (desktop; phone) | 5.53 → 3.76; 5.52 → 5.15 (3.62 on a run that caught the boat's mast behind it) | 6.77 → 6.00; 6.68 → 6.65 |
+| a struck line in a long list, left alone (desktop; phone) | 5.66 → 3.61; 5.61 → 3.86 | 6.97 → 4.17; 6.86 → 3.50 |
+| Everything's rows and section words | at or above plain: the plain ground | rows 17.3 → 15.1, section words ≥ 9.1 |
+| the finale's line (desktop, phone) | 5.1 → 4.9; 5.4 → 5.2 | 11.5 → 10.8; 13.4 → 6.8 |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30 (the precache list has both modules), compat 9 |
+| Focused runs | the Scenes tests, the walk through every kit with a scene (now six) and the full session, both viewports: 8 passed; the worker's two tests (the cached navigation, a page open across a deploy), both viewports: 4 passed |
+| Looked at | both kits on both viewports through every revision, first as contact sheets from the lab, then in the app with its washes, pads and halos, and with the long-time fixture's seven lines |
+| Screenshots | `shots/scenes-3/`: each kit mid-loop, phone and desktop (JPEG) |
+
+## What only a real iPhone can settle
+
+The glyph atlas and the stamped pictures at the phone's density (the stage caps it at 2), the phosphor bloom in WebKit's
+canvas, and what the two cost on the phone itself.

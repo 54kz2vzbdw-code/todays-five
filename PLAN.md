@@ -2515,3 +2515,52 @@ only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
 ## What only a real iPhone can settle
 
 The blurred pads under the lines in WebKit (a CSS filter on each), and the lanterns' glow at the phone's own density.
+
+# Today's Five 1.12 b332 — Scenes for every theme, round five: Arcade and Sketch
+
+*Shipped as build 333. b332 is the round's commit.*
+
+Arcade gets a neon pixel-art attract mode under bloom and scanlines; Sketch, a pencil and a brush drawing a hot-air
+balloon in watercolour, in the empty part of the page. Both parked modules were redrawn. The decisions are in
+DECISIONS.md under "1.12 b332 decisions — Scenes for every theme, round five: Arcade and Sketch". Web only; the version
+holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Arcade and Sketch** (b332). `scene-arcade.js` and `scene-sketch.js`, both rewritten. The stage tells a scene which
+   rects are a line's words, lets a scene set its pad's strength (`hug` as a number) and have the finale's words hugged
+   (`hugFinale`). The changelog names both (through Price's voice). The keep-clear test takes Sketch's balloon too.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `app.js` **+8 bytes** gzipped; `index.html`, `styles.css` unchanged; `sw.js` +12 | `gzip -9 -n` |
+| lazy, Scenes on only | `scene-arcade.js` **12,840**, `scene-sketch.js` **10,592**; `scenes.js` 8,154 → **8,272** | `gzip -9 -n` |
+| first paint | desktop FCP **52 → 48 ms** (48–68 against 48–60); mobile **1300 → 1308 ms** (1296–1320 against 1292–1320): no cost | `tools/paint.mjs 8`, 331 (port 8800) beside this build |
+| CPU, desktop | the loop: Arcade **4.2 %** of a core (19.6 % for every Chrome process; first measured 7.4 %), Sketch **4.6 %** (18.1 %); in use: **2.3 %** (12.9 %) and **2.8 %** (12.6 %) | `tools/idle.mjs 60`, `SCENES=1` and `SCENES=1 USE=5` |
+| CPU, phone (390×844 at 2×) | the loop: Arcade **3.9 %** (19.2 %), Sketch **4.7 %** (18.0 %) | `tools/idle.mjs 45`, `VP=phone SCENES=1` |
+| contrast | the table below | `tools/contrast.mjs`: the seed lines, `FIXTURE=1`, `FIXTURE=1 VIEW=all` |
+
+| p1, plain → scene (in use / left alone) | Arcade | Sketch |
+| --- | --- | --- |
+| Today's lines, three (desktop, phone) | 15.29 → 16.57 / 16.12; 15.24 → 16.39 / 15.33 | 12.58 → 12.87 / 12.87; 12.66 → 12.52 / 12.52 |
+| Today's lines, long list (desktop, phone) | 15.55 → 16.79 / 16.28; 15.24 → 15.93 / 15.33 | 12.76 → 12.87 / 12.87; 12.65 → 12.52 / 12.52 |
+| small print in a long list (desktop caption, ↻; phone ↻) | 5.12 → 5.64 / 5.39, 5.12 → 5.58 / 5.42; 5.07 → 5.70 / 5.49 | 4.42 → 4.53, 4.46 → 4.53; 4.42 → 4.49 |
+| a struck line (the finale, seed; the long list left alone) | 4.49 → 5.22, 4.47 → 5.14; 5.18 → 5.04, 5.17 → 4.81 | 4.23 → 4.23 (both); 4.58 → 4.49, 4.55 → 4.37 |
+| the header's small words, the footer hint | at or above plain; the hint 5.47 → 5.34 / 5.20 | at or above plain; the hint 4.62 → 4.55 in use (left alone it follows the app's own idle fade) |
+| the finale's line (desktop, phone) | 6.55 → 7.62; 7.26 → 7.21 | 5.83 → 5.64; 6.22 → 6.21 |
+| Everything's rows (desktop, phone) | 15.51 → 17.08; 15.26 → 17.04 | 12.77 → 13.24; 12.66 → 13.24 |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30 (the precache list has both modules), compat 9 |
+| Focused runs | the Scenes tests, the walk through every kit with a scene (now twelve), the keep-clear test (the liquid and the balloon), the pads' test, the full session and the worker's two tests, both viewports: 16 passed |
+| Looked at | both kits on both viewports: lab sheets through every beat, the app with the seed lines, the long list and a long fourth line, and live frame strips; a probe of the scene's own pixels over the loop |
+| Screenshots | `shots/scenes-6/`: each kit mid-loop, phone and desktop (JPEG) |
+
+## What only a real iPhone can settle
+
+Arcade's bloom and scanlines at the phone's density, and what each of the two costs on the phone itself.

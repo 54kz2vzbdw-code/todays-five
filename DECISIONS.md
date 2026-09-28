@@ -1669,3 +1669,75 @@ and 3.5 %: in line with the rounds before the liquid.
 
 **What did not change.** First paint (`app.js` +12 bytes gzipped, `index.html`, `styles.css` unchanged); no stored
 setting; the other scenes (the stage's `hug` does nothing for a scene without it); nothing in `apple/` but the stamp.
+
+
+# 1.12 b332 decisions — Scenes for every theme, round five: Arcade and Sketch
+
+**Both parked modules fell below the bar, and both were redrawn.** The plan had a pixel attract mode for Arcade and a
+pencil page with line boil for Sketch, and the modules written for it did those things; in the app, Arcade was a dim
+strip of city along the floor with a hero six pixels tall, and Sketch was thin grey doodles spread thin across the page
+— pale the way the first Light was. After "Light in particular looks like trash", neither was put in front of Price.
+
+**Arcade: an attract mode worth watching.** `scene-arcade.js` draws into a pixel buffer a sixth of the screen's size (a
+fifth on a phone) and scales it up crisp; the bloom is the same buffer drawn small twice and stretched back over it; CRT
+scanlines lie under every row of the game's pixels; the sky is dithered in bands. A city in two layers of parallax, lit
+windows flickering, antenna lights, a vertical ARCADE sign; a big pixel moon on the backdrop, out of the bloom so its
+craters stay. The hero — a helmet with a visor, a magenta scarf, yellow boots — waits, breathing and blinking, its
+antenna light pulsing. The loop: READY?; it crouches and springs off at GO! (a glitch across the frame); it jumps
+through an arc of coins placed on the arc itself, heads a block and a coin spins out, stomps a slime flat and bounces
+high off it; a star bounces in and it flashes through the colours with afterimages and speed lines; WARNING; a saucer
+drops in with its eye on the hero; it jumps three shots and answers each with a laser, the health bar going down in
+thirds; the saucer bursts in a shockwave of pixels (+5000); HIGH SCORE!, the score rolling up on the bricks. The finale:
+LEVEL CLEAR drops in letter by letter in a marquee under fireworks in pixels, and the hero jumps with a trophy. Every
+beat is a function of the loop's time; the world's scroll is a table over it, normalised so the loop covers a distance
+that is a multiple of every layer's period, so the loop wraps without a seam, and a loop cut short keeps the city where
+it stopped.
+
+**Sketch: the drawing that draws itself.** `scene-sketch.js` keeps to the empty part of the page, like Light's liquid: a
+hot-air balloon in pencil and watercolour in a round vignette of pale sky, with two clouds, three birds and a few
+splatters. It floats while the list is in use, its lines boiling a little. The loop: an eraser scrubs it out, crumbs
+falling, a ghost of it left on the paper; the pencil draws it again — a light guide, the envelope in one line, the seams
+in perspective, the ropes, the basket's weave, the shading hatched down one side, the clouds, the birds — each line
+tapering where it starts and ends, with graphite's second, fainter line beside it; the brush floods the sky in, then
+each gore, the wet front spreading from where it touched, the paint darker while wet and lighter as it dries, flicking
+drops off as it goes; the burner roars, the balloon lifts and the birds wheel; it settles. The finale: a burst of colour
+thrown round it, the flame roaring as it rises, gold stars sketched in. The watercolour is drawn once per size: a wash
+with its edge darker where the pigment dried, granulation, a bloom where water crept back, its edge a little off the
+pencil line.
+
+**The words.** Arcade is a dark kit, and a vivid one behind the words: at first the lines held, but the small words
+dipped as speed lines crossed the header, the WARNING frame's top edge glowed by it and the white flashes (the star, the
+burst, LEVEL CLEAR) washed the page; and on a phone the app's own finale line, "Level clear.", sat on the glowing floor
+at 3.4. So the flashes are about a third as strong, the frame has no top edge, speed lines skip the words, the neon
+floor dims under words that sit right on it, and the stage learned two things a scene may ask for: `hug` as a number
+(how dark the pad under each line is; Arcade's is .86) and `hugFinale` (the finale's words get a pad too). And the stage
+now tells a scene which of the rects it measures are a line's words, so Arcade cuts its own moving picture back under
+them before it composites — the backdrop's dark sky is what's behind the lines, and the bloom goes with it. After: the
+lines read better than on the plain ground (15.3 → 16.1–16.6 in the seed lines, 15.3–16.8 in the long list), the small
+words at or above plain, the struck lines 4.8–5.2 (plain 4.5–5.2), the finale's line 7.2–7.6.
+
+**A bug the instrument found.** One reading made no sense: in the long list the city vanished from the right-hand side
+of the screen, where there are no words at all. A probe of the scene's own pixels over the loop found it drawn at 2–10 %
+with the long list and 88–96 % with the seed lines. The helper that draws a single pixel set the buffer's alpha and left
+it there, and the city is drawn straight after the stars: with the long list the last star lay behind a word, dimmed to
+near nothing, and the whole city inherited it. The helper puts the alpha back now; the city is drawn at 92–97 %
+throughout.
+
+**Sketch keeps clear, and when there's no room it goes.** Its words are all at or above their plain values (the lines
+12.5–12.9 against 12.6–12.8) but one: on a phone, where the balloon sits under the list, the pencil and the brush
+reached up into it (12.7 → 8.2); they're now held from the side away from the words. The suite's keep-clear test,
+extended to the balloon, found that after a long fourth line there was no circle as big as its minimum and it
+overlapped; it now shrinks to 36 px (30 on a phone) and fades away when even that won't fit, until there's room again.
+
+**What it costs.** Arcade's loop first measured 7.4 % of a core on a wide screen: every star was drawn pixel by pixel
+each frame, and every pixel of the score twice, for its shadow. Now the stars are two layers drawn once and scrolled, a
+sixth of them twinkling live, and each string of text is drawn once and kept: 4.2 %, in use 2.3 %, on a phone 3.9 %.
+Sketch: 4.6 %, in use 2.8 %, on a phone 4.7 % — the liquid's range, the price of a line that boils and a wash that
+floods.
+
+**One more trap, caught.** A `//` comment added mid-line in the stage swallowed the rest of its line again; the module
+check as `.mjs` caught it before anything ran.
+
+**What did not change.** First paint (`app.js` +8 bytes gzipped; `index.html`, `styles.css` unchanged); no stored
+setting; the other scenes (the stage's new options do nothing for a scene that doesn't ask, and the fifth number in each
+rect is ignored by the ones that don't read it); nothing in `apple/` but the stamp.

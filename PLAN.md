@@ -2468,3 +2468,50 @@ the version holds at 1.12, and nothing in `apple/` changed but the stamp.
 
 What the liquid costs on the phone itself (it is the dearest scene so far in Chrome), and how the springs feel at the
 phone's own refresh rate.
+
+# Today's Five 1.12 b330 — Scenes for every theme, round four: Sunset and Dusk
+
+*Shipped as build 331. b330 is the round's commit.*
+
+One bay for the pair, a retro travel poster: a striped sun going down by day, paper lanterns rising at blue hour. The
+stage's pad under the list can now hug each line (`hug`), and the bay keeps its brightest things out of the words. The
+decisions are in DECISIONS.md under "1.12 b330 decisions — Scenes for every theme, round four: Sunset and Dusk". Web
+only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Sunset and Dusk** (b330). `scene-bay.js`, rewritten; the stage's `hug` (a soft pad under each line's words in place
+   of the list-wide pad); the changelog names the bay (through Price's voice); a new test that the pads hug the lines.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `app.js` **+12 bytes** gzipped; `index.html`, `styles.css` unchanged; `sw.js` +5 | `gzip -9 -n` |
+| lazy, Scenes on only | `scene-bay.js` **9,619**; `scenes.js` 7,786 → **8,154** (the hugging pads) | `gzip -9 -n` |
+| first paint | desktop FCP **52 → 56 ms** (48–64 against 48–60); mobile **1304 → 1304 ms** (1292–1320 against 1300–1312): no cost | `tools/paint.mjs 8`, 329 (port 8800) beside this build |
+| CPU, desktop | the loop: Sunset **3.1 %** of a core (14.8 % for every Chrome process), Dusk **3.5 %** (14.9 %); in use: **2.2 %** (11.1 %) and **2.2 %** (11.2 %) | `tools/idle.mjs 60`, `SCENES=1` and `SCENES=1 USE=5` |
+| CPU, phone (390×844 at 2×) | the loop: Sunset **3.1 %** (14.2 %), Dusk **3.5 %** (14.9 %) | `tools/idle.mjs 45`, `VP=phone SCENES=1` |
+| contrast | the table below | `tools/contrast.mjs`: the seed lines, `FIXTURE=1`, `FIXTURE=1 VIEW=all` |
+
+| p1, plain → scene (in use / left alone) | Sunset | Dusk |
+| --- | --- | --- |
+| Today's lines, three (desktop, phone) | 12.28 → 7.44 / 7.40; 12.28 → 8.00 / 7.79 | 13.57 → 11.19 / 10.72; 13.57 → 11.43 / 10.50 |
+| Today's lines, seven (desktop, phone) | 12.69 → 8.08 / 8.04; 12.38 → 7.14 / 7.14 | 14.07 → 10.52 / 9.97; 13.75 → 8.19 / 8.08 |
+| small print in a long list (desktop caption; phone ↻) | 5.90 → 5.43; 5.81 → 4.74 | 6.26 → 6.39; 6.16 → 5.63 |
+| a struck line (the finale; desktop, phone) | 4.94 → 4.74; 4.89 → 4.54 | 5.49 → 4.93; 5.49 → 4.40 |
+| the header's small words | at or above plain | at or above plain |
+| Everything's rows and section counts (desktop; phone) | rows 12.69 → 12.33, 12.37 → 12.63; counts 8.55 → 6.16, 8.33 → 6.67 | rows 14.07 → 12.59, 13.57 → 13.17; counts 9.12 → 7.10, 8.91 → 7.38 (at half a veil, before it went to .66) |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30 (the precache list has the new module), compat 9 |
+| Focused runs | the Scenes tests, the walk through every kit with a scene (now ten), the liquid's and the pads' tests, the full session and the worker's two tests, both viewports: 16 passed |
+| Looked at | both kits on both viewports through every revision, in the lab and in the app, with the seed lines, the long list and the finale |
+| Screenshots | `shots/scenes-5/`: each kit mid-loop, phone and desktop (JPEG) |
+
+## What only a real iPhone can settle
+
+The blurred pads under the lines in WebKit (a CSS filter on each), and the lanterns' glow at the phone's own density.

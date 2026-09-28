@@ -1631,3 +1631,41 @@ kit still without a scene, and will want a theme you make when there are none.
 **What did not change.** First paint (`app.js` +5 bytes gzipped, `index.html`, `styles.css` unchanged); no stored
 setting; the other scenes (the stage's new hooks do nothing for a scene without them); nothing in `apple/` but the
 stamp.
+
+# 1.12 b330 decisions — Scenes for every theme, round four: Sunset and Dusk
+
+**One bay, redrawn to the bar Light and Dark set.** The parked module had the plan's picture (a retro-poster bay, a
+striped sun by day, lanterns at blue hour) and none of its force: in the app the sun was a dim disc with no stripes to
+see, the lanterns flat beige shapes, the moon a ring, the whole of it muddy under the washes. `scene-bay.js` is
+rewritten for both kits. Sunset: a sky in one long gradient from plum to gold with a band of halftone where it turns, a
+huge sun with slits sliding down through it, glowing, with rays turning slowly round it, its reflection a column of
+shimmering bars; headlands with their rims lit, palms with leaflets. The loop: the slits quicken and the horizon
+shimmers; a flock crosses the sun; a bank of stratus (strips stacked like a poster's) slides over it and its underside
+catches fire; a sailboat crosses the reflection; a flare streaks across as the palms toss. The finale: crisp fireworks —
+bright streaks with hot heads and a flash where each bursts — and the same, dimmer, in the water. Dusk: the same bay at
+blue hour, a crescent moon (cut clean out of its disc; the first one's even-odd fill left a second sliver, and read as a
+ring) and its silver path, and paper sky lanterns lit from inside, rising and swaying, each with its light in the water
+under it. The loop: the stars prick in; one lantern goes up from the beach; the whole shore lets theirs go; an egret
+lifts off the shallows and its rings spread; a star falls. The finale: the whole festival goes up at once.
+
+**The pad hugs the lines.** Vivid was the easy half. The first vivid version failed the words: lines from 12–14:1 down
+to 4–6, a struck line to 1.5, Dusk's count under a lantern to 3.5. The pad under the list, the full width of the page,
+was what had kept the old version legible and what had made it muddy. So the stage learned `hug`: for a scene that asks,
+the pad under the list gives way to a soft pad under each line's words (the kit's ground at 72 %, blurred, measured with
+the same hook that tells the liquid where the words are, and moved when they move), and the rest of the picture keeps
+its colour. A new test checks there is one over each line's words, before and after a line is added.
+
+**And bright things keep out of the words.** The bay takes the words too. The sun slides along the horizon clear of the
+lines' ends (and ignores a row's small tools, which are hidden until you point at the row; counting them pushed the sun
+off the screen); the fireworks go off in the four points of sky furthest from any word, the header and each other, and a
+spark over a word is left out; the lanterns fade as their glow nears a word and are gone before the header; the egret,
+the twinkling stars and the falling star fade the same way. On Everything, a dense list, the picture gets more veil
+(.66). After: the lines hold at 7.1 and better (Sunset's long list on a phone) and at 10 and better for Dusk; a struck
+line 4.4 and better; the header's small words at or above their plain values; a long list's small print at 4.7 and
+better.
+
+**What it costs.** The loop 3.1 % (Sunset) and 3.5 % (Dusk) of a core on a wide screen, in use 2.2 %, on a phone 3.1 %
+and 3.5 %: in line with the rounds before the liquid.
+
+**What did not change.** First paint (`app.js` +12 bytes gzipped, `index.html`, `styles.css` unchanged); no stored
+setting; the other scenes (the stage's `hug` does nothing for a scene without it); nothing in `apple/` but the stamp.

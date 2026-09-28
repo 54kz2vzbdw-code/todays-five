@@ -9,6 +9,11 @@ html[data-scene]{--halo:0 0 2px var(--ink),0 0 6px var(--ink),0 0 14px var(--ink
 html[data-scene] #shell{text-shadow:var(--halo)}
 html[data-scene] #shell .row .tx{text-shadow:none} /* the lines are big and sit on the washes; a halo on them read as a smudge */
 html[data-scene] #shell .row .tx :is(.rep,.cap,.note){text-shadow:var(--halo)} /* the small print that rides in a line keeps it */
+/* and a note or a caption sits on a soft cloud of the ground itself: a long list's last lines lie over the busiest part of
+   any picture (a town, the doe's horizon, the harbour), and small print has least room there. A shadow, not padding, so
+   nothing moves. */
+html[data-scene] #shell .row .tx :is(.note,.cap){background-color:color-mix(in srgb,var(--ink) 72%,transparent);box-shadow:0 0 5px 3px color-mix(in srgb,var(--ink) 72%,transparent);border-radius:4px}
+html[data-scene] #shell .row .tx .note{width:fit-content}
 /* Today's lines on a pad of the same ground, soft at the edges and always the size of the list, so a long list's last
    lines (down where the doe walks and the waves break) are as quiet behind as its first */
 html[data-scene] #today{background-color:color-mix(in srgb,var(--ink) 45%,transparent);box-shadow:0 0 32px 18px color-mix(in srgb,var(--ink) 45%,transparent);border-radius:28px}

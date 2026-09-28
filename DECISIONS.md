@@ -1844,3 +1844,42 @@ Light, Use for Day), and the picker is checked for a kit without the tag: none. 
 and Ember's fire, and, in a commit of its own, Blush's and Pink's heart, which b334 had missed.
 
 **What did not change.** First paint; no stored setting; the other scenes; nothing in `apple/` but the stamp.
+
+# 1.12 b339 decisions — Scenes: a section's name reads like a line
+
+**What the instrument found.** Checking round seven, `tools/contrast.mjs` over Everything (the long-time fixture) found
+section names reading under their plain value over three scenes in the live build: Arcade's on a phone at 2.57 against
+5.18 — under 4.5 — with the city and its stars coming through behind "Unsorted" and "Calls"; Dusk's caret at 4.85
+against 6.65 on a wide screen; Ember's names at 6.01 against 6.22 on a phone, where the fire found room beside "Calls".
+
+**The cause was the stage's.** The stage tells a scene where the words are, so it can keep clear of them, lay a pad
+under them or cut its picture back under them. It measured a line's words and tools, the pills, the date, the count, the
+keyboard line and the finale's words — not a section's name or count, which only Everything has. No scene knew the
+headings were there.
+
+**The fix.** The stage measures a section's name and count and treats them as it treats a line's words (the rect's fifth
+element is 1): the scenes with pads lay one under each (Dusk, Pink, Arcade, Cocoa, Ember), Arcade cuts its moving
+picture back under them as it does under a line, Ember and Cocoa put their picture in shadow there, and the scenes that
+keep clear settle clear of them (the liquid, the balloon, the heart, the cup, the fire). No scene's code changed.
+
+**Tried first, and dropped.** Measured as small words (0), they brought Arcade's phone reading only to 3.41, because
+Arcade cuts back less under small words. Cutting back all the way under every small word brought it to 5.37, but cut
+dark boxes out of the brick floor under the keyboard line and out of the city round "+ New line", in Today. Read as a
+line, a section's name gets what the lines get, in Everything only; Today has no sections and is untouched.
+
+**After.** Arcade's section names 2.57 → 5.67 on a phone and 5.02 → 5.72 on a wide screen (plain 5.18), their counts
+5.37 → 9.15; Dusk's caret 4.85 → 6.32 and its names 5.37 → 6.51 on a wide screen, 5.50 → 6.55 and 6.61 on a phone;
+Ember's 6.01 → 6.52; Pink's 5.77–5.82 → 5.73–5.75 (plain 4.95–5.03: the pad is the ink, and the wall behind is darker in
+places); Cocoa and Dark within a few hundredths of where they were; the lines in Everything unchanged. Dusk's caret and
+name on a wide screen still sit a little under plain (6.32 and 6.51 against 6.65 and 6.64). Midnight's, Terminal's and
+Forest's section names read under plain too (Midnight's caret 5.08 against 6.04 at worst), unchanged by this: those
+scenes don't ask where the words are. That's for another build.
+
+**Why it ships alone.** It changes what several scenes look like in Everything — where the liquid, the balloon, the
+heart, the cup and the fire settle, and a pad under each heading — on screens that asked for nothing new. So it goes out
+on a build of its own, after round seven.
+
+**The test.** New: with the long-time fixture in Everything, Dusk lays a pad under each section's name and count on
+screen. It fails on 338 (four on screen, none padded) and passes here.
+
+**What did not change.** Today; any scene's code; first paint; no stored setting; nothing in `apple/` but the stamp.

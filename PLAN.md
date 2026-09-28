@@ -2660,3 +2660,42 @@ Everything on a phone, 5.18 → 2.57 in the live build.
 | Focused runs | the Scenes tests, the walk through every kit with a scene (now sixteen), the keep-clear test (now seven kits) and the pads' test, the full session and the worker's two tests, both viewports: 16 passed |
 | Looked at | both kits on both viewports: lab sheets through every beat, then the app with the seed lines, the long list, Everything and the finale |
 | Screenshots | `shots/scenes-8/`: each kit mid-loop, phone and desktop (JPEG) |
+
+# Today's Five 1.12 b339 — Scenes: a section's name reads like a line
+
+*Shipped as build 340. b339 is the change's commit.*
+
+A section's name and count in Everything are words the stage measures now, treated as a line's words: padded where a
+scene pads its lines, cut back under where Arcade cuts back, kept clear of by the scenes that keep clear. It ships on its
+own because it changes what several scenes look like in Everything on screens that asked for nothing new. The decisions
+are in DECISIONS.md under "1.12 b339 decisions — Scenes: a section's name reads like a line". Web only; the version holds
+at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Section names read like lines** (b339). `scenes.js` measures `.sec-toggle` and `.sec-count` with the rest and gives
+   them the line's flag; the hug pads follow the flag. A new browser test: Dusk pads each section name in Everything.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| lazy, Scenes on only | `scenes.js` 8,339 → **8,407** gzipped; nothing on the first-paint path | `gzip -9 -n` |
+| contrast, Everything's section names | the table below: plain, the live build (338), this one | `FIXTURE=1 VIEW=all tools/contrast.mjs`, 338 on port 8800 beside this |
+
+| p1 of a section's name (caret; count), plain → 338 → this | wide screen | phone |
+| --- | --- | --- |
+| Arcade | 5.18 → 5.02 → **5.72** (5.17 → 5.02 → 5.73; 8.28 → 7.45 → 9.14) | 5.18 → **2.57** → **5.67** (5.20 → 5.21 → 5.73; 8.27 → 5.37 → 9.15) |
+| Dusk | 6.64 → 5.37 → **6.51** (6.65 → **4.85** → 6.32; 9.12 → 7.94 → 9.15) | 6.53 → 5.50 → **6.61** (6.67 → 5.50 → 6.55; 8.91 → 8.15 → 9.25) |
+| Ember | 6.30 → 6.21 → **6.52** (6.31 → 6.53 → 6.55; 8.93 → 8.92 → 9.25) | 6.22 → 6.01 → **6.52** (6.30 → 6.59 → 6.54; 8.79 → 8.58 → 9.22) |
+| Pink | 5.03 → 5.82 → 5.73 (5.06 → 5.87 → 5.77) | 4.95 → 5.77 → 5.73 (5.06 → 5.82 → 5.75) |
+| Cocoa | 5.89 → 6.23 → 6.15 | 5.72 → 6.11 → 6.15 |
+| Dark | 5.81 → 5.88 → 5.88 | 5.77 → 5.86 → 5.86 |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | the Scenes tests, the walk through every kit with a scene, the keep-clear and pads' tests, the new section-names test, the full session and the worker's two tests, both viewports: 18 passed; the new test fails on 338 |
+| Looked at | Arcade's Today on both viewports with the cut-back tried and dropped (the boxes in the floor), and Everything's headings |

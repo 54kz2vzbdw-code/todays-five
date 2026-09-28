@@ -274,7 +274,7 @@ export default function arcade(K) {
       const score = on ? Math.round(PTS.reduce((s, [t, p]) => s + p * clamp((T - t) / .4), 0) / 10) * 10 * I : 0, sc = String(Math.round(score)).padStart(6, "0");
       txt(pr ? sc : "SCORE " + sc, bw - tw(pr ? sc : "SCORE " + sc) - 4, gy + (pr ? 3 : 5), "#FFE14D", 1);
       // under the words the moving picture is cut back, so the backdrop's dark sky is what's behind them (and the bloom with it)
-      b.globalCompositeOperation = "destination-out"; for (const [x0, y0, x1, y1, k] of S.wr || []) { b.globalAlpha = k ? .7 : .4; b.fillRect(Math.floor(x0 / PS), Math.floor(y0 / PS), Math.ceil((x1 - x0) / PS) + 1, Math.ceil((y1 - y0) / PS) + 1); } b.globalCompositeOperation = "source-over"; b.globalAlpha = 1;
+      b.globalCompositeOperation = "destination-out"; for (const [x0, y0, x1, y1, k] of S.wr || []) { b.globalAlpha = k === 1 ? .7 : .4; b.fillRect(Math.floor(x0 / PS), Math.floor(y0 / PS), Math.ceil((x1 - x0) / PS) + 1, Math.ceil((y1 - y0) / PS) + 1); } b.globalCompositeOperation = "source-over"; b.globalAlpha = 1;
       // the frame: crisp, then bloom, then scanlines; a shake when things hit; a glitch at GO!, the burst and the finale
       if (F >= 0 && F < .05) shake = 2;
       const ox = shake ? Math.round((Math.random() - .5) * 2 * shake) * PS : 0, oy = shake ? Math.round((Math.random() - .5) * 2 * shake) * PS : 0;

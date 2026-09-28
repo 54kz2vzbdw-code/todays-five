@@ -11,7 +11,7 @@
 
 export const LOOP = 15;
 const IDLE_AFTER = 20000;
-const MODS = { forest: "./scene-forest.js", harbor: "./scene-harbor.js", paper: "./scene-papercut.js", midnight: "./scene-papercut.js", teletype: "./scene-teletype.js", terminal: "./scene-terminal.js", light: "./scene-orbit.js", dark: "./scene-orbit.js", sunset: "./scene-bay.js", dusk: "./scene-bay.js", arcade: "./scene-arcade.js", sketch: "./scene-sketch.js", blush: "./scene-heart.js", pink: "./scene-heart.js" }; // a pair can share one world
+const MODS = { forest: "./scene-forest.js", harbor: "./scene-harbor.js", paper: "./scene-papercut.js", midnight: "./scene-papercut.js", teletype: "./scene-teletype.js", terminal: "./scene-terminal.js", light: "./scene-orbit.js", dark: "./scene-orbit.js", sunset: "./scene-bay.js", dusk: "./scene-bay.js", arcade: "./scene-arcade.js", sketch: "./scene-sketch.js", blush: "./scene-heart.js", pink: "./scene-heart.js", cocoa: "./scene-cocoa.js", ember: "./scene-ember.js" }; // a pair can share one world
 export const SCENE_IDS = Object.keys(MODS);
 
 /* ---------------- the drawing kit a scene is handed ---------------- */
@@ -147,7 +147,7 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     for (const el of shell.querySelectorAll(".row .tx, .row .tool, .chip, .seg, .add, #date, #count, #hint, #finale > span")) {
       if (el.classList.contains("tx")) range.selectNodeContents(el);
       const b = el.classList.contains("tx") ? range.getBoundingClientRect() : el.getBoundingClientRect();
-      if (b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < innerHeight) out.push([b.left, b.top, b.right, b.bottom, el.classList.contains("tx") ? 1 : 0]); /* the fifth: 1 for a line's words */
+      if (b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < innerHeight) out.push([b.left, b.top, b.right, b.bottom, el.classList.contains("tx") ? 1 : el.classList.contains("tool") ? 2 : 0]); /* the fifth: 1 for a line's words, 2 for its tools (there when it is hovered), 0 the rest */
       if (scene.hug && b.width > 0 && (el.classList.contains("tx") || (scene.hugFinale && el.matches("#finale > span")))) lines.push(b); /* a scene can have the finale's words hugged too */
     }
     if (scene.words) scene.words(out);

@@ -1569,3 +1569,65 @@ their list looks different, it is this one commit.
 plain ground is 4.51), Paper 4.81 → 4.98, Midnight 5.19 → 5.71, Teletype 3.76 → 4.87, Terminal 5.71 → 6.06; on a phone
 Forest 4.60 → 5.64, Harbor 4.44 → 4.54, Paper 4.51 → 4.82, Midnight 5.74 → 6.00, Teletype 3.62–5.15 → 5.05, Terminal
 6.29 → 6.78. Notes and captions unchanged. `scenes.css` +17 bytes gzipped; nothing on the first-paint path.
+
+# 1.12 b328 decisions — Scenes for every theme, round three: Light and Dark
+
+The plan had one room for the pair: a window's light on a wall, sun and leaves by day, headlights and rain by night. It
+was built and looked at, and Price, from the screenshots: "I don't like what you've done for light/dark. Light in
+particular looks like trash… Remember, make a dynamic motion graphics animation that shows what an incredible motion
+designer you are… go all out." Then the direction: "since they are just generic light/dark, a throbber-type animation or
+something would work fine. But extremely high quality… for the idle maybe just a fascinating shape (or morphing series
+of spheres or something) that is easy to look at for hours… Run with that and make something just show-stopping
+amazing."
+
+**What was dropped, and why.** The room was ambience, not motion design: a pale patch on a pale wall, muddy under a
+light kit's washes, most of its events too small to see. The first answer to the new brief, a string of ninety beads in
+three dimensions flowing between knots, was elegant and read as a necklace, or a molecular model. Both stayed out.
+
+**A throbber in liquid.** `scene-orbit.js`, one module for the pair. Ten glossy drops on a ring, a pulse running round
+them the way a loader's comet does; the swollen drops at its head melt into their neighbours as it passes. Left alone,
+the drops pour together into one trembling blob, pinch into three lobes that turn, run out along a figure of eight
+(merging where it crosses), string out into a wave that ripples through them in three dimensions, and flow back into the
+ring. The finale: everything pools into one drop, which splashes, and the ring re-forms out of the splash. Light's
+liquid is an orange glaze with a soft shadow; Dark's is molten amber, glowing. The drops are metaballs: their summed
+field is found on a grid each frame, the level where it is 1 traced by marching squares, smoothed, and drawn as a vector
+outline, so the edge is crisp at any density; the light comes off the outline itself (bright just inside where it faces
+the upper left, shaded where it faces away, a sheen in each body and one glint where it faces the light most), so a
+merged blob has one glint, not one per drop. Each drop chases its place on a spring, a little under-damped, so the
+liquid wobbles as it merges and parts.
+
+**It keeps to the empty part of the page.** The pad under the list and the wash over its band are there to quiet a
+picture behind the words; they dimmed a single bright object beside them to peach, and Dark's amber to mud. So the stage
+learned to say where the words are: a scene with `words(rects)` is told each line's text and its tools, the pills, the
+date, the count, the keyboard line and the finale's words, measured again (once a frame at most) whenever the page's
+words change, move or scroll. The liquid settles in the largest circle of empty page, as big as it allows, and glides
+there, resizing, as the list changes — beside short lines on a wide screen, under a short list on a phone, beside "+ New
+line" under a long one. A scene that declares `clear` keeps out of the words' way, so for it the stage drops the pad and
+the list's wash. The suite now checks it: no pad, and clear of every line before and after a long line is added.
+Everything it draws, the pool of shadow or light under it, the glow and the splash, fits inside that circle. A row that
+is hovered or focused lights its whole width and covers part of it for the moment; that is how the page is layered, and
+it is left so.
+
+**The words.** Every line reads exactly as on the plain ground, in every configuration, on both viewports: the seed
+lines, the long list and Everything. The small words and a long list's small print are at or above their plain values.
+One reading dips: on a wide screen, Light's finale line "That's the list." is 4.23 with the liquid and 4.47–4.84
+without, across runs. The settled finale is pixel for pixel the same with the scene and without, where that line is; the
+with-scene value never moves while the plain one swings, so it is the finale's entrance sampled at different moments,
+not the liquid.
+
+**What it costs.** First measured, the loop took 5.9–6.0 % of a core on a wide screen. A canvas shadow blur for the
+liquid's shadow and glow went (a soft sprite under each drop makes the same thing), the field is summed only where each
+drop reaches (a kernel that falls to nothing, so no seam), and the grid it is traced on is as coarse as keeps a drop
+round: the loop now 4.4–4.8 %, in use 3.1–3.2 %, on a phone 4.2 %. That is half again the other scenes, the price of a
+surface found anew every frame, and the loop plays only when nothing is being touched. A profile of the page puts its
+own script at about 1.5 % of that; the rest is drawing.
+
+**Two traps.** `node --check` on these `.js` modules (no package.json, so no "type": "module") passes a real syntax
+error; a module that fails to parse fails silently in the app, the scene simply never laying out. Every module is now
+checked as an `.mjs` copy. And a `//` comment put in the middle of one of these one-line loops swallows the rest of the
+line; it did, twice. The b318 test's "a theme without one" was Light, and Light has one now: it takes the first light
+kit still without a scene, and will want a theme you make when there are none.
+
+**What did not change.** First paint (`app.js` +5 bytes gzipped, `index.html`, `styles.css` unchanged); no stored
+setting; the other scenes (the stage's new hooks do nothing for a scene without them); nothing in `apple/` but the
+stamp.

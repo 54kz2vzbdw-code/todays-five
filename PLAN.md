@@ -2418,3 +2418,53 @@ DECISIONS.md under "1.12 b326 decisions — The repeat mark on the soft cloud". 
 | the ↻ over the long list, left alone (desktop; phone) | Forest 5.28 → **5.78**; 4.60 → **5.64**. Harbor 4.24 → **4.37**; 4.44 → **4.54**. Paper 4.81 → **4.98**; 4.51 → **4.82**. Midnight 5.19 → **5.71**; 5.74 → **6.00**. Teletype 3.76 → **4.87**; 3.62–5.15 → **5.05**. Terminal 5.71 → **6.06**; 6.29 → **6.78** | `tools/contrast.mjs`, `FIXTURE=1`, all six kits, both viewports |
 | bytes | `scenes.css` 975 → **992** gzipped, lazy, Scenes on only | `gzip -9 -n` |
 | tests | the Scenes tests, the walk through every kit with a scene, the full session and a page open across a deploy, both viewports | `tools/e2e4.js` |
+
+# Today's Five 1.12 b328 — Scenes for every theme, round three: Light and Dark
+
+*Shipped as build 329. b328 is the round's commit.*
+
+Light and Dark share a liquid throbber: glossy drops on a ring with a comet running round, pouring through five forms when
+left alone, keeping to the empty part of the page. The room the plan had was built and dropped on Price's word; the
+decisions are in DECISIONS.md under "1.12 b328 decisions — Scenes for every theme, round three: Light and Dark". Web only;
+the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Light and Dark** (b328). `scene-orbit.js`, one module for the pair: metaballs traced each frame and drawn as vector
+   outlines lit from their own edges, on springs. The stage learns two things a scene may ask for: `words(rects)` (where
+   the words are, measured again as they change) and `clear` (it keeps out of their way, so no pad and no wash over the
+   list). The changelog names the drops (through Price's voice). A new test checks the liquid stays clear of every line.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `app.js` **+5 bytes** gzipped; `index.html`, `styles.css` unchanged; `sw.js` +6 | `gzip -9 -n` |
+| lazy, Scenes on only | `scene-orbit.js` **6,755**; `scenes.js` 7,040 → **7,786** (where the words are); `scenes.css` 992 → **1,078** (no pad for a scene that keeps clear) | `gzip -9 -n` |
+| first paint | desktop FCP **56 → 48 ms** (48–64 against 48–60); mobile **1308 → 1304 ms** (1296–1316 against 1296–1312): no cost | `tools/paint.mjs 8`, 327 (port 8800) beside this build |
+| CPU, desktop | the loop: Light **4.4 %** of a core (15.7 % for every Chrome process), Dark **4.8 %** (15.8 %); in use: Light **3.1 %** (11.8 %), Dark **3.2 %** (12.0 %). First measured at 5.9 % and 6.0 % | `tools/idle.mjs 60`, `SCENES=1` and `SCENES=1 USE=5` |
+| CPU, phone (390×844 at 2×) | the loop: Light **4.2 %** (15.8 %), Dark **4.2 %** (15.2 %) | `tools/idle.mjs 45`, `VP=phone SCENES=1` |
+| contrast | the table below | `tools/contrast.mjs`: the seed lines, `FIXTURE=1`, `FIXTURE=1 VIEW=all` |
+
+| p1, plain → scene (in use / left alone) | Light | Dark |
+| --- | --- | --- |
+| Today's lines, three (desktop, phone) | 7.41 → 7.41 / 7.41; 7.46 → 7.46 / 7.46 | 17.16 → 17.16 / 17.16; 17.17 → 17.17 / 17.17 |
+| Today's lines, seven (desktop, phone) | 7.46 → 7.46 / 7.46; 7.41 → 7.41 / 7.41 | 17.23 → 17.23 / 17.23; 17.16 → 17.16 / 17.16 |
+| small print in a long list (desktop caption; phone note) | 4.27 → 4.39; 4.35 → 4.52 | 5.70 → 5.87; 7.71 → 7.95 |
+| a struck line in a long list, left alone (desktop; phone) | 4.49 → 4.49; 4.46 → 4.46 | 5.85 → 5.85; 5.80 → 5.80 |
+| Everything's rows (desktop; phone) | 7.51 → 7.82; 7.46 → 7.82 | 17.23 → 17.58; 17.19 → 17.47 |
+| the finale's line (desktop, phone) | 4.47–4.84 → 4.23 (the entrance, sampled at different moments; settled, pixel-identical); 4.21 → 4.83 | 4.74 → 4.94; 4.20 → 4.69 |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30 (the precache list has the new module), compat 9 |
+| Focused runs | the Scenes tests, the walk through every kit with a scene (now eight), the new test that the liquid keeps clear of the words, the full session and the worker's two tests, both viewports: 14 passed |
+| Looked at | both kits on both viewports through every version (the room, the beads, the liquid), first as contact sheets and live frame strips, then in the app with the seed lines, the long-time fixture's seven lines and the finale |
+| Screenshots | `shots/scenes-4/`: each kit mid-loop, phone and desktop (JPEG) |
+
+## What only a real iPhone can settle
+
+What the liquid costs on the phone itself (it is the dearest scene so far in Chrome), and how the springs feel at the
+phone's own refresh rate.

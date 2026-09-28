@@ -3244,7 +3244,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   });
 
   /* 1.12 b321: the kits that carry a scene, and the module each one's is in (a pair can share one) */
-  const SCENE_MODS = { forest: "scene-forest.js", harbor: "scene-harbor.js", paper: "scene-papercut.js", midnight: "scene-papercut.js", teletype: "scene-teletype.js", terminal: "scene-terminal.js", light: "scene-orbit.js", dark: "scene-orbit.js", sunset: "scene-bay.js", dusk: "scene-bay.js", arcade: "scene-arcade.js", sketch: "scene-sketch.js" };
+  const SCENE_MODS = { forest: "scene-forest.js", harbor: "scene-harbor.js", paper: "scene-papercut.js", midnight: "scene-papercut.js", teletype: "scene-teletype.js", terminal: "scene-terminal.js", light: "scene-orbit.js", dark: "scene-orbit.js", sunset: "scene-bay.js", dusk: "scene-bay.js", arcade: "scene-arcade.js", sketch: "scene-sketch.js", blush: "scene-heart.js", pink: "scene-heart.js" };
   const SCENE_KITS = Object.keys(SCENE_MODS);
   /* 1.12 b318: Scenes. A device that has them on, Forest in Night and Harbor in Day (a dark system: Forest on) */
   const sceneDevice = (on = true) => `try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: { day: "T1:curated:harbor", night: "T1:curated:forest", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }${on ? ", scenes: true" : ""} } })); } catch (e) {}`;
@@ -3292,10 +3292,10 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal((await t.s()).scene.running, true, "back on Today, it moves again"); assert.equal(await t.page.$eval("#field", f => getComputedStyle(f.lastElementChild).opacity), "0");
     // the picker tags the kits that have one; a theme without one takes the scene down (1.12 b328: the first light kit
     // still without one, as the rounds give them theirs; when none is left this wants a theme you make)
-    const BARE = ["blush", "sketch"].find(k => !SCENE_MODS[k]);
+    const BARE = ["blush", "sketch", "cocoa", "ember"].find(k => !SCENE_MODS[k]), BARE_GROUP = ["cocoa", "ember"].includes(BARE) ? "#sw-dark" : "#sw-light";
     await openPicker(t, "day");
     assert.deepEqual(await t.page.$$eval("#p-theme .swatch .scene-tag", els => els.map(e => e.closest(".swatch").dataset.code + ":" + e.textContent).sort()), SCENE_KITS.map(k => "T1:curated:" + k + ":Scene").sort(), "the kits with a scene, tagged");
-    await t.page.click(`#sw-light .swatch[data-code="T1:curated:${BARE}"]`); await wait(500); await t.esc(); await wait(300);
+    await t.page.click(`${BARE_GROUP} .swatch[data-code="T1:curated:${BARE}"]`); await wait(500); await t.esc(); await wait(300);
     assert.equal((await t.s()).theme, BARE); assert.equal((await t.s()).scene, null, BARE + " has none: the scene goes");
     assert.ok(await t.page.$eval("#field", e => e.hidden && !e.children.length && !e.style.cssText), "and leaves the layer as it found it");
     assert.equal(await t.page.evaluate(() => "scene" in document.documentElement.dataset), false, "and the page without its mark");

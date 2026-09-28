@@ -11,7 +11,7 @@
 
 export const LOOP = 15;
 const IDLE_AFTER = 20000;
-const MODS = { forest: "./scene-forest.js", harbor: "./scene-harbor.js", paper: "./scene-papercut.js", midnight: "./scene-papercut.js" }; // a pair can share one world
+const MODS = { forest: "./scene-forest.js", harbor: "./scene-harbor.js", paper: "./scene-papercut.js", midnight: "./scene-papercut.js", teletype: "./scene-teletype.js", terminal: "./scene-terminal.js" }; // a pair can share one world
 export const SCENE_IDS = Object.keys(MODS);
 
 /* ---------------- the drawing kit a scene is handed ---------------- */

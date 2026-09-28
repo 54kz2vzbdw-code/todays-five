@@ -11,7 +11,7 @@
 
 export const LOOP = 15;
 const IDLE_AFTER = 20000;
-const MODS = { forest: "./scene-forest.js", harbor: "./scene-harbor.js", paper: "./scene-papercut.js", midnight: "./scene-papercut.js", teletype: "./scene-teletype.js", terminal: "./scene-terminal.js" }; // a pair can share one world
+const MODS = { forest: "./scene-forest.js", harbor: "./scene-harbor.js", paper: "./scene-papercut.js", midnight: "./scene-papercut.js", teletype: "./scene-teletype.js", terminal: "./scene-terminal.js", light: "./scene-orbit.js", dark: "./scene-orbit.js" }; // a pair can share one world
 export const SCENE_IDS = Object.keys(MODS);
 
 /* ---------------- the drawing kit a scene is handed ---------------- */
@@ -102,16 +102,17 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
   // the words stay on a quiet ground: washes of the kit's own ink where the app keeps words — the bar along the top,
   // the list, the footer's row — and the picture whole between them and in the corners (tools/contrast.mjs measures
   // it). A scene weighs the two bands (`wash`): a light kit's small words sit right at 4.5:1 on its own ground, so its
-  // picture has to come nearly to the ink under them, where a dark kit's has room to spare.
+  // picture has to come nearly to the ink under them, where a dark kit's has room to spare. A scene that keeps its picture
+  // clear of the list (`list`, 1.12 b328) may lighten the wash over the list's band, so its picture isn't dimmed for nothing.
   const [ir, ig, ib] = rgb(ink), k = a => `rgba(${ir},${ig},${ib},${Math.min(.95, a).toFixed(3)})`, ss = scrim.style; ss.position = "absolute"; ss.inset = "0";
-  let weight = 1;
+  let weight = 1, listW = 1;
   const wash = (w = weight) => {
     weight = w;
     const pool = Math.round(Math.max(innerWidth * .7, 360)); // a phone's footer row is as wide as the phone
     ss.background = [
       `linear-gradient(to bottom, ${k(.55 * w)} 0, ${k(.55 * w)} 48px, ${k(.28 * w)} 88px, ${k(0)} 132px)`,
       `radial-gradient(${pool}px 110px at 50% 100%, ${k(.72 * w)} 0%, ${k(.72 * w)} 45%, ${k(.4 * w)} 75%, ${k(0)} 100%)`,
-      `radial-gradient(120% 72% at 42% 40%, ${k(.62)} 0%, ${k(.4)} 52%, ${k(0)} 82%)`,
+      `radial-gradient(120% 72% at 42% 40%, ${k(.62 * listW)} 0%, ${k(.4 * listW)} 52%, ${k(0)} 82%)`,
     ].join(", ");
   };
   // Everything is a page of words from top to bottom, over every part of the picture (the moon included): there the
@@ -133,6 +134,21 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
   document.addEventListener("visibilitychange", onVis);
   const onResize = () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (alive && scene) { size(); draw(); } }, 150); };
   addEventListener("resize", onResize);
+  /* 1.12 b328: a scene that keeps to the empty part of the page (its `words(rects)`) is told where the words are: each
+     line's text and its tools, the pills, the date, the count, the keyboard line and the finale's words, in CSS pixels, measured again (once a frame at
+     most) whenever the page's words change, move or scroll. */
+  let wordsF = 0, watch = null;
+  const measure = () => {
+    wordsF = 0; if (!alive || !scene || !scene.words) return;
+    const out = [], range = document.createRange(), shell = document.getElementById("shell"); if (!shell) return;
+    for (const el of shell.querySelectorAll(".row .tx, .row .tool, .chip, .seg, .add, #date, #count, #hint, #finale > span")) {
+      if (el.classList.contains("tx")) range.selectNodeContents(el);
+      const b = el.classList.contains("tx") ? range.getBoundingClientRect() : el.getBoundingClientRect();
+      if (b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < innerHeight) out.push([b.left, b.top, b.right, b.bottom]);
+    }
+    scene.words(out);
+  };
+  const remeasure = () => { if (!wordsF && alive) wordsF = requestAnimationFrame(measure); };
 
   /* Two ways to draw. Pixel art (Forest, Harbor): a canvas about 190 pixels tall, scaled up crisp, redrawn whole each
      frame, which at that size costs next to nothing. The smooth styles (`res` on the scene: canvas pixels per CSS pixel,
@@ -184,8 +200,12 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
 
   const ready = import(MODS[id] + "?v=" + build).then(m => {
     if (!alive) return;
-    scene = m.default(KIT, id); scene.bind(g); if (scene.wash) wash(scene.wash); if (scene.veil) { veilAt = scene.veil; paintVeil(); }
-    size(); draw();
+    scene = m.default(KIT, id); scene.bind(g);
+    if (scene.clear) { listW = 0; document.documentElement.dataset.sceneClear = ""; } else if (scene.list) listW = scene.list; // it keeps out of the words' way
+    wash(scene.wash || weight); if (scene.veil) { veilAt = scene.veil; paintVeil(); }
+    size();
+    if (scene.words) { const shell = document.getElementById("shell"); if (shell) { watch = new MutationObserver(remeasure); watch.observe(shell, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["class", "hidden", "style"] }); } addEventListener("resize", remeasure); addEventListener("scroll", remeasure, opt); measure(); }
+    draw();
     requestAnimationFrame(() => { if (alive) hs.opacity = "1"; });
     run();
   }).catch(() => { /* no scene: the kit's own ground shows, as with the setting off */ });
@@ -202,12 +222,13 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     /** as if nothing had been touched for the twenty seconds (the suite's way in; see app.js's __tfTest) */
     leaveAlone() { lastInput = performance.now() - IDLE_AFTER - 1; run(); },
     ready,
-    state() { return { id, idle: I > .5, level: +I.toFixed(2), finale: F >= 0, frames, fps: raf || timer ? fps : 0, running: !!(raf || timer), busy: crowd, px: PXS, size: [W, H], t: +T.toFixed(2) }; },
+    state() { return { id, idle: I > .5, level: +I.toFixed(2), finale: F >= 0, frames, fps: raf || timer ? fps : 0, running: !!(raf || timer), busy: crowd, px: PXS, size: [W, H], t: +T.toFixed(2), spot: scene && scene.spot ? scene.spot() : null }; }, // spot: where a scene that keeps to the empty page has settled
     stop() {
       alive = false; halt(); clearTimeout(resizeT); clearTimeout(coverT);
       INPUTS.forEach(t => removeEventListener(t, touched, opt));
       document.removeEventListener("visibilitychange", onVis); removeEventListener("resize", onResize);
-      host.className = ""; host.textContent = ""; host.hidden = true; delete document.documentElement.dataset.scene;
+      if (watch) watch.disconnect(); removeEventListener("resize", remeasure); removeEventListener("scroll", remeasure, opt); cancelAnimationFrame(wordsF);
+      host.className = ""; host.textContent = ""; host.hidden = true; delete document.documentElement.dataset.scene; delete document.documentElement.dataset.sceneClear;
       for (const p of ["position", "inset", "pointerEvents", "zIndex", "overflow", "opacity", "transition"]) hs[p] = "";
     },
   };

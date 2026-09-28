@@ -42,9 +42,10 @@ used to be filed under day—sit with the other dark ones.
 
 Scenes: turn them on in Appearance, and the themes tagged Scene get a moving picture behind the list—a moonlit forest
 with fireflies and a doe for Forest; a harbor with gulls and a lighthouse for Harbor; one pop-up paper town for Paper
-and Midnight, by day and by night; and one coast for Teletype and Terminal, typed in characters on green-bar paper by
-day and drawn in glowing green lines at night. They stay nearly still while you use the list and play out when you leave
-it alone. Off by default—with them off, the app runs exactly as before.
+and Midnight, by day and by night; one coast for Teletype and Terminal, typed in characters on green-bar paper by day
+and drawn in glowing green lines at night; and for Light and Dark, a ring of glossy liquid drops that spins like a
+loader and keeps to the empty part of the page. They stay nearly still while you use the list and play out when you
+leave it alone. Off by default—with them off, the app runs exactly as before.
 
 ## 1.11 — A look of its own.
 

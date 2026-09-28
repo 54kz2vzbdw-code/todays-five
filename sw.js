@@ -13,7 +13,7 @@ const BUILD = 327;          // = version.js's BUILD
 const CACHE = VERSION + "-b" + BUILD;
 const SHELL = [
   "./index.html", "./about.html", "./styles.css", "./panels.css", "./app.js", "./model.js", "./sync.js", "./crypto.js", "./theme.js",
-  "./sound.js", "./packs.js", "./packs-secret.js", "./secretfx.js", "./secretfx.css", "./packs-extra.js", "./extrafx.js", "./extrafx.css", "./scenes.js", "./scenes.css", "./scene-forest.js", "./scene-harbor.js", "./scene-papercut.js", "./scene-teletype.js", "./scene-terminal.js", "./fx.js", "./motion.js", "./finale.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json",
+  "./sound.js", "./packs.js", "./packs-secret.js", "./secretfx.js", "./secretfx.css", "./packs-extra.js", "./extrafx.js", "./extrafx.css", "./scenes.js", "./scenes.css", "./scene-forest.js", "./scene-harbor.js", "./scene-papercut.js", "./scene-teletype.js", "./scene-terminal.js", "./scene-orbit.js", "./fx.js", "./motion.js", "./finale.js", "./qr.js", "./config.js", "./version.js", "./panels.js", "./exporter.js", "./whatsnew.json",
   "./manifest.webmanifest", "./vendor/realtime.js",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-512-maskable.png", "./icons/apple-touch-icon.png"
 ];

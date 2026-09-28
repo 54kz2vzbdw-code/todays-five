@@ -17,5 +17,8 @@ html[data-scene] #shell .row .tx .note{width:fit-content}
 /* Today's lines on a pad of the same ground, soft at the edges and always the size of the list, so a long list's last
    lines (down where the doe walks and the waves break) are as quiet behind as its first */
 html[data-scene] #today{background-color:color-mix(in srgb,var(--ink) 45%,transparent);box-shadow:0 0 32px 18px color-mix(in srgb,var(--ink) 45%,transparent);border-radius:28px}
+/* 1.12 b328: a scene that keeps to the empty part of the page (Light's and Dark's liquid) has nothing behind the words to
+   quiet, so it has no pad */
+html[data-scene][data-scene-clear] #today{background-color:transparent;box-shadow:none}
 html[data-scene] #shell .chip,html[data-scene] #shell .seg,html[data-scene] #shell .add{background-color:var(--ink)}
 html[data-scene] #shell .chip:hover{background-color:var(--ink-2)}

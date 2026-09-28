@@ -11,7 +11,7 @@
 
 export const LOOP = 15;
 const IDLE_AFTER = 20000;
-const MODS = { forest: "./scene-forest.js", harbor: "./scene-harbor.js" };
+const MODS = { forest: "./scene-forest.js", harbor: "./scene-harbor.js", paper: "./scene-papercut.js", midnight: "./scene-papercut.js" }; // a pair can share one world
 export const SCENE_IDS = Object.keys(MODS);
 
 /* ---------------- the drawing kit a scene is handed ---------------- */
@@ -22,7 +22,11 @@ const E = {
   out: t => 1 - Math.pow(1 - t, 3),
   in: t => t * t * t,
   sine: t => -(Math.cos(Math.PI * t) - 1) / 2,
+  back: t => 1 + 2.70158 * Math.pow(t - 1, 3) + 1.70158 * Math.pow(t - 1, 2), // out, overshooting a little and settling
+  elastic: t => t <= 0 ? 0 : t >= 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - .75) * 2.0944) + 1,
 };
+/** a damped spring from 0 to 1 over t in [0,1]: `k` wobbles, `d` how fast they die */
+const spring = (t, k = 3, d = 6) => t <= 0 ? 0 : t >= 1 ? 1 : 1 - Math.exp(-d * t) * Math.cos(k * Math.PI * t);
 const seg = (t, a, b, e = E.io) => e(clamp((t - a) / (b - a)));
 /** a beat's envelope: 0 before a, up to 1 by b, held to c, back to 0 by d */
 const env = (t, a, b, c, d, e = E.io) => t <= a || t >= d ? 0 : t < b ? e((t - a) / (b - a)) : t <= c ? 1 : e((d - t) / (d - c));
@@ -62,9 +66,21 @@ function pine(h, seed, body, rim, trunk, shade) {
 }
 /** a pixel sprite from rows of characters, one palette entry per character */
 function sprite(rows, pal) { const w = Math.max(...rows.map(r => r.length)); return paint(w, rows.length, (x, y) => pal[rows[y][x]] || null); }
+/** the first `p` (0…1) of a polyline's length, drawn: a line that draws itself */
+function partial(g, pts, p) {
+  if (p <= 0 || pts.length < 2) return; let total = 0; const seglen = [];
+  for (let i = 1; i < pts.length; i++) { const l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seglen.push(l); total += l; }
+  let left = total * clamp(p); g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length && left > 0; i++) { const l = seglen[i - 1], f = Math.min(1, left / (l || 1)); g.lineTo(lerp(pts[i - 1][0], pts[i][0], f), lerp(pts[i - 1][1], pts[i][1], f)); left -= l; }
+  g.stroke();
+}
+/** line boil: the same drawing redrawn a few times a second with its points shifted a hair, as a hand would redraw it */
+const boil = (frame, amp = .8) => { const r = rng(frame * 7919 + 13); return (x, y) => [x + (r() - .5) * 2 * amp, y + (r() - .5) * 2 * amp]; };
+/** paper grain: soft specks of light and dark, drawn once and laid over a paper colour */
+function grain(w, h, seed = 1, k = .06) { const r = rng(seed); return paint(w, h, () => { const v = r(); return v < .5 ? [0, 0, 0, Math.round(255 * k * r())] : [255, 255, 255, Math.round(255 * k * .8 * r())]; }); }
 /** a layer redrawn only when what is in it moves: `key` says what it looks like now */
 function layer() { let c = null, k = null; return (w, h, key, draw) => { if (!c || c.width !== w || c.height !== h) { [c] = canvas(w, h); k = null; } if (key !== k) { const x = c.getContext("2d"); x.clearRect(0, 0, w, h); draw(x); k = key; } return c; }; }
-export const KIT = { LOOP, clamp, lerp, E, seg, env, rng, dith, rgb, mixc, css, canvas, paint, noise1, fbm, glowSpr, pine, sprite, layer };
+export const KIT = { LOOP, clamp, lerp, E, spring, seg, env, rng, dith, rgb, mixc, css, canvas, paint, noise1, fbm, glowSpr, pine, sprite, layer, partial, boil, grain };
 
 /* ---------------- the stage ---------------- */
 /** The words' side of it (scenes.css), asked for with the page's build (COMPATIBILITY.md §6), and only once. */
@@ -77,12 +93,12 @@ function linkCss(build) {
 export function createScene(host, id, { build = "", reduced = () => false, ink = "#000000", busy = false } = {}) {
   let alive = true, scene = null, raf = 0, timer = 0, last = 0, T = 0, I = 0, A = 12, F = -1, frames = 0, fps = 15, lastInput = performance.now();
   let W = 0, H = 0, PXS = 4, resizeT = 0, coverT = 0, crowd = !!busy, veilAt = .5;
-  const [cv, g] = canvas(1, 1);
-  cv.setAttribute("aria-hidden", "true");
+  const [cv, g] = canvas(1, 1), [bd, bg] = canvas(1, 1); // the moving picture, and (smooth styles) what never moves under it
+  cv.setAttribute("aria-hidden", "true"); bd.setAttribute("aria-hidden", "true");
   const scrim = document.createElement("div");
   host.hidden = false; host.className = "scene"; host.textContent = "";
   const hs = host.style; hs.position = "fixed"; hs.inset = "0"; hs.pointerEvents = "none"; hs.zIndex = "1"; hs.overflow = "hidden"; hs.opacity = "0"; hs.transition = "opacity .7s ease";
-  const cs = cv.style; cs.position = "absolute"; cs.left = "0"; cs.top = "0"; cs.imageRendering = "pixelated";
+  const cs = cv.style, bs = bd.style; for (const x of [cs, bs]) { x.position = "absolute"; x.left = "0"; x.top = "0"; }
   // the words stay on a quiet ground: washes of the kit's own ink where the app keeps words — the bar along the top,
   // the list, the footer's row — and the picture whole between them and in the corners (tools/contrast.mjs measures
   // it). A scene weighs the two bands (`wash`): a light kit's small words sit right at 4.5:1 on its own ground, so its
@@ -105,7 +121,7 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
   const veil = document.createElement("div"), vs = veil.style; vs.position = "absolute"; vs.inset = "0"; vs.background = ink; vs.transition = "opacity .5s ease";
   const paintVeil = () => { vs.opacity = crowd ? String(veilAt) : "0"; };
   wash(); paintVeil();
-  host.append(cv, scrim, veil);
+  host.append(bd, cv, scrim, veil);
   linkCss(build); document.documentElement.dataset.scene = id;
 
   const touched = () => { lastInput = performance.now(); };
@@ -118,13 +134,29 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
   const onResize = () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (alive && scene) { size(); draw(); } }, 150); };
   addEventListener("resize", onResize);
 
+  /* Two ways to draw. Pixel art (Forest, Harbor): a canvas about 190 pixels tall, scaled up crisp, redrawn whole each
+     frame, which at that size costs next to nothing. The smooth styles (`res` on the scene: canvas pixels per CSS pixel,
+     or "dpr" for line art that wants the screen's own, up to 2): the scene draws in CSS pixels, what never moves goes
+     on the backdrop once, at layout, and each frame redraws only what moves. */
+  let smooth = false;
   function size() {
     wash();
-    PXS = Math.max(3, Math.round(innerHeight / (innerWidth < 700 ? 205 : 185)));
-    W = Math.ceil(innerWidth / PXS); H = Math.ceil(innerHeight / PXS);
-    cv.width = W; cv.height = H; g.imageSmoothingEnabled = false;
-    cs.width = W * PXS + "px"; cs.height = H * PXS + "px";
-    scene.layout(W, H);
+    smooth = scene.res !== undefined && scene.res !== "pixel";
+    if (!smooth) {
+      PXS = Math.max(3, Math.round(innerHeight / (innerWidth < 700 ? 205 : 185)));
+      W = Math.ceil(innerWidth / PXS); H = Math.ceil(innerHeight / PXS);
+      cv.width = W; cv.height = H; g.imageSmoothingEnabled = false;
+      cs.width = W * PXS + "px"; cs.height = H * PXS + "px"; cs.imageRendering = "pixelated";
+      bd.width = bd.height = 1; bs.display = "none";
+      scene.layout(W, H);
+      return;
+    }
+    PXS = scene.res === "dpr" ? Math.min(2, devicePixelRatio || 1) : +scene.res || 1;
+    W = innerWidth; H = innerHeight;
+    for (const [c, x, st] of [[cv, g, cs], [bd, bg, bs]]) { c.width = Math.round(W * PXS); c.height = Math.round(H * PXS); x.setTransform(PXS, 0, 0, PXS, 0, 0); x.imageSmoothingEnabled = true; st.width = W + "px"; st.height = H + "px"; st.imageRendering = "auto"; }
+    bs.display = "";
+    bg.clearRect(0, 0, W, H);
+    scene.layout(W, H, bg);
   }
   function draw() { g.globalAlpha = 1; scene.draw(T, I, A, F); frames++; }
   /* Two cadences, two ways of asking for frames, each the cheaper one where it is used (measured in Chrome with
@@ -150,9 +182,9 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
   function run() { if (!alive || !scene || raf || timer || hidden() || covered()) return; if (reduced()) { draw(); return; } last = 0; raf = requestAnimationFrame(tick); }
   function halt() { if (raf) cancelAnimationFrame(raf); clearTimeout(timer); raf = timer = 0; }
 
-  import(MODS[id] + "?v=" + build).then(m => {
+  const ready = import(MODS[id] + "?v=" + build).then(m => {
     if (!alive) return;
-    scene = m.default(KIT); scene.bind(g); if (scene.wash) wash(scene.wash); if (scene.veil) { veilAt = scene.veil; paintVeil(); }
+    scene = m.default(KIT, id); scene.bind(g); if (scene.wash) wash(scene.wash); if (scene.veil) { veilAt = scene.veil; paintVeil(); }
     size(); draw();
     requestAnimationFrame(() => { if (alive) hs.opacity = "1"; });
     run();
@@ -165,8 +197,11 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     motion() { halt(); if (scene) { draw(); run(); } },
     /** the page is full of words (Everything) or not (Today): the veil, and whether the loop may play */
     busy(on) { crowd = !!on; paintVeil(); clearTimeout(coverT); if (covered()) coverT = setTimeout(() => { if (covered()) halt(); }, 520); else run(); },
+    /** a given moment, drawn once and held: the loop's time, how idle, the wall clock, the finale (tools/scene-frames.mjs) */
+    seek(t, i = 1, a = A, f = -1) { halt(); T = t; I = i; A = a; F = f; if (scene) draw(); },
     /** as if nothing had been touched for the twenty seconds (the suite's way in; see app.js's __tfTest) */
     leaveAlone() { lastInput = performance.now() - IDLE_AFTER - 1; run(); },
+    ready,
     state() { return { id, idle: I > .5, level: +I.toFixed(2), finale: F >= 0, frames, fps: raf || timer ? fps : 0, running: !!(raf || timer), busy: crowd, px: PXS, size: [W, H], t: +T.toFixed(2) }; },
     stop() {
       alive = false; halt(); clearTimeout(resizeT); clearTimeout(coverT);

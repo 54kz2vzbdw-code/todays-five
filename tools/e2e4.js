@@ -3243,6 +3243,9 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 
+  /* 1.12 b321: the kits that carry a scene, and the module each one's is in (a pair can share one) */
+  const SCENE_MODS = { forest: "scene-forest.js", harbor: "scene-harbor.js", paper: "scene-papercut.js", midnight: "scene-papercut.js" };
+  const SCENE_KITS = Object.keys(SCENE_MODS);
   /* 1.12 b318: Scenes. A device that has them on, Forest in Night and Harbor in Day (a dark system: Forest on) */
   const sceneDevice = (on = true) => `try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: { day: "T1:curated:harbor", night: "T1:curated:forest", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }${on ? ", scenes: true" : ""} } })); } catch (e) {}`;
   const sceneUp = (t, id) => t.page.waitForFunction(id => { const s = window.__tf().scene; return !!s && s.id === id && s.frames > 0; }, id, { timeout: 8000, polling: 100 });
@@ -3257,7 +3260,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.ok(await t.page.$eval("#field", e => e.hidden && !e.children.length), "the layer is empty");
     await openAppear(t);
     assert.equal(await t.page.getAttribute("#ap-scenes", "aria-pressed"), "false", "the switch is off");
-    assert.equal(await t.page.textContent("#ap-scenes-sub"), "A moving picture behind Forest and Harbor");
+    assert.equal(await t.page.textContent("#ap-scenes-sub"), "A moving picture behind the themes tagged Scene");
     if (opts.hasTouch) assert.ok((await t.page.$eval("#ap-scenes", e => e.getBoundingClientRect().height)) >= 44, "44 px on touch");
     await t.page.click("#ap-scenes"); await wait(200);
     assert.equal(await t.page.getAttribute("#ap-scenes", "aria-pressed"), "true", "on");
@@ -3269,10 +3272,10 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.esc(); await wait(900);
     const sc = (await t.s()).scene; assert.equal(sc.running, true, "running: " + JSON.stringify(sc));
     assert.ok(sc.size[1] >= 150 && sc.size[1] <= 240 && sc.px >= 3, "about 190 pixels tall, scaled up whole: " + JSON.stringify(sc));
-    const z = await t.page.evaluate(() => { const f = document.getElementById("field"), cs = getComputedStyle(f), c = f.querySelector("canvas"), r = c.getBoundingClientRect(); return { field: +cs.zIndex, glow: +getComputedStyle(document.getElementById("glow")).zIndex, shell: +getComputedStyle(document.getElementById("shell")).zIndex, ev: cs.pointerEvents, pos: cs.position, op: cs.opacity, cover: r.left <= 0 && r.top <= 0 && r.right >= innerWidth && r.bottom >= innerHeight, px: getComputedStyle(c).imageRendering, aria: f.getAttribute("aria-hidden") }; });
+    const z = await t.page.evaluate(() => { const f = document.getElementById("field"), cs = getComputedStyle(f), c = f.querySelectorAll("canvas")[1], r = c.getBoundingClientRect(); return { field: +cs.zIndex, glow: +getComputedStyle(document.getElementById("glow")).zIndex, shell: +getComputedStyle(document.getElementById("shell")).zIndex, ev: cs.pointerEvents, pos: cs.position, op: cs.opacity, cover: r.left <= 0 && r.top <= 0 && r.right >= innerWidth && r.bottom >= innerHeight, px: getComputedStyle(c).imageRendering, aria: f.getAttribute("aria-hidden") }; });
     assert.ok(z.field > z.glow && z.field < z.shell && z.ev === "none" && z.pos === "fixed", "above the glow, behind the words, and not in the way: " + JSON.stringify(z));
     assert.ok(z.cover && z.px === "pixelated" && z.aria === "true" && z.op === "1", "the whole screen, in crisp pixels, faded in, silent to a screen reader: " + JSON.stringify(z));
-    const washes = await t.page.$eval("#field", f => getComputedStyle(f.children[1]).backgroundImage);
+    const washes = await t.page.$eval("#field", f => getComputedStyle(f.querySelector("div")).backgroundImage);
     assert.ok((washes.match(/radial-gradient/g) || []).length === 2 && (washes.match(/linear-gradient/g) || []).length === 1, "the words' three washes are all there (one value the parser rejects drops the lot): " + washes.slice(0, 80));
     const hit = await t.page.evaluate(() => { const r = document.querySelector("#list .row .tx").getBoundingClientRect(); return document.elementFromPoint(r.left + 10, r.top + r.height / 2).closest(".row") !== null; });
     assert.ok(hit, "a tap on a line lands on the line");
@@ -3280,7 +3283,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.press("#daynight"); await wait(400);
     await sceneUp(t, "harbor"); assert.equal((await t.s()).theme, "harbor");
     assert.deepEqual((await sceneFiles(t)).sort(), ["scene-forest.js", "scene-harbor.js", "scenes.css", "scenes.js"], "Harbor's module, now Harbor is on");
-    assert.equal(await t.page.$$eval("#field canvas", els => els.length), 1, "one picture at a time");
+    assert.equal(await t.page.$$eval("#field canvas", els => els.length), 2, "one picture (and its backdrop) at a time");
     // Harbor's small words are dark on light with no room to spare: on Everything, the plain ground, and nothing drawn under it
     await t.press("#v-all"); await t.page.waitForSelector("#all .row"); await wait(1100);
     assert.equal(await t.page.$eval("#field", f => getComputedStyle(f.lastElementChild).opacity), "1", "Harbor's veil covers it on Everything");
@@ -3289,7 +3292,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal((await t.s()).scene.running, true, "back on Today, it moves again"); assert.equal(await t.page.$eval("#field", f => getComputedStyle(f.lastElementChild).opacity), "0");
     // the picker tags the two kits that have one; a theme without one takes the scene down
     await openPicker(t, "day");
-    assert.deepEqual(await t.page.$$eval("#p-theme .swatch .scene-tag", els => els.map(e => e.closest(".swatch").dataset.code + ":" + e.textContent).sort()), ["T1:curated:forest:Scene", "T1:curated:harbor:Scene"], "Forest and Harbor, tagged");
+    assert.deepEqual(await t.page.$$eval("#p-theme .swatch .scene-tag", els => els.map(e => e.closest(".swatch").dataset.code + ":" + e.textContent).sort()), SCENE_KITS.map(k => "T1:curated:" + k + ":Scene").sort(), "the kits with a scene, tagged");
     await t.page.click('#sw-light .swatch[data-code="T1:curated:light"]'); await wait(500); await t.esc(); await wait(300);
     assert.equal((await t.s()).theme, "light"); assert.equal((await t.s()).scene, null, "Light has none: the scene goes");
     assert.ok(await t.page.$eval("#field", e => e.hidden && !e.children.length && !e.style.cssText), "and leaves the layer as it found it");
@@ -3299,7 +3302,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.click("#ap-scenes"); await wait(200); assert.equal(await t.page.getAttribute("#ap-scenes", "aria-pressed"), "false");
     assert.equal(await t.page.evaluate(() => "scenes" in JSON.parse(localStorage.getItem("tf/v2/meta")).device), false, "off is no key at all, as on a new device");
     await t.page.click("#ap-scenes"); await wait(300);
-    assert.equal(await t.page.textContent("#toast .msg"), "Scenes are on. Forest and Harbor each have one.", "on, on a theme without one, it says where one shows");
+    assert.equal(await t.page.textContent("#toast .msg"), "Scenes are on. Any theme tagged Scene has one.", "on, on a theme without one, it says where one shows");
     await t.esc(); await wait(200);
     // this device's, and kept
     await t.press("#daynight"); await wait(400); await sceneUp(t, "forest");
@@ -3359,7 +3362,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const r = await fresh(opts, { init: sceneDevice(), reducedMotion: "reduce" });
     await sceneUp(r, "forest"); await wait(600);
     const still = (await r.s()).scene; assert.equal(still.running, false, "a still frame: " + JSON.stringify(still));
-    const opaque = await r.page.evaluate(() => { const c = document.querySelector("#field canvas"), d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] === 255) n++; return n / (d.length / 4); });
+    const opaque = await r.page.evaluate(() => { const c = document.querySelectorAll("#field canvas")[1], d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] === 255) n++; return n / (d.length / 4); });
     assert.ok(opaque > .99, "the whole picture: " + opaque);
     for (const box of await r.page.$$("#list .row:not(.done) .check")) { await box.click(); await wait(300); }
     await wait(1400);
@@ -3367,6 +3370,27 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal((await r.s()).scene.finale, false, "with no moment of the scene's own"); assert.equal((await r.s()).scene.running, false);
     assert.equal(r.errors.length, 0, r.errors.join("; "));
     await r.close();
+  });
+
+  await test(label + ": 1.12 b321: every kit with a scene brings its own and only its module, draws, plays its loop left alone, has its finale's moment, and throws nothing", async () => {
+    const t = await fresh(opts, { init: sceneDevice() });
+    await sceneUp(t, "forest");
+    for (const kit of SCENE_KITS) {
+      await openPicker(t, "night"); await t.page.click(`#p-theme .swatch[data-code="T1:curated:${kit}"]`); await wait(300); await t.esc(); await wait(200);
+      await sceneUp(t, kit);
+      const files = await sceneFiles(t); assert.ok(files.includes(SCENE_MODS[kit]), kit + ": its module: " + files.join(", "));
+      const extra = files.filter(f => /^scene-/.test(f) && !Object.values(SCENE_MODS).includes(f)); assert.deepEqual(extra, [], kit + ": nothing that is not a scene's");
+      let sc = (await t.s()).scene; assert.ok(sc.running && sc.frames > 0, kit + ": drawing: " + JSON.stringify(sc));
+      await t.page.evaluate(() => window.__tfTest.sceneIdle());
+      await t.page.waitForFunction(() => { const s = window.__tf().scene; return s.idle && s.fps === 30; }, null, { timeout: 5000, polling: 100 });
+      await t.page.evaluate(() => window.__tfTest.sceneFinale());
+      await t.page.waitForFunction(() => window.__tf().scene.finale, null, { timeout: 3000, polling: 50 });
+      await t.page.waitForFunction(() => !window.__tf().scene.finale, null, { timeout: 8000, polling: 100 });
+      await t.page.keyboard.press("Shift");
+    }
+    assert.deepEqual(await t.page.$$eval("#field canvas", els => els.length), 2, "one picture (and its backdrop) at a time");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0, "csp: " + t.csp.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join("; "));
+    await t.close();
   });
 
   await test(label + ": no page errors, CSP violations or third-party requests across a full session", async () => {

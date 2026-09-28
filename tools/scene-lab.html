@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scene lab</title>
+<!-- tools/scene-lab.html — 1.12 b321: one scene through the real stage (scenes.js), with the real washes, three sample lines
+     in the kit's own ink, text and face, and window.seek(t, i, a, f) to hold any moment. tools/scene-frames.mjs drives it.
+     ?scene=<kit id>. Not part of the app: nothing links here. -->
+<style>
+  html,body{margin:0;height:100%;overflow:hidden}
+  #field{position:fixed;inset:0}
+  #words{position:fixed;left:6%;right:6%;top:36%;z-index:2;font-weight:700;line-height:1.08}
+  #words p{margin:0 0 .5em;font-size:clamp(22px,4.6vw,62px);display:flex;gap:.55em;align-items:center}
+  #words i{display:inline-block;width:.5em;height:.5em;border:2px solid currentColor;border-radius:.12em;opacity:.55;flex:none}
+  #bar{position:fixed;left:6%;right:6%;top:18px;z-index:2;font:700 12px/1 system-ui;letter-spacing:.14em;text-transform:uppercase;opacity:.8}
+  #lab{position:fixed;right:8px;bottom:8px;z-index:3;font:700 13px/1 ui-monospace,monospace;background:#000c;color:#fff;padding:4px 6px;border-radius:4px}
+</style></head>
+<body>
+<div id="field"></div>
+<div id="bar">Sunday · September 27</div>
+<div id="lab"></div>
+<div id="words"><p><i></i>Tap or click to cross this off</p><p><i></i>Add a line of your own</p><p><i></i>Cross off all three and see</p></div>
+<script type="module">
+  import { createScene } from "../scenes.js";
+  import * as T from "../theme.js";
+  const id = new URLSearchParams(location.search).get("scene") || "forest", kit = T.curated(id);
+  document.body.style.background = kit.colors.ink; document.body.style.color = kit.colors.text;
+  const face = (T.pairOf(kit.pair) || {}).task; if (face) { document.getElementById("words").style.fontFamily = face[2]; document.getElementById("bar").style.fontFamily = face[2]; }
+  const st = createScene(document.getElementById("field"), id, { ink: kit.colors.ink });
+  window.stage = st;
+  window.seek = (t, i = 1, a = 12, f = -1, label = "") => { document.getElementById("lab").textContent = label; st.seek(t, i, a, f); };
+  st.ready.then(() => { st.seek(0, 0, 12); document.getElementById("field").style.transition = "none"; document.getElementById("field").style.opacity = "1"; window.labReady = true; });
+</script>
+</body></html>

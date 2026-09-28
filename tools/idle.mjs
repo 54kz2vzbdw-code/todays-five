@@ -15,12 +15,14 @@ const SECONDS = +(process.argv[2] || 300);
 const KITS = (process.argv[3] || "dark,chalkboard,whiteboard").split(",");
 const WORDS = (process.env.WORD || "").split(",").filter(Boolean);
 const SCENES = !!process.env.SCENES, USE = +(process.env.USE || 0);
+// 1.12 b321: VP=phone measures at 390×844 and twice the density, where the smooth styles draw four times the pixels
+const VIEW = process.env.VP === "phone" ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : { viewport: { width: 1440, height: 900 } };
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const bcdp = await browser.newBrowserCDPSession();
 const procs = async () => (await bcdp.send("SystemInfo.getProcessInfo")).processInfo.reduce((a, p) => a + p.cpuTime, 0);
 console.log(`kit                  window   TaskDuration   style recalc   share of one core   all procs`);
 for (const kit of KITS) {
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: "dark" });
+  const ctx = await browser.newContext({ ...VIEW, colorScheme: "dark" });
   const page = await ctx.newPage(); page.setDefaultTimeout(9000);
   await page.goto(BASE + "?transport=local"); await page.waitForSelector("#welcome:not([hidden])");
   await page.evaluate(() => document.getElementById("w-keep").click()); await page.waitForSelector("#p-save[open]"); await page.click("#save-done");

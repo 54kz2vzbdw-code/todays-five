@@ -1780,3 +1780,67 @@ want a theme you make.
 
 **What did not change.** First paint (`app.js` +9 bytes gzipped; `index.html`, `styles.css` unchanged); no stored
 setting; the other scenes; the stage but for two names in its map; nothing in `apple/` but the stamp.
+
+# 1.12 b336 decisions — Scenes for every theme, round seven: Cocoa and Ember
+
+**Both were redrawn before Price saw them.** The first cut of Ember was a small fire low in its circle under a sky all
+but black — the quiet the Light round was sent back for — and Cocoa, a cup on walnut planks, read but was the quiet one
+beside anything vivid. So Ember went out under the Milky Way, and Cocoa got a morning's light through a window.
+
+**Cocoa: latte art in the morning light.** `scene-cocoa.js` keeps to the largest open space on the page, like the
+liquid, the balloon and the heart. A café table of dark walnut planks seen from above, and on it a cup of cocoa on its
+saucer, a spoon, a few beans. The window's light falls across the table in four soft panes; the leaves outside move
+their shadows through it, dust drifts in it, and the cup's shadow lies in it. The latte art is a stacked heart: four
+pours, a line of crema between each and the next, the foam lighter in the middle. The loop: the spoon stirs the old
+pattern away into a swirl; a new pour blooms, rings pushed into rings, and the pull-through turns them into a heart;
+three marshmallows drop in, bob, drift round and melt; a cloud goes over and the light dims and comes back; cinnamon
+dusts the top; the steam curls up, soft, fading as it rises. The finale: small foam hearts bloom round the big one and
+the steam rises in a heart.
+
+**Ember: a campfire under the Milky Way.** `scene-ember.js`. The sky goes from deep blue overhead to wine at the
+treeline; the Milky Way rises out of the trees across it — clouds of light brightest low down, a dark rift wandering up
+its middle, its stars thick along it — with a crescent moon in a halo, a hazed ridge and two lines of pines, the near
+one taller toward the edges. The fire keeps to the largest open space where it can stand on the ground, below the
+treeline and never in the sky: logs in a ring of stones, two crossed behind the flame and one across its foot, their
+char cracked into glowing blocks; a bed of embers; and the flame in four layers of tongues — deep red, orange, yellow, a
+near-white core — each swaying on its own time, the inner ones a beat behind, licks breaking off the tops, sparks rising
+in spirals high into the night. Its light falls on the trees and in a pool on the ground, flickering, and stops at the
+ground beyond the pool. The stars twinkle. The loop: it roars up; a log settles with a burst of sparks; a gust leans the
+flames over and streams the sparks sideways; a star falls; it pulses on a beat, three and rest, twice (the kit's sound
+is bongos), its light on the trees pulsing with it; it sinks to its coals, smoking; it catches again with a whoosh. The
+finale: a column of sparks goes up, opens, and hangs in the sky as stars, twinkling, before it fades.
+
+**The words.** Cocoa's planks and Ember's sky are both brighter than their kits' inks, so each scene puts its own
+picture in shadow where the words are, on its own canvas and under the stage's pads: under every line, and in Ember
+under the small words too. The bar along the top and the keyboard line keep to Cocoa's ink, the window's light stays out
+of them, and the planks came down a shade so Everything's section names held. Ember's firelight stops at the ground
+beyond its pool, so the finale's words at the foot keep their ground. Every reading is at or above its plain value, in
+the seed lines, the long list and Everything, on both viewports, but for three things. Two are not the picture: Cocoa's
+keyboard line, 6.12 → 6.05 (and by as much in the finale and left alone), over pixels identical to the plain ground's
+(the ink, 42,31,26), with Ember's struck line in a phone's long list, 6.30 → 6.28, inside the instrument's noise; and a
+few finale rows, where the instrument caught the words fading in at a different alpha in each run — frame by frame,
+settled, they match (6.03 and 6.03, 7.61 and 7.61), and at the same alpha the scene's is the higher (4.44 against 4.39).
+The third is the picture: Ember's section names in Everything, 6.30 → 6.21 on a wide screen and 6.22 → 6.01 on a phone,
+where the fire finds room beside "Calls" and its light reaches the name. The fix is in the stage, not the scene (below),
+and it ships alone.
+
+**The stage.** The fifth element of each rect the stage measures now says 2 for a line's tools, which are there only
+when the line is hovered: Ember's shade under the small words skips them — under nothing it was a dark box beside every
+row — and Arcade and Cocoa, which read the flag as "a line's words" or not, now read `kind === 1`, so nothing changes
+for them. A section's name and count in Everything are not among the words the stage measures, so a scene keeping clear
+doesn't know they are there. Measuring them lifts Ember's section names to 6.56 and 6.54; but it moves where the liquid,
+the balloon and the heart settle in Everything, and what Arcade cuts back there, so it goes out on a build of its own
+after this one — with a fix for Arcade, whose section names in Everything read 5.18 → 2.57 on a phone in the live build,
+335 (the instrument found it while checking this round; the stage change alone brings it to 3.41).
+
+**What it costs.** Cocoa's loop 3.5 % of a core on a wide screen, in use 2.4 %, on a phone 3.5 %; Ember's 3.8 %, 2.5 %
+and 4.1 %. Ember's loop first measured 4.7 %: every stone of the ring built a gradient each frame and every ember a
+colour string. Both are sprites now, drawn once — a stone dark, and a stone lit laid over it as the fire flares — which
+took a fifth of a point off in back-to-back runs. Those first runs, and one of Cocoa's at 4.3 %, were taken while
+another program held a core of the machine (a load of 14); the numbers above are from a quiet one.
+
+**Every curated kit has a scene now.** The b318 test's theme without one is a theme you make (Make your own, an accent,
+Light, Use for Day), and the picker is checked for a kit without the tag: none. The keep-clear test takes Cocoa's cup
+and Ember's fire, and, in a commit of its own, Blush's and Pink's heart, which b334 had missed.
+
+**What did not change.** First paint; no stored setting; the other scenes; nothing in `apple/` but the stamp.

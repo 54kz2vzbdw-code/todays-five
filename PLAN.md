@@ -2608,3 +2608,55 @@ b334 decisions — Scenes for every theme, round six: Blush and Pink". Web only;
 | Focused runs | the Scenes tests, the walk through every kit with a scene (now fourteen), the keep-clear and pads' tests, the full session and the worker's two tests, both viewports: 16 passed |
 | Looked at | both kits on both viewports: lab sheets through every beat, then the app with the seed lines and the finale |
 | Screenshots | `shots/scenes-7/`: each kit mid-loop, phone and desktop (JPEG) |
+
+# Today's Five 1.12 b336 — Scenes for every theme, round seven: Cocoa and Ember
+
+*Shipped as build 338. b336 and b337 are the round's commits.*
+
+The last pair: latte art on a café table in the morning's light for Cocoa, and a campfire under the Milky Way for
+Ember, each in the largest open space on the page. Every curated kit now has a scene. The decisions are in
+DECISIONS.md under "1.12 b336 decisions — Scenes for every theme, round seven: Cocoa and Ember". Web only; the version
+holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **The keep-clear test takes Blush's and Pink's heart** (b336, tests only). b334 had left the heart out of it.
+2. **Cocoa and Ember** (b337). `scene-cocoa.js` and `scene-ember.js`; the stage maps both, the swatches tag both, the
+   worker precaches both; the stage marks a line's tools apart from the other small words (the rect's fifth element is
+   2), which Ember's shade needs and which changes nothing for Arcade or Cocoa; the changelog names both (through
+   Price's voice); the b318 test's theme without a scene is a theme you make, and the keep-clear test takes the cup and
+   the fire.
+
+Next, on a build of its own: a section's name and count in Everything measured as words (every keep-clear scene then
+settles clear of them, Ember's section names lift to 6.56 and 6.54), with a fix for Arcade's section names in
+Everything on a phone, 5.18 → 2.57 in the live build.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `app.js` **+10 bytes** gzipped; `index.html`, `styles.css` unchanged; `sw.js` +12 | `gzip -9 -n` |
+| lazy, Scenes on only | `scene-cocoa.js` **7,099**; `scene-ember.js` **8,928**; `scenes.js` 8,287 → **8,339** | `gzip -9 -n` |
+| first paint | desktop FCP **48 → 56 ms** (48–60 against 48–64); mobile **1304 → 1296 ms** (1292–1320 against 1288–1316): no cost | `tools/paint.mjs 8`, 335 (port 8800) beside this build |
+| CPU, desktop | the loop: Cocoa **3.5 %** of a core (14.2 % for every Chrome process), Ember **3.8 %** (14.5 %); in use: **2.4 %** (10.6 %) and **2.5 %** (10.6 %) | `tools/idle.mjs 60`, `SCENES=1` and `SCENES=1 USE=5`, on a quiet machine |
+| CPU, phone (390×844 at 2×) | the loop: Cocoa **3.5 %** (13.9 %), Ember **4.1 %** (15.3 %) | `tools/idle.mjs 60`, `VP=phone SCENES=1` |
+| contrast | every reading at or above plain but: Cocoa's keyboard line, 6.12 → 6.05 (as much in the finale and left alone), over pixels identical to plain's; Ember's struck line in a phone's long list, 6.30 → 6.28 (noise); finale rows caught fading in at a different alpha run to run (settled, equal); Ember's section names in Everything, 6.30 → 6.21 and 6.22 → 6.01 (the next build's) | `tools/contrast.mjs`: the seed lines, `FIXTURE=1`, `FIXTURE=1 VIEW=all` |
+
+| p1, plain → scene (in use / left alone) | Cocoa | Ember |
+| --- | --- | --- |
+| Today's lines, three (desktop, phone) | 12.22 → 13.80 / 13.80; 12.37 → 13.44 / 13.44 | 15.02 → 15.27 / 15.05; 15.07 → 15.93 / 15.50 |
+| Today's lines, long list (desktop, phone) | 12.58 → 13.94 / 13.94; 12.37 → 13.89 / 13.89 | 15.48 → 16.58 / 16.51; 15.16 → 15.75 / 15.75 |
+| small print in a long list (desktop caption; phone ↻) | 5.58 → 6.03; 5.58 → 6.12 | 6.06 → 6.50; 6.02 → 6.36 |
+| a struck line (the finale; the long list) | 5.11 → 5.35, 5.18 → 5.35; 5.96 → 6.12, 5.91 → 6.26 | 5.57 → 6.08, 5.60 → 6.08; 6.37 → 6.52, 6.30 → 6.28 |
+| the finale's line (desktop, phone) | 6.57 → 7.04; 6.95 → 6.96 | 4.24 → 4.42; 4.76 → 5.02 |
+| Everything's rows (desktop, phone) | 12.47 → 13.64; 12.37 → 13.54 | 15.42 → 16.52; 15.11 → 16.17 |
+| Everything's section names (desktop, phone) | 5.89 → 6.23; 5.72 → 6.11 | 6.30 → 6.21; 6.22 → 6.01 |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30 (the precache list has both modules), compat 9 |
+| Focused runs | the Scenes tests, the walk through every kit with a scene (now sixteen), the keep-clear test (now seven kits) and the pads' test, the full session and the worker's two tests, both viewports: 16 passed |
+| Looked at | both kits on both viewports: lab sheets through every beat, then the app with the seed lines, the long list, Everything and the finale |
+| Screenshots | `shots/scenes-8/`: each kit mid-loop, phone and desktop (JPEG) |

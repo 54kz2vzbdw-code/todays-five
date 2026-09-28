@@ -3260,7 +3260,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.ok(await t.page.$eval("#field", e => e.hidden && !e.children.length), "the layer is empty");
     await openAppear(t);
     assert.equal(await t.page.getAttribute("#ap-scenes", "aria-pressed"), "false", "the switch is off");
-    assert.equal(await t.page.textContent("#ap-scenes-sub"), "A moving picture behind the themes tagged Scene");
+    assert.equal(await t.page.textContent("#ap-scenes-sub"), "A moving picture behind every built-in theme");
     if (opts.hasTouch) assert.ok((await t.page.$eval("#ap-scenes", e => e.getBoundingClientRect().height)) >= 44, "44 px on touch");
     await t.page.click("#ap-scenes"); await wait(200);
     assert.equal(await t.page.getAttribute("#ap-scenes", "aria-pressed"), "true", "on");
@@ -3306,7 +3306,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.page.click("#ap-scenes"); await wait(200); assert.equal(await t.page.getAttribute("#ap-scenes", "aria-pressed"), "false");
     assert.equal(await t.page.evaluate(() => "scenes" in JSON.parse(localStorage.getItem("tf/v2/meta")).device), false, "off is no key at all, as on a new device");
     await t.page.click("#ap-scenes"); await wait(300);
-    assert.equal(await t.page.textContent("#toast .msg"), "Scenes are on. Any theme tagged Scene has one.", "on, on a theme without one, it says where one shows");
+    assert.equal(await t.page.textContent("#toast .msg"), "Scenes are on. Every built-in theme has one.", "on, on a theme without one, it says where one shows");
     await t.esc(); await wait(200);
     // this device's, and kept
     await t.press("#daynight"); await wait(400); await sceneUp(t, "forest");

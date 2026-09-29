@@ -46,10 +46,10 @@ and Midnight, by day and by night; one coast for Teletype and Terminal, typed in
 and drawn in glowing green lines at night; for Light and Dark, a ring of soft liquid drops—a little out of focus—that
 spins like a loader and keeps to the empty part of the page; one bay for Sunset and Dusk, a striped sun going down by
 day and paper lanterns rising at blue hour; a neon pixel-art game playing its attract mode for Arcade; for Sketch, a
-pencil and a brush drawing a hot-air balloon in watercolor; one heart for Blush and Pink, a glossy candy heart by day
-and a neon sign on a brick wall at night; for Cocoa, latte art poured into a cup on a café table in morning light; and
-for Ember, a campfire under the Milky Way. They stay nearly still while you use the list and play out when you leave it
-alone. Off by default—with them off, the app runs exactly as before.
+pencil and a brush drawing a hot-air balloon in watercolor; for Blush, soap bubbles blown from a wand, their films
+swirling with color; for Pink, a neon heart on a brick wall; for Cocoa, latte art poured into a cup on a café table in
+morning light; and for Ember, a campfire under the Milky Way. They stay nearly still while you use the list and play
+out when you leave it alone. Off by default—with them off, the app runs exactly as before.
 
 ## 1.11 — A look of its own.
 

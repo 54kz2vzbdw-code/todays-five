@@ -3244,7 +3244,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   });
 
   /* 1.12 b321: the kits that carry a scene, and the module each one's is in (a pair can share one) */
-  const SCENE_MODS = { forest: "scene-forest.js", harbor: "scene-harbor.js", paper: "scene-papercut.js", midnight: "scene-papercut.js", teletype: "scene-teletype.js", terminal: "scene-terminal.js", light: "scene-orbit.js", dark: "scene-orbit.js", sunset: "scene-bay.js", dusk: "scene-bay.js", arcade: "scene-arcade.js", sketch: "scene-sketch.js", blush: "scene-heart.js", pink: "scene-heart.js", cocoa: "scene-cocoa.js", ember: "scene-ember.js" };
+  const SCENE_MODS = { forest: "scene-forest.js", harbor: "scene-harbor.js", paper: "scene-papercut.js", midnight: "scene-papercut.js", teletype: "scene-teletype.js", terminal: "scene-terminal.js", light: "scene-orbit.js", dark: "scene-orbit.js", sunset: "scene-bay.js", dusk: "scene-bay.js", arcade: "scene-arcade.js", sketch: "scene-sketch.js", blush: "scene-bubbles.js", pink: "scene-heart.js", cocoa: "scene-cocoa.js", ember: "scene-ember.js" };
   const SCENE_KITS = Object.keys(SCENE_MODS);
   /* 1.12 b318: Scenes. A device that has them on, Forest in Night and Harbor in Day (a dark system: Forest on) */
   const sceneDevice = (on = true) => `try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: { day: "T1:curated:harbor", night: "T1:curated:forest", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }${on ? ", scenes: true" : ""} } })); } catch (e) {}`;
@@ -3397,7 +3397,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": 1.12 b328: Light's and Dark's liquid (and, from b332, Sketch's balloon; from b334, Blush's and Pink's heart; from b336, Cocoa's cup and Ember's fire) keeps to the empty part of the page — no pad under the words, and wherever it settles it is clear of every line, before and after a long line is added", async () => {
+  await test(label + ": 1.12 b328: Light's and Dark's liquid (and, from b332, Sketch's balloon; from b334, Pink's heart; from b336, Cocoa's cup and Ember's fire; from b353, Blush's wand and its big bubble) keeps to the empty part of the page — no pad under the words, and wherever it settles it is clear of every line, before and after a long line is added", async () => {
     const t = await fresh(opts, { init: sceneDevice() });
     await sceneUp(t, "forest");
     const clear = () => t.page.evaluate(() => { const s = window.__tf().scene, [x, y, r] = s.spot || [-1e4, -1e4, 0], range = document.createRange(), hits = [];

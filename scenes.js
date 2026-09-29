@@ -11,7 +11,7 @@
 
 export const LOOP = 15;
 const IDLE_AFTER = 20000;
-const MODS = { forest: "./scene-forest.js", harbor: "./scene-harbor.js", paper: "./scene-papercut.js", midnight: "./scene-papercut.js", teletype: "./scene-teletype.js", terminal: "./scene-terminal.js", light: "./scene-orbit.js", dark: "./scene-orbit.js", sunset: "./scene-bay.js", dusk: "./scene-bay.js", arcade: "./scene-arcade.js", sketch: "./scene-sketch.js", blush: "./scene-heart.js", pink: "./scene-heart.js", cocoa: "./scene-cocoa.js", ember: "./scene-ember.js" }; // a pair can share one world
+const MODS = { forest: "./scene-forest.js", harbor: "./scene-harbor.js", paper: "./scene-papercut.js", midnight: "./scene-papercut.js", teletype: "./scene-teletype.js", terminal: "./scene-terminal.js", light: "./scene-orbit.js", dark: "./scene-orbit.js", sunset: "./scene-bay.js", dusk: "./scene-bay.js", arcade: "./scene-arcade.js", sketch: "./scene-sketch.js", blush: "./scene-bubbles.js", pink: "./scene-heart.js", cocoa: "./scene-cocoa.js", ember: "./scene-ember.js" }; // a pair can share one world
 export const SCENE_IDS = Object.keys(MODS);
 
 /* ---------------- the drawing kit a scene is handed ---------------- */

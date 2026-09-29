@@ -12,6 +12,24 @@
 // drift up and away. The finale: the whole festival goes up at once.
 // (b347: whatever comes and goes does it whole — the flock off past the right edge, the egret away past one edge and
 // home from the other to land in its rings, the loop's new stars gone again before it comes round.)
+// 1.12 b384: the forever cycle. The first pass is the loop above, beat for beat; each pass after it deals its own, one
+// beat to each of its parts from that part's pool (a pool plays through before any of it comes round again, and never
+// the same beat twice running), each with its own side, height, count, colours and timing, so the bay never plays the
+// same fifteen seconds twice. At sunset the slits quicken at the start or later; then something in the air: the flock in
+// its V either way, a pelican that glides in low and folds and plunges into the sun's path, or a line of flamingos, pink
+// with black-tipped wings; something by the sun: the cloud bank from either side, a liner with its portholes lit and its
+// smoke trailing or a junk under batten sails the sun shows through, along the horizon across the sun (on a wide screen
+// from behind one headland to behind the other), or a jet high up drawing a contrail that glows and spreads; something
+// on the water: the sailboat (or two racing), a windsurfer with the sun through its sail, or dolphins leaping through the
+// reflection; and to close, the flare as the palms toss, a run of light down the sun's path, or flying fish skimming it.
+// At dusk the stars prick in; the lanterns go up from the beach and the whole shore in orange, rose or gold, or from
+// both headlands at once, or are set floating on the water to drift and gutter; on the water the egret flies off and
+// home, or stands and fishes, or a rowboat comes along the shore under its lantern and puts it up (or rows far out),
+// or fireflies blink along the shore; in the sky a star falls, bats flit across the moon, a veil of cloud is drawn
+// across it, or a lighthouse out on the point sweeps its beam over the bay. Rare, about once in eight passes each: a
+// whale's spout and its flukes out of the sun's path, and a seaplane coming in to land and taxiing away, at sunset; a
+// meteor shower, and the shallows glowing blue as the ripples run, at dusk. Everything comes on from past an edge (or
+// out of the water, or from behind a headland, or lights) and goes all the way off (or under, or out); nothing carries.
 export default function bay(K, id) {
   const dusk = id === "dusk";
   const { clamp, lerp, E, seg, env, rng, canvas } = K;
@@ -24,6 +42,15 @@ export default function bay(K, id) {
   const grad = (x, x0, y0, x1, y1, stops) => { const gr = x.createLinearGradient(x0, y0, x1, y1); for (const [o, c] of stops) gr.addColorStop(o, c); return gr; };
   /** a soft glow: a radial gradient of one colour, from `a` at the middle to nothing, `r` CSS pixels across its radius */
   const glow = (r, [cr, cg, cb], a) => make(r * 2, r * 2, x => { const gr = x.createRadialGradient(r, r, 0, r, r, r); gr.addColorStop(0, `rgba(${cr},${cg},${cb},${a})`); gr.addColorStop(.35, `rgba(${cr},${cg},${cb},${a * .45})`); gr.addColorStop(1, `rgba(${cr},${cg},${cb},0)`); x.fillStyle = gr; x.fillRect(0, 0, r * 2, r * 2); });
+  /* 1.12 b384, the forever cycle: the plan of the pass that is up, dealt once when it comes up (and again after a layout) */
+  let plan = null, gen = 0;
+  /** a flat silhouette with the light along its top: the shape once in the rim's colour a hair higher, then itself */
+  const sil = (x, path, col, rim, u) => { if (rim) { x.fillStyle = rim; x.save(); x.translate(0, -.16 * u); x.fill(path); x.restore(); } x.fillStyle = col; x.fill(path); };
+  /** a path from a list of commands in units of `u`: ["M", x, y], ["L", x, y], ["Q", …], ["C", …], ["E", cx, cy, rx, ry, rotation], ["Z"] */
+  const bez = (pts, u) => { const p = new Path2D(); for (const s of pts) { const [c, ...v] = s, a = v.map(n => n * u);
+    if (c === "M") p.moveTo(a[0], a[1]); else if (c === "L") p.lineTo(a[0], a[1]); else if (c === "Q") p.quadraticCurveTo(a[0], a[1], a[2], a[3]); else if (c === "C") p.bezierCurveTo(a[0], a[1], a[2], a[3], a[4], a[5]);
+    else if (c === "E") { p.moveTo(a[0] + a[2] * Math.cos(v[4]), a[1] + a[2] * Math.sin(v[4])); p.ellipse(a[0], a[1], a[2], a[3], v[4], 0, TAU); } else if (c === "Z") p.closePath(); } return p; };
+
   const S = {
     res: "dpr",
     wash: 1, veil: .66, list: .35, hug: true, // dark kits; the pad hugs the lines, so the list's wash can be light; Everything, a dense list, gets more veil
@@ -32,6 +59,7 @@ export default function bay(K, id) {
      *  the clearest sky, and anything bright that passes behind a word fades there */
     words(rects) {
       S.wr = rects.map(([x0, y0, x1, y1]) => [x0 - 12, y0 - 8, x1 + 12, y1 + 8]); S.lines = rects.filter(r => r[4] === 1);
+      S.barB = rects.reduce((m, r) => r[4] !== 1 && r[1] < 90 ? Math.max(m, r[3] + 8) : m, 0); /* (b384) the bottom of the bar's words */
       if (!S.W) return;
       const { W, H, hz, pr } = S;
       if (!dusk) { const R = S.sun.R, band = S.wr.filter(([x0, y0, x1, y1]) => y1 > hz - R * 1.05 && y0 < hz && x1 - x0 > 84); /* lines and pills, not a row's small tools */ const xr = band.reduce((m, r) => Math.max(m, r[2]), 0); S.sunTx = clamp(Math.max(pr ? W * .5 : W * .74, xr + R * 1.02), pr ? W * .5 : W * .6, W - R * .45); }
@@ -105,6 +133,7 @@ export default function bay(K, id) {
         S.festival = pool(pr ? 50 : 84, .1, 1).map(c => Object.assign(c, { lag: r() * .35 }));
         S.egret = { x: W * (pr ? .16 : .24), y: hz + (pr ? 8 : 6) * u };
       }
+      gen++; extras(W, H, u, pr, hz); /* b384: what the passes after the first bring (nothing here draws on the backdrop) */
     },
     /** a palm frond from the crown `top` at angle `a`, length `L`: an arching spine, with leaflets hanging from it */
     frond(top, a, L) {
@@ -115,32 +144,40 @@ export default function bay(K, id) {
         g.moveTo(x - side * L * .03, y); g.lineTo(x + side * len * .35, y + len); g.lineTo(x + side * L * .05, y + L * .01); }
       g.fill();
     },
-    /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1 */
-    draw(T, I, A, F) {
+    /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; pass: which time round
+     *  (b384: pass 0 is the loop, the passes after it are dealt) */
+    draw(T, I, A, F, pass = 0) {
       const { W, H, u, hz, pr } = S, on = I > .01;
+      if (!plan || plan.pass !== pass || plan.gen !== gen) plan = dusk ? dealDusk(pass) : dealSunset(pass);
+      const pl = plan;
       g.clearRect(0, 0, W, H);
       const add = (spr, x, y, a, s = 1) => { if (a <= .005) return; g.globalAlpha = clamp(a); g.drawImage(spr, x - spr.w2 * s / 2, y - spr.h2 * s / 2, spr.w2 * s, spr.h2 * s); };
       if (!dusk) {
         if (S.sunTx !== undefined) { const dt2 = S.lastA === undefined ? 1 : clamp(A - S.lastA, 0, .1); S.sun.x += (S.sunTx - S.sun.x) * (1 - Math.exp(-dt2 * 2)); } // it slides clear of the lines
-        const { x: sx, y: sy, R } = S.sun;
+        const { x: sx, y: sy, R } = S.sun, cl = pl.close;
         // rays turning slowly round the sun, only in the sky
         g.save(); g.beginPath(); g.rect(0, 0, W, hz); g.clip(); g.globalCompositeOperation = "lighter";
-        const rot = A * .035, flare = env(T, 10.6, 11.2, 12.0, 13.0, E.sine) * I;
-        for (let k = 0; k < 14; k++) { const a = rot + k / 14 * TAU, w = .07; g.globalAlpha = .05 + .05 * flare; g.fillStyle = "#FFB070"; g.beginPath(); g.moveTo(sx, sy); g.arc(sx, sy, Math.max(W, H) * 1.2, a - w, a + w); g.closePath(); g.fill(); }
+        const rot = A * .035, flare = cl.k === "flare" ? env(T, cl.f[0], cl.f[1], cl.f[2], cl.f[3], E.sine) * I : 0;
+        const fl2 = pl.pass > 0 ? flare : 0; /* (b384) a dealt pass brightens its rays for the flare apart: not over the bar's words */
+        for (let k = 0; k < 14; k++) { const a = rot + k / 14 * TAU, w = .07; g.globalAlpha = .05 + .05 * (flare - fl2); g.fillStyle = "#FFB070"; g.beginPath(); g.moveTo(sx, sy); g.arc(sx, sy, Math.max(W, H) * 1.2, a - w, a + w); g.closePath(); g.fill(); }
+        if (fl2 > .001) { const b0 = S.barB || 0; if (!S.flareFill || S.flareFill.b !== b0) { const gr = g.createLinearGradient(0, b0, 0, b0 + 70); gr.addColorStop(0, "rgba(255,176,112,0)"); gr.addColorStop(1, "rgba(255,176,112,1)"); S.flareFill = { b: b0, gr }; }
+          g.globalAlpha = .05 * fl2; g.fillStyle = S.flareFill.gr; for (let k = 0; k < 14; k++) { const a = rot + k / 14 * TAU, w = .07; g.beginPath(); g.moveTo(sx, sy); g.arc(sx, sy, Math.max(W, H) * 1.2, a - w, a + w); g.closePath(); g.fill(); } }
         add(S.halo, sx, sy, .85 + .15 * Math.sin(A * .7)); add(S.core, sx, sy, .9);
         // the disc, and its slits sliding down through the lower half, faster in the loop's first beat
         g.globalCompositeOperation = "source-over"; g.globalAlpha = 1; g.drawImage(S.disc, sx - R, sy - R, R * 2, R * 2);
-        const speed = .16 + env(T, .2, .8, 2.0, 2.8, E.sine) * I * .5; S.slide = (S.slide || 0) + (S.lastA === undefined ? 0 : clamp(A - S.lastA, 0, .1)) * speed; S.lastA = A;
+        const speed = .16 + env(T, pl.q[0], pl.q[1], pl.q[2], pl.q[3], E.sine) * I * .5; S.slide = (S.slide || 0) + (S.lastA === undefined ? 0 : clamp(A - S.lastA, 0, .1)) * speed; S.lastA = A;
         g.save(); g.beginPath(); g.arc(sx, sy, R + 1, 0, TAU); g.clip(); g.globalCompositeOperation = "destination-out";
         for (let k = 0; k < 9; k++) { const f = (k + (S.slide % 1)) / 8, yy = sy - R * .55 + f * R * .6, h = .6 + f * R * .085; g.fillRect(sx - R - 2, yy, R * 2 + 4, h); }
         g.restore(); g.restore();
         // a shimmer of heat along the horizon
-        const heat = .5 + env(T, .2, .8, 2.2, 3.0, E.sine) * I * .5; g.globalCompositeOperation = "lighter";
+        const heat = .5 + env(T, pl.h[0], pl.h[1], pl.h[2], pl.h[3], E.sine) * I * .5; g.globalCompositeOperation = "lighter";
         for (let k = 0; k < 4; k++) { const y = hz - (k + 1) * .9 * u, w = R * (1.3 - k * .22); g.globalAlpha = .12 * heat; g.fillStyle = "#FFD08A"; g.fillRect(sx - w + Math.sin(A * 3 + k * 1.7) * 2 * u, y, w * 2, .8); }
         // its reflection: a column of light on the water, bars wider near the horizon and further apart below
         for (const s of S.glints) { const y = hz + 2 + Math.pow(s.y, 1.5) * (H - hz) * .85, spread = R * (1.05 - s.y * .6), k = .5 + .5 * Math.sin(A * s.f + s.ph), w = spread * s.w * (.55 + .45 * k); g.globalAlpha = (.22 + .55 * k) * (1 - s.y * .6); g.fillStyle = s.y < .25 ? "#FFE3A0" : "#FFA864"; g.fillRect(sx - w / 2 + s.s * spread * .5, y, w, 1 + (1 - s.y) * 1.6); }
         for (const p of S.sparkles) { const k = Math.pow(Math.max(0, Math.sin(A * p.f + p.ph)), 8); if (k < .05) continue; const x = p.x * W, y = hz + 4 + p.y * (H - hz) * .9; g.globalAlpha = k * .8; g.fillStyle = "#FFF1D0"; g.fillRect(x - 1, y - .5, 2 + k * 3, 1); }
+        if (cl.k === "run") sRun(T, I, cl, sx, R); /* (b384) a run of light down the sun's path */
         g.globalCompositeOperation = "source-over";
+        const sn = pl.sun; if (sn.k === "contrail") sContrail(T, I, sn); else if (sn.k === "liner") sLiner(T, I, A, sn); else if (sn.k === "junk") sJunk(T, I, A, sn); /* (b384) high up a jet's contrail; on the horizon a liner, or a junk */
         // the clouds: flat banks, magenta, their undersides catching fire where they cross the sun
         const bank = (c, x0, y, a) => { if (a <= .01) return; const near = clamp(1 - Math.abs(x0 + c.w / 2 - sx) / (R * 2.2)) * clamp(1 - Math.abs(y - sy) / (R * 1.4)); g.globalAlpha = a;
           // three strips, each shorter and further in than the one below it; each lit along its lower edge
@@ -148,18 +185,16 @@ export default function bay(K, id) {
             g.fillStyle = "#6A1F4E"; g.beginPath(); g.roundRect(x, yy - hh / 2, w, hh, hh / 2); g.fill();
             g.fillStyle = `rgba(255,${Math.round(140 + 90 * near)},${Math.round(80 + 70 * near)},${(.35 + .6 * near).toFixed(3)})`; g.beginPath(); g.roundRect(x + hh * .3, yy + hh * .18, w - hh * .6, hh * .32, hh * .16); g.fill(); } };
         for (const c of S.clouds) bank(c, ((c.x0 + A * c.v) % (W + c.w * 2)) - c.w, c.y, 1);
-        const across = seg(T, 4.6, 9.4, E.io); if (on && across > 0 && across < 1) bank(S.hero, lerp(sx - R * 2.4 - S.hero.w, sx + R * 1.6, across), sy - R * .42, I * env(across, 0, .12, .88, 1));
+        if (sn.k === "cloud" && !sn.full) { const across = seg(T, sn.a[0], sn.a[1], E.io); if (on && across > 0 && across < 1) bank(S.hero, lerp(sx - R * 2.4 - S.hero.w, sx + R * 1.6, across), sy - R * sn.y, I * env(across, 0, .12, .88, 1)); }
+        else if (sn.k === "cloud") { const across = seg(T, sn.a[0], sn.a[1], x => x), w = S.hero.w + 2 * u; if (on && across > 0 && across < 1) bank(S.hero, sn.dir > 0 ? lerp(-w, W + 2 * u, across) : lerp(W + 2 * u, -w, across), sy - R * sn.y, I); } /* (b384) the whole way across, at a steady drift */
         g.globalAlpha = 1;
-        // a flock across the sun
-        const fb = seg(T, 2.4, 5.8, x => x); if (on && fb > 0 && fb < 1) { const lx = lerp(-4 * u, W + 17 * u, fb), /* the last of the V off the right before it is gone */ ly = sy - R * .6 + Math.sin(fb * 5) * 2 * u; g.fillStyle = P.palm; g.globalAlpha = I;
-          for (const b of S.flock) { const x = lx + b.dx, y = ly + b.dy, s = b.s * u, fl = Math.sin(A * 11 + b.ph); g.beginPath(); g.moveTo(x - 2.4 * s, y - fl * 1.3 * s); g.quadraticCurveTo(x - 1 * s, y - .8 * s, x, y + .3 * s); g.quadraticCurveTo(x + 1 * s, y - .8 * s, x + 2.4 * s, y - fl * 1.3 * s); g.quadraticCurveTo(x + 1 * s, y + .1 * s, x, y + .9 * s); g.quadraticCurveTo(x - 1 * s, y + .1 * s, x - 2.4 * s, y - fl * 1.3 * s); g.fill(); } }
-        // a sailboat across the reflection
-        const sb = seg(T, 7.4, 11.0, x => x); if (on && sb > 0 && sb < 1) { const bx = lerp(W * 1.06, -W * .08, sb), by = hz + 1.6 * u, s = u * (pr ? 1.1 : .9); g.globalAlpha = I; g.fillStyle = P.palm;
-          g.beginPath(); g.moveTo(bx - 3.2 * s, by); g.lineTo(bx + 3.2 * s, by); g.lineTo(bx + 2.3 * s, by + 1.3 * s); g.lineTo(bx - 2.3 * s, by + 1.3 * s); g.closePath(); g.fill();
-          g.beginPath(); g.moveTo(bx - .2 * s, by - .2 * s); g.lineTo(bx - .2 * s, by - 8.5 * s); g.lineTo(bx + 3.6 * s, by - .8 * s); g.closePath(); g.fill(); g.beginPath(); g.moveTo(bx - .6 * s, by - 7.5 * s); g.lineTo(bx - .6 * s, by - 1 * s); g.lineTo(bx - 3 * s, by - 1 * s); g.closePath(); g.fill();
-          g.globalAlpha = .35 * I; g.fillRect(bx - 2.8 * s, by + 1.8 * s, 5.6 * s, .5 * s); }
+        // in the air: a flock across the sun (b384: or a pelican, flamingos, a seaplane)
+        const sk = pl.sky; if (sk.k === "flock") sFlock(T, I, A, sk, sy, R); else if (sk.k === "pelican") sPelican(T, I, A, sk); else if (sk.k === "flamingos") sFlamingos(T, I, A, sk); else sSeaplane(T, I, A, sk);
+        // on the water: a sailboat across the reflection (b384: or two, a windsurfer, dolphins, the whale)
+        const wt = pl.water; if (wt.k === "sail") for (const b of wt.boats) sSail(T, I, b); else if (wt.k === "windsurf") sWindsurf(T, I, A, wt); else if (wt.k === "dolphins") sDolphins(T, I, A, wt); else if (wt.k === "whale") sWhale(T, I, A, wt);
+        if (cl.k === "fish") sFish(T, I, A, cl); /* (b384) flying fish skimming the sun's path */
         // a flare streaking across, and the ghosts it leaves
-        if (flare > .01) { g.globalCompositeOperation = "lighter"; const fx = lerp(sx - R * 3, sx + R * 3, seg(T, 10.6, 13.0, E.io)); g.globalAlpha = flare * .5; g.fillStyle = "#FFD6A0"; g.fillRect(0, sy - R * .08, W, 1.4); add(S.flare, sx, sy - R * .05, flare * .7, 1.6); for (const [k, s2] of [[.4, .5], [.8, .8], [1.3, .35]]) add(S.flare, lerp(sx, W - fx, k), lerp(sy, H * .3, k), flare * .35, s2); g.globalCompositeOperation = "source-over"; }
+        if (flare > .01) { g.globalCompositeOperation = "lighter"; const fx = lerp(sx - R * 3, sx + R * 3, seg(T, cl.fx[0], cl.fx[1], E.io)); g.globalAlpha = flare * .5; g.fillStyle = "#FFD6A0"; g.fillRect(0, sy - R * .08, W, 1.4); add(S.flare, sx, sy - R * .05, flare * .7, 1.6); for (const [k, s2] of [[.4, .5], [.8, .8], [1.3, .35]]) add(S.flare, lerp(sx, W - fx, k), lerp(sy, H * .3, k), flare * .35, s2); g.globalCompositeOperation = "source-over"; }
         // the finale: fireworks over the bay, and in the water
         // crisp sparks streaking out with hot heads, a flash where each bursts, and all of it again, dimmer, in the water
         if (F >= 0) { g.globalCompositeOperation = "lighter"; g.lineCap = "round";
@@ -174,43 +209,53 @@ export default function bay(K, id) {
             } }
           g.globalCompositeOperation = "source-over"; }
         // the palms, their fronds in the breeze; a gust as the flare passes
-        const gust = env(T, 10.8, 11.6, 12.6, 13.6, E.sine) * I; g.globalAlpha = 1; g.fillStyle = g.strokeStyle = P.palm;
+        const gust = cl.k === "flare" ? env(T, cl.g[0], cl.g[1], cl.g[2], cl.g[3], E.sine) * I : 0; g.globalAlpha = 1; g.fillStyle = g.strokeStyle = P.palm;
         for (const p of S.palms) { const top = [p.x + p.lean * p.h * .45, p.y - p.h]; g.lineWidth = 1.1 * u; g.lineCap = "round"; g.beginPath(); g.moveTo(p.x, p.y); g.quadraticCurveTo(p.x + p.lean * p.h * .05, p.y - p.h * .5, top[0], top[1]); g.stroke();
           for (let k = 0; k < 8; k++) S.frond(top, -Math.PI * .98 + k / 7 * Math.PI * .96 + Math.sin(A * 1.1 + p.ph + k) * .05 + gust * .25 * Math.sin(A * 6 + k), p.h * (.44 + (k % 2) * .08)); }
       } else {
         // the stars that twinkle, pricking in at the loop's start
-        const prick = seg(T, .2, 2.6, x => x) * I * (1 - seg(T, 13.3, 14.9, E.sine)); /* the new ones gone again before the loop comes round */
+        const pk = pl.prick, prick = seg(T, pk[0], pk[1], x => x) * I * (1 - seg(T, pk[2], pk[3], E.sine)); /* the new ones gone again before the loop comes round */
         g.fillStyle = "#F4F0FF"; for (const p of S.sparkles) { const shown = p.ph < 3.6 ? 1 : clamp((3.6 + prick * 2.7 - p.ph) / .35); if (shown <= 0) continue; const k = .35 + .65 * Math.pow(Math.max(0, Math.sin(A * p.f + p.ph)), 3); const x = p.x * W, y = H * .09 + p.y * (hz * .75 - H * .09), s = 1 + (p.f > 2.4 ? 1 : 0); g.globalAlpha = k * shown * S.shade(x, y, 4); g.fillRect(x, y, s, s); }
         // the moon, a crescent with its halo, and its path on the water
         const { x: mx, y: my, r: mr } = S.moon; g.globalCompositeOperation = "lighter"; add(S.moonGlow, mx, my, .8); g.globalCompositeOperation = "source-over";
         g.globalAlpha = 1; g.drawImage(S.moonDisc, mx - mr - 1, my - mr - 1, S.moonDisc.w2, S.moonDisc.h2);
         g.globalCompositeOperation = "lighter"; for (const s of S.glints) { const y = hz + 2 + Math.pow(s.y, 1.3) * (H - hz) * .85, k = .5 + .5 * Math.sin(A * s.f + s.ph), w = (4 + s.w * 9) * u * (1 - s.y * .5) * k; g.globalAlpha = (.12 + .2 * k) * (1 - s.y * .5); g.fillStyle = "#CFC6FF"; g.fillRect(mx - w / 2 + s.s * 5 * u, y, w, .9); }
-        // a star falls
-        const fall = seg(T, 11.2, 12.1, E.in) * I; if (fall > 0 && fall < 1) { const x = lerp(W * .38, W * .7, fall), y = lerp(H * .2, H * .4, fall), fa = S.shade(x, y, 14 * u); const gr = g.createLinearGradient(x, y, x - 14 * u, y - 7 * u); gr.addColorStop(0, `rgba(255,255,255,${(.9 * (1 - fall) * fa).toFixed(3)})`); gr.addColorStop(1, "rgba(255,255,255,0)"); g.globalAlpha = 1; g.strokeStyle = gr; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x, y); g.lineTo(x - 14 * u, y - 7 * u); g.stroke(); }
+        const sk = pl.sky, wt = pl.water, hd = pl.head;
+        if (wt.k === "glow") dGlow(T, I, A, wt); /* (b384) the shallows glowing blue */
+        if (sk.k === "beam") dBeam(T, I, A, sk); /* (b384) a lighthouse's beam over the bay */
+        // a star falls (b384: from either side; or a shower of them)
+        if (sk.k === "fall") { const fall = seg(T, sk.t[0], sk.t[1], E.in) * I; if (fall > 0 && fall < 1) { const x = lerp(W * sk.x[0], W * sk.x[1], fall), y = lerp(H * sk.y[0], H * sk.y[1], fall), fa = S.shade(x, y, 14 * u), tx = sk.x[1] > sk.x[0] ? -14 * u : 14 * u; const gr = g.createLinearGradient(x, y, x + tx, y - 7 * u); gr.addColorStop(0, `rgba(255,255,255,${(.9 * (1 - fall) * fa).toFixed(3)})`); gr.addColorStop(1, "rgba(255,255,255,0)"); g.globalAlpha = 1; g.strokeStyle = gr; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x, y); g.lineTo(x + tx, y - 7 * u); g.stroke(); } }
+        else if (sk.k === "meteors") dMeteors(T, I, sk);
         g.globalCompositeOperation = "source-over";
+        if (sk.k === "bats") dBats(T, I, A, sk); else if (sk.k === "veil") dVeil(T, I, A, sk); /* (b384) bats, or a veil of cloud, across the moon */
         // lanterns: a few far ones always, one from the beach, the whole shore's, the festival's; each with its light in the water
-        const lant = (xn, rise, z, sw, ph, a) => {
-          if (a <= .01) return; const s = lerp(.35, 1.45, z), x = xn * W + Math.sin(A * .9 * sw + ph) * 1.6 * u * s, y = lerp(hz - 1.4 * u, H * .1, rise), flick = .88 + .12 * Math.sin(A * 13 + ph * 3) * Math.sin(A * 7.3 + ph);
+        const lant = (xn, rise, z, sw, ph, a, spr = S.lantern, glw = S.lglow, rc = "#FFB45C", drift = 0) => {
+          if (a <= .01) return; const s = lerp(.35, 1.45, z), x = xn * W + Math.sin(A * .9 * sw + ph) * 1.6 * u * s + drift * rise * W, y = lerp(hz - 1.4 * u, H * .1, rise), flick = .88 + .12 * Math.sin(A * 13 + ph * 3) * Math.sin(A * 7.3 + ph);
           a *= S.shade(x, y, S.lr * s * 3.4) * (1 - clamp((H * .32 - y) / (H * .14))); if (a <= .01) return; // it fades as its glow nears a word; it's gone well before the header
-          const spr = S.lantern; g.globalCompositeOperation = "lighter"; add(S.lglow, x, y, a * .75 * flick, s); g.globalCompositeOperation = "source-over"; add(spr, x, y, a * clamp(1.2 - z * .2), s);
-          if (y < hz && rise < .45) { g.globalCompositeOperation = "lighter"; g.globalAlpha = a * .35 * (1 - rise / .45) * flick; g.fillStyle = "#FFB45C"; const ry = hz + (hz - y) * .45, rw = S.lr * s * 1.1; g.fillRect(x - rw / 2 + Math.sin(A * 3 + ph) * u * .6, ry, rw, 1.2 + s); g.fillRect(x - rw * .3, ry + 3 * s, rw * .6, 1); g.globalCompositeOperation = "source-over"; }
+          g.globalCompositeOperation = "lighter"; add(glw, x, y, a * .75 * flick, s); g.globalCompositeOperation = "source-over"; add(spr, x, y, a * clamp(1.2 - z * .2), s);
+          if (y < hz && rise < .45) { g.globalCompositeOperation = "lighter"; g.globalAlpha = a * .35 * (1 - rise / .45) * flick; g.fillStyle = rc; const ry = hz + (hz - y) * .45, rw = S.lr * s * 1.1; g.fillRect(x - rw / 2 + Math.sin(A * 3 + ph) * u * .6, ry, rw, 1.2 + s); g.fillRect(x - rw * .3, ry + 3 * s, rw * .6, 1); g.globalCompositeOperation = "source-over"; }
         };
         for (const q of S.quietL) { const rq = (q.t + A * .006 * (1 + q.z)) % 1 * .75 + .15; lant(q.x, rq, q.z * .6, q.sw, q.ph, .85 * clamp((rq - .15) / .09)); } /* each fades in as it leaves the water */
-        const first = seg(T, 2.4, 9.4, E.sine); if (on && first > 0 && first < 1) lant(.5, first, .95, 1, 0, I * (1 - seg(first, .85, 1)) * clamp(first * 12));
-        for (const c of S.cascade) { const k = seg(T, c.start, c.start + 6.5, E.sine); if (!on || k <= 0 || k >= 1) continue; lant(c.x, k, c.z, c.sw, c.ph, I * (1 - seg(k, .82, 1)) * clamp(k * 14)); }
+        if (hd.first) { const L = S.lcols[hd.first.c]; const first = seg(T, hd.first.t0, hd.first.t1, E.sine); if (on && first > 0 && first < 1) lant(hd.first.x, first, .95, 1, 0, I * (1 - seg(first, .85, 1)) * clamp(first * 12), L[0], L[1], L[2]); }
+        if (hd.casc) for (const c of hd.casc) { const k = seg(T, c.start, c.start + 6.5, E.sine); if (!on || k <= 0 || k >= 1) continue; const L = S.lcols[c.c || 0]; lant(c.x, k, c.z, c.sw, c.ph, I * (1 - seg(k, .82, 1)) * clamp(k * 14), L[0], L[1], L[2], c.dx || 0); }
+        if (hd.k === "flotilla") dFlotilla(T, I, A, hd); /* (b384) lanterns set floating on the water */
+        if (wt.k === "row" && wt.far) dRow(T, I, A, wt); /* (b384) a rowboat far out on the bay, behind the egret */
         if (F >= 0) for (const f of S.festival) { const k = clamp((F - f.lag) / (1 - f.lag)); if (k <= 0 || k >= 1) continue; lant(f.x, E.sine(k), f.z, f.sw, f.ph, clamp(k * 10) * (1 - seg(k, .8, 1))); }
-        // the egret: standing in the shallows, then up and away, its rings spreading
-        const es = u * (pr ? 1.15 : .95), x0 = S.egret.x, y0 = S.egret.y, away = seg(T, 9.0, 11.3, E.in), home = seg(T, 12.3, 14.6, E.out);
+        // the egret: standing in the shallows, then up and away, its rings spreading (b384: or it stands and fishes)
+        const es = u * (pr ? 1.15 : .95), x0 = S.egret.x, y0 = S.egret.y, fly = wt.k === "egret" || !!wt.flush, away = fly ? seg(T, wt.away[0], wt.away[1], E.in) : 0, home = fly ? seg(T, wt.home[0], wt.home[1], E.out) : 0;
         let ex = x0, ey = y0, up = 0; /* up: 0 standing … 1 in the air */
         if (home > 0) { ex = lerp(-10 * es, x0, home); ey = y0 - (1 - home) * H * .2 - Math.sin(home * Math.PI) * H * .03; up = 1 - seg(home, .85, 1); }
         else if (away > 0) { ex = lerp(x0, W + 10 * es, away); ey = y0 - Math.sin(away * Math.PI / 2) * H * .28; up = away >= 1 ? 2 : 1; }
         ex = lerp(x0, ex, I); ey = lerp(y0, ey, I); if (I < .99 && up === 2) up = 1; /* touched, it settles back where it stands */
-        const flap = up > 0 && up <= 1 ? Math.sin(A * 9) * (home > 0 ? 1 - home * .6 : 1) : 0;
-        if (up < 2) { g.globalAlpha = S.shade(ex, ey, 8 * es); g.fillStyle = "#EFE8FF"; g.beginPath(); g.ellipse(ex, ey, 2.4 * es, 1 * es, -.2, 0, TAU); g.fill(); g.strokeStyle = "#EFE8FF"; g.lineWidth = .55 * es; g.beginPath(); g.moveTo(ex + 1.8 * es, ey - .4 * es); g.quadraticCurveTo(ex + 2.6 * es, ey - 3.4 * es, ex + 3.4 * es, ey - 3.2 * es); g.stroke();
+        const flap = up > 0 && up <= 1 ? Math.sin(A * 9) * (home > 0 ? 1 - home * .6 : 1) : 0, nk = wt.k === "fishing" ? env(T, wt.ts, wt.ts + .22, wt.ts + .5, wt.ts + 1.05, E.io) * I : 0; /* nk: its neck down to the water */
+        if (up < 2) { g.globalAlpha = S.shade(ex, ey, 8 * es); g.fillStyle = "#EFE8FF"; g.beginPath(); g.ellipse(ex, ey, 2.4 * es, 1 * es, -.2, 0, TAU); g.fill(); g.strokeStyle = "#EFE8FF"; g.lineWidth = .55 * es; g.beginPath(); g.moveTo(ex + 1.8 * es, ey - .4 * es); g.quadraticCurveTo(ex + (2.6 + .9 * nk) * es, ey - (3.4 - 3.0 * nk) * es, ex + (3.4 + .6 * nk) * es, ey - (3.2 - 5.4 * nk) * es); g.stroke();
           if (up > 0) { g.beginPath(); g.moveTo(ex - 1.5 * es, ey); g.quadraticCurveTo(ex - 3 * es, ey - 3.2 * es * flap, ex - 6 * es, ey - 4.4 * es * flap); g.quadraticCurveTo(ex - 2 * es, ey - .5 * es, ex, ey); g.fill(); }
           else { g.strokeStyle = "#CFC5E6"; g.lineWidth = .3 * es; g.beginPath(); g.moveTo(ex, ey + .8 * es); g.lineTo(ex, ey + 3 * es); g.stroke(); } }
-        const land = seg(T, 14.2, 15.0, E.out) * I; if (land > 0 && land < 1) for (let k = 0; k < 2; k++) { const q = clamp(land * 1.2 - k * .2); if (q <= 0) continue; g.globalAlpha = (1 - q) * .4; g.strokeStyle = "#C4B4E8"; g.lineWidth = .7; g.beginPath(); g.ellipse(x0, y0 + 3 * es, q * 11 * u, q * 2 * u, 0, 0, TAU); g.stroke(); } /* a ring or two as it lands */
-        const rip = seg(T, 9.0, 12.0, E.out) * I; if (rip > 0 && rip < 1) for (let k = 0; k < 3; k++) { const q = clamp(rip * 1.3 - k * .15); if (q <= 0) continue; g.globalAlpha = (1 - q) * .55; g.strokeStyle = "#C4B4E8"; g.lineWidth = .8; g.beginPath(); g.ellipse(S.egret.x, S.egret.y + 3 * es, q * 18 * u, q * 3 * u, 0, 0, TAU); g.stroke(); }
+        if (wt.k === "fishing") dCatch(T, I, A, wt, ex, ey, es);
+        const land = fly ? seg(T, wt.land[0], wt.land[1], E.out) * I : 0; if (land > 0 && land < 1) for (let k = 0; k < 2; k++) { const q = clamp(land * 1.2 - k * .2); if (q <= 0) continue; g.globalAlpha = (1 - q) * .4; g.strokeStyle = "#C4B4E8"; g.lineWidth = .7; g.beginPath(); g.ellipse(x0, y0 + 3 * es, q * 11 * u, q * 2 * u, 0, 0, TAU); g.stroke(); } /* a ring or two as it lands */
+        const rip = fly ? seg(T, wt.rip[0], wt.rip[1], E.out) * I : 0; if (rip > 0 && rip < 1) for (let k = 0; k < 3; k++) { const q = clamp(rip * 1.3 - k * .15); if (q <= 0) continue; g.globalAlpha = (1 - q) * .55; g.strokeStyle = "#C4B4E8"; g.lineWidth = .8; g.beginPath(); g.ellipse(S.egret.x, S.egret.y + 3 * es, q * 18 * u, q * 3 * u, 0, 0, TAU); g.stroke(); }
+        if (wt.k === "row" && !wt.far) dRow(T, I, A, wt); /* (b384) a rowboat under its lantern, nearer than the egret's shallows */
+        if (wt.k === "fireflies") dFireflies(T, I, A, wt); /* (b384) fireflies along the shore */
         // the palms, dark against the last light
         g.globalAlpha = 1; g.fillStyle = g.strokeStyle = P.palm;
         for (const p of S.palms) { const top = [p.x + p.lean * p.h * .45, p.y - p.h]; g.lineWidth = 1.1 * u; g.lineCap = "round"; g.beginPath(); g.moveTo(p.x, p.y); g.quadraticCurveTo(p.x + p.lean * p.h * .05, p.y - p.h * .5, top[0], top[1]); g.stroke();
@@ -225,5 +270,384 @@ export default function bay(K, id) {
       g.globalAlpha = 1;
     },
   };
+
+  /* ---------------- 1.12 b384: the forever cycle ---------------- */
+  /** a sprite at (x, y), anchored at (ax, ay) of its size, turned and scaled */
+  const stamp = (spr, x, y, ax, ay, rot, sx, sy, a) => { if (a <= .005) return; g.save(); g.globalAlpha = clamp(a); g.translate(x, y); if (rot) g.rotate(rot); g.scale(sx, sy); g.drawImage(spr, -spr.w2 * ax, -spr.h2 * ay, spr.w2, spr.h2); g.restore(); };
+  /** what only the passes after the first bring, made once at layout (nothing here touches the backdrop or the first
+   *  pass's dice) */
+  function extras(W, H, u, pr, hz) {
+    const dark = P.palm, rim = P.rim;
+    const shape = (w, h, ox, oy, fn) => { const s = make(w * u, h * u, x => { x.translate(ox * u, oy * u); fn(x); }); s.ox = ox / w; s.oy = oy / h; return s; };
+    if (!dusk) {
+      // the headlands and their reflections, which what sails along the horizon passes behind
+      { const c = new Path2D(); c.rect(-20, -20, W + 40, H + 40); for (const pts of [S.left, S.right]) { c.moveTo(pts[0][0], hz + 1); for (const p of pts) c.lineTo(p[0], Math.min(hz + 1, p[1])); c.lineTo(pts[pts.length - 1][0], hz + 1); c.closePath(); c.moveTo(pts[0][0], hz); for (const p of pts) c.lineTo(p[0], hz + (hz - Math.min(hz, p[1])) * .5); c.lineTo(pts[pts.length - 1][0], hz); c.closePath(); } S.headClip = c; }
+      // a pelican (facing right): gliding, wings up, folded for the dive
+      const pBody = [["E", 0, 0, 1.9, .78, -.06], ["M", 1.2, -.5], ["Q", 1.8, -1.05, 2.3, -.95], ["Q", 2.8, -.9, 2.75, -.45], ["L", 1.5, .1], ["Z"], ["M", 2.45, -.95], ["L", 5.0, -.5], ["L", 5.05, -.36], ["Q", 3.9, .3, 2.55, -.3], ["Z"], ["M", -1.7, -.25], ["L", -2.8, -.42], ["L", -2.7, .12], ["L", -1.7, .25], ["Z"]];
+      const pWing = [[["M", .9, -.55], ["Q", -1.4, -1.9, -4.9, -1.45], ["L", -5.4, -1.2], ["L", -4.9, -1.02], ["L", -5.25, -.78], ["L", -4.7, -.66], ["L", -4.95, -.42], ["Q", -2.2, -.2, -.5, .1], ["Z"]],
+        [["M", .8, -.6], ["Q", -.4, -2.8, -2.4, -4.6], ["L", -2.9, -4.4], ["L", -2.6, -3.9], ["L", -3.2, -3.7], ["L", -2.8, -3.2], ["L", -3.3, -2.9], ["Q", -2.2, -1.1, -.7, .05], ["Z"]],
+        [["M", .9, -.45], ["Q", -1.1, -1.05, -3.6, -.62], ["L", -3.8, -.3], ["Q", -1.6, .15, -.4, .2], ["Z"]]];
+      S.pel = pWing.map(wing => shape(12, 8, 6.2, 4.8, x => { const p = bez(pBody, u); const w2 = bez(wing, u); p.addPath(w2); sil(x, p, dark, rim, u); }));
+      // flamingos (facing right), pink with black flight feathers: wings up, wings down
+      S.flam = [0, 1].map(f => shape(10, 6, 5.2, 3, x => { const pink = "#F4879F", deep = "#D9607E";
+        x.strokeStyle = deep; x.lineCap = "round"; x.lineWidth = .14 * u; x.beginPath(); x.moveTo(-.9 * u, .15 * u); x.lineTo(-4.4 * u, .42 * u); x.moveTo(-.9 * u, .28 * u); x.lineTo(-4.3 * u, .66 * u); x.stroke(); // legs trailing
+        x.strokeStyle = pink; x.lineWidth = .3 * u; x.beginPath(); x.moveTo(.9 * u, -.12 * u); x.quadraticCurveTo(2.2 * u, -.2 * u, 3.4 * u, -.42 * u); x.stroke(); // the neck
+        x.fillStyle = pink; x.beginPath(); x.arc(3.55 * u, -.45 * u, .28 * u, 0, TAU); x.fill(); x.fillStyle = "#1C0716"; x.beginPath(); x.moveTo(3.7 * u, -.58 * u); x.quadraticCurveTo(4.3 * u, -.55 * u, 4.35 * u, -.12 * u); x.quadraticCurveTo(4.05 * u, -.3 * u, 3.72 * u, -.3 * u); x.closePath(); x.fill(); // the head, its bent black bill
+        x.fillStyle = pink; x.beginPath(); x.ellipse(0, 0, 1.25 * u, .55 * u, -.05, 0, TAU); x.fill();
+        const tip = f ? [-.9, 2.4] : [-1.1, -2.6], wing = new Path2D(); wing.moveTo(.4 * u, -.25 * u); wing.quadraticCurveTo(-.1 * u, tip[1] * .55 * u, tip[0] * u, tip[1] * u); wing.quadraticCurveTo(-1.2 * u, tip[1] * .45 * u, -.9 * u, 0); wing.closePath();
+        x.fillStyle = pink; x.fill(wing); x.save(); x.clip(wing); x.fillStyle = "#1C0716"; x.beginPath(); x.rect(-3 * u, f ? 1.1 * u : -4 * u, 6 * u, 2.9 * u); x.fill(); x.restore(); // its wing, the outer half black
+        x.fillStyle = "rgba(255,210,220,.45)"; x.beginPath(); x.ellipse(.2 * u, -.2 * u, .8 * u, .2 * u, -.05, 0, TAU); x.fill(); }));
+      // a liner (facing left): hull, decks, three raked funnels with their bands, masts, rows of lit portholes
+      S.liner = shape(18, 7.5, 8.6, 6.2, x => { const hull = bez([["M", -7.0, 0], ["L", -7.7, -1.6], ["L", 6.3, -1.3], ["Q", 7.5, -1.25, 7.35, -.55], ["L", 6.6, 0], ["Z"]], u), deck = bez([["M", -4.7, -1.4], ["L", -4.7, -2.3], ["L", 4.6, -2.3], ["L", 4.6, -1.3], ["Z"], ["M", -3.4, -2.3], ["L", -3.4, -3.05], ["L", 3.1, -3.05], ["L", 3.1, -2.3], ["Z"], ["M", -4.5, -2.3], ["L", -4.5, -3.55], ["L", -3.2, -3.55], ["L", -3.2, -2.3], ["Z"]], u);
+        const col = "#3A1030"; hull.addPath(deck); for (const fx of [-1.9, .5, 2.9]) hull.addPath(bez([["M", fx - .48, -3.05], ["L", fx + .48, -3.05], ["L", fx + .8, -5.1], ["L", fx - .12, -5.1], ["Z"]], u)); sil(x, hull, col, rim, u);
+        x.fillStyle = "#E2544E"; for (const fx of [-1.9, .5, 2.9]) { x.beginPath(); x.moveTo((fx - .3) * u, -4.1 * u); x.lineTo((fx + .63) * u, -4.1 * u); x.lineTo((fx + .7) * u, -4.55 * u); x.lineTo((fx - .22) * u, -4.55 * u); x.closePath(); x.fill(); } // the funnels' red bands, catching the light
+        x.strokeStyle = col; x.lineWidth = .12 * u; x.beginPath(); x.moveTo(-5.9 * u, -1.5 * u); x.lineTo(-5.7 * u, -5.6 * u); x.moveTo(5.3 * u, -1.3 * u); x.lineTo(5.1 * u, -5.1 * u); x.stroke(); x.lineWidth = .04 * u; x.beginPath(); x.moveTo(-7.6 * u, -1.6 * u); x.lineTo(-5.7 * u, -5.6 * u); x.lineTo(-1.9 * u, -5.1 * u); x.moveTo(2.9 * u, -5.1 * u); x.lineTo(5.1 * u, -5.1 * u); x.lineTo(7.2 * u, -1.3 * u); x.stroke(); // masts and rigging
+        x.fillStyle = "#FFD08A"; for (let k = 0; k < 20; k++) x.fillRect((-6.2 + k * .65) * u, -.85 * u, .16 * u, .14 * u); for (let k = 0; k < 13; k++) x.fillRect((-4.3 + k * .7) * u, -1.95 * u, .2 * u, .16 * u); for (let k = 0; k < 8; k++) x.fillRect((-3.0 + k * .78) * u, -2.75 * u, .2 * u, .15 * u); }); // its portholes, lit
+      S.liner.funnels = [[-1.6, -5.1], [.8, -5.1], [3.2, -5.1]];
+      // a junk (facing left): its high stern, three masts, lug sails stiffened with battens that the low sun shows through
+      S.junk = shape(15, 11.5, 7, 10.4, x => { const col = "#34102C", p = bez([["M", -6.4, -1.05], ["L", -5.5, 0], ["L", 4.5, 0], ["L", 5.9, -1.3], ["L", 6.3, -2.4], ["L", 4.3, -1.7], ["L", -4.2, -1.35], ["Z"]], u);
+        const sails = [[-3.0, 7.0, 2.6], [.5, 9.2, 3.1], [3.7, 6.2, 2.3]];
+        for (const [mx, h, w] of sails) p.addPath(bez([["M", mx - .15, -1.3], ["L", mx - .15, -h - .4], ["L", mx + .1, -h - .4], ["L", mx + .1, -1.3], ["Z"], ["M", mx - .5, -h], ["L", mx + w, -h + .9], ["Q", mx + w * 1.35, -h * .55, mx + w * 1.12, -1.9], ["L", mx - .4, -1.95], ["Z"]], u));
+        p.addPath(bez([["M", .6, -9.6], ["L", 1.9, -9.25], ["L", .6, -8.9], ["Z"]], u)); sil(x, p, col, rim, u);
+        x.strokeStyle = "rgba(255,170,110,.55)"; x.lineWidth = .07 * u; for (const [mx, h, w] of sails) for (let k = 1; k < 7; k++) { const f = k / 7, yy = lerp(-h + .45, -1.95, f); x.beginPath(); x.moveTo((mx - .45) * u, yy * u); x.lineTo((mx + w * (1.02 + .25 * Math.sin(f * Math.PI))) * u, (yy + .45 * (1 - f)) * u); x.stroke(); } // its battens
+        x.fillStyle = "#FFD08A"; for (let k = 0; k < 3; k++) x.fillRect((4.2 + k * .45) * u, -1.55 * u, .18 * u, .14 * u); }); // lanterns at the stern
+      S.flyfish = shape(4, 2, 2, 1, x => sil(x, bez([["M", 1.4, 0], ["Q", .6, -.28, -.9, -.12], ["L", -1.5, -.45], ["L", -1.35, 0], ["L", -1.5, .4], ["L", -.9, .12], ["Q", .6, .25, 1.4, 0], ["Z"], ["M", .5, -.1], ["L", -.4, -.95], ["L", -.2, -.1], ["Z"], ["M", .5, .05], ["L", -.2, .55], ["L", -.1, .05], ["Z"]], u), "#2A0C22", "rgba(255,210,150,.85)", u));
+      // a windsurfer (moving right): the board, the rider leaning out, the sail with the low sun through it
+      S.surf = shape(8, 9, 4.2, 7.9, x => { const sail = new Path2D(); sail.moveTo(.1 * u, -.4 * u); sail.lineTo(-.5 * u, -7.2 * u); sail.quadraticCurveTo(-2.4 * u, -4.2 * u, -3.5 * u, -2.3 * u); sail.quadraticCurveTo(-1.6 * u, -.9 * u, .1 * u, -.4 * u); sail.closePath();
+        const gr = x.createLinearGradient(0, -7 * u, -3.5 * u, -1 * u); gr.addColorStop(0, "#FFE9A0"); gr.addColorStop(.45, "#FFB25E"); gr.addColorStop(1, "#F2585A"); x.globalAlpha = .93; x.fillStyle = gr; x.fill(sail); x.globalAlpha = 1;
+        x.save(); x.clip(sail); x.strokeStyle = "rgba(120,30,50,.45)"; x.lineWidth = .1 * u; for (const k of [.3, .52, .74]) { x.beginPath(); x.moveTo(lerp(.1, -.5, k) * u, lerp(-.4, -7.2, k) * u); x.lineTo(lerp(-.2, -3.4, 1 - k) * u, lerp(-.9, -2.6, 1 - k) * u - .6 * u); x.stroke(); } x.fillStyle = "rgba(255,255,255,.25)"; x.fillRect(-4 * u, -4.6 * u, 5 * u, .5 * u); x.restore(); // battens, a light panel
+        const body = bez([["E", 0, 0, 2.7, .24, 0], ["M", -.35, -.15], ["L", -1.25, -2.55], ["L", -.85, -2.7], ["L", .05, -.2], ["Z"], ["E", -1.3, -3.0, .32, .34, 0], ["M", -1.1, -2.4], ["L", -.6, -3.3], ["L", -.45, -3.2], ["L", -.95, -2.3], ["Z"]], u); sil(x, body, dark, rim, u);
+        x.strokeStyle = dark; x.lineWidth = .14 * u; x.beginPath(); x.moveTo(.1 * u, -.3 * u); x.lineTo(-.5 * u, -7.2 * u); x.moveTo(-.2 * u, -3.4 * u); x.lineTo(-3.4 * u, -2.3 * u); x.stroke(); }); // mast and boom
+      // a dolphin (facing right), and a whale's flukes
+      S.dolph = shape(7, 3.4, 3.2, 1.6, x => sil(x, bez([["M", 2.7, .05], ["Q", 2.3, -.25, 1.9, -.42], ["Q", .5, -.95, -1.4, -.5], ["Q", -2.1, -.3, -2.35, -.2], ["L", -3.0, -.75], ["Q", -2.75, -.1, -2.95, .45], ["L", -2.3, .05], ["Q", -1, .5, .6, .42], ["L", .3, .95], ["L", 1.0, .38], ["Q", 2.1, .3, 2.7, .05], ["Z"], ["M", .1, -.8], ["Q", -.3, -1.55, -.85, -1.55], ["Q", -.55, -1.1, -.7, -.62], ["Z"]], u), dark, rim, u));
+      S.fluke = shape(11, 6, 5.5, 5.4, x => sil(x, bez([["M", -.55, 0], ["Q", -.45, -1.6, -.3, -2.3], ["Q", -2.2, -2.3, -4.6, -3.9], ["Q", -3.2, -4.9, -1.1, -4.3], ["Q", -.3, -3.9, 0, -3.5], ["Q", .3, -3.9, 1.1, -4.3], ["Q", 3.2, -4.9, 4.6, -3.9], ["Q", 2.2, -2.3, .3, -2.3], ["Q", .45, -1.6, .55, 0], ["Z"]], u), dark, rim, u));
+      // a seaplane (facing right): its high wing, floats and struts; a jet, a glint of gold high up
+      S.plane = shape(9, 4.2, 4.4, 2.2, x => { const p = bez([["M", -3.5, -.55], ["L", -3.9, -1.7], ["L", -3.2, -1.7], ["L", -2.3, -.65], ["L", 1.6, -.8], ["Q", 2.6, -.75, 3.1, -.3], ["Q", 3.0, .15, 2.2, .25], ["L", -2.6, .05], ["Z"], ["M", -1.3, -1.35], ["L", 3.1, -1.35], ["L", 3.1, -1.05], ["L", -1.3, -1.05], ["Z"], ["M", -2.2, 1.05], ["L", 2.6, 1.05], ["Q", 3.3, 1.1, 3.4, 1.3], ["Q", 2.8, 1.55, 2.1, 1.55], ["L", -2.0, 1.5], ["Z"]], u); sil(x, p, dark, rim, u);
+        x.strokeStyle = dark; x.lineWidth = .1 * u; x.beginPath(); x.moveTo(-.3 * u, .1 * u); x.lineTo(-.9 * u, 1.05 * u); x.moveTo(1.4 * u, .15 * u); x.lineTo(1.9 * u, 1.05 * u); x.moveTo(.4 * u, -1.05 * u); x.lineTo(1.0 * u, -.75 * u); x.moveTo(2.4 * u, -1.05 * u); x.lineTo(2.2 * u, -.6 * u); x.stroke(); x.fillStyle = "#FFD08A"; for (const k of [0, 1, 2]) x.fillRect((.2 + k * .5) * u, -.6 * u, .28 * u, .2 * u); });
+      S.jet = shape(3, 1.6, 1.5, .8, x => { x.fillStyle = "#FFE7B0"; x.beginPath(); x.moveTo(1.3 * u, 0); x.lineTo(-1.2 * u, -.1 * u); x.lineTo(-1.2 * u, .1 * u); x.closePath(); x.moveTo(.3 * u, -.05 * u); x.lineTo(-.5 * u, -.7 * u); x.lineTo(-.2 * u, 0); x.lineTo(-.5 * u, .7 * u); x.closePath(); x.moveTo(-1.0 * u, 0); x.lineTo(-1.35 * u, -.35 * u); x.lineTo(-1.35 * u, .35 * u); x.closePath(); x.fill(); });
+    } else {
+      // lanterns in rose and in gold beside the orange ones, their glows and the light they lay on the water
+      const lr = S.lr, lanternOf = (stops, rib) => make(lr * 3.2, lr * 4.2, x => { const w = lr * 2, h = lr * 2.7; x.save(); x.translate(lr * .6, lr * .6);
+        const body = new Path2D(); body.moveTo(w * .08, 0); body.lineTo(w * .92, 0); body.quadraticCurveTo(w, 0, w * .96, h * .12); body.lineTo(w * .8, h); body.lineTo(w * .2, h); body.lineTo(w * .04, h * .12); body.quadraticCurveTo(0, 0, w * .08, 0); body.closePath();
+        const gr = x.createRadialGradient(w * .5, h * .95, 0, w * .5, h * .6, h * .95); stops.forEach((c, i) => gr.addColorStop([0, .35, .75, 1][i], c)); x.fillStyle = gr; x.fill(body);
+        x.strokeStyle = rib; x.lineWidth = Math.max(.6, lr * .06); for (const f of [.35, .65]) { x.beginPath(); x.moveTo(w * (.08 + f * .84), 0); x.lineTo(w * (.2 + f * .6), h); x.stroke(); }
+        x.fillStyle = "#FFFBEA"; x.beginPath(); x.ellipse(w * .5, h * .93, w * .13, h * .05, 0, 0, TAU); x.fill(); x.restore(); });
+      S.lcols = [[S.lantern, S.lglow, "#FFB45C"], [lanternOf(["#FFF0F4", "#FFB0C6", "#EE6F8E", "#B23E5E"], "rgba(140,30,60,.35)"), glow(lr * 3.4, [255, 130, 175], .5), "#FF9DBB"], [lanternOf(["#FFFFF2", "#FFE8A6", "#F0C25C", "#B4862C"], "rgba(130,90,20,.35)"), glow(lr * 3.4, [255, 222, 140], .5), "#FFE2A0"]];
+      // a lantern set floating on the water: a paper box lit inside, on its little float
+      S.wlant = make(lr * 2.8, lr * 2.6, x => { const w = lr * 1.7, h = lr * 1.3, ox = lr * .55, oy = lr * .5; x.fillStyle = "#1A1430"; x.fillRect(ox - lr * .12, oy + h, w + lr * .24, lr * .28);
+        const gr = x.createRadialGradient(ox + w / 2, oy + h * .8, 0, ox + w / 2, oy + h * .5, h * 1.1); gr.addColorStop(0, "#FFF6CC"); gr.addColorStop(.45, "#FFC663"); gr.addColorStop(1, "#E07A3A"); x.fillStyle = gr; x.beginPath(); x.moveTo(ox + w * .08, oy); x.lineTo(ox + w * .92, oy); x.lineTo(ox + w, oy + h); x.lineTo(ox, oy + h); x.closePath(); x.fill();
+        x.strokeStyle = "rgba(150,60,20,.4)"; x.lineWidth = Math.max(.6, lr * .06); x.beginPath(); x.moveTo(ox + w * .5, oy); x.lineTo(ox + w * .5, oy + h); x.stroke(); x.fillStyle = "#2A1F3E"; x.fillRect(ox + w * .02, oy - lr * .1, w * .96, lr * .14); });
+      S.wglow = glow(lr * 2.4, [255, 170, 80], .45);
+      // a rowboat (facing right) with its rower; the lantern at its bow is drawn with its light
+      S.row = shape(10, 5, 5, 3.4, x => sil(x, bez([["M", -3.9, -.55], ["L", 3.7, -.8], ["Q", 3.2, .5, 2.2, .55], ["L", -2.9, .5], ["Q", -3.7, .3, -3.9, -.55], ["Z"], ["M", -.9, -.6], ["L", -1.25, -2.2], ["Q", -1.0, -2.55, -.55, -2.3], ["L", -.2, -.65], ["Z"], ["E", -1.05, -2.75, .34, .36, 0], ["M", 3.2, -.75], ["L", 3.35, -3.4], ["L", 3.5, -3.4], ["L", 3.4, -.75], ["Z"], ["M", 3.35, -3.35], ["L", 4.1, -3.2], ["L", 4.1, -3.05], ["L", 3.4, -3.15], ["Z"]], u), dark, rim, u));
+      // bats: wings up, spread, down
+      S.bat = [-1, 0, 1].map(f => make(5 * u, 3.6 * u, x => { x.translate(2.5 * u, 1.8 * u); const p = new Path2D(); p.ellipse(0, 0, .35 * u, .55 * u, 0, 0, TAU); p.moveTo(-.25 * u, -.45 * u); p.lineTo(-.3 * u, -.85 * u); p.lineTo(-.05 * u, -.5 * u); p.lineTo(.05 * u, -.5 * u); p.lineTo(.3 * u, -.85 * u); p.lineTo(.25 * u, -.45 * u); p.closePath();
+        for (const sd of [-1, 1]) { const ty = f * 1.4, tx = 2.3 - Math.abs(f) * .5; p.moveTo(sd * .25 * u, -.2 * u); p.quadraticCurveTo(sd * 1.2 * u, (-.6 + ty * .3) * u, sd * tx * u, ty * u - .4 * u); p.quadraticCurveTo(sd * (tx - .35) * u, (ty * .6 + .15) * u, sd * (tx - .7) * u, (ty * .45 + .25) * u); p.quadraticCurveTo(sd * (tx - 1.05) * u, (ty * .35 + .05) * u, sd * (tx - 1.35) * u, (ty * .3 + .3) * u); p.quadraticCurveTo(sd * .8 * u, (ty * .15 + .1) * u, sd * .25 * u, .2 * u); p.closePath(); }
+        sil(x, p, "#07061A", "rgba(190,170,255,.55)", u); }));
+      S.veil = make(30 * u, 6 * u, x => { const bands = [[0, 3.6, 26, 1.1], [3.5, 2.5, 18, 1.0], [7.5, 1.4, 10, .9]]; for (const [ox, oy, w, h] of bands) { x.fillStyle = "#2E2458"; x.beginPath(); x.roundRect(ox * u, oy * u, w * u, h * u, h * u / 2); x.fill(); x.fillStyle = "rgba(200,185,255,.55)"; x.beginPath(); x.roundRect((ox + .5) * u, (oy + h * .62) * u, (w - 1) * u, h * .24 * u, h * .12 * u); x.fill(); } }); // flat strips, moonlight along their lower edges
+      S.fish = make(1.6 * u, .7 * u, x => { x.fillStyle = "#DCE6FF"; x.beginPath(); x.ellipse(.7 * u, .35 * u, .55 * u, .18 * u, 0, 0, TAU); x.fill(); x.beginPath(); x.moveTo(.2 * u, .35 * u); x.lineTo(0, .12 * u); x.lineTo(0, .58 * u); x.closePath(); x.fill(); });
+      { const gl = glow(2.6 * u, [200, 245, 150], .7); S.ffGlow = make(gl.w2, gl.w2, x => { x.globalAlpha = .8; x.drawImage(gl, 0, 0, gl.w2, gl.w2); x.globalAlpha = 1; x.fillStyle = "#F6FFC8"; x.beginPath(); x.arc(gl.w2 / 2, gl.w2 / 2, .28 * u, 0, TAU); x.fill(); }); } /* its glow and its dot in one */
+      S.lampGlow = glow(5 * u, [255, 236, 190], .8);
+    }
+  }
+
+  /* ---------------- sunset's beats ---------------- */
+  /** the flock across the sun in its V, either way */
+  function sFlock(T, I, A, b, sy, R) {
+    const { W, u } = S, on = I > .01, fb = seg(T, b.t0, b.t1, x => x); if (on && fb > 0 && fb < 1) { const lx = lerp(-4 * u, W + b.tail, fb), /* the last of the V off the right before it is gone */ ly = sy - R * b.dy + Math.sin(fb * 5) * 2 * u; g.fillStyle = P.palm; g.globalAlpha = I;
+      for (const f of b.flock) { const x0 = lx + f.dx, x = b.dir > 0 ? x0 : W - x0, y = ly + f.dy, s = f.s * u, fl = Math.sin(A * 11 + f.ph); g.beginPath(); g.moveTo(x - 2.4 * s, y - fl * 1.3 * s); g.quadraticCurveTo(x - 1 * s, y - .8 * s, x, y + .3 * s); g.quadraticCurveTo(x + 1 * s, y - .8 * s, x + 2.4 * s, y - fl * 1.3 * s); g.quadraticCurveTo(x + 1 * s, y + .1 * s, x, y + .9 * s); g.quadraticCurveTo(x - 1 * s, y + .1 * s, x - 2.4 * s, y - fl * 1.3 * s); g.fill(); } }
+  }
+  /** a sailboat across the reflection, right to left (the first pass's) or mirrored */
+  function sSail(T, I, b) {
+    const on = I > .01, sb = seg(T, b.t0, b.t1, x => x); if (on && sb > 0 && sb < 1) { const bx = lerp(b.xs, b.xe, sb), by = b.by, s = b.s, m = b.m; g.globalAlpha = I; g.fillStyle = P.palm;
+      g.beginPath(); g.moveTo(bx - m * 3.2 * s, by); g.lineTo(bx + m * 3.2 * s, by); g.lineTo(bx + m * 2.3 * s, by + 1.3 * s); g.lineTo(bx - m * 2.3 * s, by + 1.3 * s); g.closePath(); g.fill();
+      g.beginPath(); g.moveTo(bx - m * .2 * s, by - .2 * s); g.lineTo(bx - m * .2 * s, by - 8.5 * s); g.lineTo(bx + m * 3.6 * s, by - .8 * s); g.closePath(); g.fill(); g.beginPath(); g.moveTo(bx - m * .6 * s, by - 7.5 * s); g.lineTo(bx - m * .6 * s, by - 1 * s); g.lineTo(bx - m * 3 * s, by - 1 * s); g.closePath(); g.fill();
+      g.globalAlpha = .35 * I; g.fillRect(bx - 2.8 * s, by + 1.8 * s, 5.6 * s, .5 * s); }
+  }
+  /** a run of light down the sun's path, from the horizon to the foot of the page (the glints there flare as it passes) */
+  function sRun(T, I, b, sx, R) {
+    const { H, hz } = S, band = (H - hz) * .2;
+    for (const t0 of b.runs) { const k = seg(T, t0, t0 + 1.9, x => x); if (k <= 0 || k >= 1) continue; const yc = lerp(hz - band, H + band, E.io(k)), e0 = I * Math.sin(k * Math.PI);
+      g.fillStyle = "#FFF3D6"; for (const s of S.glints) { const y = hz + 2 + Math.pow(s.y, 1.5) * (H - hz) * .85, d = Math.abs(y - yc) / band; if (d >= 1) continue; const spread = R * (1.05 - s.y * .6), w = spread * s.w * 1.35; const bx = sx - w / 2 + s.s * spread * .5; g.globalAlpha = Math.min(1, e0 * (1 - d) * 1.15) * S.shade(bx + w / 2, y, w * .3); g.fillRect(bx, y - .8, w, 2.6 + (1 - s.y) * 2.2); } /* faded by the words: the footer's too */
+      g.globalAlpha = e0 * .35 * Math.min(S.shade(sx - R * 1.1, yc, 8), S.shade(sx, yc, 8), S.shade(sx + R * 1.1, yc, 8)); g.fillRect(sx - R * 1.1, yc - 1, R * 2.2, 2); } /* the crest of it, a line of light across the path */
+  }
+  /** a jet high up, a glint of gold, drawing a contrail that glows in the low sun and spreads and fades */
+  function sContrail(T, I, b) {
+    if (I <= .01 || T <= b.t0 || T >= b.t1) return;
+    const { u } = S, k = seg(T, b.t0, b.t0 + b.fly, x => x), n = 28, yAt = x => b.y + (x - b.xs) * b.slope, age0 = T - b.t0, head = Math.min(age0, b.fly);
+    // a ribbon from where it came in to where the jet is (or went out): wider and fainter the older it is
+    const xAt = t => lerp(b.xs, b.xe, clamp(t / b.fly)), top = [], bot = [];
+    for (let i = 0; i <= n; i++) { const t = head * i / n, x = xAt(t), age = T - (b.t0 + t), w = (.14 + age * .16) * u, sag = Math.sin(age * 1.3 + i * .8) * age * .1 * u; top.push([x, yAt(x) + sag - w]); bot.push([x, yAt(x) + sag + w]); }
+    const xh = xAt(head), xt = xAt(0), a = I * S.shade((xh + xt) / 2, yAt((xh + xt) / 2), 4 * u);
+    const gr = g.createLinearGradient(xh, 0, xt, 0), agefade = t => clamp(1 - t / b.life);
+    gr.addColorStop(0, `rgba(255,222,190,${(.75 * agefade(age0 - head)).toFixed(3)})`); gr.addColorStop(.5, `rgba(255,205,180,${(.45 * agefade(age0 - head / 2)).toFixed(3)})`); gr.addColorStop(1, `rgba(255,190,175,${(.2 * agefade(age0)).toFixed(3)})`);
+    g.save(); g.globalAlpha = clamp(a); g.fillStyle = gr; g.beginPath(); top.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); for (let i = n; i >= 0; i--) g.lineTo(bot[i][0], bot[i][1]); g.closePath(); g.fill(); g.restore();
+    if (k > 0 && k < 1) { const x = lerp(b.xs, b.xe, k); stamp(S.jet, x, yAt(x), .5, .5, Math.atan(b.slope) * (b.xe > b.xs ? 1 : -1), b.xe > b.xs ? 1 : -1, 1, I * S.shade(x, yAt(x), 2 * u)); }
+  }
+  /** a liner along the horizon, its smoke trailing, its portholes lit; on a wide screen from behind one headland to
+   *  behind the other, across the sun */
+  function sLiner(T, I, A, b) {
+    const k = seg(T, b.t0, b.t1, x => x); if (k <= 0 || k >= 1 || I <= .01) return;
+    const { u } = S, x = lerp(b.xs, b.xe, k), y = b.y + Math.sin(A * .8) * .08 * u, s = b.s, sx = -b.dir * s, a = clamp(I * (b.clip ? 1 : .35 + .65 * S.shade(x, y - 3 * u * s, 6 * u * s)));
+    g.save(); if (b.clip) g.clip(S.headClip, "evenodd");
+    // its smoke, in soft puffs drifting back from the funnels and up
+    const thin = clamp((T - b.t0) / 1.2) * clamp((b.t1 - T) / 1.2); /* it thins at the ends, where the ship is behind a headland */
+    g.fillStyle = "#8A4466"; for (const [fx, fy] of S.liner.funnels) for (let j = 0; j < 6; j++) { const age = (A * .5 + j / 6 + fx * .13) % 1, px2 = x + sx * (fx + age * 7) * u, py2 = y + (fy - age * 2.6) * u * s, r = (.35 + age * 1.1) * u * s; g.globalAlpha = a * (1 - age) * .42 * thin; g.beginPath(); g.ellipse(px2, py2, r * 1.4, r, 0, 0, TAU); g.fill(); }
+    // its reflection, dim and broken
+    g.globalAlpha = a * .22; g.save(); g.translate(x, y + .2 * u); g.scale(sx, -s * .55); g.drawImage(S.liner, -S.liner.w2 * S.liner.ox, -S.liner.h2 * S.liner.oy, S.liner.w2, S.liner.h2); g.restore();
+    g.globalAlpha = a; g.save(); g.translate(x, y); g.scale(sx, s); g.drawImage(S.liner, -S.liner.w2 * S.liner.ox, -S.liner.h2 * S.liner.oy, S.liner.w2, S.liner.h2); g.restore();
+    g.restore();
+  }
+  /** a pelican: it glides in low, rises, tips over and plunges into the sun's path; a crown of spray and its rings */
+  function sPelican(T, I, A, b) {
+    if (I <= .01 || T <= b.t0 || T >= b.t1) return;
+    const { u } = S, t = T - b.t0, s = b.s, d = b.dir; let x, y, rot = 0, f = 0, show = true;
+    if (t < b.g1) { const k = t / b.g1; x = lerp(b.xs, b.xa, k); y = b.yg + Math.sin(t * 1.3) * .35 * u; f = t > b.g1 * .35 && t < b.g1 * .55 ? (Math.sin(t * 9) > 0 ? 1 : 0) : 0; }
+    else if (t < b.g2) { const k = (t - b.g1) / (b.g2 - b.g1); x = lerp(b.xa, b.xb, k); y = b.yg - E.out(k) * 2.4 * u; rot = d * lerp(-.12, 1.1, E.in(k)); f = k > .55 ? 2 : 0; }
+    else if (t < b.g3) { const k = (t - b.g2) / (b.g3 - b.g2); x = lerp(b.xb, b.xd, k); y = lerp(b.yg - 2.4 * u, b.yw, E.in(k)); rot = d * 1.25; f = 2; }
+    else show = false;
+    if (show) { g.save(); g.beginPath(); g.rect(0, 0, S.W, b.yw); g.clip(); stamp(S.pel[f], x, y, S.pel[f].ox, S.pel[f].oy, rot, d * s, s, I * (.35 + .65 * S.shade(x, y, 4 * u))); g.restore(); }
+    const sp = (t - b.g3) / 1.3; if (sp > 0 && sp < 1) splash(b.xd, b.yw, sp, s * 1.2, I); // the spray where it went in
+    const rg = (t - b.g3) / 2.4; if (rg > 0 && rg < 1) rings(b.xd, b.yw, rg, 3, 9 * u * s, I * .6);
+  }
+  /** a crown of flat spray thrown up where something goes into the water, falling back */
+  function splash(x, y, k, s, a) {
+    const { u } = S; g.fillStyle = "#FFE6B0";
+    for (let i = 0; i < 9; i++) { const an = -Math.PI / 2 + (i - 4) * .26, v = (i % 2 ? 4.6 : 6.4) * u * s, px2 = x + Math.cos(an) * v * k * .9, py2 = y + Math.sin(an) * v * Math.sin(k * Math.PI) * 1.3, r = (.5 - k * .28) * u * s; if (r <= 0) continue; g.globalAlpha = a * (1 - k * k); g.beginPath(); g.ellipse(px2, py2, r, r * 1.8, an + Math.PI / 2, 0, TAU); g.fill(); }
+    const col = Math.sin(clamp(k * 1.6) * Math.PI) * 3.6 * u * s; if (col > .5) { g.globalAlpha = a * (1 - k) * .9; g.beginPath(); g.moveTo(x - .7 * u * s, y); g.quadraticCurveTo(x, y - col * 1.2, x + .7 * u * s, y); g.closePath(); g.fill(); } // a column of spray
+    g.globalAlpha = a * (1 - k) * .8; g.beginPath(); g.ellipse(x, y, (1.2 + k * 2.6) * u * s, .4 * u * s, 0, 0, TAU); g.fill();
+  }
+  /** rings spreading on the water, flattened */
+  function rings(x, y, k, n, R, a, col = "#FFD9A0") { g.strokeStyle = col; g.lineWidth = .8; for (let i = 0; i < n; i++) { const q = clamp(k * 1.3 - i * .15); if (q <= 0) continue; g.globalAlpha = a * (1 - q); g.beginPath(); g.ellipse(x, y, q * R, q * R * .2, 0, 0, TAU); g.stroke(); } }
+  /** flamingos in a line across the sun, pink, their wingbeats out of step */
+  function sFlamingos(T, I, A, b) {
+    const k = seg(T, b.t0, b.t1, x => x); if (k <= 0 || k >= 1 || I <= .01) return;
+    const { u } = S;
+    for (const f of b.birds) { const x = lerp(b.xs, b.xe, k) - b.dir * f.dx, y = b.y + f.dy + Math.sin(A * 2.2 + f.ph) * .4 * u, fr = Math.sin(A * 5.5 + f.ph) > 0 ? 0 : 1; stamp(S.flam[fr], x, y, S.flam[fr].ox, S.flam[fr].oy, 0, b.dir * b.s, b.s, I * (.35 + .65 * S.shade(x, y, 3 * u))); }
+  }
+  /** a seaplane: in from past one edge, down to the water in the sun's path in a burst of spray, and away along it */
+  function sSeaplane(T, I, A, b) {
+    if (I <= .01 || T <= b.t0 || T >= b.t1) return;
+    const { u } = S, t = T - b.t0, s = b.s, d = b.dir; let x, y, rot = 0;
+    if (t < b.g1) { const k = t / b.g1; x = lerp(b.xs, b.xt, k); y = lerp(b.ya, b.yw - 1.55 * u * s, E.out(k)); rot = d * lerp(.1, -.02, k); }
+    else { const k = (t - b.g1) / (b.dur - b.g1); x = lerp(b.xt, b.xe, k * (.6 + .4 * k)); y = b.yw - 1.55 * u * s + Math.sin(A * 3) * .06 * u; rot = 0; }
+    const a = I * (.4 + .6 * S.shade(x, y, 5 * u));
+    if (t > b.g1 - .2) { const w = clamp((t - b.g1 + .2) / .6); g.fillStyle = "#FFE0A6"; g.globalAlpha = a * .5 * w; g.fillRect(Math.min(x, b.xt) , b.yw - .15 * u, Math.abs(x - b.xt) * (1 - clamp((t - b.g1) / 6)), .5); } // its wake
+    stamp(S.plane, x, y, S.plane.ox, S.plane.oy, rot, d * s, s, a);
+    g.save(); g.globalAlpha = a * .4; g.fillStyle = "#FFF1D6"; g.beginPath(); g.ellipse(x + d * 3.2 * u * s, y - .25 * u * s, .12 * u * s, .9 * u * s, 0, 0, TAU); g.fill(); g.restore(); // the propeller
+    const sp = (t - b.g1) / 1.4; if (sp > 0 && sp < 1) { splash(x - d * 1.5 * u * s, b.yw, sp, s * .5, I * .75); splash(x + d * .8 * u * s, b.yw, Math.min(1, sp * 1.2), s * .38, I * .65); }
+  }
+  /** a windsurfer across the bay, the low sun through its sail, spray at the bow and a wake behind */
+  function sWindsurf(T, I, A, b) {
+    const k = seg(T, b.t0, b.t1, x => x); if (k <= 0 || k >= 1 || I <= .01) return;
+    const { u } = S, x = lerp(b.xs, b.xe, k), y = b.y + Math.sin(A * 2.4) * .15 * u, s = b.s, d = b.dir, a = I * (.4 + .6 * S.shade(x, y - 4 * u * s, 5 * u * s));
+    g.fillStyle = "#FFE7B8"; g.globalAlpha = a * .5; g.fillRect(d > 0 ? x - 16 * u * s : x + 2 * u * s, y + .1 * u, 14 * u * s, .12 * u * s + .5); // its wake
+    for (let i = 0; i < 5; i++) { const q = (A * 2.6 + i / 5) % 1; g.globalAlpha = a * (1 - q) * .8; g.beginPath(); g.arc(x + d * (2.4 + q * 1.2) * u * s, y - (Math.sin(q * Math.PI) * 1.1 + .1) * u * s, (.18 - q * .1) * u * s + .3, 0, TAU); g.fill(); } // spray at the bow
+    stamp(S.surf, x, y, S.surf.ox, S.surf.oy, d * (-.05 + Math.sin(A * 1.7) * .03), d * s, s, a);
+  }
+  /** dolphins leaping one after another through the sun's path, splashing in and out */
+  function sDolphins(T, I, A, b) {
+    if (I <= .01) return; const { u } = S;
+    for (const l of b.leaps) { const k = (T - l.t0) / l.d; if (k <= -.2 || k >= 1.5) continue;
+      if (k > 0 && k < 1) { const x = l.x + b.dir * l.L * k, y = l.y - Math.sin(k * Math.PI) * l.h, dx = b.dir * l.L, dy = -Math.cos(k * Math.PI) * Math.PI * l.h, rot = Math.atan2(dy, Math.abs(dx)) * b.dir;
+        g.save(); g.beginPath(); g.rect(0, 0, S.W, l.y); g.clip(); stamp(S.dolph, x, y, S.dolph.ox, S.dolph.oy, rot, b.dir * l.s, l.s, I * (.4 + .6 * S.shade(x, y, 3 * u))); g.restore(); }
+      const s1 = k / .3; if (s1 > 0 && s1 < 1) splash(l.x + b.dir * l.L * .06, l.y, s1, l.s * .6, I * .8); const s2 = (k - .92) / .35; if (s2 > 0 && s2 < 1) splash(l.x + b.dir * l.L * .94, l.y, s2, l.s * .7, I * .8);
+      const rg = (k - .9) / .6; if (rg > 0 && rg < 1) rings(l.x + b.dir * l.L * .94, l.y, rg, 2, 6 * u * l.s, I * .5); }
+  }
+  /** the whale: a spout far out in the sun's path, its back rolling, then its flukes up out of the water, streaming,
+   *  and down again */
+  function sWhale(T, I, A, b) {
+    if (I <= .01 || T <= b.t0 || T >= b.t1) return;
+    const { u } = S, t = T - b.t0, s = b.s, x = b.x, y = b.y;
+    // the spout: two plumes of mist fanning up out of the water and curling over, drifting on the wind and thinning
+    const sp = t / 2.4; if (sp > 0 && sp < 1) { g.fillStyle = "#FFF1D8"; const sx0 = x - b.dir * 2.2 * u * s, rise = E.out(clamp(sp / .45)), thin = 1 - clamp((sp - .35) / .65);
+      for (const side of [-1, 1]) for (let i = 0; i < 8; i++) { const q = (i + 1) / 8 * rise, px2 = sx0 + side * q * q * 2.4 * u * s + sp * 1.6 * u * s * b.dir * -1, py2 = y - q * 7 * u * s + q * q * q * 2.2 * u * s, r = (.35 + q * .75) * u * s; g.globalAlpha = I * thin * (.25 + .5 * (1 - q)) ; g.beginPath(); g.ellipse(px2, py2, r * 1.15, r, 0, 0, TAU); g.fill(); }
+      g.globalAlpha = I * thin * .5; g.beginPath(); g.ellipse(sx0, y - .2 * u * s, 1.2 * u * s, .35 * u * s, 0, 0, TAU); g.fill(); }
+    g.save(); g.beginPath(); g.rect(0, 0, S.W, y); g.clip(); g.fillStyle = P.palm;
+    // its back, rolling over
+    const bk = (t - 1.2) / 2.2; if (bk > 0 && bk < 1) { const h = Math.sin(bk * Math.PI) * 1.4 * u * s, cx = x + b.dir * lerp(-3, 3, bk) * u * s; g.globalAlpha = I; g.beginPath(); g.ellipse(cx, y, 4.5 * u * s, h, 0, Math.PI, TAU); g.fill(); if (bk > .3 && bk < .8) { g.beginPath(); g.moveTo(cx - b.dir * .5 * u * s, y - h * .9); g.lineTo(cx - b.dir * 1.5 * u * s, y - h * .9 - .7 * u * s * Math.sin((bk - .3) / .5 * Math.PI)); g.lineTo(cx - b.dir * 1.6 * u * s, y - h * .6); g.closePath(); g.fill(); } }
+    // its flukes: up out of the water, held, and down
+    const fk = (t - 3.2) / 4.4; if (fk > 0 && fk < 1) { const rise = fk < .3 ? E.out(fk / .3) : fk > .72 ? 1 - E.in((fk - .72) / .28) : 1, fx = x + b.dir * 3.2 * u * s, fy = y + (1 - rise) * 6 * u * s;
+      stamp(S.fluke, fx, fy, S.fluke.ox, S.fluke.oy, b.dir * (.08 + (1 - rise) * .25), s, s, I);
+      if (rise > .5) { g.fillStyle = "#FFE3A8"; for (let i = 0; i < 10; i++) { const q = (A * 1.6 + i / 10) % 1, dx2 = (i - 4.5) * .8 * u * s, px2 = fx + dx2, py2 = fy - (4.1 - Math.abs(i - 4.5) * .12) * u * s + q * 4.4 * u * s; g.globalAlpha = I * (rise - .5) * 2 * (1 - q) * .8; g.fillRect(px2, py2, .12 * u * s + .4, (.5 + q * .8) * u * s); } } }
+    g.restore();
+    const rg = (t - 6.8) / 2.6; if (rg > 0 && rg < 1) rings(x + b.dir * 3.2 * u * s, y, rg, 3, 12 * u * s, I * .6);
+  }
+
+  /** a junk along the horizon under its batten sails, across the sun (on a wide screen from behind one headland to behind
+   *  the other) */
+  function sJunk(T, I, A, b) {
+    const k = seg(T, b.t0, b.t1, x => x); if (k <= 0 || k >= 1 || I <= .01) return;
+    const { u } = S, x = lerp(b.xs, b.xe, k), y = b.y + Math.sin(A * .9) * .1 * u, s = b.s, sx = -b.dir * s, a = clamp(I * (b.clip ? 1 : .35 + .65 * S.shade(x, y - 4 * u * s, 6 * u * s))), roll = Math.sin(A * 1.1) * .015;
+    g.save(); if (b.clip) g.clip(S.headClip, "evenodd");
+    g.globalAlpha = a * .22; g.save(); g.translate(x, y + .2 * u); g.scale(sx, -s * .5); g.drawImage(S.junk, -S.junk.w2 * S.junk.ox, -S.junk.h2 * S.junk.oy, S.junk.w2, S.junk.h2); g.restore(); // its reflection
+    g.globalAlpha = a; g.save(); g.translate(x, y); g.rotate(roll); g.scale(sx, s); g.drawImage(S.junk, -S.junk.w2 * S.junk.ox, -S.junk.h2 * S.junk.oy, S.junk.w2, S.junk.h2); g.restore();
+    g.restore();
+  }
+  /** flying fish skimming the sun's path: out of the water, a long glide, down, and out again, each with its splash */
+  function sFish(T, I, A, b) {
+    if (I <= .01) return; const { u } = S;
+    for (const f of b.fish) { const k = (T - f.t0) / f.d; if (k <= 0 || k >= 1.25) continue;
+      const hop = Math.min(.999, k) * f.hops, h = Math.floor(hop), q = hop - h, x = lerp(f.xs, f.xe, Math.min(1, k)), y = f.y - Math.sin(q * Math.PI) * f.h * (1 - h * .15);
+      if (k < 1) { const dy = -Math.cos(q * Math.PI) * Math.PI * f.h, rot = Math.atan2(dy, Math.abs(f.xe - f.xs) / f.hops) * .6 * (f.xe > f.xs ? 1 : -1); g.save(); g.beginPath(); g.rect(0, 0, S.W, f.y); g.clip(); stamp(S.flyfish, x, y, .5, .5, rot, (f.xe > f.xs ? 1 : -1) * f.s, f.s, I * (.4 + .6 * S.shade(x, y, 2 * u))); g.restore(); }
+      for (let j = 1; j <= f.hops; j++) { const tj = f.t0 + f.d * j / f.hops, rg = (T - tj) / 1.1; if (rg <= 0 || rg >= 1) continue; const xj = lerp(f.xs, f.xe, j / f.hops); rings(xj, f.y, rg, 2, 3 * u * f.s, I * .55); } }
+  }
+
+  /* ---------------- dusk's beats ---------------- */
+  /** a veil of cloud drawn slowly across the moon, its lower edges lit, and on past it */
+  function dVeil(T, I, A, b) {
+    const k = seg(T, b.t0, b.t1, E.io); if (k <= 0 || k >= 1 || I <= .01) return;
+    const { x: mx, y: my } = S.moon, x = lerp(b.x0, b.x1, k), a = I * (b.dir < 0 ? 1 - seg(k, .78, 1, E.sine) : seg(k, 0, .22, E.sine)) * .92; /* from past the edge, or away past it; it forms or thins on the far side of the moon */
+    stamp(S.veil, x, my + b.dy, .5, .5, 0, b.dir, 1, a * (.45 + .55 * S.shade(x, my + b.dy, 10 * S.u)));
+  }
+
+  /** lanterns set on the water one after another across the bay, each lit as it is set down; they drift, and gutter out */
+  function dFlotilla(T, I, A, b) {
+    if (I <= .01) return; const { u } = S;
+    for (const f of b.lan) { if (T <= f.t0 || T >= f.out + 1.4) continue;
+      const lit = clamp((T - f.t0) / .7) * (1 - clamp((T - f.out) / 1.4)), x = f.x + f.vx * (T - f.t0) + Math.sin(A * .5 + f.ph) * .5 * u, y = f.y + Math.sin(A * 1.2 + f.ph) * .12 * u * f.s, a = I * lit * S.shade(x, y, 4 * u * f.s); if (a <= .01) continue;
+      const flick = .9 + .1 * Math.sin(A * 11 + f.ph * 3); g.globalCompositeOperation = "lighter";
+      g.globalAlpha = a * .5 * flick * S.shade(x, y + S.wglow.h2 * f.s * .3, 4 * u); g.drawImage(S.wglow, x - S.wglow.w2 * f.s / 2, y - S.wglow.h2 * f.s / 2, S.wglow.w2 * f.s, S.wglow.h2 * f.s); /* its halo, faded by the words below it */
+      g.fillStyle = "#FFB45C"; const rw = S.lr * 1.3 * f.s; for (let i = 0; i < 4; i++) { const by = y + (1 + i * 1.3) * u * f.s; g.globalAlpha = a * .4 * flick * S.shade(x, by, 2 * u); g.fillRect(x - rw * (.5 - i * .08) + Math.sin(A * 3 + f.ph + i) * .4 * u, by, rw * (1 - i * .16), .8 + f.s * .6); } // its light on the water, faded by the words bar by bar
+      g.globalCompositeOperation = "source-over"; g.globalAlpha = a; g.drawImage(S.wlant, x - S.wlant.w2 * f.s / 2, y - S.wlant.h2 * f.s * .72, S.wlant.w2 * f.s, S.wlant.h2 * f.s); }
+    g.globalAlpha = 1;
+  }
+  /** a rowboat across the bay under the lantern at its bow; the oars dip and leave their rings */
+  function dRow(T, I, A, b) {
+    const k = seg(T, b.t0, b.t1, x => x); if (k <= 0 || k >= 1 || I <= .01) return;
+    const { u } = S, s = b.s, d = b.dir, st = A * 2.1 + b.ph, surge = Math.sin(st) * .5 * u * s, x = lerp(b.xs, b.xe, k) + d * surge, y = b.y, a = I * (.4 + .6 * S.shade(x, y - 2 * u * s, 5 * u * s));
+    // the lantern's light on the water, and its glow
+    const L = S.lcols[b.c || 0], lg = L[1], lx = x + d * 3.95 * u * s, ly = y - 3.05 * u * s, flick = .9 + .1 * Math.sin(A * 12 + b.ph); g.globalCompositeOperation = "lighter"; g.globalAlpha = a * .8 * flick * S.shade(lx, ly + lg.h2 * s * .3, 4 * u); g.drawImage(lg, lx - lg.w2 * s * .9 / 2, ly - lg.h2 * s * .9 / 2, lg.w2 * s * .9, lg.h2 * s * .9); /* its halo, faded by the words below it (the footer's) */
+    g.fillStyle = L[2]; for (let i = 0; i < 5; i++) { const by = y + (.8 + i * 1.1) * u * s; g.globalAlpha = a * .55 * flick * S.shade(lx, by, 2 * u); g.fillRect(lx - (1.3 - i * .18) * u * s + Math.sin(A * 2.6 + i * 1.3) * .5 * u, by, (2.6 - i * .36) * u * s, .7 + s * .5); } g.globalCompositeOperation = "source-over"; /* faded by the words bar by bar */
+    // the oars: they sweep, dip and lift (the far one first, a shade darker), and the boat
+    const sw = Math.sin(st), dip = Math.max(0, Math.cos(st)), cap = g.lineCap; g.strokeStyle = P.palm; g.lineCap = "round";
+    for (const [dx0, w] of [[-.5, .16], [-.75, .2]]) { const px0 = x + d * dx0 * u * s, py0 = y - 1.2 * u * s, ex2 = px0 + d * (sw * 2.4 - .6) * u * s, ey2 = y + (dip * .7 - .2) * u * s; g.globalAlpha = a; g.lineWidth = w * u * s; g.beginPath(); g.moveTo(px0, py0); g.lineTo(ex2, ey2); g.stroke(); }
+    g.lineCap = cap; stamp(S.row, x, y, S.row.ox, S.row.oy, Math.sin(st) * .02, d * s, s, a);
+    g.fillStyle = ["#FFE1A0", "#FFD3E0", "#FFF1BE"][b.c || 0]; g.globalAlpha = a * flick; g.beginPath(); g.arc(lx, ly, .38 * u * s, 0, TAU); g.fill(); // the lantern itself
+    const age = (((st - Math.PI * 1.5) / TAU) % 1 + 1) % 1; rings(x - d * (3.5 + age * 2) * u * s, y + .4 * u * s, age, 2, 4 * u * s, a * .45, "#C9B8F0"); // where the oars went in
+  }
+  /** the egret, standing, strikes at the water and comes up with a fish, and swallows it */
+  function dCatch(T, I, A, b, ex, ey, es) {
+    const t = T - b.ts; if (t <= 0 || t >= 3 || I <= .01) return;
+    const wx = ex + 4.0 * es, wy = ey + 2.3 * es;
+    const sp = t / .9 - .45; if (sp > 0 && sp < 1) { g.fillStyle = "#EDE6FF"; for (let i = 0; i < 5; i++) { const an = -Math.PI / 2 + (i - 2) * .45, v = 2.2 * es; g.globalAlpha = I * (1 - sp) * .8; g.beginPath(); g.arc(wx + Math.cos(an) * v * sp, wy + Math.sin(an) * v * Math.sin(sp * Math.PI), .22 * es, 0, TAU); g.fill(); } }
+    const rg = (t - .4) / 2.2; if (rg > 0 && rg < 1) for (let k = 0; k < 3; k++) { const q = clamp(rg * 1.3 - k * .15); if (q <= 0) continue; g.globalAlpha = I * (1 - q) * .55; g.strokeStyle = "#C4B4E8"; g.lineWidth = .8; g.beginPath(); g.ellipse(wx, wy, q * 12 * S.u, q * 2 * S.u, 0, 0, TAU); g.stroke(); }
+    const fk = (t - .75) / 1.6; if (fk > 0 && fk < 1) { const hx = ex + 3.4 * es, hy = ey - 3.2 * es, sc = 1 - E.in(clamp((fk - .7) / .3)); if (sc > .02) { g.save(); g.globalAlpha = I * clamp(fk * 8); g.translate(hx + .3 * es, hy + .1 * es); g.rotate(.5 + Math.sin(A * 14) * .25 * (1 - fk)); g.scale(sc, sc); g.drawImage(S.fish, -S.fish.w2 * .2, -S.fish.h2 / 2, S.fish.w2, S.fish.h2); g.restore(); } } // in its bill, wriggling, and swallowed
+  }
+  /** fireflies along the shore, blinking each in its own time over the water's edge */
+  function dFireflies(T, I, A, b) {
+    const k = env(T, b.t0, b.t0 + 1.4, b.t1 - 1.6, b.t1, E.sine) * I; if (k <= .01) return;
+    const { u } = S, gw = S.ffGlow.w2; g.globalCompositeOperation = "lighter";
+    for (const f of b.flies) { const x = f.x + Math.sin(A * f.f1 + f.p1) * f.ax, y = f.y + Math.sin(A * f.f2 + f.p2) * f.ay, bl = Math.pow(Math.max(0, Math.sin(A * f.fb + f.pb)), 2), a = k * (.1 + .9 * bl) * S.shade(x, y, 2 * u); if (a < .03) continue; g.globalAlpha = a; g.drawImage(S.ffGlow, x - gw / 2, y - gw / 2, gw, gw); }
+    g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
+  }
+  /** bats flitting across the sky and over the moon */
+  function dBats(T, I, A, b) {
+    if (I <= .01) return; const { u } = S;
+    for (const bt of b.bats) { const k = (T - bt.t0) / bt.d; if (k <= 0 || k >= 1) continue;
+      const x = lerp(bt.xs, bt.xe, k) + Math.sin(k * bt.w1 + bt.p1) * bt.a1 * Math.sin(k * Math.PI), y = bt.y + Math.sin(k * bt.w2 + bt.p2) * bt.a2 + Math.sin(k * 23 + bt.p1) * .5 * u, fr = Math.floor(((A * 9 + bt.ph) % 3 + 3) % 3);
+      stamp(S.bat[fr], x, y, .5, .5, Math.cos(k * bt.w2 + bt.p2) * .25, bt.s, bt.s, I * (.4 + .6 * S.shade(x, y, 3 * u))); }
+  }
+  /** a lighthouse's light on the far headland comes on, and its beam sweeps across the bay as it turns, flaring as it
+   *  faces us; then it goes out */
+  function dBeam(T, I, A, b) {
+    const k = env(T, b.t0, b.t0 + 1.2, b.t1 - 1.2, b.t1, E.sine) * I; if (k <= .01) return;
+    const { W, u } = S, [lx, ly] = b.at, th = b.a0 + (T - b.t0) * b.spin, face = Math.sin(th);
+    for (const off of [0, Math.PI]) { const c = Math.cos(th + off), L = W * 1.25 * Math.abs(c), dir = c > 0 ? 1 : -1; if (L < 4 * u) continue;
+      const vis = clamp(.3 + .7 * Math.max(0, Math.sin(th + off) + .35)), ex = lx + dir * L, spread = L * .05 + 1.2 * u, drop = L * .07; /* it leans down to the water */
+      const gr = g.createLinearGradient(lx, ly, ex, ly + drop); gr.addColorStop(0, `rgba(255,240,205,${(.55 * k * vis).toFixed(3)})`); gr.addColorStop(.45, `rgba(255,236,200,${(.18 * k * vis).toFixed(3)})`); gr.addColorStop(1, "rgba(255,240,205,0)");
+      g.globalAlpha = 1; g.fillStyle = gr; g.beginPath(); g.moveTo(lx, ly - .15 * u); g.lineTo(ex, ly + drop - spread); g.lineTo(ex, ly + drop + spread); g.lineTo(lx, ly + .15 * u); g.closePath(); g.fill(); }
+    add2(S.lampGlow, lx, ly, k * (.35 + .65 * Math.pow(Math.max(0, face), 6)), .5 + Math.pow(Math.max(0, face), 6) * .9);
+    g.fillStyle = "#FFF6DA"; g.globalAlpha = k; g.beginPath(); g.arc(lx, ly, .22 * u, 0, TAU); g.fill();
+  }
+  const add2 = (spr, x, y, a, s = 1) => { if (a <= .005) return; g.globalAlpha = clamp(a); g.drawImage(spr, x - spr.w2 * s / 2, y - spr.h2 * s / 2, spr.w2 * s, spr.h2 * s); };
+  /** a meteor shower: streaks one after another from the same quarter of the sky */
+  function dMeteors(T, I, b) {
+    const { u } = S;
+    for (const m of b.ms) { const k = (T - m.t0) / m.d; if (k <= 0 || k >= 1) continue; const e = E.in(k), x = m.x + m.vx * e, y = m.y + m.vy * e, l = Math.hypot(m.vx, m.vy), tx = -m.vx / l * m.len, ty = -m.vy / l * m.len, fa = I * (1 - k) * Math.min(S.shade(x, y, 10 * u), S.shade(x + tx * .6, y + ty * .6, 6 * u)); if (fa <= .01) continue;
+      const gr = g.createLinearGradient(x, y, x + tx, y + ty); gr.addColorStop(0, `rgba(255,255,255,${(.95 * fa).toFixed(3)})`); gr.addColorStop(1, "rgba(200,190,255,0)"); g.globalAlpha = 1; g.strokeStyle = gr; g.lineWidth = m.w; g.beginPath(); g.moveTo(x, y); g.lineTo(x + tx, y + ty); g.stroke(); }
+  }
+  /** the shallows glowing blue: ripples lit as they run along the water, one after another toward us, sparks in them */
+  function dGlow(T, I, A, b) {
+    if (I <= .01) return; const { u } = S, cap = g.lineCap; /* (the egret's strokes take the cap the frame leaves them: put it back) */
+    g.lineCap = "round";
+    for (const w of b.waves) { const k = (T - w.t0) / w.d; if (k <= 0 || k >= 1) continue; const xc = lerp(w.x0, w.x1, E.io(k)), fade = Math.sin(k * Math.PI) * I, lo = Math.max(w.xa, xc - w.band * 2.2), hi = Math.min(w.xb, xc + w.band * 2.2); if (hi <= lo) continue;
+      const n = 18, yAt = x => w.y + Math.sin(x * w.f + A * 1.3) * w.amp;
+      for (const [lw, al, col] of [[1.6 * u, .16, "#3FD8F0"], [.32 * u, .8, "#9AF8FF"]]) { g.strokeStyle = col; g.lineWidth = lw;
+        for (let i = 0; i < n; i++) { const xa = lerp(lo, hi, i / n), xb2 = lerp(lo, hi, (i + 1) / n), e = Math.exp(-Math.pow(((xa + xb2) / 2 - xc) / w.band, 2)) * fade; if (e < .03) continue; g.globalAlpha = e * al * S.shade((xa + xb2) / 2, w.y, 3 * u); g.beginPath(); g.moveTo(xa, yAt(xa)); g.lineTo(xb2, yAt(xb2)); g.stroke(); } } /* faded by the words: the footer's too */
+      g.fillStyle = "#E4FFFF"; for (let i = 0; i < 9; i++) { const q = ((i * .618 + A * .9 + w.f * 50) % 1), x = xc + (q - .5) * w.band * 2.4, e = Math.exp(-Math.pow((x - xc) / w.band, 2)) * fade; if (e < .2) continue; g.globalAlpha = e * (.5 + .5 * Math.sin(A * 7 + i * 2.3)) * S.shade(x, w.y, 2 * u); g.fillRect(x, yAt(x) - (.4 + (i % 3) * .3) * u, 1.6, 1.6); } }
+    g.lineCap = cap;
+  }
+
+  /* ---------------- the passes: what each one deals ---------------- */
+  function dealSunset(pass) {
+    const { W, H, u, hz, pr } = S;
+    if (pass <= 0) return { pass, gen, q: [.2, .8, 2.0, 2.8], h: [.2, .8, 2.2, 3.0], // the first pass: the loop, beat for beat
+      sky: { k: "flock", t0: 2.4, t1: 5.8, dir: 1, dy: .6, tail: 17 * u, flock: S.flock },
+      sun: { k: "cloud", a: [4.6, 9.4], dir: 1, y: .42 },
+      water: { k: "sail", boats: [{ t0: 7.4, t1: 11.0, xs: W * 1.06, xe: -W * .08, by: hz + 1.6 * u, s: u * (pr ? 1.1 : .9), m: 1 }] },
+      close: { k: "flare", f: [10.6, 11.2, 12.0, 13.0], fx: [10.6, 13.0], g: [10.8, 11.6, 12.6, 13.6] } };
+    const r = K.deal(pass, 7400), rare = K.bag(pass, 8, 7401), pick = (list, salt) => list[K.bag(pass, list.length, salt)], pl = { pass, gen }, { R } = S.sun, sx = S.sunTx !== undefined ? S.sunTx : S.sun.x; /* where the sun comes to rest clear of the lines, so the deal doesn't hang on how far it has slid */
+    { const t = r() < .55 ? 0 : 3 + r() * 5; pl.q = [.2 + t, .8 + t, 2.0 + t, 2.8 + t]; pl.h = [.2 + t, .8 + t, 2.2 + t, 3.0 + t]; } // the slits quicken, at the start or later
+    const skK = rare === 2 ? "seaplane" : pick(["flock", "pelican", "flamingos"], 7402), snK = pick(["cloud", "liner", "contrail", "junk"], 7403), wtK = rare === 1 ? "whale" : skK === "seaplane" ? "none" : pick(["sail", "windsurf", "dolphins"], 7404), late = skK === "pelican" ? 1.8 : 0, clK = pick(["flare", "run", "fish"], 7405);
+    // in the air
+    if (skK === "flock") { const n = 5 + 2 * Math.floor(r() * 3), t0 = 2.0 + r() * .9, flock = []; for (let i = 0; i < n; i++) { const j = i - (n - 1) / 2; flock.push({ dx: -Math.abs(j) * 3.2 * u, dy: j * 1.9 * u, ph: r() * TAU, s: .8 + r() * .4 }); } pl.sky = { k: skK, t0, t1: t0 + 3.2 + r() * .8, dir: r() < .5 ? 1 : -1, dy: .35 + r() * .6, tail: 17 * u, flock }; }
+    else if (skK === "pelican") { const d = sx > W * .5 ? 1 : -1, dir = r() < .7 ? d : -d, s = pr ? 1.2 : 1.15, yw = hz + (H - hz) * (.2 + r() * .12), xd = sx + (r() - .5) * R * .6; pl.sky = { k: skK, t0: 1.6 + r() * .8, t1: 0, dir, s, xs: dir > 0 ? -7.5 * u * s : W + 7.5 * u * s, xa: xd - dir * 5 * u, xb: xd - dir * 2.2 * u, xd, yg: yw - (6 + r() * 3) * u, yw, g1: 4.4, g2: 5.1, g3: 5.55 }; pl.sky.t1 = pl.sky.t0 + 8.2; }
+    else if (skK === "flamingos") { const dir = r() < .5 ? 1 : -1, n = 5 + Math.floor(r() * 3), s = pr ? 1.05 : 1.0, birds = []; for (let i = 0; i < n; i++) birds.push({ dx: i * 5.6 * u * s + r() * 1.5 * u, dy: (i % 2 ? 1 : -1) * r() * 1.2 * u + i * .5 * u, ph: r() * TAU }); const back = (n * 5.6 + 6) * u * s, t0 = 2.2 + r() * .8;
+      pl.sky = { k: skK, t0, t1: t0 + 5.6, dir, s, birds, y: S.sun.y - R * (.14 + r() * .3), xs: dir > 0 ? -6 * u * s : W + 6 * u * s, xe: dir > 0 ? W + back : -back }; }
+    else { const dir = r() < .5 ? 1 : -1, s = pr ? 1.5 : 1.4, yw = hz + (H - hz) * (.26 + r() * .08), xt = sx - dir * R * .3; pl.sky = { k: skK, t0: 1.2, t1: 13.8, dur: 12.6, dir, s, g1: 4.2, xs: dir > 0 ? -5.4 * u * s : W + 5.4 * u * s, xt, xe: dir > 0 ? W + 5.4 * u * s : -5.4 * u * s, ya: hz - (10 + r() * 6) * u, yw }; }
+    // by the sun
+    if (snK === "cloud") { const t = (r() - .5) * 1.4; pl.sun = { k: snK, full: true, a: [3.4 + t, 10.8 + t], dir: r() < .5 ? 1 : -1, y: .2 + r() * .45 }; }
+    else if (snK === "liner" || snK === "junk") { const jk = snK === "junk", s = pr ? 1.05 : .95, half = (jk ? 7.4 : 8.6) * u * s, dir = r() < .6 ? -1 : 1; if (!pr) { const need = (jk ? 9.8 : 9) * u * s, /* its sails, or its smoke */ hAt = (pts, x) => { let b = pts[0]; for (const q of pts) if (Math.abs(q[0] - x) < Math.abs(b[0] - x)) b = q; return hz - b[1]; }; let xr = S.right[0][0], xl = S.left[S.left.length - 1][0]; while (xr < W && hAt(S.right, xr) < need) xr += 4; while (xl > 0 && hAt(S.left, xl) < need) xl -= 4; /* from where each headland stands taller than the ship */
+      const a0 = xr + half + u, a1 = xl - half - u; pl.sun = { k: snK, t0: .8, t1: 14.2, dir, s, clip: true, y: hz - .05 * u, xs: dir < 0 ? a0 : a1, xe: dir < 0 ? a1 : a0 }; } else pl.sun = { k: snK, t0: .8, t1: 14.2, dir, s, clip: false, y: hz + .8 * u, xs: dir < 0 ? W + half + 7 * u : -half - 7 * u, xe: dir < 0 ? -half - 7 * u : W + half + 7 * u }; }
+    else { const dir = r() < .5 ? 1 : -1, y = H * (pr ? .1 + r() * .08 : .08 + r() * .08); pl.sun = { k: snK, t0: 1.2 + r() * 1.2, t1: 14.6, fly: 5.2 + r() * 1.2, life: 5.5, y, slope: (r() - .3) * .06 * (dir > 0 ? 1 : -1), xs: dir > 0 ? -3 * u : W + 3 * u, xe: dir > 0 ? W + 3 * u : -3 * u }; }
+    // on the water
+    if (wtK === "sail") { const two = r() < .4, boats = []; for (let i = 0; i < (two ? 2 : 1); i++) { const dir = i ? boats[0].m > 0 ? -1 : 1 : (r() < .5 ? -1 : 1), t0 = 6.8 + r() * .8 + i * .9 + late * .5, s = u * (pr ? 1.1 : .9) * (i ? .72 : 1), by = hz + (i ? .9 : 1.6) * u; boats.push({ t0, t1: t0 + 3.4 + r() * .6, xs: dir < 0 ? W * 1.06 : -W * .06, xe: dir < 0 ? -W * .08 : W * 1.08, by, s, m: dir < 0 ? 1 : -1 }); } pl.water = { k: wtK, boats }; }
+    else if (wtK === "windsurf") { const dir = r() < .5 ? 1 : -1, s = pr ? 1.05 : .95, t0 = 6.4 + r() * .8 + late; pl.water = { k: wtK, t0, t1: t0 + 4.6, dir, s, y: hz + (H - hz) * (.3 + r() * .12), xs: dir > 0 ? -6 * u : W + 6 * u, xe: dir > 0 ? W + 18 * u : -18 * u }; } /* its wake off the edge with it */
+    else if (wtK === "dolphins") { const dir = r() < .5 ? 1 : -1, leaps = [], y = hz + (H - hz) * (.18 + r() * .1), s = pr ? 1.2 : 1.15; let x = sx - dir * R * .9, t = 6.6 + r() * .6 + late * 1.45; for (let i = 0; i < 6; i++) { const L = (7 + r() * 3) * u * s; leaps.push({ t0: t + (i % 3) * .28, d: 1.05 + r() * .2, x: x + (i % 3) * 2.6 * u * s * -dir, y: y + (i % 3) * .6 * u, L, h: (3 + r() * 1.6) * u * s, s: s * (1 - (i % 3) * .08) }); if (i % 3 === 2) { x += dir * L * 1.25; t += 1.7 + r() * .4; } } pl.water = { k: wtK, dir, leaps }; }
+    else if (wtK === "none") pl.water = { k: wtK }; /* the seaplane has the water to itself */
+    else { const dir = r() < .5 ? 1 : -1; pl.water = { k: wtK, t0: 5.0, t1: 14.6, dir, s: pr ? 1.35 : 1.55, x: sx + (r() - .5) * R * .5, y: hz + (H - hz) * (.26 + r() * .08) }; }
+    if (pl.sky.k === "pelican" && (pl.sun.k === "liner" || pl.sun.k === "junk")) { /* it dives clear of the ship going by */
+      const b = pl.sky, n = pl.sun, td = b.t0 + b.g3, shipX = lerp(n.xs, n.xe, clamp((td - n.t0) / (n.t1 - n.t0))), gap = (n.k === "junk" ? 7.4 : 8.6) * u * n.s + 8 * u;
+      if (Math.abs(shipX - b.xd) < gap) { b.xd = shipX + (b.xd >= shipX ? 1 : -1) * gap; b.xa = b.xd - b.dir * 5 * u; b.xb = b.xd - b.dir * 2.2 * u; } }
+    // to close
+    if (clK === "flare") { const t = (r() - .5) * 1.2; pl.close = { k: clK, f: [10.6 + t, 11.2 + t, 12.0 + t, 13.0 + t], fx: [10.6 + t, 13.0 + t], g: [10.8 + t, 11.6 + t, 12.6 + t, 13.6 + t] }; }
+    else if (clK === "run") { const t0 = 10.2 + r() * .8; pl.close = { k: clK, runs: [t0, t0 + 1.2 + r() * .4] }; }
+    else { const fish = [], dir = r() < .5 ? 1 : -1, n = 4 + Math.floor(r() * 3), y0 = hz + (H - hz) * (.14 + r() * .1), s = pr ? 1.15 : 1.05; for (let i = 0; i < n; i++) { const span = R * (1.6 + r() * .8), x0 = sx - dir * span / 2 + (r() - .5) * R * .4; fish.push({ t0: 10.0 + i * .25 + r() * .25, d: 1.9 + r() * .4, /* the last rings gone by 14.9 */ xs: x0, xe: x0 + dir * span, y: y0 + (r() - .5) * 2.4 * u, h: (2.2 + r() * 1.4) * u * s, hops: 2 + Math.floor(r() * 2), s }); } pl.close = { k: clK, fish }; }
+    return pl;
+  }
+  function dealDusk(pass) {
+    const { W, H, u, hz, pr } = S;
+    if (pass <= 0) return { pass, gen, prick: [.2, 2.6, 13.3, 14.9], // the first pass: the loop, beat for beat
+      head: { k: "cascade", first: { t0: 2.4, t1: 9.4, x: .5, c: 0 }, casc: S.cascade },
+      water: { k: "egret", away: [9.0, 11.3], home: [12.3, 14.6], land: [14.2, 15.0], rip: [9.0, 12.0] },
+      sky: { k: "fall", t: [11.2, 12.1], x: [.38, .7], y: [.2, .4] } };
+    const r = K.deal(pass, 7500), rare = K.bag(pass, 8, 7501), pick = (list, salt) => list[K.bag(pass, list.length, salt)], pl = { pass, gen };
+    { const t = (r() - .3) * .8; pl.prick = [.2 + Math.max(0, t), 2.6 + t, 13.3, 14.9]; }
+    const hdK = pick(["cascade", "flotilla", "twin"], 7502), wtK = rare === 2 ? "glow" : pick(["egret", "fishing", "row", "fireflies"], 7503), skK = rare === 1 ? "meteors" : pick(["fall", "bats", "beam", "veil"], 7504);
+    const col = K.bag(pass, 4, 7505), lc = i => col < 3 ? col : i % 3; // orange, rose, gold, or all three
+    // the lanterns
+    if (hdK === "cascade") { const n = pr ? 18 : 28, from = r() < .34 ? -1 : r() < .5 ? 1 : 0, t0 = 4.2 + r() * .6, casc = []; for (let i = 0; i < n; i++) { const z = .15 + r() * .85, x0 = r(), x = from < 0 ? x0 * .6 : from > 0 ? .4 + x0 * .6 : x0; casc.push({ x, z, ph: r() * TAU, sw: .5 + r() * 1.2, start: t0 + (from ? (from < 0 ? x / .6 : (1 - x) / .6) * 3.0 : i / n * 3.2) + r() * .4, c: lc(i) }); } /* the last away by the time the loop comes round, as the first pass's are */
+      pl.head = { k: hdK, first: { t0: 2.0 + r() * .8, t1: 9.0 + r() * .6, x: .35 + r() * .3, c: lc(0) }, casc }; }
+    else if (hdK === "twin") { const n = pr ? 16 : 28, t0 = 3.2 + r() * .6, casc = []; for (let i = 0; i < n; i++) { const side = i % 2, z = .15 + r() * .7, x = side ? .72 + r() * .26 : .02 + r() * .26; casc.push({ x, z, ph: r() * TAU, sw: .5 + r() * 1.2, start: t0 + Math.floor(i / 2) / (n / 2) * 4.0 + r() * .4, c: lc(i), dx: side ? -(.1 + r() * .12) : .1 + r() * .12 }); } pl.head = { k: hdK, casc }; }
+    else { const n = pr ? 11 : 16, lan = [], dir = r() < .5 ? 1 : -1, t0 = 2.4 + r() * .6; for (let i = 0; i < n; i++) { const f = (i + r() * .6) / n, x = dir > 0 ? W * (.04 + f * .92) : W * (.96 - f * .92), depth = .08 + r() * .5, s = lerp(.55, 1.25, depth / .58); lan.push({ t0: t0 + f * 3.4 + r() * .3, out: 11.2 + f * 1.6 + r() * .4, x, y: hz + (H - hz) * depth, vx: dir * (2 + r() * 4) * u * .1 * (1 + depth), s, ph: r() * TAU }); } pl.head = { k: hdK, lan }; }
+    // on the water
+    if (wtK === "egret") { const t = (r() - .5) * .8; pl.water = { k: wtK, away: [9.0 + t, 11.3 + t], home: [12.3 + t * .5, 14.6], land: [14.2, 15.0], rip: [9.0 + t, 12.0 + t] }; }
+    else if (wtK === "fishing") pl.water = { k: wtK, ts: 8.6 + r() * 2 };
+    else if (wtK === "row") { /* along the shore from the left, flushing the egret, which flies off ahead of it and comes home behind; or far out across the bay, behind it */
+      const near = r() < .55, dir = near ? 1 : -1, s = (pr ? 1.35 : 1.4) * (near ? 1 : .72), t0 = near ? 3.4 + r() * .8 : 3.0 + r(), t1 = 14.3, m = 3.95 * u * s + S.lr * 3.4 * .9 * s + 2 * u, /* its lantern's glow ahead of it, too */
+        xs = dir > 0 ? -m : W + m, xe = dir > 0 ? W + m : -m, row = { k: wtK, far: !near, t0, t1, dir, s, ph: r() * TAU, y: hz + (H - hz) * (near ? .5 + r() * .1 : .09 + r() * .05), xs, xe, c: lc(0) };
+      if (near) { const tf = t0 + (S.egret.x - 11.95 * u * s - xs) / (xe - xs) * (t1 - t0); Object.assign(row, { flush: true, away: [tf, tf + 2.3], home: [12.3, 14.6], land: [14.2, 15.0], rip: [tf, tf + 3.0] }); }
+      pl.water = row; }
+    else if (wtK === "fireflies") { const flies = []; for (let i = 0; i < (pr ? 12 : 18); i++) { const side = r() < .5 ? S.left : S.right, p = side[Math.floor(side.length * (side === S.left ? .55 + r() * .45 : r() * .45))]; flies.push({ x: p[0] + (r() - .5) * 4 * u, y: lerp(p[1], hz, .5 + r() * .5) - r() * 2 * u, ax: (1 + r() * 3) * u, ay: (.6 + r() * 1.5) * u, f1: .3 + r() * .5, f2: .4 + r() * .6, p1: r() * TAU, p2: r() * TAU, fb: .9 + r() * .9, pb: r() * TAU }); } pl.water = { k: wtK, t0: 8.4 + r() * .8, t1: 14.6, flies }; }
+    else { const waves = []; for (let i = 0; i < 7; i++) { const y = hz + (H - hz) * (.06 + i * .1 + r() * .04), /* clear of the footer's pool */ t0 = 7 + i * .55 + r() * .4; waves.push({ t0, d: 2.6 + r() * .6, y, xa: -2 * u, xb: W + 2 * u, x0: r() < .5 ? -W * .2 : W * 1.2, x1: 0, f: .01 + r() * .015, amp: (.3 + r() * .5) * u, band: W * (pr ? .14 : .08) * (1 + r() * .4) }); waves[i].x1 = waves[i].x0 < 0 ? W * 1.2 : -W * .2; } pl.water = { k: "glow", waves }; }
+    // in the sky
+    if (skK === "fall") { const t = 10.4 + r() * 1.6, m = r() < .5, x0 = .3 + r() * .2, y0 = .14 + r() * .1; pl.sky = { k: skK, t: [t, t + .9], x: m ? [1 - x0, 1 - x0 - .32] : [x0, x0 + .32], y: [y0, y0 + .2] }; }
+    else if (skK === "bats") { const bats = [], dir = r() < .5 ? 1 : -1; for (let i = 0; i < (pr ? 4 : 6); i++) { const t0 = 8.6 + i * .3 + r() * .4; bats.push({ t0, d: 3.0 + r() * 1.0, /* the last off the far edge by 14.5 */ xs: dir > 0 ? -3 * u : W + 3 * u, xe: dir > 0 ? W + 3 * u : -3 * u, y: S.moon.y + (r() - .5) * H * .12, w1: 3 + r() * 5, p1: r() * TAU, a1: (2 + r() * 4) * u, w2: 2 + r() * 4, p2: r() * TAU, a2: (2 + r() * 4) * u, ph: r() * 3, s: (pr ? .75 : .65) * (.8 + r() * .4) }); } pl.sky = { k: skK, bats }; }
+    else if (skK === "beam") { const x0 = S.right[0][0], want = x0 + (W - x0) * .22, p = S.right.reduce((a, q) => Math.abs(q[0] - want) < Math.abs(a[0] - want) ? q : a); pl.sky = { k: skK, t0: 8.6 + r() * .8, t1: 14.4, at: [p[0], p[1] - .5 * u], a0: -Math.PI * (.05 + r() * .1), spin: .75 + r() * .15 }; /* it turns to face us (a flare), then sweeps across the bay, then away */ } /* a lighthouse out on the point of the right headland, well away from the words */
+    else if (skK === "veil") { const dir = r() < .5 ? 1 : -1, w = 30 * u, edge = W + w * .5 + 2 * u, far = S.moon.x - (w * .5 + S.moon.r * 3); pl.sky = { k: skK, t0: 8.8 + r() * .8, t1: 14.4, dir, dy: (r() - .45) * S.moon.r * 1.6, x0: dir < 0 ? edge : far, x1: dir < 0 ? far : edge }; }
+    else { const ms = [], vx = (r() < .5 ? 1 : -1) * W * .16, vy = H * .12; for (let i = 0; i < 13; i++) ms.push({ t0: 9.2 + i * .3 + r() * .25, d: .55 + r() * .3, x: W * (vx > 0 ? .3 + r() * .5 : .2 + r() * .5), y: H * (.14 + r() * .18), /* their tails reach back up: clear of the bar */ vx: vx * (.8 + r() * .4), vy: vy * (.8 + r() * .4), len: (8 + r() * 10) * u, w: .8 + r() * .9 }); pl.sky = { k: skK, ms }; }
+    return pl;
+  }
   return S;
 }

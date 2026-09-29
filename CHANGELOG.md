@@ -50,8 +50,9 @@ playing its attract mode for Arcade; for Sketch, a pencil and a brush drawing in
 then a lighthouse, sailboat, whale, teapot or hummingbird; for Blush, soap bubbles blown from a wand, their films
 swirling with color; for Pink, a neon heart on a brick wall; for Cocoa, latte art poured into a cup on a café table
 in morning light; and for Ember, a campfire by a lake at night in color-cycling pixel art. They stay nearly still
-while you use the list and play out when you leave it alone. Off by default—with them off, the app runs exactly as
-before.
+while you use the list and play out when you leave it alone—a little different each time around, with something rare
+now and then, so you never see the same fifteen seconds twice in a row. Off by default—with them off, the app runs
+exactly as before.
 
 ## 1.11 — A look of its own.
 

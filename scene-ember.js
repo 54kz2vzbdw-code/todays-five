@@ -10,8 +10,25 @@
 // crosses the moon; a fish jumps and its rings spread; and the fire settles. The finale: a column of sparks goes up and
 // opens into new stars. The lines sit on pads of the night (scenes.js, `hug`). The beats are a table, so they can be
 // dealt differently each time round.
+//
+// 1.12 b378: the forever cycle. That loop is the first pass; each pass after it deals a night of its own from a pool
+// about three times what one pass plays, painted the same way: what is new is put in at the picture's own pixels, and
+// its shimmer and blinking come from little ramps of colour that turn. The fire keeps its heartbeat every time, burning
+// a little higher or lower than on the first pass, flaring when it will, and then either settling a log in a burst of
+// sparks or popping, a spray of sparks straight up and one ember thrown out to land in the dirt, glow a while and go
+// out. In the sky: the falling star from anywhere, the owl across either way (now and then both, as in the first pass),
+// or a cloud drifting in over the moon, its rim silvering, the moon glowing through it, and the glitter on the water
+// and the moon's halo going out under it. On the lake: a fish or two, wherever; a canoe paddled across the moon's path,
+// a lantern at its bow and its light trembling on the water behind a wake; a loon that comes up, rears to beat its
+// wings, dives, and comes up again further on; a deer, moonlit, who steps out of the dark of the far trees into the
+// shallows to drink, her reflection under her. On most nights mist comes up, lavender in the moonlight and warm near
+// the fire: a thin one along whichever shore the list leaves open (on a phone the far one, over the hills' reflection;
+// on a desktop ours), or a thick one filling the lake in long wisps. Some nights fireflies come out over the grass. The
+// rare ones, each about once in eight passes: the northern lights over the far hills, in the palette, their light
+// running along them and again in the lake; a meteor shower; a moose wading out of the far shore to drink, lifting his
+// head with the water running off. Every pass opens and closes on the same resting picture.
 export default function ember(K) {
-  const { clamp, lerp, E, seg, env, rng, canvas, noise1, fbm, dith } = K;
+  const { clamp, lerp, E, seg, env, rng, canvas, noise1, fbm, dith, deal, bag } = K;
   let g = null;
   const hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
   const pack = c => (255 << 24 | c[2] << 16 | c[1] << 8 | c[0]) >>> 0; /* a colour as the ImageData's 32 bits (little-endian) */
@@ -28,6 +45,13 @@ export default function ember(K) {
     return Array.from({ length: 37 }, (_, i) => { const t = i / 36; let k = 0; while (k < st.length - 2 && t > st[k + 1][0]) k++; return pack(mix(st[k][1], st[k + 1][1], (t - st[k][0]) / (st[k + 1][0] - st[k][0]))); }); })();
   // the loop's beats: when each happens (the forever cycle can deal them differently)
   const B = { flare: [.8, 1.4, 2.6, 3.4], log: 4.6, star: [6.2, 7.0], owl: [8.3, 11.3], fish: 12.0 };
+  // the forever cycle's colours: a firefly's blink, round its ramp; the northern lights from the hem up, and the light
+  // that runs along them; a cloud's body and its lit rim; ripples and a wake catching the moon
+  const blend = (a, b, k) => { k = k < 0 ? 0 : k > 1 ? 1 : k; const r = a & 255, gg = a >> 8 & 255, bl = a >> 16 & 255; return (255 << 24 | Math.round(bl + ((b >> 16 & 255) - bl) * k) << 16 | Math.round(gg + ((b >> 8 & 255) - gg) * k) << 8 | Math.round(r + ((b & 255) - r) * k)) >>> 0; }; /* no arrays: it runs for every pixel a new thing tints */
+  const addc = (v, r, gg, b) => (255 << 24 | Math.min(255, (v >> 16 & 255) + b) << 16 | Math.min(255, (v >> 8 & 255) + gg) << 8 | Math.min(255, (v & 255) + r)) >>> 0;
+  const FFP = ["#10140A", "#1E2C0E", "#3E5A18", "#86BA38", "#E4FF8C", "#9ACC44", "#4A6A1C", "#1E2C0E"].map(h => pack(hex(h)));
+  const AURC = ["#3E2466", "#40338A", "#2E58A6", "#2296A0", "#26BC88", "#40E08A", "#8CFFB8", "#D8FFE8"].map(hex), RAY = [.25, .4, .72, 1, .82, .55, .34, .2];
+  const STREAKC = pack(hex("#FFF4E0")), STREAK = Array.from({ length: 17 }, (_, i) => [pack(mix(SKYC[3], hex("#FFE8C8"), i / 16)), pack(mix(SKYC[3], hex("#FFFFFF"), i / 16))]), CLOUDC = pack(hex("#1B1733")), RIMC = pack(hex("#A8A2D8")), RINGC = pack(hex("#C8C4E0")), WAKEC = pack(hex("#6C6499")), FRP = FR.map(pack);
   const S = {
     res: "dpr",
     wash: 1, veil: .6, hug: .72, hugFinale: true, list: .4, // a dark kit: the night is behind the words, and the lines and the finale's words sit on pads
@@ -112,6 +136,7 @@ export default function ember(K) {
       S.owlPath = pr ? [[-12, bh * .17], [bw + 12, bh * .09]] : [[-12, bh * .25], [bw + 12, bh * .15]];
       S.fishAt = [Math.round(bw * (pr ? .3 : .36)), Math.round(lerp(hy, sy, .55))];
       S.turn = 0; S.lastA = undefined;
+      S.cast(bw, bh, pr); S.planP = -1; S.maskWords();
     },
     /** one step of the flames: each cell's heat rises into the one above, cooling a little and drifting a little sideways;
      *  the bottom row is fed from the logs, hottest in the middle, by `feed` (0 … 1) */
@@ -125,15 +150,102 @@ export default function ember(K) {
         heat[dst - FW] = Math.max(0, h - (frng() < .5 ? 1 : 0) - (frng() < S.cool + edge * .5 ? 1 : 0));
       }
     },
-    words(rects) { S.raw = rects; },
-    /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1 */
-    draw(T, I, A, F) {
+    words(rects) { S.raw = rects; S.maskWords(); },
+    /** where the words are, at the picture's own pixels: in the passes after the first, what is new keeps back from them
+     *  (the pad under a line leaves a quarter of the picture showing; nothing new is in that quarter) */
+    maskWords() {
+      const { bw, bh, PS } = S; if (!bw) return;
+      const rs = S.raw || [], R = 2, F = 4;
+      if (!S.em || S.em.length !== bw * bh) S.em = new Float32Array(bw * bh);
+      const m = S.em; m.fill(1);
+      for (const [x0, y0, x1, y1] of rs) { const a0 = x0 / PS, b0 = y0 / PS, a1 = x1 / PS, b1 = y1 / PS;
+        for (let y = Math.max(0, Math.floor(b0 - R - F)); y <= Math.min(bh - 1, Math.ceil(b1 + R + F)); y++) for (let x = Math.max(0, Math.floor(a0 - R - F)); x <= Math.min(bw - 1, Math.ceil(a1 + R + F)); x++) {
+          const d = Math.hypot(Math.max(a0 - x - .5, 0, x + .5 - a1), Math.max(b0 - y - .5, 0, y + .5 - b1)), v = clamp((d - R) / F), i = y * bw + x; if (v < m[i]) m[i] = v; } }
+      S.emOn = rs.length > 0;
+    },
+    /** the forever cycle's cast, drawn once at the picture's own pixels, from dice of their own (the signature's are left as they were) */
+    cast(bw, bh, pr) {
+      const q = rng(211), P2 = { "#": "#07060C", L: "#FFD27A", o: "#B8461C", p: "#1A1420", w: "#C8C4E0", m: "#2E2952", l: "#57508C", h: "#A49ED6", d: "#15122C", a: "#C9C2EE" };
+      const px = (rows, pal = P2) => { const list = []; rows.forEach((row, y) => [...row].forEach((ch, x) => { if (pal[ch]) list.push([x, y, pack(hex(pal[ch]))]); })); const lx = rows[0].indexOf("L"); return { w: Math.max(...rows.map(r => r.length)), h: rows.length, px: list, lx }; };
+      // a canoe, a paddler in the stern, a lantern on a pole at the bow; three strokes of the paddle
+      S.canoe = [["............oLo", "....#........#.", "...###.......#.", "...###p......#.", "#..###.p.....#.", "##############.", ".############..", "........p......"],
+        ["............oLo", "....#........#.", "...###.......#.", "..p###.......#.", "#p.###.......#.", "##############.", ".############..", "..............."],
+        ["............oLo", "..p.#........#.", "...p##.......#.", "...###.......#.", "#..###.......#.", "##############.", ".############..", "..............."]].map(r => px(r));
+      const dT = [".......h.", "......hl.", ".....lmm.", "hhhhhlm..", "lmmmmmm..", "dmmmmmd.."], dS = dT.concat(["m.d...m.d", "m.d...m.d"]);
+      S.deer = { walk: [px(dS), px(dT.concat([".m.d.m.d.", "m...d.m.d"]))], drink: px(["........." , ".........", ".........", "hhhhhh...", "lmmmmmlh.", "dmmmmmmlm", "m.d...m.dm", "m.d...m.d."]), stand: px(dS) };
+      const mo = ["..........a.a.a", ".........aaaaa.", "..........hlh..", ".........lmmmh.", "..h......mmmmm.", ".hhhhhhhhlmmm..", "hllllllllmmm...", "lmmmmmmmmmm....", "dmmmmmmmmmd....", "m.dm...m.d.....", "m.d....m.d.....", "m.d....m.d....."];
+      S.moose = { walk: [px(mo), px(mo.slice(0, 9).concat([".md.m..m..d....", ".m...d.m...d...", ".m...d.m...d..."]))], drink: px(["...............", "...............", "...............", "...............", "..h............", ".hhhhhhhhh.a.a.", "hllllllllmaaa..", "lmmmmmmmmmhlh..", "dmmmmmmmmmmmmh.", "m.dm...m.dmmmm.", "m.d....m.d.mm..", "m.d....m.d....."]), stand: px(mo) };
+      S.loon = { sit: px([".....##", "....###", ".....#.", "#w#w##.", "w#w#w#.", ".####.."]), up: px(["#.....#..", "##...##..", ".##.##...", "..####.##", "...##.###", "..#w#w##.", "..w#w#w#.", "...####.."]) };
+      // a thin cloud for the moon: lumpy, its upper rim lit where the moon is behind it
+      const cl = pr ? 38 : 58, ch = pr ? 17 : 22, n1 = noise1(301, 64), n2 = noise1(303, 64);
+      const dens = (x, y) => { const body = Math.pow(Math.sin(Math.PI * clamp(x / (cl - 1))), .6), top = ch * (.6 - .5 * body * (.55 + .45 * Math.abs(Math.sin(x * .23 + fbm(n1, x * .1, 2) * 3)))), bot = ch * (.66 + .3 * body * fbm(n2, x * .2, 2)); return y < top || y > bot ? 0 : clamp(Math.min(y - top + .6, bot - y + .5)); };
+      S.ecl = []; S.erim = []; for (let y = 0; y < ch; y++) for (let x = 0; x < cl; x++) { const v = dens(x, y); if (v <= 0 || (v < .4 && dith(x, y) > v * 1.5)) continue; S.ecl.push([x, y, v]); if (dens(x, y - 1) <= 0) S.erim.push([x, y]); }
+      Object.assign(S, { cl, ch });
+      // fireflies over the grass by the water and the shore
+      S.ffl = Array.from({ length: pr ? 10 : 16 }, (_, i) => { let x; do { x = bw * (.04 + q() * .92); } while (Math.abs(x - S.fx) < (pr ? 10 : 14)); return { x, y: i < (pr ? 3 : 5) ? S.sy - 2 - q() * 5 : S.sy + 3 + q() * (bh - S.sy - 10), ax: 2 + q() * 5, ay: 1 + q() * 3, fx: .3 + q() * .5, fy: .4 + q() * .6, rise: 2 + q() * 7, p: Math.floor(q() * 8), s: 1.6 + q() * 1.2 }; });
+      // the pop: a spray of sparks straight up
+      S.popSparks = Array.from({ length: 18 }, () => ({ a: -Math.PI / 2 + (q() - .5) * .8, v: 34 + q() * 30, l: .55 + q() * .6 }));
+      // the northern lights: a curtain over the far hills (on a phone, high up, above the list) as an index map, each pixel a
+      // level up from its hem and a phase along it; the colours of its sixty-four entries turn, and the light runs along it
+      const x0 = pr ? 0 : Math.round(bw * .52), w = bw - x0, hem0 = pr ? Math.round(bh * .25) : S.hy - 38, len = pr ? 34 : 50, y0 = Math.max(0, hem0 - len - 30), h = hem0 + 8 - y0, na = noise1(307, 64), nb = noise1(309, 64), map = new Uint8Array(w * h);
+      for (let x = 0; x < w; x++) { const hem = hem0 + Math.sin(x * .05 + 1.3) * (pr ? 3 : 5) + Math.sin(x * .13 + .4) * 2.5 - (pr ? 0 : (1 - x / w) * 20), tall = len * (.45 + .55 * fbm(na, x * .06, 2)), fade = Math.min(1, x / (w * (pr ? .12 : .3)), (w - x) / (w * .06));
+        const bend = Math.round(fbm(nb, x * .08, 2) * 9); for (let y = Math.max(0, Math.round(hem - tall)); y <= Math.min(h + y0 - 1, Math.round(hem)); y++) { const lv = Math.min(7, Math.floor((1 - (hem - y) / tall) * 8 * (.3 + .7 * fade))); if (lv < 1 && dith(x, y) > .5) continue; map[(y - y0) * w + x] = 1 + Math.max(0, lv) * 8 + ((x * 2 + bend + ((hem - y) >> 2)) & 7); } }
+      S.aur = { x0, y0, w, h, map }; S.aurR = new Float32Array(64); S.aurG = new Float32Array(64); S.aurB = new Float32Array(64);
+      // mist on the lake: long wisps lying on the water, twice the lake's width so they can drift, in four levels; lavender
+      // in the moonlight, warming to the fire's orange near it
+      const mh = S.sy - S.hy, mw = bw * 2, nm = noise1(311, 64), nm2 = noise1(313, 64), mm = new Uint8Array(mw * mh);
+      for (let y = 0; y < mh; y++) { const low = Math.pow(y / mh, .7), band = Math.floor(y / 3), bf = Math.sin(Math.PI * ((y % 3) + .5) / 3); for (let x = 0; x < mw; x++) { const u = x / mw * 64, v = (fbm(nm, u * .6 + band * 7.31, 3) * .75 + fbm(nm2, u * .23 + band * 3.17, 2) * .25 - .47) * 3.2 * bf * (.3 + .7 * low); mm[y * mw + x] = v <= 0 ? 0 : Math.min(4, 1 + Math.floor(v * 4)); } } // each band of three rows a wisp of its own, lying along the water
+      S.mist = { mm, mw, mh, col: Array.from({ length: bw }, (_, x) => pack(mix(hex("#8E88C0"), hex("#E08A4A"), clamp(1 - Math.abs(x - S.fx) / (pr ? 34 : 48)) * .8))) };
+    },
+    /** the first pass, number for number the loop this scene has always played */
+    sig() {
+      const { bw, bh, pr } = S;
+      return { flare: B.flare, log: B.log, star: { t: B.star, path: pr ? [bw * .15, bh * .07, bw * .55, bh * .18] : [bw * .3, bh * .07, bw * .62, bh * .24] }, owl: { t: B.owl, path: S.owlPath }, fish: [{ t: B.fish, at: S.fishAt, d: 1 }] };
+    },
+    /** pass n's night, from its own dice: the fire's heartbeat, what the sky does, what happens on the lake, and when */
+    dealPass(n) {
+      const r = deal(n, 3), { bw, bh, hy, sy, mx, my, mr, pr } = S, pick = (a, b) => a + r() * (b - a), side = () => r() < .5 ? 1 : -1;
+      const rare = bag(n, 8, 7), sky = rare === 1 ? 3 : rare === 2 ? 4 : bag(n, 3, 2), lake = rare === 3 ? 4 : bag(n, 4, 1);
+      const a = pick(.3, 1.3), pl = { dealt: true, flare: [a, a + .6, a + 1.8, a + 2.6], heat: (r() < .5 ? -1 : 1) * pick(.06, .16) }; // some nights the fire burns higher, some lower
+      const m0 = pick(.8, 2.4), misty = bag(n, 3, 5); if (misty && sky !== 3) pl.mist = { t: [m0, m0 + 3, m0 + 8.6, m0 + 11.6], k: misty === 2 ? 1.2 : 1, band: misty === 2 ? [-1, 2] : pr ? [-1, .5] : [.45, 2], v: side() * pick(1.2, 2.6) }; // mist on the lake: a thin one along the shore the list leaves open (on a phone the far one, on a desktop ours), or a thick one filling it
+      // the fire's second beat: a log settles in a burst of sparks, or the fire pops and throws an ember
+      if (r() < .55) pl.log = pick(3.9, 5.4); else pl.pop = { t: pick(3.9, 5.6), dx: side() * pick(pr ? 7 : 10, pr ? 11 : 16), dy: pick(pr ? 5 : 6, pr ? 8 : 10), h: pick(6, 12) };
+      // the sky: the falling star, the owl, a cloud over the moon (or, rarely, the northern lights, a meteor shower)
+      const star = t0 => { const d = side(), x0 = bw * (pr ? pick(.1, .8) : pick(.3, .62)), y0 = bh * pick(.04, .1); let x1 = clamp(x0 + d * bw * (pr ? pick(.3, .42) : pick(.2, .3)), bw * .04, bw * .96), y1 = y0 + bh * pick(.06, .12); if (Math.hypot(x1 - mx, y1 - my) < mr * 3) { x1 = lerp(x0, x1, .55); y1 = lerp(y0, y1, .55); } return { t: [t0, t0 + pick(.7, .9)], path: [x0, y0, x1, y1] }; };
+      const owl = t0 => { const d = side(), ya = bh * (pr ? pick(.1, .19) : pick(.15, .26)), yb = ya - bh * pick(.02, .1); return { t: [t0, t0 + pick(2.7, 3.3)], path: d > 0 ? [[-12, ya], [bw + 12, yb]] : [[bw + 12, ya], [-12, yb]] }; };
+      const s1 = pick(5.4, 7.2);
+      if (sky === 0) { pl.star = star(s1); if (r() < .5) pl.owl = owl(s1 + pick(1.8, 2.6)); }
+      else if (sky === 1) { pl.owl = owl(s1); if (r() < .5) pl.star = star(s1 + pick(3.4, 4.2)); }
+      else if (sky === 2) { const c0 = pick(1.4, 3.2); pl.cloud = { t: [c0, c0 + (pr ? 8.8 : 10)], x0: bw + 2, x1: mx - S.cl - (pr ? 10 : 18), y: my - Math.round(S.ch * .55) + Math.round(pick(-1, 1)) }; }
+      else if (sky === 3) { const a3 = pick(1.2, 2.2); pl.aurora = { t: [a3, a3 + 3, a3 + 8.4, a3 + 11.4] }; }
+      else { const k = pr ? 6 : 9, rx = bw * (pr ? pick(.3, .6) : pick(.5, .7)), ry = bh * pick(.04, .09), t0 = pick(5.4, 6.6), list = [];
+        for (let j = 0; j < k; j++) { const tj = t0 + j * (4.6 / k) + pick(0, .3), th = pick(-.15, 1.15) * Math.PI, s0 = pick(pr ? 4 : 6, pr ? 14 : 24), L = pick(pr ? 14 : 22, pr ? 28 : 48), c = Math.cos(th), sn = Math.sin(th);
+          list.push({ t: [tj, tj + pick(.35, .6)], path: [rx + c * s0, ry + sn * s0, rx + c * (s0 + L), ry + sn * (s0 + L)] }); }
+        pl.meteors = list; }
+      // the lake: the fish, a canoe with a lantern, a loon, a deer at the far shore (or, rarely, a moose)
+      if (lake === 0) { const lt = pick(9.6, 10.6), k = r() < .5 ? 1 : 2; pl.fish = Array.from({ length: k }, (_, i) => ({ t: lt + i * pick(.8, 1.3), at: [Math.round(bw * (pr ? pick(.15, .75) : pick(.2, .62))), Math.round(lerp(hy, sy, pick(.48, .8)))], d: side() })); }
+      else if (lake === 1) { const t0 = pick(.5, 1.6); pl.canoe = { t: [t0, t0 + (pr ? 10.4 : 12.4)], dir: side(), y: sy - (pr ? 13 : 16) }; }
+      else if (lake === 2) { const t0 = pick(6.0, 7.2), d = side(), x = bw * (pr ? pick(.2, .6) : pick(.24, .5)), y = Math.round(lerp(hy, sy, pick(.55, .75))); pl.loon = [{ t0, d: 3.4, x, y, dir: d, flap: pick(1.2, 1.8) }, { t0: t0 + 4.6, d: 1.6, x: x + d * (pr ? 16 : 26), y: y + (r() < .5 ? 2 : -2), dir: d, flap: -9 }]; }
+      else if (lake === 3) pl.deer = { t0: pick(5.6, 7.4), x: Math.round(bw * (pr ? pick(.2, .55) : pick(.62, .68))), dir: side() };
+      else pl.moose = { t0: pick(5.2, 6.4), x: Math.round(bw * (pr ? pick(.2, .5) : pick(.6, .66))), dir: side() };
+      // and some nights fireflies come out over the grass
+      if (r() < .5) { const f0 = pick(1.6, 3.4); pl.flies = { t: [f0, f0 + 2.2, 11.6, 13.6], ph: Math.floor(pick(0, 8)) }; }
+      return pl;
+    },
+    /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; N: the pass (0, the signature) */
+    draw(T, I, A, F, N = 0) {
       const { W, H, bw, bh, PS, out, idx, pal, fx, fy } = S;
+      if (N !== S.planP) { S.pl = N > 0 ? S.dealPass(N) : S.sig(); S.planP = N; }
+      const pl = S.pl;
       g.clearRect(0, 0, W, H);
       const dt = S.lastA === undefined ? 0 : clamp(A - S.lastA, 0, .1); S.lastA = A;
       const on = I > .01; S.turn += dt * (.35 + .65 * I); const tn = S.turn;
-      const flare = on ? env(T, ...B.flare, E.sine) * I : 0, settle = on ? env(T, B.log - .15, B.log, B.log + .1, B.log + .9, E.sine) * I : 0;
-      const flick = .72 + .16 * Math.sin(A * 11.3) + .08 * Math.sin(A * 7.1 + 1) + .06 * Math.sin(A * 17.9 + 2), glow = clamp(flick * (.72 + .28 * I) + flare * .35 - settle * .25);
+      const flare = on ? env(T, ...pl.flare, E.sine) * I : 0, settle = on && pl.log ? env(T, pl.log - .15, pl.log, pl.log + .1, pl.log + .9, E.sine) * I : 0;
+      const pop = on && pl.pop ? env(T, pl.pop.t - .04, pl.pop.t, pl.pop.t + .1, pl.pop.t + .8, E.out) * I : 0, cov = on && pl.cloud ? S.cover(T, pl.cloud) * I : 0;
+      const flick = .72 + .16 * Math.sin(A * 11.3) + .08 * Math.sin(A * 7.1 + 1) + .06 * Math.sin(A * 17.9 + 2); let glow = clamp(flick * (.72 + .28 * I) + flare * .35 - settle * .25);
+      if (pop > 0) glow = clamp(glow + pop * .5);
+      const heat = pl.heat ? pl.heat * env(T, .6, 3, 11.6, 14.4, E.sine) * I : 0; // the fire's mood for the pass, gone again at either end of it
+      if (heat) glow = clamp(glow + heat * .9); // and its light on the ground, the tent and the pines with it
       // the palette: the still colours, and the ranges that turn
       for (let k = 0; k < 16; k++) { pal[SKY + k] = pack(SKYC[k]); pal[LAKE + k] = pack(mix(SKYC[k], [4, 6, 20], .4)); }
       const t8 = n => Math.floor(tn * n);
@@ -149,26 +261,35 @@ export default function ember(K) {
       ["#2A2226", "#3A2E30"].forEach((c, k) => { pal[ROCK + k] = pack(hex(c)); }); pal[ROCK + 2] = pack(mix(hex("#3A2A26"), hex("#C0683A"), glow)); pal[ROCK + 3] = pack(mix(hex("#4A3630"), hex("#F09050"), glow));
       ["#2A1A12", "#3A2416", "#4A2E1A"].forEach((c, k) => { pal[LOG + k] = pack(hex(c)); });
       pal[TENT] = pack(hex("#1E1418")); pal[TENT + 1] = pack(mix(hex("#2E1E1C"), hex("#B0582E"), glow * .9)); pal[TENT + 2] = pack(hex("#0C080A"));
+      if (cov > 0) { for (let k = 0; k < 8; k++) pal[GLIT + k] = pack(mix(GL[(k + t8(7)) & 7], GL[0], cov * .85)); pal[MOON + 3] = pack(mix(hex("#231F4E"), SKYC[1], cov * .8)); pal[MOON + 4] = pack(mix(hex("#312A62"), SKYC[1], cov * .8)); } /* under the cloud the glitter and the halo go out */
       // the picture, through the palette
       for (let i = 0; i < out.length; i++) out[i] = pal[idx[i]];
       const put = (x, y, c) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && x < bw && y >= 0 && y < bh) out[y * bw + x] = c; };
+      S.dm = !!pl.dealt && !!S.emOn; const putB = S.dm ? (x, y, c) => S.tint(x, y, c, 1) : put; // a dealt pass's beats keep back from the words
+      S.put = putB;
+      if (on) { if (pl.aurora) S.auroraAt(T, I, pl.aurora, t8); if (pl.cloud) S.cloudAt(T, I, pl.cloud); if (pl.deer) S.deerAt(T, I, pl.deer, 0); if (pl.moose) S.deerAt(T, I, pl.moose, 1); if (pl.loon) S.loonAt(T, I, pl.loon); if (pl.canoe) S.canoeAt(T, I, pl.canoe, t8); if (pl.mist) S.mistAt(T, I, A, pl.mist); }
       // the flames: stepped at thirty a second, fed harder in the flare and after the log settles, low while the list is in use
-      S.ft += dt; while (S.ft > 1 / 30) { S.ft -= 1 / 30; S.fire(clamp(.62 + .3 * I + flare * .3 + (on ? env(T, B.log + .1, B.log + .4, B.log + .9, B.log + 1.8) * .25 * I : 0) - settle * .35), A); }
+      S.ft += dt; while (S.ft > 1 / 30) { S.ft -= 1 / 30; S.fire(clamp(.62 + .3 * I + flare * .3 + (on && pl.log ? env(T, pl.log + .1, pl.log + .4, pl.log + .9, pl.log + 1.8) * .25 * I : 0) + pop * .45 - settle * .35 + Math.min(0, heat)), A); } // a higher night swells the light, not the flames: they never stand taller than the first pass's
       { const { FW, FH, heat } = S, x0 = fx - Math.floor(FW / 2), y0 = fy - FH + 1; for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) { const h = heat[y * FW + x]; if (h > 7) put(x0 + x, y0 + y, FIRE[h]); /* the dark tips left out */ } }
       // the sparks, riding up out of it
       const n = Math.round(S.sparks.length * (.4 + .6 * I));
       for (let k = 0; k < n; k++) { const s = S.sparks[k], q = ((A + s.o) / s.p) % 1, y = fy - S.FH * .55 - q * (S.pr ? 50 : 70), x = fx + Math.sin(q * s.sw + s.ph) * 2 + s.dr * q; if (q < .85 || ((A * 20 + k) & 1)) put(x, y, FIRE[Math.round(34 - q * 20)]); }
-      if (on && T > B.log && T < B.log + 2) { const q = T - B.log; for (const s of S.burst) { if (q > s.l) continue; const k = q / s.l; put(fx + Math.cos(s.a) * s.v * q, fy - 6 + Math.sin(s.a) * s.v * q + 18 * q * q, FIRE[Math.round(35 - k * 22)]); } }
+      if (on && pl.log && T > pl.log && T < pl.log + 2) { const q = T - pl.log; for (const s of S.burst) { if (q > s.l) continue; const k = q / s.l; put(fx + Math.cos(s.a) * s.v * q, fy - 6 + Math.sin(s.a) * s.v * q + 18 * q * q, FIRE[Math.round(35 - k * 22)]); } }
+      if (on && pl.pop) S.popAt(T, pl.pop, I);
       // a star falls
-      if (on && T > B.star[0] && T < B.star[1]) { const k = (T - B.star[0]) / (B.star[1] - B.star[0]), [x0, y0, x1, y1] = S.pr ? [bw * .15, bh * .07, bw * .55, bh * .18] : [bw * .3, bh * .07, bw * .62, bh * .24];
-        for (let j = 0; j < 9; j++) { const kk = k - j * .018; if (kk < 0) break; const fade = (1 - j / 9) * (k < .15 ? k / .15 : k > .8 ? (1 - k) / .2 : 1); if (fade > .25) put(lerp(x0, x1, kk), lerp(y0, y1, kk), pack(mix(SKYC[2], hex("#FFF4E0"), fade))); } }
+      const st = pl.star;
+      if (on && st && T > st.t[0] && T < st.t[1]) { const k = (T - st.t[0]) / (st.t[1] - st.t[0]), [x0, y0, x1, y1] = st.path;
+        for (let j = 0; j < 9; j++) { const kk = k - j * .018; if (kk < 0) break; const fade = (1 - j / 9) * (k < .15 ? k / .15 : k > .8 ? (1 - k) / .2 : 1); if (fade > .25) putB(lerp(x0, x1, kk), lerp(y0, y1, kk), pack(mix(SKYC[2], hex("#FFF4E0"), fade))); } }
+      if (on && pl.meteors) for (const m of pl.meteors) S.streak(T, m, I);
       // an owl crosses the moon, from past one edge to past the other
-      if (on && T > B.owl[0] && T < B.owl[1]) { const k = (T - B.owl[0]) / (B.owl[1] - B.owl[0]), [[ax, ay], [bx, by]] = S.owlPath, x = lerp(ax, bx, k), y = lerp(ay, by, k) + Math.sin(k * 20) * 1.2, up = Math.floor(A * 6) & 1, c = pack(hex("#07060C"));
-        for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1], [-1, 0], [2, 0], ...(up ? [[-2, -1], [-3, -2], [3, -1], [4, -2]] : [[-2, 1], [-3, 1], [3, 1], [4, 1]])]) put(x + dx, y + dy, c); }
+      const ow = pl.owl;
+      if (on && ow && T > ow.t[0] && T < ow.t[1]) { const k = (T - ow.t[0]) / (ow.t[1] - ow.t[0]), [[ax, ay], [bx, by]] = ow.path, x = lerp(ax, bx, k), y = lerp(ay, by, k) + Math.sin(k * 20) * 1.2, up = Math.floor(A * 6) & 1, c = pack(hex("#07060C"));
+        for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1], [-1, 0], [2, 0], ...(up ? [[-2, -1], [-3, -2], [3, -1], [4, -2]] : [[-2, 1], [-3, 1], [3, 1], [4, 1]])]) putB(x + dx, y + dy, c); }
       // a fish jumps, and its rings spread across the water
-      if (on && T > B.fish && T < B.fish + 2.6) { const q = T - B.fish, [lx, ly] = S.fishAt;
-        if (q < .5) { const k = q / .5; for (let j = 0; j < 3; j++) put(lx + k * 6 + j, ly - Math.sin(k * Math.PI) * 5 + j * .4, pack(hex("#C8C4E0"))); }
-        for (const [t0, a] of [[.45, 1], [.8, .7], [1.15, .5]]) { const rq = (q - t0) / 1.4; if (rq <= 0 || rq >= 1) continue; const rx = 2 + rq * 12, ry = rx * .28, c = pack(mix(hex("#1A1838"), hex("#C8C4E0"), a * (1 - rq))); for (let j = 0; j < 40; j++) { const th = j / 40 * Math.PI * 2; put(lx + 8 + Math.cos(th) * rx, ly + Math.sin(th) * ry, c); } } }
+      for (const f of pl.fish || []) if (on && T > f.t && T < f.t + 2.6) { const q = T - f.t, [lx, ly] = f.at, d = f.d;
+        if (q < .5) { const k = q / .5; for (let j = 0; j < 3; j++) putB(d > 0 ? lx + k * 6 + j : lx - k * 6 - j, ly - Math.sin(k * Math.PI) * 5 + j * .4, pack(hex("#C8C4E0"))); }
+        for (const [t0, a] of [[.45, 1], [.8, .7], [1.15, .5]]) { const rq = (q - t0) / 1.4; if (rq <= 0 || rq >= 1) continue; const rx = 2 + rq * 12, ry = rx * .28, c = pack(mix(hex("#1A1838"), hex("#C8C4E0"), a * (1 - rq))); for (let j = 0; j < 40; j++) { const th = j / 40 * Math.PI * 2; putB((d > 0 ? lx + 8 : lx - 8) + Math.cos(th) * rx, ly + Math.sin(th) * ry, c); } } }
+      if (on && pl.flies) S.fliesAt(T, I, pl.flies, t8);
       // the finale: a column of sparks goes up and opens into new stars, twinkling, then gone
       if (F >= 0) for (const s of S.fan) { const k = clamp((F - s.d) / (1 - s.d)); if (k <= 0 || k >= 1) continue; const up = E.out(clamp(k / .45)), open = E.out(clamp((k - .3) / .35)), x = fx + s.x * lerp(.06, 1, open), y = lerp(fy - 10, s.y, up);
         const c = k < .5 ? FIRE[Math.round(34 - k * 20)] : pack(mix(SKYC[3], TW[Math.max(3, (s.tw + t8(3)) & 7)], k > .85 ? (1 - k) / .15 : 1)); put(x, y, c);
@@ -181,6 +302,94 @@ export default function ember(K) {
       // under each line, the night in shade: a long list's last lines lie over the fire and its sparks on a phone, and the
       // finale's column of sparks rises behind the lines (the stage lays its pad over this)
       g.save(); g.imageSmoothingEnabled = true; g.globalAlpha = .75; for (const [x0, y0, x1, y1, kind] of S.raw || []) if (kind === 1) { const mx = 18 + (y1 - y0) * .5, my = 6 + (y1 - y0) * .3; g.drawImage(S.pad, x0 - mx, y0 - my, x1 - x0 + mx * 2, y1 - y0 + my * 2); } g.restore();
+    },
+    /** a sprite of the picture's own pixels put in, mirrored or not, and faded by k */
+    blit(sp, x, y, fl, k = 1) { const { bw, bh, out } = S; x = Math.round(x); y = Math.round(y); for (const [dx, dy, c] of sp.px) { const X = x + (fl ? sp.w - 1 - dx : dx), Y = y + dy; if (X < 0 || X >= bw || Y < 0 || Y >= bh) continue; const i = Y * bw + X, kk = S.dm ? k * S.em[i] : k; if (kk <= 0) continue; out[i] = kk >= 1 ? c : blend(out[i], c, kk); } },
+    /** a pixel mixed toward a colour, by k */
+    tint(x, y, c, k) { const { bw, bh, out } = S; x = Math.round(x); y = Math.round(y); if (x < 0 || x >= bw || y < 0 || y >= bh || k <= 0) return; const i = y * bw + x; if (S.dm) { k *= S.em[i]; if (k <= 0) return; } out[i] = blend(out[i], c, k); },
+    /** rings spreading on the water from x, y */
+    rings(x, y, q, a, w = 12) { if (q <= 0 || q >= 1) return; const rx = 1.5 + q * w, ry = rx * .28, c = RINGC; for (let j = 0; j < 36; j++) { const th = j / 36 * Math.PI * 2; S.tint(x + Math.cos(th) * rx, y + Math.sin(th) * ry, c, a * (1 - q)); } },
+    /** a meteor: a short streak, brightest at its head */
+    streak(T, m, I) { if (T <= m.t[0] || T >= m.t[1]) return; const k = (T - m.t[0]) / (m.t[1] - m.t[0]), [x0, y0, x1, y1] = m.path, edge = (k < .12 ? k / .12 : k > .8 ? (1 - k) / .2 : 1) * I;
+      for (let j = 0; j < 12; j++) { const kk = k - j * .032; if (kk < 0) break; const fade = Math.pow(1 - j / 12, 1.3) * edge; if (fade > .15) S.put(lerp(x0, x1, kk), lerp(y0, y1, kk), STREAK[Math.round(fade * 16)][j < 2 ? 1 : 0]); }
+      const hx = lerp(x0, x1, k), hy = lerp(y0, y1, k); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) S.tint(hx + dx, hy + dy, STREAKC, edge * .5); }, // a bright head, a little cross of light round it
+    /** the fire pops: a spray of sparks straight up, and one ember thrown out to land in the dirt, glow a while and go out */
+    popAt(T, p, I) {
+      const q = T - p.t; if (q <= 0 || q >= 3) return;
+      const { fx, fy } = S, put = (x, y, c) => S.tint(x, y, c, I); // eased with I, as the rest of the new beats
+      if (q < 1.2) for (const s of S.popSparks) { if (q > s.l) continue; const k = q / s.l; put(fx + Math.cos(s.a) * s.v * q, fy - 10 + Math.sin(s.a) * s.v * q + 16 * q * q, FIRE[Math.round(35 - k * 24)]); }
+      const fl = .55; if (q < fl) { const k = q / fl; put(fx + p.dx * k, fy - 6 - Math.sin(k * Math.PI) * p.h + (p.dy + 6) * k, FIRE[32]); }
+      else { const k = (q - fl) / (3 - fl), c = FIRE[Math.round(31 - k * 23)]; put(fx + p.dx, fy + p.dy, c); if (k < .5) { S.tint(fx + p.dx - 1, fy + p.dy, FIRE[20], (.5 - k) * I); S.tint(fx + p.dx + 1, fy + p.dy, FIRE[20], (.5 - k) * I); } }
+    },
+    /** how much of the moon the cloud hides (0 … 1) */
+    cover(T, c) {
+      const u = (T - c.t[0]) / (c.t[1] - c.t[0]); if (u <= 0 || u >= 1) return 0;
+      const x = lerp(c.x0, c.x1, u), o = clamp((Math.min(x + S.cl * .86, S.mx + S.mr) - Math.max(x + S.cl * .14, S.mx - S.mr)) / (S.mr * 2));
+      return E.sine(o) * (1 - seg(u, .7, 1, E.sine));
+    },
+    /** a thin cloud drifts in from past the edge and over the moon, its rim silvering where the moon is behind it, and thins away */
+    cloudAt(T, I, c) {
+      const u = (T - c.t[0]) / (c.t[1] - c.t[0]); if (u <= 0 || u >= 1) return;
+      const x = Math.round(lerp(c.x0, c.x1, u)), y = c.y, a = (1 - seg(u, .7, 1, E.sine)) * I, { mx, my, mr } = S;
+      for (const [dx, dy, v] of S.ecl) S.tint(x + dx, y + dy, CLOUDC, a * Math.min(.95, .45 + v * .7));
+      for (const [dx, dy] of S.erim) { const d = Math.hypot(x + dx - mx, y + dy - my), near = clamp(1 - (d - mr) / (mr * 3.2)); S.tint(x + dx, y + dy, RIMC, a * (.22 + .78 * near * near)); }
+    },
+    /** a canoe paddled across the lake, through the moon's path; its lantern's light trembling on the water under it, its wake */
+    canoeAt(T, I, c, t8) {
+      const u = (T - c.t[0]) / (c.t[1] - c.t[0]); if (u <= 0 || u >= 1) return;
+      const { bw, sy } = S, sp = S.canoe[Math.floor(T * 2.4) % 3], w = sp.w, fl = c.dir < 0, x = Math.round(lerp(fl ? bw + 3 : -w - 3, fl ? -w - 3 : bw + 3, u)), y = c.y - sp.h + 2;
+      for (let k = 1; k < 9; k++) { const sx = fl ? x + w + k * 2 - 2 : x - k * 2 + 1; for (const s of [-1, 1]) S.tint(sx, c.y + Math.round(s * k * .5), WAKEC, I * .55 * (1 - k / 9)); } // the wake: a V of ripples catching the moon
+      S.blit(sp, x, y, fl, I);
+      const lx = x + (fl ? w - 1 - sp.lx : sp.lx);
+      for (let j = 0; j < 8; j++) { const Y = c.y + 2 + j * 2; if (Y >= sy) break; S.tint(lx + Math.sin(T * 8 + j * 1.9) * (.6 + j * .35), Y, FRP[(j + t8(9)) & 7], I * (1 - j / 9)); } // the lantern's light on the water, turning
+    },
+    /** a deer (or the moose) steps out of the dark of the far trees into the shallows, drinks, looks up, and goes back; its reflection under it */
+    deerAt(T, I, d, big) {
+      const k = T - d.t0, D = big ? S.moose : S.deer, [e1, e2, e3, e4] = big ? [1.6, 5.0, 6.0, 7.6] : [1.2, 3.9, 4.7, 6.2]; if (k <= 0 || k >= e4) return;
+      const { hy, sy, bw } = S, fl = d.dir < 0; let lift, spr;
+      if (k < e1) { lift = E.sine(k / e1); spr = D.walk[Math.floor(T * 5) % 2]; }
+      else if (k < e2) { lift = 1; spr = D.drink; }
+      else if (k < e3) { lift = 1; spr = D.stand; }
+      else { lift = 1 - E.sine((k - e3) / (e4 - e3)); spr = D.walk[Math.floor(T * 5) % 2]; }
+      const wade = big ? 9 : 7, feet = hy + Math.round(lift * wade), x = Math.round(d.x + d.dir * lift * (big ? 4 : 3)), y = feet - spr.h + 1;
+      S.blit(spr, x, y, fl, I);
+      for (const [dx, dy, c] of spr.px) { const Y = feet + (spr.h - dy); if ((Y - hy) & 1 || Y >= sy) continue; S.tint(x + (fl ? spr.w - 1 - dx : dx), Y, c, I * .5 * lift); } // its reflection, broken by the ripples
+      const mz = x + (fl ? 0 : spr.w - 1), my = feet;
+      if (k > e1 && k < e2) S.rings(mz, my + 1, ((k - e1) % 1.3) / 1.3, I * .8, 7);
+      if (big && k > e2 && k < e2 + 1) { for (let i = 0; i < 3; i++) { const q = (k - e2 + i * .3) % 1; S.tint(mz + (fl ? 1 : -1) * i, feet - 6 + q * 6, RINGC, I * (1 - q)); } } // the water running off his muzzle
+    },
+    /** a loon comes up, swims a little, rears up and beats its wings, and dives; and comes up again further on */
+    loonAt(T, I, list) {
+      for (const s of list) {
+        const k = T - s.t0; if (k <= 0 || k >= s.d + 1.2) continue;
+        S.rings(s.x, s.y + 1, k / 1.2, I * .9, 9); S.rings(s.x + s.dir * s.d * 2.2, s.y + 1, (k - s.d) / 1.2, I * .9, 9);
+        if (k >= s.d) continue;
+        const x = s.x + s.dir * k * 2.2, flap = k > s.flap && k < s.flap + .9, spr = flap && (Math.floor(T * 7) & 1) ? S.loon.up : S.loon.sit, a = I * Math.min(1, k / .2, (s.d - k) / .2);
+        S.blit(spr, x - (spr.w >> 1), s.y - spr.h + 1, s.dir < 0, a);
+        for (let j = 1; j < 5; j++) for (const sd of [-1, 1]) S.tint(x - s.dir * (j * 2 + 2), s.y + 1 + Math.round(sd * j * .4), WAKEC, a * .45 * (1 - j / 5));
+      }
+    },
+    /** mist lying on the lake: the wisp map drifting, each level a little more of the mist's colour over the water and the
+     *  far hills' reflection in it (not over the moon's glitter or the firelight on the ripples, which shine through) */
+    mistAt(T, I, A, m) {
+      const e = env(T, ...m.t, E.sine) * I * m.k; if (e < .01) return;
+      const { bw, out, idx, hy } = S, { mm, mw, mh, col } = S.mist, off = ((Math.floor(A * m.v * .6 + T * m.v) % mw) + mw) % mw, lv = S.pr ? [0, .08 * e, .15 * e, .23 * e, .32 * e] : [0, .1 * e, .2 * e, .3 * e, .42 * e];
+      for (let y = 1; y < mh; y++) { const reach = clamp((y - m.band[0] * mh) / (mh * .2)) * clamp((m.band[1] * mh - y) / (mh * .2)); if (reach <= 0) continue; const row = (hy + y) * bw, mrow = y * mw; for (let x = 0; x < bw; x++) { const v = mm[mrow + ((x + off) % mw)]; if (!v) continue; const i = row + x, ix = idx[i]; if (ix !== TREEF + 1 && (ix < LAKE || ix >= LAKE + 16)) continue; const e2 = S.dm ? S.em[i] : 1; if (e2 > 0) out[i] = blend(out[i], col[x], lv[v] * reach * e2); } }
+    },
+    /** fireflies over the grass: each blinks round a little ramp of its own that turns, and drifts */
+    fliesAt(T, I, f, t8) {
+      const e = env(T, ...f.t, E.sine) * I; if (e < .02) return;
+      for (const q of S.ffl) { const stp = (q.p + f.ph + t8(q.s)) & 7; if (stp < 2 || stp > 6) continue; const x = q.x + Math.sin(T * q.fx + q.p) * q.ax, y = q.y + Math.sin(T * q.fy + q.p * 1.7) * q.ay - e * q.rise;
+        S.tint(x, y, FFP[stp], e); if (stp === 4) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) S.tint(x + dx, y + dy, FFP[3], e * .45); }
+    },
+    /** the northern lights: this frame's sixty-four colours from the turning ramp, laid over the sky behind the hills (not over
+     *  the moon), and again in the lake, broken by the ripples, half as bright */
+    auroraAt(T, I, au, t8) {
+      const e = env(T, ...au.t, E.sine) * I; if (e < .01) return;
+      const { bw, out, idx, hy, sy } = S, { x0, y0, w, h, map } = S.aur, R = S.aurR, G = S.aurG, Bl = S.aurB, sh = t8(3.2);
+      for (let lv = 0; lv < 8; lv++) { const c = AURC[lv], br = .7 + .3 * Math.sin(T * .8 + lv * .6); for (let ph = 0; ph < 8; ph++) { const k = e * RAY[(ph + sh) & 7] * br, j = lv * 8 + ph; R[j] = c[0] * k; G[j] = c[1] * k; Bl[j] = c[2] * k; } }
+      for (let y = 0; y < h; y++) { const row = (y0 + y) * bw + x0, mrow = y * w; for (let x = 0; x < w; x++) { const v = map[mrow + x]; if (!v) continue; const i = row + x, ix = idx[i]; if (ix >= MTN || (ix >= MOON && ix <= MOON + 2)) continue; const e2 = S.dm ? S.em[i] : 1; if (e2 > 0) out[i] = addc(out[i], R[v - 1] * e2, G[v - 1] * e2, Bl[v - 1] * e2); } }
+      for (let y = hy + 2; y < sy; y += 2) { const m = Math.round(hy - (y - hy) * 1.7) - y0; if (m < 0 || m >= h) continue; const row = y * bw + x0, mrow = m * w; for (let x = 0; x < w; x++) { const v = map[mrow + x]; if (!v) continue; const i = row + x, ix = idx[i]; if (ix < LAKE || ix >= FREF) continue; const e2 = S.dm ? S.em[i] * .45 : .45; if (e2 > 0) out[i] = addc(out[i], R[v - 1] * e2, G[v - 1] * e2, Bl[v - 1] * e2); } }
     },
   };
   return S;

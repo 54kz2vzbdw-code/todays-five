@@ -16,6 +16,12 @@
 // which has it to itself, its spout, its back rolling over, a second spout, its flukes lifting with the water running
 // off and sliding under; a seaplane dropping in to land with a V of spray and taxiing away; the tall ship. Every pass
 // opens and closes on the same resting picture.
+//
+// 1.12 b379: under a long list. Harbor's sea lies under the list, and a long list's last lines (the struck ones, the
+// small print that rides in a line) sit over it: darker than the kit's ground, it cost them their contrast even with the
+// scene still. Under each line the morning lies in a haze of its own, a touch paler than the ground (the stage's washes
+// can only bring it to the ground), fuller over the sea than over the sky, which is pale already; elsewhere the picture
+// keeps its colour. It is one layer at the picture's own pixels, laid over everything and redrawn only when the words move.
 export default function harbor(K) {
   const { clamp, lerp, E, seg, env, rng, rgb, mixc, css, canvas, paint, noise1, fbm, glowSpr, sprite, deal, bag } = K;
   let g = null;
@@ -26,7 +32,7 @@ export default function harbor(K) {
     house: rgb("#F5FAF9"), houseLo: rgb("#DDEBE8"), band: rgb("#9CCBC6"), dome: rgb("#7FA8A4"), lamp: rgb("#FFE3A0"), lampHi: rgb("#FFFFFF"),
     sea: [rgb("#D3E8E4"), rgb("#C4DFDB"), rgb("#B6D6D1")], crest: rgb("#EDF7F5"), crestLo: rgb("#DAEDEA"), glint: rgb("#FFFFFF"), foam: rgb("#F6FBFA"),
     hull: rgb("#8FB8B4"), hullHi: rgb("#B2D1CD"), sail: rgb("#F9FCFB"), sailLo: rgb("#D7E8E5"), mast: rgb("#8FB2AE"), pier: rgb("#9DC0BB"), pierHi: rgb("#C0DAD6"),
-    gull: rgb("#5F8C88"), fish: rgb("#7FAAA5"),
+    gull: rgb("#5F8C88"), fish: rgb("#7FAAA5"), haze: rgb("#FAFDFC"),
     hullD: rgb("#7FA8A4"), whale: rgb("#57827E"), whaleHi: rgb("#86AEA9"), spout: rgb("#FFFFFF"), spoutLo: rgb("#BFD9D5"), shade: rgb("#D3E6E2"), window: rgb("#8FB8B4"), funnel: rgb("#6F9A96"), smoke: rgb("#EDF4F2"), dol: rgb("#5F8C88"), dolHi: rgb("#9CC0BC"),
   };
   const flip = c => { const [o, x] = canvas(c.width, c.height); x.setTransform(-1, 0, 0, 1, c.width, 0); x.drawImage(c, 0, 0); return o; };
@@ -37,7 +43,7 @@ export default function harbor(K) {
     /** where the words are (CSS px). On a light kit a dark thing behind a word costs it; in the passes after the first, the
      *  boats and creatures new to the bay keep back from the words: a mask at the picture's own pixels, down to a trace
      *  behind a word and whole a few pixels clear of it */
-    words(rects) { S.raw = rects; S.maskWords(); },
+    words(rects) { S.raw = rects; S.maskWords(); S.hazeWords(); },
     maskWords() {
       const { W, H } = S; if (!W) return;
       const rs = S.raw || [], px = Math.round(innerWidth / W) || 1, R = 2, F = 4, LO = 0; // on a light kit, not even a trace of a dark thing behind a word
@@ -48,6 +54,19 @@ export default function harbor(K) {
           const d = Math.hypot(Math.max(a0 - x - .5, 0, x + .5 - a1), Math.max(b0 - y - .5, 0, y + .5 - b1)), v = LO + (1 - LO) * clamp((d - R) / F), i = y * W + x; if (v < m[i]) m[i] = v; } }
       const d = S.wmImg.data; for (let i = 0; i < m.length; i++) { const k = i * 4; d[k] = d[k + 1] = d[k + 2] = 255; d[k + 3] = Math.round(255 * m[i]); }
       S.wmX.putImageData(S.wmImg, 0, 0); S.wmOn = rs.length > 0;
+    },
+    /** the haze under the lines: the kit's morning, paler than its ground, fuller over the sea than the sky */
+    hazeWords() {
+      const { W, H, hz } = S; if (!W) return;
+      const rs = (S.raw || []).filter(r => r[4] === 1), px = Math.round(innerWidth / W) || 1, R = 1.5, F = 6, c = P.haze;
+      if (S.hzW !== W || S.hzH !== H) { [S.hzC, S.hzX] = canvas(W, H); S.hzImg = S.hzX.createImageData(W, H); S.hzA = new Float32Array(W * H); S.hzW = W; S.hzH = H; }
+      const a = S.hzA; a.fill(0);
+      for (const [x0, y0, x1, y1] of rs) { const a0 = x0 / px, b0 = y0 / px, a1 = x1 / px, b1 = y1 / px;
+        for (let y = Math.max(0, Math.floor(b0 - R - F)); y <= Math.min(H - 1, Math.ceil(b1 + R + F)); y++) { const k = lerp(.6, .86, clamp((y - hz + 8) / 14));
+          for (let x = Math.max(0, Math.floor(a0 - R - F)); x <= Math.min(W - 1, Math.ceil(a1 + R + F)); x++) {
+            const d = Math.hypot(Math.max(a0 - x - .5, 0, x + .5 - a1), Math.max(b0 - y - .5, 0, y + .5 - b1)), f = clamp(1 - (d - R) / F), v = k * f * f * (3 - 2 * f), i = y * W + x; if (v > a[i]) a[i] = v; } } } // an eased edge, so it thins away rather than stopping
+      const d = S.hzImg.data; for (let i = 0; i < a.length; i++) { const j = i * 4; d[j] = c[0]; d[j + 1] = c[1]; d[j + 2] = c[2]; d[j + 3] = Math.round(255 * a[i]); }
+      S.hzX.putImageData(S.hzImg, 0, 0); S.hzOn = rs.length > 0;
     },
     /** drawn through the mask: `draw` paints a layer, the layer is cut back where the words are and laid on the picture */
     masked(draw) { if (!S.wmOn) { draw(g); return; } const x = S.mlx, keep = g; x.globalCompositeOperation = "source-over"; x.globalAlpha = 1; x.clearRect(0, 0, S.W, S.H); g = x; try { draw(x); } finally { g = keep; } x.globalAlpha = 1; x.globalCompositeOperation = "destination-in"; x.drawImage(S.wmC, 0, 0); x.globalCompositeOperation = "source-over"; g.drawImage(S.ml, 0, 0); }, // (while it paints, the layer is the picture: a beat's own drawing goes there)
@@ -94,7 +113,7 @@ export default function harbor(K) {
       const [sea, b] = canvas(W, H); b.drawImage(hills, 0, 0); for (let y = hz; y < H; y++) { const f = Math.pow((y - hz) / (H - hz), .8) * 2, i = Math.floor(f); b.fillStyle = css(mixc(P.sea[Math.min(i, 2)], P.sea[Math.min(i + 1, 2)], f - i)); b.fillRect(0, y, W, 1); }
       const [front, c] = canvas(W, H); c.drawImage(head, 0, 0); c.fillStyle = css(P.pierHi); c.fillRect(pr.x0, pr.y, pr.x1 - pr.x0, 1); c.fillStyle = css(P.pier); c.fillRect(pr.x0, pr.y + 1, pr.x1 - pr.x0, 1); for (let x = pr.x0 + 1; x < pr.x1; x += 5) c.fillRect(x, pr.y + 2, 1, 3 + ((x >> 2) & 1));
       Object.assign(S, { bgSky: sk, bgSea: sea, bgFront: front });
-      S.cast(W, H, portrait); S.planP = -1; S.maskWords();
+      S.cast(W, H, portrait); S.planP = -1; S.maskWords(); S.hazeWords();
     },
     /** the forever cycle's boats and creatures, drawn once, from dice of their own (the signature's are left as they were) */
     cast(W, H, pr) {
@@ -208,6 +227,7 @@ export default function harbor(K) {
       if (pl.dealt) S.masked(birds); else birds(); // a dealt pass's gulls and fish keep back from the words
       if (cover > 0) S.masked(v => { v.globalAlpha = cover * .08; v.fillStyle = css(P.funnel); v.fillRect(0, 0, W, H); v.globalAlpha = 1; }); // the morning dims a little under the cloud, not behind the words
       if (F >= 0) for (const b of S.flock) { const u = clamp((F - b.d) / .8); if (u <= 0 || u >= 1) continue; g.globalAlpha = u > .8 ? (1 - u) / .2 : 1; g.drawImage(S.gull[[0, 1, 2, 1][Math.floor(u * 28) % 4]], Math.round(b.x + b.dx * E.io(u)), Math.round(b.y + b.dy * E.out(u))); g.globalAlpha = 1; }
+      if (S.hzOn) g.drawImage(S.hzC, 0, 0); // under a long list's lines, the morning's haze
     },
     /** a cloud builds over the sun, drifting a little, and thins away; returns how much of the sun it hides */
     sunCloudAt(T, I, c) {

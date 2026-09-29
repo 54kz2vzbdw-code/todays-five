@@ -2635,3 +2635,68 @@ everything and redrawn only when the words move. On the long list it reads as a 
 
 **After.** The crossed-off line 4.65 on a wide screen and 4.55–4.60 on a phone; the ↻ 4.58–4.65; the captions 4.61–4.62;
 in use and left alone. Its own commit, in this build.
+
+# 1.12 b381 decisions — the forever cycle, seven: Arcade, Teletype, Terminal
+
+**The game plays on; the board and the demo never repeat.** Drafted by a helper to the forever cycle's brief and
+checked here. Pass 0 is each loop as it was; nothing carries.
+
+**Arcade.** Every pass after the first is the next level in the same frame: its number where READY? was, GO!, a run, a
+power-up, WARNING and a boss, a score to close. A level deals its sky from five (shooting stars; a synthwave sun rising
+behind the towers, clear of the words; a storm with rain and lightning; snow settling on the roofs; the northern lights),
+three obstacles from ten (the coin arc, the block, the slime in three colours, a spiked shell, swooping bats, bricks, a
+spring, a pit, a pipe with a snapping plant, a cannon), a power-up from four (the star; a mushroom that makes the hero
+twice the size; a fire flower; a jetpack), a boss from four (the saucer; a robot that lobs bombs; a serpent dragon; a
+slime king who splits in four and leaves the hero his crown) and its closing words. Rare, about one level in eight
+each: a 1UP block, and a warp pipe down to a bonus room of blue bricks. Its two shakes, which used `Math.random`, are
+now a jitter of the frame's time, so pass 0 differs from before only inside them (two loads of the old build never
+agreed there either).
+
+**Teletype.** A pass deals one still pattern from thirteen, two moving ones from twelve, flipped a frame at a time the
+way a station board animates (ripples, a radar sweep, a turning spiral, a sea, a heart beating round the list, rain down
+the columns, a clock, an equaliser…), and a little picture in the open part of the wall (a rocket lifting off, a skyline
+lighting up, a sunrise over peaks, a sailboat, a plane, a steam engine), each change in a wave dealt from eleven. Rare:
+the whole wall cascading through its tones like a departures board resetting. The wall is plain again at the end of
+every pass, so the list always sits on plain.
+
+**Terminal.** Every pass opens and closes on the plasma and deals three effects between from fifteen — the signature's
+tunnel, checkerboard, fire and stars, and a shaded donut, metaballs, a twister, glyph rain, copper bars, contour hills,
+a Mandelbrot zoom, moiré, a mandala, a wireframe cube, a sphere of dots — each change in one of six (the raster bar, a
+dissolve, a melt, a wipe, an iris, a glitch). Rare: a crash and reboot, or a big five made of characters. Nothing on
+the screen is ever a word; it still works the screen out a dozen times a second.
+
+**Checked.** Pass 0 the same to the byte as before on both viewports but Arcade's shakes. Twelve passes each: no pass
+like the one before; the seams at most Arcade's neon sign flickering (0.88 %) and Terminal's plasma tick (1.9 %), as the
+untouched modules read.
+
+**The copy.** The changelog said Terminal's demo was "plasma, tunnel and fire"; it now says, through Price's voice,
+"plasma, tunnel, fire and over a dozen more".
+
+**Contrast.** Over dealt passes 1 to 3, the seed lines and the long list, both viewports: at or above plain but the
+finale's words as they fade in, and Arcade's header — its count 4.08 and its date 4.46–4.58 on a wide screen, with the
+list in use as much as left alone, in the untouched scene too. That is fixed in its own commit (b382, below), which also
+keeps the dealt levels' weather out from behind the header.
+
+**What it costs.** The loop over pass 0 and over dealt passes 1 to 4, sixty seconds each, back to back on one quiet
+machine, as a share of one core, with this build's fix to Arcade's sky: Arcade 4.91 → 5.13 % on a wide screen and 4.43 →
+4.50 % on a phone; Teletype 3.37 → 3.27 % and 2.75 → 2.75 %; Terminal 4.66 → 4.61 % and 2.95 → 2.93 % (it still works
+the screen out a dozen times a second). `scene-arcade.js` 12,843 → 33,372, `scene-flap.js` 3,487 → 10,036,
+`scene-demo.js` 4,025 → 11,173 gzipped.
+
+**What did not change.** Pass 0 (but Arcade's shakes) and the finales; the kits; first paint; nothing in `apple/` but the
+stamp.
+
+# 1.12 b382 decisions — Arcade's sky keeps out from behind the header's small words
+
+**Before this build.** On a wide screen one of the sky's pixel stars sat right behind the header's count ("0/3" is eight
+pixels wide, so one star is more than a hundredth of it): the count read 4.08 against a plain 7.14 with the list in use,
+the date 4.46–4.58. Which star it is changes with the length of the day's date, which is why build 333 read the header at
+or above plain.
+
+**The fix.** The stars, the twinkling ones too, go out behind the header's small words — the date, the count, the pills,
+the hint (the rects the stage hands `words` as small words) — and fade in across three pixels round them, in every pass;
+the dealt levels' shooting stars, lightning, rain and snow fade the same way as they fall through the header.
+
+**After.** On a wide screen the count 7.96 (plain 7.14), its "/3" 9.22, the date 5.77 (plain 5.23), in use and left
+alone; the pills and tabs at or above plain in every phase. On a phone no star sat behind them before, and nothing
+changes there.

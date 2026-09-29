@@ -3295,3 +3295,42 @@ the version holds at 1.12, and nothing in `apple/` changed but the stamp.
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on a checkout of the change alone: the Scenes tests, the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
 | Looked at | passes 1–6 of each kit on both viewports, each new beat full size, the first draft's fog bank behind a phone's long list caught on camera, the haze on the long list |
+
+# Today's Five 1.12 b381 — the forever cycle, seven: Arcade, Teletype, Terminal
+
+*Shipped as build 383. b381 is the change's commit. b382 is its own fix, Arcade's sky out from behind the header's small words.*
+
+Arcade plays the next level each pass (a sky from five, three obstacles from ten, a power-up from four, a boss from
+four; rarely a 1UP or a bonus room); Teletype deals a still pattern, two moving ones and a little picture in dealt waves
+(rarely the whole wall cascading); Terminal deals three effects from fifteen between the plasma, in six kinds of
+transition (rarely a crash and reboot, or a big five). Pass 0 is each loop as it was, but Arcade's shakes, now seeded.
+The changelog's Terminal clause says so. And, found by this build's contrast runs, Arcade's sky keeps out from behind
+the header's small words. The decisions are in DECISIONS.md under "1.12 b381 decisions — the forever cycle, seven:
+Arcade, Teletype, Terminal". Web only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Arcade, Teletype, Terminal deal their passes** (b381). `scene-arcade.js`, `scene-flap.js`, `scene-demo.js`; the
+   changelog's Terminal clause (through Price's voice).
+2. **Arcade's sky keeps out from behind the header's small words** (b382). `scene-arcade.js`: the count 4.08 → 7.96 and
+   the date 4.58 → 5.77 on a wide screen.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: the change is three lazy modules and the changelog | `git diff --stat` 380..381 |
+| lazy, Scenes on under the kit only | `scene-arcade.js` 12,843 → **33,372**; `scene-flap.js` 3,487 → **10,036**; `scene-demo.js` 4,025 → **11,173** gzipped | `gzip -9 -n` |
+| pass 0 | the same to the byte as 380's at b381, all three kits, both viewports, but Arcade's two shakes (random before, a jitter of the frame's time now; the old build never agreed with itself there) | `samecv.mjs`, 365's checkout (port 8833) against this |
+| the passes | twelve each, both viewports: no pass like the one before; the seams at most Arcade's neon flicker (0.88 %) and Terminal's plasma tick (1.9 %), as the untouched modules read | `tools/scene-seams.mjs` |
+| CPU, desktop (share of one core) | the loop, pass 0 → dealt passes 1–4, with b382: Arcade 4.91 → **5.13 %**, Teletype 3.37 → **3.27 %**, Terminal 4.66 → **4.61 %** | `tools/idle.mjs 60`, `SCENES=1` (`UNLOCK=1` for hidden kits), `PASS=0` against `PASS=1` (passes 1–4), back to back |
+| CPU, phone (390×844 at 2×) | Arcade 4.43 → **4.50 %**, Teletype 2.75 → **2.75 %**, Terminal 2.95 → **2.93 %** | the same, `VP=phone` |
+| contrast | at or above plain but the finale's words fading in; Arcade's header count and date, under 4.5 before (4.08 / 4.46–4.58, the untouched too), **7.96 / 5.77** with b382 | `tools/contrast.mjs` `PASS=1 PASSES=3`: the seed lines; `FIXTURE=1 CLOCK=2026-09-28T15:00:00` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests, the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
+| Looked at | passes 1–6 of each kit on both viewports, each new level, pattern and effect, the star behind the count caught on camera |

@@ -3244,7 +3244,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   });
 
   /* 1.12 b321: the kits that carry a scene, and the module each one's is in (a pair can share one) */
-  const SCENE_MODS = { forest: "scene-forest.js", harbor: "scene-harbor.js", paper: "scene-papercut.js", midnight: "scene-papercut.js", teletype: "scene-teletype.js", terminal: "scene-terminal.js", light: "scene-orbit.js", dark: "scene-orbit.js", sunset: "scene-bay.js", dusk: "scene-bay.js", arcade: "scene-arcade.js", sketch: "scene-sketch.js", blush: "scene-bubbles.js", pink: "scene-heart.js", cocoa: "scene-cocoa.js", ember: "scene-ember.js" };
+  const SCENE_MODS = { forest: "scene-forest.js", harbor: "scene-harbor.js", paper: "scene-papercut.js", midnight: "scene-papercut.js", teletype: "scene-flap.js", terminal: "scene-demo.js", light: "scene-orbit.js", dark: "scene-orbit.js", sunset: "scene-bay.js", dusk: "scene-bay.js", arcade: "scene-arcade.js", sketch: "scene-sketch.js", blush: "scene-bubbles.js", pink: "scene-heart.js", cocoa: "scene-cocoa.js", ember: "scene-ember.js" };
   const SCENE_KITS = Object.keys(SCENE_MODS);
   /* 1.12 b318: Scenes. A device that has them on, Forest in Night and Harbor in Day (a dark system: Forest on) */
   const sceneDevice = (on = true) => `try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: { day: "T1:curated:harbor", night: "T1:curated:forest", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }${on ? ", scenes: true" : ""} } })); } catch (e) {}`;

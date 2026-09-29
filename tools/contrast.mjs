@@ -24,6 +24,9 @@ const T = await import("../theme.js");
 const DARK = kit => T.curated(kit).base === "dark"; // 1.12 b321: any kit — a dark one goes in Night under a dark system, a light one in Day
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const FIXTURE = !!process.env.FIXTURE, VIEW = process.env.VIEW || "today";
+// 1.12 b349: CLOCK="2026-09-28T15:00:00" pins the page's clock (and seeds the fixture for that moment): the fixture's
+// Today depends on the day of the week, so two builds measured either side of midnight would otherwise see two lists
+const CLOCK = process.env.CLOCK || "";
 const { seedScript } = await import("./audit/harness.mjs");
 const { VERSION } = await import("../version.js"); // the device has seen this version's news: no toast over the words
 const lin = v => { v /= 255; return v <= .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); };
@@ -62,9 +65,10 @@ async function measure(vp, kit, on) {
   const ctx = await browser.newContext({ ...VP[vp], colorScheme: DARK(kit) ? "dark" : "light", bypassCSP: true });
   const day = DARK(kit) ? "light" : kit, night = DARK(kit) ? kit : "dark";
   const device = `{ day: "T1:curated:${day}", night: "T1:curated:${night}", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }, seenVersion: "${VERSION}"${on ? ", scenes: true" : ""} }`;
-  if (FIXTURE) await ctx.addInitScript(seedScript() + `;try { if (!sessionStorage.getItem("tf-contrast")) { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device = Object.assign(m.device || {}, ${device}); localStorage.setItem("tf/v2/meta", JSON.stringify(m)); sessionStorage.setItem("tf-contrast", "1"); } } catch (e) {}`);
+  if (FIXTURE) await ctx.addInitScript(seedScript({ now: CLOCK ? +new Date(CLOCK) : null }) + `;try { if (!sessionStorage.getItem("tf-contrast")) { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device = Object.assign(m.device || {}, ${device}); localStorage.setItem("tf/v2/meta", JSON.stringify(m)); sessionStorage.setItem("tf-contrast", "1"); } } catch (e) {}`);
   else await ctx.addInitScript(`try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: ${device} })); } catch (e) {}`);
   const page = await ctx.newPage(); page.setDefaultTimeout(9000);
+  if (CLOCK) await page.clock.install({ time: CLOCK });
   await page.goto(BASE + "?transport=local");
   if (!FIXTURE) { await page.waitForSelector("#welcome:not([hidden])"); await page.evaluate(() => document.getElementById("w-keep").click()); await page.waitForSelector("#p-save[open]"); await page.click("#save-done"); }
   await page.waitForSelector("#list .row"); await wait(900);

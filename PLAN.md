@@ -2748,8 +2748,8 @@ holds at 1.12, and nothing in `apple/` changed but the stamp.
 | --- | --- | --- |
 | first-paint path | unchanged: the change is `scene-papercut.js` alone; the stamp moves the build number | `git diff --stat` 342..343 |
 | lazy, Scenes on only | `scene-papercut.js` 10,746 → **13,218** gzipped | `gzip -9 -n` |
-| CPU, desktop (share of one core; every Chrome process) | Paper's loop 2.49 → **2.94 %** (13.18 → 13.38 %), in use 2.55 → **2.83 %**; Midnight's loop 2.88 → **2.96 %** (13.97 → 13.44 %), in use 2.70 → **2.75 %** | `tools/idle.mjs 60`, `SCENES=1` and `SCENES=1 USE=5`, 342 (port 8800) and this build back to back; another program held a core (load 3.4–5) |
-| CPU, phone (390×844 at 2×) | Paper 2.62 → **2.91 %** (13.77 → 14.01 %); Midnight 3.04 → **3.03 %** (14.66 → 14.34 %) | `tools/idle.mjs 60`, `VP=phone SCENES=1` |
+| CPU, desktop (share of one core; every Chrome process) | Paper's loop 2.49 → **2.94 %** (13.18 → 13.38 %), in use 1.77 → **1.97 %** (corrected in b354); Midnight's loop 2.88 → **2.96 %** (13.97 → 13.44 %), in use 1.95 → **1.98 %** (corrected in b354) | `tools/idle.mjs 60`, `SCENES=1` and `SCENES=1 USE=5`, 342 (port 8800) and this build back to back; another program held a core (load 3.4–5) |
+| CPU, phone (390×844 at 2×) | Paper 2.18 → **2.63 %**; Midnight 2.63 → **2.64 %** (corrected in b354) | `tools/idle.mjs 60`, `VP=phone SCENES=1` |
 | contrast | every reading at or above 342's but the tools in the app's idle fade (noise, ±0.4; in use equal); the table below | `tools/contrast.mjs`: the seed lines, `FIXTURE=1`, `FIXTURE=1 VIEW=all`; 342's from the same instrument |
 
 | p1, plain → 342 → this | wide screen | phone |
@@ -2788,8 +2788,8 @@ DECISIONS.md under "1.12 b345 decisions — Scenes, polished: Light and Dark ste
 | --- | --- | --- |
 | first-paint path | unchanged: the change is `scene-orbit.js` and the changelog; the stamp moves the build number | `git diff --stat` 344..345 |
 | lazy, Scenes on only | `scene-orbit.js` 6,755 → **5,630** gzipped | `gzip -9 -n` |
-| CPU, desktop (share of one core; every Chrome process) | Light's loop 3.81 → **2.95 %** (13.52 → 12.75 %), in use 3.78 → **3.16 %**; Dark's loop 3.85 → **2.83 %** (13.02 → 11.75 %), in use 4.05 → **3.64 %** | `tools/idle.mjs 60`, `SCENES=1` and `SCENES=1 USE=5`, 342 (port 8800) and this build back to back; another program held a core (load 3.1–6.1) |
-| CPU, phone (390×844 at 2×) | Light 4.23 → **3.22 %** (14.52 → 13.36 %); Dark 4.53 → **3.40 %** (14.90 → 13.78 %) | `tools/idle.mjs 60`, `VP=phone SCENES=1` |
+| CPU, desktop (share of one core; every Chrome process) | Light's loop 3.81 → **2.95 %** (13.52 → 12.75 %), in use 3.05 → **2.15 %** (corrected in b354); Dark's loop 3.85 → **2.83 %** (13.02 → 11.75 %), in use 3.03 → **2.18 %** (corrected in b354) | `tools/idle.mjs 60`, `SCENES=1` and `SCENES=1 USE=5`, 342 (port 8800) and this build back to back; another program held a core (load 3.1–6.1) |
+| CPU, phone (390×844 at 2×) | Light 3.88 → **2.79 %**; Dark 3.88 → **2.90 %** (corrected in b354) | `tools/idle.mjs 60`, `VP=phone SCENES=1` |
 | contrast | every reading at or above plain, all three sets, both viewports, but a long list's keyboard line on a wide screen left alone, 5.24 → 5.08 (the app's idle fade) | `tools/contrast.mjs`: the seed lines, `FIXTURE=1`, `FIXTURE=1 VIEW=all` |
 
 ## Verification results
@@ -2822,8 +2822,8 @@ Scenes, polished: Sunset and Dusk". Web only; the version holds at 1.12, and not
 | --- | --- | --- |
 | first-paint path | unchanged: the change is `scene-bay.js` and `tools/contrast.mjs`; the stamp moves the build number | `git diff --stat` 346..349 |
 | lazy, Scenes on only | `scene-bay.js` 9,619 → **10,463** gzipped | `gzip -9 -n` |
-| CPU, desktop (share of one core; every Chrome process) | Sunset's loop 2.45 → **2.42 %** (12.19 → 12.14 %), in use 2.85 → **2.71 %**; Dusk's loop 2.96 → **2.84 %** (13.10 → 12.46 %), in use 3.19 → **3.14 %** | `tools/idle.mjs 60`, `SCENES=1` and `SCENES=1 USE=5`, 346 (port 8800) and this build back to back; another program held a core (load 3.3–4.5) |
-| CPU, phone (390×844 at 2×) | Sunset 2.52 → **2.47 %**; Dusk 3.25 → **3.17 %** | `tools/idle.mjs 60`, `VP=phone SCENES=1` |
+| CPU, desktop (share of one core; every Chrome process) | Sunset's loop 2.45 → **2.42 %** (12.19 → 12.14 %), in use 1.92 → **1.93 %** (corrected in b354); Dusk's loop 2.96 → **2.84 %** (13.10 → 12.46 %), in use 1.95 → **2.02 %** (corrected in b354) | `tools/idle.mjs 60`, `SCENES=1` and `SCENES=1 USE=5`, 346 (port 8800) and this build back to back; another program held a core (load 3.3–4.5) |
+| CPU, phone (390×844 at 2×) | Sunset 2.40 → **2.35 %**; Dusk 2.49 → **2.62 %** (corrected in b354) | `tools/idle.mjs 60`, `VP=phone SCENES=1` |
 | contrast | the table below; the rest at or above 346's but the tools in the app's idle fade | `tools/contrast.mjs`: the seed lines, `FIXTURE=1 CLOCK=2026-09-28T15:00:00`, `FIXTURE=1 VIEW=all` |
 
 | p1 in a long list, plain → 346 → this | Sunset, wide screen | Sunset, phone | Dusk, wide screen | Dusk, phone |
@@ -2860,7 +2860,7 @@ under "1.12 b351 decisions — Scenes, polished: Cocoa's pour". Web only; the ve
 | --- | --- | --- |
 | first-paint path | unchanged: the change is `scene-cocoa.js` alone; the stamp moves the build number | `git diff --stat` 350..351 |
 | lazy, Scenes on only | `scene-cocoa.js` 7,099 → **9,130** gzipped | `gzip -9 -n` |
-| CPU (share of one core; every Chrome process) | the loop 3.91 → **4.32 %**; in use 3.52 → **4.01 %** (14.29 → 14.53 %); a phone 3.55 → **4.00 %** (14.40 → 14.66 %) | `tools/idle.mjs 60`, 350 and this build alternated, two runs each; another program held a core |
+| CPU (share of one core; every Chrome process) | the loop 3.91 → **4.32 %**; in use 2.54 → **2.27 %**; a phone 3.57 → **4.13 %** (corrected in b354) | `tools/idle.mjs 60`, 350 and this build alternated, two runs each; another program held a core |
 | contrast | every reading at or above plain but the finale's "Bring them all back" caught fading in (5.81 → 5.50) | `tools/contrast.mjs`: the seed lines, `FIXTURE=1` (Monday's list), `FIXTURE=1 VIEW=all` |
 
 ## Verification results

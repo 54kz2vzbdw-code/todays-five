@@ -1930,8 +1930,8 @@ leftover from b339.
 
 **What it costs.** Measured back to back with the live build, 342, on the same machine, with another program holding a
 core of it throughout (a load of 3.4–5, so the numbers read high; the difference is what counts): Paper's loop 2.49 →
-2.94 % of a core (every Chrome process 13.18 → 13.38 %), in use 2.55 → 2.83 %, on a phone 2.62 → 2.91 %; Midnight's
-2.88 → 2.96 %, 2.70 → 2.75 % and 3.04 → 3.03 %. The day's train, its steam and the kite are what Paper adds.
+2.94 % of a core (every Chrome process 13.18 → 13.38 %), in use 1.77 → 1.97 %, on a phone 2.18 → 2.63 %; Midnight's
+2.88 → 2.96 %, 1.95 → 1.98 % and 2.63 → 2.64 % (corrected in b354). The day's train, its steam and the kite are what Paper adds.
 
 **Contrast.** Every reading at or above the live build's, but for the tools in the app's own idle fade, whose plain
 readings swing as far (±0.4): Midnight's pills and keyboard line on a wide screen left alone, 5.92–8.46 plain against
@@ -1963,8 +1963,8 @@ clamped; a smooth exponential squash of the field (1 − e^−0.8f) rounds the p
 
 **It costs less.** The field image is small and filled once a frame, where the glossy liquid traced its outline each
 frame (marching squares), smoothed it, and lit it face by face with a glint on every blob: the loop went from 3.81 to 2.95 % of a core on Light and 3.85 to 2.83 % on Dark, back to back with 342 on the
-same machine (another program held a core throughout, so both read high); in use 3.78 → 3.16 % and 4.05 → 3.64 %; on a
-phone 4.23 → 3.22 % and 4.53 → 3.40 %.
+same machine (another program held a core throughout, so both read high); in use 3.05 → 2.15 % and 3.03 → 2.18 %; on a
+phone 3.88 → 2.79 % and 3.88 → 2.90 % (corrected in b354).
 
 **Contrast.** Every reading at or above plain — the seed lines, the long list and Everything, both viewports — but the
 keyboard line on a wide screen with a long list left alone, 5.24 → 5.08, in the app's own idle fade (its plain reading
@@ -2008,7 +2008,7 @@ day — so two builds are measured on the same list whatever the date: `CLOCK=` 
 of its own).
 
 **What it costs.** Nothing measurable: back to back with 346 on the same machine, Sunset's loop 2.45 → 2.42 % of a
-core, in use 2.85 → 2.71 %, on a phone 2.52 → 2.47 %; Dusk's 2.96 → 2.84 %, 3.19 → 3.14 % and 3.25 → 3.17 %.
+core, in use 1.92 → 1.93 %, on a phone 2.40 → 2.35 %; Dusk's 2.96 → 2.84 %, 1.95 → 2.02 % and 2.49 → 2.62 % (corrected in b354).
 
 **Everything.** Its section names read as b339 left them — on a wide screen the caret still a little under plain,
 6.03 against 6.22 (Sunset) and 6.32 against 6.65 (Dusk), and on a phone at or above it.
@@ -2044,7 +2044,7 @@ too: then it's drawn once at the cup's size and laid down as an image, and only 
 live. Each line gains its points in one pass as it stretches, rather than one insertion at a time.
 
 **What it costs.** About half a point of a core more than the drawn heart, alternating the two on the same machine:
-the loop 3.91 → 4.32 %, in use 3.52 → 4.01 %, on a phone 3.55 → 4.00 % (another program held a core throughout, so all
+the loop 3.91 → 4.32 %, in use 2.54 → 2.27 %, on a phone 3.57 → 4.13 % (corrected in b354) (another program held a core throughout, so all
 of them read high). The first cut cost twice that: a line gained its points one insertion at a time, and the finished
 heart was drawn as lines every frame.
 
@@ -2054,3 +2054,30 @@ pill the kit's own ground.
 
 **What did not change.** The cup, the table, the light, the marshmallows, the steam, the finale's small hearts; first
 paint; no stored setting; nothing in `apple/` but the stamp.
+
+# 1.12 b354 decisions — a correction: the in-use and phone CPU of 344 to 352
+
+**What was wrong.** The CPU figures for "in use" and "on a phone" in the notes for 344, 346, 350 and 352 were not what
+they said. The runs passed their settings to `tools/idle.mjs` as one string in a shell that doesn't split a variable
+into words, so `SCENES=1 USE=5` arrived as a single setting named SCENES and `VP=phone` never arrived: every one of
+those runs measured the loop on a wide screen, again. The loop figures are sound. Found when a run of the next build
+printed "scene@15" for a list in use, where the earlier ones had printed "scene@30".
+
+**The figures, measured again.** Builds 342 and 352 served side by side and measured back to back, one kit after
+another, in use (a key every five seconds) and on a phone (390×844 at 2×), sixty seconds a kit:
+
+| share of one core, 342 → 352 | in use (a key every five seconds, 15 frames a second) | a phone (the loop, 390×844 at 2×) |
+| --- | --- | --- |
+| Paper | 1.77 → 1.97 % | 2.18 → 2.63 % |
+| Midnight | 1.95 → 1.98 % | 2.63 → 2.64 % |
+| Light | 3.05 → 2.15 % | 3.88 → 2.79 % |
+| Dark | 3.03 → 2.18 % | 3.88 → 2.90 % |
+| Sunset | 1.92 → 1.93 % | 2.40 → 2.35 % |
+| Dusk | 1.95 → 2.02 % | 2.49 → 2.62 % |
+| Cocoa | 2.54 → 2.27 % | 3.57 → 4.13 % |
+
+**What changes in the notes.** The notes for 344, 346, 350 and 352 now carry these figures, each marked as corrected
+here; nothing else in them moves. What they show: in use, Light's and Dark's soft liquid costs a point less than the
+glossy one and Cocoa's held heart a little less than the drawn one, and the rest are where they were; on a phone, Light
+and Dark cost a point less, Paper half a point more (its train and kite), Cocoa half a point more (its pour), the rest
+the same. The loop figures in those notes were measured right and stand.

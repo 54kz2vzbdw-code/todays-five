@@ -2472,3 +2472,50 @@ gzipped, loaded only under these kits.
 
 **What did not change.** Pass 0 and the finales; the kits; every public page (they name neither); first paint; nothing
 in `apple/` but the stamp.
+
+# 1.12 b373 decisions — the forever cycle, four: Whiteboard and Chalkboard, Bark and Char
+
+**Pictures that carry.** Drafted by a helper to the forever cycle's brief and checked here. These four scenes draw
+something that stays, so each carries its picture from one pass into the next (`carry`): whatever a pass draws stays up
+through the quiet after it, until the next pass takes it off and draws another, and a touch mid-pass eases back to the
+picture the pass began on. Pass 0 is each loop as it was, and pass 1 starts from the picture pass 0 ends on; after that
+the picture a pass rests on is worked out from the pass before it alone (`K.bag`), never from what happened to be shown.
+Each run of passes deals its kit's whole pool once, never the same picture twice running.
+
+**Chalkboard.** Each pass wipes the last lesson and draws another: the signature's geometry; the solar system, each
+planet somewhere on its own orbit and a comet going by; a page of music ruled with a staff liner's five sticks, a dealt
+key, time and tune, and a keyboard with its first keys marked; light through a prism fanned into its colours and over a
+rainbow, and a lens bringing three rays to their focus; the water cycle; DNA going behind itself with its pairs
+coloured in, a benzene ring and a water molecule with its angle. About one pass in ten, the hand plays itself at noughts
+and crosses, or doodles a cat with a ball of wool. The finale's A+ goes where the lesson leaves room for it.
+
+**Whiteboard.** Each pass peels the old plan's notes off one by one, erases the board and draws another plan, a
+marker colour at a time, its notes slapped on: the signature's planning board; a flowchart whose no loops back; three
+sets overlapping, coloured in so their inks mix where they meet; a roadmap winding up the board, its milestones flagged;
+a mind map; a rocket launch, the dotted way to the moon and the countdown ticked; a dashboard, a pie and a line going up
+past its target. Rare: noughts and crosses in marker, or a page of meeting doodles.
+
+**Bark and Char.** One set of pictures drawn both ways — inlaid in veneers by day, burned by night: the signature's
+country; a compass rose; a schooner under sail at evening; a lighthouse on its rock at dusk; a robin before the full
+moon; an oak leaf and an acorn on a parquet ground. A pass deals which picture and, for all but the compass, which way it
+faces, and with it a second look (a later hour, a harvest moon, other woods). Rare, about one pass in ten: a stag before
+the setting sun. By day the plane takes the last picture back to the plank and the new one's pieces fly in; by night the
+last glows and crumbles to ash and the pen burns the new one.
+
+**Checked.** Pass 0 of all four kits the same to the byte as before, both viewports. Twelve passes each: no pass like
+the one before; every seam 0.00 %, and every resting picture the same to the pixel as the end of the pass before it.
+
+**Contrast.** Over dealt passes 1 to 3, the seed lines and the long list, and Everything's resting picture at passes 2
+and 3, both viewports: no reading under 4.5 but the finale's words on Whiteboard, as the signature's (its note slapped
+behind them); at or above plain across the long list; the top bar a few tenths under plain in the app's idle fade, and
+Whiteboard's in Everything, where its veil covers the picture entirely and stops it drawing, so that is the fade alone.
+
+**What it costs.** The loop over pass 0 and over dealt passes 1 to 4, sixty seconds each, back to back on one quiet
+machine, as a share of one core: Whiteboard 2.22 → 2.08 % on a wide screen and 2.20 → 2.21 % on a phone; Chalkboard
+2.80 → 2.75 % and 2.65 → 2.63 %; Bark 2.39 → 2.24 % and 2.33 → 2.35 %; Char 2.81 → 2.84 % and 2.73 → 2.73 %. A pass's
+first frame pays once for working out its picture (up to 2 ms on the boards, 13 ms on the wood); the wood lets go of
+the canvases of pictures not in use, and the boards keep at most four passes' pictures. `scene-board.js` 24,971 → 49,822
+and `scene-wood.js` 26,217 → 40,815 gzipped, loaded only under these kits.
+
+**What did not change.** Pass 0 and the finales but where Chalkboard's A+ lands after a dealt lesson; the kits; first
+paint; nothing in `apple/` but the stamp.

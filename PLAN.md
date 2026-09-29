@@ -3184,3 +3184,37 @@ at 1.12, and nothing in `apple/` changed but the stamp.
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on a checkout of the change alone: the Scenes tests, the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
 | Looked at | passes 1–6 of both kits on both viewports, and each new beat full size; the count's worst frame caught on camera |
+
+# Today's Five 1.12 b373 — the forever cycle, four: Whiteboard and Chalkboard, Bark and Char
+
+*Shipped as build 374. b373 is the change's commit.*
+
+Four scenes that carry their picture from one pass into the next: Chalkboard teaches a different lesson each pass,
+Whiteboard maps a different plan, and Bark inlays and Char burns a different picture in the medallion, each staying up
+through the quiet until the next pass takes it off. Pass 0 is each loop as it was; no public page names the kits. The
+decisions are in DECISIONS.md under "1.12 b373 decisions — the forever cycle, four: Whiteboard and Chalkboard, Bark and
+Char". Web only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Whiteboard and Chalkboard, Bark and Char deal their passes, and carry** (b373). `scene-board.js`, `scene-wood.js`.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: the change is lazy modules | `git diff --stat` 372..373 |
+| lazy, Scenes on under the kit only | `scene-board.js` 24,971 → **49,822**; `scene-wood.js` 26,217 → **40,815** gzipped | `gzip -9 -n` |
+| pass 0 | the same to the byte as 372's, all four kits, both viewports, eleven moments of the loop and three of the finale | `samecv.mjs`, 365's checkout (port 8833) against this |
+| the passes | twelve each, both viewports: no pass like the one before; every seam 0.00 %, every resting picture the pixel-for-pixel end of the pass before | `tools/scene-seams.mjs` |
+| CPU, desktop (share of one core) | the loop, pass 0 → dealt passes 1–4: Whiteboard 2.22 → **2.08 %**, Chalkboard 2.80 → **2.75 %**, Bark 2.39 → **2.24 %**, Char 2.81 → **2.84 %** | `tools/idle.mjs 60`, `SCENES=1` (`UNLOCK=1` for hidden kits), `PASS=0` against `PASS=1` (passes 1–4), back to back |
+| CPU, phone (390×844 at 2×) | Whiteboard 2.20 → **2.21 %**, Chalkboard 2.65 → **2.63 %**, Bark 2.33 → **2.35 %**, Char 2.73 → **2.73 %** | the same, `VP=phone` |
+| contrast | no reading under 4.5 but Whiteboard's finale words, as the signature's; at or above plain across the long list; the top bar a few tenths under plain in the app's idle fade (and Whiteboard's in Everything, where its veil covers the picture) | `tools/contrast.mjs` `PASS=1 PASSES=3`: the seed lines; `FIXTURE=1 CLOCK=2026-09-28T15:00:00`; for a scene that carries, `FIXTURE=1 VIEW=all` at `PASS=2` and `PASS=3` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests, the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
+| Looked at | passes 1–6 of each kit on both viewports, each kit's whole pool finished, a wipe and an ease-back mid-pass |

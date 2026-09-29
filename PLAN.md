@@ -2840,3 +2840,34 @@ Scenes, polished: Sunset and Dusk". Web only; the version holds at 1.12, and not
 | Pops | each kit stepped through the loop and across its seam in the lab at thirty frames a second, both viewports, the change from frame to frame measured (a scratch check): no frame changes far more than its neighbours |
 | Looked at | both kits on both viewports in the lab; a phone's long list with the sun behind its last lines, before and after |
 | Screenshots | `shots/scenes-9/`: each kit mid-loop, phone and desktop (JPEG) |
+
+# Today's Five 1.12 b351 — Scenes, polished: Cocoa's pour
+
+*Shipped as build 352. b351 is the change's commit.*
+
+Cocoa's latte art is poured now: each pour's edge carried by the surface's own flow, the rings stacking and the
+pull-through drawing them into a heart, the old heart stirred into a spiral first. The decisions are in DECISIONS.md
+under "1.12 b351 decisions — Scenes, polished: Cocoa's pour". Web only; the version holds at 1.12, and nothing in
+`apple/` changed but the stamp.
+
+## What shipped
+
+1. **Cocoa's pour** (b351). `scene-cocoa.js` only.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: the change is `scene-cocoa.js` alone; the stamp moves the build number | `git diff --stat` 350..351 |
+| lazy, Scenes on only | `scene-cocoa.js` 7,099 → **9,130** gzipped | `gzip -9 -n` |
+| CPU (share of one core; every Chrome process) | the loop 3.91 → **4.32 %**; in use 3.52 → **4.01 %** (14.29 → 14.53 %); a phone 3.55 → **4.00 %** (14.40 → 14.66 %) | `tools/idle.mjs 60`, 350 and this build alternated, two runs each; another program held a core |
+| contrast | every reading at or above plain but the finale's "Bring them all back" caught fading in (5.81 → 5.50) | `tools/contrast.mjs`: the seed lines, `FIXTURE=1` (Monday's list), `FIXTURE=1 VIEW=all` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests, the full session and the worker's two tests, both viewports: 18 passed; again on the stamp |
+| Looked at | the pour step by step in the lab (the stir's spiral, each ring, the pull-through), the held heart against the live one, both viewports in the app |
+| Screenshots | `shots/scenes-9/`: the stir and the pull-through, phone and desktop (JPEG) |

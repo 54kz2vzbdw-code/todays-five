@@ -2015,3 +2015,42 @@ core, in use 2.85 → 2.71 %, on a phone 2.52 → 2.47 %; Dusk's 2.96 → 2.84 %
 
 **What did not change.** The sun, the lanterns' festival, the finales, the pads; first paint; no stored setting;
 nothing in `apple/` but the stamp.
+
+# 1.12 b351 decisions — Scenes, polished: Cocoa's pour
+
+**What Price asked for.** Cocoa is one of his favorites, but the latte art could be better drawn, blended a little,
+and the pour animated with fluid mechanics.
+
+**Poured, not drawn.** The art was three rings of foam drawn as shapes and pulled into a heart by a formula. Now it is
+poured. The surface moves: the spoon's swirl turns it, faster in the middle; the stream pushes it out from where it
+lands; the pull-through drags a narrow band of it along behind the stream. Each pour's edge is a closed line of points
+carried along by that flow, a point put in wherever the line stretches, so a pour of foam opens into a disc, a breath of
+crema opens into a ring inside it, the next foam inside that, and the rings stack — each push longer than the last, so
+the first rings are pushed out wide — and the pull-through drags the stack into a heart and draws its point. At the
+start of the loop the spoon winds the old heart into a spiral before it's stirred away.
+
+**Drawn in lines, so it stays drawn.** The first cut carried the surface as a grid of how much foam was where (each
+cell taking what was upstream of it). It moved right, but every step blurred it: after the pour the inside of the heart
+read 0.8 all through, the crema between the pours gone, and no ramp of colour could bring the rings back. Carried as
+lines of points, nothing smears. Each foam edge goes caramel where it meets the crema, in two soft strokes; the crema
+lines are cocoa-dark; the pull-through's thread tapers.
+
+**Seamless.** The pour always starts from a clear surface, so it always ends in the same heart; the heart is poured
+once when the scene starts, and the loop starts from it. Held at any moment, the surface is stepped there from the heart
+or from the clear cup.
+
+**Held when still.** Before the stir and after the pour the surface is the heart, and while the list is in use it is
+too: then it's drawn once at the cup's size and laid down as an image, and only the stir and the pour draw their lines
+live. Each line gains its points in one pass as it stretches, rather than one insertion at a time.
+
+**What it costs.** About half a point of a core more than the drawn heart, alternating the two on the same machine:
+the loop 3.91 → 4.32 %, in use 3.52 → 4.01 %, on a phone 3.55 → 4.00 % (another program held a core throughout, so all
+of them read high). The first cut cost twice that: a line gained its points one insertion at a time, and the finished
+heart was drawn as lines every frame.
+
+**Contrast.** As before: every reading at or above plain, in the seed lines, the long list and Everything, both
+viewports, but the finale's "Bring them all back" caught fading in at a different alpha in each run (5.81 → 5.50), its
+pill the kit's own ground.
+
+**What did not change.** The cup, the table, the light, the marshmallows, the steam, the finale's small hearts; first
+paint; no stored setting; nothing in `apple/` but the stamp.

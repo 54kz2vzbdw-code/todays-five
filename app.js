@@ -235,7 +235,7 @@ let field = null, fieldKind = "", fieldTok = 0;
    (scenes.js, asked for only then: a page with the setting off never loads or runs a line of it; the worker precaches
    it like every module, COMPATIBILITY.md §6). Neither kit has a field of its own, so a scene and a field never compete
    for it. */
-const SCENE_KITS = new Set(["forest", "harbor", "paper", "midnight", "teletype", "terminal", "light", "dark", "sunset", "dusk", "arcade", "sketch", "blush", "pink", "cocoa", "ember"]);
+const SCENE_KITS = new Set(["forest", "harbor", "paper", "midnight", "teletype", "terminal", "light", "dark", "sunset", "dusk", "arcade", "sketch", "blush", "pink", "cocoa", "ember", "birthday", "superpink"]);
 const sceneFor = t => (dev.scenes && t && SCENE_KITS.has(t.id) ? t.id : "");
 function setScenes(on) { if (on) dev.scenes = true; else delete dev.scenes; saveDevice(); paintField(); }
 function paintField() {

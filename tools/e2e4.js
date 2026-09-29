@@ -3397,13 +3397,37 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": 1.12 b328: Light's and Dark's liquid (and, from b332, Sketch's balloon; from b334, Pink's heart; from b336, Cocoa's cup; from b353, Blush's wand and its big bubble) keeps to the empty part of the page — no pad under the words, and wherever it settles it is clear of every line, before and after a long line is added", async () => {
-    const t = await fresh(opts, { init: sceneDevice() });
+  // 1.12 b361: the hidden kits have scenes too, once this device has them (the unlock is the device's own latch, as the
+  // picker writes it: no word is typed here)
+  const HIDDEN_MODS = { birthday: "scene-party.js", superpink: "scene-party.js" };
+  const hiddenDevice = `try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: { day: "T1:curated:harbor", night: "T1:curated:forest", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }, scenes: true, secret: true, extras: ["chalk", "wood"] } })); } catch (e) {}`;
+  await test(label + ": 1.12 b361: each hidden kit with a scene, once this device has it, brings its own module in place of its field or ground, draws, plays its loop left alone, has its moment under the kit's own finale, and throws nothing", async () => {
+    const t = await fresh(opts, { init: hiddenDevice });
+    await sceneUp(t, "forest");
+    for (const kit of Object.keys(HIDDEN_MODS)) {
+      await openPicker(t, "night"); await t.page.click(`#p-theme .swatch[data-code="T1:curated:${kit}"]`); await wait(300); await t.esc(); await wait(200);
+      await sceneUp(t, kit);
+      const files = await sceneFiles(t); assert.ok(files.includes(HIDDEN_MODS[kit]), kit + ": its module: " + files.join(", "));
+      const sc = (await t.s()).scene; assert.ok(sc.running && sc.frames > 0, kit + ": drawing: " + JSON.stringify(sc));
+      await t.page.evaluate(() => window.__tfTest.sceneIdle());
+      await t.page.waitForFunction(() => { const s = window.__tf().scene; return s.idle && s.fps === 30; }, null, { timeout: 5000, polling: 100 });
+      await t.page.evaluate(() => window.__tfTest.sceneFinale());
+      await t.page.waitForFunction(() => window.__tf().scene.finale, null, { timeout: 3000, polling: 50 });
+      await t.page.waitForFunction(() => !window.__tf().scene.finale, null, { timeout: 8000, polling: 100 });
+      await t.page.keyboard.press("Shift");
+    }
+    assert.deepEqual(await t.page.$$eval("#field canvas", els => els.length), 2, "one picture (and its backdrop) at a time");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0, "csp: " + t.csp.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join("; "));
+    await t.close();
+  });
+
+  await test(label + ": 1.12 b328: Light's and Dark's liquid (and, from b332, Sketch's balloon; from b334, Pink's heart; from b336, Cocoa's cup; from b353, Blush's wand and its big bubble; from b361, Birthday's bouquet and Superpink's mirror ball) keeps to the empty part of the page — no pad under the words, and wherever it settles it is clear of every line, before and after a long line is added", async () => {
+    const t = await fresh(opts, { init: hiddenDevice });
     await sceneUp(t, "forest");
     const clear = () => t.page.evaluate(() => { const s = window.__tf().scene, [x, y, r] = s.spot || [-1e4, -1e4, 0], range = document.createRange(), hits = [];
       for (const el of document.querySelectorAll("#today .row .tx")) { range.selectNodeContents(el); const b = range.getBoundingClientRect(); const dx = Math.max(b.left - x, 0, x - b.right), dy = Math.max(b.top - y, 0, y - b.bottom); if (Math.hypot(dx, dy) < r) hits.push(el.textContent.slice(0, 20)); }
       return { spot: s.spot, hits, flag: document.documentElement.dataset.sceneClear !== undefined, pad: getComputedStyle(document.getElementById("today")).backgroundColor }; });
-    for (const kit of ["light", "dark", "sketch", "blush", "pink", "cocoa"]) {
+    for (const kit of ["light", "dark", "sketch", "blush", "pink", "cocoa", "birthday", "superpink"]) {
       await openPicker(t, "night"); await t.page.click(`#p-theme .swatch[data-code="T1:curated:${kit}"]`); await wait(300); await t.esc(); await wait(200);
       await sceneUp(t, kit); await wait(2500);
       let c = await clear(); assert.ok(c.flag, kit + ": the stage knows it keeps clear"); assert.ok(/rgba\(0, 0, 0, 0\)|transparent/.test(c.pad), kit + ": no pad under the words: " + c.pad);

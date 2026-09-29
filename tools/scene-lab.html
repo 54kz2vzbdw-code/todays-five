@@ -2,8 +2,8 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Scene lab</title>
 <!-- tools/scene-lab.html — 1.12 b321: one scene through the real stage (scenes.js), with the real washes, three sample lines
-     in the kit's own ink, text and face, and window.seek(t, i, a, f) to hold any moment. tools/scene-frames.mjs drives it.
-     ?scene=<kit id>. Not part of the app: nothing links here. -->
+     in the kit's own ink, text and face, and window.seek(t, i, a, f, label, pass) to hold any moment of any pass (b367).
+     tools/scene-frames.mjs drives it. ?scene=<kit id>&visit=<n> (1 unless asked). Not part of the app: nothing links here. -->
 <style>
   html,body{margin:0;height:100%;overflow:hidden}
   #field{position:fixed;inset:0}
@@ -21,12 +21,12 @@
 <script type="module">
   import { createScene } from "../scenes.js";
   import * as T from "../theme.js";
-  const id = new URLSearchParams(location.search).get("scene") || "forest", kit = T.curated(id);
+  const q = new URLSearchParams(location.search), id = q.get("scene") || "forest", kit = T.curated(id);
   document.body.style.background = kit.colors.ink; document.body.style.color = kit.colors.text;
   const face = (T.pairOf(kit.pair) || {}).task; if (face) { document.getElementById("words").style.fontFamily = face[2]; document.getElementById("bar").style.fontFamily = face[2]; }
-  const st = createScene(document.getElementById("field"), id, { ink: kit.colors.ink });
+  const st = createScene(document.getElementById("field"), id, { ink: kit.colors.ink, visit: +(q.get("visit") || 1) });
   window.stage = st;
-  window.seek = (t, i = 1, a = 12, f = -1, label = "") => { document.getElementById("lab").textContent = label; st.seek(t, i, a, f); };
-  st.ready.then(() => { st.seek(0, 0, 12); document.getElementById("field").style.transition = "none"; document.getElementById("field").style.opacity = "1"; window.labReady = true; });
+  window.seek = (t, i = 1, a = 12, f = -1, label = "", p = 0) => { document.getElementById("lab").textContent = label; st.seek(t, i, a, f, p); };
+  st.ready.then(() => { st.seek(0, 0, 12, -1, 0); document.getElementById("field").style.transition = "none"; document.getElementById("field").style.opacity = "1"; window.labReady = true; });
 </script>
 </body></html>

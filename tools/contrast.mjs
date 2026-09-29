@@ -27,6 +27,9 @@ const FIXTURE = !!process.env.FIXTURE, VIEW = process.env.VIEW || "today";
 // 1.12 b349: CLOCK="2026-09-28T15:00:00" pins the page's clock (and seeds the fixture for that moment): the fixture's
 // Today depends on the day of the week, so two builds measured either side of midnight would otherwise see two lists
 const CLOCK = process.env.CLOCK || "";
+// 1.12 b367: left alone, a scene deals each time round its own pass; the loop phase reads PASSES of them (1 unless asked)
+// from pass PASS (0, the signature loop, unless asked) of visit 1, so two runs read the same passes
+const PASS = +(process.env.PASS || 0), PASSES = +(process.env.PASSES || 1);
 const { seedScript } = await import("./audit/harness.mjs");
 const { VERSION } = await import("../version.js"); // the device has seen this version's news: no toast over the words
 const lin = v => { v /= 255; return v <= .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); };
@@ -76,6 +79,7 @@ async function measure(vp, kit, on) {
   if (VIEW === "all") { await page.click("#v-all"); await page.waitForSelector("#all .row"); await wait(900); }
   const x = await page.$("#install-x"); if (x && await x.isVisible()) await x.click();
   if (on) await page.waitForFunction(() => { const s = window.__tf().scene; return s && s.frames > 0 && (s.running || s.busy); }, null, { timeout: 9000 }); // (on Everything a light kit's is covered, and still)
+  if (on) await page.evaluate(p => { if (window.__tfTest.scenePass) window.__tfTest.scenePass(p, 1); }, PASS);
   if (!VP[vp].hasTouch) await page.mouse.move(2, 2);
   await wait(1200); // the scene's fade-in, the crossfade
   await page.addStyleTag({ content: HIDE });
@@ -115,10 +119,11 @@ async function measure(vp, kit, on) {
   } };
   // in use: a key now and then keeps the scene quiet and the app's tools up
   for (let i = 0; i < 6; i++) { await page.keyboard.press("Shift"); await wait(350); await sample("quiet"); }
-  // left alone: the loop, read as fast as frames can be for sixteen seconds of it (the plain ground on the same clock)
+  // left alone: the loop, read as fast as frames can be for sixteen seconds of it, or of each pass asked for (the plain
+  // ground on the same clock)
   // (on Everything the loop waits for Today, so there "left alone" is the quiet scene under the app's own idle fade)
   if (on && VIEW !== "all") { await page.evaluate(() => window.__tfTest.sceneIdle()); await page.waitForFunction(() => window.__tf().scene.level > .95, null, { timeout: 6000 }); } else await wait(1500);
-  const t0 = Date.now(); while (Date.now() - t0 < 16000) await sample("loop");
+  const t0 = Date.now(); while (Date.now() - t0 < PASSES * 15000 + 1000) await sample("loop");
   // the finale: the lines crossed off, and the scene's own moment
   if (!FIXTURE && VIEW !== "all") {
     for (const box of await page.$$("#list .row:not(.done) .check")) { await box.click(); await wait(120); }

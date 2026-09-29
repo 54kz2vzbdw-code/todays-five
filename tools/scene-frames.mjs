@@ -2,6 +2,8 @@
 // each moment with seek): the quiet picture, the loop at the seconds asked for, and the finale at three points, each
 // with its label, tiled a third of their size. One PNG per kit and viewport. For looking, not for asserting.
 // Run: node tools/serve.js 8791 . &  then  node tools/scene-frames.mjs <kit,kit,…> [out=.] [phone,desktop] [seconds]
+// b367: PASS=n holds pass n (0, the signature loop, unless asked); PASSES=a,b,… lays those passes' moments one after
+// another on the sheet (the quiet picture before each, as the scene would show it before that pass; the finale once).
 import { createRequire } from "node:module";
 import fs from "node:fs";
 const NM = process.env.NODE_PATH || (process.env.HOME + "/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules");
@@ -21,9 +23,10 @@ for (const vp of vps.split(",")) for (const kit of kits.split(",")) {
   page.on("pageerror", e => errs.push(e.message)); page.on("console", m => { if (m.type() === "error") errs.push(m.text()); });
   await page.goto(BASE + "tools/scene-lab.html?scene=" + kit); await page.waitForFunction(() => window.labReady, null, { timeout: 15000 });
   await page.evaluate(() => document.fonts && document.fonts.ready);
-  const moments = [{ t: 0, i: 0, f: -1, label: "quiet" }, ...secs.split(",").map(Number).map(t => ({ t, i: 1, f: -1, label: t + " s" })), ...[.18, .45, .72].map(f => ({ t: 0, i: 0, f, label: "finale " + f }))];
+  const passes = (process.env.PASSES || process.env.PASS || "0").split(",").map(Number), many = passes.length > 1;
+  const moments = [...passes.flatMap(p => [{ t: 0, i: 0, f: -1, p, label: (many ? "pass " + p + " " : "") + "quiet" }, ...secs.split(",").map(Number).map(t => ({ t, i: 1, f: -1, p, label: (many ? "pass " + p + " " : "") + t + " s" }))]), ...[.18, .45, .72].map(f => ({ t: 0, i: 0, f, p: passes[passes.length - 1], label: "finale " + f }))];
   const shots = [];
-  for (const m of moments) { await page.evaluate(m => window.seek(m.t, m.i, 12 + m.t, m.f, m.label), m); shots.push(shrink(PNG.sync.read(await page.screenshot()), K)); }
+  for (const m of moments) { await page.evaluate(m => window.seek(m.t, m.i, 12 + m.t, m.f, m.label, m.p), m); shots.push(shrink(PNG.sync.read(await page.screenshot()), K)); }
   const w = shots[0].width, h = shots[0].height, rows = Math.ceil(shots.length / COLS), sheet = new PNG({ width: w * COLS, height: h * rows });
   shots.forEach((s, n) => PNG.bitblt(s, sheet, 0, 0, w, h, (n % COLS) * w, Math.floor(n / COLS) * h));
   fs.writeFileSync(`${out}/${kit}-${vp}.png`, PNG.sync.write(sheet));

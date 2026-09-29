@@ -3376,6 +3376,27 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await r.close();
   });
 
+  // 1.12 b367: the forever cycle — the stage counts the passes and hands each to the scene
+  await test(label + ": 1.12 b367: the forever cycle — a visit opens on pass 0, the scene's signature loop; the pass moves on each time the loop comes round, and when it comes back after the list was used, so every stretch left alone opens on a new one; and the instruments can hold one", async () => {
+    const t = await fresh(opts, { init: sceneDevice() });
+    await sceneUp(t, "forest"); await t.page.keyboard.press("Shift"); await wait(300);
+    let sc = (await t.s()).scene; assert.equal(sc.pass, 0, "a visit opens on pass 0: " + JSON.stringify(sc)); assert.equal(sc.carry, false, "Forest's picture rests the same between passes");
+    await t.page.evaluate(() => window.__tfTest.sceneIdle());
+    await t.page.waitForFunction(() => { const s = window.__tf().scene; return s.idle && s.t > .5; }, null, { timeout: 4000, polling: 100 });
+    assert.equal((await t.s()).scene.pass, 0, "the signature plays first");
+    await t.page.keyboard.press("Shift"); // cut short: it eases back, and the next stretch alone opens on the next pass
+    await t.page.waitForFunction(() => { const s = window.__tf().scene; return s.level === 0 && s.t === 0; }, null, { timeout: 5000, polling: 100 });
+    assert.equal((await t.s()).scene.pass, 1, "the next stretch opens on the next pass");
+    await t.page.evaluate(() => window.__tfTest.scenePass(7, 1)); // where the instruments put it
+    await t.page.evaluate(() => window.__tfTest.sceneIdle());
+    await t.page.waitForFunction(() => window.__tf().scene.idle, null, { timeout: 4000, polling: 100 });
+    assert.equal((await t.s()).scene.pass, 7, "held where it was put");
+    await t.page.waitForFunction(() => window.__tf().scene.pass === 8, null, { timeout: 17000, polling: 200 }); // and round again
+    sc = (await t.s()).scene; assert.ok(sc.idle && sc.t < 3, "the next pass from its start: " + JSON.stringify(sc));
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join("; "));
+    await t.close();
+  });
+
   await test(label + ": 1.12 b321: every kit with a scene brings its own and only its module, draws, plays its loop left alone, has its finale's moment, and throws nothing", async () => {
     const t = await fresh(opts, { init: sceneDevice() });
     await sceneUp(t, "forest");

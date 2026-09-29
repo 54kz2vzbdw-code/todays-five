@@ -8,6 +8,17 @@
 // back the moment anything is touched; Everything, a page of words, keeps it quiet behind a veil. The finale has a
 // moment of its own. prefers-reduced-motion gets one still frame; a hidden page gets nothing at all. Each scene is its
 // own module (scene-<id>.js), handed the drawing kit below; the words' side of it is scenes.css.
+//
+// 1.12 b367: the forever cycle. Left alone, a scene no longer plays one fifteen-second loop over and over: each time
+// round is a pass, and the scene deals each pass its own — which of its beats play and when, from which side, in which
+// colours, now and then a rare one — so it never shows the same fifteen seconds twice running. The stage counts the
+// passes (`P`, the fifth thing `draw` is handed): the count moves on each time the loop comes round, and each time the
+// loop starts again after the list was used, so every stretch left alone opens on a pass not seen yet. A scene that
+// carries its picture from one pass into the next (`carry`: what a pass drew stays up through the quiet after it) plays
+// a pass cut short again from its start instead, so its picture never jumps. Pass 0 is the scene's signature loop, the
+// first of every visit; the passes after it are the visit's own, dealt from a number taken from the wall clock when the
+// scene comes up, so no two visits go the same way. Every pass begins and ends in the scene's resting picture (for a
+// scene that carries, the one the pass before it left), so any pass can follow any other.
 
 export const LOOP = 15;
 const IDLE_AFTER = 20000;
@@ -37,6 +48,21 @@ const rgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n 
 const mixc = (a, b, t) => a.map((v, i) => Math.round(lerp(v, b[i], t)));
 const css = (c, a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 const canvas = (w, h) => { const c = document.createElement("canvas"); c.width = Math.max(1, w | 0); c.height = Math.max(1, h | 0); const x = c.getContext("2d"); x.imageSmoothingEnabled = false; return [c, x]; };
+/** a pass's own dice: the same pass of the same visit always deals the same, so any moment of any pass can be held
+ *  (tools/scene-lab.html) and a scene that carries can work out the picture the pass before left; `salt` keeps a scene's
+ *  dealers apart */
+let VISIT = 1;
+const deal = (P, salt = 0) => rng(Math.imul(VISIT, 0x9E3779B1) ^ Math.imul(P + 1, 0x85EBCA6B) ^ Math.imul(salt + 1, 0xC2B2AE35));
+/** a pass's pick from a pool of `n` (the signature, pass 0, has the first): each run of n passes after it deals the whole
+ *  pool once, in an order of its own, and never the same one twice running — worked out from the pass alone */
+const bag = (P, n, salt = 0) => {
+  if (P <= 0 || n < 2) return 0;
+  if (n === 2) return P % 2;
+  const k = Math.floor((P - 1) / n), order = j => { const r = deal(-1000 - j, salt), a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const q = Math.floor(r() * (i + 1)); [a[i], a[q]] = [a[q], a[i]]; } return a; };
+  const a = order(k), before = k > 0 ? order(k - 1)[n - 1] : 0; // the pass before this run: the last of the one before (a swap never reaches it), or the signature
+  if (a[0] === before) [a[0], a[1]] = [a[1], a[0]];
+  return a[(P - 1) % n];
+};
 /** a sprite from a function of (x, y) → [r,g,b,a?] or null, written straight into pixels */
 function paint(w, h, fn) {
   const [c, x2] = canvas(w, h), im = x2.createImageData(c.width, c.height), d = im.data;
@@ -80,7 +106,7 @@ const boil = (frame, amp = .8) => { const r = rng(frame * 7919 + 13); return (x,
 function grain(w, h, seed = 1, k = .06) { const r = rng(seed); return paint(w, h, () => { const v = r(); return v < .5 ? [0, 0, 0, Math.round(255 * k * r())] : [255, 255, 255, Math.round(255 * k * .8 * r())]; }); }
 /** a layer redrawn only when what is in it moves: `key` says what it looks like now */
 function layer() { let c = null, k = null; return (w, h, key, draw) => { if (!c || c.width !== w || c.height !== h) { [c] = canvas(w, h); k = null; } if (key !== k) { const x = c.getContext("2d"); x.clearRect(0, 0, w, h); draw(x); k = key; } return c; }; }
-export const KIT = { LOOP, clamp, lerp, E, spring, seg, env, rng, dith, rgb, mixc, css, canvas, paint, noise1, fbm, glowSpr, pine, sprite, layer, partial, boil, grain };
+export const KIT = { LOOP, deal, bag, clamp, lerp, E, spring, seg, env, rng, dith, rgb, mixc, css, canvas, paint, noise1, fbm, glowSpr, pine, sprite, layer, partial, boil, grain };
 
 /* ---------------- the stage ---------------- */
 /** The words' side of it (scenes.css), asked for with the page's build (COMPATIBILITY.md §6), and only once. */
@@ -90,8 +116,9 @@ function linkCss(build) {
   document.head.appendChild(l);
 }
 /** Mount scene `id` in `host` (#field). Returns { stop, finale, state }; stop() leaves the host as it found it. */
-export function createScene(host, id, { build = "", reduced = () => false, ink = "#000000", busy = false } = {}) {
-  let alive = true, scene = null, raf = 0, timer = 0, last = 0, T = 0, I = 0, A = 12, F = -1, frames = 0, fps = 15, lastInput = performance.now();
+export function createScene(host, id, { build = "", reduced = () => false, ink = "#000000", busy = false, visit = 0 } = {}) {
+  let alive = true, scene = null, raf = 0, timer = 0, last = 0, T = 0, I = 0, A = 12, F = -1, P = 0, frames = 0, fps = 15, lastInput = performance.now();
+  VISIT = visit || Math.floor(Date.now() / 1000) % 999983 + 1; // this visit's sequence of passes (b367)
   let W = 0, H = 0, PXS = 4, resizeT = 0, coverT = 0, crowd = !!busy, veilAt = .5;
   const [cv, g] = canvas(1, 1), [bd, bg] = canvas(1, 1); // the moving picture, and (smooth styles) what never moves under it
   cv.setAttribute("aria-hidden", "true"); bd.setAttribute("aria-hidden", "true");
@@ -183,7 +210,7 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     bg.clearRect(0, 0, W, H);
     scene.layout(W, H, bg);
   }
-  function draw() { g.globalAlpha = 1; scene.draw(T, I, A, F); frames++; }
+  function draw() { g.globalAlpha = 1; scene.draw(T, I, A, F, P); frames++; }
   /* Two cadences, two ways of asking for frames, each the cheaper one where it is used (measured in Chrome with
      tools/idle.mjs, A against B on the same build): quiet at fifteen, a timer wakes half a display frame before the
      next is due and that one frame is asked for (1.6 % of a core against 2.4 % with a callback on every vsync); at
@@ -196,7 +223,9 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     const dt = last ? Math.min(.1, (now - last) / 1000) : 1 / fps; last = now;
     A += dt;
     I = clamp(I + (want - I) * Math.min(1, dt * (want ? 1.2 : 2.6)));
-    if (want || I > .005) T = (T + dt) % LOOP; else T = 0; // the loop starts from its first beat each time it comes back
+    // the loop starts from its first beat each time it comes back; the pass moves on each time round, and when the
+    // loop comes back after the list was used (b367) — but a pass cut short in a scene that carries plays again
+    if (want || I > .005) { T += dt; if (T >= LOOP) { T -= LOOP; P++; } } else { if (T > 0 && !scene.carry) P++; T = 0; }
     if (F >= 0) { F += dt / 3.4; if (F >= 1) F = -1; }
     fps = want || I > .01 ? 30 : 15;
     draw();
@@ -227,12 +256,14 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     motion() { halt(); if (scene) { draw(); run(); } },
     /** the page is full of words (Everything) or not (Today): the veil, and whether the loop may play */
     busy(on) { crowd = !!on; paintVeil(); clearTimeout(coverT); if (covered()) coverT = setTimeout(() => { if (covered()) halt(); }, 520); else run(); },
-    /** a given moment, drawn once and held: the loop's time, how idle, the wall clock, the finale (tools/scene-frames.mjs) */
-    seek(t, i = 1, a = A, f = -1) { halt(); T = t; I = i; A = a; F = f; if (scene) draw(); },
+    /** a given moment, drawn once and held: the loop's time, how idle, the wall clock, the finale, the pass (tools/scene-frames.mjs) */
+    seek(t, i = 1, a = A, f = -1, p = P) { halt(); T = t; I = i; A = a; F = f; P = p; if (scene) draw(); },
+    /** from here on, pass `p` of visit `v` (the instruments' way to measure the same passes each run; b367) */
+    pass(p = 0, v = VISIT) { P = p; VISIT = v; },
     /** as if nothing had been touched for the twenty seconds (the suite's way in; see app.js's __tfTest) */
     leaveAlone() { lastInput = performance.now() - IDLE_AFTER - 1; run(); },
     ready,
-    state() { return { id, idle: I > .5, level: +I.toFixed(2), finale: F >= 0, frames, fps: raf || timer ? fps : 0, running: !!(raf || timer), busy: crowd, px: PXS, size: [W, H], t: +T.toFixed(2), spot: scene && scene.spot ? scene.spot() : null }; }, // spot: where a scene that keeps to the empty page has settled
+    state() { return { id, idle: I > .5, level: +I.toFixed(2), finale: F >= 0, frames, fps: raf || timer ? fps : 0, running: !!(raf || timer), busy: crowd, px: PXS, size: [W, H], t: +T.toFixed(2), pass: P, carry: !!(scene && scene.carry), spot: scene && scene.spot ? scene.spot() : null }; }, // spot: where a scene that keeps to the empty page has settled
     stop() {
       alive = false; halt(); clearTimeout(resizeT); clearTimeout(coverT);
       INPUTS.forEach(t => removeEventListener(t, touched, opt));

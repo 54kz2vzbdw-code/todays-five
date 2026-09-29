@@ -7,6 +7,8 @@
 // 1.12 b318: SCENES=1 turns Scenes on first and measures a scene's loop (left alone the whole window); USE=5 adds a
 // key press every five seconds, a list in use, for a scene's quiet mode. "all procs" is every Chrome process's CPU
 // (SystemInfo.getProcessInfo), because a canvas's raster and compositing run outside the renderer's main thread.
+// 1.12 b367: the loop is the forever cycle's passes, from pass PASS (0, the signature, unless asked) of visit 1, so two
+// runs measure the same passes.
 import { createRequire } from "node:module";
 const NM = process.env.NODE_PATH || (process.env.HOME + "/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules");
 const require = createRequire(NM + "/");
@@ -39,7 +41,7 @@ for (const kit of KITS) {
   await page.mouse.move(2, 2); await page.waitForTimeout(6000); // past the idle preload and the crossfade
   const cdp = await ctx.newCDPSession(page); await cdp.send("Performance.enable");
   const read = async () => { const { metrics } = await cdp.send("Performance.getMetrics"); const m = Object.fromEntries(metrics.map(x => [x.name, x.value])); return { task: m.TaskDuration, recalc: m.RecalcStyleDuration, at: m.Timestamp }; };
-  if (SCENES && !USE) await page.evaluate(() => window.__tfTest && window.__tfTest.sceneIdle()); // the loop from the first second
+  if (SCENES && !USE) await page.evaluate(p => { if (!window.__tfTest) return; if (window.__tfTest.scenePass) window.__tfTest.scenePass(p, 1); window.__tfTest.sceneIdle(); }, +(process.env.PASS || 0)); // the loop from the first second
   const a = await read(), pa = await procs();
   for (let left = SECONDS * 1000; left > 0; left -= USE * 1000 || left) { await page.waitForTimeout(Math.min(left, USE * 1000 || left)); if (USE) await page.keyboard.press("Shift"); }
   const b = await read(), pb = await procs();

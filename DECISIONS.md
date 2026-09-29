@@ -2081,3 +2081,41 @@ here; nothing else in them moves. What they show: in use, Light's and Dark's sof
 glossy one and Cocoa's held heart a little less than the drawn one, and the rest are where they were; on a phone, Light
 and Dark cost a point less, Paper half a point more (its train and kite), Cocoa half a point more (its pour), the rest
 the same. The loop figures in those notes were measured right and stand.
+
+# 1.12 b353 decisions — Scenes: soap bubbles for Blush
+
+**What Price asked for.** Pink is good; its day, Blush, was a little boring. Something else for that one.
+
+**Soap bubbles.** `scene-bubbles.js`, Blush's own now; Pink keeps the neon heart. Each bubble's film is coloured the way a
+real one is: light comes back off the film's two faces and interferes, so the colour at each point is set by how thick
+the film is there. The module works that out once for every thickness from 0 to 1.2 µm — the reflectance sin²(2πnd/λ),
+summed across the visible spectrum into red, green and blue — and each film is a field of thicknesses: thicker low down,
+where it drains, swirling, and seen slant at the rim, where its colours crowd into rings. The middle of a bubble is nearly
+clear and its colour gathers toward the rim, a window shines in it up on the left with a fainter one low on the right, and
+each wobbles as it goes. The room is Blush's own pink, warmer where the light comes in, with a few soft spots of sun.
+
+**The loop.** Small bubbles drift up the page all the time, from below the foot to past the top, and now and then one
+pops. In the loop: a pink wand comes in from the right; a big bubble swells out of its ring — a cap of a sphere whose rim
+is the ring, growing until a neck pinches and lets it go — wobbles, and floats to the middle of the open space; the wand
+sweeps and a stream of small bubbles pours out of it; the wand goes; the big bubble's film thins to gold at the top and it
+pops, the film torn open from one side and gone in a spray of droplets; the stream's bubbles pop one by one. The finale: a
+flurry of bubbles rises from below and pops. While the list is in use the small ones drift, slowly. The kit's sound is a
+pop.
+
+**The words.** The wand and the big bubble keep to the largest open space on the page, as the heart did, and with no room
+for them they go and the small ones stay. The small ones drift behind the lines, which sit on pads of the ground
+(`hug`, .85), and fade to a trace as they pass behind any word: the first measure had the bar's small words a few tenths
+under plain as bubbles drifted behind them, and a long list's crossed-off line at 5.39 against 5.91 low on the page,
+where the room goes rosier. With the fade, the denser pads and a lighter rose at the foot, every reading is at or above
+plain but that crossed-off line on a wide screen, 5.64 against 5.91, and the tools in the app's idle fade in Everything
+(a few hundredths to two tenths, as their plain readings swing).
+
+**Pink, unchanged.** The module both kits shared loses the gummy heart; Pink's sign draws from the same seeded sequence,
+so the draws the day's heart took are still taken, and the sign comes out pixel for pixel what it was.
+
+**What it costs.** The loop 2.85 → 3.58 % of a core against the heart, alternating the two on the same machine: the
+big bubble's film is worked out about fifteen times a second, its window drawn at a smaller size, and the small bubbles
+number ten on a wide screen and seven on a phone. In use it is cheaper than the heart was, 2.01 → 1.75 %; on a phone
+2.48 → 3.45 %.
+
+**What did not change.** Pink; first paint; no stored setting; nothing in `apple/` but the stamp.

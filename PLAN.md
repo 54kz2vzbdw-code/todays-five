@@ -2871,3 +2871,40 @@ under "1.12 b351 decisions — Scenes, polished: Cocoa's pour". Web only; the ve
 | Focused runs | on a checkout of the change alone: the Scenes tests, the full session and the worker's two tests, both viewports: 18 passed; again on the stamp |
 | Looked at | the pour step by step in the lab (the stir's spiral, each ring, the pull-through), the held heart against the live one, both viewports in the app |
 | Screenshots | `shots/scenes-9/`: the stir and the pull-through, phone and desktop (JPEG) |
+
+# Today's Five 1.12 b353 — Scenes: soap bubbles for Blush
+
+*Shipped as build 355. b353 and b354 are its commits.*
+
+Blush has its own scene: soap bubbles, their films coloured by real thin-film interference, a big one blown from a pink
+wand and popped. Pink keeps its neon heart, pixel for pixel. The decisions are in DECISIONS.md under "1.12 b353
+decisions — Scenes: soap bubbles for Blush". Web only; the version holds at 1.12, and nothing in `apple/` changed but
+the stamp.
+
+## What shipped
+
+1. **Soap bubbles for Blush** (b353). `scene-bubbles.js` (new); `scene-heart.js` loses the day's heart; the stage maps
+   Blush to the new module; the worker precaches it; the changelog's clause (through Price's voice); the features test's
+   list and the Scenes tests follow.
+2. **A correction to the CPU notes of 344–352** (b354). `DECISIONS.md`, `PLAN.md`: their in-use and phone figures had
+   been measured as loop runs on a wide screen; measured again and replaced (DECISIONS.md, "1.12 b354 decisions").
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: the change is the scene modules, the stage's map, the worker's list, the changelog and the tests; the stamp moves the build number | `git diff --stat` 352..353 |
+| lazy, Scenes on only | `scene-bubbles.js` **7,366** (new); `scene-heart.js` 7,834 → **4,960** | `gzip -9 -n` |
+| CPU, desktop (share of one core) | the loop 2.85 → **3.58 %** (the heart against the bubbles, two runs each, alternated); in use 2.01 → **1.75 %** | `tools/idle.mjs 60`, `SCENES=1`, `SCENES=1 USE=5`; 352 (port 8800) against this |
+| CPU, phone (390×844 at 2×) | 2.48 → **3.45 %** | `tools/idle.mjs 60`, `VP=phone SCENES=1` |
+| contrast | every reading at or above plain but a long list's crossed-off line on a wide screen, 5.91 → 5.64, and the tools in the app's idle fade in Everything | `tools/contrast.mjs`: the seed lines, `FIXTURE=1 CLOCK=2026-09-28T15:00:00`, `FIXTURE=1 VIEW=all` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests (the keep-clear test with Blush's wand and bubble), the full session and the worker's two tests, both viewports: 18 passed; again on the stamp |
+| Pink | both of its canvases read straight from the stage, old module against new, at six moments of the loop and two of the finale, both viewports: identical, byte for byte |
+| Looked at | both viewports in the lab through the loop and the finale, full size; in the app with the seed lines and the long list |
+| Screenshots | `shots/scenes-9/`: the big bubble and the stream, phone and desktop (JPEG) |

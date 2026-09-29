@@ -2267,3 +2267,42 @@ same latch (b360, a commit of its own), so no word is typed to measure them.
 **What did not change.** The kits, their fields and finales with Scenes off; every public page (the test that holds the
 changelog, README, About, How it works and the markup to not naming them passes); first paint but the list in `app.js`;
 nothing in `apple/` but the stamp.
+
+# 1.12 b363 decisions — Scenes for the hidden kits, two: Whiteboard and Chalkboard
+
+**One board, by day and by night.** `scene-board.js`, drafted by a helper to the round's brief and looked over here.
+A hand we never see draws on the board, stroke by stroke, in the open space the words leave; all we see of it is its
+tool — a stick of chalk or a marker — riding the line, lifting between strokes (its shadow moves further off) and going
+off the board's edge to change colour. The letters are a single-stroke script of its own, each drawn a little
+differently. The board is drawn once; what has been drawn builds up in a held layer, and each frame draws only the
+stroke in hand.
+
+**Chalkboard.** Slate with a haze of dust, faint ghosts of old lessons, and window light in two soft shafts where chalk
+motes glint. The lesson: a circle with a right triangle standing in it, a²+b²=c² boxed below, a sine wave on axes,
+38+47 worked in a column, Saturn with its ring. The chalk is the slate's own grain showing through the line, so it breaks
+where the stick skips, puffs where it lands and sheds dust. The loop: a wet sponge wipes the lesson off in straight
+passes, leaving dark wet slate with ragged edges, a sheen and streaks of slurry; it dries from the edges in, in patches,
+while white chalk draws the lesson again; the hand fetches blue (the wave, the planet) and yellow (the right angle, the
+box, the carried 1, the answer 85 underlined twice, stars). The finale: A+ written in yellow and circled, with stars;
+the kit's own felt eraser still passes over it.
+
+**Whiteboard.** Three sticky notes — idea, plan, ship! — with shadows and curled corners, a bar chart, a light bulb, a
+checklist. The loop: a blue eraser scrubs the chart and the list off, leaving a ghost that fades, while the "ship!"
+note's corner lifts and it peels off and flutters out past the edge; the black marker draws the list and the axes again,
+blue fills the bars and outlines them, a new note is slapped on (from in front of the board: big, then landing and
+squashing); green ticks the list; red draws the trend, rings the best bar and lights the bulb. The finale: eight ticked
+or starred notes slapped on round the plan and then blown off the edge, under the kit's own big marker check.
+
+**The words.** The drawing keeps to the largest open space, preferring a tall column on a wide screen, and moves (fading
+out and in) only if words cover it or there is a quarter more room elsewhere; the sponge's and the eraser's passes stay
+in the drawing's rows; the motes fade near words; the lines and the finale's words sit on pads.
+
+**Contrast.** No reading under 4.5 anywhere. Chalkboard's are all at or above plain; Whiteboard's too, but its finale
+line and "Bring them all back" as the finale's notes slap on round the plan behind them, 6.29 → 5.62 and 5.29 → 4.78.
+
+**What it costs.** Whiteboard's loop 2.24 % of a core, in use 1.68 %, on a phone 2.31 %; Chalkboard's 2.49 %, 1.67 % and
+2.44 % — the board drawn once and what has been drawn held, so each frame draws only the stroke in hand. With Scenes off
+the kits' grounds cost next to nothing (0.05 % and 0.06 %). `app.js` +16 bytes gzipped for the two names.
+
+**What did not change.** The kits, their grounds and finales with Scenes off; every public page; first paint but the
+list in `app.js`; nothing in `apple/` but the stamp.

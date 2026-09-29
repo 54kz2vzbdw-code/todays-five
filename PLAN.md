@@ -3012,3 +3012,37 @@ Birthday and Superpink". Web only; the version holds at 1.12, and nothing in `ap
 | Focused runs | on a checkout of the change alone: the Scenes tests (the keep-clear test with the bouquet and the ball), the new hidden-kits test, the full session and the worker's two tests, both viewports: 20 passed; again on the stamp |
 | Looked at | both kits on both viewports in the lab and in the app, the loop and the finale; the helper's sheets with live words |
 | Screenshots | sent to Price; not kept in the repo, which doesn't publish the hidden kits' looks |
+
+# Today's Five 1.12 b363 — Scenes for the hidden kits, two: Whiteboard and Chalkboard
+
+*Shipped as build 364. b363 is the change's commit.*
+
+The second hidden pair: one board, a lesson in chalk for Chalkboard and a planning board in marker for Whiteboard, drawn
+by a hand we never see. No public page names them, and nothing here writes the word that unlocks them. The decisions are
+in DECISIONS.md under "1.12 b363 decisions — Scenes for the hidden kits, two: Whiteboard and Chalkboard". Web only; the
+version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Whiteboard and Chalkboard** (b363). `scene-board.js` (new); `app.js` lists the two with the kits that have scenes;
+   the stage maps them; the worker precaches the module; the features test's list; the hidden-kits test and the
+   keep-clear test take them.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `app.js` **+16 bytes** gzipped (55,330 → 55,346) for the two names; `index.html`, `styles.css` unchanged; first paint measured with the last pair's, below | `gzip -9 -n` |
+| lazy, Scenes on under a hidden kit only | `scene-board.js` **24,971** gzipped | `gzip -9 -n` |
+| CPU, desktop (share of one core) | Whiteboard's loop **2.24 %**, in use **1.68 %**; Chalkboard's loop **2.49 %**, in use **1.67 %**; their grounds with Scenes off 0.05 % and 0.06 % | `tools/idle.mjs 60`, `SCENES=1 UNLOCK=1` (and `USE=5`) |
+| CPU, phone (390×844 at 2×) | Whiteboard **2.31 %**; Chalkboard **2.44 %** | `tools/idle.mjs 60`, `VP=phone SCENES=1 UNLOCK=1` |
+| contrast | no reading under 4.5; Chalkboard's all at or above plain; Whiteboard's too but its finale line and "Bring them all back" as the finale's notes slap on behind them (6.29 → 5.62, 5.29 → 4.78) | `tools/contrast.mjs`: the seed lines, `FIXTURE=1 CLOCK=2026-09-28T15:00:00`, `FIXTURE=1 VIEW=all` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30 (its public pages still name neither), compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests (the keep-clear test with the lesson and the plan), the hidden-kits test, the full session and the worker's two tests, both viewports: 20 passed; again on the stamp |
+| Looked at | both kits on both viewports in the lab and in the app, the loop and the finale |
+| Screenshots | sent to Price; not kept in the repo |

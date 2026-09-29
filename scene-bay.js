@@ -31,7 +31,7 @@ export default function bay(K, id) {
     /** where the words are (scenes.js): the sun slides along the horizon clear of the lines' ends, the fireworks go off in
      *  the clearest sky, and anything bright that passes behind a word fades there */
     words(rects) {
-      S.wr = rects.map(([x0, y0, x1, y1]) => [x0 - 12, y0 - 8, x1 + 12, y1 + 8]);
+      S.wr = rects.map(([x0, y0, x1, y1]) => [x0 - 12, y0 - 8, x1 + 12, y1 + 8]); S.lines = rects.filter(r => r[4] === 1);
       if (!S.W) return;
       const { W, H, hz, pr } = S;
       if (!dusk) { const R = S.sun.R, band = S.wr.filter(([x0, y0, x1, y1]) => y1 > hz - R * 1.05 && y0 < hz && x1 - x0 > 84); /* lines and pills, not a row's small tools */ const xr = band.reduce((m, r) => Math.max(m, r[2]), 0); S.sunTx = clamp(Math.max(pr ? W * .5 : W * .74, xr + R * 1.02), pr ? W * .5 : W * .6, W - R * .45); }
@@ -50,6 +50,7 @@ export default function bay(K, id) {
       const hz = Math.round(H * (pr ? .73 : .78));
       Object.assign(S, { W, H, pr, u, hz });
       S.sun = pr ? { x: W * .5, y: hz, R: Math.min(W * .3, H * .15) } : { x: W * .72, y: hz, R: Math.min(W * .14, H * .21) };
+      { const [r0, g0, b0] = K.rgb(P.near); S.pad = make(160, 80, x => { for (let q = 0; q < 12; q++) { x.fillStyle = `rgba(${r0},${g0},${b0},.15)`; x.beginPath(); x.roundRect(q * 2.4, q * 1.8, 160 - q * 4.8, 80 - q * 3.6, 34 - q * 2); x.fill(); } }); } /* the shade under a line low on the page */
       S.moon = pr ? { x: W * .76, y: H * .25, r: 3.6 * u } : { x: W * .8, y: H * .2, r: 2.6 * u };
       // the headlands: a far range, hazy, and a near one, dark, each a line of noise falling toward the middle
       const nL = K.noise1(3, 64), nR = K.noise1(5, 64), nF = K.noise1(9, 64);
@@ -216,6 +217,12 @@ export default function bay(K, id) {
           for (let k = 0; k < 8; k++) S.frond(top, -Math.PI * .98 + k / 7 * Math.PI * .96 + Math.sin(A * .9 + p.ph + k) * .04, p.h * (.44 + (k % 2) * .08)); }
       }
       g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
+      // 1.12 b348: a long list's last lines lie over the brightest part of the picture — the sun on the horizon, its
+      // reflection, the moon's path — and on a narrow screen the sun has nowhere clear of them to go; there the picture
+      // is put in shade under each line (the stage lays its pad over this), and elsewhere it keeps its colour
+      const lowY = S.hz - (S.pr ? S.H * .12 : S.H * .14); g.globalAlpha = .8;
+      for (const [x0, y0, x1, y1] of S.lines || []) if (y1 > lowY) { const mx = 18 + (y1 - y0) * .5, my = 6 + (y1 - y0) * .3; g.drawImage(S.pad, x0 - mx, y0 - my, x1 - x0 + mx * 2, y1 - y0 + my * 2); }
+      g.globalAlpha = 1;
     },
   };
   return S;

@@ -2726,3 +2726,45 @@ changed but the stamp.
 | --- | --- |
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Browser suite | the whole of it, in four slices (`SHARD=0/4` … `3/4`), both viewports: 228 passed, 0 failed |
+
+# Today's Five 1.12 b343 — Scenes, polished: Paper and Midnight
+
+*Shipped as build 344. b343 is the change's commit.*
+
+The first of this round's builds, one pair each: Paper and Midnight polished. By day a train runs the viaduct where the
+pop-up house was, and the kite rests on the bank before it flies; by night the train and the star on its wire go all the
+way off the page; each line sits on a pad of the ground, so a long list's last lines stay quiet over the town. The
+decisions are in DECISIONS.md under "1.12 b343 decisions — Scenes, polished: Paper and Midnight". Web only; the version
+holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Paper and Midnight, polished** (b343). `scene-papercut.js` only: the day's train and viaduct, the kite at rest,
+   the exits, the pads under the lines, the trains dimming behind them.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: the change is `scene-papercut.js` alone; the stamp moves the build number | `git diff --stat` 342..343 |
+| lazy, Scenes on only | `scene-papercut.js` 10,746 → **13,218** gzipped | `gzip -9 -n` |
+| CPU, desktop (share of one core; every Chrome process) | Paper's loop 2.49 → **2.94 %** (13.18 → 13.38 %), in use 2.55 → **2.83 %**; Midnight's loop 2.88 → **2.96 %** (13.97 → 13.44 %), in use 2.70 → **2.75 %** | `tools/idle.mjs 60`, `SCENES=1` and `SCENES=1 USE=5`, 342 (port 8800) and this build back to back; another program held a core (load 3.4–5) |
+| CPU, phone (390×844 at 2×) | Paper 2.62 → **2.91 %** (13.77 → 14.01 %); Midnight 3.04 → **3.03 %** (14.66 → 14.34 %) | `tools/idle.mjs 60`, `VP=phone SCENES=1` |
+| contrast | every reading at or above 342's but the tools in the app's idle fade (noise, ±0.4; in use equal); the table below | `tools/contrast.mjs`: the seed lines, `FIXTURE=1`, `FIXTURE=1 VIEW=all`; 342's from the same instrument |
+
+| p1, plain → 342 → this | wide screen | phone |
+| --- | --- | --- |
+| Midnight, a crossed-off line in a long list | 6.15 → 2.49 → **5.60** | 6.08 → 2.53 → **5.58** |
+| Paper, a crossed-off line in a long list | 5.12 → 3.50 → **4.37** | 5.08 → 4.32 → **4.49** |
+| Paper, a long list's small print (caption; ↻) | 4.90 → 4.02 → **4.63**; 4.97 → 3.97 → **4.65** | — |
+| a long list's lines (Paper; Midnight) | 14.67 → 11.93 → **14.03**; 14.43 → 14.07 → **15.17** | 14.55 → 10.97 → **14.00**; 14.12 → 6.42 → **11.62** |
+| Midnight's section names in Everything (caret; name), the middle figure before the pads | 6.04 → 5.08 → **6.03**; 6.03 → 5.50 → **6.19** | 6.03 → 5.55 → **6.14**; 5.91 → 5.61 → **6.19** |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests (b318's two, the walk through every kit with a scene, the keep-clear test, the pads' test, the section names), the full session and the worker's two tests, both viewports: 18 passed; again on the stamp |
+| Looked at | both kits on both viewports through the loop in the lab and in the app, the long list with a train behind its crossed-off lines, and the kite held at every height the words leave it |
+| Screenshots | `shots/scenes-9/`: each kit at its train and at its kite or star, phone and desktop (JPEG) |

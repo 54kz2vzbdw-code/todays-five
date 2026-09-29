@@ -1900,3 +1900,46 @@ viewports: 228 passed, none failed. The Node suites passed.
 
 **What did not change.** Anything but the four strings and the two tests that read them; nothing in `apple/` but the
 stamp.
+
+# 1.12 b343 decisions — Scenes, polished: Paper and Midnight
+
+**What Price asked for.** He loves the papercraft; a few things that move when the list is left alone vanished before
+they were off the page (Midnight's train and its shooting star), a couple of moments were janky, and by day the kite
+just appeared and flew. He suggested a train going by in place of the pop-up house.
+
+**By day.** The pop-up house is gone. A red steam engine and three cream cars run the viaduct right to left, from past
+the right edge to past the left, puffing steam in paper puffs that start at the chimney, swell as they rise and thin
+away; the near bank's trees stand in front of it. The kite lies on the near bank, tied to its peg, its bows along the
+grass, until the wind lifts it; it climbs, flies a while and comes down to rest, and if the list is touched mid-flight
+it settles. It flies no higher than clears the lines, looking above and below where it likes to fly for the nearest
+clear height; with no clear sky it stays on the bank. Its string goes behind the words. The paper birds cross from past
+the right edge to past the left.
+
+**By night.** The train comes on from past one edge and goes all the way off the other; it had vanished with its last
+cars still on the page. The viaduct now spans the river from edge to edge, so both trains run on it (the night train
+had run on past the bridge's end over water). The cloud is let down across the moon on its thread and taken up again.
+The star on its wire starts below the bar along the top, which it had crossed (the date read 6.12 → 3.11 as it went
+over); its tail is a fixed length behind it, so it goes off the edge with it rather than vanishing mid-page, and it
+fades behind the words. The fireworks' rockets fade in.
+
+**The words.** In a long list the last lines lie over the town, where the trains now run: the train behind a crossed-off
+line took it to 2.95 against 5.08 plain on a phone. So each line sits on a pad of the ground (`hug`, .82) in place of
+the pad across the list, and a train dims to under half where it passes behind a line, as if under vellum; clear of
+the words, the picture keeps its colour. It also lays a pad under each section's name in Everything on Midnight, the
+leftover from b339.
+
+**What it costs.** Measured back to back with the live build, 342, on the same machine, with another program holding a
+core of it throughout (a load of 3.4–5, so the numbers read high; the difference is what counts): Paper's loop 2.49 →
+2.94 % of a core (every Chrome process 13.18 → 13.38 %), in use 2.55 → 2.83 %, on a phone 2.62 → 2.91 %; Midnight's
+2.88 → 2.96 %, 2.70 → 2.75 % and 3.04 → 3.03 %. The day's train, its steam and the kite are what Paper adds.
+
+**Contrast.** Every reading at or above the live build's, but for the tools in the app's own idle fade, whose plain
+readings swing as far (±0.4): Midnight's pills and keyboard line on a wide screen left alone, 5.92–8.46 plain against
+5.74–7.90 (in use they read 6.31 and 8.71, as they did). In a long list, a crossed-off line over the town reads 2.49 →
+5.60 on Midnight's wide screen and 2.53 → 5.58 on its phone (plain 6.15 and 6.08), and 3.50 → 4.37 and 4.32 → 4.49 on
+Paper's (plain 5.12 and 5.08); Paper's small print there 4.02 → 4.63 and 3.97 → 4.65; the lines themselves 11.93 →
+14.03 on Paper's wide screen and 6.42 → 11.62 on Midnight's phone. Midnight's section names in Everything: the caret
+5.08 → 6.03 against 6.04 plain, the name 5.50 → 6.19 against 6.03 (before the pads, as b339 found them).
+
+**What did not change.** The sun, the paper plane and the rest of the day's loop; the finales; first paint; no stored
+setting; nothing in `apple/` but the stamp.

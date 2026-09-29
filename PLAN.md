@@ -2768,3 +2768,35 @@ holds at 1.12, and nothing in `apple/` changed but the stamp.
 | Focused runs | on a checkout of the change alone: the Scenes tests (b318's two, the walk through every kit with a scene, the keep-clear test, the pads' test, the section names), the full session and the worker's two tests, both viewports: 18 passed; again on the stamp |
 | Looked at | both kits on both viewports through the loop in the lab and in the app, the long list with a train behind its crossed-off lines, and the kite held at every height the words leave it |
 | Screenshots | `shots/scenes-9/`: each kit at its train and at its kite or star, phone and desktop (JPEG) |
+
+# Today's Five 1.12 b345 — Scenes, polished: Light and Dark step back
+
+*Shipped as build 346. b345 is the change's commit.*
+
+Light's and Dark's liquid, drawn soft, as if out of focus, so it sits behind the list and the list takes the eye: the
+same forms and loop, a low apricot by day and a low ember by night, and cheaper to draw. The decisions are in
+DECISIONS.md under "1.12 b345 decisions — Scenes, polished: Light and Dark step back". Web only; the version holds at
+1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Light and Dark step back** (b345). `scene-orbit.js`: the soft render; the changelog's clause (through Price's voice).
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: the change is `scene-orbit.js` and the changelog; the stamp moves the build number | `git diff --stat` 344..345 |
+| lazy, Scenes on only | `scene-orbit.js` 6,755 → **5,630** gzipped | `gzip -9 -n` |
+| CPU, desktop (share of one core; every Chrome process) | Light's loop 3.81 → **2.95 %** (13.52 → 12.75 %), in use 3.78 → **3.16 %**; Dark's loop 3.85 → **2.83 %** (13.02 → 11.75 %), in use 4.05 → **3.64 %** | `tools/idle.mjs 60`, `SCENES=1` and `SCENES=1 USE=5`, 342 (port 8800) and this build back to back; another program held a core (load 3.1–6.1) |
+| CPU, phone (390×844 at 2×) | Light 4.23 → **3.22 %** (14.52 → 13.36 %); Dark 4.53 → **3.40 %** (14.90 → 13.78 %) | `tools/idle.mjs 60`, `VP=phone SCENES=1` |
+| contrast | every reading at or above plain, all three sets, both viewports, but a long list's keyboard line on a wide screen left alone, 5.24 → 5.08 (the app's idle fade) | `tools/contrast.mjs`: the seed lines, `FIXTURE=1`, `FIXTURE=1 VIEW=all` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests, the full session and the worker's two tests, both viewports: 18 passed; again on the stamp |
+| Looked at | both kits on both viewports in the lab through the loop and the finale, and in the app beside the live build |
+| Screenshots | `shots/scenes-9/`: each kit mid-loop, phone and desktop (JPEG) |

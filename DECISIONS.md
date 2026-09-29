@@ -1943,3 +1943,35 @@ Paper's (plain 5.12 and 5.08); Paper's small print there 4.02 → 4.63 and 3.97 
 
 **What did not change.** The sun, the paper plane and the rest of the day's loop; the finales; first paint; no stored
 setting; nothing in `apple/` but the stamp.
+
+# 1.12 b345 decisions — Scenes, polished: Light and Dark step back
+
+**What Price asked for.** The liquid was good, but a little too far forward: it competed with the list for the eye. He
+asked for it to sit further back and keep its interest.
+
+**Drawn out of focus.** The drops' summed field, the same one that made the glossy liquid, is sampled on a grid and
+becomes a small image: the body where the field passes 1, its edge feathered across the field's fall-off, lit from the
+upper left by the field's own slope, its colour drifting slowly toward a second hue. That image is laid down scaled up
+and smooth, so the liquid reads as if seen through a lens focused on the list. No outline and no glint: on Light, a pale
+apricot going to rose over a faint shadow; on Dark, a low ember. The splash's drops in the finale are as soft as the
+body. The forms and the loop are the same — the ring, the blob, the three lobes, the figure of eight, the wave, the
+splash — and so is where it keeps: the largest clear circle on the page.
+
+**Tried first, and dropped.** Shading the field by its slope in two dimensions dimpled the body wherever two drops met;
+a normal built in three dimensions fixed that, then left a flat plateau with a hard ridge round it where the field was
+clamped; a smooth exponential squash of the field (1 − e^−0.8f) rounds the plateau off.
+
+**It costs less.** The field image is small and filled once a frame, where the glossy liquid traced its outline each
+frame (marching squares), smoothed it, and lit it face by face with a glint on every blob: the loop went from 3.81 to 2.95 % of a core on Light and 3.85 to 2.83 % on Dark, back to back with 342 on the
+same machine (another program held a core throughout, so both read high); in use 3.78 → 3.16 % and 4.05 → 3.64 %; on a
+phone 4.23 → 3.22 % and 4.53 → 3.40 %.
+
+**Contrast.** Every reading at or above plain — the seed lines, the long list and Everything, both viewports — but the
+keyboard line on a wide screen with a long list left alone, 5.24 → 5.08, in the app's own idle fade (its plain reading
+swings as far). It keeps to the empty page as it did, so there is nothing under the words to quiet.
+
+**The copy.** The changelog said "a ring of glossy liquid drops"; it now says "a ring of soft liquid drops—a little out
+of focus—", through Price's voice.
+
+**What did not change.** The forms, the loop, where it settles; first paint; no stored setting; nothing in `apple/` but
+the stamp.

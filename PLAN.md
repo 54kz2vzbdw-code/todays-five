@@ -3081,3 +3081,37 @@ nothing in `apple/` changed but the stamp.
 | Focused runs | on a checkout of the change alone: the Scenes tests (the keep-clear test with the medallion), the hidden-kits test, the full session and the worker's two tests, both viewports: 20 passed; again on the stamp |
 | Looked at | both kits on both viewports in the lab and in the app, the loop and the finale |
 | Screenshots | sent to Price; not kept in the repo |
+
+# Today's Five 1.12 b367 — the forever cycle, one: the stage counts the passes
+
+*Shipped as build 368. b367 is the change's commit.*
+
+The stage's half of the forever cycle: left alone, each time round is a pass, numbered and handed to the scene, which
+will deal each pass its own beats; pass 0, the first of every visit, is the signature loop. Nothing anyone sees changes
+here — every scene still draws pass 0 exactly as before, every time round. The decisions are in DECISIONS.md under
+"1.12 b367 decisions — the forever cycle, one: the stage counts the passes". Web only; the version holds at 1.12, and
+nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **The stage counts the passes** (b367). `scenes.js`: the pass, handed to `draw`; `deal` and `bag` in the kit; a
+   scene that carries; `seek` and `pass` for the lab and the instruments; the pass in `state()`. `app.js`: the test
+   hook's `scenePass`. The lab, `tools/scene-frames.mjs`, `tools/contrast.mjs`, `tools/idle.mjs`; `tools/scene-seams.mjs`
+   (new); a new browser test.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `app.js` **+18 bytes** gzipped (55,353 → 55,371); `index.html`, `styles.css`, `sw.js` unchanged but the stamp | `gzip -9 -n` |
+| lazy, Scenes on only | `scenes.js` 8,459 → **9,609** gzipped (most of it the header's new paragraph) | `gzip -9 -n` |
+| what anyone sees | pass 0 of all twenty-two kits, both viewports, eleven moments of the loop and three of the finale: the stage's canvases **identical** to build 366's, but Arcade's boss shake at 10.5 s, which differs between two loads of 366 itself (`Math.random`) | `samecv.mjs`, 365's checkout (port 8833) against this |
+| the dealer | `bag`: every run of n passes deals the pool once, never the same twice running — pools of 2 to 12, forty runs, three visits | a Node check of the function as shipped |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests, the new forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
+| The seams tool | passes 0 to 6 of Forest and Cocoa on both viewports: every seam 0.00 %, and every pass like the one before, as it should be until their halves land |

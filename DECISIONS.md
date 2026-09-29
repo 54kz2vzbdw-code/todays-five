@@ -2345,3 +2345,43 @@ With Scenes off the kits' grounds cost next to nothing (0.06 % and 0.05 %).
 
 **What did not change.** The kits, their grounds and finales with Scenes off; every public page; first paint but the
 list in `app.js`; nothing in `apple/` but the stamp.
+
+# 1.12 b367 decisions — the forever cycle, one: the stage counts the passes
+
+**What Price asked for.** To turn the fifteen-second idle loops into what feels like a forever-changing cycle of idle
+animations, with new animations wherever the cycle needs them. This build is the stage's half, and nobody sees it: every
+scene plays exactly what it played before. The scenes' halves follow, a group at a time, each its own build.
+
+**Passes.** Left alone, a scene still plays fifteen seconds at a time, but each time round is now a pass, numbered, and
+the stage hands the number to the scene (the fifth thing `draw` is handed). It moves on each time the loop comes round,
+and each time the loop starts again after the list was used, so every stretch left alone opens on a pass not seen yet.
+Pass 0, the first of every visit, is the scene's signature loop, the one Price has been reviewing. The passes after it
+are the visit's own, dealt from a number the stage takes from the wall clock when the scene comes up, so no two visits
+go the same way.
+
+**Dealing.** The drawing kit gains two helpers. `deal(P, salt)` is a pass's own dice: the same pass of the same visit
+always deals the same, so any moment of any pass can be held in the lab and measured again. `bag(P, n, salt)` picks from
+a pool of n so that every run of n passes deals the whole pool once, in an order of its own, never the same pick twice
+running (checked over forty runs of pools of two to twelve, on three visits), for a scene's subject or its headline beat.
+
+**Carrying.** Some scenes draw something that stays: Sketch's drawing, Cocoa's latte art, a board's lesson. Such a scene
+says so (`carry`). Its resting picture before a pass is the one the pass before ended on, and when the list cuts one of
+its passes short, the stage plays that pass again from its start instead of moving on, so the picture never jumps.
+
+**Seamless.** Every pass begins and ends on the scene's resting picture, so any pass can follow any other. A new tool
+reads that off the lab: `tools/scene-seams.mjs` compares the last frame of each pass with the first of the next, the
+resting picture before each pass, and the same seconds of two passes side by side, which should differ.
+
+**The instruments.** The lab holds any moment of any pass (`seek`'s sixth argument; `?visit=`, 1 unless asked), and
+`tools/scene-frames.mjs` lays several passes on one sheet (`PASSES=`). `tools/contrast.mjs` and `tools/idle.mjs` pin
+visit 1 and a first pass (`PASS=`, 0 unless asked), so two runs read the same passes, and the contrast tool reads
+`PASSES=` of them. The app's test hook can hold a pass (`scenePass`, on the local transport only, like the rest of it).
+A new browser test covers the count: a visit opens on pass 0, a pass cut short moves the next stretch on, the loop
+coming round moves it on, and the hook holds one.
+
+**What did not change.** What anyone sees: every scene draws pass 0 exactly as before — the stage's two canvases read
+straight off both viewports at eleven moments of the loop and three of the finale, for all twenty-two kits, the same to
+the byte as build 366's (but Arcade's shake as its boss dies, which is random from one load to the next on 366 too; its
+half makes it a seeded jitter) — and plays it every time round until its own half lands. The frame's work is the same. First
+paint but `app.js`'s hook (+18 bytes gzipped); `scenes.js`, lazy, 8,459 → 9,609 gzipped, most of it the new header.
+Nothing in `apple/` but the stamp.

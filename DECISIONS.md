@@ -2519,3 +2519,61 @@ and `scene-wood.js` 26,217 → 40,815 gzipped, loaded only under these kits.
 
 **What did not change.** Pass 0 and the finales but where Chalkboard's A+ lands after a dealt lesson; the kits; first
 paint; nothing in `apple/` but the stamp.
+
+# 1.12 b375 decisions — the forever cycle, five: Sketch and Cocoa
+
+**Two scenes that carry.** Drafted by a helper to the forever cycle's brief and checked here. What each pass draws or
+pours stays up through the quiet after it (`carry`), until the next pass takes it off; pass 0 is each loop as it was.
+
+**Sketch.** Each pass draws one subject from a pool of six, a run of six passes drawing them all and never the same
+twice running: the balloon again (in its own colours, a rainbow, or blue and gold); a lighthouse on its rock at sundown,
+its lamp lit as the first stars come out, its beam turning while a wave breaks on the rock; a sailboat riding a swell,
+bow up then stern, throwing spray; a humpback that blows and slaps the sea with its flukes; a teapot on a gingham cloth
+that rattles, puffs and pours the cup in front of it full; a hummingbird that darts in to a fuchsia, drinks, loops up and
+comes back, its wings in the blur of a hover. Each is drawn the balloon's way — guide, line, details, hatching, washes
+wet and drying, flicked drops — and a pass deals which way it faces, its colours, and which way the eraser scrubs.
+Rare, about one pass in eight: a cat on its rug by a ball of yarn, whose eyes follow the pencil and the brush round
+the page before it yawns, bats its yarn and gives a slow blink.
+
+**Cocoa.** Each pass pours one of four with the same fluid (contour advection, b351) — the heart; a rosetta, small
+pushes swung side to side and pulled through into a fern; a tulip, big pushes pressed into stacked hearts; a big heart
+on a stem over fern leaves — each turned a little its own way, and deals what follows: marshmallows or none, cinnamon,
+cocoa sifted from one side or chocolate shavings, a cloud or two over the window, a bird's shadow up the light, a gust
+in the leaves. Rare, about one pass in eight each: a swan, and a ginger cat's paw reaching in from the edge away from
+the words to pat the saucer, its toe beans showing.
+
+**Checked.** Pass 0 of both kits the same to the byte as before, both viewports. Twelve passes each: no pass like the
+one before on Sketch; on Cocoa's wide screen two pairs read alike to the tool, where the cup is three hundredths of the
+screen, and differ in a quarter of the cup's own pixels. Every seam at most Sketch's line boil.
+
+**The copy.** The changelog said Sketch drew "a hot-air balloon in watercolor"; it now names the rest, through Price's
+voice: "for Sketch, a pencil and a brush drawing in watercolor—a hot-air balloon first, then a lighthouse, sailboat,
+whale, teapot or hummingbird".
+
+**Contrast.** Over dealt passes 1 to 3, the seed lines and the long list, and Everything's resting picture at passes 2
+and 3, both viewports: at or above plain but the top bar in the app's idle fade on Sketch's long list. One reading
+under 4.5 was there before this build: Sketch's crossed-off line in a phone's long list, 4.55 → 4.37, in use as much as
+left alone, the same in the untouched scene. It is fixed in its own commit (b376, below).
+
+**What it costs.** The loop over pass 0 and over dealt passes 1 to 4, sixty seconds each, back to back on one quiet
+machine, as a share of one core, with this build's shade under Sketch's lines: Sketch 4.71 → 4.62 % on a wide screen and
+4.79 → 4.67 % on a phone; Cocoa 4.39 → 4.25 % and 4.36 → 4.32 %. A new Sketch subject's washes are made once at the
+start of its pass (4–7 ms), and Cocoa keeps each finished pour, so the next pass doesn't pour it again to rest on it.
+`scene-sketch.js` 10,592 → 36,413 (most of it the subjects' drawings) and `scene-cocoa.js` 9,130 → 16,911 gzipped.
+
+**What did not change.** Pass 0 and the finales; the kits; first paint; nothing in `apple/` but the stamp.
+
+# 1.12 b376 decisions — Sketch shades under a line's words
+
+**Before this build.** A phone's long list puts its last lines over the sketchbook's squares and the vignette's edge, and
+the crossed-off line read 4.37 against a plain 4.55 whether the list was in use or not — the scene's own resting
+picture, in the untouched module too. Found by this build's contrast runs, which read the long list over dealt passes.
+
+**The fix.** After drawing, the scene lays its own paper (the kit's ground, which is the sketchbook's paper) under each
+line's words: solid over the text and a few pixels round it, fading out over 14 pixels on a phone and 18 on a wide screen.
+Tools and small words are left alone. On screen the squares soften under each line and there is no box; the subjects
+keep to the open space as before. It needs the words, so the lab, which has none, draws exactly what it did.
+
+**After.** The crossed-off line 4.58 on a phone and 4.62 on a wide screen (plain 4.55 and 4.58: the plain page carries
+the kit's faint accent glow), in use and left alone, over pass 0 and dealt passes; a line 12.65 → 13.14, the ↻ 4.42 →
+4.57. Its own commit, in this build: it changes how Sketch draws a list on screens that already have Scenes on.

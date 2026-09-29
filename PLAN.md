@@ -3218,3 +3218,42 @@ Char". Web only; the version holds at 1.12, and nothing in `apple/` changed but 
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on a checkout of the change alone: the Scenes tests, the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
 | Looked at | passes 1–6 of each kit on both viewports, each kit's whole pool finished, a wipe and an ease-back mid-pass |
+
+# Today's Five 1.12 b375 — the forever cycle, five: Sketch and Cocoa
+
+*Shipped as build 377. b375 is the change's commit. b376 is its own fix, Sketch's shade under a line's words.*
+
+Two scenes that carry: Sketch draws one of six subjects each pass at the balloon's craft (the balloon in other colours,
+a lighthouse, a sailboat, a humpback, a teapot, a hummingbird; rarely a cat), and Cocoa pours one of four latte arts
+with the same fluid (the heart, a rosetta, a tulip, a heart on a fern; rarely a swan or a cat's paw); what a pass draws
+or pours stays up through the quiet until the next pass takes it off. Pass 0 is each loop as it was. The changelog's
+Sketch clause names the rest. And, found by this build's contrast runs, Sketch now shades under a line's words. The
+decisions are in DECISIONS.md under "1.12 b375 decisions — the forever cycle, five: Sketch and Cocoa". Web only; the
+version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Sketch and Cocoa deal their passes, and carry** (b375). `scene-sketch.js`, `scene-cocoa.js`; the changelog's Sketch
+   clause (through Price's voice).
+2. **Sketch shades under a line's words** (b376). `scene-sketch.js`: its own paper under each line, so a phone's long
+   list's crossed-off line reads 4.37 → 4.58.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: the change is two lazy modules and the changelog | `git diff --stat` 374..375 |
+| lazy, Scenes on under the kit only | `scene-sketch.js` 10,592 → **36,413**; `scene-cocoa.js` 9,130 → **16,911** gzipped | `gzip -9 -n` |
+| pass 0 | the same to the byte as 374's at b375, both kits, both viewports, eleven moments of the loop and three of the finale (b376's shade needs the words, which the lab has none of) | `samecv.mjs`, 365's checkout (port 8833) against this |
+| the passes | twelve each, both viewports: the seams at most Sketch's line boil; no pass like the one before but two Cocoa pairs on a wide screen, where the cup is three hundredths of the screen and a quarter of its pixels differ | `tools/scene-seams.mjs` |
+| CPU, desktop (share of one core) | the loop, pass 0 → dealt passes 1–4, with b376: Sketch 4.71 → **4.62 %**, Cocoa 4.39 → **4.25 %** | `tools/idle.mjs 60`, `SCENES=1` (`UNLOCK=1` for hidden kits), `PASS=0` against `PASS=1` (passes 1–4), back to back |
+| CPU, phone (390×844 at 2×) | Sketch 4.79 → **4.67 %**, Cocoa 4.36 → **4.32 %** | the same, `VP=phone` |
+| contrast | at or above plain but the top bar in the app's idle fade on Sketch's long list; Sketch's crossed-off line in a phone's long list, 4.37 before (the untouched scene too), **4.58** with b376 (desktop 4.49 → **4.62**) | `tools/contrast.mjs` `PASS=1 PASSES=3`: the seed lines; `FIXTURE=1 CLOCK=2026-09-28T15:00:00`; for a scene that carries, `FIXTURE=1 VIEW=all` at `PASS=2` and `PASS=3` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests, the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
+| Looked at | passes 1–6 of both kits on both viewports, every subject and pour finished, each rare beat, the paw and the hummingbird's wings again after their polish, the shade under a phone's long list |

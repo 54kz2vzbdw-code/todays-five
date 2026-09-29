@@ -2908,3 +2908,37 @@ the stamp.
 | Pink | both of its canvases read straight from the stage, old module against new, at six moments of the loop and two of the finale, both viewports: identical, byte for byte |
 | Looked at | both viewports in the lab through the loop and the finale, full size; in the app with the seed lines and the long list |
 | Screenshots | `shots/scenes-9/`: the big bubble and the stream, phone and desktop (JPEG) |
+
+# Today's Five 1.12 b356 — Scenes: Teletype's split flaps and Terminal's demo
+
+*Shipped as build 357. b356 is the change's commit.*
+
+Both of Price's type kits get new scenes, type in motion: a railway station's wall of split flaps for Teletype, a
+nineties demo in characters for Terminal. The old coast is gone. The decisions are in DECISIONS.md under "1.12 b355
+decisions — Scenes: Teletype's split flaps and Terminal's demo". Web only; the version holds at 1.12, and nothing in
+`apple/` changed but the stamp.
+
+## What shipped
+
+1. **Teletype's split flaps and Terminal's demo** (b356). `scene-flap.js` and `scene-demo.js` (new);
+   `scene-teletype.js` and `scene-terminal.js` removed; the stage maps the kits to the new modules; the worker's list,
+   the changelog's clause (through Price's voice), the features test's list and the Scenes tests follow.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: the change is the scene modules, the stage's map, the worker's list, the changelog and the tests; the stamp moves the build number | `git diff --stat` 355..356 |
+| lazy, Scenes on only | `scene-flap.js` **3,487** (was `scene-teletype.js`, 6,312); `scene-demo.js` **4,025** (was `scene-terminal.js`, 4,981) | `gzip -9 -n` |
+| CPU, desktop (share of one core) | Teletype's loop 2.70 → **3.46 %**, in use 1.64 → **1.34 %**; Terminal's loop 3.36 → **4.45 %** (two runs each, alternated; every Chrome process 14.1 → 11.9 %), in use 2.04 → **2.93 %** | `tools/idle.mjs 60`, `SCENES=1`, `SCENES=1 USE=5`; 355 against this |
+| CPU, phone (390×844 at 2×) | Teletype 2.82 → **2.42 %**; Terminal 2.73 → **2.88 %** | `tools/idle.mjs 60`, `VP=phone SCENES=1` |
+| contrast | every reading at or above plain but the finale's words caught fading in and the tools in the app's idle fade | `tools/contrast.mjs`: the seed lines, `FIXTURE=1 CLOCK=2026-09-28T15:00:00`, `FIXTURE=1 VIEW=all` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests, the full session and the worker's two tests, both viewports: 18 passed; again on the stamp |
+| Looked at | both kits through the loop in the lab and in the app, both viewports; the long list; Terminal's first cut profiled (the glyphs drawn, not the arithmetic, were the cost) |
+| Screenshots | `shots/scenes-9/`: each kit mid-loop, phone and desktop (JPEG) |

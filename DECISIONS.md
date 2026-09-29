@@ -2119,3 +2119,51 @@ number ten on a wide screen and seven on a phone. In use it is cheaper than the 
 2.48 → 3.45 %.
 
 **What did not change.** Pink; first paint; no stored setting; nothing in `apple/` but the stamp.
+
+# 1.12 b356 decisions — Scenes: Teletype's split flaps and Terminal's demo
+
+**What Price asked for.** He didn't like Teletype's or Terminal's scenes (a coast typed in characters on green-bar paper
+by day, drawn in glowing green lines at night); scrap them and do something else.
+
+**Both kits are about type, so both scenes are type in motion.**
+
+**Teletype: a wall of split flaps.** `scene-flap.js`. The whole page is a wall of split flaps of the kind a railway
+station hangs over its platforms, each a tone barely off the page's own cream toward the kit's green. Every flap really
+flips — its top half falls over the hinge, shading as it turns, and the next face's bottom half comes down over the
+last — and passes through every tone between where it is and where it's going, in order, the way a real one does, so a
+change runs across the wall as a clattering ripple. The loop: a wave from the left draws a sun as big as the page, its
+rays running out from behind the list; rings ripple out from the middle; a diagonal sweep winds a spiral; flaps turn
+over one by one, here and there, into stripes; a wave from the right wipes the wall plain again. The finale: rings
+burst out from the middle. While the list is in use the wall holds still, and nothing is drawn. The pictures, the order
+they come in and the shape of each wave are a table.
+
+**Terminal: a nineties demo in characters.** `scene-demo.js`. The whole page is a phosphor screen running a demo, the
+kind the demoscene made, in characters: every cell a letter from a ramp of ten, light to dense, so each effect is drawn
+the way ASCII art draws a picture, in the kit's green, with a soft bloom and scanlines. The loop: a plasma; a raster bar
+sweeps down and behind it a tunnel rushes toward you; the next bar brings a checkerboard turning and zooming; then fire,
+rising from the foot of the screen; then the stars stream out from the middle, faster, and the plasma comes back. The
+finale: a shockwave of characters rings out from the middle, twice. The screen is worked out and drawn twelve times a
+second, as the demos ran (six while the list is in use), and left as it is in between.
+
+**The words.** On Teletype the flaps under the words, and the gaps between them, rest page-plain: the words sit on the
+page's own ground and the pictures flow round the list. On Terminal the characters under the words are blank, the lines
+sit on pads, and the light the bloom and the raster bar spill into the blank cells round the words is taken out again
+there, soft at the edges.
+
+**What it cost, and what it costs now.** Terminal's first cut drew about eight thousand characters twice a frame, thirty
+times a second: 12 % of a core. Worked out and drawn twelve times a second in slightly larger cells, it costs about as
+much as Cocoa; every Chrome process together spends less on it than on the old scene. Teletype's wall draws only the
+flaps that move, and nothing when none do.
+
+**The numbers.** Against the old scenes, back to back on the same machine: Teletype's loop 2.70 → 3.46 % of a core, in
+use 1.64 → 1.34 %, on a phone 2.82 → 2.42 %; Terminal's loop 3.36 → 4.45 % (two runs each, alternated), in use 2.04 →
+2.93 %, on a phone 2.73 → 2.88 %, and every Chrome process together 14.1 → 11.9 % in its loop. Contrast: every reading
+at or above plain on both — the seed lines, the long list, Everything, both viewports — but the finale's words caught
+fading in at a different alpha run to run, and the tools in the app's idle fade. The modules are smaller than the ones
+they replace: 6,312 → 3,487 bytes gzipped for Teletype, 4,981 → 4,025 for Terminal.
+
+**The copy.** The changelog's clause for the two now reads "for Teletype, a wall of split flaps flipping through
+pictures; for Terminal, a nineties-style demo—plasma, tunnel and fire, drawn in green characters", through Price's voice.
+
+**What did not change.** The kits; first paint; no stored setting; nothing in `apple/` but the stamp. The old scenes'
+modules are gone from the site and from the worker's list.

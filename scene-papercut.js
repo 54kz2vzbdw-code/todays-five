@@ -2,11 +2,13 @@
 // loads it for either kit and says which). Cut paper: flat shapes in paper colours, each laying a soft shadow on the
 // layer behind, a grain over all of it; what never moves is laid down once on the backdrop, and each frame moves only
 // the rest. The day's loop, fifteen seconds: a breeze through the trees and the windmill; a paper plane loops the loop
-// and leaves a dotted line; a house pops up out of the hill like a page turning; a red kite climbs with its bows
-// trailing; paper birds cross the sky as the sun's rays turn a notch; everything folds back down. The night's: the
-// windows light across the town; a paper train crosses the bridge, its reflection wobbling in the river; a cloud on a
-// wire slides over the moon; cut-paper fireworks in glass colours; a star on a wire; the lights go out again. The
-// finales: paper cranes fly up past the sun; a fan of paper stars opens out of the moon.
+// and leaves a dotted line; a red steam train runs along the viaduct, puffing paper steam; the kite lying on the near
+// bank is lifted by the wind and climbs, its bows streaming, flies a while and comes down to rest; paper birds cross the
+// sky as the sun's rays turn a notch. The night's: the windows light across the town; a paper train crosses the
+// viaduct, its reflection wobbling in the river; a cloud is let down on its thread across the moon and taken up again;
+// cut-paper fireworks in glass colours; a star on a wire; the lights go out again. Whatever crosses the sky comes on
+// from past one edge and goes all the way off another. The finales: paper cranes fly up past the sun; a fan of paper
+// stars opens out of the moon. (b343: the train by day, the viaduct, the kite at rest, the exits, and the lines on pads.)
 export default function papercut(K, id) {
   const night = id === "midnight";
   const { clamp, lerp, E, seg, env, rng, canvas, grain, noise1, fbm } = K;
@@ -45,6 +47,7 @@ export default function papercut(K, id) {
     res: "dpr",
     wash: night ? 1 : 1.6, // a light kit's small words have no room for the picture under them (scenes.js)
     veil: night ? .5 : 1,
+    hug: .82, // each line on a pad of the ground: a long list's last lines lie over the town, where the trains run
     bind(ctx) { g = ctx; },
     layout(W, H, bg) {
       px = bg.getTransform().a;
@@ -84,13 +87,12 @@ export default function papercut(K, id) {
       S.mill = { x: mx, y: mb - mh, base: mb, h: mh, r: mh * .62 };
       S.millSail = make(S.mill.r * 1.1, S.mill.r * .34, x => { shade(x, 4, -1, 2); x.fillStyle = P.sail; x.fillRect(S.mill.r * .1, S.mill.r * .04, S.mill.r * .95, S.mill.r * .24); unshade(x); x.strokeStyle = P.millLo; x.lineWidth = .8; for (let k = 1; k < 5; k++) { const xx = S.mill.r * (.1 + k * .19); x.beginPath(); x.moveTo(xx, S.mill.r * .04); x.lineTo(xx, S.mill.r * .28); x.stroke(); } });
       S.millAngle = 0; S.lastA = null;
-      // the bridge over the river, and the bank the train runs along
-      const b0 = W * (pr ? .2 : .28), b1 = W * (pr ? .54 : .5);
-      S.deckY = riverY - 1.5 * u; S.bridge = [b0, b1];
+      // the viaduct's deck over the river, which the trains run along
+      S.deckY = riverY - 1.5 * u;
       // trees: lollipops on the hills, each swaying from its foot
       const treeSpr = (s, c) => make(4.6 * u * s + 4 * u, 9 * u * s + 3 * u, x => { const w = 4.6 * u * s, pad = 2 * u; shade(x, 5, -1.2, 2.2); x.fillStyle = P.trunk; x.fillRect(pad + w / 2 - .35 * u, pad + w * .8, .7 * u, 9 * u * s - w * .8); x.fillStyle = c; x.beginPath(); x.arc(pad + w / 2, pad + w / 2, w / 2, 0, TAU); x.fill(); unshade(x); x.fillStyle = "rgba(255,255,255,.14)"; x.beginPath(); x.arc(pad + w * .62, pad + w * .38, w * .22, 0, TAU); x.fill(); });
       S.trees = [];
-      const treeAt = (x, yf, s) => { const spr = treeSpr(s, P.tree[S.trees.length % 3]); S.trees.push({ x, y: yf(x) + .5 * u, spr, ph: r() * TAU, s }); };
+      const treeAt = (x, yf, s) => { const spr = treeSpr(s, P.tree[S.trees.length % 3]); S.trees.push({ x, y: yf(x) + .5 * u, spr, ph: r() * TAU, s, front: yf === frontY }); }; /* the near bank's stand in front of the viaduct */
       for (const f of (pr ? [.06, .64, .72] : [.43, .85, .96, .12])) treeAt(W * f, townY, .9 + r() * .3);
       for (const f of (pr ? [.1, .34, .66, .95] : [.06, .2, .56, .7, .9])) treeAt(W * f, frontY, 1 + r() * .35);
 
@@ -104,14 +106,26 @@ export default function papercut(K, id) {
           else { const k = (v - .72) / .28; x = lerp(cx, W * 1.14, k); y = lerp(cy, cy - H * .09, k * k); }
           S.planePath.push([x, y]); }
         S.plane = make(6 * u, 3 * u, x => { shade(x, 3, -.8, 1.6); x.fillStyle = P.paper; x.beginPath(); x.moveTo(6 * u, 1.3 * u); x.lineTo(0, 0); x.lineTo(1.4 * u, 1.3 * u); x.lineTo(0, 2.6 * u); x.closePath(); x.fill(); unshade(x); x.fillStyle = P.fold; x.beginPath(); x.moveTo(6 * u, 1.3 * u); x.lineTo(1.4 * u, 1.3 * u); x.lineTo(0, 2.6 * u); x.closePath(); x.fill(); });
-        const hw = 7 * u, hh = 7.4 * u;
-        S.pop = { x: W * (pr ? .66 : .41), w: hw, h: hh, spr: make(hw + 3 * u, hh + 3 * u, x => { const o = 1.5 * u; shade(x, 5, -1.4, 2.4); x.fillStyle = P.wall; x.fillRect(o, o + hh * .42, hw, hh * .58); x.fillStyle = P.kite; x.beginPath(); x.moveTo(o - .6 * u, o + hh * .44); x.lineTo(o + hw / 2, o); x.lineTo(o + hw + .6 * u, o + hh * .44); x.closePath(); x.fill(); unshade(x);
-          x.fillStyle = P.window; x.beginPath(); x.arc(o + hw / 2, o + hh * .27, hh * .07, 0, TAU); x.fill(); x.fillStyle = P.door; x.fillRect(o + hw * .4, o + hh * .72, hw * .2, hh * .28); x.fillStyle = P.window; x.fillRect(o + hw * .12, o + hh * .6, hw * .16, hh * .14); x.fillRect(o + hw * .72, o + hh * .6, hw * .16, hh * .14); }) };
-        S.pop.y = frontY(S.pop.x + hw / 2) + .8 * u;
+        // the train: a red engine and three cream cars, right to left along the viaduct; its steam in puffs of paper
+        const tW = 9 * u, tH = 3.4 * u, wheel = (x, xs, y, r0) => { x.fillStyle = "#5A4636"; for (const f of xs) { x.beginPath(); x.arc(f, y, r0, 0, TAU); x.fill(); } x.fillStyle = "#B8A58C"; for (const f of xs) { x.beginPath(); x.arc(f, y, r0 * .35, 0, TAU); x.fill(); } };
+        S.tW = tW; S.tH = tH;
+        S.dcar = make(tW + 2 * u, tH + 2.4 * u, x => { x.translate(u, u); shade(x, 3, -.8, 1.6); x.fillStyle = P.wall; x.beginPath(); x.roundRect(0, 0, tW, tH, .8 * u); x.fill(); unshade(x);
+          x.fillStyle = P.kite; x.fillRect(0, tH * .68, tW, .5 * u); x.fillStyle = P.wallLo; x.fillRect(0, 0, tW, .45 * u); x.fillStyle = "#9CC0C8"; for (let k = 0; k < 3; k++) x.fillRect(tW * (.1 + k * .3), tH * .2, tW * .2, tH * .32); wheel(x, [tW * .22, tW * .78], tH, .62 * u); });
+        S.dcar.foot = u + tH + .62 * u;
+        S.dengine = make(tW + 2.8 * u, tH * 1.5 + 2.6 * u, x => { x.translate(1.8 * u, u); shade(x, 3, -.8, 1.6);
+          x.fillStyle = "#4E3E30"; x.fillRect(tW * .1, 0, tW * .15, tH * .55); x.fillRect(tW * .07, 0, tW * .21, tH * .12); /* the chimney, its flared top */
+          x.fillStyle = P.kite; x.beginPath(); x.roundRect(0, tH * .45, tW * .66, tH * 1.05, tH * .4); x.fill(); /* the boiler */
+          x.fillStyle = P.wall; x.fillRect(tW * .6, tH * .1, tW * .4, tH * 1.4); x.fillStyle = P.kite; x.fillRect(tW * .56, 0, tW * .48, tH * .16); /* the cab and its roof */
+          x.fillStyle = "#4E3E30"; x.beginPath(); x.moveTo(0, tH * 1.1); x.lineTo(-tW * .12, tH * 1.5); x.lineTo(0, tH * 1.5); x.closePath(); x.fill(); unshade(x); /* the cowcatcher */
+          x.fillStyle = P.kiteHi; x.fillRect(tW * .04, tH * .55, tW * .56, tH * .14); x.fillStyle = "#9CC0C8"; x.fillRect(tW * .7, tH * .32, tW * .2, tH * .34);
+          wheel(x, [tW * .12, tW * .34, tW * .56], tH * 1.5, .78 * u); wheel(x, [tW * .82], tH * 1.5, .62 * u); });
+        S.dengine.foot = u + tH * 1.5 + .78 * u;
+        S.puff = make(7 * u, 5.4 * u, x => { shade(x, 4, -1, 2); x.fillStyle = "#FFFFFF"; x.beginPath(); for (const [bx, by, br] of [[2.3, 3.1, 1.5], [3.6, 2.2, 1.9], [4.9, 3.2, 1.4]]) { x.moveTo((bx + br) * u, by * u); x.arc(bx * u, by * u, br * u, 0, TAU); } x.fill(); unshade(x);
+          x.fillStyle = "rgba(170,150,125,.28)"; x.beginPath(); x.arc(3.6 * u, 3.4 * u, 1.9 * u, .15 * Math.PI, .85 * Math.PI); x.fill(); });
         S.kite = make(5 * u, 6.4 * u, x => { const w = 5 * u, h = 6.4 * u; shade(x, 4, -1, 2); x.fillStyle = P.kite; x.beginPath(); x.moveTo(w / 2, 0); x.lineTo(w, h * .38); x.lineTo(w / 2, h); x.lineTo(0, h * .38); x.closePath(); x.fill(); unshade(x); x.fillStyle = P.kiteHi; x.beginPath(); x.moveTo(w / 2, 0); x.lineTo(w, h * .38); x.lineTo(w / 2, h * .38); x.closePath(); x.fill(); x.beginPath(); x.moveTo(w / 2, h); x.lineTo(0, h * .38); x.lineTo(w / 2, h * .38); x.closePath(); x.fill(); x.strokeStyle = "rgba(255,248,236,.7)"; x.lineWidth = .7; x.beginPath(); x.moveTo(w / 2, 0); x.lineTo(w / 2, h); x.moveTo(0, h * .38); x.lineTo(w, h * .38); x.stroke(); });
         S.bows = P.bow.map(c => make(2.6 * u, 1.6 * u, x => { shade(x, 2, -.5, 1); x.fillStyle = c; x.beginPath(); x.moveTo(0, 0); x.lineTo(1.3 * u, .8 * u); x.lineTo(0, 1.6 * u); x.closePath(); x.moveTo(2.6 * u, 0); x.lineTo(1.3 * u, .8 * u); x.lineTo(2.6 * u, 1.6 * u); x.closePath(); x.fill(); }));
-        S.kiteAnchor = pr ? [W * .06, frontY(W * .06)] : [W * .68, townY(W * .68)];
-        S.kiteTop = pr ? [W * .15, H * .25] : [W * .75, H * .21];
+        S.kiteAnchor = pr ? [W * .06, frontY(W * .06)] : [W * .715, frontY(W * .715)]; /* on the near bank, clear of the houses */
+        S.kiteTop0 = pr ? [W * .15, H * .25] : [W * .79, H * .21]; S.kiteTop = S.kiteTop0.slice(); /* where it likes to fly; words() lowers it clear of the lines */
         const bird = up => make(4.4 * u, 2.6 * u, x => { shade(x, 2, -.5, 1.2); x.fillStyle = P.bird; x.beginPath(); x.moveTo(0, up ? .2 * u : 1.4 * u); x.lineTo(2.2 * u, 1.3 * u); x.lineTo(4.4 * u, up ? .2 * u : 1.4 * u); x.lineTo(2.2 * u, 2.2 * u); x.closePath(); x.fill(); unshade(x); x.fillStyle = P.birdFold; x.beginPath(); x.moveTo(2.2 * u, 1.3 * u); x.lineTo(4.4 * u, up ? .2 * u : 1.4 * u); x.lineTo(2.2 * u, 2.2 * u); x.closePath(); x.fill(); });
         S.bird = [bird(true), bird(false)];
         S.flock = Array.from({ length: 6 }, (_, i) => ({ dx: (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 3.2 * u, dy: Math.ceil(i / 2) * 2.2 * u, ph: r() * TAU }));
@@ -169,19 +183,32 @@ export default function papercut(K, id) {
       // the river, its bridge, and the bank
       shade(bg, 6, -1, 2); bg.fillStyle = P.river; bg.beginPath(); bg.moveTo(0, riverY); for (let x = 0; x <= W + 4; x += 6) bg.lineTo(x, riverY + Math.sin(x / (9 * u)) * .4 * u); bg.lineTo(W, riverY + riverH); bg.lineTo(0, riverY + riverH); bg.closePath(); bg.fill(); unshade(bg);
       bg.fillStyle = P.riverHi; for (let k = 0; k < (pr ? 6 : 10); k++) { const x = r() * W, y = riverY + riverH * (.25 + r() * .55); bg.globalAlpha = .55; bg.fillRect(x, y, (3 + r() * 6) * u, .35 * u); } bg.globalAlpha = 1;
-      { const [b0, b1] = S.bridge, top = S.deckY, n = pr ? 2 : 3, span = (b1 - b0) / n;
+      { const top = S.deckY, n = Math.ceil(W / (W * (pr ? .19 : .085))), span = (W + 4 * u) / n, b0 = -2 * u, b1 = W + 2 * u; /* a viaduct right across the river: both trains run on it */
         shade(bg, 6, -1.4, 2.6); bg.fillStyle = P.bridge; bg.beginPath(); bg.moveTo(b0 - 2 * u, top); bg.lineTo(b1 + 2 * u, top);
         bg.lineTo(b1 + 2 * u, riverY + riverH * .9);
         for (let k = n - 1; k >= 0; k--) { const a0 = b0 + k * span; bg.lineTo(a0 + span * .92, riverY + riverH * .9); bg.quadraticCurveTo(a0 + span * .5, top + 1.2 * u - (riverH * .3), a0 + span * .08, riverY + riverH * .9); }
         bg.lineTo(b0 - 2 * u, riverY + riverH * .9); bg.closePath(); bg.fill(); unshade(bg);
-        bg.fillStyle = night ? "#34426A" : "#F8F0E0"; bg.fillRect(b0 - 2 * u, top, b1 - b0 + 4 * u, .5 * u); }
+        bg.fillStyle = night ? "#34426A" : "#F8F0E0"; bg.fillRect(b0 - 2 * u, top, b1 - b0 + 4 * u, .5 * u);
+        bg.fillStyle = night ? "rgba(10,16,34,.55)" : "rgba(110,86,60,.35)"; bg.fillRect(b0 - 2 * u, top - .28 * u, b1 - b0 + 4 * u, .28 * u); } /* the rails */
       band(frontY, P.front, 8);
       // the near hill, its top cut with pinking shears
       { shade(bg, 7, -1.4, 3); bg.fillStyle = P.near; bg.beginPath(); bg.moveTo(0, H); const tooth = 1.2 * u;
         for (let x = 0, k = 0; x <= W + tooth; x += tooth, k++) bg.lineTo(x, nearY(x) - (k % 2 ? 0 : .7 * u)); bg.lineTo(W, H); bg.closePath(); bg.fill(); unshade(bg); }
       // grain, the paper's own
       const tile = grain(140, 140, night ? 29 : 11, P.grainK); bg.fillStyle = bg.createPattern(tile, "repeat"); bg.fillRect(0, 0, W, H);
+      if (S.raw) S.words(S.raw);
     },
+    /** where the words are (scenes.js): by day the kite flies no higher than clears them — it and its tail keep off the lines */
+    words(rects) {
+      S.raw = rects; S.wr = rects.map(([x0, y0, x1, y1]) => [x0 - 10, y0 - 8, x1 + 10, y1 + 8]); if (night || !S.W || !S.kiteTop0) return;
+      const { u } = S, x = S.kiteTop0[0];
+      const hit = y => rects.some(([x0, y0, x1, y1]) => x > x0 - 9 * u && x < x1 + 9 * u && y + 17 * u > y0 - 2 * u && y - 5 * u < y1 + 2 * u); /* the kite and its tail; the string goes behind the words */
+      const y0 = S.kiteTop0[1], lo = S.H * .1 + 5 * u, hi = S.townY(x) - 16 * u; let y = null; /* the nearest clear height, above or below where it likes to be */
+      for (let k = 0; k < 400; k++) { const up = y0 - k * u, dn = y0 + k * u; if (up >= lo && !hit(up)) { y = up; break; } if (dn <= hi && !hit(dn)) { y = dn; break; } if (up < lo && dn > hi) break; }
+      S.kiteTop = y === null ? null : [x, y]; /* no clear sky for it: it stays on the bank */
+    },
+    /** 1 clear of the words, down to nothing behind them: for what crosses the sky */
+    shade(x, y, r) { let d = 1e9; for (const [x0, y0, x1, y1] of S.wr || []) d = Math.min(d, Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(y0 - y, 0, y - y1))); return clamp((d - r * .3) / (r + 6)); },
 
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1 */
     draw(T, I, A, F) {
@@ -197,14 +224,16 @@ export default function papercut(K, id) {
         const turn = A * .04 + seg(T, 11, 12.7, E.back) * (TAU / 12) * (I > .01 ? 1 : 0); // a notch: twelve rays, so a notch looks like none when the loop comes round
         put(S.sunRays, ox, oy, .5, .5, turn); put(S.sunDisk, ox, oy);
       } else {
-        const veiled = env(T, 5.6, 6.5, 7.2, 8.1, E.sine) * I;
+        const veiled = env(T, 6.1, 6.6, 7.2, 7.7, E.sine) * I; /* while the cloud is across it */
         g.globalAlpha = .75 - veiled * .45 + (F >= 0 ? env(F, 0, .2, .7, 1) * .25 : 0); g.drawImage(S.moonGlow, ox - S.moonGlow.width / 2, oy - S.moonGlow.height / 2); g.globalAlpha = 1;
         g.fillStyle = P.moon; g.beginPath(); g.arc(ox, oy, orb.r, 0, TAU); g.fill();
         g.fillStyle = P.moonLo; for (const [cx, cy, cr] of [[-.3, -.2, .22], [.25, .15, .16], [-.05, .38, .12]]) { g.beginPath(); g.arc(ox + cx * orb.r, oy + cy * orb.r, cr * orb.r, 0, TAU); g.fill(); }
         // the stars that twinkle (the rest are pinholes in the backdrop)
         for (const s of S.stars) { if (!s.tw) continue; const a = .35 + .65 * Math.pow(Math.max(0, Math.sin(A * s.f + s.ph)), 3); g.globalAlpha = a; g.fillStyle = P.star; g.beginPath(); g.arc(s.x, s.y, s.s * .7, 0, TAU); g.fill(); } g.globalAlpha = 1;
         // the cloud on its wire that slides over the moon
-        const mc = seg(T, 5.3, 8.4, E.sine); if (mc > 0 && mc < 1 && I > .01) { const x = orb.x + lerp(-.42, .42, mc) * W * (S.pr ? .9 : .4); g.globalAlpha = I; g.strokeStyle = P.thread; g.beginPath(); g.moveTo(0, oy - orb.r * .1); g.lineTo(W, oy - orb.r * .1); g.stroke(); put(S.moonCloud, x, oy + orb.r * .2, .5, .5, 0, 1, 1, I); g.globalAlpha = 1; }
+        const cd = seg(T, 5.1, 6.1, E.out) * (1 - seg(T, 7.8, 8.8, E.in)), cs = seg(T, 5.8, 8.0, E.io);
+        if (cd > .001 && I > .01) { const ch = S.moonCloud.h2, x = orb.x + lerp(-2.6, 2.6, cs) * orb.r, y = lerp(-ch * 1.2, oy + orb.r * .15, cd), sw = Math.sin(A * 1.3) * .03 * cd;
+          g.globalAlpha = I; g.strokeStyle = P.thread; g.lineWidth = .8; g.beginPath(); g.moveTo(x, 0); g.lineTo(x + Math.sin(sw) * ch, y - ch * .1); g.stroke(); put(S.moonCloud, x + Math.sin(sw) * ch, y, .5, .2, sw, 1, 1, I); g.globalAlpha = 1; }
       }
       // the clouds on their threads
       for (const c of S.clouds) {
@@ -215,8 +244,9 @@ export default function papercut(K, id) {
       // the windmill's sails, turning at their own pace and faster in the breeze
       S.millAngle += dt * ((night ? .22 : .42) + breeze * 1.6);
       { const m = S.mill; for (let k = 0; k < 4; k++) put(S.millSail, m.x, m.y + m.h * .12, .1, .5, S.millAngle + k * TAU / 4); g.fillStyle = P.millLo; g.beginPath(); g.arc(m.x, m.y + m.h * .12, .7 * u, 0, TAU); g.fill(); }
-      // the trees, each swaying from its foot
-      for (const t of S.trees) put(t.spr, t.x, t.y, .5, 1 - 1.4 * u / t.spr.h2, Math.sin(A * 1.1 + t.ph) * .018 + breeze * .09 * Math.sin(A * 3.4 + t.ph));
+      // the trees, each swaying from its foot: the town's now, the near bank's once the trains have been drawn
+      const trees = front => { for (const t of S.trees) if (t.front === front) put(t.spr, t.x, t.y, .5, 1 - 1.4 * u / t.spr.h2, Math.sin(A * 1.1 + t.ph) * .018 + breeze * .09 * Math.sin(A * 3.4 + t.ph)); };
+      trees(false);
 
       if (!night) {
         // the river glints
@@ -228,20 +258,32 @@ export default function papercut(K, id) {
           const from = Math.max(0, i - Math.floor(n * .34)); g.save(); g.setLineDash([1.1 * u, 1.3 * u]); g.lineWidth = .45 * u; g.strokeStyle = P.trail; g.globalAlpha = I * (1 - seg(pp, .75, 1)); g.beginPath(); g.moveTo(path[from][0], path[from][1]); for (let k = from + 1; k <= i; k++) g.lineTo(path[k][0], path[k][1]); g.lineTo(p[0], p[1]); g.stroke(); g.restore();
           put(S.plane, p[0], p[1], .55, .45, ang, 1, 1, I);
         }
-        // the house that pops up out of the hill, and folds away again
-        const up = seg(T, 5.0, 6.3, E.back) * (1 - seg(T, 13.3, 14.6, E.in)) * I;
-        if (up > .01) { const h = S.pop; g.save(); g.translate(h.x + h.w / 2, h.y); g.scale(1, up); g.drawImage(h.spr, -h.spr.w2 / 2, -h.spr.h2 + 1.5 * u, h.spr.w2, h.spr.h2); g.restore(); }
-        // the kite: up from the hill, a while in the wind, down again; its bows follow where it has been
-        const kiteAt = t => { const k = seg(t, 8.0, 10.2, E.out) * (1 - seg(t, 13.0, 14.8, E.in)); const [ax, ay] = S.kiteAnchor, [tx, ty] = S.kiteTop; return [lerp(ax, tx, k) + Math.sin(t * 1.7) * 1.4 * u * k, lerp(ay + 2 * u, ty, E.sine(k)) + Math.sin(t * 2.3 + 1) * u * k, k]; };
-        const [kx, ky, kk] = kiteAt(T);
-        if (kk > .01 && I > .01) {
-          const [ax, ay] = S.kiteAnchor; g.globalAlpha = I; g.strokeStyle = "rgba(96,74,50,.45)"; g.lineWidth = .7; g.beginPath(); g.moveTo(ax, ay); g.quadraticCurveTo(lerp(ax, kx, .6), lerp(ay, ky, .2) + 6 * u, kx, ky + 3 * u); g.stroke(); g.globalAlpha = 1;
-          for (let b = 5; b >= 1; b--) { const [bx, by] = kiteAt(T - b * .13); put(S.bows[b % 2], bx + Math.sin(T * 5 + b) * .8 * u, by + 3.2 * u + b * 1.6 * u, .5, .5, Math.sin(T * 4 + b) * .4, 1, 1, I); }
-          put(S.kite, kx, ky, .5, .45, Math.sin(T * 2.1) * .14, 1, 1, I);
-        }
+        // the train, right to left along the viaduct, puffing steam: each puff swells as it rises and drifts back, and
+        // thins away; the train comes on from past the right edge and goes all the way off the left before it is gone
+        { const t0 = 4.4, t1 = 9.4, gap = S.tW + .8 * u, parts = [S.dengine, S.dcar, S.dcar, S.dcar], xs = W + 2 * u, xe = -(3 * gap + S.tW + 3 * u), trainX = t => lerp(xs, xe, seg(t, t0, t1, x => x));
+          if (I > .01 && T > t0 && T < t1 + 1.9) {
+            const chimneyTop = S.deckY - S.dengine.foot + u; /* the puffs start at the chimney's mouth, swell as they rise and drift back, and thin away */
+            for (let te = t0; te < Math.min(T, t1); te += .24) { const age = T - te, q = age / 1.9; if (q >= 1) continue; const cx = trainX(te) + 1.8 * u + S.tW * .17, sz = .45 + .85 * E.out(q); const px2 = cx + q * 7 * u, py2 = chimneyTop - E.out(q) * 9 * u; put(S.puff, px2, py2, .5, .75, Math.sin(te * 9) * .3, sz, sz, I * (q < .08 ? q / .08 : 1) * (1 - q) * (.45 + .55 * S.shade(px2, py2 - 2 * u, 3 * u))); }
+            if (T < t1) { const x0 = trainX(T); parts.forEach((c, k) => { const x = x0 + (k ? 1.8 * u + S.tW + .8 * u + (k - 1) * gap : 0), y = S.deckY - c.foot; put(c, x, y, 0, 0, 0, 1, 1, I * (.45 + .55 * S.shade(x + c.w2 / 2, y + c.h2 / 2, c.w2 / 2))); /* under vellum where it passes behind a line */
+              for (let s2 = 0; s2 < 2; s2++) { const sh = c.h2 / 2, wob = Math.sin(A * 4 + s2 * 2.1 + k * .7) * .35 * u; g.save(); g.globalAlpha = .14 * I; g.translate(x + wob, S.riverY + .6 * u + s2 * sh * .6); g.scale(1, -.6); g.drawImage(c, 0, (1 - s2) * sh * px, c.width, sh * px, 0, -sh, c.w2, sh); g.restore(); } }); }
+          } }
+        // the kite: it lies on the hill, tied to its peg, until the wind lifts it; it climbs, flies a while and comes down
+        // to rest again (and settles if the list is touched mid-flight). Its tail lies along the grass, and in the air
+        // hangs from it, streaming down the wind
+        { const kg = 1 - Math.exp(-dt * 1.5), goal = S.kiteTop || S.kt || S.kiteTop0; S.kt = S.kt ? [lerp(S.kt[0], goal[0], kg), lerp(S.kt[1], goal[1], kg)] : goal.slice(); /* it glides to a new height when the list changes */
+          S.kOk = (S.kOk === undefined ? 1 : S.kOk) + ((S.kiteTop ? 1 : 0) - (S.kOk === undefined ? 1 : S.kOk)) * kg; /* no clear sky: it settles on the bank */
+          const [ax, ay] = S.kiteAnchor, [tx, ty] = S.kt, rest = [ax + 3.4 * u, ay - .5 * u];
+          const kf = seg(T, 8.0, 10.3, E.out) * (1 - seg(T, 12.9, 14.7, E.io)) * I * S.kOk, lift = seg(kf, 0, .22, E.sine);
+          const kx = lerp(rest[0], tx, E.sine(kf)) + Math.sin(A * 1.7) * 1.4 * u * kf, ky = lerp(rest[1], ty, kf) - Math.sin(kf * Math.PI) * 3 * u + Math.sin(A * 2.3 + 1) * u * kf, rot = lerp(1.32, Math.sin(A * 2.1) * .14, lift);
+          { const cx2 = lerp(ax, kx, .6), cy2 = lerp(ay, ky, .25) + 6 * u * lift, ex2 = kx, ey2 = ky + 1.5 * u, at = q => [(1 - q) * (1 - q) * ax + 2 * (1 - q) * q * cx2 + q * q * ex2, (1 - q) * (1 - q) * ay + 2 * (1 - q) * q * cy2 + q * q * ey2];
+            g.lineWidth = .7; for (let k = 0; k < 28; k++) { const [x1, y1] = at(k / 28), [x2, y2] = at((k + 1) / 28), a = S.shade((x1 + x2) / 2, (y1 + y2) / 2, 3 * u); if (a < .02) continue; g.strokeStyle = `rgba(96,74,50,${(.45 * a).toFixed(3)})`; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); } } /* the string: it goes behind the words */
+          for (let b = 5; b >= 1; b--) { const th = Math.PI / 2 - .55 + Math.sin(A * 3.2 + b * .9) * .24 * (b / 5), fx = kx + Math.cos(th) * (b * 2.1 + 1.2) * u, fy = ky + 2.2 * u + Math.sin(th) * (b * 2.1 + 1.2) * u;
+            put(S.bows[b % 2], lerp(rest[0] + (b * 2.2 + 2.2) * u, fx, lift), lerp(rest[1] + .3 * u, fy, lift), .5, .5, lerp(0, Math.sin(A * 4 + b) * .4, lift)); }
+          put(S.kite, kx, ky, .5, .45, rot); }
+        trees(true);
         // the paper birds, right to left across the sky
-        const fb = seg(T, 10.4, 13.9, x => x) * (I > .01 ? 1 : 0);
-        if (fb > 0 && fb < 1) { const lx = lerp(W * 1.1, -W * .15, fb), ly = H * (S.pr ? .1 : .08) + Math.sin(fb * 5) * 2 * u; for (const b of S.flock) put(S.bird[Math.floor(A * 7 + b.ph) % 2], lx + b.dx * -1 + (b.dx < 0 ? -b.dx * .2 : 0) + Math.abs(b.dx) * .9, ly + b.dy, .5, .5, 0, 1, 1, I); }
+        const fb = seg(T, 10.3, 14.0, x => x) * (I > .01 ? 1 : 0);
+        if (fb > 0 && fb < 1) { const lx = lerp(W + 4 * u, -26 * u, fb), ly = H * (S.pr ? .1 : .08) + Math.sin(fb * 5) * 2 * u; for (const b of S.flock) put(S.bird[Math.floor(A * 7 + b.ph) % 2], lx + b.dx * -1 + (b.dx < 0 ? -b.dx * .2 : 0) + Math.abs(b.dx) * .9, ly + b.dy, .5, .5, 0, 1, 1, I); }
         // the finale: paper cranes up past the sun
         if (F >= 0) for (const c of S.cranes) { const k = clamp((F - c.d) / (1 - c.d)); if (k <= 0 || k >= 1) continue; const e = E.io(k), x = c.x0 + c.dx * e + Math.sin(k * 6 + c.ph) * 2 * u, y = lerp(c.y0, -H * .08, e); put(S.crane[c.c * 2 + Math.floor(A * 8 + c.ph) % 2], x, y, .5, .5, -.25 + Math.sin(k * 5 + c.ph) * .1, c.s, c.s, k < .12 ? k / .12 : k > .86 ? (1 - k) / .14 : 1); }
       } else {
@@ -255,16 +297,17 @@ export default function papercut(K, id) {
         // the moon on the river
         g.fillStyle = P.moon; for (const s of S.moonStrips) { const k = .5 + .5 * Math.sin(A * s.v + s.ph), w = s.w * (.55 + .45 * k); g.globalAlpha = (.06 + .22 * k) * (1 - Math.abs(s.dx) / (4.5 * u)); g.fillRect(orb.x - w / 2 + s.dx + Math.sin(A * .7 + s.ph) * .5 * u, s.y, w, .24 * u); } g.globalAlpha = 1;
         // the train along the bank and over the bridge, its reflection wobbling under it
-        const tr = seg(T, 2.4, 6.2, x => x); if (tr > 0 && tr < 1 && I > .01) {
-          const cars = [S.engine, S.car, S.car, S.car], L = cars.length * (S.carW + .6 * u), x0 = lerp(-L, W + S.carW, tr);
-          cars.forEach((c, k) => { const x = x0 - k * (S.carW + .6 * u), y = S.deckY - c.h2 + u; put(c, x, y, 0, 0, 0, 1, 1, I);
+        const tr = seg(T, 2.2, 6.7, x => x); if (tr > 0 && tr < 1 && I > .01) {
+          const cars = [S.engine, S.car, S.car, S.car], gap = S.carW + .6 * u, x0 = lerp(-(S.carW + 3 * u), W + (cars.length - 1) * gap + 2 * u, tr); /* all of it off the edges at both ends */
+          cars.forEach((c, k) => { const x = x0 - k * gap, y = S.deckY - c.h2 + u; put(c, x, y, 0, 0, 0, 1, 1, I * (.45 + .55 * S.shade(x + c.w2 / 2, y + c.h2 / 2, c.w2 / 2)));
             for (let s = 0; s < 2; s++) { const sh = c.h2 / 2, wob = Math.sin(A * 4 + s * 2.1 + k * .7) * .35 * u; g.save(); g.globalAlpha = .2 * I; g.translate(x + wob, S.riverY + .6 * u + s * sh * .6); g.scale(1, -.6); g.drawImage(c, 0, (1 - s) * sh * px, c.width, sh * px, 0, -sh, c.w2, sh); g.restore(); } });
           g.globalAlpha = .4 * I; g.drawImage(S.glow, x0 + S.carW + u - S.glow.width / 2, S.deckY - S.carH * .5 - S.glow.height / 2); g.globalAlpha = 1;
         }
+        trees(true);
         // cut-paper fireworks in the colours of glass
         for (const b of S.bursts) {
           const k = (T - b.t) / 1.9; if (k <= 0 || k >= 1 || I < .01) continue;
-          if (k < .18) { const q = k / .18; g.globalAlpha = I; g.strokeStyle = P.glass[b.c]; g.lineWidth = .5 * u; g.beginPath(); g.moveTo(b.x, b.y + H * .12 * (1 - q) + 3 * u); g.lineTo(b.x, b.y + H * .12 * (1 - q)); g.stroke(); g.globalAlpha = 1; continue; }
+          if (k < .18) { const q = k / .18, yh = b.y + H * .12 * (1 - E.out(q)); g.globalAlpha = I * seg(q, 0, .35, E.sine); g.strokeStyle = P.glass[b.c]; g.lineWidth = .5 * u; g.beginPath(); g.moveTo(b.x, yh + 3.5 * u); g.lineTo(b.x, yh); g.stroke(); g.globalAlpha = 1; continue; }
           const q = (k - .18) / .82, a = I * (q < .6 ? 1 : (1 - q) / .4);
           if (q < .25) { g.globalAlpha = (1 - q / .25) * .7 * I; g.drawImage(S.glow, b.x - S.glow.width / 2, b.y - S.glow.height / 2); g.globalAlpha = 1; }
           for (const [ring, n, R, sp] of [[0, b.n, 1, 1], [1, Math.round(b.n * .6), .6, .8]]) {
@@ -274,11 +317,11 @@ export default function papercut(K, id) {
               put(S.shards[(s + b.c + ring) % S.shards.length], cx, cy, .75, .5, an, 1, 1, a); } }
         }
         // the star on its wire
-        const ws = seg(T, 10.9, 13.1, E.io); if (ws > 0 && ws < 1 && I > .01) {
-          const x0 = -W * .08, y0 = H * (S.pr ? .05 : .04), x1 = W * 1.08, y1 = H * (S.pr ? .3 : .26), wa = env(ws, 0, .15, .85, 1);
+        const ws = seg(T, 10.8, 13.4, E.sine); if (ws > 0 && ws < 1 && I > .01) {
+          const x0 = -5 * u, y0 = H * (S.pr ? .12 : .12), x1 = W + 20 * u, y1 = H * (S.pr ? .33 : .3), /* below the bar along the top */ wa = env(ws, 0, .12, .88, 1), dl = Math.hypot(x1 - x0, y1 - y0), ux = (x1 - x0) / dl, uy = (y1 - y0) / dl, sx = lerp(x0, x1, ws), sy = lerp(y0, y1, ws);
           g.globalAlpha = .5 * wa * I; g.strokeStyle = P.thread; g.lineWidth = .7; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
-          for (let k = 1; k <= 6; k++) { const q = ws - k * .025; if (q <= 0) continue; g.globalAlpha = (1 - k / 7) * .7 * I; g.fillStyle = "#FFE9A8"; g.beginPath(); g.arc(lerp(x0, x1, q), lerp(y0, y1, q) + Math.sin(k * 2.3) * .6 * u, .35 * u, 0, TAU); g.fill(); }
-          g.globalAlpha = 1; put(S.wireStar, lerp(x0, x1, ws), lerp(y0, y1, ws), .5, .5, ws * 7, 1, 1, I);
+          for (let k = 1; k <= 6; k++) { const d = k * 2.2 * u; if (d > ws * dl) break; g.globalAlpha = (1 - k / 7) * .7 * I * S.shade(sx - ux * d, sy - uy * d, 3 * u); g.fillStyle = "#FFE9A8"; g.beginPath(); g.arc(sx - ux * d, sy - uy * d + Math.sin(k * 2.3) * .6 * u, .35 * u, 0, TAU); g.fill(); } /* its tail, a fixed length behind it: off the edge with it */
+          g.globalAlpha = 1; put(S.wireStar, sx, sy, .5, .5, ws * 7, 1, 1, I * S.shade(sx, sy, 4 * u));
         }
         // the finale: a fan of paper stars opens out of the moon
         if (F >= 0) for (const s of S.fan) { const k = clamp((F - s.lag) / (1 - s.lag)); if (k <= 0 || k >= 1) continue; const e = E.back(Math.min(1, k * 1.6)), x = ox + Math.cos(s.a) * s.d * e, y = oy + Math.sin(s.a) * s.d * e * .75 + (S.pr ? S.orb.r : 0); put(S.fanStars[s.c], x, y, .5, .5, k * 4 + s.a, s.s, s.s, k > .8 ? (1 - k) / .2 : 1); }

@@ -3046,3 +3046,38 @@ version holds at 1.12, and nothing in `apple/` changed but the stamp.
 | Focused runs | on a checkout of the change alone: the Scenes tests (the keep-clear test with the lesson and the plan), the hidden-kits test, the full session and the worker's two tests, both viewports: 20 passed; again on the stamp |
 | Looked at | both kits on both viewports in the lab and in the app, the loop and the finale |
 | Screenshots | sent to Price; not kept in the repo |
+
+# Today's Five 1.12 b365 — Scenes for the hidden kits, three: Bark and Char
+
+*Shipped as build 366. b365 is the change's commit.*
+
+The last hidden pair: one country in a round medallion, inlaid in veneers for Bark and burned into the charred plank for
+Char. No public page names them, and nothing here writes the word that unlocks them. The decisions are in DECISIONS.md
+under "1.12 b365 decisions — Scenes for the hidden kits, three: Bark and Char". Web only; the version holds at 1.12, and
+nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Bark and Char** (b365). `scene-wood.js` (new); `app.js` lists the two with the kits that have scenes; the stage
+   maps them; the worker precaches the module; the features test's list; the hidden-kits test and the keep-clear test
+   take them.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `app.js` **+7 bytes** gzipped (55,346 → 55,353) for the two names; `sw.js` +5; `index.html`, `styles.css` unchanged | `gzip -9 -n` |
+| first paint | desktop FCP **56 → 56 ms** (52–64 against 48–56); mobile **1308 → 1304 ms** (1292–1316 against 1288–1324): no cost, for this pair's names and the last pair's together | `tools/paint.mjs 8`, 362 (port 8832) beside 365 (8831) |
+| lazy, Scenes on under a hidden kit only | `scene-wood.js` **26,217** gzipped | `gzip -9 -n` |
+| CPU, desktop (share of one core) | Bark's loop **2.21 %**, in use **1.60 %**; Char's loop **2.83 %**, in use **1.69 %**; their grounds with Scenes off 0.06 % and 0.05 % | `tools/idle.mjs 60`, `SCENES=1 UNLOCK=1` (and `USE=5`) |
+| CPU, phone (390×844 at 2×) | Bark **2.35 %**; Char **2.71 %** | `tools/idle.mjs 60`, `VP=phone SCENES=1 UNLOCK=1` |
+| contrast | no reading under 4.5; at or above plain but the tools in the app's idle fade | `tools/contrast.mjs`: the seed lines, `FIXTURE=1 CLOCK=2026-09-28T15:00:00`, `FIXTURE=1 VIEW=all` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30 (its public pages still name neither), compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests (the keep-clear test with the medallion), the hidden-kits test, the full session and the worker's two tests, both viewports: 20 passed; again on the stamp |
+| Looked at | both kits on both viewports in the lab and in the app, the loop and the finale |
+| Screenshots | sent to Price; not kept in the repo |

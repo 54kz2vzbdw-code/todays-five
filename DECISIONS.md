@@ -2306,3 +2306,42 @@ the kits' grounds cost next to nothing (0.05 % and 0.06 %). `app.js` +16 bytes g
 
 **What did not change.** The kits, their grounds and finales with Scenes off; every public page; first paint but the
 list in `app.js`; nothing in `apple/` but the stamp.
+
+# 1.12 b365 decisions — Scenes for the hidden kits, three: Bark and Char
+
+**One country, by day and by night.** `scene-wood.js`, drafted by a helper to the round's brief and looked over here.
+A round medallion in the largest open space on the plank: a sun (by night the moon) low between two peaks, nearer hills,
+a lake, three pines on the shore.
+
+**Bark: marquetry.** About thirty veneer pieces, each with its own grain and a glue line round it — maple and satinwood
+sunburst rays, a padauk sun cut across the end grain, oak and teak peaks with holly snow, cherry and walnut hills, a
+slate-blue lake with a satinwood glint, green pines on an ebony shore, a ring of dogtooth banding — lying oiled on the
+pale plank, a slow sheen crossing it. The loop: a bullnose plane planes it back to the plank in three passes, each curl
+of shaving textured with the band it cut, riding back in the plane's throat and flicked off the right edge; the pieces
+come back from the side away from the list — the banding spins in, the rays arrive as a closed fan and open round the
+centre, then the sun, the peaks, the snow, the hills, the lake, the shore and the pines, each landing with a puff of
+sawdust; a rag wipes oil across in three rows, the raw woods deepening; a sheen crosses. The finale: the pieces lift and
+settle in a wave under the kit's own carving.
+
+**Char: pyrography.** The plank charred — crazed along the grain, mottled, ash and soot, embers breathing in its cracks —
+and the same country burned into it in pale ash lines: the ring and its dotted band, the moon's rim and halo, the ridges
+and snow, faces hatched along the grain, pines, the lake and the moon's road, stars, a stippled moon. The loop: the
+picture glows red-hot once, from the moon outward, and crumbles behind the glow into drifting ash; the pen comes in —
+cork grip, glowing nib lighting the char, its cord off the page, a wisp of smoke off the tip — and burns about 320 marks
+back in, each line going white-hot, then orange, then red, and cooling to ash; the stippling comes last. The finale: a
+pulse of heat runs out from the moon through every line, sparks flying off its front, a wisp rising off the moon, under
+the kit's own burn.
+
+**The words.** The medallion keeps to the largest open space and fades when there is none; the plane and the rag stop
+each pass short of any word in their row; the curls leave by the right edge; the pieces come in from the side away from
+the words, and the pen is held from that side too; the embers dim near words; the lines and the finale's words sit on
+pads.
+
+**Contrast.** No reading under 4.5 anywhere, and every one at or above plain but the tools in the app's idle fade —
+on Char, a few tenths more than their plain readings swing (Today 8.19 → 7.37).
+
+**What it costs.** Bark's loop 2.21 % of a core, in use 1.60 %, on a phone 2.35 %; Char's 2.83 %, 1.69 % and 2.71 %.
+With Scenes off the kits' grounds cost next to nothing (0.06 % and 0.05 %).
+
+**What did not change.** The kits, their grounds and finales with Scenes off; every public page; first paint but the
+list in `app.js`; nothing in `apple/` but the stamp.

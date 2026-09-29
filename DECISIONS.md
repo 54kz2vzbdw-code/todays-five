@@ -2385,3 +2385,49 @@ the byte as build 366's (but Arcade's shake as its boss dies, which is random fr
 half makes it a seeded jitter) — and plays it every time round until its own half lands. The frame's work is the same. First
 paint but `app.js`'s hook (+18 bytes gzipped); `scenes.js`, lazy, 8,459 → 9,609 gzipped, most of it the new header.
 Nothing in `apple/` but the stamp.
+
+# 1.12 b369 decisions — the forever cycle, two: Light and Dark, Blush, Pink
+
+**The first scenes to deal their passes.** Drafted by a helper to the forever cycle's brief and checked here. Pass 0 is
+each scene's loop as it was; every pass after it is dealt its own from `K.deal` and `K.bag`, and none of the three
+carries: every pass rests on the same picture.
+
+**Light and Dark.** Each pass pours the drops through three forms from a pool of fifteen — the signature's blob, lobes,
+figure of eight and wave, and eleven more: two comets chasing each other's tails, a cell dividing in two and then four,
+an atom, the ring spun on its edge like a coin, a star, a flower opening, a sand-glass turned over and running, a
+beating heart, a Newton's cradle, a fountain, a pair passing through each other. Every run of five passes shows all
+fifteen, none in two passes running. A pass deals its timings, each form's turn, now and then a pour-together between
+forms, and a lean of the camera's own. About one pass in eight opens on the rare drop: it swells over the ring, falls
+into its middle and splashes. Still soft, still out of focus, still in the empty part of the page.
+
+**Blush.** The wand comes in one of six colours (a run of six passes shows all six), its frame now and then a star or
+a heart, and blows one of five beats: two bubbles that join with a wall between them until one pops; a heart-shaped
+bubble that rounds as it floats free; a flurry that packs into a raft of foam and pops from its edge in; a stream a
+breeze winds into a whirl; a chain that pops down its length. One pass in four, never two running, is a rare one
+instead: a bubble inside a bubble, let out when the big one pops, or a bubble that freezes and shatters.
+
+**Pink.** The heart stays lit, and the arrow blinks out and hands over to a neon of the pass's own, one of seven, lit a
+stretch at a time: a crown, flames in three frames, a heartbeat's trace, lips that blow a small heart away, marquee
+bulbs chasing, hearts inside the heart, a moon with stars and a shooting one. The rare ones: a stretch of tube fails in
+sparks and catches again, or a moth comes to the light.
+
+**Checked.** Pass 0 of all four kits is the same to the byte as before: the stage's two canvases read straight off at
+eleven moments of the loop and three of the finale, both viewports. Twelve passes each through `tools/scene-seams.mjs`:
+no pass like the one before; every seam at most what the scene's own drift moves in a thirtieth of a second (Pink's
+worst, 1.97 %, is its old neon buzz, which the untouched module shows at the same seams).
+
+**Contrast.** Over dealt passes 1 to 3, the seed lines and the long list, both viewports: every reading at or above
+plain but where the app's own fades set it — the finale's words fading in (Light's "Bring them all back" on a wide
+screen, 3.99 → 3.75, where the untouched module reads 4.19 → 3.88 on the same instrument) and the top bar in the idle
+fade on Dark's long list (0.2 under plain, 4.63 at worst) — and a long list's crossed-off line on Blush, 5.91 → 5.62,
+with the small bubbles drifting behind it. One reading of 1.67 under Pink's Everything pill on a phone came in a run
+where the loaded machine had the app showing its offline label; two more runs read every frame at 6.1 or better.
+
+**What it costs.** The loop over pass 0 and over dealt passes 1 to 4, sixty seconds each, back to back on one quiet
+machine (Adobe Desktop Service holding a core, as it does), as a share of one core: Light 3.43 → 3.53 % on a wide screen
+and 3.30 → 2.86 % on a phone; Dark 3.16 → 3.40 % and 3.10 → 3.23 %; Blush 3.83 → 3.32 % and 3.42 → 3.57 %; Pink 3.20 →
+3.09 % and 3.52 → 3.13 %. The dealt passes cost what the signature does, within a few tenths either way. In use nothing
+changes: the quiet picture is the one every pass rests on.
+
+**What did not change.** Pass 0 and the finales; the kits; first paint (no file on its path changed but the stamp);
+nothing in `apple/` but the stamp.

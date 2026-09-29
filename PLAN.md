@@ -3115,3 +3115,37 @@ nothing in `apple/` changed but the stamp.
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on a checkout of the change alone: the Scenes tests, the new forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
 | The seams tool | passes 0 to 6 of Forest and Cocoa on both viewports: every seam 0.00 %, and every pass like the one before, as it should be until their halves land |
+
+# Today's Five 1.12 b369 — the forever cycle, two: Light and Dark, Blush, Pink
+
+*Shipped as build 370. b369 is the change's commit.*
+
+The first scenes to deal their passes: Light's and Dark's liquid pours through three forms of fifteen each pass, Blush
+blows one of five beats with a wand of six colours, Pink's heart hands its arrow to one of seven neons, and each has
+its rare ones. Pass 0 is each loop as it was. The decisions are in DECISIONS.md under "1.12 b369 decisions — the forever
+cycle, two: Light and Dark, Blush, Pink". Web only; the version holds at 1.12, and nothing in `apple/` changed but the
+stamp.
+
+## What shipped
+
+1. **Light and Dark, Blush, Pink deal their passes** (b369). `scene-orbit.js`, `scene-bubbles.js`, `scene-heart.js`.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: the change is three lazy modules | `git diff --stat` 368..369 |
+| lazy, Scenes on under the kit only | `scene-orbit.js` 5,630 → **10,981**; `scene-bubbles.js` 7,366 → **15,549**; `scene-heart.js` 4,960 → **11,508** gzipped | `gzip -9 -n` |
+| pass 0 | the same to the byte as 368's, all four kits, both viewports, eleven moments of the loop and three of the finale | `samecv.mjs`, 365's checkout (port 8833) against this |
+| the passes | twelve each, both viewports: no pass like the one before; the worst seam 0.00 % (Light, Dark), 0.30 % (Blush), 1.97 % (Pink's old buzz) | `tools/scene-seams.mjs` |
+| CPU, desktop (share of one core) | the loop, pass 0 → dealt passes 1–4: Light 3.43 → **3.53 %**, Dark 3.16 → **3.40 %**, Blush 3.83 → **3.32 %**, Pink 3.20 → **3.09 %** | `tools/idle.mjs 60`, `SCENES=1`, `PASS=0` against `PASS=1`, back to back |
+| CPU, phone (390×844 at 2×) | Light 3.30 → **2.86 %**, Dark 3.10 → **3.23 %**, Blush 3.42 → **3.57 %**, Pink 3.52 → **3.13 %** | the same, `VP=phone` |
+| contrast | at or above plain but the app's own fades (the finale's words fading in; the idle fade on Dark's long list, 4.63 at worst) and Blush's long list's crossed-off line, 5.91 → 5.62 | `tools/contrast.mjs` `PASS=1 PASSES=3`: the seed lines; `FIXTURE=1 CLOCK=2026-09-28T15:00:00` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests, the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
+| Looked at | passes 1–6 of each kit on both viewports, and each new form, neon and beat full size |

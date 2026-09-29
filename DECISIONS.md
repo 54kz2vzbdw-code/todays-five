@@ -2577,3 +2577,61 @@ keep to the open space as before. It needs the words, so the lab, which has none
 **After.** The crossed-off line 4.58 on a phone and 4.62 on a wide screen (plain 4.55 and 4.58: the plain page carries
 the kit's faint accent glow), in use and left alone, over pass 0 and dealt passes; a line 12.65 → 13.14, the ↻ 4.42 →
 4.57. Its own commit, in this build: it changes how Sketch draws a list on screens that already have Scenes on.
+
+# 1.12 b378 decisions — the forever cycle, six: Forest, Harbor, Ember
+
+**Three pixel pictures, a new night or morning each pass.** Drafted by a helper to the forever cycle's brief and
+checked here. Each deals a pass from a pool about three times what one pass plays; nothing carries, and every pass opens
+and closes on the same resting picture. New things are drawn at the picture's own pixels, and Ember's shimmer and
+blinking come from colour ramps that turn, the way its picture always has.
+
+**Forest.** Who comes into the clearing: the doe from either side, the doe with her spotted fawn, a fox that noses the
+grass and pounces, rabbits that hop out to nibble. What the sky does: the shooting star from anywhere and the fireflies'
+answer, an owl gliding across the moon (or settling in the tall pine by it), a bat looping round it. The air: stronger
+moonlight, a cloud that swallows the moon and gives it back, a bank of fog rolling through. The fireflies blink, wind up
+into a spiral, or pass waves of light. Rare, about once in eight passes each: a stag who bellows, his breath smoking; a
+meteor shower; the northern lights over the ridge, dimmed behind the lines (the module now listens for the words).
+
+**Harbor.** A boat crosses the bay — a sailboat that goes about, a steamer, a fishing boat with gulls over its stern;
+something in the water — a fish or two, a pod of dolphins, a seal; overhead one to three gulls, one to three flashes of
+the lighthouse, the light running down the sun's path or up it, now and then a cloud over the sun. Rare: a whale, a
+seaplane landing, a tall ship under all her sail. Harbor's morning is pale under a light kit's washes, the new beats as
+much as the signature's gulls: the seams tool's cut (an eighth of the range) sees its passes as alike; a finer cut sees
+every one differ, and the sheets show it.
+
+**Ember.** The fire burns a little higher or lower each pass, then settles a log or pops an ember into the dirt. The
+sky: the falling star, the owl, or a cloud that silvers and swallows the moon. The lake: a fish, a canoe with a lantern
+trembling on the water, a loon that rears and dives, a deer wading in to drink. Mist most nights, fireflies some. Rare:
+the northern lights in the palette and again in the lake, a meteor shower, a moose.
+
+**Checked.** Pass 0 of all three kits the same to the byte as before, both viewports. Twelve passes each: every seam at
+most Ember's fire in a thirtieth of a second (0.73 % on a phone, as the untouched module reads); no Ember pass like the
+one before, one Forest pair at the tool's cut (the cloud swallowing the moon, dark on dark), Harbor as above.
+
+**Contrast.** The first draft let the fog bank and the fireflies pass behind a phone's long list: its crossed-off line
+read 2.67 (the untouched scene 4.81). Everything new or brighter than the signature is now drawn through a mask of the
+words that thins to nothing behind them: Forest's crossed-off line 5.15 on a phone and 5.98 on a wide screen, above the
+untouched scene's; Ember's at the untouched scene's; Harbor's at the untouched scene's, which is under 4.5 — 3.79 on a wide
+screen, 3.86 on a phone, in use as much as left alone. That is fixed in its own commit (b379, below).
+
+**What it costs.** The loop over pass 0 and over dealt passes 1 to 4, sixty seconds each, back to back on one quiet
+machine, as a share of one core, with this build's haze under Harbor's lines: Forest 4.65 → 4.89 % on a wide screen and
+3.49 → 3.68 % on a phone; Harbor 4.08 → 4.20 % and 3.15 → 3.31 %; Ember 4.03 → 4.24 % and 3.19 → 3.30 % — a fifth of a
+point for the new animals, weather and mist. `scene-forest.js` 5,715 → 17,960, `scene-harbor.js` 4,261 → 12,760,
+`scene-ember.js` 8,790 → 17,610 gzipped.
+
+**What did not change.** Pass 0 and the finales; the kits; first paint; nothing in `apple/` but the stamp.
+
+# 1.12 b379 decisions — Harbor's haze under a long list
+
+**Before this build.** Harbor's sea lies under the list, and a long list's last lines sit over it: its crossed-off line
+read 3.79 on a wide screen and 3.86 on a phone (plain 4.65 and 4.61), its ↻ 4.14 and its captions 4.17, with the scene
+still — in the untouched module too. Found by this build's contrast runs.
+
+**The fix.** Under each line's words the morning lies in a haze of its own, a touch paler than the kit's ground (the
+stage's washes can only bring the picture back to the ground, and Harbor's captions read only about 4.46 even on plain
+ground), fuller over the sea than over the pale sky, with an eased edge: one layer at the picture's own pixels, laid over
+everything and redrawn only when the words move. On the long list it reads as a pale morning mist behind the lines.
+
+**After.** The crossed-off line 4.65 on a wide screen and 4.55–4.60 on a phone; the ↻ 4.58–4.65; the captions 4.61–4.62;
+in use and left alone. Its own commit, in this build.

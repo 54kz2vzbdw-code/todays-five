@@ -3257,3 +3257,41 @@ version holds at 1.12, and nothing in `apple/` changed but the stamp.
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on a checkout of the change alone: the Scenes tests, the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
 | Looked at | passes 1–6 of both kits on both viewports, every subject and pour finished, each rare beat, the paw and the hummingbird's wings again after their polish, the shade under a phone's long list |
+
+# Today's Five 1.12 b378 — the forever cycle, six: Forest, Harbor, Ember
+
+*Shipped as build 380. b378 is the change's commit. b379 is its own fix, Harbor's haze under a long list.*
+
+Three pixel pictures deal a night or a morning of their own each pass, from pools about three times what a pass plays:
+Forest's doe, fawn, fox and rabbits, owl and bat, fog and cloud (rarely a stag, a meteor shower, the northern lights);
+Harbor's sailboat, steamer and fishing boat, dolphins and a seal (rarely a whale, a seaplane, a tall ship); Ember's
+canoe, loon and wading deer, mist and fireflies (rarely the northern lights in the palette, a meteor shower, a moose).
+Pass 0 is each loop as it was. And, found by this build's contrast runs, Harbor lays a haze under a long list's lines.
+The decisions are in DECISIONS.md under "1.12 b378 decisions — the forever cycle, six: Forest, Harbor, Ember". Web only;
+the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Forest, Harbor, Ember deal their passes** (b378). `scene-forest.js`, `scene-harbor.js`, `scene-ember.js`.
+2. **Harbor's haze under a long list** (b379). `scene-harbor.js`: its crossed-off line 3.79 → 4.65 on a wide screen and
+   3.86 → 4.55–4.60 on a phone, its ↻ and captions from 4.14–4.17 to 4.58–4.65.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: the change is lazy modules | `git diff --stat` 377..378 |
+| lazy, Scenes on under the kit only | `scene-forest.js` 5,715 → **17,960**; `scene-harbor.js` 4,261 → **12,760**; `scene-ember.js` 8,790 → **17,610** gzipped | `gzip -9 -n` |
+| pass 0 | the same to the byte as 377's at b378, all three kits, both viewports, eleven moments of the loop and three of the finale (b379's haze needs the words, which the lab has none of) | `samecv.mjs`, 365's checkout (port 8833) against this |
+| the passes | twelve each, both viewports: the seams at most Ember's fire (0.74 %, as the untouched module); no Ember pass like the one before, one Forest pair (dark on dark), Harbor's pale passes under the tool's cut though each differs | `tools/scene-seams.mjs` |
+| CPU, desktop (share of one core) | the loop, pass 0 → dealt passes 1–4, with b379: Forest 4.65 → **4.89 %**, Harbor 4.08 → **4.20 %**, Ember 4.03 → **4.24 %** | `tools/idle.mjs 60`, `SCENES=1` (`UNLOCK=1` for hidden kits), `PASS=0` against `PASS=1` (passes 1–4), back to back |
+| CPU, phone (390×844 at 2×) | Forest 3.49 → **3.68 %**, Harbor 3.15 → **3.31 %**, Ember 3.19 → **3.30 %** | the same, `VP=phone` |
+| contrast | every reading at or above the untouched scene's: Forest's crossed-off line on a phone **5.15** (the first draft 2.67, the untouched 4.81) and on a wide screen **5.98**; Harbor's, under 4.5 before (3.79 / 3.86, the untouched too), **4.65 / 4.55–4.60** with b379 | `tools/contrast.mjs` `PASS=1 PASSES=3`: the seed lines; `FIXTURE=1 CLOCK=2026-09-28T15:00:00` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests, the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
+| Looked at | passes 1–6 of each kit on both viewports, each new beat full size, the first draft's fog bank behind a phone's long list caught on camera, the haze on the long list |

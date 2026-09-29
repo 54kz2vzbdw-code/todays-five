@@ -2431,3 +2431,44 @@ changes: the quiet picture is the one every pass rests on.
 
 **What did not change.** Pass 0 and the finales; the kits; first paint (no file on its path changed but the stamp);
 nothing in `apple/` but the stamp.
+
+# 1.12 b371 decisions — the forever cycle, three: Birthday and Superpink
+
+**One party, a new one each pass.** Drafted by a helper to the forever cycle's brief and checked here. Pass 0 is the
+loop as it was; nothing carries.
+
+**Birthday.** A pass takes its headline from a bag of five: the popper (from either side, in another foil, loaded with
+stars, hearts or sequins); a clear balloon full of confetti that comes up, trembles and pops; a balloon whose knot gives,
+so it zips round the bouquet in tightening loops and drops limp; foil balloons — a star, a heart, a round — that join
+the bouquet, turn on their ribbons and float away at the close; or party horns poked in from the edge, tooting in turn
+and then together. Around it the pass deals the gust, the guest balloon's colour and whether it pops or floats off, and
+how many of the top balloons slip free at the close. Rare, about one pass in eight: a gift box whose lid hops twice and
+flies off in a fountain of confetti, balloons floating up out of it.
+
+**Superpink.** Each pass turns the spots over, in a wave across the room, into its own shape — round, hearts, stars or
+sparkles — and its second light's colour, carried into the beams, the tiles and the glitter; gives the beams their own
+dance; and takes a headline from a bag: the ball spun up in glitter; lasers fanned through the haze and closed onto the
+ball, which throws them round the room as points; a confetti cannon of foil streamers; a balloon drop; or a pin spot,
+the room's lights down and one white light on the ball. Rare, about one pass in eight: a second, smaller ball let down
+beside the first, or the spots gathering into a heart round the ball, beating twice and flying apart.
+
+**The words.** Everything new fades near words by the distance the module already keeps from them, by its own size
+rather than a fixed reach. The first draft let the rare second ball down through the top bar beside the count, which
+read 1.91 (plain 5.32) as its tiles and chain passed behind it: it now hangs on whichever side of the main ball has more
+room all the way down, fading near words, and the count reads 5.19 there, beside the signature's own 4.93.
+
+**Checked.** Pass 0 of both kits the same to the byte as before, both viewports. Twelve passes each: no pass like the
+one before; the worst seam 0.15 % (the ball turning in a thirtieth of a second).
+
+**Contrast.** Over dealt passes 1 to 3, the seed lines and the long list, both viewports: at or above plain but Superpink's
+count on a wide screen, 5.32 → 4.52 (the main ball's chain, which every pass has; the signature's own worst there is
+4.93), Birthday's finale line on a phone as it fades in (5.77 → 4.49; the signature's 4.77), and a few tenths under the
+app's idle fade on the top bar.
+
+**What it costs.** The loop over pass 0 and over dealt passes 1 to 4, sixty seconds each, back to back on one quiet
+machine, as a share of one core: Birthday 3.41 → 3.25 % on a wide screen and 2.71 → 2.77 % on a phone; Superpink 4.52 →
+4.65 % and 3.93 → 4.14 % (its lasers, cannon and second ball are the dearest beats). `scene-party.js` 18,561 → 37,852
+gzipped, loaded only under these kits.
+
+**What did not change.** Pass 0 and the finales; the kits; every public page (they name neither); first paint; nothing
+in `apple/` but the stamp.

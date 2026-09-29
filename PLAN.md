@@ -3149,3 +3149,38 @@ stamp.
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on a checkout of the change alone: the Scenes tests, the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
 | Looked at | passes 1–6 of each kit on both viewports, and each new form, neon and beat full size |
+
+# Today's Five 1.12 b371 — the forever cycle, three: Birthday and Superpink
+
+*Shipped as build 372. b371 is the change's commit.*
+
+The party deals each pass its own: by day a headline from a bag of five (the popper, a confetti balloon, a balloon that
+zips round the bouquet, foil balloons, party horns) and a rare gift box; by night the spots turned into each pass's
+shape and colour, the beams' own dance, a headline from a bag (glitter, lasers, a confetti cannon, a balloon drop, a pin
+spot) and a rare second ball or heart. Pass 0 is the loop as it was; no public page names the kits. The decisions are in
+DECISIONS.md under "1.12 b371 decisions — the forever cycle, three: Birthday and Superpink". Web only; the version holds
+at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Birthday and Superpink deal their passes** (b371). `scene-party.js`.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: the change is lazy modules | `git diff --stat` 370..371 |
+| lazy, Scenes on under the kit only | `scene-party.js` 18,561 → **37,852** gzipped | `gzip -9 -n` |
+| pass 0 | the same to the byte as 370's, both kits, both viewports, eleven moments of the loop and three of the finale | `samecv.mjs`, 365's checkout (port 8833) against this |
+| the passes | twelve each, both viewports: no pass like the one before; the worst seam 0.15 % (the ball turning) | `tools/scene-seams.mjs` |
+| CPU, desktop (share of one core) | the loop, pass 0 → dealt passes 1–4: Birthday 3.41 → **3.25 %**, Superpink 4.52 → **4.65 %** | `tools/idle.mjs 60`, `SCENES=1` (`UNLOCK=1` for hidden kits), `PASS=0` against `PASS=1` (passes 1–4), back to back |
+| CPU, phone (390×844 at 2×) | Birthday 2.71 → **2.77 %**, Superpink 3.93 → **4.14 %** | the same, `VP=phone` |
+| contrast | at or above plain but Superpink's count on a wide screen, 5.32 → 4.52 (the main ball's chain; the signature's 4.93), Birthday's finale line on a phone fading in, 5.77 → 4.49 (the signature's 4.77), and the idle fade; the first draft's 1.91 under the count (the second ball) fixed before it shipped | `tools/contrast.mjs` `PASS=1 PASSES=3`: the seed lines; `FIXTURE=1 CLOCK=2026-09-28T15:00:00` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests, the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
+| Looked at | passes 1–6 of both kits on both viewports, and each new beat full size; the count's worst frame caught on camera |

@@ -10,6 +10,8 @@
 // stars prick in; one lantern goes up from the beach, swaying, its light in the water under it; then the whole shore lets
 // theirs go, near and far; an egret lifts off the shallows and its rings break the reflections; a star falls; the lanterns
 // drift up and away. The finale: the whole festival goes up at once.
+// (b347: whatever comes and goes does it whole — the flock off past the right edge, the egret away past one edge and
+// home from the other to land in its rings, the loop's new stars gone again before it comes round.)
 export default function bay(K, id) {
   const dusk = id === "dusk";
   const { clamp, lerp, E, seg, env, rng, canvas } = K;
@@ -148,7 +150,7 @@ export default function bay(K, id) {
         const across = seg(T, 4.6, 9.4, E.io); if (on && across > 0 && across < 1) bank(S.hero, lerp(sx - R * 2.4 - S.hero.w, sx + R * 1.6, across), sy - R * .42, I * env(across, 0, .12, .88, 1));
         g.globalAlpha = 1;
         // a flock across the sun
-        const fb = seg(T, 2.4, 5.6, x => x); if (on && fb > 0 && fb < 1) { const lx = lerp(-W * .12, W * 1.12, fb), ly = sy - R * .6 + Math.sin(fb * 5) * 2 * u; g.fillStyle = P.palm; g.globalAlpha = I;
+        const fb = seg(T, 2.4, 5.8, x => x); if (on && fb > 0 && fb < 1) { const lx = lerp(-4 * u, W + 17 * u, fb), /* the last of the V off the right before it is gone */ ly = sy - R * .6 + Math.sin(fb * 5) * 2 * u; g.fillStyle = P.palm; g.globalAlpha = I;
           for (const b of S.flock) { const x = lx + b.dx, y = ly + b.dy, s = b.s * u, fl = Math.sin(A * 11 + b.ph); g.beginPath(); g.moveTo(x - 2.4 * s, y - fl * 1.3 * s); g.quadraticCurveTo(x - 1 * s, y - .8 * s, x, y + .3 * s); g.quadraticCurveTo(x + 1 * s, y - .8 * s, x + 2.4 * s, y - fl * 1.3 * s); g.quadraticCurveTo(x + 1 * s, y + .1 * s, x, y + .9 * s); g.quadraticCurveTo(x - 1 * s, y + .1 * s, x - 2.4 * s, y - fl * 1.3 * s); g.fill(); } }
         // a sailboat across the reflection
         const sb = seg(T, 7.4, 11.0, x => x); if (on && sb > 0 && sb < 1) { const bx = lerp(W * 1.06, -W * .08, sb), by = hz + 1.6 * u, s = u * (pr ? 1.1 : .9); g.globalAlpha = I; g.fillStyle = P.palm;
@@ -176,8 +178,8 @@ export default function bay(K, id) {
           for (let k = 0; k < 8; k++) S.frond(top, -Math.PI * .98 + k / 7 * Math.PI * .96 + Math.sin(A * 1.1 + p.ph + k) * .05 + gust * .25 * Math.sin(A * 6 + k), p.h * (.44 + (k % 2) * .08)); }
       } else {
         // the stars that twinkle, pricking in at the loop's start
-        const prick = seg(T, .2, 2.6, x => x) * I;
-        g.fillStyle = "#F4F0FF"; for (const p of S.sparkles) { const shown = p.ph < 3.6 || p.ph < 3.6 + prick * 2.7; if (!shown) continue; const k = .35 + .65 * Math.pow(Math.max(0, Math.sin(A * p.f + p.ph)), 3); const x = p.x * W, y = H * .09 + p.y * (hz * .75 - H * .09), s = 1 + (p.f > 2.4 ? 1 : 0); g.globalAlpha = k * S.shade(x, y, 4); g.fillRect(x, y, s, s); }
+        const prick = seg(T, .2, 2.6, x => x) * I * (1 - seg(T, 13.3, 14.9, E.sine)); /* the new ones gone again before the loop comes round */
+        g.fillStyle = "#F4F0FF"; for (const p of S.sparkles) { const shown = p.ph < 3.6 ? 1 : clamp((3.6 + prick * 2.7 - p.ph) / .35); if (shown <= 0) continue; const k = .35 + .65 * Math.pow(Math.max(0, Math.sin(A * p.f + p.ph)), 3); const x = p.x * W, y = H * .09 + p.y * (hz * .75 - H * .09), s = 1 + (p.f > 2.4 ? 1 : 0); g.globalAlpha = k * shown * S.shade(x, y, 4); g.fillRect(x, y, s, s); }
         // the moon, a crescent with its halo, and its path on the water
         const { x: mx, y: my, r: mr } = S.moon; g.globalCompositeOperation = "lighter"; add(S.moonGlow, mx, my, .8); g.globalCompositeOperation = "source-over";
         g.globalAlpha = 1; g.drawImage(S.moonDisc, mx - mr - 1, my - mr - 1, S.moonDisc.w2, S.moonDisc.h2);
@@ -192,15 +194,21 @@ export default function bay(K, id) {
           const spr = S.lantern; g.globalCompositeOperation = "lighter"; add(S.lglow, x, y, a * .75 * flick, s); g.globalCompositeOperation = "source-over"; add(spr, x, y, a * clamp(1.2 - z * .2), s);
           if (y < hz && rise < .45) { g.globalCompositeOperation = "lighter"; g.globalAlpha = a * .35 * (1 - rise / .45) * flick; g.fillStyle = "#FFB45C"; const ry = hz + (hz - y) * .45, rw = S.lr * s * 1.1; g.fillRect(x - rw / 2 + Math.sin(A * 3 + ph) * u * .6, ry, rw, 1.2 + s); g.fillRect(x - rw * .3, ry + 3 * s, rw * .6, 1); g.globalCompositeOperation = "source-over"; }
         };
-        for (const q of S.quietL) lant(q.x, (q.t + A * .006 * (1 + q.z)) % 1 * .75 + .15, q.z * .6, q.sw, q.ph, .85);
+        for (const q of S.quietL) { const rq = (q.t + A * .006 * (1 + q.z)) % 1 * .75 + .15; lant(q.x, rq, q.z * .6, q.sw, q.ph, .85 * clamp((rq - .15) / .09)); } /* each fades in as it leaves the water */
         const first = seg(T, 2.4, 9.4, E.sine); if (on && first > 0 && first < 1) lant(.5, first, .95, 1, 0, I * (1 - seg(first, .85, 1)) * clamp(first * 12));
         for (const c of S.cascade) { const k = seg(T, c.start, c.start + 6.5, E.sine); if (!on || k <= 0 || k >= 1) continue; lant(c.x, k, c.z, c.sw, c.ph, I * (1 - seg(k, .82, 1)) * clamp(k * 14)); }
         if (F >= 0) for (const f of S.festival) { const k = clamp((F - f.lag) / (1 - f.lag)); if (k <= 0 || k >= 1) continue; lant(f.x, E.sine(k), f.z, f.sw, f.ph, clamp(k * 10) * (1 - seg(k, .8, 1))); }
         // the egret: standing in the shallows, then up and away, its rings spreading
-        const up = seg(T, 9.0, 11.6, E.in), ex = S.egret.x + up * W * .45, ey = S.egret.y - up * H * .3, flap = up > 0 && up < 1 ? Math.sin(A * 9) : 0, es = u * (pr ? 1.15 : .95);
-        if (up < 1) { g.globalAlpha = (up > .9 ? (1 - up) * 10 : 1) * S.shade(ex, ey, 8 * es); g.fillStyle = "#EFE8FF"; g.beginPath(); g.ellipse(ex, ey, 2.4 * es, 1 * es, -.2, 0, TAU); g.fill(); g.strokeStyle = "#EFE8FF"; g.lineWidth = .55 * es; g.beginPath(); g.moveTo(ex + 1.8 * es, ey - .4 * es); g.quadraticCurveTo(ex + 2.6 * es, ey - 3.4 * es, ex + 3.4 * es, ey - 3.2 * es); g.stroke();
+        const es = u * (pr ? 1.15 : .95), x0 = S.egret.x, y0 = S.egret.y, away = seg(T, 9.0, 11.3, E.in), home = seg(T, 12.3, 14.6, E.out);
+        let ex = x0, ey = y0, up = 0; /* up: 0 standing … 1 in the air */
+        if (home > 0) { ex = lerp(-10 * es, x0, home); ey = y0 - (1 - home) * H * .2 - Math.sin(home * Math.PI) * H * .03; up = 1 - seg(home, .85, 1); }
+        else if (away > 0) { ex = lerp(x0, W + 10 * es, away); ey = y0 - Math.sin(away * Math.PI / 2) * H * .28; up = away >= 1 ? 2 : 1; }
+        ex = lerp(x0, ex, I); ey = lerp(y0, ey, I); if (I < .99 && up === 2) up = 1; /* touched, it settles back where it stands */
+        const flap = up > 0 && up <= 1 ? Math.sin(A * 9) * (home > 0 ? 1 - home * .6 : 1) : 0;
+        if (up < 2) { g.globalAlpha = S.shade(ex, ey, 8 * es); g.fillStyle = "#EFE8FF"; g.beginPath(); g.ellipse(ex, ey, 2.4 * es, 1 * es, -.2, 0, TAU); g.fill(); g.strokeStyle = "#EFE8FF"; g.lineWidth = .55 * es; g.beginPath(); g.moveTo(ex + 1.8 * es, ey - .4 * es); g.quadraticCurveTo(ex + 2.6 * es, ey - 3.4 * es, ex + 3.4 * es, ey - 3.2 * es); g.stroke();
           if (up > 0) { g.beginPath(); g.moveTo(ex - 1.5 * es, ey); g.quadraticCurveTo(ex - 3 * es, ey - 3.2 * es * flap, ex - 6 * es, ey - 4.4 * es * flap); g.quadraticCurveTo(ex - 2 * es, ey - .5 * es, ex, ey); g.fill(); }
           else { g.strokeStyle = "#CFC5E6"; g.lineWidth = .3 * es; g.beginPath(); g.moveTo(ex, ey + .8 * es); g.lineTo(ex, ey + 3 * es); g.stroke(); } }
+        const land = seg(T, 14.2, 15.0, E.out) * I; if (land > 0 && land < 1) for (let k = 0; k < 2; k++) { const q = clamp(land * 1.2 - k * .2); if (q <= 0) continue; g.globalAlpha = (1 - q) * .4; g.strokeStyle = "#C4B4E8"; g.lineWidth = .7; g.beginPath(); g.ellipse(x0, y0 + 3 * es, q * 11 * u, q * 2 * u, 0, 0, TAU); g.stroke(); } /* a ring or two as it lands */
         const rip = seg(T, 9.0, 12.0, E.out) * I; if (rip > 0 && rip < 1) for (let k = 0; k < 3; k++) { const q = clamp(rip * 1.3 - k * .15); if (q <= 0) continue; g.globalAlpha = (1 - q) * .55; g.strokeStyle = "#C4B4E8"; g.lineWidth = .8; g.beginPath(); g.ellipse(S.egret.x, S.egret.y + 3 * es, q * 18 * u, q * 3 * u, 0, 0, TAU); g.stroke(); }
         // the palms, dark against the last light
         g.globalAlpha = 1; g.fillStyle = g.strokeStyle = P.palm;

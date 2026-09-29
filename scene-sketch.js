@@ -519,6 +519,8 @@ export default function sketch(K) {
       S.stars = Array.from({ length: 5 }, (_, i) => { const a = -Math.PI / 2 + (i - 2) * .55, d = .82; return { x: Math.cos(a) * d * (i % 2 ? 1.05 : .95), y: Math.sin(a) * d * .95 + .02, s: .05 + (i % 2) * .02, t: .18 + i * .07 }; });
       S.crumbs = Array.from({ length: 40 }, (_, i) => ({ e: i / 40 + r() * .02, vx: (r() - .5) * .5, vy: .02 + r() * .1, rot: r() * TAU, c: r() < .6 ? [205, 150, 150] : [150, 150, 158] }));
       S.jitter = null; S.RR = 0; // the caches are drawn for a size, and again if it changes much
+      { const pm = pr ? 14 : 18, M = Math.max(2, Math.round(pm * px)), N = 2 * M + 2; S.padM = pm; S.padD = M; // the shade under the lines (b376)
+        S.padSpr = K.paint(N, N, (x, y) => { const dx = Math.max(0, Math.abs(x + .5 - N / 2) - 1), dy = Math.max(0, Math.abs(y + .5 - N / 2) - 1), d = Math.min(1, Math.hypot(dx, dy) / M); return d >= 1 ? null : [248, 246, 241, Math.round(255 * (1 - d * d * (3 - 2 * d)))]; }); }
       bg.fillStyle = "#F8F6F1"; bg.fillRect(0, 0, W, H);
       // the paper's tooth: faint fibres, and the sketchbook's squares
       const step = pr ? 18 : 22; bg.strokeStyle = "rgba(110,135,170,.12)"; bg.lineWidth = .6; bg.beginPath(); for (let x = (W % step) / 2; x < W; x += step) { bg.moveTo(x, 0); bg.lineTo(x, H); } for (let y = step; y < H; y += step) { bg.moveTo(0, y); bg.lineTo(W, y); } bg.stroke();
@@ -753,7 +755,20 @@ export default function sketch(K) {
       for (const d of st.drops) { if (d.k <= 0) continue; const s2 = d.s * E.back(clamp(d.k)); x.fillStyle = rgba(d.c, .55 * d.a); x.beginPath(); x.arc(d.x, d.y, s2, 0, TAU); x.fill(); x.strokeStyle = rgba(d.c, .5 * d.a, .72); x.lineWidth = .9 / S.RR; x.stroke(); }
     },
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; P: the pass (b375) */
-    draw(T, I, A, F, P = 0) {
+    draw(T, I, A, F, P = 0) { S.paint(T, I, A, F, P); S.shade(); },
+    /** under each line's words, the paper (b376): whatever the scene has drawn there — the sketchbook's squares, the edge
+     *  of a wash, a tool going by — is laid over with the kit's own ground, solid under the words and fading out round
+     *  them, so a line (a struck line's grey most of all) reads as it does on the plain page; in every pass, and in use */
+    shade() {
+      const rs = S.raw, sp = S.padSpr; if (!rs || !rs.length || !sp) return;
+      const m = S.padM, M = S.padD, e = 3; g.save(); g.globalAlpha = 1; g.globalCompositeOperation = "source-over"; g.fillStyle = "#F8F6F1";
+      for (const [x0, y0, x1, y1, kind] of rs) { if (kind !== 1) continue; const a = x0 - e, b = y0 - e, w = x1 - x0 + 2 * e, h = y1 - y0 + 2 * e; if (w <= 0 || h <= 0 || b - m > S.H || b + h + m < 0) continue;
+        g.fillRect(a, b, w, h); // under the words: the paper, solid
+        g.drawImage(sp, 0, 0, M, M, a - m, b - m, m, m); g.drawImage(sp, M + 2, 0, M, M, a + w, b - m, m, m); g.drawImage(sp, 0, M + 2, M, M, a - m, b + h, m, m); g.drawImage(sp, M + 2, M + 2, M, M, a + w, b + h, m, m); // round it, fading: the corners,
+        g.drawImage(sp, M, 0, 2, M, a, b - m, w, m); g.drawImage(sp, M, M + 2, 2, M, a, b + h, w, m); g.drawImage(sp, 0, M, M, 2, a - m, b, m, h); g.drawImage(sp, M + 2, M, M, 2, a + w, b, m, h); } // and the sides
+      g.restore();
+    },
+    paint(T, I, A, F, P = 0) {
       if (P > 0) { S.drawPass(T, I, A, F, P); return; }
       const { W, H } = S, on = I > .01;
       g.clearRect(0, 0, W, H);

@@ -2,7 +2,8 @@
 // TaskDuration (Performance.getMetrics over CDP) sampled at the start and the end of a quiet window, as a share of
 // one core, plus the style-recalc part of it. The instrument the 1.8 sparkle field's number was read off
 // (PLAN.md, "The sparkle field"), so the numbers compare.
-// Run: node tools/serve.js 8791 . &  then  node tools/idle.mjs [seconds=300] [kit,kit,…]   (WORD=… unlocks first)
+// Run: node tools/serve.js 8791 . &  then  node tools/idle.mjs [seconds=300] [kit,kit,…]   (WORD=… unlocks first; UNLOCK=1
+// gives the device the hidden kits by its own latch instead, so no word is typed)
 // 1.12 b318: SCENES=1 turns Scenes on first and measures a scene's loop (left alone the whole window); USE=5 adds a
 // key press every five seconds, a list in use, for a scene's quiet mode. "all procs" is every Chrome process's CPU
 // (SystemInfo.getProcessInfo), because a canvas's raster and compositing run outside the renderer's main thread.
@@ -23,6 +24,7 @@ const procs = async () => (await bcdp.send("SystemInfo.getProcessInfo")).process
 console.log(`kit                  window   TaskDuration   style recalc   share of one core   all procs`);
 for (const kit of KITS) {
   const ctx = await browser.newContext({ ...VIEW, colorScheme: "dark" });
+  if (process.env.UNLOCK) await ctx.addInitScript(() => { try { const m = JSON.parse(localStorage.getItem("tf/v2/meta") || "{}"); m.device = Object.assign(m.device || {}, { secret: true, extras: ["chalk", "wood"] }); localStorage.setItem("tf/v2/meta", JSON.stringify(m)); } catch (e) {} }); // 1.12 b360: the hidden kits by the device's own latch, no word typed
   const page = await ctx.newPage(); page.setDefaultTimeout(9000);
   await page.goto(BASE + "?transport=local"); await page.waitForSelector("#welcome:not([hidden])");
   await page.evaluate(() => document.getElementById("w-keep").click()); await page.waitForSelector("#p-save[open]"); await page.click("#save-done");

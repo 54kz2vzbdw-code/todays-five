@@ -64,7 +64,8 @@ const HIDE = "#shell, #shell * { -webkit-text-fill-color: transparent !important
 async function measure(vp, kit, on) {
   const ctx = await browser.newContext({ ...VP[vp], colorScheme: DARK(kit) ? "dark" : "light", bypassCSP: true });
   const day = DARK(kit) ? "light" : kit, night = DARK(kit) ? kit : "dark";
-  const device = `{ day: "T1:curated:${day}", night: "T1:curated:${night}", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }, seenVersion: "${VERSION}"${on ? ", scenes: true" : ""} }`;
+  const hidden = T.curated(kit).secret || T.curated(kit).extra; // 1.12 b360: a hidden kit, on a device that has it (the latch the picker writes; no word)
+  const device = `{ day: "T1:curated:${day}", night: "T1:curated:${night}", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }, seenVersion: "${VERSION}"${on ? ", scenes: true" : ""}${hidden ? ', secret: true, extras: ["chalk", "wood"]' : ""} }`;
   if (FIXTURE) await ctx.addInitScript(seedScript({ now: CLOCK ? +new Date(CLOCK) : null }) + `;try { if (!sessionStorage.getItem("tf-contrast")) { const m = JSON.parse(localStorage.getItem("tf/v2/meta")); m.device = Object.assign(m.device || {}, ${device}); localStorage.setItem("tf/v2/meta", JSON.stringify(m)); sessionStorage.setItem("tf-contrast", "1"); } } catch (e) {}`);
   else await ctx.addInitScript(`try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: ${device} })); } catch (e) {}`);
   const page = await ctx.newPage(); page.setDefaultTimeout(9000);

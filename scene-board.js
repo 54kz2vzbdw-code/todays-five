@@ -23,6 +23,27 @@
 // best bar and lights the bulb. The finale, under the kit's big check: notes slapped on all round the plan, ticked and
 // starred, and a gust takes them off the edge. While the list is in use the lesson and the plan simply stand there, the
 // dust drifting and the notes' corners stirring. The beats are a table, so they can be dealt differently each time round.
+//
+// 1.12 b373: the forever cycle. The loop above is pass 0. Each pass after it wipes the board and draws a lesson (or a
+// plan) of its own, and what it draws stays up through the quiet after it (the scene carries), until the next pass wipes
+// it in its turn; a touch mid-pass eases back to the one it began on. By night the lessons are the signature's geometry;
+// the solar system, the sun in the corner, each orbit as far as the board goes and each planet somewhere on its own (where,
+// is dealt), the belt of rocks, a comet going by; a page of music, the grand staff ruled with a staff liner's five sticks
+// at once, the clefs, a dealt key, time and tune with its bass, how it is to be played, and a keyboard with the tune's
+// first keys marked; light, a beam through a prism fanned out into its colours on a screen and over a rainbow, a stick for
+// each colour, and a lens bringing three rays to their focus; the water cycle, the mountain and its river, the rain, the
+// sea (on either side, dealt), the sun and the arrows round; and DNA, the double helix going behind itself with its pairs
+// coloured in pair by pair (which, dealt), a benzene ring and a water molecule with its angle. By day the plans are the
+// signature's planning board; a flowchart whose no loops back; three sets overlapping, coloured in with the side of each
+// marker so their inks mix where they meet (which inks, dealt); a roadmap winding up the board (which way, dealt), its
+// milestones flagged and noted; a mind map (its leaves' places and inks dealt); a rocket launch, the dotted way to the moon
+// (or a ringed planet) and the countdown ticked; and a dashboard, a pie with its key and a line going up past its target.
+// A pass after the signature's peels the old plan's notes off one by one, erases the whole board and slaps the new plan's
+// notes on as it is drawn. Each run of passes deals the whole pool once, never the same twice running. About one pass in
+// ten, never two within four passes, is a rare one: the hand plays itself at noughts and crosses (it stops to think before
+// each move, crosses win, the line is struck through them and the next game begun in the corner), or, by night, doodles a
+// cat with a ball of wool, or, by day, fills the board with the doodles of a long meeting. The finale's A+ goes where the
+// lesson on the board leaves room for it.
 export default function board(K, id) {
   const chalk = id !== "whiteboard";
   const { clamp, lerp, E, seg, env, rng, canvas, paint } = K;
@@ -40,8 +61,10 @@ export default function board(K, id) {
   const B = chalk
     ? { wipe: [.5, 2.2], dry: [2.2, 5.6], white: [2.4, 9.3], blue: [9.8, 11.1], yellow: [11.6, 14.1] }
     : { wipe: [.6, 2.4], ghost: [2.4, 4.2], peel: [1.0, 2.1], slap: 8.9, black: [2.8, 6.8], blue: [7.3, 10.0], green: [10.5, 11.4], red: [11.9, 13.8] };
-  const INKS = chalk ? [[246, 243, 234], [140, 196, 255], [250, 226, 118]] /* white, blue, yellow chalk */
-    : [[34, 40, 49], [36, 87, 197], [38, 150, 84], [204, 44, 36]]; /* black, blue, green, red marker */
+  // by day, a pass after the signature's: its notes peel off from `peel`, `gap` apart; the eraser; the ghost it leaves
+  const BW = { peel: .3, gap: .42, wipe: [1.35, 3.35], ghost: [3.35, 4.6] };
+  const INKS = chalk ? [[246, 243, 234], [140, 196, 255], [250, 226, 118], [255, 152, 190], [152, 226, 146], [255, 182, 104], [202, 166, 255]] /* white, blue, yellow chalk; and for the forever cycle's lessons, pink, green, orange, violet */
+    : [[34, 40, 49], [36, 87, 197], [38, 150, 84], [204, 44, 36], [124, 60, 178], [234, 122, 22]]; /* black, blue, green, red marker; purple, orange */
   const PHASES = chalk ? ["white", "blue", "yellow"] : ["black", "blue", "green", "red"];
 
   /* ---------------- the hand: a single-stroke script ----------------
@@ -76,6 +99,26 @@ export default function board(K, id) {
     "5": ".52:.12,0 .08,.44;.08,.44 .28,.38 .48,.47 .54,.7 .45,.92 .25,1 .03,.92|.12,0 .5,-.01",
     "7": ".54:.02,0 .54,0;.54,0 .18,1",
     "8": ".52:.46,.12 .28,0 .08,.08 .1,.28 .28,.44 .48,.6 .52,.82 .38,.99 .18,1 .03,.84 .08,.62 .28,.44 .44,.28 .46,.12",
+    // the forever cycle's lessons and plans want a few more
+    t: ".32:.14,.1 .13,.86 .19,.98 .3,.97|.02,.44 .3,.43",
+    r: ".38:.06,.43 .06,1|.06,.7 .14,.51 .26,.43 .37,.46",
+    u: ".5:.05,.43 .06,.8 .16,.97 .31,1 .44,.88 .46,.43;.46,.43 .47,1",
+    m: ".74:.05,.43 .05,1|.05,.63 .15,.46 .27,.43 .35,.53 .36,1|.36,.63 .46,.46 .58,.43 .67,.53 .69,1",
+    g: ".5:.44,.52 .28,.42 .09,.5 .03,.72 .13,.94 .3,.98 .44,.84|.46,.43 .46,1.18 .37,1.33 .19,1.36 .05,1.27",
+    k: ".48:.07,-.02 .06,1|.43,.43 .07,.74;.07,.74 .46,1",
+    v: ".48:.02,.43 .24,1;.24,1 .46,.43",
+    w: ".7:.02,.43 .17,1;.17,1 .35,.55;.35,.55 .52,1;.52,1 .68,.43",
+    f: ".36:.34,.06 .25,-.01 .15,.03 .12,.2 .12,1|.01,.44 .31,.44",
+    "?": ".46:.06,.2 .14,.04 .28,0 .42,.08 .44,.24 .34,.38 .22,.48 .22,.7|.22,.94 .23,.965",
+    Y: ".58:.02,0 .29,.5;.29,.5 .56,0|.29,.5 .29,1",
+    N: ".62:.06,1 .06,0;.06,0 .56,1;.56,1 .56,0",
+    H: ".6:.06,0 .06,1|.54,0 .54,1|.06,.5 .54,.5",
+    X: ".56:.04,0 .52,1|.52,0 .04,1",
+    F: ".5:.06,1 .06,0;.06,0 .46,0|.06,.47 .38,.47",
+    "6": ".52:.44,.06 .3,0 .14,.08 .05,.34 .04,.66 .12,.92 .28,1 .44,.94 .5,.76 .44,.56 .28,.5 .12,.56 .06,.7",
+    "9": ".52:.46,.36 .38,.5 .22,.52 .08,.42 .06,.2 .18,.04 .34,0 .46,.1 .48,.3 .46,.62 .38,.9 .22,1 .08,.94",
+    ".": ".2:.08,.95 .09,.97",
+    "°": ".3:.15,.02 .06,.08 .06,.2 .15,.26 .24,.2 .24,.08 .15,.02",
   };
   /** a curve through the points (Catmull-Rom), `n` steps to each span */
   const smooth = (q, n = 5) => { const out = [q[0]]; for (let i = 0; i < q.length - 1; i++) { const p0 = q[Math.max(0, i - 1)], p1 = q[i], p2 = q[i + 1], p3 = q[Math.min(q.length - 1, i + 2)]; for (let k = 1; k <= n; k++) { const t = k / n, t2 = t * t, t3 = t2 * t; out.push([0, 1].map(j => .5 * (2 * p1[j] + (p2[j] - p0[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (3 * p1[j] - p0[j] - 3 * p2[j] + p3[j]) * t3))); } } return out; };
@@ -83,6 +126,7 @@ export default function board(K, id) {
   for (const ch in SRC) { const i = SRC[ch].indexOf(":"); GL[ch] = { w: +SRC[ch].slice(0, i), s: SRC[ch].slice(i + 1).split("|").map(st => st.split(";").map(run => run.trim().split(/\s+/).map(p => p.split(",").map(Number)))) }; }
   const oval = (cx, rx) => [Array.from({ length: 15 }, (_, i) => { const a = -1.75 - i / 14 * TAU * 1.07; return [cx + Math.cos(a) * rx, .5 + Math.sin(a) * .5]; })];
   GL.O = { w: .66, s: [oval(.33, .31)] }; GL["0"] = { w: .5, s: [oval(.25, .23)] };
+  GL.o = { w: .48, s: [[Array.from({ length: 13 }, (_, i) => { const a = -1.75 - i / 12 * TAU * 1.07; return [.24 + Math.cos(a) * .22, .715 + Math.sin(a) * .285]; })]] };
   /** how wide a line of the hand is, at cap height s */
   const width = (str, s) => { let w = -.15; for (const ch of str) w += ch === " " ? .42 : GL[ch] ? GL[ch].w + .15 : 0; return Math.max(0, w) * s; };
   /** a line in the hand, as strokes in board pixels: cap height u, its left end at (x, y) on the line; every letter a
@@ -116,6 +160,27 @@ export default function board(K, id) {
   const hbox = (x0, y0, x1, y1, r, j) => poly([[x0, y0], [x1, y0 + (r() - .5) * j], [x1 + (r() - .5) * j, y1], [x0, y1 + (r() - .5) * j], [x0 + (r() - .5) * j, y0 - j * .8]], r);
   /** a word too far off to read: the loops and humps of a running hand along a line */
   const scrawl = (x, y, len, u, r) => { const pts = [], n = Math.max(2, Math.round(len / (.5 * u))), adv = len / n; for (let k = 0; k < n; k++) { const h = (r() < .28 ? .9 : .4 + r() * .1) * u; for (let j = 0; j < 8; j++) { const t = (k + j / 8) * TAU; pts.push([x + (k + j / 8) * adv - Math.sin(t) * .12 * u, y - (1 - Math.cos(t)) / 2 * h]); } } pts.push([x + len, y]); return smooth(pts, 2); };
+  // (the forever cycle's lessons and plans draw with these too)
+  /** part of an ellipse (tilted by `tilt`) from a0 round through `sweep`, in one sweep of the hand, a little uneven */
+  const harc = (c, rx, ry, a0, sweep, r, tilt = 0) => { const n = Math.max(8, Math.ceil(Math.abs(sweep) * Math.max(rx, ry) / 4)), wob = K.noise1(1 + Math.floor(r() * 9999), 8), ct = Math.cos(tilt), sn = Math.sin(tilt), wa = Math.min(.018, 2.4 / Math.max(rx, ry, 1)), wf = Math.max(1, Math.min(6, Math.abs(sweep) * Math.max(rx, ry) / 90)); return Array.from({ length: n + 1 }, (_, i) => { const t = i / n, a = a0 + sweep * t, f = 1 + wa * (wob(t * wf) - .5), x = Math.cos(a) * rx * f, y = Math.sin(a) * ry * f; return [c[0] + x * ct - y * sn, c[1] + x * sn + y * ct]; }); };
+  /** a shape shaded the way a hand shades one, back and forth across it at an angle: one stroke, zigzagging */
+  const zigzag = (inside, box, gap, ang, r) => { const ux = Math.cos(ang), uy = Math.sin(ang), cx = (box[0] + box[2]) / 2, cy = (box[1] + box[3]) / 2, R = Math.hypot(box[2] - box[0], box[3] - box[1]) / 2, pts = []; let flip = false;
+    for (let o = -R; o <= R; o += gap) { let a = null, b = null; for (let t = -R; t <= R; t += gap / 4) { const x = cx - uy * o + ux * t, y = cy + ux * o + uy * t; if (inside(x, y)) { if (!a) a = [x, y]; b = [x, y]; } } if (!a || Math.hypot(b[0] - a[0], b[1] - a[1]) < gap * .3) continue; const j = (r() - .5) * gap * .6; pts.push(...(flip ? [[b[0] + ux * j, b[1] + uy * j], a] : [[a[0] - ux * j, a[1] - uy * j], b])); flip = !flip; }
+    return pts; };
+  const inDisc = (c, R) => (x, y) => (x - c[0]) * (x - c[0]) + (y - c[1]) * (y - c[1]) < R * R;
+  /** a spiral wound in from the rim of an ellipse: a note's head filled in, a dot pressed in */
+  const spiral = (c, rx, ry, turns, tilt = 0, a0 = 0) => { const n = Math.max(10, Math.ceil(turns * 14)), ct = Math.cos(tilt), sn = Math.sin(tilt); return Array.from({ length: n + 1 }, (_, i) => { const t = i / n, a = a0 + t * turns * TAU, k = 1 - .8 * t, x = Math.cos(a) * rx * k, y = Math.sin(a) * ry * k; return [c[0] + x * ct - y * sn, c[1] + x * sn + y * ct]; }); };
+  /** an arrow's head at the end of a line, its barbs `hl` long */
+  const head = (pts, hl, spread = .5) => { const e = pts[pts.length - 1], d = pts[Math.max(0, pts.length - 3)], a = Math.atan2(e[1] - d[1], e[0] - d[0]); return [[e[0] - Math.cos(a - spread) * hl, e[1] - Math.sin(a - spread) * hl], e, [e[0] - Math.cos(a + spread) * hl, e[1] - Math.sin(a + spread) * hl]]; };
+  /** a line that waves as it goes, `amp` either side of it, `waves` times along it */
+  const wavy = (a, b, amp, waves, n = 40, ph = 0) => { const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1; return Array.from({ length: n + 1 }, (_, i) => { const t = i / n, o = Math.sin(t * waves * TAU + ph) * amp; return [a[0] + dx * t - dy / L * o, a[1] + dy * t + dx / L * o]; }); };
+  /** a cloud's outline in one stroke: billows over the top, scalloped where they meet, and a flat foot (`w` its width;
+   *  the billows dealt a little) */
+  const cloudPts = (cx, cy, w, h, nb, r) => { const B = (nb > 3 ? [[-.31, .02, .19], [-.1, -.1, .26], [.15, -.05, .22], [.34, .04, .15]] : [[-.26, .02, .22], [.02, -.08, .28], [.29, .03, .19]]).map(([x, y, q]) => [cx + (x + (r() - .5) * .03) * w, cy + y * w * (h / w > .3 ? 1.1 : .9), q * w * (.96 + r() * .08)]);
+    const yb = cy + .1 * w, x0 = Math.min(...B.map(q => q[0] - q[2])) + w * .01, x1 = Math.max(...B.map(q => q[0] + q[2])) - w * .01, top = x => { let y = yb; for (const [bx, by, br] of B) { const dx = x - bx; if (Math.abs(dx) < br) y = Math.min(y, by - Math.sqrt(br * br - dx * dx)); } return y; };
+    const pts = [[x0 + w * .03, yb]]; for (let i = 0; i <= 64; i++) { const x = lerp(x0, x1, i / 64); pts.push([x, top(x)]); } pts.push([x1 - w * .03, yb], [lerp(x1, x0, .5), yb + w * .012], [x0 + w * .05, yb + w * .004]); return pts; };
+  /** a curve through points (a hand's, via the same spline the letters use) */
+  const curve = (q, n = 8) => smooth(q, n);
 
   /* ---------------- strokes, and when each is drawn ---------------- */
   let seedN = 1;
@@ -139,12 +204,17 @@ export default function board(K, id) {
       let t = 0, pv = null;
       for (const st of ph.strokes) {
         if (pv) { const e = pv.p[pv.p.length - 1], d = Math.hypot(st.p[0][0] - e[0], st.p[0][1] - e[1]); t += .06 + Math.sqrt(d / u) * .05; }
+        if (st.wait) t += st.wait; /* the hand stopping to think (a move at noughts and crosses) */
         st.t0 = t; t += st.kind === "d" ? .06 : Math.max(.08, Math.sqrt(st.len * 2.4 * u) / (10 * u)); st.t1 = t; pv = st;
       }
       const [a, b] = ph.win, k = Math.min(1.2, (b - a) / t); ph.pace = 1 / k; /* above 1: brisker than the hand's own pace; never much slower (a short list of strokes just finishes early) */
       for (const st of ph.strokes) { st.t0 = a + st.t0 * k; st.t1 = a + st.t1 * k; }
     }
   };
+
+  /** the dust a stick sheds as it goes: where each speck leaves the line, how it falls, and when (all of it settled
+   *  before the loop comes round) */
+  const dustOf = (all, r) => { const out = []; for (const st of all) { const n = Math.ceil((st.t1 - st.t0) / .05); for (let k = 0; k < n; k++) { const t = lerp(st.t0, st.t1, (k + r()) / n), q = along(st, done(st, t)); out.push({ t, x: q[0], y: q[1], vx: (r() - .5) * 26, vy: 4 + r() * 14, s: .6 + r() * 1.1, life: Math.min(.5 + r() * .7, K.LOOP - .05 - t), c: st.col }); } } return out; };
 
   /* ---------------- chalk: the board's own grain showing through the line ---------------- */
   // the tooth of the slate, a tile of it: where the chalk catches (most of it), and the pits it skips (a fine speckle
@@ -161,7 +231,9 @@ export default function board(K, id) {
   /** segments k0 … k1-1 of a chalk stroke (three pixels each, butt-ended so they meet without beading), each as heavy as
    *  the chalk's pressure where it falls; the first is a dab where the stick landed; the last thins as it lifts */
   const chalkSegs = (x, st, k0, k1, upto = st.len, ga = 1) => {
+    if (st.par) return chalkPar(x, st, k0, k1, upto, ga);
     const P = pats(x), d = st.len / st.n; x.strokeStyle = P[st.col]; x.fillStyle = P[st.col]; x.lineCap = "butt";
+    if (st.soft) ga *= st.soft; /* shading, with the side of the stick */
     if (k0 === 0 && upto > 0) { x.globalAlpha = .7 * ga; x.beginPath(); x.arc(st.p[0][0], st.p[0][1], st.w * .62, 0, TAU); x.fill(); }
     for (let k = k0; k < k1; k++) {
       const s0 = k * d, s1 = Math.min(upto, (k + 1) * d); if (s1 <= s0) break;
@@ -172,18 +244,32 @@ export default function board(K, id) {
     }
     x.lineCap = "round"; x.globalAlpha = 1;
   };
+  /** the staff liner's five sticks at once: each line its own chalk, catching and skipping on its own */
+  const chalkPar = (x, st, k0, k1, upto, ga) => {
+    const P = pats(x), d = st.len / st.n; x.strokeStyle = P[st.col]; x.fillStyle = P[st.col]; x.lineCap = "butt";
+    st.par.forEach((q, j) => {
+      if (k0 === 0 && upto > 0) { x.globalAlpha = .6 * ga; x.beginPath(); x.arc(q[0][0], q[0][1], st.w * .55, 0, TAU); x.fill(); }
+      for (let k = k0; k < k1; k++) {
+        const s0 = k * d, s1 = Math.min(upto, (k + 1) * d); if (s1 <= s0) break;
+        const sm = (s0 + s1) / 2, pr = st.pr(sm + j * 41), tap = st.len - sm < 7 ? .6 + .4 * (st.len - sm) / 7 : 1;
+        trace(x, st, s0, s1, q); x.globalAlpha = .6 * pr * ga; x.lineWidth = st.w * tap; x.stroke();
+        x.globalAlpha = Math.min(1, .9 * pr) * ga; x.lineWidth = st.w * .5 * tap; x.stroke();
+      }
+    });
+    x.lineCap = "round"; x.globalAlpha = 1;
+  };
   /** the dust that hangs about a chalk line, a soft haze a few times its width */
-  const chalkHalo = (x, st, upto, ga = 1) => { if (upto <= 0) return; trace(x, st, 0, upto); x.strokeStyle = rgba(INKS[st.col]); x.globalAlpha = .035 * ga; x.lineWidth = st.w * 4.6; x.stroke(); x.globalAlpha = .055 * ga; x.lineWidth = st.w * 2.4; x.stroke(); x.globalAlpha = 1; };
+  const chalkHalo = (x, st, upto, ga = 1) => { if (upto <= 0) return; if (st.par) { for (const q of st.par) { trace(x, st, 0, upto, q); x.strokeStyle = rgba(INKS[st.col]); x.globalAlpha = .03 * ga; x.lineWidth = st.w * 3.4; x.stroke(); } x.globalAlpha = 1; return; } if (st.soft) ga *= st.soft; trace(x, st, 0, upto); x.strokeStyle = rgba(INKS[st.col]); x.globalAlpha = .035 * ga; x.lineWidth = st.w * 4.6; x.stroke(); x.globalAlpha = .055 * ga; x.lineWidth = st.w * 2.4; x.stroke(); x.globalAlpha = 1; };
 
   /* ---------------- marker: translucent, round, streaked where the felt ran thin, pooled where it rested ---------------- */
   const markerLine = (x, st, upto) => {
     if (upto <= 0) return; const c = INKS[st.col];
     x.lineCap = "round"; x.lineJoin = "round"; x.globalCompositeOperation = "multiply";
-    trace(x, st, 0, upto); x.strokeStyle = rgba(c, st.a || .88); x.lineWidth = st.w; x.stroke();
+    trace(x, st, 0, upto); x.strokeStyle = rgba(c, st.a || .88); x.lineWidth = st.w; if (st.dash) { x.setLineDash(st.dash); x.stroke(); x.setLineDash([]); } else x.stroke();
     x.fillStyle = rgba(c, .35 * (st.a || .88) / .88); const a = st.p[0]; x.beginPath(); x.arc(a[0], a[1], st.w * .52, 0, TAU); x.fill(); /* where it went down */
     if (upto >= st.len) { const b = st.p[st.p.length - 1]; x.beginPath(); x.arc(b[0], b[1], st.w * .46, 0, TAU); x.fill(); } /* and came up */
     x.globalCompositeOperation = "source-over";
-    for (const [pts, al] of st.streaks) { trace(x, st, 0, upto, pts); x.strokeStyle = `rgba(255,255,255,${al})`; x.lineWidth = Math.max(.6, st.w * .09); x.stroke(); }
+    if (st.dash) return; for (const [pts, al] of st.streaks) { trace(x, st, 0, upto, pts); x.strokeStyle = `rgba(255,255,255,${al})`; x.lineWidth = Math.max(.6, st.w * .09); x.stroke(); }
   };
   /** the lines along a stroke a hair either side of its middle, where a felt tip leaves its streaks */
   const streaks = (st, r) => [[-.22, .3], [.08, .18], [.26, .24]].map(([o, a]) => [st.p.map((p, i) => { const q = st.p[Math.min(st.p.length - 1, i + 1)], pq = st.p[Math.max(0, i - 1)], dx = q[0] - pq[0], dy = q[1] - pq[1], L = Math.hypot(dx, dy) || 1; return [p[0] - dy / L * o * st.w, p[1] + dx / L * o * st.w]; }), a * (.6 + r() * .6)]);
@@ -272,6 +358,451 @@ export default function board(K, id) {
     return { ph, top, notes };
   };
 
+  /* ---------------- the forever cycle: what the passes after the signature's draw ----------------
+     Each lesson (and each plan) is laid out in the signature's own room, tall or wide, in units of the letter height, and
+     worked out from its pass's dice alone: its details (where the planets are on their orbits, the tune, the game) and
+     some of its colours. It is drawn a colour at a time, the hand going off the board for the next stick. */
+  /** a lesson's pen: its strokes into its phases, at size u from (ox, oy) */
+  const pen = (ox, oy, u, nph, r) => {
+    const w = clamp(u * .2, 2.4, chalk ? 6 : 6.2), ph = Array.from({ length: nph }, () => []), P = (x, y) => [ox + x * u, oy + y * u];
+    const put = (i, pts, k = 1, kind = "l", extra) => { const st = mk(pts, 0, w * k, kind); if (!chalk) st.streaks = streaks(st, r); if (extra) Object.assign(st, extra); ph[i].push(st); return st; };
+    const say = (i, str, x, y, s, seed, al = 0, k = 1) => { const tw = width(str, s * u); write(str, ox + x * u - tw * al, oy + y * u, s * u, seed).forEach(p => put(i, p, clamp(s * .9, .8, 1.25) * k, "w")); return tw / u; };
+    const disc = (i, c, R, gap = .3, ang = -.8, k = 1.6, soft = .55) => put(i, zigzag(inDisc(c, R * u * .9), [c[0] - R * u, c[1] - R * u, c[0] + R * u, c[1] + R * u], gap * u, ang, r), k, "l", { soft }); /* a round thing shaded in */
+    return { u, w, ph, P, put, say, disc };
+  };
+
+  /** the solar system from the sun in the corner: each orbit as far as the board goes, each planet somewhere on its own
+   *  (where, is dealt), the belt of rocks, a comet going by */
+  const solar = (L, ox, oy, u, r) => {
+    const d = pen(ox, oy, u, 4, r), { P, put, disc } = d, W = L.w, H = L.h, sc = [1.1, 1.3], SR = 3.3, sp = P(...sc);
+    // yellow: the sun in the corner, its rim, shaded with the side of the stick, its rays
+    put(0, harc(sp, SR * u, SR * u, -.1, Math.PI / 2 + .2, r), 1.15);
+    put(0, zigzag((x, y) => inDisc(sp, SR * u * .93)(x, y) && x > ox + .2 * u && y > oy + .2 * u, [ox, oy, sp[0] + SR * u, sp[1] + SR * u], u * .5, -.75, r), 2.3, "l", { soft: .4 });
+    for (let i = 0; i < 7; i++) { const a = (i + .5) / 7 * Math.PI / 2, r0 = SR + .55, r1 = SR + (i % 2 ? 1.35 : 2.1); put(0, hline(P(sc[0] + Math.cos(a) * r0, sc[1] + Math.sin(a) * r0), P(sc[0] + Math.cos(a) * r1, sc[1] + Math.sin(a) * r1), r), .95); }
+    // white: the orbits from the inside out, each broken round its planet, and the planet on it; the belt of rocks; stars
+    const Dm = Math.hypot(W - sc[0], H - sc[1]) - 1.4;
+    const span = (rho, m) => { let a0 = null, a1 = 0; for (let a = 0; a <= Math.PI / 2 + 1e-9; a += .003) { const x = sc[0] + Math.cos(a) * rho, y = sc[1] + Math.sin(a) * rho; if (x < W - m && y < H - m && x > m && y > m) { if (a0 === null) a0 = a; a1 = a; } } return a0 === null ? null : [a0, a1]; };
+    const ORB = [{ f: .21, r: .34 }, { f: .285, r: .54, k: 3 }, { f: .36, r: .62, k: 2, moon: 1 }, { f: .435, r: .47, k: 3 }, { f: .59, r: 1.45, bands: 1 }, { f: .72, r: 1.02, ring: 1 }, { f: .845, r: .76, k: 2, tilt: 1 }, { f: .96, r: .74, k: 2 }];
+    for (const q of ORB) {
+      const rho = q.f * Dm, sa = span(rho, .45); if (!sa) continue;
+      const m = (q.r + .6) / rho, th = sa[1] - sa[0] > 2 * m ? lerp(sa[0] + m, sa[1] - m, r()) : (sa[0] + sa[1]) / 2, gap = (q.r + .3) / rho;
+      if (th - gap > sa[0] + .01) put(1, harc(sp, rho * u, rho * u, sa[0], th - gap - sa[0], r), .72, "l", { soft: .8 });
+      if (sa[1] > th + gap + .01) put(1, harc(sp, rho * u, rho * u, th + gap, sa[1] - th - gap, r), .72, "l", { soft: .8 });
+      const cx = sc[0] + Math.cos(th) * rho, cy = sc[1] + Math.sin(th) * rho, c = P(cx, cy); q.at = c; q.xy = [cx, cy];
+      put(1, hring(c, q.r * u, q.r * u, r, r() * TAU, .05), q.r > 1 ? 1.05 : .9);
+      if (q.moon) put(1, hring(P(cx + q.r + .45, cy - .5), .17 * u, .17 * u, r, 0, .05), .7);
+      if (q.ring) { const tilt = -.32, rx = q.r * 1.95, ry = q.r * .5, rp = a => { const x = Math.cos(a) * rx, y = Math.sin(a) * ry; return [cx + x * Math.cos(tilt) - y * Math.sin(tilt), cy + x * Math.sin(tilt) + y * Math.cos(tilt)]; };
+        const hid = a => Math.hypot(rp(a)[0] - cx, rp(a)[1] - cy) < q.r * 1.08; let a0 = Math.PI; while (!hid(a0) && a0 < 1.5 * Math.PI) a0 += .02; let a1 = TAU; while (!hid(a1) && a1 > 1.5 * Math.PI) a1 -= .02;
+        const ring = []; for (let a = a0 - .04; a >= a1 - TAU + .04; a -= .05) ring.push(P(...rp(a))); put(1, ring, .85); }
+      if (q.tilt) put(1, harc(c, q.r * 1.8 * u, q.r * .34 * u, -2.2, TAU * .98, r, 1.32), .7);
+    }
+    { const sa = span(.51 * Dm, .5); if (sa) for (let i = 0; i < 17; i++) { const a = lerp(sa[0] + .03, sa[1] - .03, (i + r() * .8) / 17), rho = (.49 + r() * .045) * Dm, p = P(sc[0] + Math.cos(a) * rho, sc[1] + Math.sin(a) * rho); put(1, [p, [p[0] + .1 * u, p[1] + .04 * u]], .5 + r() * .55, "d"); } }
+    for (const [fx, fy, s] of [[.93, .08, .42], [.56, .96, .34], [.08, .93, .38]]) put(1, hstar(P(fx * W, fy * H), s * u, (r() - .5) * .4), .8);
+    // blue: the blue planets shaded in, and a comet going by, its tail streaming away from the sun
+    for (const q of ORB) if (q.at && q.k === 2) disc(2, q.at, q.r, .26);
+    { // the comet: where it is clearest of the planets (its tail too), its head pressed in, its tail fanning away from the sun
+      let best = null; for (let j = 0; j < 40; j++) { const x = lerp(W * .3, W - 2.2, r()), y = lerp(H * .12, H - 2.2, r()), ta = Math.atan2(y - sc[1], x - sc[0]); let dmin = 1e9;
+        for (const q of ORB) if (q.xy) for (const f of [0, .5, 1]) dmin = Math.min(dmin, Math.hypot(q.xy[0] - x - Math.cos(ta) * 4 * f, q.xy[1] - y - Math.sin(ta) * 4 * f) - q.r);
+        if (Math.hypot(x - sc[0], y - sc[1]) < SR + 6) continue; if (!best || dmin > best.d) best = { x, y, d: dmin, ta }; }
+      const { x: hx, y: hy, ta } = best, hp = P(hx, hy); ORB.comet = [hx, hy];
+      put(2, spiral(hp, .34 * u, .34 * u, 2.2, 0, r() * TAU), 1.25);
+      [[0, 4.8, .9], [-.13, 3.9, .7], [.14, 3.6, .7], [-.26, 2.7, .55], [.27, 2.5, .55]].forEach(([o, l, k]) => { const a0 = [hx + Math.cos(ta + o * 1.6) * .42, hy + Math.sin(ta + o * 1.6) * .42], bend = o * .35;
+        put(2, curve([a0, [hx + Math.cos(ta + o + bend * .5) * l * .5, hy + Math.sin(ta + o + bend * .5) * l * .5], [hx + Math.cos(ta + o + bend) * l, hy + Math.sin(ta + o + bend) * l]].map(q => P(...q)), 10), k, "l", { soft: .55 + .45 * k }); });
+      for (let i = 0; i < 3; i++) { const a = ta + (r() - .5) * .6, l = 1.2 + r() * 3, p = P(hx + Math.cos(a) * l, hy + Math.sin(a) * l); put(2, [p, [p[0] + .06 * u, p[1]]], .5, "d"); } }
+    // orange: Venus and Mars shaded in, Jupiter's bands and its spot
+    for (const q of ORB) if (q.at && q.k === 3) disc(3, q.at, q.r, .24);
+    { const q = ORB[4]; if (q.at) { const [cx, cy] = q.xy; for (const [o, k] of [[-.5, .8], [-.12, 1], [.3, .9]]) { const hw = Math.sqrt(1 - o * o) * q.r * .88; put(3, hline(P(cx - hw, cy + o * q.r), P(cx + hw, cy + o * q.r + .05), r, .03), k); }
+      put(3, hring(P(cx + q.r * .38, cy + q.r * .52), q.r * .26 * u, q.r * .14 * u, r, 0, .08), .75); } }
+    d.cols = [2, 0, 1, 5]; d.wins = [[2.4, 3.8], [4.2, 10.3], [10.7, 12.1], [12.5, 14.0]];
+    { let fb = null; const fs = L.w > 23 ? 1.7 : 2.2; for (let j = 0; j < 66; j++) { const x = lerp(fs * 1.4, W - fs * 1.4, (j % 11) / 10), y = lerp(fs * 1.3, H - fs * 1.3, Math.floor(j / 11) / 5); if (Math.hypot(x - sc[0], y - sc[1]) < SR + 3.4) continue; /* the A+ where the planets and the comet leave it most room */
+        let m = 1e9; for (const q of ORB) if (q.xy) m = Math.min(m, Math.hypot(q.xy[0] - x, q.xy[1] - y) - q.r * (q.ring ? 2 : 1)); if (ORB.comet) m = Math.min(m, Math.hypot(ORB.comet[0] - x, ORB.comet[1] - y) - 1.5); if (!fb || m > fb.m) fb = { x, y, m }; }
+      d.fin = [fb.x, fb.y, fs]; }
+    return d;
+  };
+
+  /** the staff's line gap for each room (the liner is cut to it), where the two staves sit, and the keyboard under them */
+  const MUSIC = { tall: { g: .78, tops: [3.4, 11.2], bars: 3, keys: [1, 21, 17.6, 24.6] }, wide: { g: .64, tops: [1.6, 7.9], bars: 4, keys: [1.5, 24.5, 12.9, 17.7] } };
+  /** the clefs, in staff gaps from the staff's top line: the G clef's spiral round its line, the F clef's curl and dots */
+  const GCLEF = [[1.25, 3.05], [1.45, 2.6], [1.25, 2.2], [.8, 2.15], [.45, 2.5], [.35, 3.1], [.55, 3.65], [1.1, 3.95], [1.7, 3.8], [2.05, 3.3], [2, 2.6], [1.6, 2], [1.1, 1.5], [.8, .85], [.8, 0], [1, -.75], [1.35, -1.15], [1.6, -.9], [1.62, -.3], [1.4, .35], [1.15, 1.2], [1.1, 2.2], [1.15, 3.2], [1.25, 4.3], [1.25, 5], [1.05, 5.45], [.7, 5.5], [.45, 5.25]];
+  const FCLEF = [[.45, 1.02], [.42, .5], [.9, .1], [1.55, .12], [1.98, .6], [2.02, 1.38], [1.66, 2.3], [1.02, 3.08], [.26, 3.6]];
+  /** a page of music: the grand staff ruled with the liner, the clefs, the key and the time, a tune (dealt: its notes and
+   *  its rhythm) with the bass under it, how it is to be played, and a keyboard with the tune's first keys marked */
+  const music = (L, ox, oy, u, r, k) => {
+    const d = pen(ox, oy, u, 4, r), { P, put, say } = d, M = MUSIC[k], g = M.g, W = L.w, x0 = .9, x1 = W - .5, [tT, tB] = M.tops, bot = tB + 4 * g;
+    const Y = (top, s) => top + (8 - s) * g / 2; /* a staff step (0 the bottom line, 8 the top) to the board */
+    // the liner: each staff's five lines at once
+    for (const t of M.tops) { const mid = hline(P(x0, t + 2 * g), P(x1, t + 2 * g), r, .0025); put(0, mid, .8, "l", { par: [-2, -1, 0, 1, 2].map(j => mid.map(([x, y], i) => [x, y + j * g * u + Math.sin(i * 1.3 + j * 2) * .35])) }); }
+    // white: the brace and the line that joins the staves, the clefs, the key, the time, the bar lines
+    const bh = bot - tT; put(1, curve([[x0 - .12, tT], [x0 - .52, tT + bh * .1], [x0 - .46, tT + bh * .38], [x0 - .86, tT + bh * .5], [x0 - .46, tT + bh * .62], [x0 - .52, tT + bh * .9], [x0 - .12, bot]].map(q => P(...q)), 8), 1.1);
+    put(1, hline(P(x0, tT), P(x0, bot), r, .004), .9);
+    const cx = x0 + .35; put(1, curve(GCLEF.map(([a, b]) => P(cx + a * g, tT + b * g)), 7), 1.05); put(1, spiral(P(cx + .62 * g, tT + 5.12 * g), .2 * g * u, .2 * g * u, 1.6), 1.1);
+    put(1, spiral(P(cx + .5 * g, tB + 1 * g), .2 * g * u, .2 * g * u, 1.6), 1.2); put(1, curve(FCLEF.map(([a, b]) => P(cx + a * g, tB + b * g)), 7), 1.05);
+    for (const yy of [.55, 1.45]) put(1, spiral(P(cx + 2.5 * g, tB + yy * g), .12 * g * u, .12 * g * u, 1.4), 1);
+    const nsh = Math.floor(r() * 3), sharp = (x, y) => { for (const dx of [.28, .72]) put(1, hline(P(x + dx * g, y - 1.25 * g), P(x + dx * g + .05 * g, y + 1.35 * g), r, .01), .7); for (const dy of [-.42, .48]) put(1, hline(P(x - .02 * g, y + (dy + .14) * g), P(x + 1.02 * g, y + (dy - .14) * g), r, .01), 1.3); };
+    let kx = cx + 2.75 * g; for (let i = 0; i < nsh; i++) { sharp(kx, Y(tT, [8, 5][i])); sharp(kx, Y(tB, [6, 3][i])); kx += 1.15 * g; }
+    const three = r() < .35, beats = three ? 3 : 4, tx = kx + .25 * g;
+    for (const t of M.tops) { say(1, three ? "3" : "4", tx, t + 2 * g, 2 * g, 60 + t, 0, 1.05); say(1, "4", tx, t + 4 * g, 2 * g, 70 + t, 0, 1.05); }
+    const bx0 = tx + 1.7 * g, bw = (x1 - .5 - bx0) / M.bars, bars = Array.from({ length: M.bars + 1 }, (_, i) => bx0 + i * bw);
+    for (let i = 1; i < M.bars; i++) put(1, hline(P(bars[i], tT), P(bars[i], bot), r, .004), .85);
+    put(1, hline(P(x1 - .45, tT), P(x1 - .45, bot), r, .003), .8); put(1, hline(P(x1 - .08, tT), P(x1 - .08, bot), r, .003), 2.2);
+    // the keyboard: its case, the white keys' edges, the black keys filled in
+    const [kx0, kx1, ky0, ky1] = M.keys, nk = 14, kw = (kx1 - kx0) / nk;
+    put(1, hbox(ox + kx0 * u, oy + ky0 * u, ox + kx1 * u, oy + ky1 * u, r, .1 * u), 1);
+    for (let i = 1; i < nk; i++) put(1, hline(P(kx0 + i * kw, ky0 + .05), P(kx0 + i * kw, ky1 - .05), r, .004), .7);
+    for (let i = 1; i < nk; i++) if ([1, 2, 4, 5, 6].includes(i % 7)) { const bx = kx0 + i * kw, bw2 = kw * .3, by0 = ky0 + .06, by1 = ky0 + (ky1 - ky0) * .6;
+      put(1, poly([P(bx - bw2, by0), P(bx - bw2, by1), P(bx + bw2, by1), P(bx + bw2, by0)], r, .004), .6);
+      put(1, zigzag((x, y) => x > ox + (bx - bw2 + .1) * u && x < ox + (bx + bw2 - .1) * u && y > oy + (by0 + .1) * u && y < oy + (by1 - .1) * u, [ox + (bx - bw2) * u, oy + by0 * u, ox + (bx + bw2) * u, oy + by1 * u], u * .24, -.95, r), 1, "l", { soft: .55 }); }
+    // blue: the tune (a walk of notes, dealt, ending home) and the bass under it
+    const RH = beats === 4 ? [[1, 1, 1, 1], [.5, .5, 1, 1, 1], [1, .5, .5, 1, 1], [2, 1, 1], [1, 1, 2], [.5, .5, .5, .5, 1, 1], [1.5, .5, 2]] : [[1, 1, 1], [.5, .5, 1, 1], [2, 1], [1, .5, .5, 1], [1.5, .5, 1]];
+    const LAST = beats === 4 ? [[2, 2], [4], [1, 1, 2]] : [[3], [2, 1]];
+    const rx = .64 * g, ry = .46 * g, tilt = -.38, notes = []; let st = 2 + Math.floor(r() * 4);
+    for (let b = 0; b < M.bars; b++) { const pat = b === M.bars - 1 ? LAST[Math.floor(r() * LAST.length)] : RH[Math.floor(r() * RH.length)]; let at = 0;
+      pat.forEach((du, i) => { if (b || i) st = clamp(st + [-2, -1, -1, 1, 1, 2, 0][Math.floor(r() * 7)], -1, 9); if (b === M.bars - 1 && i === pat.length - 1) st = [1, 4, 8][Math.floor(r() * 3)];
+        notes.push({ b, at, du, s: st, x: bars[b] + .55 + (at / beats) * (bw - .9) + rx * .6 }); at += du; }); }
+    const noteAt = (top, n, stemDir) => { const x = n.x, y = Y(top, n.s), c = P(x, y);
+      if (n.s <= -2) for (let s = -2; s >= n.s; s -= 2) put(2, hline(P(x - rx * 1.6, Y(top, s)), P(x + rx * 1.6, Y(top, s)), r, .01), .7); /* ledger lines */
+      if (n.s >= 10) for (let s = 10; s <= n.s; s += 2) put(2, hline(P(x - rx * 1.6, Y(top, s)), P(x + rx * 1.6, Y(top, s)), r, .01), .7);
+      if (n.du >= 2) put(2, harc(c, rx * u, ry * u, -2.4, TAU * 1.04, r, tilt), .75); else put(2, spiral(c, rx * u * .92, ry * u * .92, 2.2, tilt, -2.4), 1.35);
+      if (n.du % 1 === .5 && n.du > 1) put(2, spiral(P(x + rx * 1.9, y - (n.s % 2 ? 0 : g * .25)), .1 * g * u, .1 * g * u, 1.2), 1); /* a dotted note */
+      if (n.du >= 4) return null; const up = stemDir ?? n.s < 4, sx = x + (up ? rx * .92 : -rx * .92), sy1 = y + (up ? -3.3 * g : 3.3 * g); put(2, hline(P(sx, y + (up ? -.1 : .1) * g), P(sx, sy1), r, .006), .8); return [sx, sy1, up]; };
+    for (let i = 0; i < notes.length; i++) { const n = notes[i], m = notes[i + 1];
+      if (n.du === .5 && m && m.du === .5 && m.b === n.b && Math.floor(n.at) === Math.floor(m.at)) { const up = (n.s + m.s) / 2 < 4, a = noteAt(tT, n, up), c = noteAt(tT, m, up); put(2, hline(P(a[0], a[1]), P(c[0], c[1] + (m.s - n.s) * g * .12), r, .01), 2.3); i++; continue; }
+      const e = noteAt(tT, n); if (n.du === .5 && e) put(2, curve([[e[0], e[1]], [e[0] + .45 * g, e[1] + (e[2] ? 1 : -1) * 1.1 * g], [e[0] + .75 * g, e[1] + (e[2] ? 1 : -1) * 2.3 * g], [e[0] + .5 * g, e[1] + (e[2] ? 1 : -1) * 3 * g]].map(q => P(...q)), 6), .9); /* a flag */ }
+    for (let b = 0; b < M.bars; b++) { const two = r() < .6 && b < M.bars - 1; for (let j = 0; j < (two ? 2 : 1); j++) { const s = 1 + Math.floor(r() * 5); noteAt(tB, { x: bars[b] + .55 + j * (bw - .9) / 2 + rx * .6, s, du: two ? 2 : beats === 4 ? 4 : 3 }); } }
+    // yellow: a slur over the first bar, piano to begin, a swell, forte, a pause held on the last note; the first bar's keys
+    const b0 = notes.filter(n => n.b === 0), hiS = Math.max(...b0.map(n => n.s)) + 3.2; if (b0.length > 1) put(3, curve([[b0[0].x, Y(tT, hiS - .8)], [(b0[0].x + b0[b0.length - 1].x) / 2, Y(tT, hiS + 1.1)], [b0[b0.length - 1].x, Y(tT, hiS - .8)]].map(q => P(...q)), 10), .8);
+    const dy = tT + 4 * g + 1.35; say(3, "p", bars[0] + .3, dy + .5, 1.1, 81); say(3, "f", bars[Math.min(2, M.bars - 1)] + .3, dy + .5, 1.1, 82);
+    put(3, [P(bars[1] + .4, dy + .05), P(bars[1] + bw - .8, dy - .45)], .8); put(3, [P(bars[1] + .4, dy + .15), P(bars[1] + bw - .8, dy + .6)], .8);
+    { const n = notes[notes.length - 1], up = n.s < 4 && n.du < 4, hy = Y(tT, n.s), fy = Math.min(up ? hy - 3.3 * g : hy - .7 * g, tT) - 1.1 * g; put(3, harc(P(n.x, fy), .78 * g * u, .62 * g * u, Math.PI, Math.PI, r), .85); put(3, spiral(P(n.x, fy - .12 * g), .11 * g * u, .11 * g * u, 1.2), 1.1); }
+    const kd = [...new Set(b0.map(n => n.s))]; for (const s of kd) { const ki = s + 2; if (ki < 0 || ki >= nk) continue; put(3, spiral(P(kx0 + (ki + .5) * kw, ky1 - (ky1 - ky0) * .18), .22 * u, .22 * u, 1.8), 1.2); }
+    d.cols = [0, 0, 1, 2]; d.tools = ["liner", null, null, null]; d.wins = [[2.4, 3.5], [3.8, 8.4], [8.8, 12.2], [12.6, 14.1]];
+    d.fin = k === "tall" ? [17.8, 15.9, 1.55] : [21.6, 11.4, 1.6];
+    return d;
+  };
+  const at2 = (p, q, t) => [lerp(p[0], q[0], t), lerp(p[1], q[1], t)];
+  /** light: a beam through a prism fanned out into its colours on a screen, a rainbow over the corner in the same
+   *  colours, and a lens bringing three rays to their focus. White first, then each colour in its turn */
+  const prism = (L, ox, oy, u, r, k) => {
+    const d = pen(ox, oy, u, 7, r), { P, put, say } = d, tall = k === "tall";
+    const G = tall ? { ap: [8.6, 2.4], s: 9.2, src: [.4, 4.3], sx: 21.3, sy: [8.4, 14.6], rb: [17.7, 5.7, 2.5, 4.2], ax: [.6, 21.3, 20.7], ln: [8.3, 3.9], lr: [-2.5, 0, 2.5], fx: 15.3, fin: [4.2, 13.8, 1.7] }
+      : { ap: [6.2, 1.1], s: 8.4, src: [.3, 2.9], sx: 16.6, sy: [6.1, 10.9], rb: [21.8, 7.4, 2.3, 3.9], ax: [.5, 15.2, 14.3], ln: [5.2, 3.0], lr: [-2, 0, 2], fx: 11.3, fin: [22.9, 13.6, 1.6] };
+    const [apx, apy] = G.ap, hs = G.s / 2, by = apy + G.s * .866, bl = [apx - hs, by], br = [apx + hs, by], at = (p, q, t) => [lerp(p[0], q[0], t), lerp(p[1], q[1], t)];
+    const A = at(G.ap, bl, .36 + r() * .12), Bq = at(G.ap, br, .5 + r() * .12); G.rb = [G.rb[0], G.rb[1], G.rb[2] * (.92 + r() * .12), G.rb[3] * (.95 + r() * .08)];
+    // white: the prism, the beam in (and its arrow), the normals where it goes in and out, the ray inside, the screen
+    put(0, poly([P(...G.ap), P(...br), P(...bl), P(apx - .06, apy - .1)], r, .008), 1.15);
+    const beam = hline(P(...G.src), P(...A), r, .004); put(0, beam, 1.1); put(0, head(beam.slice(0, Math.ceil(beam.length * .55)), .6 * u), .9);
+    for (const [p, q] of [[A, bl], [Bq, br]]) { const fx = q[0] - G.ap[0], fy = q[1] - G.ap[1], fl = Math.hypot(fx, fy), nx = -fy / fl * (p === A ? -1 : 1), ny = fx / fl * (p === A ? -1 : 1);
+      for (let j = -2; j <= 1; j++) put(0, hline(P(p[0] + nx * (j * .8 + .15), p[1] + ny * (j * .8 + .15)), P(p[0] + nx * (j * .8 + .55), p[1] + ny * (j * .8 + .55)), r, .01), .5, "l", { soft: .7 }); }
+    put(0, hline(P(...A), P(...Bq), r, .005), .85);
+    put(0, hline(P(G.sx + .15, G.sy[0] - 1.3), P(G.sx + .15, G.sy[1] + 1.3), r, .004), 1.2);
+    for (let yy = G.sy[0] - 1.1; yy < G.sy[1] + 1.2; yy += .75) put(0, [P(G.sx + .25, yy), P(G.sx + .75, yy - .45)], .55, "l", { soft: .7 });
+    // the lens's axis, and the clouds the rainbow stands on
+    put(0, hline(P(G.ax[0], G.ax[2]), P(G.ax[1], G.ax[2]), r, .003), .6, "l", { soft: .75 });
+    { const [lx0, lh] = G.ln; for (const sd of [-1, 1]) put(0, curve([[lx0, G.ax[2] - lh], [lx0 + sd * .95, G.ax[2]], [lx0, G.ax[2] + lh]].map(q => P(...q)), 12), 1); } /* the lens */
+    const [rcx, rcy, rr0, rr1] = G.rb; for (const sx of [-1, 1]) put(0, cloudPts(ox + (rcx + sx * (rr0 + rr1) / 2) * u, oy + (rcy + .15) * u, 2.6 * u, 1.1 * u, 3, r), .8);
+    // the colours, one stick each: its ray out of the prism, where it lands on the screen, its band of the rainbow; the
+    // yellow brings the lens's rays to their focus, the blue draws the lens
+    const COL = [3, 5, 2, 4, 1, 6];
+    COL.forEach((c, i) => { const ph = i + 1, ty = lerp(G.sy[0], G.sy[1], i / 5), o = (i - 2.5) * .06;
+      put(ph, hline(P(Bq[0], Bq[1] + o), P(G.sx, ty), r, .004), 1.05);
+      put(ph, [P(G.sx - .1, ty - .28), P(G.sx - .08, ty + .28)], 2.1);
+      const rad = lerp(rr1, rr0, i / 5); put(ph, harc(P(rcx, rcy), rad * u, rad * u, Math.PI + .03, Math.PI - .06, r), 1.7);
+      if (c === 2) { const [lx0, lh] = G.ln; for (const dy of G.lr) { const y0 = G.ax[2] + dy, ray = [P(G.ax[0] + .2, y0), P(lx0, y0), P(G.fx, G.ax[2]), P(G.fx + (G.fx - lx0) * .45, G.ax[2] - dy * .45)]; put(ph, ray, .8); }
+        put(ph, hstar(P(G.fx, G.ax[2]), .55 * u, .2), .9); say(ph, "F", G.fx + .1, G.ax[2] + 2.1, 1.1, 97, .5); }
+      if (c === 1) { const [lx0, lh] = G.ln, bx = ox + lx0 * u, byc = oy + G.ax[2] * u; put(ph, zigzag((x, y) => { const t = (y - byc) / (lh * u); return Math.abs(t) < .92 && Math.abs(x - bx) < .9 * u * (1 - t * t); }, [bx - u, byc - lh * u, bx + u, byc + lh * u], u * .22, -.6, r), 1, "l", { soft: .5 }); } /* the glass tinted */
+    });
+    d.cols = [0, ...COL]; d.wins = [[2.4, 6.3], [6.7, 7.6], [7.9, 8.8], [9.1, 10.6], [10.9, 11.7], [12.0, 13.0], [13.3, 14.05]];
+    d.fin = G.fin;
+    return d;
+  };
+
+  /** the water cycle: the sea, the mountain and its river, the trees at its foot; the cloud raining on it; the sun, and
+   *  the arrows round the cycle (up off the sea, over to the cloud) */
+  const water = (L, ox, oy, u, r, k) => {
+    const d = pen(ox, oy, u, 4, r), { put } = d, tall = k === "tall", flip = r() < .5, X = x => flip ? L.w - x : x, P = (x, y) => d.P(X(x), y); /* the sea on either side, dealt */
+    const G = tall ? { mt: [[.3, 22.6], [2.2, 18.2], [3.4, 16.4], [5, 12.6], [5.9, 11], [6.8, 12.4], [7.6, 11.6], [8.5, 13.2], [10.4, 16.6], [12.2, 20.2], [13.4, 22.6], [14.2, 23.1]],
+      snow: [[4.75, 13.1], [5.35, 13.9], [5.9, 13.1], [6.5, 13.8], [7.1, 12.9], [7.6, 13.6], [8.2, 12.9]], sea: [14, 21.8, 23.1, 1.3], river: [[7.2, 14.2], [7.9, 15.6], [7.5, 16.9], [8.6, 18.2], [9.8, 19.4], [10.6, 20.8], [12, 21.8], [13.9, 23]],
+      trees: [[1.7, 22.6, 2.3], [2.9, 22.7, 1.8], [11.4, 21.4, 1.9]], cloud: [6.6, 4.7, 8.4, 3.3], cloud2: [12.6, 2.4, 4.4, 1.7], rain: [3.6, 9.8, 7.1, 10.6], sun: [18.3, 4.3, 1.9], evap: [15.2, 17.4, 19.6], ey: [22.2, 14.7], cond: [[17.4, 12.6], [15.8, 8.2], [12.2, 5.8]], fin: [5.6, 25, 1.5] }
+      : { mt: [[.2, 15.6], [1.8, 12.4], [3, 10], [4.3, 7.2], [5.1, 6], [5.9, 7], [6.6, 6.4], [7.4, 7.7], [9, 10.5], [10.6, 13.3], [11.8, 15.6], [12.6, 16]],
+      snow: [[3.9, 8], [4.5, 8.7], [5.1, 7.9], [5.7, 8.6], [6.2, 7.8], [6.7, 8.4], [7.3, 7.9]], sea: [12.4, 25.8, 16, .95], river: [[6.2, 8.7], [6.9, 9.9], [6.5, 11.1], [7.6, 12.2], [8.9, 13.2], [10.1, 14.4], [12.4, 15.9]],
+      trees: [[1.3, 15.6, 1.8], [2.4, 15.7, 1.4], [10.5, 14.4, 1.6]], cloud: [9.4, 3, 7, 2.7], cloud2: [15.6, 1.9, 3.8, 1.4], rain: [7.4, 11.6, 4.8, 7.6], sun: [22.8, 3.2, 1.7], evap: [16.4, 18.8, 21.2], ey: [15.2, 9.3], cond: [[20.3, 8.4], [17, 6.2], [13.3, 4.4]], fin: [24.1, 10.9, 1.4] };
+    // white: the mountain and its snowline, the clouds
+    put(0, poly(G.mt.map(q => P(...q)), r, .006), 1.1); put(0, poly(G.snow.map(q => P(...q)), r, .01), .8);
+    for (let i = 0; i < 5; i++) { const t = .12 + i * .15, p0 = at2(G.mt[4], G.mt[10], t); put(0, hline(P(p0[0] - .3, p0[1] + .45), P(p0[0] - 1.25, p0[1] + 2.1 - i * .12), r, .02), .55, "l", { soft: .6 }); } /* the far side in shadow */
+    for (const c of [G.cloud, G.cloud2]) put(0, cloudPts(ox + X(c[0]) * u, oy + c[1] * u, c[2] * u, c[3] * u, c === G.cloud ? 4 : 3, r), c === G.cloud ? 1.1 : .9);
+    // green: the trees at the mountain's foot
+    for (const [x, y, h] of G.trees) { put(1, [[x, y - h], [x + h * .28, y - h * .6], [x + h * .1, y - h * .6], [x + h * .36, y - h * .2], [x - h * .36, y - h * .2], [x - h * .1, y - h * .6], [x - h * .28, y - h * .6], [x, y - h]].map(q => P(...q)), .9); put(1, hline(P(x, y - h * .2), P(x, y), r, .02), .8); }
+    // blue: the rain, the river, the sea and its waves
+    const [rx0, rx1, ry0, ry1] = G.rain; for (let i = 0; i < 13; i++) { const x = lerp(rx0, rx1, (i % 7 + (i > 6 ? .5 : 0) + r() * .3) / 7), y = lerp(ry0, ry1, i > 6 ? .55 + r() * .2 : r() * .25); put(2, hline(P(x, y), P(x + (flip ? .32 : -.32), y + .95), r, .01), .8); }
+    put(2, curve(G.river.map(q => P(...q)), 8), 1.1);
+    const [sx0, sx1, sy, sgap] = G.sea; put(2, wavy(P(sx0, sy), P(sx1, sy), .13 * u, (sx1 - sx0) / 1.4, 90), 1.05);
+    for (let j = 1; j <= 2; j++) { const y = sy + sgap * j; for (let x = sx0 + .8 + j * .6; x < sx1 - 1.4; x += 3.1) put(2, wavy(P(x, y), P(x + 1.9, y), .12 * u, 1.3, 16), .75); }
+    // yellow: the sun, the water going up off the sea, and over to the cloud
+    const [scx, scy, sR] = G.sun; put(3, hring(P(scx, scy), sR * u, sR * u, r, -2, .06), 1.1);
+    for (let i = 0; i < 10; i++) { const a = i / 10 * TAU + .2; put(3, hline(P(scx + Math.cos(a) * (sR + .55), scy + Math.sin(a) * (sR + .55)), P(scx + Math.cos(a) * (sR + (i % 2 ? 1.1 : 1.5)), scy + Math.sin(a) * (sR + (i % 2 ? 1.1 : 1.5))), r, .01), .9); }
+    for (const x of G.evap) { const w = wavy(P(x, G.ey[0]), P(x, G.ey[1]), .28 * u, 2.2, 36, r() * 3); put(3, w, .9); put(3, head(w, .55 * u), .9); }
+    const cv = curve(G.cond.map(q => P(...q)), 10); put(3, cv, 1); put(3, head(cv, .65 * u), 1);
+    d.cols = [0, 4, 1, 2]; d.wins = [[2.4, 7.0], [7.4, 8.6], [9.0, 11.6], [12.0, 14.1]]; d.fin = [X(G.fin[0]), G.fin[1], G.fin[2]];
+    return d;
+  };
+
+  /** DNA's double helix, its two strands going behind each other, the rungs of its pairs coloured in pair by pair (which
+   *  pairs, dealt); and beside it a benzene ring and a water molecule with its angle */
+  const dna = (L, ox, oy, u, r, k) => {
+    const d = pen(ox, oy, u, 5, r), { P, put, say } = d, tall = k === "tall";
+    const G = tall ? { v: 1, c: 5.4, amp: 3.3, s0: .9, s1: 26, per: 8.4, bz: [16.3, 5.3, 3], o: [16.3, 14.6, 1.55], h: 3.5, hr: .95, lab: [16.3, 21.4, 1.2], fin: [16.6, 24.6, 1.5] }
+      : { v: 0, c: 13.3, amp: 3.1, s0: .8, s1: 25.2, per: 8.4, bz: [4.7, 4.5, 2.7], o: [15.2, 2.6, 1.3], h: 2.9, hr: .8, lab: [21.4, 4.6, 1.1], fin: [9.9, 5.7, 1.35] };
+    const at = (s, ph) => { const th = (s - G.s0) / G.per * TAU + ph, w = G.c + G.amp * Math.sin(th); return G.v ? [w, s] : [s, w]; }, ph2 = 2.4;
+    const front = (s, ph) => Math.cos((s - G.s0) / G.per * TAU + ph) > 0;
+    // white: the two strands, a piece at a time, the pieces behind softer
+    for (const ph of [0, ph2]) { let cur = [], f = front(G.s0, ph); const flush = () => { if (cur.length > 1) put(0, cur.map(q => P(...q)), f ? 1.15 : .75, "l", f ? undefined : { soft: .5 }); };
+      for (let s = G.s0; s <= G.s1 + 1e-9; s += .12) { const nf = front(s, ph); if (nf !== f) { cur.push(at(s, ph)); flush(); cur = [at(s, ph)]; f = nf; } else cur.push(at(s, ph)); } flush(); }
+    // the benzene ring, its circle, the bonds off it; the water molecule, its atoms named
+    const [bx, by, bR] = G.bz, hex = Array.from({ length: 7 }, (_, i) => { const a = -Math.PI / 2 + i * Math.PI / 3; return P(bx + Math.cos(a) * bR, by + Math.sin(a) * bR); });
+    put(0, poly(hex, r, .006), 1.05); put(0, hring(P(bx, by), bR * .58 * u, bR * .58 * u, r, -1, .05), .85);
+    for (let i = 0; i < 6; i++) { const a = -Math.PI / 2 + i * Math.PI / 3; put(0, hline(P(bx + Math.cos(a) * (bR + .15), by + Math.sin(a) * (bR + .15)), P(bx + Math.cos(a) * (bR + .95), by + Math.sin(a) * (bR + .95)), r, .01), .8); }
+    const [qx, qy, qR] = G.o, HA = 52.25 * Math.PI / 180, Hs = [-1, 1].map(sd => [qx + sd * Math.sin(HA) * G.h, qy + Math.cos(HA) * G.h]);
+    put(0, hring(P(qx, qy), qR * u, qR * u, r, -2, .05), 1.1); say(0, "O", qx, qy + .5, 1, 94, .5);
+    for (const [hx, hy] of Hs) { const dx = hx - qx, dy = hy - qy, l = Math.hypot(dx, dy); for (const o of [-.12, .12]) put(0, hline(P(qx + dx / l * qR - dy / l * o, qy + dy / l * qR + dx / l * o), P(hx - dx / l * G.hr - dy / l * o, hy - dy / l * G.hr + dx / l * o), r, .01), .75);
+      put(0, hring(P(hx, hy), G.hr * u, G.hr * u, r, -2, .05), .95); say(0, "H", hx, hy + .45, .9, 95 + hx, .5); }
+    // the pairs: A with T (blue and yellow), C with G (pink and green), each rung its two halves; which way round, dealt
+    const pair = { A: [1, 2], T: [2, 1], C: [3, 4], G: [4, 3] }, PH = { 1: 1, 2: 2, 3: 3, 4: 4 };
+    for (let s = G.s0 + .55; s < G.s1 - .3; s += .78) { const a = at(s, 0), b = at(s, ph2), gap = Math.abs(G.v ? a[0] - b[0] : a[1] - b[1]); if (gap < 1.1) continue;
+      const m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], [ca, cb] = pair["ATCG"[Math.floor(r() * 4)]], sh = G.v ? [(a[0] < b[0] ? .12 : -.12), 0] : [0, (a[1] < b[1] ? .12 : -.12)];
+      put(PH[ca], hline(P(a[0] + sh[0], a[1] + sh[1]), P(...m), r, .01), 1.25); put(PH[cb], hline(P(...m), P(b[0] - sh[0], b[1] - sh[1]), r, .01), 1.25); }
+    // yellow also marks the water molecule's angle and says what it is; pink fills in the oxygen
+    const a0 = Math.PI / 2 - HA, a1 = Math.PI / 2 + HA; put(2, harc(P(qx, qy), (qR + .75) * u, (qR + .75) * u, a0 + .06, a1 - a0 - .12, r), .85);
+    say(2, "104.5°", G.lab[0], G.lab[1], G.lab[2], 96, .5);
+    d.disc(3, P(qx, qy), qR * .96, .24, -.7, 1.4, .45);
+    d.cols = [0, 1, 2, 3, 4]; d.wins = [[2.4, 7.4], [7.8, 9.2], [9.6, 11.6], [12.0, 13.0], [13.3, 14.1]]; d.fin = G.fin;
+    return d;
+  };
+
+  /* ---------------- the rare ones ---------------- */
+  /** noughts and crosses, the hand playing both sides: it thinks before each move, crosses win (along a line dealt), the
+   *  line struck through them in yellow, and the tally kept */
+  const ttt = (L, ox, oy, u, r, k) => {
+    const d = pen(ox, oy, u, 3, r), { P, put, say } = d, tall = k === "tall", [gx, gy, c] = tall ? [11, 11.4, 4.7] : [13, 8.9, 4.2], cellC = (i, j) => [gx + (i - 1) * c, gy + (j - 1) * c];
+    for (const o of [-.5, .5]) put(0, hline(P(gx + o * c, gy - 1.52 * c), P(gx + o * c + .1, gy + 1.52 * c), r, .01), 1.15);
+    for (const o of [-.5, .5]) put(0, hline(P(gx - 1.52 * c, gy + o * c), P(gx + 1.52 * c, gy + o * c - .1), r, .01), 1.15);
+    const LINES = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]], win = LINES[Math.floor(r() * 8)], rest = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter(i => !win.includes(i));
+    for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
+    const xs = win.slice(); for (let i = 2; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [xs[i], xs[j]] = [xs[j], xs[i]]; }
+    const moves = [xs[0], rest[0], xs[1], rest[1], xs[2]];
+    moves.forEach((cell, m) => { const [cx, cy] = cellC(cell % 3, Math.floor(cell / 3)), s = c * .3;
+      if (m % 2 === 0) { put(0, hline(P(cx - s, cy - s), P(cx + s, cy + s), r, .02), 1.1, "l", { wait: .38 + r() * .2 }); put(0, hline(P(cx + s, cy - s), P(cx - s, cy + s), r, .02), 1.1); }
+      else put(0, hring(P(cx, cy), s * 1.05 * u, s * 1.05 * u, r, -2.1, .06), 1.1, "l", { wait: .45 + r() * .25 }); });
+    const [p0, p2] = [cellC(win[0] % 3, Math.floor(win[0] / 3)), cellC(win[2] % 3, Math.floor(win[2] / 3))], ex = (p2[0] - p0[0]) / Math.hypot(p2[0] - p0[0], p2[1] - p0[1]), ey = (p2[1] - p0[1]) / Math.hypot(p2[0] - p0[0], p2[1] - p0[1]);
+    put(1, hline(P(p0[0] - ex * c * .45, p0[1] - ey * c * .45), P(p2[0] + ex * c * .45, p2[1] + ey * c * .45), r, .015), 1.5, "l", { wait: .2 });
+    put(1, hstar(P(gx + 1.62 * c, gy - 1.55 * c), .9 * u, .15), 1);
+    // and the next game begun in the corner, noughts to go first this time
+    const [nx2, ny2, c2] = tall ? [16.4, 22.9, 1.75] : [3.3, 4.2, 1.5];
+    for (const o of [-.5, .5]) put(2, hline(P(nx2 + o * c2, ny2 - 1.5 * c2), P(nx2 + o * c2 + .05, ny2 + 1.5 * c2), r, .01), .8, "l", o < 0 ? { wait: .3 } : undefined);
+    for (const o of [-.5, .5]) put(2, hline(P(nx2 - 1.5 * c2, ny2 + o * c2), P(nx2 + 1.5 * c2, ny2 + o * c2 - .05), r, .01), .8);
+    { const cell = Math.floor(r() * 9), q = [nx2 + (cell % 3 - 1) * c2, ny2 + (Math.floor(cell / 3) - 1) * c2]; put(2, hring(P(...q), c2 * .32 * u, c2 * .32 * u, r, -2.1, .06), .85, "l", { wait: .5 }); }
+    d.cols = chalk ? [0, 2, 0] : [0, 3, 1]; d.wins = chalk ? [[2.4, 10.4], [10.8, 11.9], [12.3, 13.8]] : [[3.4, 10.6], [11.0, 12.1], [12.5, 13.9]]; d.fin = tall ? [5.8, 22.8, 1.6] : [23.2, 13.6, 1.5];
+    return d;
+  };
+
+  /** a cat, doodled: sitting, tail curled round, its whiskers and its green eyes, pink ears and nose, hearts over it, and
+   *  a ball of wool it has been at, its thread run out to the cat's paw */
+  const cat = (L, ox, oy, u, r, k) => {
+    const d = pen(ox, oy, u, 4, r), { put } = d, tall = k === "tall", sc = tall ? 1 : .78, dx = tall ? 0 : 2.6, dy = tall ? 0 : -1.9, flip = r() < .5, FX = x => flip ? L.w - x : x, T2 = ([x, y]) => [ox + FX(dx + x * sc) * u, oy + (dy + y * sc) * u], TT = q => q.map(T2); /* which way it sits, dealt */
+    const head = [[6.1, 9.2], [5.95, 7.6], [6.35, 6.3], [6.2, 5], [6, 3.7], [6, 3.7], [7, 4.6], [7.7, 5.2], [9, 5], [10.3, 5.2], [11, 4.6], [12, 3.7], [12, 3.7], [11.8, 5], [11.65, 6.3], [12.05, 7.6], [11.9, 9.2], [10.9, 10.6], [9, 11.1], [7.1, 10.6], [6.1, 9.2]];
+    const body = [[7, 10.8], [5.5, 13.2], [4.6, 16.4], [4.9, 19.4], [6, 21.3], [8, 21.8], [10, 21.8], [12, 21.3], [13.1, 19.4], [13.4, 16.4], [12.5, 13.2], [11, 10.8]];
+    put(0, TT(curve(head, 6)), 1.1); put(0, TT(curve(body, 6)), 1.1);
+    put(0, TT(curve([[7.7, 16], [7.4, 19], [7.6, 21.7]], 6)), .95); put(0, TT(curve([[10.3, 16], [10.6, 19], [10.4, 21.7]], 6)), .95);
+    put(0, TT(curve([[12.9, 20.4], [15.2, 21], [16.8, 19.6], [16.9, 17.2], [15.8, 15.8], [14.8, 16.4], [15.2, 17.4]], 8)), 1.05);
+    for (const [a, b] of [[[8.4, 5.6], [8.6, 6.4]], [[9, 5.45], [9, 6.3]], [[9.6, 5.6], [9.4, 6.4]]]) put(0, TT([a, b]), .8);
+    put(0, TT(curve([[9, 9.65], [9, 9.95], [8.6, 10.25], [8.25, 10.05]], 5)), .75); put(0, TT(curve([[9, 9.95], [9.4, 10.25], [9.75, 10.05]], 5)), .75);
+    for (const sd of [-1, 1]) for (const [ey, ly] of [[9.5, 8.8], [9.7, 9.7], [9.9, 10.6]]) put(0, TT([[9 + sd * 1.4, ey], [9 + sd * 3.1, (ey + ly) / 2 - .05], [9 + sd * 4.8, ly]]), .6);
+    // pink: inside the ears, the nose, hearts
+    put(1, TT([[6.6, 5.8], [6.35, 4.5], [7.35, 5.3]]), .85); put(1, TT([[11.4, 5.8], [11.65, 4.5], [10.65, 5.3]]), .85);
+    put(1, TT([[8.6, 9.05], [9.4, 9.05], [9, 9.6], [8.6, 9.05]]), 1.1);
+    const heart = (x, y, s) => TT(curve([[x, y + s * .9], [x - s * .9, y + s * .1], [x - s * .75, y - s * .55], [x - s * .2, y - s * .6], [x, y - s * .15], [x + s * .2, y - s * .6], [x + s * .75, y - s * .55], [x + s * .9, y + s * .1], [x, y + s * .9]], 5));
+    put(1, heart(14.6, 4.4, .95), 1); put(1, heart(16.7, 6.6, .62), .9); put(1, heart(15.4, 8.7, .42), .8);
+    // green: the eyes, their slits; blue: the ball of wool and its thread to the paw
+    for (const ex of [7.85, 10.15]) { put(2, TT(curve([[ex - .75, 7.95], [ex, 7.4], [ex + .75, 7.95], [ex, 8.5], [ex - .75, 7.95]], 5)), .85); put(2, TT([[ex, 7.55], [ex + .02, 8.35]]), 1.1); }
+    const [yx, yy, yr] = tall ? [18, 23.4, 1.95] : [21.3, 14.4, 1.75], YB = (x, y) => [ox + FX(x) * u, oy + y * u];
+    put(3, hring(YB(yx, yy), yr * u, yr * u, r, -1.5, .05), 1.05);
+    for (const [o, a, s] of [[-.35, .5, 1.6], [.2, -.4, 1.9], [.55, .9, 1.3]]) put(3, harc(YB(yx + o * yr, yy - .9 * o * yr), yr * s * u * .55, yr * s * u * .55, flip ? Math.PI - a - 2 : a, 2, r), .7);
+    const paw = T2([10.9, 21.8]), start = YB(yx - yr * .7, yy - yr * .6); put(3, curve([[start[0], start[1]], [start[0] + (flip ? 1.6 : -1.6) * u, start[1] + 1.2 * u], [lerp(start[0], paw[0], .55), Math.max(start[1], paw[1]) + .3 * u], [paw[0], paw[1]]], 10), .75);
+    d.cols = [0, 3, [4, 2][Math.floor(r() * 2)], [1, 6][Math.floor(r() * 2)]]; d.wins = [[2.4, 8.6], [9.0, 10.8], [11.2, 12.2], [12.6, 14.05]]; d.fin = tall ? [FX(18.7), 12.9, 1.5] : [FX(22.4), 4.8, 1.5];
+    return d;
+  };
+
+  /* ---------------- by day, the plans after the signature's ---------------- */
+  /** a plan's pen: the lesson's, and its notes (in units, slapped on at `slap`) and its shapes */
+  const board = (L, ox, oy, u, r, nph) => {
+    const d = pen(ox, oy, u, nph, r), P = d.P; d.notes = [];
+    d.N = (x, y, rot, ci, word, slap) => d.notes.push({ x: ox + x * u, y: oy + y * u, rot, s: L.ns * u, col: NOTE[ci], word, ph: r() * TAU, slap });
+    d.pill = (cx, cy, w, h) => { const rr = h / 2, pts = []; for (let i = 0; i <= 14; i++) { const a = -Math.PI / 2 - i / 14 * Math.PI; pts.push(P(cx - w / 2 + rr + Math.cos(a) * rr, cy + Math.sin(a) * rr)); } for (let i = 0; i <= 14; i++) { const a = Math.PI / 2 - i / 14 * Math.PI; pts.push(P(cx + w / 2 - rr + Math.cos(a) * rr, cy + Math.sin(a) * rr)); } pts.push(P(cx - w / 2 + rr + .15, cy - rr - .04)); return pts; };
+    d.arrow = (i, q, k = 1, hl = .62) => { const pts = q.length > 2 ? curve(q.map(p => P(...p)), 10) : hline(P(...q[0]), P(...q[1]), r, .01); d.put(i, pts, k); d.put(i, head(pts, hl * u), k); return pts; };
+    d.fill = (i, inside, box, gap = .3, ang = -.9, a = .3) => d.put(i, zigzag(inside, box.map((v, j) => (j % 2 ? oy : ox) + v * u), gap * u, ang, r), 3, "l", { a });
+    d.scr = (i, x, y, len, k = .8) => d.put(i, scrawl(ox + x * u, oy + y * u, len * u, u * .85, r), k, "w");
+    return d;
+  };
+
+  /** a flowchart: start, a step, a question; yes goes on to the end, no loops back to the step */
+  const flow = (L, ox, oy, u, r, k) => {
+    const d = board(L, ox, oy, u, r, 4), { P, put, say, pill, arrow, scr, N } = d, tall = k === "tall";
+    const G = tall ? { st: [10.3, 2.3, 6.2, 2.3], pr: [7.2, 5.6, 13.4, 8.8], dm: [10.3, 13.1, 3.5, 2.6], ye: [7.2, 17.2, 13.4, 20.2], en: [10.3, 23.6, 6.2, 2.3],
+        ar: [[[10.3, 3.5], [10.3, 5.45]], [[10.3, 8.95], [10.3, 10.35]], [[10.3, 15.8], [10.3, 17.05]], [[10.3, 20.35], [10.3, 22.35]]], no: [[13.85, 13.1], [17.6, 13.1], [17.6, 7.2], [13.55, 7.2]], Y: [11, 16.9], Nl: [15.4, 12.6], notes: [[3.5, 12.9, -.06], [16.9, 21.2, .05]] }
+      : { st: [3.3, 3.4, 5.4, 2.2], pr: [7.6, 2.2, 12.6, 4.6], dm: [16.6, 3.4, 3, 2.3], ye: [14.1, 9.4, 19.1, 11.8], en: [23.2, 10.6, 4.8, 2.2],
+        ar: [[[6.05, 3.4], [7.45, 3.4]], [[12.75, 3.4], [13.45, 3.4]], [[16.6, 5.8], [16.6, 9.25]], [[19.25, 10.6], [20.65, 10.6]]], no: [[16.6, 1.05], [16.6, .35], [10.1, .35], [10.1, 2.05]], Y: [17.2, 7.9], Nl: [13.6, 1.5], notes: [[4.4, 11], [23.4, 5.3, .06]].map(q => q.length < 3 ? [...q, -.05] : q) };
+    // black: the shapes, what's in them
+    put(0, pill(...G.st), 1); scr(0, G.st[0] - G.st[2] * .3, G.st[1] + .45, G.st[2] * .6);
+    put(0, hbox(ox + G.pr[0] * u, oy + G.pr[1] * u, ox + G.pr[2] * u, oy + G.pr[3] * u, r, .1 * u), 1); scr(0, G.pr[0] + .7, (G.pr[1] + G.pr[3]) / 2 + .45, G.pr[2] - G.pr[0] - 1.4);
+    const [dx, dy, hw, hh] = G.dm; put(0, poly([P(dx, dy - hh), P(dx + hw, dy), P(dx, dy + hh), P(dx - hw, dy), P(dx + .05, dy - hh - .06)], r, .006), 1); say(0, "?", dx, dy + .75, 1.5, 131, .5);
+    put(0, hbox(ox + G.ye[0] * u, oy + G.ye[1] * u, ox + G.ye[2] * u, oy + G.ye[3] * u, r, .1 * u), 1); scr(0, G.ye[0] + .7, (G.ye[1] + G.ye[3]) / 2 + .45, G.ye[2] - G.ye[0] - 1.4);
+    put(0, pill(...G.en), 1);
+    // blue: the way through; green: yes, and the end reached; red: no, back round
+    for (const q of G.ar) arrow(1, q, .95);
+    say(2, "Y", G.Y[0], G.Y[1], 1.1, 132); const [ex, ey, ew, eh] = G.en; d.fill(2, (x, y) => Math.abs(x - ox - ex * u) < (ew / 2 - .3) * u && Math.abs(y - oy - ey * u) < (eh / 2 - .3) * u, [ex - ew / 2, ey - eh / 2, ex + ew / 2, ey + eh / 2], .3, -.9, .32);
+    put(2, [P(ex - .9, ey), P(ex - .2, ey + .6), P(ex + 1.1, ey - .8)], 1.3);
+    const nl = poly(G.no.map(q => P(...q)), r, .005); put(3, nl, 1); put(3, head(nl, .66 * u), 1); say(3, "N", G.Nl[0], G.Nl[1], 1.1, 133);
+    const W2 = [["test", "done"], ["idea", "ship!"], ["try", "yes!"], ["plan", "go!"]][Math.floor(r() * 4)], nc = Math.floor(r() * 5); N(...G.notes[0], nc, W2[0], 8.0); N(...G.notes[1], (nc + 1 + Math.floor(r() * 4)) % 5, W2[1], 13.9);
+    d.cols = [0, 1, 2, 3]; d.wins = [[3.4, 7.8], [8.2, 9.6], [10.0, 11.3], [11.7, 13.6]]; return d;
+  };
+
+  /** three sets overlapping, each coloured in with the side of its marker so their inks mix where they overlap; the
+   *  middle starred, what's in each written in, and a note pointing at the middle */
+  const venn = (L, ox, oy, u, r, k) => {
+    const d = board(L, ox, oy, u, r, 4), { P, put, arrow, scr, N } = d, tall = k === "tall";
+    const G = tall ? { C: [[7.3, 8.5], [13.3, 8.5], [10.3, 13.7]], R: 5, lab: [[3.4, 6.6], [14.4, 6.6], [8.6, 17.4]], nt: [16.6, 21.8, .06], nt2: [3.8, 22, -.05], ar: [[14.6, 20.2], [13.4, 15.6], [11.1, 11.3]] }
+      : { C: [[9.7, 5.4], [14.9, 5.4], [12.3, 9.9]], R: 4.2, lab: [[6.3, 4.2], [15.8, 4.2], [11.1, 13], []].slice(0, 3), nt: [22.4, 11.4, .06], nt2: [3.4, 12.2, -.05], ar: [[20.2, 10.9], [16.4, 10.4], [12.9, 7.5]] };
+    G.C.forEach((c, i) => { const cp = P(...c); put(i, hring(cp, G.R * u, G.R * u, r, -2.2 + i, .06), 1.05); d.fill(i, inDisc(cp, (G.R - .35) * u), [c[0] - G.R, c[1] - G.R, c[0] + G.R, c[1] + G.R], .34, [-.9, -.5, -1.2][i], .26); });
+    const mid = [(G.C[0][0] + G.C[1][0] + G.C[2][0]) / 3, (G.C[0][1] + G.C[1][1] + G.C[2][1]) / 3]; put(3, hstar(P(...mid), .95 * u, .1), 1.2);
+    G.lab.forEach(([x, y]) => scr(3, x, y, 3.2, .75));
+    arrow(3, G.ar, 1, .6); N(...G.nt, 3, "us!", 11.5); N(...G.nt2, 0, "yes", 13.9);
+    const inks = [1, 3, 2, 4, 5]; for (let i = inks.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [inks[i], inks[j]] = [inks[j], inks[i]]; }
+    d.cols = [inks[0], inks[1], inks[2], 0]; d.wins = [[3.4, 5.6], [6.0, 8.2], [8.6, 10.8], [11.3, 13.7]]; return d;
+  };
+
+  /** a roadmap: the road winding up the board, its milestones flagged, each with its note; the ones passed ticked, where
+   *  we are pinned, the finish flag chequered */
+  const road = (L, ox, oy, u, r, k) => {
+    const d = board(L, ox, oy, u, r, 4), { P, put, N } = d, tall = k === "tall", flip = r() < .5;
+    const C0 = tall ? [[1.2, 25.2], [6, 23], [12.4, 22.2], [16.8, 18.6], [15, 14.4], [7.2, 13.4], [4.2, 9.8], [7.6, 6], [14, 5.3], [19.2, 2.4]] : [[.6, 14.6], [5.4, 13], [8.4, 9.4], [12.6, 8.6], [15.4, 11.9], [19.4, 12.4], [22, 8.4], [20.4, 4.8], [23.2, 2.4], [25.6, 1.9]], C = flip ? C0.map(([x, y]) => [L.w - x, y]) : C0; /* which way the road winds, dealt */
+    const mid = curve(C, 10), cum = [0]; for (let i = 1; i < mid.length; i++) cum.push(cum[i - 1] + Math.hypot(mid[i][0] - mid[i - 1][0], mid[i][1] - mid[i - 1][1]));
+    const at = f => { const s = f * cum[cum.length - 1]; let i = 1; while (i < cum.length - 1 && cum[i] < s) i++; const t = (s - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1), a = mid[i - 1], b = mid[i], L2 = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; return { p: [lerp(a[0], b[0], t), lerp(a[1], b[1], t)], n: [-(b[1] - a[1]) / L2, (b[0] - a[0]) / L2] }; };
+    const edge = o => mid.map((q, i) => { const a = mid[Math.max(0, i - 1)], b = mid[Math.min(mid.length - 1, i + 1)], L2 = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; return P(q[0] - (b[1] - a[1]) / L2 * o, q[1] + (b[0] - a[0]) / L2 * o); });
+    put(0, edge(.78), 1); put(0, edge(-.78), 1); put(1, mid.map(q => P(...q)), .75, "l", { dash: [.42 * u, .5 * u] });
+    const MS = [.2, .44, .68, .93], words = ["v1", "beta", "ship!"], flags = MS.map((f, i) => { const { p, n } = at(f), side = i % 2 ? -1 : 1; return [p[0] + n[0] * 1.3 * side + .6, p[1] + n[1] * 1.3 * side - 1.8]; });
+    MS.forEach((f, i) => { const { p, n } = at(f), side = (i % 2 ? -1 : 1), base = [p[0] + n[0] * 1.3 * side, p[1] + n[1] * 1.3 * side], top = [base[0], base[1] - 2.6];
+      put(0, hline(P(...base), P(...top), r, .01), 1);
+      if (i < 3) { put(3, [P(...top), P(top[0] + 1.5, top[1] + .5), P(top[0], top[1] + 1), P(...top)], 1); d.fill(3, (x, y) => { const tx = (x - ox) / u - top[0], ty = (y - oy) / u - top[1]; return tx > .05 && ty > tx * .33 + .06 && ty < 1 - tx * .33 - .06; }, [top[0], top[1], top[0] + 1.6, top[1] + 1], .2, -.3, .5); }
+      else { for (let a = 0; a < 2; a++) for (let b = 0; b < 3; b++) { const x0 = top[0] + b * .55, y0 = top[1] + a * .5; put(0, hbox(ox + x0 * u, oy + y0 * u, ox + (x0 + .55) * u, oy + (y0 + .5) * u, r, .02 * u), .45); if ((a + b) % 2 === 0) d.fill(0, (x, y) => x > ox + (x0 + .06) * u && x < ox + (x0 + .49) * u && y > oy + (y0 + .06) * u && y < oy + (y0 + .44) * u, [x0, y0, x0 + .55, y0 + .5], .12, -.8, .8); } }
+      if (i < 2) put(2, [P(base[0] + .7 * side - .3, base[1] - .9), P(base[0] + .7 * side + .1, base[1] - .4), P(base[0] + .7 * side + .9, base[1] - 1.6)], 1.2);
+      if (i < 3) { // the note where it is clearest of the road, the flags and the notes already up
+        let best = null; for (let j = 0; j < 16; j++) { const a = j / 16 * TAU, dd = L.ns * .62 + 1, x = clamp(top[0] + .7 + Math.cos(a) * dd, L.ns * .55, L.w - L.ns * .55), y = clamp(top[1] + .6 + Math.sin(a) * dd, L.ns * .55, L.h - L.ns * .55);
+          let m = 1e9; for (const q of mid) m = Math.min(m, Math.max(Math.abs(q[0] - x), Math.abs(q[1] - y)) - L.ns * .5 - .9); for (const q of d.notes) m = Math.min(m, Math.max(Math.abs(q.x - ox - x * u), Math.abs(q.y - oy - y * u)) / u - L.ns - .3); for (const q of flags) m = Math.min(m, Math.hypot(q[0] - x, q[1] - y) - L.ns * .6);
+          if (!best || m > best.m + .05) best = { x, y, m }; }
+        N(best.x, best.y, (r() - .5) * .12, [0, 1, 2][i], words[i], 12.6 + i * .42); } });
+    { const { p } = at(.56); put(3, curve([[p[0], p[1] - .15], [p[0] - .75, p[1] - 1.3], [p[0], p[1] - 2.1], [p[0] + .75, p[1] - 1.3], [p[0], p[1] - .15]].map(q => P(...q)), 6), 1.2); put(3, hring(P(p[0], p[1] - 1.35), .26 * u, .26 * u, r, 0, .05), 1); }
+    d.cols = [0, 1, 2, 3]; d.wins = [[3.4, 7.6], [8.0, 9.0], [9.4, 10.1], [10.5, 12.3]]; return d;
+  };
+
+  /** a mind map: the idea in a cloud, its branches out in colours to what grows from it, two of them notes */
+  const mind = (L, ox, oy, u, r, k) => {
+    const d = board(L, ox, oy, u, r, 6), { P, put, say, scr, N } = d, tall = k === "tall";
+    const G = tall ? { c: [10.3, 12.8, 7.6], lv: [[3.9, 4.8], [16.7, 4.6], [17.4, 14.4], [3.3, 14.8]], nt: [[15.6, 22.2, .05], [4.6, 22, -.06]] }
+      : { c: [13, 8.2, 7], lv: [[3.9, 3.2], [22.1, 3.1], [22.4, 13.3], [3.8, 13.2]], nt: [[22.9, 8.3, .05], [3, 8.2, -.05]] };
+    const [cx, cy, cw] = G.c; put(0, cloudPts(ox + cx * u, oy + (cy + .2) * u, cw * u, cw * .4 * u, 4, r), 1.1); say(0, "idea", cx, cy + .9, 1.4, 141, .5);
+    const branch = (i, to, leaf) => { const a = Math.atan2(to[1] - cy, to[0] - cx), s0 = [cx + Math.cos(a) * cw * .42, cy + .5 + Math.sin(a) * cw * .22], e = leaf ? [to[0] - Math.cos(a) * 2.4, to[1] - Math.sin(a) * 1.25] : [to[0] - Math.cos(a) * 2.3, to[1] - Math.sin(a) * 2.3], m = [(s0[0] + e[0]) / 2 - Math.sin(a) * .9, (s0[1] + e[1]) / 2 + Math.cos(a) * .9];
+      put(i, curve([s0, m, e].map(q => P(...q)), 12), 1.7); if (leaf) put(i, hring(P(...to), 2.6 * u, 1.3 * u, r, -2.4, .06), 1); };
+    for (let i = G.lv.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [G.lv[i], G.lv[j]] = [G.lv[j], G.lv[i]]; }
+    G.lv.forEach((q, i) => branch(1 + i, q, true));
+    G.nt.forEach((q, i) => branch(5, q, false));
+    G.lv.forEach(([x, y]) => scr(0, x - 1.7, y + .35, 3.4, .7));
+    put(0, hstar(P(G.lv[1][0] + 2.6, G.lv[1][1] - 1.6), .6 * u, .2), .9);
+    N(...G.nt[0], 1, "wow!", 5.3); N(...G.nt[1], 0, "fun!", 5.7);
+    const ph0 = d.ph[0], first = ph0.slice(0, ph0.length - 5), last = ph0.slice(ph0.length - 5); d.ph = [first, d.ph[1], d.ph[2], d.ph[3], d.ph[4], d.ph[5], last]; /* the idea first; what's in the leaves, last */
+    const inks = [1, 2, 3, 4, 5]; for (let i = inks.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [inks[i], inks[j]] = [inks[j], inks[i]]; }
+    d.cols = [0, ...inks, 0]; d.wins = [[3.4, 5.1], [6.1, 7.1], [7.4, 8.4], [8.7, 9.7], [10.0, 11.0], [11.3, 12.3], [12.7, 13.9]]; return d;
+  };
+
+  /** a launch: the rocket on its pad, its nose and fins in red, its window, the flame lit; the dotted way to the moon; the
+   *  countdown ticked off; and the note that says go */
+  const rocket = (L, ox, oy, u, r, k) => {
+    const d = board(L, ox, oy, u, r, 5), { P, put, say, N } = d, tall = k === "tall";
+    const G = tall ? { rk: [4.6, 21.2, 1], pad: [1.2, 8.4, 22.7], mo: [17, 4.8, 2.5], tr: [[4.6, 10.9], [6.4, 6.4], [10.6, 3.6], [14.1, 3.9]], cd: [11.6, 13.6, 2.8], nt: [15.8, 23.3, .06], st: [[9.2, 1.6], [13.6, 8.6], [19.6, 10.2], [1.6, 3.6]] }
+      : { rk: [4.2, 14.2, .8], pad: [1, 7.6, 15.4], mo: [22.6, 3.4, 2.2], tr: [[4.2, 5.4], [6.6, 2.6], [12.4, 1.2], [19.8, 2.4]], cd: [10, 6.8, 2.6], nt: [21.4, 12, .06], st: [[9.6, 5.2], [16.4, 4.4], [25, 8.4], [2.2, 2.2]] };
+    const [bx, by, s] = G.rk, R = q => P(bx + q[0] * s, by + q[1] * s);
+    const hull = [[-1.2, -.2], [-1.2, -5.8], [-1.05, -7.4], [-.55, -8.8], [0, -9.9], [.55, -8.8], [1.05, -7.4], [1.2, -5.8], [1.2, -.2], [-1.2, -.2]];
+    put(0, curve(hull.slice(0, 9), 6).map(q => R(q)).concat([R([-1.2, -.2])]), 1.05);
+    put(0, hline(R([-1.12, -7.3]), R([1.12, -7.3]), r, .01), .8);
+    for (const sd of [-1, 1]) put(0, [R([sd * 1.2, -3.2]), R([sd * 2.5, -.2]), R([sd * 2.4, .4]), R([sd * 1.2, -.3])], .95);
+    put(0, hring(R([0, -5]), .62 * s * u, .62 * s * u, r, -2, .05), 1);
+    put(0, hline(P(G.pad[0], G.pad[2]), P(G.pad[1], G.pad[2]), r, .005), 1.3);
+    const [mx, my, mR] = G.mo, ringed = r() < .4; put(0, hring(P(mx, my), mR * u, mR * u, r, -2, .05), 1.1);
+    if (ringed) put(0, harc(P(mx, my), mR * 1.75 * u, mR * .42 * u, .1, Math.PI - .2, r, -.25), .9); /* a ringed planet this time */
+    for (const [ax, ay, ar] of [[-.8, -.6, .5], [.5, .3, .7], [.3, -1.2, .35], [-.4, 1.1, .3]]) put(0, hring(P(mx + ax * mR, my + ay * mR), ar * mR * .6 * u, ar * mR * .6 * u, r, 1, .04), .6);
+    const [cx0, cy0, cdy] = G.cd; ["3", "2", "1"].forEach((n, i) => { const y = cy0 + i * cdy; put(0, hbox(ox + cx0 * u, oy + (y - 1.3) * u, ox + (cx0 + 1.3) * u, oy + y * u, r, .08 * u), .85); say(0, n, cx0 + 1.9, y, 1.3, 150 + i); d.scr(0, cx0 + 3.1, y, 3.2, .7); });
+    // red: the nose and the fins coloured in, stars
+    d.fill(1, (x, y) => { const q = [((x - ox) / u - bx) / s, ((y - oy) / u - by) / s]; return q[1] < -7.45 && Math.abs(q[0]) < (q[1] + 9.9) / 2.5 * 1.05; }, [bx - 1.2 * s, by - 10 * s, bx + 1.2 * s, by - 7.3 * s], .22, -.9, .45);
+    for (const sd of [-1, 1]) d.fill(1, (x, y) => { const q = [((x - ox) / u - bx) / s * sd, ((y - oy) / u - by) / s]; return q[0] > 1.25 && q[1] < .2 && q[1] > -3.1 + (q[0] - 1.2) * 2.3; }, [bx + (sd < 0 ? -2.6 : 1.2) * s, by - 3.3 * s, bx + (sd < 0 ? -1.2 : 2.6) * s, by + .5 * s], .2, -.6, .45);
+    for (const [x, y] of G.st) put(1, hstar(P(x, y), .5 * u, (r() - .5) * .4), .85);
+    // blue: the window, the way to the moon, dotted
+    d.fill(2, inDisc(R([0, -5]), .5 * s * u), [bx - .7 * s, by - 5.7 * s, bx + .7 * s, by - 4.3 * s], .14, -.8, .45);
+    const tr = curve(G.tr.map(q => P(...q)), 12); put(2, tr, .9, "l", { dash: [.28 * u, .42 * u] }); put(2, head(tr, .6 * u), .9);
+    // orange: the flame, lit; green: the countdown ticked
+    put(4, curve([[-.9, .1], [-.55, 1.4], [-.25, .8], [0, 2.3], [.25, .8], [.55, 1.4], [.9, .1]].map(R), 6), 1.2); d.fill(4, (x, y) => { const q = [((x - ox) / u - bx) / s, ((y - oy) / u - by) / s]; return q[1] > .15 && Math.abs(q[0]) < .8 * (1 - (q[1] - .15) / 1.9); }, [bx - .9 * s, by, bx + .9 * s, by + 2.2 * s], .15, -.8, .5);
+    [0, 1, 2].forEach(i => { const y = cy0 + i * cdy; put(3, [P(cx0 + .2, y - .9), P(cx0 + .6, y - .25), P(cx0 + 1.6, y - 1.8)], 1.15); });
+    N(...G.nt, 2, "go!", 13.95);
+    d.ph = [d.ph[0], d.ph[1], d.ph[2], d.ph[4], d.ph[3]]; d.cols = [0, [3, 4][Math.floor(r() * 2)], 1, 5, 2]; d.wins = [[3.4, 8.2], [8.6, 9.8], [10.2, 11.4], [11.8, 12.6], [13.0, 13.8]]; return d;
+  };
+
+  /** the numbers: a pie in three colours with its key, a line going up past its target, the gain written by it, and a
+   *  note that says so */
+  const dash = (L, ox, oy, u, r, k) => {
+    const d = board(L, ox, oy, u, r, 4), { P, put, say, scr, N } = d, tall = k === "tall";
+    const G = tall ? { pc: [6.1, 6.4, 4.3], key: [12.4, 3.4, 2.3], ch: [1.6, 24.2, 19.2, 12.6], nt: [5.6, 16.3, -.05] } : { pc: [5, 6.2, 4], key: [1.6, 12.6, 1.5], ch: [11.2, 14.6, 25.4, 1.6], nt: [15.4, 4.7, .05] };
+    const [pcx, pcy, pR] = G.pc, cp = P(pcx, pcy); put(0, hring(cp, pR * u, pR * u, r, -1.6, .05), 1.1);
+    const f1 = .36 + r() * .16, f2 = f1 + .24 + r() * .12, A0 = -Math.PI / 2, ang = [A0, A0 + f1 * TAU, A0 + f2 * TAU, A0 + TAU];
+    for (const a of ang.slice(0, 3)) put(0, hline(cp, P(pcx + Math.cos(a) * pR, pcy + Math.sin(a) * pR), r, .006), .9);
+    const [x0, y0, x1, y1] = G.ch; put(0, [...hline(P(x0, y1), P(x0, y0), r), ...hline(P(x0, y0), P(x1, y0), r).slice(1)], 1);
+    const n = 6, pts = []; let v = .2 + r() * .15; for (let i = 0; i < n; i++) { pts.push([lerp(x0 + 1.2, x1 - 1.4, i / (n - 1)), lerp(y0 - .8, y1 + 1.2, v)]); v = clamp(v + (i === n - 2 ? .3 : (r() - .3) * .32), .05, .95); } pts[n - 1][1] = Math.min(pts[n - 1][1], y1 + 1.4);
+    for (let i = 0; i < 3; i++) { const [kx, ky, kdy] = G.key, y = ky + i * kdy; put(0, hbox(ox + kx * u, oy + (y - .7) * u, ox + (kx + .9) * u, oy + (y + .2) * u, r, .05 * u), .7); scr(0, kx + 1.4, y + .2, 3.4, .7); }
+    // the pie's wedges and the key, coloured in, each its own marker
+    [1, 2, 3].forEach((c, i) => { const a0 = ang[i], a1 = ang[i + 1]; d.fill(i + 1, (x, y) => { const dx = x - cp[0], dy = y - cp[1]; if (dx * dx + dy * dy > (pR - .3) * (pR - .3) * u * u) return false; let a = Math.atan2(dy, dx); while (a < a0) a += TAU; return a < a1 - .04 && Math.hypot(dx, dy) > .35 * u; }, [pcx - pR, pcy - pR, pcx + pR, pcy + pR], .3, [-.9, -.4, -1.3][i], .3);
+      const [kx, ky, kdy] = G.key, y = ky + i * kdy; d.fill(i + 1, (x, yy) => x > ox + (kx + .1) * u && x < ox + (kx + .8) * u && yy > oy + (y - .6) * u && yy < oy + (y + .1) * u, [kx, y - .7, kx + .9, y + .2], .16, -.9, .45); });
+    // red: the line and its points, the gain; green (again): the target, dashed, and the way up
+    const line = pts.map(q => P(...q)); put(3, line, 1.05); for (const q of line) put(3, [q, [q[0] + .05 * u, q[1]]], 2, "d");
+    say(3, "+42", pts[n - 1][0] - 2.4, pts[n - 1][1] - 1, 1.3, 161);
+    const ty2 = lerp(y0 - .8, y1 + 1.2, .62); put(2, hline(P(x0 + .3, ty2), P(x1 - .3, ty2), r, .004), .7, "l", { dash: [.35 * u, .35 * u] });
+    N(...G.nt, 0, "yes!", 13.9);
+    d.ph = [d.ph[0], d.ph[1], d.ph[2].filter(st => !st.dash), d.ph[3], d.ph[2].filter(st => st.dash)];
+    const inks = [1, 2, 3, 4, 5]; for (let i = inks.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [inks[i], inks[j]] = [inks[j], inks[i]]; }
+    d.cols = [0, inks[0], inks[1], inks[2], inks[1]]; d.wins = [[3.4, 7.8], [8.2, 9.2], [9.6, 10.6], [11.0, 12.9], [13.2, 13.8]]; return d;
+  };
+
+  /** rare: the doodles of a long meeting, all over the board in every colour — a cube, a spiral, a face, a flower, a
+   *  bolt, a heart, stars, a loop of arrow, hi */
+  const doodles = (L, ox, oy, u, r, k) => {
+    const d = board(L, ox, oy, u, r, 5), { P, put, say } = d, W = L.w, H = L.h, cells = [];
+    for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) cells.push([(i + .5) / 3 * W + (r() - .5) * W * .06, (j + .5) / 3 * H + (r() - .5) * H * .05]);
+    for (let i = cells.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [cells[i], cells[j]] = [cells[j], cells[i]]; }
+    const s = Math.min(W, H) / 7.5, c = i => cells[i];
+    { const [x, y] = c(0), a = s * .8, o = s * .45; for (const q of [[[x - a, y - a + o], [x + a - o, y - a + o], [x + a - o, y + a], [x - a, y + a], [x - a, y - a + o]], [[x - a, y - a + o], [x - a + o, y - a], [x + a, y - a], [x + a - o, y - a + o]], [[x + a, y - a], [x + a, y + a - o], [x + a - o, y + a]]]) put(0, poly(q.map(p => P(...p)), r, .01), .9); }
+    { const [x, y] = c(1); put(1, spiral(P(x, y), s * .95 * u, s * .95 * u, 3.2, 0, r() * TAU).reverse(), .9); }
+    { const [x, y] = c(2); put(4, hring(P(x, y), s * u, s * u, r, -2, .06), 1.1); for (const sd of [-1, 1]) put(4, [P(x + sd * s * .35, y - s * .3), P(x + sd * s * .36, y - s * .12)], 1.6); put(4, harc(P(x, y + s * .05), s * .55 * u, s * .45 * u, .35, Math.PI - .7, r), 1); }
+    { const [x, y] = c(3); for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + i / 5 * TAU; put(3, curve([[x, y], [x + Math.cos(a - .38) * s * .7, y + Math.sin(a - .38) * s * .7], [x + Math.cos(a) * s * .95, y + Math.sin(a) * s * .95], [x + Math.cos(a + .38) * s * .7, y + Math.sin(a + .38) * s * .7], [x, y]].map(p => P(...p)), 4), .85); } put(2, curve([[x, y + s * .2], [x - s * .15, y + s * .9], [x + s * .05, y + s * 1.5]].map(p => P(...p)), 6), 1); }
+    { const [x, y] = c(4); put(4, poly([[x + s * .25, y - s], [x - s * .45, y + s * .1], [x + s * .05, y + s * .1], [x - s * .3, y + s], [x + s * .5, y - s * .15], [x, y - s * .15], [x + s * .3, y - s]].map(p => P(...p)), r, .01), 1.05); }
+    { const [x, y] = c(5); put(3, curve([[x, y + s * .85], [x - s * .9, y + s * .05], [x - s * .75, y - s * .6], [x - s * .2, y - s * .65], [x, y - s * .15], [x + s * .2, y - s * .65], [x + s * .75, y - s * .6], [x + s * .9, y + s * .05], [x, y + s * .85]].map(p => P(...p)), 5), 1.1); }
+    { const [x, y] = c(6); for (const [dx, dy, q] of [[0, 0, .6], [s * .9, -s * .5, .35], [-s * .8, s * .6, .3]]) put(0, hstar(P(x + dx, y + dy), q * s * u * 1.3, (r() - .5) * .5), .9); }
+    { const [x, y] = c(7), pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40, a = t * TAU * 1.1 - Math.PI / 2; pts.push(P(x - s * 1.1 + t * s * 2.2 + Math.cos(a) * s * .45 * Math.sin(t * Math.PI), y + Math.sin(a) * s * .45 * Math.sin(t * Math.PI))); } put(2, pts, .95); put(2, head(pts, .55 * u), .95); }
+    { const [x, y] = c(8); say(1, "hi!", x, y + s * .45, s * 1.1, 171, .5, 1.2); }
+    const inks = [1, 2, 3, 4, 5]; for (let i = inks.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [inks[i], inks[j]] = [inks[j], inks[i]]; }
+    d.cols = [0, inks[0], inks[1], inks[2], inks[3]]; d.wins = [[3.4, 6.2], [6.6, 8.4], [8.8, 10.4], [10.8, 12.3], [12.7, 13.9]]; return d;
+  };
+
+  // the pool: the signature's first, then the others (each run of passes deals all of them once); and the rare ones,
+  // about one pass in ten, never two within four passes of each other
+  const POOL = chalk ? [null, solar, music, prism, water, dna] : [null, flow, venn, road, mind, rocket, dash], RAREP = chalk ? [ttt, cat] : [ttt, doodles], NS = POOL.length, NR = RAREP.length;
+  const rareHit = P => NR > 0 && P > 1 && K.deal(P, 91)() < 1 / 6, rareAt = P => rareHit(P) && !rareHit(P - 1) && !rareHit(P - 2) && !rareHit(P - 3);
+  const subjOf = P => P <= 0 ? 0 : rareAt(P) ? NS + Math.floor(K.deal(P, 92)() * NR) : K.bag(P, NS, 90);
+
   /* ---------------- the sponge's and the eraser's path: straight passes to and fro, in from an edge and out ----------------
      The wet (and what's wiped) is the passes themselves, square at the ends and overlapping; the sponge rides a rounded
      copy of the same path, swinging a little wide at each turn, and slows into it. */
@@ -295,7 +826,7 @@ export default function board(K, id) {
 
   /* ---------------- the stage's side of it ---------------- */
   const S = {
-    res: "dpr",
+    res: "dpr", carry: true, // (the lesson or the plan a pass draws stays up through the quiet after it)
     ...(chalk ? { wash: 1, veil: .6, hug: .72, hugFinale: true, list: .4 } : { wash: 1.6, veil: 1, hug: .8, hugFinale: true, list: .4 }), // the lines and the finale's words sit on pads; the drawing keeps to the open space
     bind(ctx) { g = ctx; g.lineCap = "round"; g.lineJoin = "round"; },
     layout(W, H, bg) {
@@ -396,7 +927,7 @@ export default function board(K, id) {
         S.finS = [...letters, ...round, ...stars];
         // the chalk stick, one of each colour, and its shadow; the sponge
         const sl = clamp(u * 1.9, 24, 50), sd = sl * .22; S.tl = sl;
-        S.tools = INKS.map(c => make(sl + 4, sd + 4, x => { x.translate(2, 2); const gr = x.createLinearGradient(0, 0, 0, sd); gr.addColorStop(0, rgba(mix(c, W3, .6))); gr.addColorStop(.4, rgba(c)); gr.addColorStop(1, rgba(mix(c, K3, .3)));
+        S.tools = INKS.slice(0, 3).map(c => make(sl + 4, sd + 4, x => { /* (the forever cycle's other colours are cut after the rest, with dice of their own: extra()) */ x.translate(2, 2); const gr = x.createLinearGradient(0, 0, 0, sd); gr.addColorStop(0, rgba(mix(c, W3, .6))); gr.addColorStop(.4, rgba(c)); gr.addColorStop(1, rgba(mix(c, K3, .3)));
           x.fillStyle = gr; x.beginPath(); x.moveTo(sd * .3, 0); x.lineTo(sl - 1.2, .4); x.lineTo(sl, sd * .35); x.lineTo(sl - .6, sd * .7); x.lineTo(sl - 1.4, sd); x.lineTo(sd * .12, sd); x.quadraticCurveTo(-sd * .18, sd * .5, sd * .3, 0); x.fill();
           x.fillStyle = rgba(mix(c, W3, .45), .9); x.beginPath(); x.ellipse(sd * .1, sd * .5, sd * .2, sd * .42, 0, 0, TAU); x.fill(); /* the worn end */
           x.fillStyle = rgba(mix(c, K3, .25), .35); for (let k = 0; k < 4; k++) x.fillRect(sd + r() * (sl - sd * 2), r() * sd, .8, .8); }));
@@ -418,7 +949,7 @@ export default function board(K, id) {
           x.fillStyle = rgba(mix(c, K3, .08), .5); x.fillRect(0, 0, ns, ns * .18); if (!word) return;
           const s = ns * .2, tw = width(word, s); x.strokeStyle = "rgba(34,40,49,.92)"; x.lineWidth = Math.max(1.4, ns * .045);
           for (const p of write(word, (ns - tw) / 2, ns * .6 + s * .3, s, seed)) { x.beginPath(); p.forEach(([a, b2], i) => i ? x.lineTo(a, b2) : x.moveTo(a, b2)); x.stroke(); } });
-        S.notes.forEach((n, i) => { n.spr = noteSpr(n.col, n.word, 50 + i); n.back = noteSpr(n.col, "", 0, true); });
+        S.notes.forEach((n, i) => { n.spr = noteSpr(n.col, n.word, 50 + i); n.back = noteSpr(n.col, "", 0, true); }); S.noteSpr = noteSpr;
         S.noteSh = make(ns * 1.5, ns * 1.5, x => { x.shadowColor = "rgba(40,48,60,.42)"; x.shadowBlur = ns * .08 * px; x.shadowOffsetY = 1000 * px; x.fillStyle = "#000"; x.fillRect(ns * .25, ns * .25 - 1000, ns, ns); });
         // the finale's notes: slapped on round the plan, each ticked or starred
         const [fcx, fcy] = L.fin; S.burst = Array.from({ length: 8 }, (_, i) => { const a = i / 8 * TAU + r() * .5, d = .55 + r() * .45; return { x: clamp(b.x + (fcx + Math.cos(a) * L.w * .42 * d) * u, b.x + ns * .5, b.x + b.w - ns * .5), y: clamp(b.y + (fcy + Math.sin(a) * L.h * .38 * d) * u, b.y + ns * .5, b.y + b.h - ns * .5), /* inside the plan's own room */ rot: (r() - .5) * .5, t: .02 + i * .03, off: .52 + i * .018 + r() * .02, c: NOTE[i % 5], ph: r() * TAU, sp: .8 + r() * .5 }; });
@@ -445,6 +976,83 @@ export default function board(K, id) {
       // the dust the chalk sheds as it goes: where each speck leaves the line, how it falls, and when
       S.dust = []; if (chalk) for (const st of S.all) { const n = Math.ceil((st.t1 - st.t0) / .05); for (let k = 0; k < n; k++) { const t = lerp(st.t0, st.t1, (k + r()) / n), q = along(st, done(st, t)); S.dust.push({ t, x: q[0], y: q[1], vx: (r() - .5) * 26, vy: 4 + r() * 14, s: .6 + r() * 1.1, life: Math.min(.5 + r() * .7, K.LOOP - .05 - t), c: st.col }); } /* all of it settled before the loop comes round */ }
       S.live.n = S.live.k = 0;
+      S.extra();
+    },
+    /** the forever cycle's own, for this room: the other sticks of chalk and the staff liner, or the eraser that takes a
+     *  whole plan off; and no passes worked out yet */
+    extra() {
+      const b = S.box, u = b.u, r = rng(62);
+      S.pics = new Map(); S.pp = null;
+      if (chalk) {
+        const sl = S.tl, sd = sl * .22;
+        for (const c of INKS.slice(3)) S.tools.push(make(sl + 4, sd + 4, x => { x.translate(2, 2); const gr = x.createLinearGradient(0, 0, 0, sd); gr.addColorStop(0, rgba(mix(c, W3, .6))); gr.addColorStop(.4, rgba(c)); gr.addColorStop(1, rgba(mix(c, K3, .3)));
+          x.fillStyle = gr; x.beginPath(); x.moveTo(sd * .3, 0); x.lineTo(sl - 1.2, .4); x.lineTo(sl, sd * .35); x.lineTo(sl - .6, sd * .7); x.lineTo(sl - 1.4, sd); x.lineTo(sd * .12, sd); x.quadraticCurveTo(-sd * .18, sd * .5, sd * .3, 0); x.fill();
+          x.fillStyle = rgba(mix(c, W3, .45), .9); x.beginPath(); x.ellipse(sd * .1, sd * .5, sd * .2, sd * .42, 0, 0, TAU); x.fill();
+          x.fillStyle = rgba(mix(c, K3, .25), .35); for (let k = 0; k < 4; k++) x.fillRect(sd + r() * (sl - sd * 2), r() * sd, .8, .8); }));
+        // the staff liner: five short sticks in a wire cradle on a wooden handle, as far apart as the staff's lines
+        const gp = (b.k === "tall" ? MUSIC.tall.g : MUSIC.wide.g) * u, lh = gp * 4 + sd * 1.6, hl = clamp(u * 2.4, 30, 62); S.gp = gp;
+        S.liner = make(hl + sd * 2 + 6, lh + 6, x => { x.translate(3, 3); const cx = sd * .9;
+          x.strokeStyle = "#8C939B"; x.lineWidth = Math.max(1.2, sd * .22); x.beginPath(); x.moveTo(cx, sd * .5); x.lineTo(cx, lh - sd * .5); x.stroke();
+          for (let j = 0; j < 5; j++) { const y = sd * .8 + j * gp; x.fillStyle = rgba(INKS[0]); x.beginPath(); x.roundRect(0, y - sd * .32, sd * 1.3, sd * .64, sd * .3); x.fill(); x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(sd * .4, y + sd * .08, sd * .8, sd * .2); }
+          const gr = x.createLinearGradient(0, lh / 2 - sd * .4, 0, lh / 2 + sd * .4); gr.addColorStop(0, "#C99A62"); gr.addColorStop(1, "#7A5230"); x.fillStyle = gr; x.beginPath(); x.roundRect(cx, lh / 2 - sd * .38, hl, sd * .76, sd * .38); x.fill(); });
+        S.liner.cx = sd * .9 + 3; S.liner.cy = sd * .8 + 2 * gp + 3;
+      } else {
+        // a pass after the signature's takes the whole plan off: its passes over the whole room, and an eraser to fit them
+        const L = PLAN[b.k], both = b.x < S.W * .1 && b.x + b.w > S.W * .9, pz = passesFor(.3, L.h - .3, L.eh, u, both), band = pz.band, ew = band * .4;
+        S.band2 = band; S.wipeAll = wipePath(pz.passes, band, b, u);
+        S.sponge2 = make(ew + 8, band + 8, x => { x.translate(4, 4); x.fillStyle = "#AEB4BB"; x.beginPath(); x.roundRect(0, 0, ew, band, ew * .18); x.fill(); const gr = x.createLinearGradient(0, 0, ew, 0); gr.addColorStop(0, "#3F6FD6"); gr.addColorStop(1, "#224AA6"); x.fillStyle = gr; x.beginPath(); x.roundRect(ew * .12, band * .05, ew * .76, band * .9, ew * .2); x.fill();
+          x.fillStyle = "rgba(255,255,255,.28)"; x.beginPath(); x.roundRect(ew * .2, band * .1, ew * .18, band * .8, ew * .1); x.fill(); x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(ew * .46, band * .22, ew * .08, band * .56); });
+        S.spongeSh2 = make(ew + 30, band + 30, x => { x.shadowColor = "rgba(40,48,60,.35)"; x.shadowBlur = 7 * px; x.shadowOffsetY = 1000 * px; x.fillStyle = "#000"; x.beginPath(); x.roundRect(15, 15 - 1000, ew, band, ew * .2); x.fill(); });
+        S.nspr = new Map();
+      }
+    },
+    /** what pass P draws, and so what pass P + 1 rests on: its strokes by phase, paced, in their colours, worked out from P
+     *  alone (its own dice, and its own chalk, the same whenever it is worked out again) */
+    pic(P) {
+      let pc = S.pics.get(P); if (pc) return pc;
+      if (P <= 0) pc = { P: 0, id: 0, phases: S.phases, all: S.all, end: S.end, dust: S.dust, whole: chalk ? S.full : null, finS: S.finS, notes: S.notes, fin: chalk ? LESSON[S.box.k].fin : null };
+      else {
+        const b = S.box, L = (chalk ? LESSON : PLAN)[b.k], id = subjOf(P), keep = seedN, r = K.deal(P, 93);
+        seedN = 20000 + (P % 1009) * 700;
+        const o = id === 0 ? S.again(L, b) : (id < NS ? POOL[id] : RAREP[id - NS])(L, b.x, b.y, b.u, r, b.k);
+        seedN = keep;
+        const phases = o.ph.map((strokes, i) => ({ col: o.cols[i], win: o.wins[i], strokes, tool: o.tools ? o.tools[i] : null })).filter(q => q.strokes.length);
+        for (const q of phases) for (const st of q.strokes) st.col = q.col;
+        pace(phases, b.u);
+        const all = phases.flatMap(q => q.strokes);
+        pc = { P, id, phases, all, end: all[all.length - 1].t1, dust: chalk ? dustOf(all, rng(7000 + P % 9973)) : [], fin: o.fin, notes: o.notes || [], whole: null };
+      }
+      S.pics.set(P, pc);
+      if (S.pics.size > 4) for (const k of S.pics.keys()) { if (k !== P && k !== P - 1 && k !== P + 1) { S.pics.delete(k); if (S.pics.size <= 4) break; } }
+      return pc;
+    },
+    /** the signature's lesson (or plan) again, in a pass of its own: the same strokes and the same chalk as pass 0's */
+    again(L, b) {
+      if (chalk) { seedN = 3; const ph = lessonAt(L, b.x, b.y, b.u); return { ph, cols: [0, 1, 2], wins: [B.white, B.blue, B.yellow], fin: L.fin }; }
+      seedN = 1; const pl = planAt(L, b.x, b.y, b.u); return { ph: [[...pl.top, ...pl.ph[0]], pl.ph[1], pl.ph[2], pl.ph[3]], cols: [0, 1, 2, 3], wins: [[4.0, 7.4], [7.8, 10.2], [10.6, 11.5], [11.9, 13.8]], notes: pl.notes.map((n, i) => ({ ...n, slap: 3.5 + i * .3 })) };
+    },
+    /** the pass: what it draws, and what it rests on (what the pass before it drew; the signature's before pass 1) */
+    passOf(P) { P = Math.max(0, P | 0); if (S.pp && S.pp.P === P) return S.pp; return (S.pp = { P, cur: S.pic(P), prev: S.pic(Math.max(0, P - 1)) }); },
+    /** a pass's picture, whole, on a layer of its own: the live layer taken over when it has just finished drawing it,
+     *  else drawn afresh */
+    wholeOf(pc) {
+      if (pc.whole) return pc.whole;
+      const l = S.live, w = !(l.list === pc.all && l.n >= pc.all.length) || (!chalk && pc.P === 0) ? S.layer() : l;
+      if (w === l) S.live = S.layer();
+      else if (!chalk && pc.P === 0) { w.x.save(); w.x.setTransform(1, 0, 0, 1, 0, 0); w.x.drawImage(S.top.c, 0, 0); w.x.drawImage(S.full.c, 0, 0); w.x.restore(); }
+      else for (const st of pc.all) { if (chalk) { chalkSegs(w.x, st, 0, st.n); chalkHalo(w.x, st, st.len); } else markerLine(w.x, st, st.len); }
+      return (pc.whole = w);
+    },
+    /** the finale's A+ where a pass's picture leaves room for it */
+    finOf(pc) {
+      if (pc.finS) return pc.finS;
+      const b = S.box, u = b.u, r = rng(8000 + pc.P % 9973), keep = seedN; seedN = 900000 + (pc.P % 1009) * 60;
+      const [fx, fy, fs] = pc.fin, fw = width("A+", fs * u), fwd = clamp(u * .22, 2.6, 6.4);
+      const letters = write("A+", b.x + fx * u - fw / 2, b.y + (fy + fs * .5) * u, fs * u, 77).map(p => mk(p, 2, fwd, "w"));
+      const round = [mk(hring([b.x + fx * u, b.y + fy * u], fw * .5 + .45 * fs * u, fs * u * .85, r, -2.6, .1), 2, fwd * .9)];
+      const stars = [[-1.15, -1.1, .3], [1.25, -.95, .24], [1.1, 1.05, .2]].map(([dx, dy, s]) => mk(hstar([b.x + (fx + dx * fs) * u, b.y + (fy + dy * fs) * u], s * fs * u, r() - .5), 2, fwd * .75));
+      pace([{ win: [.06, .38], strokes: letters }, { win: [.42, .55], strokes: round }, { win: [.58, .72], strokes: stars }], u); seedN = keep;
+      return (pc.finS = [...letters, ...round, ...stars]);
     },
     /** the wet the sponge leaves, worked out once, small, and stretched soft: how far each point lies inside the passes
      *  (their edges ragged, as a wet edge is), which decides when it dries — the edges first, then in patches, as a slate
@@ -474,7 +1082,7 @@ export default function board(K, id) {
       S.slurry = [-.4, -.34, .36, .41, (r() - .5) * .3].map(o => [o * band, .045 + r() * .05, .7 + r() * 1.1, [band * (.5 + r() * 1.6), band * (.12 + r() * .4)]]);
     },
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1 */
-    draw(T, I, A, F) {
+    draw(T, I, A, F, P = 0) {
       const { W, H } = S;
       g.clearRect(0, 0, W, H);
       const jump = S.lastA === undefined || A < S.lastA || A - S.lastA > .15, dt = jump ? 0 : A - S.lastA; S.lastA = A;
@@ -483,15 +1091,16 @@ export default function board(K, id) {
       if (S.pending && S.vis < .03) { S.box = S.pending; S.pending = null; S.build(); }
       S.F = F; if (F < 0 && S.refit) { S.refit = false; S.fit(false); }
       const vis = S.vis, on = I > .01;
-      if (vis > .005 && S.box) { if (chalk) S.lesson(T, I, A, on, vis); else S.plan(T, I, A, on, vis); }
+      if (vis > .005 && S.box) { const pp = S.passOf(P); if (chalk) S.lesson(T, I, A, on, vis, pp); else if (pp.P) S.planOn(T, I, A, on, vis, pp); else S.plan(T, I, A, on, vis); }
       if (chalk) S.dustMotes(A);
-      if (F >= 0 && S.box) { if (chalk) S.aplus(F); else S.notesBurst(F, A); }
+      if (F >= 0 && S.box) { if (chalk) S.aplus(F, S.passOf(P)); else S.notesBurst(F, A); }
       g.globalAlpha = 1;
     },
     blit(l, a) { if (a <= .003) return; g.globalAlpha = a; g.drawImage(l.c, S.lx, S.ly, l.c.width / px, l.c.height / px); g.globalAlpha = 1; },
     /** a layer brought to time t: the strokes done by then drawn whole, the one in hand drawn as far as it has gone
      *  (and all of it again from nothing if time has gone back); returns the stroke in hand */
     grow(l, list, t) {
+      if (l.list !== list) { if (l.list) { l.x.setTransform(1, 0, 0, 1, 0, 0); l.x.clearRect(0, 0, l.c.width, l.c.height); l.x.setTransform(px, 0, 0, px, -S.lx * px, -S.ly * px); } l.list = list; l.n = l.k = 0; } /* another pass's */
       let n = 0; while (n < list.length && list[n].t1 <= t) n++;
       const cur = list[n], k = chalk && cur && t > cur.t0 ? Math.floor(done(cur, t) / (cur.len / cur.n)) : 0;
       if (n < l.n || (n === l.n && k < l.k)) { l.x.setTransform(1, 0, 0, 1, 0, 0); l.x.clearRect(0, 0, l.c.width, l.c.height); l.x.setTransform(px, 0, 0, px, -S.lx * px, -S.ly * px); l.n = l.k = 0; }
@@ -506,39 +1115,48 @@ export default function board(K, id) {
       const off = p => S.side === "l" ? [-S.tl - 30, p[1] + 30] : [S.W + S.tl + 30, p[1] + 40];
       for (const ph of phases) {
         const ss = ph.strokes, a = ss[0].t0, b = ss[ss.length - 1].t1; if (t < a - OFF || t > b + OFF) continue;
-        if (t < a) { const k = E.out((t - a + OFF) / OFF), o = off(ss[0].p[0]), p = ss[0].p[0]; return { x: lerp(o[0], p[0], k), y: lerp(o[1], p[1], k), lift: 1 - k, dir: Math.PI, col: ph.col }; }
-        if (t > b) { const e = ss[ss.length - 1].p, p = e[e.length - 1], o = off(p), k = E.in((t - b) / OFF); return { x: lerp(p[0], o[0], k), y: lerp(p[1], o[1], k), lift: k, dir: 0, col: ph.col }; }
+        if (t < a) { const k = E.out((t - a + OFF) / OFF), o = off(ss[0].p[0]), p = ss[0].p[0]; return { x: lerp(o[0], p[0], k), y: lerp(o[1], p[1], k), lift: 1 - k, dir: Math.PI, col: ph.col, tool: ph.tool }; }
+        if (t > b) { const e = ss[ss.length - 1].p, p = e[e.length - 1], o = off(p), k = E.in((t - b) / OFF); return { x: lerp(p[0], o[0], k), y: lerp(p[1], o[1], k), lift: k, dir: 0, col: ph.col, tool: ph.tool }; }
         for (let i = 0; i < ss.length; i++) { const st = ss[i]; if (t > st.t1) continue;
-          if (t >= st.t0) { const q = along(st, done(st, t)); return { x: q[0], y: q[1], lift: 0, dir: q[2], col: ph.col }; }
+          if (t >= st.t0) { const q = along(st, done(st, t)); return { x: q[0], y: q[1], lift: 0, dir: q[2], col: ph.col, tool: ph.tool }; }
           const e = ss[i - 1].p[ss[i - 1].p.length - 1], s0 = st.p[0], k = clamp((t - ss[i - 1].t1) / (st.t0 - ss[i - 1].t1)), ke = E.io(k), d = Math.hypot(s0[0] - e[0], s0[1] - e[1]), up = Math.sin(Math.PI * k);
-          return { x: lerp(e[0], s0[0], ke), y: lerp(e[1], s0[1], ke) - up * Math.min(10, d * .15), lift: up * clamp(d / (S.box.u * 2), .35, 1), dir: Math.atan2(s0[1] - e[1], s0[0] - e[0]), col: ph.col }; }
+          return { x: lerp(e[0], s0[0], ke), y: lerp(e[1], s0[1], ke) - up * Math.min(10, d * .15), lift: up * clamp(d / (S.box.u * 2), .35, 1), dir: Math.atan2(s0[1] - e[1], s0[0] - e[0]), col: ph.col, tool: ph.tool }; }
       }
       return null;
     },
     /** the chalk or the marker in the hand, its tip at the point, leaning off down to the right as a right hand holds it;
      *  lifted, it stands off the board and its shadow falls further from it */
     tool(p, a) {
-      if (!p || a <= .01) return; const spr = S.tools[p.col], sh = S.toolSh, ang = (chalk ? .78 : .9) + Math.cos(p.dir) * .06 + p.lift * .1, s = 1 + p.lift * .07;
+      if (!p || a <= .01) return; if (p.tool === "liner") return S.linerAt(p, a);
+      const spr = S.tools[p.col], sh = S.toolSh, ang = (chalk ? .78 : .9) + Math.cos(p.dir) * .06 + p.lift * .1, s = 1 + p.lift * .07;
       g.save(); g.globalAlpha = a * (chalk ? .6 : .5) * (1 - p.lift * .35); g.translate(p.x + 2 + p.lift * 8, p.y + 3 + p.lift * 11); g.rotate(ang); g.drawImage(sh, -8, -sh.h2 / 2, sh.w2, sh.h2); g.restore();
       g.save(); g.globalAlpha = a; g.translate(p.x, p.y - p.lift * 2); g.rotate(ang); g.scale(s, s); g.drawImage(spr, -2, -spr.h2 / 2, spr.w2, spr.h2); g.restore();
     },
+    /** the staff liner, its middle stick at the point, the cradle upright across the line it rules, the handle off to the
+     *  side the hand is on; lifted, it stands off the board */
+    linerAt(p, a) {
+      const L = S.liner, dx = S.side === "l" ? -1 : 1, lift = p.lift;
+      g.save(); g.globalAlpha = a * .5 * (1 - lift * .35); g.translate(p.x + 3 + lift * 9, p.y + 4 + lift * 12); g.scale(dx, 1); g.fillStyle = "rgba(0,0,0,.5)"; g.fillRect(-L.cx + 2, -L.cy + 2, L.w2 * .35, L.h2 - 4); g.restore();
+      g.save(); g.globalAlpha = a; g.translate(p.x, p.y - lift * 3); g.scale(dx * (1 + lift * .06), 1 + lift * .06); g.drawImage(L, -L.cx, -L.cy, L.w2, L.h2); g.restore();
+    },
     /** the sponge or the eraser along its path at loop time t, leaning into its passes; null before and after */
     wiper(t) { const k = (t - B.wipe[0]) / (B.wipe[1] - B.wipe[0]); if (k <= 0 || k >= 1) return null; const f = S.wipe.at(k), q = along(S.wipe.ride, f * S.wipe.ride.len); return { s: f * S.wipe.len, x: q[0], y: q[1], dir: q[2] }; },
-    drawWiper(w, a, A) { if (!w || a <= .01) return; const spr = S.sponge, sh = S.spongeSh, lean = Math.cos(w.dir) * -.07 + Math.sin(A * (chalk ? 9 : 26)) * (chalk ? .03 : .05), jig = chalk ? 0 : Math.sin(A * 26) * S.box.u * .35;
+    drawWiper(w, a, A, spr = S.sponge, sh = S.spongeSh) { if (!w || a <= .01) return; const lean = Math.cos(w.dir) * -.07 + Math.sin(A * (chalk ? 9 : 26)) * (chalk ? .03 : .05), jig = chalk ? 0 : Math.sin(A * 26) * S.box.u * .35;
       g.save(); g.globalAlpha = a * .8; g.translate(w.x + 6 + jig, w.y + 10); g.rotate(lean); g.drawImage(sh, -sh.w2 / 2, -sh.h2 / 2, sh.w2, sh.h2); g.restore();
       g.save(); g.globalAlpha = a; g.translate(w.x + jig, w.y); g.rotate(lean); g.drawImage(spr, -spr.w2 / 2, -spr.h2 / 2, spr.w2, spr.h2); g.restore(); },
     /** the whole drawing with the wiper's path so far taken out of it — as far as the loop has taken over (I) */
-    wiped(s, vis, I) { const l = S.scr, x = l.x; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, l.c.width, l.c.height); x.drawImage(S.full.c, 0, 0); x.setTransform(px, 0, 0, px, -S.lx * px, -S.ly * px);
-      if (s > 0) { x.globalCompositeOperation = "destination-out"; x.strokeStyle = `rgba(0,0,0,${I.toFixed(3)})`; x.lineWidth = S.band; x.lineCap = "butt"; x.lineJoin = "miter"; trace(x, S.wipe, 0, s); x.stroke(); x.globalCompositeOperation = "source-over"; x.lineCap = "round"; x.lineJoin = "round"; }
+    wiped(s, vis, I, src = S.full, path = S.wipe, band = S.band) { const l = S.scr, x = l.x; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, l.c.width, l.c.height); x.drawImage(src.c, 0, 0); x.setTransform(px, 0, 0, px, -S.lx * px, -S.ly * px);
+      if (s > 0) { x.globalCompositeOperation = "destination-out"; x.strokeStyle = `rgba(0,0,0,${I.toFixed(3)})`; x.lineWidth = band; x.lineCap = "butt"; x.lineJoin = "miter"; trace(x, path, 0, s); x.stroke(); x.globalCompositeOperation = "source-over"; x.lineCap = "round"; x.lineJoin = "round"; }
       S.blit(l, vis); },
     /** the drawing so far, and (while the loop is only taking over, or giving back) the whole of it, crossfaded */
-    redrawn(vis, I) { if (I >= .99) { S.blit(S.live, vis); return; } const l = S.scr, x = l.x; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, l.c.width, l.c.height); x.globalAlpha = 1 - I; x.drawImage(S.full.c, 0, 0);
+    redrawn(vis, I, src = S.full) { if (I >= .99) { S.blit(S.live, vis); return; } const l = S.scr, x = l.x; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, l.c.width, l.c.height); x.globalAlpha = 1 - I; x.drawImage(src.c, 0, 0);
       x.globalCompositeOperation = "lighter"; x.globalAlpha = I; x.drawImage(S.live.c, 0, 0); x.globalCompositeOperation = "source-over"; x.globalAlpha = 1; x.setTransform(px, 0, 0, px, -S.lx * px, -S.ly * px); S.blit(l, vis); },
 
     /* ---------------- by night: the lesson ---------------- */
-    lesson(T, I, A, on, vis) {
-      const loop = on && T >= B.wipe[0] && T < S.end + 1.3, a = vis * I;
-      if (!loop) { S.blit(S.full, vis); return; }
+    lesson(T, I, A, on, vis, pp) {
+      // what the pass rests on (the lesson the pass before it drew: the signature's, before pass 1), and what it draws
+      const rest = S.wholeOf(pp.prev), cur = pp.cur, loop = on && T >= B.wipe[0] && (pp.P > 0 || T < cur.end + 1.3), a = vis * I;
+      if (!loop) { S.blit(rest, vis); return; }
       const w = S.wiper(T), s = w ? w.s : T >= B.wipe[1] ? S.wipe.len : 0;
       // the wet: where the sponge has been, drying back from its edges in
       const dk = seg(T, B.dry[0], B.dry[1], x => x), wa = a * (T < B.dry[1] ? 1 : 0);
@@ -554,15 +1172,15 @@ export default function board(K, id) {
         g.globalAlpha = 1;
       }
       // the lesson: going under the sponge, then drawn again stroke by stroke
-      if (T < B.wipe[1]) S.wiped(s, vis, I);
-      else { const cur = S.grow(S.live, S.all, T); S.redrawn(vis, I); if (cur) S.hand(cur, T, a); }
+      if (T < B.wipe[1]) S.wiped(s, vis, I, rest);
+      else { const st = S.grow(S.live, cur.all, T); S.redrawn(vis, I, rest); if (st) S.hand(st, T, a); }
       // the dust: a puff where each stroke begins, specks falling from the stick as it goes
       g.fillStyle = rgba(INKS[0]);
-      for (const st of S.all) { const age = T - st.t0; if (age < 0 || age > .5) continue; const k = age / .5, R = S.box.u * (.35 + .5 * E.out(k)); g.globalAlpha = a * .22 * (1 - k); g.drawImage(S.puffs[st.col], st.p[0][0] - R, st.p[0][1] - R, R * 2, R * 2); }
-      for (const d of S.dust) { const age = T - d.t; if (age < 0 || age > d.life) continue; g.globalAlpha = a * .55 * (1 - age / d.life); g.fillStyle = rgba(INKS[d.c]); g.fillRect(d.x + d.vx * age, d.y + d.vy * age + 70 * age * age, d.s, d.s); }
+      for (const st of cur.all) { const age = T - st.t0; if (age < 0 || age > .5) continue; const k = age / .5, R = S.box.u * (.35 + .5 * E.out(k)); g.globalAlpha = a * .22 * (1 - k); g.drawImage(S.puffs[st.col], st.p[0][0] - R, st.p[0][1] - R, R * 2, R * 2); }
+      for (const d of cur.dust) { const age = T - d.t; if (age < 0 || age > d.life) continue; g.globalAlpha = a * .55 * (1 - age / d.life); g.fillStyle = rgba(INKS[d.c]); g.fillRect(d.x + d.vx * age, d.y + d.vy * age + 70 * age * age, d.s, d.s); }
       g.globalAlpha = 1;
       S.drawWiper(w, a, A);
-      S.tool(S.toolAt(T, S.phases), a);
+      S.tool(S.toolAt(T, cur.phases), a);
     },
     /** the chalk dust in the air, drifting down the board and glinting where the window's light falls (never in front of
      *  the words: it fades as it comes near them) */
@@ -573,13 +1191,41 @@ export default function board(K, id) {
       g.globalAlpha = 1;
     },
     /** the finale: A+ in yellow, circled, stars round it; the hand comes on for it and goes, and it all fades at the end */
-    aplus(F) {
-      const fa = 1 - seg(F, .84, 1, E.sine), fl = S.finS; if (fa <= 0) return;
+    aplus(F, pp) {
+      const fa = 1 - seg(F, .84, 1, E.sine), fl = S.finOf(pp.prev); if (fa <= 0) return; /* over the lesson the pass rests on */
       if (!S.fin) S.fin = S.layer(); const cur = S.grow(S.fin, fl, F); S.blit(S.fin, fa); if (cur) S.hand(cur, F, fa, S.fin);
       const ph = [{ col: 2, strokes: fl }]; S.tool(S.toolAt(F, ph, .06), fa);
     },
 
     /* ---------------- by day: the plan ---------------- */
+    /** a pass after the signature's: the notes the plan before it left peel off one by one and flutter away, the eraser
+     *  takes the whole plan off (a ghost of it fading), and the new plan is drawn a colour at a time, its notes slapped on */
+    planOn(T, I, A, on, vis, pp) {
+      const a = vis * I, rest = S.wholeOf(pp.prev), cur = pp.cur, WP = S.wipeAll, WB = BW.wipe, loop = on && T >= WB[0];
+      if (!loop) S.blit(rest, vis);
+      else {
+        const k = (T - WB[0]) / (WB[1] - WB[0]), s = k <= 0 ? 0 : k >= 1 ? WP.len : WP.at(k) * WP.len;
+        const gh = a * env(T, WB[0], WB[0] + .3, BW.ghost[0], BW.ghost[1], E.sine);
+        if (gh > .003) { S.blit(rest, gh * .03); g.save(); g.translate(7, 1); S.blit(rest, gh * .02); g.restore(); }
+        if (T < WB[1]) S.wiped(s, vis, I, rest, WP, S.band2);
+        else { const st = S.grow(S.live, cur.all, T); S.redrawn(vis, I, rest); if (st) S.hand(st, T, a); }
+      }
+      const curl = n => .12 + .025 * Math.sin(A * .9 + n.ph);
+      pp.prev.notes.forEach((n, i) => { const tp0 = BW.peel + i * BW.gap, tp1 = tp0 + .55; S.sprOf(n);
+        if (!on || T < tp0) { S.note(n, n.x, n.y, n.rot, 1, curl(n), vis, 0); return; }
+        if (I < .99) S.note(n, n.x, n.y, n.rot, 1, curl(n), vis * (1 - I), 0);
+        S.peel(n, T, tp0, tp1, A, a, curl(n)); });
+      if (on) for (const n of cur.notes) { if (T < n.slap) continue; S.sprOf(n); if (T >= n.slap + .6) S.note(n, n.x, n.y, n.rot, 1, curl(n), a, 0); else { const sl = S.slap(T - n.slap); S.note(n, n.x, n.y - sl.lift * n.s * .08, n.rot + sl.lift * .12, sl.sc, curl(n) + sl.flap, a * sl.a, sl.lift); } }
+      if (on) { const k = (T - WB[0]) / (WB[1] - WB[0]); if (k > 0 && k < 1) { const f = WP.at(k), q = along(WP.ride, f * WP.ride.len); S.drawWiper({ x: q[0], y: q[1], dir: q[2] }, a, A, S.sponge2, S.spongeSh2); } }
+      if (on && T < cur.end + .4) S.tool(S.toolAt(T, cur.phases), a);
+    },
+    /** a note's sprites, cut when it is first drawn (one for each colour and word) */
+    sprOf(n) { if (n.spr) return; const key = n.col.join() + n.word; let q = S.nspr.get(key); if (!q) { q = [S.noteSpr(n.col, n.word, 50 + n.word.length * 7), S.noteSpr(n.col, "", 0, true)]; S.nspr.set(key, q); } [n.spr, n.back] = q; },
+    /** a note peeling off, its corner lifting from tp0 to tp1, then fluttering away off the board */
+    peel(n, T, tp0, tp1, A, a, c0) {
+      if (T < tp1) { const k = seg(T, tp0, tp1, E.in); S.note(n, n.x, n.y - k * n.s * .04, n.rot - k * .06, 1 + k * .03, c0 + k * .55 + Math.sin(A * 21) * .02 * k, a, k); return; }
+      const k = T - tp1, f = S.flutter(n, k, -n.s * .04, -.06); if (f) S.note(n, f.x, f.y, f.rot, 1.03 + .01 * clamp(k / .3), lerp(c0 + .55, .3, clamp(k / .35)), a, 1, f.flip);
+    },
     plan(T, I, A, on, vis) {
       const a = vis * I, loop = on && T >= B.wipe[0] && T < S.end + 1.3;
       S.blit(S.top, vis);

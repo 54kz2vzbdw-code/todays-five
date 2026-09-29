@@ -22,6 +22,21 @@
 // go up off its front, and a wisp of smoke rises off the moon.
 // The plane and the rag stop short of any word, the lines sit on pads of the ground (scenes.js, `hug`), the embers keep
 // off them. The beats are tables, so they can be dealt differently each time round.
+//
+// 1.12 b373: the forever cycle. The loop above is pass 0. Each pass after it lays a picture of its own in the medallion
+// (by night, burns one), and it stays there through the quiet after it (the scene carries) until the next pass planes it
+// back to the plank, or glows it to ash, and lays or burns another; a touch mid-pass eases back to the one the pass began
+// on. The pictures are the same by day and by night, drawn once both ways: the signature's country; a compass rose, its
+// ground in sixteen wedges of two woods and its points halved light and dark; a schooner under sail on an evening sea, the
+// sun going down behind her; a lighthouse on its rock at dusk, its two beams across the sky; a robin on a branch before
+// the full moon, its leaves in two greens and its berries; and an oak leaf in two autumn woods with its veins let in in
+// holly, and an acorn, on a parquet ground. By day each comes in as the country does, the banding spun in and then piece by
+// piece from past the edge away from the words, each dropping in with its puff of sawdust, and is oiled; by night the pen
+// burns it line by line, hatching along the lie of each face, stippling the moon and the sun, and it cools to ash. A pass
+// deals which picture (each run of passes lays them all once, never the same twice running) and, for all but the compass,
+// which way it faces, and with that a second look: a later hour for the schooner, cherry in the lighthouse's bands, a
+// harvest moon behind the robin, other woods for the leaf, holly in the stag's sky. About one pass in ten, never two within four passes, is the rare one: a stag on the ridge before
+// the setting sun, the sky in rays behind him. The finale lifts, or flares, whichever picture is up.
 export default function wood(K, id) {
   const night = id === "char";
   const { clamp, lerp, E, seg, env, rng, canvas, noise1, fbm } = K;
@@ -103,6 +118,11 @@ export default function wood(K, id) {
     holly: { dry: ["#F4EDE0", "#E1D6C3", "#FCF8EF"], oil: ["#F2E5CB", "#DBC8A6", "#FBF1DD"], step: 3.4, wob: .03, ga: .24 },
     blue: { dry: ["#83A0B2", "#6B889B", "#A5BDCB"], oil: ["#4B7187", "#34586D", "#6B91A6"], step: 3, wob: .04, ga: .34, fig: "ribbon" },
     green: { dry: ["#5E7B53", "#47623F", "#7C9971"], oil: ["#3B5A34", "#284323", "#577A4C"], step: 2.8, wob: .05, ga: .4 },
+    // (the forever cycle's pictures: a deep blue, a pale one, a second green)
+    navy: { dry: ["#56758C", "#415F76", "#7090A6"], oil: ["#2F5069", "#1E3B53", "#476B86"], step: 3, wob: .04, ga: .36, fig: "ribbon" },
+    sky: { dry: ["#BACDD6", "#A2B8C4", "#D4E1E8"], oil: ["#92B2C3", "#7699AD", "#B0CCDB"], step: 3.2, wob: .04, ga: .3, fig: "ribbon" },
+    rust: { dry: ["#CC6E3E", "#A9522A", "#E08D5E"], oil: ["#B54E22", "#8A3514", "#D26E3C"], step: 2.8, wob: .07, ga: .44, fig: "ribbon" },
+    olive: { dry: ["#8C9C5C", "#72834B", "#A6B676"], oil: ["#6C7E3D", "#54642D", "#889C56"], step: 2.8, wob: .05, ga: .4 },
   };
   // the pieces: primitives each piece is the meeting of, as polygons to cut with and tests to measure with
   const circ = (r, n = 144) => Array.from({ length: n }, (_, i) => [Math.cos(i / n * TAU) * r, Math.sin(i / n * TAU) * r]);
@@ -296,10 +316,11 @@ export default function wood(K, id) {
   /** a band the rag has wiped, from where it started to x: a little wavy along its edges, the way oil takes */
   const wipePoly = (j, xa, xb) => { const top = [], bot = [], y = WIPEY[j]; for (let i = 0; i <= 20; i++) { const x = lerp(xa, xb, i / 20); top.push([x, y - .42 + .03 * Math.sin(x * 11 + j * 2)]); bot.push([x, y + .42 + .03 * Math.sin(x * 9 + j * 3 + 1)]); } return [...top, ...bot.reverse()]; };
 
-  function drawDay(T, I, A, F) {
+  function drawDay(T, I, A, F, P) {
     const { W, H } = S; g.clearRect(0, 0, W, H);
     glide(A); if (S.vis < .01) return;
     if (!S.RR || (Math.abs(S.R / S.RR - 1) > .08 && Math.abs(S.tR - S.R) < 2)) buildDay();
+    const pp = passOf(P), cur = pp.cur, prev = pp.prev; // what the pass lays, and what it rests on
     const { cx, cy, R } = S, on = I > .01, V = S.vis, L = v => lerp(1, v, I), k = R / S.RR;
     S.curlDir = [.96, .28]; // the curls go off to the right: the list is never there
     S.pstop = BANDS.map(([, , y], j) => leftStop(y, .4, S.Lp * k * MOUTH, SPAN[j])); S.rstop = WIPEY.map(y => leftStop(y, .66, S.rw * k * .5, 1.02)); // the tools keep short of the words
@@ -321,11 +342,21 @@ export default function wood(K, id) {
       return [tx + dx * D * (1 - e) - dy * side, ty + dy * D * (1 - e) + dx * side, p.rot0 * (1 - E.out(q)), 1 - seg(q, .72, 1, E.in)];
     };
     const phase = !on || T < BD.plane[0] || T >= BD.rag[3] ? 0 : T < BD.ring[0] ? 1 : T < BD.done ? 2 : T < BD.rag[0] ? 3 : 4;
-    if (phase === 0) put(S.oiled);
+    if (phase === 0) { if (!pp.P || !on || T < BD.plane[0]) put(prev.oiled); else { put(cur.oiled); put(prev.oiled, 1 - I); } }
     else if (phase === 1) { // the plane has taken these bands back to the plank
       g.save(); g.beginPath(); g.rect(cx - 1.1 * R, cy - 1.1 * R, 2.2 * R, 2.2 * R);
       BD.passes.forEach(([a, b], j) => { const s = E.sine(seg(T, a, b, lin)); if (s <= 0 || I <= .01) return; const xb = lerp(1.12, s >= 1 ? -1.12 : lerp(SPAN[j], S.pstop[j], s), I); /* cut up to the blade, under the plane */ g.rect(cx + xb * R, cy + BANDS[j][0] * R, (1.12 - xb) * R, (BANDS[j][1] - BANDS[j][0]) * R); });
-      g.clip("evenodd"); put(S.oiled); g.restore();
+      g.clip("evenodd"); put(prev.oiled); g.restore();
+    } else if (phase === 2 && !cur.sig) { // a new picture's pieces come in, one by one, over the banding spun in
+      const L2 = v => lerp(1, v, I * I), ringQ = L2(seg(T, BD.ring[0], BD.ring[1], lin)), qs = cur.pieces.map(p => L2(seg(T, p.t0, p.t1, lin))), ringDone = ringQ >= 1, RR = S.RR, n = Math.ceil(2.1 * RR * px);
+      put(S.landed(n, n, "P" + cur.key + (ringDone ? "r" : "") + qs.map(q => q >= 1 ? 1 : 0).join("") + RR, x => {
+        x.imageSmoothingEnabled = true; x.setTransform(px * RR, 0, 0, px * RR, 1.05 * RR * px, 1.05 * RR * px); cur.pieces.forEach((p, i) => { if (qs[i] >= 1) x.drawImage(p.spr, p.bb.x0, p.bb.y0, p.bb.x1 - p.bb.x0, p.bb.y1 - p.bb.y0); }); if (ringDone) x.drawImage(S.ringDry, -1.02, -1.02, 2.04, 2.04); x.setTransform(1, 0, 0, 1, 0, 0); }));
+      cur.pieces.forEach((p, i) => { const q = qs[i]; if (q <= 0 || q >= 1) return; const [x, y, rot, z] = fly(p, q); piece(p, x, y, rot, z); });
+      if (ringQ > 0 && !ringDone) { const [dx, dy] = S.away, D = out(cx, cy, dx, dy) + 1.1 * R + 30, e = E.out(ringQ), x = cx + dx * D * (1 - e), y = cy + dy * D * (1 - e), rot = -(1 - E.back(ringQ)) * TAU * 1.15, z = 1 - seg(ringQ, .7, 1, E.in), sc = 1 + .05 * z;
+        if (z > .01) { g.save(); g.globalAlpha = V * Math.min(1, z * 2) * .9; g.translate(x + (3 + 10 * z) * k, y + (5 + 15 * z) * k); g.rotate(rot); g.drawImage(S.ringSh, -1.02 * R - 10 * k, -1.02 * R - 10 * k, 2.04 * R + 20 * k, 2.04 * R + 20 * k); g.restore(); }
+        g.save(); g.globalAlpha = V; g.translate(x, y); g.rotate(rot); g.scale(sc, sc); g.drawImage(S.ringDry, -1.02 * R, -1.02 * R, 2.04 * R, 2.04 * R); g.restore(); }
+      g.fillStyle = "#C9AD80"; for (const p of cur.pieces) { const q = (T - p.t1) / .45; if (q < 0 || q > 1) continue; const r = rng(p.seed); for (let s = 0; s < 8; s++) { const a = r() * TAU, d = (p.L * .55 + .05 + .16 * E.out(q)) * R; g.globalAlpha = V * I * (1 - q) * .8; const sz = (1.2 + r() * 1.6) * Math.max(1, k); g.fillRect(cx + (p.c[0] + Math.cos(a) * d / R) * R, cy + (p.c[1] + Math.sin(a) * d / R) * R - q * 6, sz, sz); } } g.globalAlpha = 1;
+      put(prev.oiled, Math.pow(1 - I, 1.6));
     } else if (phase === 2) { // the pieces come back: what has landed is kept on a layer drawn again only when another lands
       const L2 = v => lerp(1, v, I * I); // touched mid-way, what is in flight hurries home before the oiled inlay comes back over it
       const ringQ = L2(seg(T, BD.ring[0], BD.ring[1], lin)), fq = L2(seg(T, BD.fan[0], BD.fan[1], lin)), sw = L2(seg(T, BD.fan[1], BD.fan[2], E.out)), maxEnd = S.away[0] >= -.2, th = RAYS.map(p => p.grain);
@@ -347,9 +378,9 @@ export default function wood(K, id) {
         g.save(); g.globalAlpha = V; g.translate(x, y); g.rotate(rot); g.scale(sc, sc); g.drawImage(S.ringDry, -1.02 * R, -1.02 * R, 2.04 * R, 2.04 * R); g.restore(); }
       // sawdust puffed out as each piece drops in
       g.fillStyle = "#C9AD80"; for (const p of REST) { const q = (T - p.t1) / .45; if (q < 0 || q > 1) continue; const r = rng(p.seed); for (let s = 0; s < 8; s++) { const a = r() * TAU, d = (p.L * .55 + .05 + .16 * E.out(q)) * R; g.globalAlpha = V * I * (1 - q) * .8; const sz = (1.2 + r() * 1.6) * Math.max(1, k); g.fillRect(cx + (p.c[0] + Math.cos(a) * d / R) * R, cy + (p.c[1] + Math.sin(a) * d / R) * R - q * 6, sz, sz); } } g.globalAlpha = 1;
-      put(S.oiled, Math.pow(1 - I, 1.6));
-    } else if (phase === 3) { put(S.dry); put(S.oiled, 1 - I); }
-    else { put(S.dry); g.save(); wiped(); put(S.oiled); g.restore(); } // the oil: what the rag has wiped deepens
+      put(prev.oiled, Math.pow(1 - I, 1.6));
+    } else if (phase === 3) { put(cur.dry); put(prev.oiled, 1 - I); }
+    else { put(cur.dry); g.save(); wiped(); put(cur.oiled); g.restore(); if (pp.P) put(prev.oiled, 1 - I); } // the oil: what the rag has wiped deepens
     // the wet shine the rag leaves, drying
     if (on && T > BD.wipes[0][0] && T < BD.wipes[2][1] + 1.9) BD.wipes.forEach(([, b], j) => { const wet = (1 - seg(T, b + .2, b + 1.9, E.sine)) * I; if (T < BD.wipes[j][0] || wet <= .01) return;
       g.save(); wiped(j); g.globalCompositeOperation = "screen"; put(S.gloss, .55 * wet); g.restore(); });
@@ -362,31 +393,38 @@ export default function wood(K, id) {
     if (on) { const q = seg(T, BD.sheen[0], BD.sheen[1], lin); if (q > 0 && q < 1) { sheen(lerp(-1.7, 1.7, E.io(q)), .95 * I * V, .42); sheen(lerp(-1.7, 1.7, E.io(q)), .35 * I * V, .12); } }
     // the plane and its curls
     if (on && T > BD.plane[0] && T < BD.plane[3] + BD.roll) {
-      for (let j = 0; j < 3; j++) { const c = curlAt(j, T); if (c && !c.inPlane) S.curl(j, c, I * V); }
+      for (let j = 0; j < 3; j++) { const c = curlAt(j, T); if (c && !c.inPlane) S.curl(j, c, I * V, prev.shave); }
       const pl = planeAt(T);
       if (pl) { const bx = cx + pl.x * R, by = cy + pl.y * R, sc = 1 + .05 * pl.z, Lp = S.Lp * k, Wp = S.Wp * k, b = 7 * k, dim = I * V;
         g.save(); g.globalAlpha = dim * (1 - .35 * pl.z); g.translate(bx + (5 + 22 * pl.z) * k, by + (8 + 28 * pl.z) * k); g.scale(sc, sc); g.drawImage(S.planeSh, -Lp * MOUTH - 2 * b, -Wp / 2 - 2 * b, Lp + 4 * b, Wp + 4 * b); g.restore();
         g.save(); g.globalAlpha = dim; g.translate(bx, by); g.scale(sc, sc); g.drawImage(S.plane, -Lp * MOUTH, -Wp / 2, Lp, Wp); g.restore();
-        for (let j = 0; j < 3; j++) { const c = curlAt(j, T); if (c && c.inPlane) S.curl(j, c, dim); } }
+        for (let j = 0; j < 3; j++) { const c = curlAt(j, T); if (c && c.inPlane) S.curl(j, c, dim, prev.shave); } }
     }
     // the rag
     if (on) { const rg = ragAt(T); if (rg) { const x = cx + rg.x * R + Math.sin(A * 23) * .012 * R * (rg.j !== undefined ? 1 : 0), y = cy + rg.y * R + Math.cos(A * 19) * .01 * R, rot = Math.sin(A * 3.1) * .08 + (rg.j !== undefined ? Math.sin(A * 17) * .05 : 0), sc = 1 + .06 * rg.z, rw = S.rw * k, rh = S.rh * k, b = 6 * k;
       g.save(); g.globalAlpha = I * V * .9; g.translate(x + (4 + 16 * rg.z) * k, y + (6 + 20 * rg.z) * k); g.rotate(rot); g.scale(sc, sc); g.drawImage(S.ragSh, -rw / 2 - 2 * b, -rh / 2 - 2 * b, rw + 4 * b, rh + 4 * b); g.restore();
       g.save(); g.globalAlpha = I * V; g.translate(x, y); g.rotate(rot); g.scale(sc, sc); g.drawImage(S.rag, -rw / 2, -rh / 2, rw, rh); g.restore(); } }
+    /** a sheet of a new picture's (its ground, its sky) in the finale: each part lifting as the wave reaches it, its shadow
+     *  cut to its shape, catching the light as it rises */
+    const liftParts = (p, F) => { for (const q of p.parts) { const w0 = .06 + (q.c[0] + 1) * .27, z = env(F, w0, w0 + .08, w0 + .1, w0 + .24, E.sine); if (z <= .01) continue;
+      const sx = cx + q.c[0] * R, sy = cy + q.c[1] * R - z * 9 * k, sc = 1 + .09 * z, path = () => { g.beginPath(); q.pts.forEach(([u, v], i) => i ? g.lineTo(u, v) : g.moveTo(u, v)); g.closePath(); };
+      g.save(); g.beginPath(); g.arc(cx, cy, RI * R * (1 + .09 * z), 0, TAU); g.clip(); g.globalAlpha = V * z * .28; g.translate(sx + 12 * z * k, sy + 18 * z * k); g.scale(sc, sc); g.translate(-q.c[0] * R, -q.c[1] * R); g.scale(R, R); path(); g.fillStyle = "rgb(78,52,26)"; g.fill(); g.restore();
+      g.save(); g.globalAlpha = V; g.translate(sx, sy); g.scale(sc, sc); g.translate(-q.c[0] * R, -q.c[1] * R); g.scale(R, R); path(); g.clip(); trace(g, DISC.pts); g.clip(); g.drawImage(prev.oiled, -1.05, -1.05, 2.1, 2.1);
+      g.globalCompositeOperation = "soft-light"; g.fillStyle = `rgba(255,248,228,${(.85 * z).toFixed(3)})`; g.fillRect(-1.1, -1.1, 2.2, 2.2); g.restore(); } };
     // the finale: the pieces lift and settle in a wave from left to right, the light running along with it
     if (F >= 0) {
       const fr = E.io(seg(F, .06, .7, lin)); sheen(lerp(-1.8, 1.8, fr), .9 * V * env(F, .04, .12, .62, .8), .35);
-      for (const p of [...RAYS, ...REST]) { const w0 = .06 + (p.c[0] + 1) * .27, z = env(F, w0, w0 + .08, w0 + .1, w0 + .24, E.sine); if (z <= .01) continue;
+      for (const p of prev.pieces) { if (p.parts && p.parts.length > 3) { liftParts(p, F); continue; } /* a sheet: its parts one by one, in the wave */ const w0 = .06 + (p.c[0] + 1) * .27, z = env(F, w0, w0 + .08, w0 + .1, w0 + .24, E.sine); if (z <= .01) continue;
         const sx = cx + p.c[0] * R, sy = cy + p.c[1] * R - z * 9 * k, sc = 1 + .09 * z, w = (p.bb.x1 - p.bb.x0) * R, h = (p.bb.y1 - p.bb.y0) * R, b = 4 * k;
         g.save(); g.globalAlpha = V * z; g.translate(sx + 12 * z * k, sy + 18 * z * k); g.scale(sc, sc); g.drawImage(p.sh, (p.bb.x0 - p.c[0]) * R - 2 * b, (p.bb.y0 - p.c[1]) * R - 2 * b, w + 4 * b, h + 4 * b); g.restore();
-        g.save(); g.globalAlpha = V; g.translate(sx, sy); g.scale(sc, sc); g.translate(-p.c[0] * R, -p.c[1] * R); g.scale(R, R); g.beginPath(); for (const q of p.polys) { trace(g, q.pts); g.clip(); } g.drawImage(S.oiled, -1.05, -1.05, 2.1, 2.1);
+        g.save(); g.globalAlpha = V; g.translate(sx, sy); g.scale(sc, sc); g.translate(-p.c[0] * R, -p.c[1] * R); g.scale(R, R); g.beginPath(); if (p.polys) for (const q of p.polys) { trace(g, q.pts); g.clip(); } else { for (const q of p.parts) { q.pts.forEach(([u, v], i) => i ? g.lineTo(u, v) : g.moveTo(u, v)); g.closePath(); } g.clip(); trace(g, DISC.pts); g.clip(); } g.drawImage(prev.oiled, -1.05, -1.05, 2.1, 2.1);
         g.globalCompositeOperation = "soft-light"; g.fillStyle = `rgba(255,248,228,${(.85 * z).toFixed(3)})`; g.fillRect(-1.1, -1.1, 2.2, 2.2); g.restore(); } /* and catches the light as it rises */
     }
   }
   /** a curl of shaving from pass j: a roll lying across the band it cut, the band's colours wound round it, lit like a
    *  cylinder, and its end turned a little toward us so the spiral it's wound in shows (turning as it rolls) */
-  function curl(j, c, a) {
-    const { cx, cy, R } = S, r = Math.max(2.5, c.rc * R), h = .64 * R, src = S.shave, sp = src.width / 2.2, len = Math.PI * c.rc * 1.3;
+  function curl(j, c, a, src = S.shave) {
+    const { cx, cy, R } = S, r = Math.max(2.5, c.rc * R), h = .64 * R, sp = src.width / 2.2, len = Math.PI * c.rc * 1.3;
     let x0 = c.src; while (x0 + len > 1.08) x0 -= 2.1 - len; x0 = Math.max(-1.08, x0);
     g.save(); g.globalAlpha = a; g.translate(cx + c.x * R, cy + c.y * R - c.z * 10); g.rotate(c.yaw);
     g.fillStyle = "rgba(90,58,26,.26)"; g.beginPath(); g.ellipse(4 + c.z * 8, 5 + c.z * 10, r * 1.08, h * .53, 0, 0, TAU); g.fill();
@@ -454,8 +492,8 @@ export default function wood(K, id) {
   // ash to crumble: points along every mark, each with how far it is from the moon
   const ASHES = (() => { const r = rng(17), out = []; for (const s of SEGS) { if (s.dot) { out.push({ x: s.a[0], y: s.a[1], s: r() }); continue; } const l = Math.hypot(s.b[0] - s.a[0], s.b[1] - s.a[1]); for (let d = r() * .06; d < l; d += .06) { const f = d / l; out.push({ x: lerp(s.a[0], s.b[0], f), y: lerp(s.a[1], s.b[1], f), s: r() }); } } out.forEach(p => { p.d = Math.hypot(p.x, p.y); }); return out; })();
   /** where the pen's tip is at time t, and whether it is down */
-  const tipAt = t => {
-    const M = MARKS, [p0, p1, p2, p3] = BN.pen; if (t <= p0 || t >= p3) return null;
+  const tipAt = (t, M = MARKS) => {
+    const [p0, p1, p2, p3] = BN.pen; if (t <= p0 || t >= p3) return null;
     if (t < p1) { const q = E.out(seg(t, p0, p1, lin)), o = penOff(M[0].pts[0]); return { u: lerp(o[0], M[0].pts[0][0], q), v: lerp(o[1], M[0].pts[0][1], q), down: 0, z: 1 - q }; }
     const last = M[M.length - 1], lp = last.pts[last.pts.length - 1]; if (t > last.e) { const q = E.in(seg(t, last.e, p3, lin)), o = penOff(lp); return { u: lerp(lp[0], o[0], q), v: lerp(lp[1], o[1], q), down: 0, z: Math.min(1, q * 3) }; }
     let lo = 0, hi = M.length - 1; while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (M[mid].s <= t) lo = mid; else hi = mid - 1; }
@@ -524,17 +562,17 @@ export default function wood(K, id) {
   }
   /** heat running through the picture's lines between two radii (from the moon outward): the lines themselves red-hot,
    *  and the glow round them (only the glow, faint, for the embers' breathing at rest) */
-  function heat(rIn, rOut, amp, lines = true) {
+  function heat(rIn, rOut, amp, lines = true, pc = S) {
     if (amp <= .004 || rOut <= 0) return; const { cx, cy, R } = S, soft = .12, a = Math.max(0, rIn - soft), b = Math.max(a + .02, rOut), f = t => clamp((t - a) / (b - a));
     const mask = (c, src) => { const x = c.getContext("2d"), n = c.width, m = n / 2.1; x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = "source-over"; x.clearRect(0, 0, n, n); x.drawImage(src, 0, 0);
       x.globalCompositeOperation = "destination-in"; const q = x.createRadialGradient(n / 2, n / 2, a * m, n / 2, n / 2, b * m);
       q.addColorStop(0, rIn <= 0 ? "#000" : "rgba(0,0,0,0)"); q.addColorStop(f(rIn), "#000"); q.addColorStop(Math.max(f(rIn), f(rOut - soft)), "#000"); q.addColorStop(1, "rgba(0,0,0,0)");
       x.fillStyle = q; x.fillRect(0, 0, n, n); x.globalCompositeOperation = "source-over"; return c; };
     const X = cx - 1.05 * R, Y = cy - 1.05 * R, D = 2.1 * R, all = rIn <= 0 && rOut >= 1.15; // all of it: nothing to mask
-    g.save(); if (lines) { g.globalAlpha = clamp(amp); g.drawImage(all ? S.hotC : mask(S.tmp2, S.hotC), X, Y, D, D); }
-    g.globalCompositeOperation = "lighter"; g.globalAlpha = clamp(amp * .8); g.drawImage(all ? S.glowC : mask(S.tmp, S.glowC), X, Y, D, D); g.restore();
+    g.save(); if (lines) { g.globalAlpha = clamp(amp); g.drawImage(all ? pc.hotC : mask(S.tmp2, pc.hotC), X, Y, D, D); }
+    g.globalCompositeOperation = "lighter"; g.globalAlpha = clamp(amp * .8); g.drawImage(all ? pc.glowC : mask(S.tmp, pc.glowC), X, Y, D, D); g.restore();
   }
-  function drawNight(T, I, A, F) {
+  function drawNight(T, I, A, F, P) {
     const { W, H } = S; g.clearRect(0, 0, W, H);
     glide(A);
     // the embers in the char, breathing; never behind the words, nor under the picture
@@ -544,6 +582,7 @@ export default function wood(K, id) {
     g.restore();
     if (S.vis < .01) return;
     if (!S.RR || (Math.abs(S.R / S.RR - 1) > .08 && Math.abs(S.tR - S.R) < 2)) buildNight();
+    const pp = passOf(P), cur = pp.cur, prev = pp.prev; // what the pen burns this pass, and what it rests on
     const { cx, cy, R } = S, on = I > .01, V = S.vis, ox = cx - 1.05 * R, oy = cy - 1.05 * R, D2 = 2.1 * R;
     S.penDir = (() => { const a = Math.atan2(S.away[1], S.away[0]) - .55; return [Math.cos(a), Math.sin(a)]; })();
     const pic = (c, a) => { if (a <= .003) return; g.globalAlpha = a * V; g.drawImage(c, ox, oy, D2, D2); g.globalAlpha = 1; };
@@ -551,28 +590,28 @@ export default function wood(K, id) {
     g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = .13 * V; g.drawImage(S.moonGlow, cx - .62 * R, cy - .62 * R, 1.24 * R, 1.24 * R); g.restore();
     const [c0, c1] = BN.crumble, [p0, p1, p2, p3] = BN.pen, burnt = p2 + BN.cool, cEnd = c1 - .35;
     const phase = !on || T < BN.heat[0] || T >= burnt ? 0 : T < c1 ? 1 : T < p0 ? 2 : 3;
-    heat(0, 1.2, (.045 + .035 * Math.sin(A * .7)) * V * lerp(1, 1 - env(T, BN.heat[0] - .3, BN.heat[0], burnt - .2, burnt + 1.4, E.sine), I), false); // the picture breathing a little, as embers do
-    if (phase === 0) pic(S.full, 1);
+    heat(0, 1.2, (.045 + .035 * Math.sin(A * .7)) * V * lerp(1, 1 - env(T, BN.heat[0] - .3, BN.heat[0], burnt - .2, burnt + 1.4, E.sine), I), false, pp.P && on && T >= burnt - .2 ? cur : prev); // the picture breathing a little, as embers do
+    if (phase === 0) { if (!pp.P || !on || T < BN.heat[0]) pic(prev.full, 1); else { pic(cur.full, 1); pic(prev.full, 1 - I); } } // (burned: the new picture, the old one back as the list is used)
     else if (phase === 1) { // it glows red-hot once, from the moon outward, and crumbles to ash behind the glow
       const rc = lerp(-.05, 1.12, seg(T, c0, cEnd, lin)), rh = lerp(0, 1.35, seg(T, BN.heat[0], BN.heat[1], E.sine));
-      pic(S.full, 1 - I);
-      g.save(); g.beginPath(); g.rect(ox, oy, D2, D2); if (rc > 0) g.arc(cx, cy, rc * R, 0, TAU); g.clip("evenodd"); pic(S.full, I); g.restore();
-      heat(rc, rh, I * V * .95 * (1 - seg(T, c1 - .5, c1, lin)));
-    } else if (phase === 2) pic(S.full, 1 - I);
+      pic(prev.full, 1 - I);
+      g.save(); g.beginPath(); g.rect(ox, oy, D2, D2); if (rc > 0) g.arc(cx, cy, rc * R, 0, TAU); g.clip("evenodd"); pic(prev.full, I); g.restore();
+      heat(rc, rh, I * V * .95 * (1 - seg(T, c1 - .5, c1, lin)), true, prev);
+    } else if (phase === 2) pic(prev.full, 1 - I);
     // the ash, drifting up off the lines as the crumble passes them, and going
-    if (on && T > c0 && T < cEnd + BN.drift) { g.save(); for (const p of ASHES) { const tr = lerp(c0, cEnd, clamp((p.d + .05) / 1.17)), a = (T - tr) / BN.drift; if (a < 0 || a >= 1) continue;
+    if (on && T > c0 && T < cEnd + BN.drift) { g.save(); for (const p of prev.ASHES) { const tr = lerp(c0, cEnd, clamp((p.d + .05) / 1.17)), a = (T - tr) / BN.drift; if (a < 0 || a >= 1) continue;
       const x = cx + (p.x + Math.sin(a * 5 + p.s * 9) * .03 * a + (p.s - .5) * .08 * a) * R, y = cy + (p.y - a * (.1 + .16 * p.s) - a * a * .12) * R, hot = a < .2;
       g.globalAlpha = I * V * Math.pow(1 - a, 1.3) * (hot ? 1 : .8); g.fillStyle = hot ? "#FFB257" : rgba(ASH); const s = (1.7 - a * .9) * S.ws; g.fillRect(x - s / 2, y - s / 2, s, s); } g.restore(); }
     if (phase === 3) { // the pen burns it in again: what has cooled is ash (kept on a canvas as it comes), what is new still glows
-      pic(S.full, 1 - I);
-      const cool = T - BN.cool; if (cool < S.coldT - 1e-6) { S.coldX.save(); S.coldX.setTransform(1, 0, 0, 1, 0, 0); S.coldX.clearRect(0, 0, S.cold.width, S.cold.height); S.coldX.restore(); S.ci = 0; }
-      while (S.ci < SEGS.length && SEGS[S.ci].t1 <= cool) { const s = SEGS[S.ci++]; ink(S.coldX, s, ASH, s.al); } S.coldT = cool;
+      pic(prev.full, 1 - I);
+      const cool = T - BN.cool, SG = cur.SEGS; if (S.coldL !== SG || cool < S.coldT - 1e-6) { S.coldL = SG; S.coldX.save(); S.coldX.setTransform(1, 0, 0, 1, 0, 0); S.coldX.clearRect(0, 0, S.cold.width, S.cold.height); S.coldX.restore(); S.ci = 0; }
+      while (S.ci < SG.length && SG[S.ci].t1 <= cool) { const s = SG[S.ci++]; ink(S.coldX, s, ASH, s.al); } S.coldT = cool;
       pic(S.cold, I);
       // the hot part: segments by how long ago the tip passed, white to orange to red to ash
       g.save(); g.translate(cx, cy); g.scale(R, R); const u = S.ws / R;
       const hot = AGES.map(() => ({ l: [], d: [] })); let k2 = S.ci;
-      for (; k2 < SEGS.length && SEGS[k2].t1 <= T; k2++) { const s = SEGS[k2], age = T - s.t1; let b = 0; while (b < AGES.length - 1 && age > AGES[b]) b++; (s.dot ? hot[b].d : hot[b].l).push(s); }
-      const tp0 = tipAt(T); if (tp0 && tp0.down && k2 < SEGS.length && SEGS[k2].t0 < T && !SEGS[k2].dot) { const s = SEGS[k2]; hot[0].l.push({ a: s.a, b: [tp0.u, tp0.v], w: s.w }); }
+      for (; k2 < SG.length && SG[k2].t1 <= T; k2++) { const s = SG[k2], age = T - s.t1; let b = 0; while (b < AGES.length - 1 && age > AGES[b]) b++; (s.dot ? hot[b].d : hot[b].l).push(s); }
+      const tp0 = tipAt(T, cur.M); if (tp0 && tp0.down && k2 < SG.length && SG[k2].t0 < T && !SG[k2].dot) { const s = SG[k2]; hot[0].l.push({ a: s.a, b: [tp0.u, tp0.v], w: s.w }); }
       for (let pass = 0; pass < 2; pass++) { g.globalCompositeOperation = pass ? "source-over" : "lighter";
         hot.forEach((h, b) => { if (!h.l.length && !h.d.length) return; const col = b < HOT.length ? HOT[b] : mixc(ASH, [168, 72, 34], b === 5 ? .5 : .2), ga = GLOWA[b];
           if (!pass && ga < .05) return; g.strokeStyle = pass ? rgba(col, 1) : rgba([255, 128, 40], ga); g.fillStyle = g.strokeStyle; g.globalAlpha = I * V;
@@ -580,8 +619,8 @@ export default function wood(K, id) {
           g.beginPath(); for (const s of h.d) { g.moveTo(s.a[0] + (pass ? 1.1 : 3) * u, s.a[1]); g.arc(s.a[0], s.a[1], (pass ? 1.1 : 3) * u, 0, TAU); } g.fill(); }); }
       g.restore(); g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
       // a wisp of smoke off the tip: it leans back along the way the pen came, rising and spreading and thinning as it goes
-      const tip = tipAt(T);
-      if (tip) { const back = tipAt(T - .18) || tip, vx = tip.u - back.u, vy = tip.v - back.v, vl = Math.hypot(vx, vy) || 1, lean = Math.min(1, vl / .3), up = tip.down ? 1 : .4;
+      const tip = tipAt(T, cur.M);
+      if (tip) { const back = tipAt(T - .18, cur.M) || tip, vx = tip.u - back.u, vy = tip.v - back.v, vl = Math.hypot(vx, vy) || 1, lean = Math.min(1, vl / .3), up = tip.down ? 1 : .4;
         g.save(); g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = "rgb(214,204,194)"; const pts = [];
         for (let j = 0; j <= 24; j++) { const a = j / 24, u = tip.u - vx / vl * lean * .14 * a + (Math.sin(a * 6 - T * 3.1) * .045 + Math.sin(a * 2.3 + T * 1.2) * .03) * a, v = tip.v - a * .52 - vy / vl * lean * .06 * a; pts.push([cx + u * R, cy + v * R]); }
         for (let c = 0; c < 4; c++) { const a = (c + .5) / 4; g.globalAlpha = I * V * up * .3 * Math.pow(1 - a, 1.3) * Math.min(1, a * 5); g.lineWidth = (1.1 + a * 10) * S.ws; g.beginPath(); for (let j = c * 6; j <= c * 6 + 6; j++) j > c * 6 ? g.lineTo(pts[j][0], pts[j][1]) : g.moveTo(pts[j][0], pts[j][1]); g.stroke(); }
@@ -598,16 +637,334 @@ export default function wood(K, id) {
     }
     // the finale: the picture flares from the moon outward, sparks go up off it, and a wisp of smoke rises off the moon
     if (F >= 0) {
-      heat(lerp(-.35, 1.15, seg(F, .16, .78, E.sine)), lerp(.05, 1.35, seg(F, .03, .5, E.out)), env(F, .02, .12, .6, .9) * V * .95); // a pulse of heat out from the moon, the middle cooling first
+      heat(lerp(-.35, 1.15, seg(F, .16, .78, E.sine)), lerp(.05, 1.35, seg(F, .03, .5, E.out)), env(F, .02, .12, .6, .9) * V * .95, true, prev); // a pulse of heat out from the moon, the middle cooling first
       g.save(); g.globalCompositeOperation = "lighter"; g.fillStyle = "#FFB257";
-      for (let i = 0; i < ASHES.length; i += 7) { const p = ASHES[i], t0 = .05 + p.d * .36 + p.s * .1, a = (F - t0) / .4; if (a < 0 || a >= 1) continue; const x = cx + (p.x + (p.s - .5) * .14 * a + Math.sin(a * 7 + p.s * 20) * .02) * R, y = cy + (p.y - a * (.28 + .32 * p.s)) * R, z = (2.8 - a * 1.8) * S.ws; g.globalAlpha = V * (1 - a) * (a < .1 ? a / .1 : 1); g.fillRect(x - z / 2, y - z / 2, z, z); } // sparks off the pulse's front
+      for (let i = 0; i < prev.ASHES.length; i += 7) { const p = prev.ASHES[i], t0 = .05 + p.d * .36 + p.s * .1, a = (F - t0) / .4; if (a < 0 || a >= 1) continue; const x = cx + (p.x + (p.s - .5) * .14 * a + Math.sin(a * 7 + p.s * 20) * .02) * R, y = cy + (p.y - a * (.28 + .32 * p.s)) * R, z = (2.8 - a * 1.8) * S.ws; g.globalAlpha = V * (1 - a) * (a < .1 ? a / .1 : 1); g.fillRect(x - z / 2, y - z / 2, z, z); } // sparks off the pulse's front
       g.globalCompositeOperation = "source-over"; const wa = env(F, .15, .4, .6, 1) * V; if (wa > .01) { g.lineCap = "round"; let pr2 = null; for (let j = 0; j <= 28; j++) { const f = j / 28, x = cx + (Math.sin(f * 5 + F * 4) * .08 * f + .02) * R, y = cy - (SUN + f * .9 * seg(F, .15, .7, E.out)) * R; if (pr2) { g.globalAlpha = wa * .3 * (1 - f); g.strokeStyle = "rgb(206,196,186)"; g.lineWidth = (1.5 + f * 9) * S.ws; g.beginPath(); g.moveTo(pr2[0], pr2[1]); g.lineTo(x, y); g.stroke(); } pr2 = [x, y]; } }
       g.restore();
     }
   }
 
+  /* ---------------- the forever cycle: the pictures after the country ----------------
+     Each is drawn once in the medallion's units (its radius 1, the inlay inside RI), both ways: as the pieces the day cuts
+     from its veneers (a piece is its parts, each part its wood and the way its grain runs, laid one piece after another)
+     and as the marks the night's pen burns (lines, hatching along the lie of each face, stippling, dots, in the pen's
+     order). A pass deals which picture, and, where it can, which way round it faces. */
+  const dirA = (a, r) => [Math.cos(a) * r, Math.sin(a) * r], mid2 = (p, q, t) => [lerp(p[0], q[0], t), lerp(p[1], q[1], t)];
+  const arcPts = (cx, cy, r, a0, a1, n = 40) => Array.from({ length: n + 1 }, (_, i) => { const a = lerp(a0, a1, i / n); return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; });
+  const ellPts = (cx, cy, rx, ry, rot = 0, n = 48) => Array.from({ length: n }, (_, i) => { const a = i / n * TAU, x = Math.cos(a) * rx, y = Math.sin(a) * ry; return [cx + x * Math.cos(rot) - y * Math.sin(rot), cy + x * Math.sin(rot) + y * Math.cos(rot)]; });
+  const bez = (p0, p1, p2, p3, n = 16) => Array.from({ length: n + 1 }, (_, i) => { const t = i / n, s = 1 - t; return [0, 1].map(j => s * s * s * p0[j] + 3 * s * s * t * p1[j] + 3 * s * t * t * p2[j] + t * t * t * p3[j]); });
+  const waveY = (x0, x1, y, amp, k, ph = 0, n = 48) => Array.from({ length: n + 1 }, (_, i) => { const x = lerp(x0, x1, i / n); return [x, y + Math.sin(x * k + ph) * amp]; });
+  const between = (top, bot) => [...top, ...bot.slice().reverse()]; /* the region between two lines drawn left to right */
+  /** lines across a region at an angle, `gap` apart, ends a little ragged, every other one the other way (the pen's own
+   *  back and forth) */
+  const hatchSegs = (inside, ang, gap, r, lo = -1.2, hi = 1.2) => { const out = [], ux = Math.cos(ang), uy = Math.sin(ang), bb = inside.bb; let flip = false, t0 = -1.25, t1 = 1.25;
+    if (bb) { const cs = [[bb[0], bb[1]], [bb[2], bb[1]], [bb[0], bb[3]], [bb[2], bb[3]]], os = cs.map(([x, y]) => -uy * x + ux * y), ts = cs.map(([x, y]) => ux * x + uy * y); lo = Math.max(lo, Math.min(...os) - gap); hi = Math.min(hi, Math.max(...os) + gap); t0 = Math.min(...ts) - .01; t1 = Math.max(...ts) + .01; lo = Math.floor(lo / gap) * gap; } /* only across the shape's own box */
+    for (let o = lo; o <= hi; o += gap) { let run = null; const done = () => { if (run && Math.hypot(run[1][0] - run[0][0], run[1][1] - run[0][1]) > .025) { const a = r() * .12, b = r() * .12, p0 = mid2(run[0], run[1], a), p1 = mid2(run[1], run[0], b); out.push(flip ? [p1, p0] : [p0, p1]); flip = !flip; } run = null; };
+      for (let t = t0; t <= t1; t += .007) { const x = -uy * o + ux * t, y = ux * o + uy * t; if (inside(x, y)) { if (!run) run = [[x, y], [x, y]]; else run[1] = [x, y]; } else done(); } done(); }
+    return out; };
+  /** the ring every picture sits in, burned the same as the country's: its rims and its row of dots */
+  const ringMarks = (Ln, D) => { const circle = (rr, a0, dir, n) => Array.from({ length: n + 1 }, (_, i) => { const a = a0 + dir * i / n * TAU; return [Math.cos(a) * rr, Math.sin(a) * rr]; });
+    Ln(circle(.985, -.6, -1, 96), 2.6, 1, 1.9); Ln(circle(RI, -.6, 1, 90), 1.6, .85, 1.9); for (let i = 0; i < 60; i++) { const a = -.6 + i / 60 * TAU; D([Math.cos(a) * .943, Math.sin(a) * .943], 1.6, .8); } };
+  const inPts = pts => { const t = pIn(pts); let a = 9, b = 9, c = -9, d = -9; for (const [x, y] of pts) { a = Math.min(a, x); b = Math.min(b, y); c = Math.max(c, x); d = Math.max(d, y); } const f = (x, y) => x >= a && x <= c && y >= b && y <= d && x * x + y * y < .86 * .86 && t(x, y); f.bb = [a, b, c, d]; return f; };
+
+  /** the compass rose: sixteen wedges of ground in two woods, a band of ebony, the four long points and the four short,
+   *  each point halved light and dark as the light falls on it, a boss in the middle */
+  const COMPASS = () => {
+    const pieces = [], M = [], r = rng(211), Ln = (pts, w, a, v = 1) => { if (pts.length > 1) M.push({ pts, w, a, v }); }, D = (p, w, a) => M.push({ pts: [p], w, a, dot: true });
+    const lay = (parts, t0, dur = .5) => pieces.push({ parts, t0, t1: t0 + dur });
+    const ground = []; for (let i = 0; i < 16; i++) { const a0 = -Math.PI / 2 - Math.PI / 16 + i * Math.PI / 8, a1 = a0 + Math.PI / 8; ground.push({ wood: i % 2 ? "maple" : "satin", pts: [[0, 0], ...arcPts(0, 0, 1.02, a0, a1, 10)], grain: (a0 + a1) / 2 }); }
+    lay(ground, 4.55, .7);
+    lay([{ wood: "walnut", pts: [...arcPts(0, 0, .655, 0, TAU, 80), ...arcPts(0, 0, .625, TAU, 0, 80)], grain: 0 }], 5.35, .5);
+    const main = [0, 1, 2, 3].map(k => -Math.PI / 2 + k * Math.PI / 2), T = main.map(a => dirA(a, .86)), V = main.map(a => dirA(a + Math.PI / 4, .19));
+    const inter = main.map((a, k) => ({ a: a + Math.PI / 4, v: V[k], t: dirA(a + Math.PI / 4, .6), e1: mid2(V[k], T[k], .2), e2: mid2(V[k], T[(k + 1) % 4], .2) }));
+    inter.forEach(({ a, v, t, e1, e2 }, k) => lay([{ wood: "cherry", pts: [v, e1, t], grain: a }, { wood: "maple", pts: [v, t, e2], grain: a }], 5.95 + k * .17, .45));
+    main.forEach((a, k) => lay([{ wood: "holly", pts: [[0, 0], V[(k + 3) % 4], T[k]], grain: a }, { wood: "walnut", pts: [[0, 0], T[k], V[k]], grain: a }], 6.75 + k * .2, .5));
+    lay([{ wood: "padauk", pts: ellPts(0, 0, .085, .085, 0, 32), grain: .3 }, { wood: "holly", pts: ellPts(0, 0, .032, .032, 0, 16), grain: 0 }], 7.85, .45);
+    if (!night) return { pieces, M, mir: false }; /* (the day wants only the pieces, the night only the marks) */
+    // by night: the ring; the band, ruled round and ticked across; the ground's joins; the star, its middles, its dark
+    // halves hatched along the point; the short points; the boss stippled; the maple's figure in dots
+    ringMarks(Ln, D);
+    const circ2 = (rr, n) => Array.from({ length: n + 1 }, (_, i) => dirA(-Math.PI / 2 + i / n * TAU, rr));
+    Ln(circ2(.655, 80), 1.4, .95); Ln(circ2(.625, 76), 1.4, .95);
+    for (let i = 0; i < 72; i++) { const a = i / 72 * TAU; Ln([dirA(a, .625), dirA(a + .03, .66)], 1, .75, 1.6); }
+    for (let i = 0; i < 16; i++) { const a = -Math.PI / 2 - Math.PI / 16 + i * Math.PI / 8; Ln([dirA(a, .69), dirA(a, .88)], 1.2, .8); }
+    const star = []; for (let k = 0; k < 4; k++) star.push(T[k], V[k]); star.push(T[0]); Ln(star, 2, 1);
+    for (let k = 0; k < 4; k++) Ln([[0, 0], T[k]], 1.2, .85);
+    inter.forEach(({ v, t, e1, e2 }) => { Ln([e1, t, e2], 1.6, .95); Ln([v, t], 1.1, .8); });
+    main.forEach((a, k) => hatchSegs(inPts([[0, 0], T[k], V[k]]), a, .026, r).forEach(s => Ln(s, 1.1, .75, 1.5)));
+    inter.forEach(({ a, v, t, e1 }) => hatchSegs(inPts([v, e1, t]), a, .03, r).forEach(s => Ln(s, 1, .7, 1.5)));
+    Ln(ellPts(0, 0, .085, .085, 0, 30).concat([[.085, 0]]), 1.4, .95);
+    for (let i = 0; i < 14; i++) { const a = r() * TAU, d = Math.sqrt(r()) * .07; D(dirA(a, d), 1.1, .9); }
+    for (let i = 1; i < 16; i += 2) { const a0 = -Math.PI / 2 - Math.PI / 16 + i * Math.PI / 8; for (let j = 0; j < 7; j++) D(dirA(a0 + (.15 + r() * .7) * Math.PI / 8, .7 + r() * .16), 1 + r() * .5, .55); }
+    return { pieces, M, mir: false };
+  };
+  /** the pen's helpers for a picture: lines and dots in its order, outlines of its pieces' parts, hatching in them */
+  const penOf = seed => { const M = [], r = rng(seed), Ln = (pts, w = 1.2, a = .9, v = 1) => { if (pts.length > 1) M.push({ pts, w, a, v }); }, D = (p, w = 1.1, a = .8) => M.push({ pts: [p], w, a, dot: true });
+    const outline = (pts, w = 1.6, a = .95) => Ln([...pts, pts[0]].map(([x, y]) => { const d = Math.hypot(x, y); return d > .875 ? [x * .875 / d, y * .875 / d] : [x, y]; }), w, a);
+    const hatch = (pts, ang, gap, w = 1.1, a = .72) => hatchSegs(inPts(pts), ang, gap, r).forEach(s => Ln(s, w, a, 1.5));
+    const stipple = (pts, n, w = 1.1) => { const t = inPts(pts); let x0 = 9, y0 = 9, x1 = -9, y1 = -9; for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); } const got = []; for (let k = 0; k < n * 40 && got.length < n; k++) { const x = lerp(x0, x1, r()), y = lerp(y0, y1, r()); if (!t(x, y) || got.some(q => Math.hypot(q[0] - x, q[1] - y) < .022)) continue; got.push([x, y]); } got.sort((p, q) => Math.round(p[1] / .04) - Math.round(q[1] / .04) || p[0] - q[0]).forEach(p => D(p, w + r() * .5, .85)); };
+    const stars = (n, inside) => { const got = []; for (let k = 0; k < 2000 && got.length < n; k++) { const x = (r() - .5) * 1.7, y = (r() - .5) * 1.7; if (x * x + y * y > .78 * .78 || !inside(x, y) || got.some(q => Math.hypot(q[0] - x, q[1] - y) < .12)) continue; got.push([x, y]); } got.sort((a, b) => Math.atan2(a[1], a[0]) - Math.atan2(b[1], b[0])).forEach((p, i) => { if (i % 4 === 1) { Ln([[p[0] - .022, p[1]], [p[0] + .022, p[1]]], 1, .9, 1.4); Ln([[p[0], p[1] - .022], [p[0], p[1] + .022]], 1, .9, 1.4); } else D(p, 1 + r() * .7, .55 + r() * .4); }); };
+    const bird = (x, y, s) => Ln([[x - s, y - s * .35], [x - s * .45, y - s * .6], [x, y], [x + s * .45, y - s * .6], [x + s, y - s * .35]], 1.2, .9, 1.2);
+    return { M, r, Ln, D, outline, hatch, stipple, stars, bird }; };
+  const sea = (y, amp, k, ph) => waveY(-1.05, 1.05, y, amp, k, ph, 60);
+
+  /** a schooner under sail on an evening sea: the sky in three veneers, the sun going down, its road on the water, the
+   *  hull in walnut with a line of holly, the masts, the sails in holly and maple bellied by the wind, a pennant; by night
+   *  its lines, its sails shaded, the waves, gulls and stars */
+  const SHIP = (mir) => {
+    const pieces = [], lay = (parts, t0, dur = .5) => pieces.push({ parts, t0, t1: t0 + dur });
+    const b1 = waveY(-1.05, 1.05, -.4, .025, 3.1, .4), b2 = waveY(-1.05, 1.05, -.06, .02, 4.2, 1.3), HZN = [[-1.05, .2], [1.05, .2]];
+    const top = [[-1.05, -1.05], [1.05, -1.05]];
+    const SK = mir ? ["blue", "sky", "satin"] : ["sky", "maple", "satin"]; /* the other way round, a later hour */
+    lay([{ wood: SK[0], pts: between(top, b1), grain: 0 }, { wood: SK[1], pts: between(b1, b2), grain: 0 }, { wood: SK[2], pts: between(b2, HZN), grain: 0 }], 4.5, .65); /* the sky, as one sheet */
+    const sunC = [-.42, .2], sunP = arcPts(sunC[0], sunC[1], .26, Math.PI, TAU, 36);
+    lay([{ wood: "padauk", pts: sunP, grain: .3 }], 5.2, .45);
+    const s1 = sea(.36, .018, 9, .3), s2 = sea(.55, .02, 8, 1.1), bot = [[-1.05, 1.05], [1.05, 1.05]];
+    lay([{ wood: "blue", pts: between(HZN, s1), grain: 0 }], 5.55, .5);
+    const road = []; for (let i = 0; i <= 5; i++) { const y = .205 + i * .036, w = .04 + i * .009 + (i % 2 ? .014 : 0); road.push([sunC[0] - w, y]); } for (let i = 5; i >= 0; i--) { const y = .205 + i * .036, w = .04 + i * .009 + (i % 2 ? .014 : 0); road.push([sunC[0] + w * (i % 2 ? .8 : 1.1), y]); }
+    lay([{ wood: "satin", pts: road, grain: 0 }], 5.9, .4);
+    lay([{ wood: "navy", pts: between(s1, s2), grain: 0 }, { wood: "blue", pts: between(s2, bot), grain: 0 }], 6.15, .5);
+    const hull = [[-.4, .11], ...bez([-.4, .11], [-.1, .17], [.25, .17], [.6, .08], 12).slice(1), [.64, .075], ...bez([.64, .075], [.58, .22], [.46, .32], [.24, .35], 10).slice(1), [-.12, .355], [-.32, .31], [-.41, .22]];
+    const stripe = [...bez([-.395, .15], [-.1, .2], [.25, .2], [.595, .115], 12), ...bez([.6, .145], [.25, .228], [-.1, .228], [-.39, .18], 12)];
+    lay([{ wood: "walnut", pts: hull, grain: -.05 }, { wood: "holly", pts: stripe, grain: -.05 }], 6.6, .55);
+    const mast = (x, y0, y1, w) => [[x - w, y1], [x + w, y1], [x + w * 1.2, y0], [x - w * 1.2, y0]];
+    lay([{ wood: "ebony", pts: mast(-.05, .16, -.74, .016), grain: Math.PI / 2 }, { wood: "ebony", pts: mast(.26, .15, -.64, .015), grain: Math.PI / 2 }, { wood: "ebony", pts: [[.56, .1], [.84, .005], [.845, .02], [.57, .125]], grain: -.32 }], 7.0, .45);
+    const MS = [[-.075, -.68], [-.36, -.52], [-.42, .06], [-.075, .08]], FS = [[.235, -.6], [.03, -.46], [-.02, .06], [.235, .075]], JB = [[.29, -.58], [.79, .03], [.3, .07]];
+    const belly = (q, k) => { const [a, b, c, dd] = q; return [[a, ...bez(a, mid2(a, b, .3), mid2(b, c, .1), b, 6).slice(1), ...bez(b, [lerp(b[0], c[0], .5) - .05 * k, lerp(b[1], c[1], .5)], [lerp(b[0], c[0], .8) - .03 * k, lerp(b[1], c[1], .8)], c, 10).slice(1), dd], [a, dd]]; };
+    const [msO] = belly(MS, 1), [fsO] = belly(FS, 1);
+    const cut = (pts, a, b) => { const ax = a[0], ay = a[1], bx = b[0], by = b[1], side = ([x, y]) => (bx - ax) * (y - ay) - (by - ay) * (x - ax); const L2 = [], R2 = []; for (let i = 0; i < pts.length; i++) { const p = pts[i], q = pts[(i + 1) % pts.length], sp = side(p), sq = side(q); (sp >= 0 ? L2 : R2).push(p); if ((sp >= 0) !== (sq >= 0)) { const t = sp / (sp - sq), x = [lerp(p[0], q[0], t), lerp(p[1], q[1], t)]; L2.push(x); R2.push(x); } } return [L2, R2]; };
+    for (const [o, t0] of [[msO, 7.4], [fsO, 7.75]]) { const [l, rr] = cut(o, o[0], mid2(o[Math.floor(o.length / 2)], o[o.length - 1], .5)); lay([{ wood: "holly", pts: l, grain: -1.3 }, { wood: "maple", pts: rr, grain: -1.3 }], t0, .5); }
+    { const [l, rr] = cut(JB, JB[0], mid2(JB[1], JB[2], .5)); lay([{ wood: "holly", pts: l, grain: -.9 }, { wood: "maple", pts: rr, grain: -.9 }], 8.1, .45); }
+    lay([{ wood: "padauk", pts: [[-.06, -.8], [.12, -.76], [-.06, -.72]], grain: 0 }], 8.45, .35);
+    lay([{ wood: "blue", pts: between(waveY(-.47, .72, .305, .012, 16, .7, 30), waveY(-.47, .72, .37, .01, 13, .2, 30)), grain: 0 }], 8.6, .45); /* the water over her waterline */
+    if (!night) return { pieces, M: [], mir: true };
+    // by night
+    const pn = penOf(311), { Ln, D, outline, hatch, stipple, stars, bird } = pn;
+    ringMarks(Ln, D);
+    Ln([[-.86, .2], [sunC[0] - .27, .2]], 1.4, .9); Ln([[sunC[0] + .27, .2], [-.41, .2]], 1.4, .9); Ln([[.66, .2], [.86, .2]], 1.4, .9);
+    Ln(sunP.slice(2, -2), 2, 1); stipple(sunP, 60);
+    outline(hull, 1.8); Ln(stripe.slice(0, 13), 1.1, .85); hatch(hull, -.05, .03, 1.1, .75);
+    Ln([[-.05, .15], [-.05, -.74]], 1.6, .95); Ln([[.26, .14], [.26, -.64]], 1.5, .95); Ln([[.57, .11], [.84, .01]], 1.3, .9);
+    for (const o of [msO, fsO, JB]) outline(o, 1.4, .95);
+    hatch(cut(msO, msO[0], mid2(msO[Math.floor(msO.length / 2)], msO[msO.length - 1], .5))[1], -1.3, .05, 1, .6); hatch(cut(fsO, fsO[0], mid2(fsO[Math.floor(fsO.length / 2)], fsO[fsO.length - 1], .5))[1], -1.3, .05, 1, .6);
+    Ln([[-.06, -.8], [.12, -.76], [-.06, -.72]], 1.2, .9);
+    for (let i = 0; i < 10; i++) { const y = .22 + i * .044, w = .045 + i * .012; Ln([[sunC[0] - w, y], [sunC[0] + w, y]], 1.2, .95, 1.3); }
+    for (const [y0, n] of [[.3, 5], [.4, 6], [.5, 6], [.6, 5], [.7, 4]]) for (let i = 0; i < n; i++) { const x = -.78 + (i + (y0 * 10 % 2) * .5) * 1.5 / n, l = .09; if (Math.abs(x - sunC[0]) < .12 || (x > -.45 && x < .66 && y0 < .36)) continue; Ln(waveY(x, x + l, y0, .008, 60, 0, 6), 1, .7, 1.3); }
+    const inSail = [msO, fsO, JB].map(pIn); stars(12, (x, y) => y < -.08 && !inSail.some(t => t(x, y) || t(x + .05, y) || t(x - .05, y) || t(x, y + .05)) && Math.abs(x + .06) > .06 && Math.abs(x - .26) > .06); bird(.58, -.48, .04); bird(.7, -.58, .03);
+    return { pieces, M: pn.M, mir: true };
+  };
+
+  /** a lighthouse on its rock at dusk, its two beams across the sky, the sea round the rock; by night its beams burned
+   *  out to the rim, the tower's bands, the rock hatched, the waves, stars */
+  const LIGHT = (mir) => {
+    const pieces = [], lay = (parts, t0, dur = .5) => pieces.push({ parts, t0, t1: t0 + dur });
+    const lamp = [.14, -.37], HZN = [[-1.05, .26], [1.05, .26]], top = [[-1.05, -1.05], [1.05, -1.05]], b1 = waveY(-1.05, 1.05, -.2, .02, 3.3, .8);
+    lay([{ wood: "blue", pts: between(top, b1), grain: 0 }, { wood: "sky", pts: between(b1, HZN), grain: 0 }], 4.5, .65);
+    const beam = (a, w) => [lamp, ...arcPts(lamp[0], lamp[1], 1.6, a - w, a + w, 8)];
+    lay([{ wood: "satin", pts: beam(Math.PI + .12, .085), grain: Math.PI + .12 }, { wood: "satin", pts: beam(-.1, .075), grain: -.1 }], 5.15, .5);
+    const s1 = sea(.4, .016, 10, .2), bot = [[-1.05, 1.05], [1.05, 1.05]];
+    lay([{ wood: "navy", pts: between(HZN, s1), grain: 0 }, { wood: "blue", pts: between(s1, bot), grain: 0 }], 5.6, .55);
+    const rock = [[-.3, .5], [-.22, .3], [-.1, .19], [.04, .16], [.2, .15], [.34, .2], [.44, .31], [.52, .5], [.3, .56], [0, .57]], rock2 = [[.2, .15], [.34, .2], [.44, .31], [.52, .5], [.36, .52], [.3, .36]];
+    lay([{ wood: "walnut", pts: rock, grain: .4 }, { wood: "ebony", pts: rock2, grain: .9 }], 6.1, .5);
+    const tw = (y) => lerp(.074, .128, (y + .3) / .5), band = (ya, yb) => [[lamp[0] - tw(ya), ya], [lamp[0] + tw(ya), ya], [lamp[0] + tw(yb), yb], [lamp[0] - tw(yb), yb]];
+    const ys = [-.3, -.175, -.05, .075, .2];
+    lay(ys.slice(0, 4).map((y, i) => ({ wood: i % 2 ? (mir ? "cherry" : "padauk") : "holly", pts: band(y, ys[i + 1]), grain: Math.PI / 2 })), 6.6, .55);
+    lay([{ wood: "ebony", pts: [[lamp[0] - .11, -.33], [lamp[0] + .11, -.33], [lamp[0] + .11, -.3], [lamp[0] - .11, -.3]], grain: 0 }, { wood: "satin", pts: [[lamp[0] - .058, -.44], [lamp[0] + .058, -.44], [lamp[0] + .058, -.33], [lamp[0] - .058, -.33]], grain: Math.PI / 2 }, { wood: "ebony", pts: [[lamp[0] - .085, -.44], [lamp[0] - .055, -.49], [lamp[0], -.56], [lamp[0] + .055, -.49], [lamp[0] + .085, -.44]], grain: 0 }], 7.15, .5);
+    lay([{ wood: "ebony", pts: [[lamp[0] - .03, .2], [lamp[0] - .03, .14], ...arcPts(lamp[0], .14, .03, Math.PI, TAU, 6).slice(1, -1), [lamp[0] + .03, .14], [lamp[0] + .03, .2]], grain: Math.PI / 2 }], 7.6, .35);
+    if (!night) return { pieces, M: [], mir: true };
+    // by night
+    const pn = penOf(411), { Ln, D, outline, hatch, stipple, stars, bird } = pn;
+    ringMarks(Ln, D);
+    for (const [a, w] of [[Math.PI + .12, .085], [-.1, .075]]) for (const o of [-w, 0, w]) Ln([dirA(a + o, .1).map((v, i) => v + lamp[i]), dirA(a + o, 1.2).map((v, i) => v + lamp[i])].map(([x, y]) => { const d = Math.hypot(x, y); return d > .87 ? [x * .87 / d, y * .87 / d] : [x, y]; }), o ? 1 : 1.3, o ? .7 : .95, o ? 1.2 : 1.5);
+    Ln([[-.86, .26], [-.27, .26]], 1.3, .9); Ln([[.5, .26], [.86, .26]], 1.3, .9);
+    outline(rock, 1.8); hatch(rock, .4, .035); hatch(rock2, .9, .02, 1.1, .85);
+    outline([[lamp[0] - tw(-.3), -.3], [lamp[0] + tw(-.3), -.3], [lamp[0] + tw(.2), .2], [lamp[0] - tw(.2), .2]], 1.8);
+    for (const i of [1, 3]) hatch(band(ys[i], ys[i + 1]), Math.PI / 2 + .02, .018, 1, .8);
+    outline([[lamp[0] - .11, -.33], [lamp[0] + .11, -.33], [lamp[0] + .11, -.3], [lamp[0] - .11, -.3]], 1.3); outline([[lamp[0] - .058, -.44], [lamp[0] + .058, -.44], [lamp[0] + .058, -.33], [lamp[0] - .058, -.33]], 1.3);
+    stipple([[lamp[0] - .05, -.43], [lamp[0] + .05, -.43], [lamp[0] + .05, -.34], [lamp[0] - .05, -.34]], 10); Ln([[lamp[0] - .085, -.44], [lamp[0] - .055, -.49], [lamp[0], -.56], [lamp[0] + .055, -.49], [lamp[0] + .085, -.44]], 1.5, .95);
+    for (const [y0, n] of [[.33, 6], [.45, 7], [.58, 6], [.7, 4]]) for (let i = 0; i < n; i++) { const x = -.8 + (i + (y0 * 10 % 2) * .5) * 1.6 / n; if (y0 < .6 && x > -.35 && x < .55) continue; Ln(waveY(x, x + .08, y0, .008, 60, 0, 6), 1, .7, 1.3); }
+    stars(14, (x, y) => y < .1 && Math.abs(Math.atan2(y - lamp[1], x - lamp[0]) - (Math.PI + .12)) > .2 && Math.abs(Math.atan2(y - lamp[1], x - lamp[0]) + .1) > .2 && Math.abs(x - lamp[0]) > .16);
+    bird(-.38, -.5, .045); bird(-.5, -.38, .032);
+    return { pieces, M: pn.M, mir: true };
+  };
+
+  /** a robin on a branch before the moon: a dusk sky in two blues, the full moon in holly, the branch in walnut with its
+   *  leaves in two greens and its berries; the bird in walnut, cherry and padauk. By night its outlines, the wing's
+   *  feathers, the breast stippled, the moon's rim and its face, stars */
+  const BIRD = (mir) => {
+    const pieces = [], lay = (parts, t0, dur = .5) => pieces.push({ parts, t0, t1: t0 + dur });
+    const top = [[-1.05, -1.05], [1.05, -1.05]], b1 = waveY(-1.05, 1.05, .05, .02, 3, .3), bot = [[-1.05, 1.05], [1.05, 1.05]];
+    lay([{ wood: "blue", pts: between(top, b1), grain: 0 }, { wood: "sky", pts: between(b1, bot), grain: 0 }], 4.5, .65);
+    const moon = ellPts(.2, -.2, .44, .44, 0, 72); lay([{ wood: mir ? "maple" : "holly", pts: moon, grain: .5 }], 5.15, .5); /* the other way round, a harvest moon */
+    const br = t => [lerp(-1.05, 1.05, t), lerp(.52, .06, t) + Math.sin(t * 5.5) * .035], bw = t => lerp(.075, .03, t);
+    const brPts = []; for (let i = 0; i <= 24; i++) { const t = i / 24, [x, y] = br(t); brPts.push([x, y - bw(t)]); } for (let i = 24; i >= 0; i--) { const t = i / 24, [x, y] = br(t); brPts.push([x, y + bw(t)]); }
+    const tw0 = br(.66), twig = [[tw0[0] - .025, tw0[1]], [tw0[0] + .15, tw0[1] - .16], [tw0[0] + .3, tw0[1] - .28], [tw0[0] + .31, tw0[1] - .26], [tw0[0] + .17, tw0[1] - .13], [tw0[0] + .03, tw0[1] + .01]];
+    lay([{ wood: "walnut", pts: brPts, grain: -.22 }, { wood: "walnut", pts: twig, grain: -.8 }], 5.6, .55);
+    const leaf = (x, y, a, l, w) => { const tip = [x + Math.cos(a) * l, y + Math.sin(a) * l], m = mid2([x, y], tip, .45), n = [-Math.sin(a) * w, Math.cos(a) * w]; return [bez([x, y], [m[0] + n[0], m[1] + n[1]], [tip[0] + n[0] * .3, tip[1] + n[1] * .3], tip, 8), bez([x, y], [m[0] - n[0], m[1] - n[1]], [tip[0] - n[0] * .3, tip[1] - n[1] * .3], tip, 8)]; };
+    const LV = [[br(.2), -1.9, .26, .09], [br(.3), .9, .22, .08], [br(.52), -1.3, .25, .085], [br(.78), .6, .23, .08], [[tw0[0] + .3, tw0[1] - .27], -.6, .2, .07], [[tw0[0] + .16, tw0[1] - .14], -2, .18, .065]];
+    LV.forEach(([p, a, l, w], i) => { const [s1, s2] = leaf(p[0], p[1], a, l, w); lay([{ wood: "green", pts: [...s1, p], grain: a }, { wood: "olive", pts: [...s2, p], grain: a }], 6.1 + i * .12, .4); }); /* each leaf in two greens either side of its middle */
+    const BE = [br(.4), br(.43), br(.415)].map((p, i) => [p[0] + (i - 1) * .05, p[1] + .1 + (i % 2) * .04]); lay(BE.map(p => ({ wood: "padauk", pts: ellPts(p[0], p[1], .03, .03, 0, 16), grain: 0 })), 6.9, .35);
+    // the robin, perched on the branch a third of the way along
+    const perch = br(.4), bx = perch[0] - .02, by = perch[1] - .2;
+    const body = ellPts(bx, by, .2, .145, -.3, 40), head = ellPts(bx + .19, by - .15, .1, .095, 0, 30), breast = ellPts(bx + .07, by + .03, .15, .11, -.5, 30);
+    const tail = [[bx - .15, by - .02], [bx - .38, by + .14], [bx - .42, by + .1], [bx - .35, by + .04], [bx - .17, by - .07]];
+    const wing = [...bez([bx - .12, by - .07], [bx - .02, by - .13], [bx + .1, by - .08], [bx + .08, by], 8), ...bez([bx + .08, by], [bx, by + .06], [bx - .12, by + .06], [bx - .25, by + .06], 8).slice(1)];
+    lay([{ wood: "walnut", pts: tail, grain: .5 }], 7.2, .4);
+    lay([{ wood: "teak", pts: body, grain: -.3 }, { wood: "padauk", pts: breast, grain: -.5 }], 7.5, .5);
+    lay([{ wood: "walnut", pts: wing, grain: -.2 }], 7.9, .4);
+    lay([{ wood: "teak", pts: head, grain: 0 }, { wood: "padauk", pts: ellPts(bx + .16, by - .09, .07, .05, .3, 20), grain: 0 }, { wood: "satin", pts: [[bx + .27, by - .17], [bx + .36, by - .145], [bx + .27, by - .12]], grain: 0 }, { wood: "ebony", pts: ellPts(bx + .22, by - .17, .018, .018, 0, 12), grain: 0 }], 8.2, .45);
+    lay([{ wood: "ebony", pts: [[bx - .015, by + .13], [bx + .005, by + .13], [bx + .01, perch[1] - .06], [bx - .01, perch[1] - .06]], grain: Math.PI / 2 }, { wood: "ebony", pts: [[bx + .05, by + .12], [bx + .07, by + .12], [bx + .075, perch[1] - .06], [bx + .055, perch[1] - .06]], grain: Math.PI / 2 }], 8.6, .35);
+    if (!night) return { pieces, M: [], mir: true };
+    // by night
+    const pn = penOf(511), { Ln, D, outline, hatch, stipple, stars } = pn;
+    ringMarks(Ln, D);
+    Ln(arcPts(.2, -.2, .44, -2.4, 1.75, 50), 1.8, 1); { const mn = noise1(55, 32), got = []; for (let k = 0; k < 6000 && got.length < 95; k++) { const a = pn.r() * TAU, d = Math.sqrt(pn.r()) * .41, x = .2 + Math.cos(a) * d, y = -.2 + Math.sin(a) * d; if (fbm(mn, x * 5 + y * 3.7 + 9, 2) < .46 && pn.r() < .72) continue; if (got.some(q => Math.hypot(q[0] - x, q[1] - y) < .026)) continue; if (y > -.02 + (x + .6) * -.05 && x < .45) continue; got.push([x, y]); } got.sort((p, q) => Math.round(p[1] / .04) - Math.round(q[1] / .04) || p[0] - q[0]).forEach(p => D(p, 1.1 + pn.r() * .5, .9)); } /* the moon's face, as the country's */
+    outline(brPts, 1.7); hatch(brPts, -.22, .03, 1, .7); outline(twig, 1.4);
+    LV.forEach(([p, a, l, w]) => { const [s1, s2] = leaf(p[0], p[1], a, l, w); Ln(s1, 1.3, .95); Ln(s2, 1.3, .95); Ln([p, [p[0] + Math.cos(a) * l * .95, p[1] + Math.sin(a) * l * .95]], 1, .8); });
+    BE.forEach(p => { Ln(ellPts(p[0], p[1], .03, .03, 0, 12).concat([[p[0] + .03, p[1]]]), 1.2, .95); D(p, 1.4, .9); });
+    outline(tail, 1.5); hatch(tail, .5, .025, 1, .75);
+    outline(body, 1.8); outline(head, 1.6); stipple(breast, 30); outline(wing, 1.5); for (let i = 0; i < 4; i++) { const t = .25 + i * .18; Ln([mid2([bx - .12, by - .05], [bx + .06, by - .02], t), mid2([bx - .25, by + .05], [bx - .02, by + .05], t)], 1, .75, 1.3); }
+    Ln([[bx + .27, by - .17], [bx + .36, by - .145], [bx + .27, by - .12]], 1.3, .95); D([bx + .22, by - .17], 2.2, 1);
+    Ln([[bx - .005, by + .13], [bx, perch[1] - .06]], 1.3, .95); Ln([[bx + .06, by + .12], [bx + .065, perch[1] - .06]], 1.3, .95);
+    stars(12, (x, y) => Math.hypot(x - .2, y + .2) > .52 && y < .3 && Math.hypot(x - bx, y - by) > .45);
+    return { pieces, M: pn.M, mir: true };
+  };
+
+  /** an oak leaf in autumn on a parquet ground: its lobes cut along the veins, each lobe its own wood, and an acorn; by
+   *  night the leaf's outline and its veins, alternate lobes hatched, the acorn's cup crossed, the ground's lattice faint */
+  const LEAF = (mir) => {
+    const pieces = [], lay = (parts, t0, dur = .5) => pieces.push({ parts, t0, t1: t0 + dur });
+    const ground = []; const q2 = .26; for (let i = -5; i <= 5; i++) for (let j = -5; j <= 5; j++) { const cx = (i + j) * q2 / 2 * 1.414, cy = (j - i) * q2 / 2 * 1.414; if (Math.hypot(cx, cy) > 1.2) continue; const h = q2 * .707; ground.push({ wood: (i + j) % 2 ? "maple" : "holly", pts: [[cx, cy - h], [cx + h, cy], [cx, cy + h], [cx - h, cy]], grain: (i + j) % 2 ? Math.PI / 4 : -Math.PI / 4 }); }
+    lay(ground, 4.5, .7);
+    // the leaf: along a midrib from the stem (lower left) to the tip (upper right), seven lobes, cut along the veins
+    const A = -.74, ux = Math.cos(A), uy = Math.sin(A), nx = -uy, ny = ux, base = [-.5, .5], len = 1.28, at = (s, o) => [base[0] + ux * s * len + nx * o, base[1] + uy * s * len + ny * o];
+    const halfW = s => (.13 + .2 * Math.sin(Math.PI * Math.min(1, s * 1.05))) * (s < .08 ? s / .08 : 1), lobes = [.14, .33, .52, .71, .9];
+    const edge = sd => { const pts = []; for (let i = 0; i <= 120; i++) { const s = i / 120, lobe = Math.pow(Math.abs(Math.sin((s - .04) * Math.PI * 5.2)), .7), w = halfW(s) * (.55 + .45 * lobe) * (1 - Math.pow(s, 6)); pts.push(at(s, sd * w)); } return pts; };
+    const L1 = edge(1), R1 = edge(-1), cuts = [0, .23, .42, .6, .79, 1]; /* cut at the sinuses between the lobes */
+    const WL = ["rust", "satin", "cherry", "oak", "rust"], WR = ["satin", "cherry", "rust", "teak", "satin"];
+    const slice = (E, s0, s1) => { const i0 = Math.round(s0 * 120), i1 = Math.round(s1 * 120); return [at(s0, 0), ...E.slice(i0, i1 + 1), at(s1, 0)]; };
+    const [wl, wr] = [["rust", "satin"], ["cherry", "satin"], ["satin", "rust"], ["oak", "rust"]][Math.floor(rng(613 + (mir ? 7 : 0))() * 4)];
+    lay([{ wood: wl, pts: slice(L1, 0, 1), grain: A + .5 }], 5.3, .5); lay([{ wood: wr, pts: slice(R1, 0, 1), grain: A - .5 }], 5.75, .5); /* the leaf's two halves, either side of its middle */
+    const veinQ = (a, b, w) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, n2 = [-dy / l * w, dx / l * w]; return [[a[0] + n2[0], a[1] + n2[1]], [b[0] + n2[0] * .3, b[1] + n2[1] * .3], [b[0] - n2[0] * .3, b[1] - n2[1] * .3], [a[0] - n2[0], a[1] - n2[1]]]; };
+    const VEINS = [[at(.02, 0), at(.97, 0), .013]]; for (const sv of lobes) for (const sd of [1, -1]) { const E = sd > 0 ? L1 : R1; VEINS.push([at(sv - .06, 0), mid2(at(sv - .06, 0), E[Math.min(120, Math.round((sv + .01) * 120))], .88), .008]); }
+    lay(VEINS.map(([a2, b2, w]) => ({ wood: "holly", pts: veinQ(a2, b2, w), grain: Math.atan2(b2[1] - a2[1], b2[0] - a2[0]) })), 6.3, .5); /* its veins in holly */
+    lay([{ wood: "walnut", pts: [[base[0] - .02, base[1] - .02], [base[0] + .02, base[1] + .02], [base[0] - .2, base[1] + .22], [base[0] - .23, base[1] + .19]], grain: A }], 7.4, .35);
+    const ac = [.42, .44], cup = [...arcPts(ac[0], ac[1], .12, Math.PI + .1, TAU - .1, 16), [ac[0] + .12, ac[1] + .03], [ac[0] - .12, ac[1] + .03]], nut = ellPts(ac[0], ac[1] + .13, .1, .13, 0, 32);
+    lay([{ wood: "oak", pts: nut, grain: Math.PI / 2 }], 7.8, .4); lay([{ wood: "walnut", pts: cup, grain: 0 }, { wood: "walnut", pts: [[ac[0] - .01, ac[1] - .12], [ac[0] + .01, ac[1] - .12], [ac[0] + .03, ac[1] - .2], [ac[0] + .01, ac[1] - .2]], grain: 1.3 }], 8.15, .4);
+    if (!night) return { pieces, M: [], mir: true };
+    // by night
+    const pn = penOf(611), { Ln, D, outline, hatch, stipple } = pn;
+    ringMarks(Ln, D);
+    const inLeaf = pIn([...L1, ...R1.slice().reverse()]), clear = (a, b) => { const m = mid2(a, b, .5); return Math.hypot(...a) < .82 && Math.hypot(...b) < .82 && !inLeaf(...m) && !inLeaf(...a) && !inLeaf(...b) && Math.hypot(m[0] - ac[0], m[1] - ac[1] - .08) > .2; };
+    for (const g2 of ground) { const [a, b, c] = g2.pts; if (clear(a, b)) Ln([a, b], .9, .45); if (clear(b, c)) Ln([b, c], .9, .45); } /* the parquet's lattice, faint, kept off the leaf */
+    Ln(L1, 1.8, 1); Ln(R1, 1.8, 1); Ln([at(0, 0), at(.98, 0)], 1.6, .95);
+    for (const sv of lobes) for (const sd of [1, -1]) { const E = sd > 0 ? L1 : R1, e = E[Math.min(120, Math.round((sv + .01) * 120))]; Ln([at(sv - .06, 0), mid2(at(sv - .06, 0), e, .88)], 1.1, .85); } /* the veins, out to each lobe */
+    hatch(slice(R1, 0, 1), A - .5, .028, 1, .66); /* the half away from the light, shaded */
+    Ln([[base[0], base[1]], [base[0] - .21, base[1] + .21]], 1.6, .95);
+    outline(nut, 1.6); stipple(nut, 16); outline(cup, 1.6); hatch(cup, .7, .028, 1, .8); hatch(cup, -.7, .028, 1, .8); Ln([[ac[0], ac[1] - .12], [ac[0] + .02, ac[1] - .2]], 1.3, .95);
+    return { pieces, M: pn.M, mir: true };
+  };
+
+  /** rare: a stag on the ridge before the setting sun, the sky in rays of satinwood and maple behind him; by night his
+   *  shape burned dark, the sun's rim, the ridge, the grass */
+  const STAG = (mir) => {
+    const pieces = [], lay = (parts, t0, dur = .5) => pieces.push({ parts, t0, t1: t0 + dur });
+    const sunC = [.1, .2], rays = []; for (let i = 0; i < 18; i++) { const a0 = Math.PI + i / 18 * Math.PI, a1 = a0 + Math.PI / 18; rays.push({ wood: i % 2 ? (mir ? "holly" : "maple") : "satin", pts: [sunC, ...arcPts(sunC[0], sunC[1], 1.8, a0, a1, 6)], grain: (a0 + a1) / 2 }); }
+    rays.push({ wood: "satin", pts: [[-1.05, .2], [1.05, .2], [1.05, 1.05], [-1.05, 1.05]], grain: 0 });
+    lay(rays, 4.5, .65);
+    lay([{ wood: "padauk", pts: ellPts(sunC[0], sunC[1], .34, .34, 0, 60), grain: .3 }], 5.15, .45);
+    const ridge = [[-1.05, .36], [-.7, .31], [-.4, .26], [-.1, .28], [.2, .33], [.5, .3], [.8, .34], [1.05, .38]], bot = [[-1.05, 1.05], [1.05, 1.05]], ridge2 = [[-1.05, .58], [-.6, .52], [-.2, .56], [.3, .5], [.7, .55], [1.05, .52]];
+    lay([{ wood: "cherry", pts: between(ridge, bot), grain: -.05 }, { wood: "walnut", pts: between(ridge2, bot), grain: .05 }], 5.55, .5);
+    // the stag, in profile facing right, standing on the ridge: one shape for him (body, neck, head, legs), his antlers
+    const X = (x, y) => [x - .06, y - .04];
+    const HART = [[-.34, -.1], [-.2, -.13], [0, -.12], [.12, -.14], [.2, -.24], [.27, -.33], [.3, -.4], [.27, -.47], [.33, -.43], [.36, -.41], [.44, -.34], [.52, -.28], [.535, -.25], [.49, -.225], [.42, -.235], [.36, -.26], [.3, -.18], [.26, -.06], [.24, .04],
+      [.225, .07], [.235, .22], [.22, .29], [.225, .4], [.195, .4], [.19, .29], [.185, .2], [.17, .1], [.13, .1], [.125, .24], [.12, .4], [.092, .4], [.095, .25], [.09, .12], [0, .1], [-.12, .1],
+      [-.17, .11], [-.165, .18], [-.135, .26], [-.15, .4], [-.178, .4], [-.168, .28], [-.2, .19], [-.225, .13], [-.25, .13], [-.24, .2], [-.215, .27], [-.228, .4], [-.256, .4], [-.25, .29], [-.29, .19], [-.33, .07], [-.365, -.02], [-.38, -.05], [-.36, -.08]].map(q => X(...q));
+    const limb = (q, w0, w1) => { const L2 = [], R2 = []; q.forEach((p, i) => { const a = q[Math.max(0, i - 1)], b = q[Math.min(q.length - 1, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, w = lerp(w0, w1, i / (q.length - 1)); L2.push([p[0] - dy / l * w, p[1] + dx / l * w]); R2.push([p[0] + dy / l * w, p[1] - dx / l * w]); }); return [...L2, ...R2.reverse()]; };
+    const beamN = [[.31, -.41], [.27, -.52], [.23, -.64], [.22, -.75], [.25, -.84]].map(q => X(...q)), beamF = [[.34, -.41], [.37, -.52], [.41, -.63], [.43, -.73], [.41, -.82]].map(q => X(...q));
+    const tinesOf = (bm, dir) => [[1, .12, -1.1 * dir], [2, .1, -.95 * dir], [3, .08, -1.25 * dir]].map(([i, l, da]) => { const p = bm[i], a0 = Math.atan2(bm[i + 1][1] - bm[i - 1][1], bm[i + 1][0] - bm[i - 1][0]) + da; return [p, [p[0] + Math.cos(a0) * l * .55, p[1] + Math.sin(a0) * l * .55 - .01], [p[0] + Math.cos(a0) * l, p[1] + Math.sin(a0) * l]]; });
+    const antlers = [beamN, beamF, ...tinesOf(beamN, -1), ...tinesOf(beamF, 1)];
+    lay([{ wood: "ebony", pts: HART, grain: .1 }], 6.1, .55);
+    lay(antlers.map((q, i) => ({ wood: "walnut", pts: limb(q, i < 2 ? .018 : .011, i < 2 ? .007 : .004), grain: -1.4 })), 6.8, .5);
+    lay([{ wood: "green", pts: between(waveY(-1.05, 1.05, .72, .03, 22, .4, 90), bot), grain: 0 }], 7.8, .45);
+    if (!night) return { pieces, M: [], mir: true };
+    // by night
+    const pn = penOf(711), { Ln, D, outline, hatch, stipple, stars, bird } = pn;
+    ringMarks(Ln, D);
+    Ln(arcPts(sunC[0], sunC[1], .34, Math.PI, TAU, 40), 2, 1); stipple(ellPts(sunC[0], sunC[1] - .01, .31, .31, 0, 40).filter(([x, y]) => y < .19), 44);
+    for (let i = 0; i < 9; i++) { const a = Math.PI + (i + .5) / 9 * Math.PI; Ln([dirA(a, .42).map((v, j) => v + sunC[j]), dirA(a, .6 + (i % 2) * .12).map((v, j) => v + sunC[j])], 1.1, .75, 1.4); }
+    Ln(ridge.map(([x, y]) => [x * .86, y]), 1.6, .95); Ln(ridge2.map(([x, y]) => [x * .86, y]), 1.3, .85);
+    outline(HART, 1.6); hatch(HART, .5, .014, 1.1, .92); /* burned dark all over */
+    for (const q of antlers) Ln(q, q.length > 3 ? 1.9 : 1.4, .95);
+    for (let i = 0; i < 26; i++) { const x = -.8 + i * .064 + (i % 3) * .01, y = .75 + (i % 2) * .03; Ln([[x, y], [x + .01, y - .05 - (i % 3) * .015]], 1, .7, 1.5); }
+    stars(10, (x, y) => y < 0 && Math.hypot(x - sunC[0], y - sunC[1]) > .7); bird(-.5, -.3, .04);
+    return { pieces, M: pn.M, mir: true };
+  };
+
+  /* ---------------- the forever cycle: which picture each pass lays, and what it rests on ---------------- */
+  // the pool: the country first, then the others (each run of passes deals all of them once); the rare ones about one pass
+  // in ten, never two within four passes of each other
+  const WPOOL = [null, COMPASS, SHIP, LIGHT, BIRD, LEAF], WRARE = [STAG], WNS = WPOOL.length, WNR = WRARE.length;
+  const rareHit = P => WNR > 0 && P > 1 && K.deal(P, 191)() < 1 / 6, rareAt = P => rareHit(P) && !rareHit(P - 1) && !rareHit(P - 2) && !rareHit(P - 3);
+  const subjOf = P => P <= 0 ? 0 : rareAt(P) ? WNS + Math.floor(K.deal(P, 192)() * WNR) : K.bag(P, WNS, 190);
+  const DEFS = new Map();
+  /** a picture's pieces and marks, worked out once (and turned the other way round, when a pass deals that) */
+  const defOf = (id, mir) => { const key = id + (mir ? "m" : ""); let d = DEFS.get(key); if (d) return d;
+    d = (id < WNS ? WPOOL[id] : WRARE[id - WNS])(mir); d.key = key;
+    if (!night) d.pieces.forEach((p, i) => { for (const [j, q] of p.parts.entries()) { if (mir && !q.done) { q.pts = q.pts.map(([x, y]) => [-x, y]).reverse(); q.grain = Math.PI - q.grain; } q.done = true; } measure(p, i); });
+    else { if (mir) for (const m of d.M) m.pts = m.pts.map(([x, y]) => [-x, y]); timeMarks(d.M); d.SEGS = segsOf(d.M); d.ASHES = ashesOf(d.SEGS); }
+    DEFS.set(key, d); return d; };
+  /** the pass's pictures: the one it lays (or burns), and the one it rests on (the country's, before pass 1) */
+  const passOf = P => { P = Math.max(0, P | 0); if (S.pp && S.pp.P === P && S.pp.RR === S.RR) return S.pp; const pic = q => { const id = subjOf(q); if (id === 0) return sigPic(); const d = defOf(id, d0(id).mir && K.deal(q, 194)() < .5); return night ? nightPic(d) : dayPic(d); };
+    const pp = { P, RR: S.RR, cur: pic(P), prev: pic(Math.max(0, P - 1)) };
+    for (const d of DEFS.values()) if (d !== pp.cur && d !== pp.prev && d.RR) { d.RR = 0; d.dry = d.oiled = d.shave = d.full = d.hotC = d.glowC = null; if (d.pieces) for (const q of d.pieces) q.spr = q.sh = null; } /* the rest let go */
+    return (S.pp = pp); };
+  const d0 = id => defOf(id, false);
+  /** the country, as a picture like the others (the day's and the night's own, as they were built for this size) */
+  const sigPic = () => night ? { sig: true, M: MARKS, SEGS, ASHES, full: S.full, hotC: S.hotC, glowC: S.glowC } : { sig: true, pieces: [...RAYS, ...REST], oiled: S.oiled, dry: S.dry, shave: S.shave };
+  /** a piece of a new picture measured: its middle, the box it fills, how far it reaches; and how it flies in */
+  const measure = (p, i) => {
+    let x0 = 9, y0 = 9, x1 = -9, y1 = -9, A = 0, cx = 0, cy = 0;
+    for (const q of p.parts) { const pts = q.pts.map(([x, y]) => { const d = Math.hypot(x, y), f = d > RI ? RI / d : 1; return [x * f, y * f]; });
+      for (let a = 0, b = pts.length - 1; a < pts.length; b = a++) { const [xa, ya] = pts[a], [xb, yb] = pts[b], cr = xb * ya - xa * yb; A += cr; cx += (xa + xb) * cr; cy += (ya + yb) * cr; x0 = Math.min(x0, xa); y0 = Math.min(y0, ya); x1 = Math.max(x1, xa); y1 = Math.max(y1, ya); } }
+    p.c = Math.abs(A) > 1e-5 ? [cx / (3 * A), cy / (3 * A)] : [(x0 + x1) / 2, (y0 + y1) / 2]; p.bb = { x0: x0 - .02, y0: y0 - .02, x1: x1 + .02, y1: y1 + .02 };
+    p.L = Math.max(...[[x0, y0], [x1, y0], [x0, y1], [x1, y1]].map(([u, v]) => Math.hypot(u - p.c[0], v - p.c[1]))) + .05;
+    const r = rng(700 + i * 37); p.seed = 4000 + i * 37; p.rot0 = (r() - .5) * 1.7; p.bow = (i % 2 ? 1 : -1) * (.5 + r() * .6);
+    p.parts.forEach((q, j) => { let a = 9, b = 9, c = -9, e = -9; for (const [x, y] of q.pts) { const d = Math.hypot(x, y), f = d > 1 ? 1 / d : 1; a = Math.min(a, x * f); b = Math.min(b, y * f); c = Math.max(c, x * f); e = Math.max(e, y * f); } const qc = [(a + c) / 2, (b + e) / 2];
+      Object.assign(q, { polys: [poly(q.pts), DISC], c: qc, L: Math.hypot(c - a, e - b) / 2 + .04, seed: p.seed + 7 * j }); });
+  };
+  /** a new picture cut for this size: each piece's veneers raw (and its shadow), the inlay whole raw and oiled, and the
+   *  plank as the plane will find it */
+  const dayPic = d => {
+    const R = S.RR; if (d.RR === R) return d; const u = 1 / R;
+    for (const p of d.pieces) { const { x0, y0, x1, y1 } = p.bb; p.spr = make((x1 - x0) * R, (y1 - y0) * R, x => { x.scale(R, R); x.translate(-x0, -y0); for (const q of p.parts) pieceInto(x, q, false, u); }); p.sh = shadowOf(p.spr, 4, "rgba(78,52,26,.55)"); }
+    const whole = oiled => make(2.1 * R, 2.1 * R, x => { x.scale(R, R); x.translate(1.05, 1.05); for (const p of d.pieces) { if (oiled) for (const q of p.parts) pieceInto(x, q, true, u); else x.drawImage(p.spr, p.bb.x0, p.bb.y0, p.bb.x1 - p.bb.x0, p.bb.y1 - p.bb.y0); } ringInto(x, oiled, u); });
+    d.dry = whole(false); d.oiled = whole(true);
+    d.shave = make(2.2 * R, 2.2 * R, x => { const r = rng(4); x.fillStyle = "#F3E7D3"; x.fillRect(0, 0, 2.2 * R, 2.2 * R); x.strokeStyle = "rgba(216,196,164,.6)"; for (let k = 0; k < 40; k++) { x.lineWidth = .6 + r() * 1.5; const y = r() * 2.2 * R; x.beginPath(); x.moveTo(0, y); x.bezierCurveTo(R * .7, y + (r() - .5) * 10, R * 1.4, y + (r() - .5) * 10, 2.2 * R, y + (r() - .5) * 6); x.stroke(); } x.drawImage(d.oiled, .05 * R, .05 * R, 2.1 * R, 2.1 * R); });
+    d.RR = R; return d;
+  };
+  /** a new picture's marks in the pen's order, paced as the country's are (the ring at a compass's pace, dots a tap each,
+   *  hops between), fitted to the pen's time */
+  const timeMarks = M => { let t = 0, prev = null; for (const m of M) { const p0 = m.pts[0]; if (prev) t += Math.hypot(p0[0] - prev[0], p0[1] - prev[1]) / 16 + (m.dot ? .004 : .008);
+      m.len = 0; m.cum = [0]; for (let i = 1; i < m.pts.length; i++) { m.len += Math.hypot(m.pts[i][0] - m.pts[i - 1][0], m.pts[i][1] - m.pts[i - 1][1]); m.cum.push(m.len); }
+      m.s = t; t += m.dot ? .014 : m.len / (3.4 * m.v); m.e = t; prev = m.pts[m.pts.length - 1]; }
+    const k = (BN.pen[2] - BN.pen[1]) / t; for (const m of M) { m.s = BN.pen[1] + m.s * k; m.e = BN.pen[1] + m.e * k; m.ts = m.cum.map(c => m.s + (m.len ? c / m.len : 1) * (m.e - m.s)); } };
+  const segsOf = M => { const out = []; M.forEach(m => { if (m.dot) out.push({ dot: true, a: m.pts[0], t0: m.s, t1: m.e, w: m.w, al: m.a }); else for (let i = 1; i < m.pts.length; i++) out.push({ a: m.pts[i - 1], b: m.pts[i], t0: m.ts[i - 1], t1: m.ts[i], w: m.w, al: m.a }); }); return out.sort((a, b) => a.t1 - b.t1); };
+  const ashesOf = SG => { const r = rng(17), out = []; for (const s of SG) { if (s.dot) { out.push({ x: s.a[0], y: s.a[1], s: r() }); continue; } const l = Math.hypot(s.b[0] - s.a[0], s.b[1] - s.a[1]); for (let d = r() * .06; d < l; d += .06) { const f = d / l; out.push({ x: lerp(s.a[0], s.b[0], f), y: lerp(s.a[1], s.b[1], f), s: r() }); } } out.forEach(p => { p.d = Math.hypot(p.x, p.y); }); return out; };
+  /** a new picture burned for this size: in ash, red-hot, and its glow (small, blurred as it is drawn big) */
+  const nightPic = d => {
+    const R = S.RR; if (d.RR === R) return d; const n = Math.ceil(2.1 * R * px), gk = .3;
+    const unit = (c, k = 1) => { const x = c.getContext("2d"); x.setTransform(px * R * k, 0, 0, px * R * k, 1.05 * R * px * k, 1.05 * R * px * k); x.lineCap = "round"; x.lineJoin = "round"; return x; };
+    [d.full] = canvas(n, n); const fx = unit(d.full); for (const s of d.SEGS) ink(fx, s, ASH, s.al);
+    [d.hotC] = canvas(n, n); const hx = unit(d.hotC); for (const s of d.SEGS) ink(hx, { ...s, w: s.w + .5 }, [255, 116, 40], 1);
+    [d.glowC] = canvas(Math.ceil(n * gk), Math.ceil(n * gk)); const gx = unit(d.glowC, gk); gx.strokeStyle = "rgb(255,100,26)"; gx.fillStyle = "rgb(255,100,26)";
+    for (const s of d.SEGS) { if (s.dot) { gx.beginPath(); gx.arc(s.a[0], s.a[1], 2.2 / (R * px * gk), 0, TAU); gx.fill(); } else { gx.lineWidth = (s.w + 1.6) / (R * px * gk); gx.beginPath(); gx.moveTo(s.a[0], s.a[1]); gx.lineTo(s.b[0], s.b[1]); gx.stroke(); } }
+    d.RR = R; return d;
+  };
+
   const S = {
-    res: "dpr",
+    res: "dpr", carry: true, // (the picture a pass lays, or burns, stays up through the quiet after it)
     wash: night ? 1 : 1.6, veil: night ? .6 : 1, // a light kit's small words have no room for the picture under them (scenes.js); a dark kit's do
     hug: night ? .72 : .8, hugFinale: true, list: night ? .4 : .3, // the lines and the finale's words sit on pads of the ground; the medallion keeps to the open page
     bind(ctx) { g = ctx; g.lineCap = "round"; g.lineJoin = "round"; },
@@ -628,7 +985,7 @@ export default function wood(K, id) {
     spot() { return S.vis < .05 ? null : [Math.round(S.cx), Math.round(S.cy), Math.round(S.R)]; },
     curl, ink,
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1 */
-    draw(T, I, A, F) { if (night) drawNight(T, I, A, F); else drawDay(T, I, A, F); },
+    draw(T, I, A, F, P = 0) { if (night) drawNight(T, I, A, F, P); else drawDay(T, I, A, F, P); },
   };
   return S;
 }

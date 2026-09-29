@@ -30,6 +30,12 @@
 // obstacle comes on from past the right edge wherever the hero stands, the weather arrives from the top and drains away,
 // and the score counts back to nothing, so each pass ends on the picture the next begins with. The first pass is the
 // signature loop, as it was (its two shakes now a jitter of the frame's time, which no two loads shared before).
+//
+// 1.12 b382: no star behind the header's small words. The count is eight pixels wide, so one of the sky's stars behind
+// it cost it nearly half its contrast (and which star it was changed with the length of the day's date): the stars, the
+// twinkling ones too, go out behind the date, the count, the pills and the hint (the small words `words` is told of),
+// fading as they drift toward them, in every pass; so do the shooting stars, the lightning, the rain and the snow as
+// they pass.
 export default function arcade(K) {
   const { clamp, lerp, E, seg, env, rng, canvas, sprite } = K;
   const TAU = Math.PI * 2;
@@ -263,13 +269,18 @@ export default function arcade(K) {
         if (d < 0 || d > len) return null; const u = d / len, al = (1 - u) * (1 - u) * (.5 + .5 * rays);
         return [...(u < .14 ? (k ? [205, 255, 250] : [205, 255, 215]) : u < .6 ? (k ? [80, 225, 255] : [70, 240, 150]) : (k ? [255, 90, 220] : [185, 110, 255])), Math.round(255 * al * .85)]; }));
       S.plans = []; S.sigL = { P: 0, sig: true, X: S.X }; S.placeSun();
-      S.scanPat = null; if (S.raw) S.words(S.raw);
+      S.hz = null; S.scanPat = null; if (S.raw) S.words(S.raw);
     },
     /** where the words are (scenes.js): the hero stands where the column above its ground is clear of them, and the
      *  banners go up in the clearest open space */
     words(rects) {
       S.raw = rects; S.wr = rects.map(([x0, y0, x1, y1, k]) => [x0 - 8, y0 - 8, x1 + 8, y1 + 8, k]); if (!S.bw) return;
       const { PS, bw, bh, gy, pr } = S, top = (gy - (pr ? 58 : 48)) * PS, hit = (x0, y0, x1, y1) => S.wr.some(r => r[0] < x1 && r[2] > x0 && r[1] < y1 && r[3] > y0);
+      // the small words (kind 0: the date, the count, the pills, the hint) keep the sky behind them starless — each one's
+      // box and a pixel round it, in the game's pixels, and three more for the stars to fade across
+      S.hz = []; for (const [x0, y0, x1, y1, k] of S.wr) { if (k !== 0 || y0 >= gy * PS) continue; const c0 = Math.floor(x0 / PS) - 1, r0 = Math.floor(y0 / PS) - 1, c1 = Math.ceil(x1 / PS) + 1, r1 = Math.ceil(y1 / PS) + 1; S.hz.push([c0, r0, c1, r1, c0 - 3, r0 - 3, c1 + 3, r1 + 3]); }
+      const inRows = y => S.hz.some(z => y >= z[5] && y < z[7]);
+      S.hzStars = [.04, .08].map(p => S.stars.filter(st => st.p === p && Math.round(st.ph * 10) % 6 && inRows(Math.round(st.y)))); for (const st of S.twinkle) st.hz = inRows(Math.round(st.y));
       let hx = null; for (let x = pr ? 12 : 10; x < bw - (pr ? 40 : 76); x += 2) if (!hit((x - 2) * PS, top, (x + 16) * PS, gy * PS)) { hx = x; break; }
       S.heroTx = hx === null ? Math.round(bw * (pr ? .26 : .7)) : hx;
       // the banners: a panel 70×15 of the game's pixels, wherever it is furthest from any word
@@ -290,6 +301,9 @@ export default function arcade(K) {
       let best = null, bs = -1e9; for (let cy = R + 3; cy <= gy - R * .4; cy += 3) for (let cx = R + 2; cx <= bw - R - 2; cx += 3) { if (hit(cx - R - 3, cy - R - 3, cx + R + 3, cy + R + 3)) continue; const sc = -Math.abs(cx - cx0) * .4 - Math.abs(cy - cyT) * 1.2 - (cy > cyT + R * .35 ? 100 : 0); if (sc > bs) { bs = sc; best = [cx, cy]; } }
       S.sunC = best || [cx0, gy - Math.round(R * .45)]; S.sunHigh = S.sunC[1] < cyT - R;
     },
+    /** how much of a star at (x, y), in the game's pixels, shows beside the small words: none behind one, all of it three
+     *  pixels off */
+    hzFade(x, y) { let f = 1; for (const z of S.hz || []) { if (x < z[4] || x >= z[6] || y < z[5] || y >= z[7]) continue; f = Math.min(f, clamp(Math.max(z[0] - x, 0, x - z[2] + 1, z[1] - y, y - z[3] + 1) / 3.5)); } return f; },
     /** 1 clear of the words, down to a trace behind them (CSS pixels) */
     shade(x, y, rad) { let d = 1e9; for (const [x0, y0, x1, y1] of S.wr || []) d = Math.min(d, Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(y0 - y, 0, y - y1))); return lerp(.15, 1, clamp(d / rad)); }, // full once clear of the word, faint only behind it
     /** the level pass P deals, for a hero standing in column hx (b381); pass 0 is the signature, drawn as it always was */
@@ -384,17 +398,23 @@ export default function arcade(K) {
       if (starA < 1) b.globalAlpha = starA;
       [.04, .08].forEach((p, i) => { const o = -(((X * p) % bw) + bw) % bw; b.drawImage(S.starL[i], Math.round(o), 0); b.drawImage(S.starL[i], Math.round(o) + bw, 0); });
       b.globalAlpha = 1;
-      for (const s of S.twinkle) { const x = ((s.x - X * s.p) % bw + bw) % bw, k = .45 + .55 * Math.pow(Math.max(0, Math.sin(A * s.f + s.ph)), 3); dot(x, s.y, ["#FFFFFF", "#9AE7FF", "#FF9AF0"][s.c], k * starA); }
+      const hz = S.hz && S.hz.length ? S.hz : null;
+      if (hz) { // no star behind the small words: their zones cleared, the level's tint laid back, the stars at their edges put back fading
+        b.globalCompositeOperation = "destination-out"; b.fillStyle = "#000"; for (const z of hz) b.fillRect(z[4], z[5], z[6] - z[4], z[7] - z[5]); b.globalCompositeOperation = "source-over"; // (an opaque fill: the level's tint, if it's the fill still, is clear up here)
+        if (skyK > .01) { b.globalAlpha = skyK; b.fillStyle = S.skyG[sk]; for (const z of hz) b.fillRect(z[4], z[5], z[6] - z[4], z[7] - z[5]); b.globalAlpha = 1; }
+        [.04, .08].forEach((p, i) => { const o = Math.round(-(((X * p) % bw) + bw) % bw); for (const st of S.hzStars[i]) { let x = o + Math.round(st.x); if (x < 0) x += bw; const y = Math.round(st.y), f = S.hzFade(x, y); if (f > 0 && f < 1) dot(x, y, ["#FFFFFF", "#9AE7FF", "#FF9AF0"][st.c], (.55 + .35 * ((st.ph * 7) % 1)) * starA * f); } });
+      }
+      for (const s of S.twinkle) { const x = ((s.x - X * s.p) % bw + bw) % bw, k = .45 + .55 * Math.pow(Math.max(0, Math.sin(A * s.f + s.ph)), 3); dot(x, s.y, ["#FFFFFF", "#9AE7FF", "#FF9AF0"][s.c], k * starA * (hz && s.hz ? S.hzFade(Math.round(x), Math.round(s.y)) : 1)); }
       // b381: behind the city — the sun going down, the storm's lightning and its clouds
       if (sk === 1 && skyK > .01) { const rise = S.sunHigh ? E.out(seg(T, 1.5, 3.0)) * (1 - E.io(seg(T, 10.9, 11.9))) : E.out(seg(T, .15, 1.9)) * (1 - E.io(seg(T, 12.8, 14.6))), R = S.sunR, [scx, scy] = S.sunC; b.globalAlpha = I * (S.sunHigh ? rise : 1); b.drawImage(S.sun, scx - R, Math.round(S.sunHigh ? scy - R + (1 - rise) * 8 : lerp(gy + 1, scy - R, rise))); b.globalAlpha = 1; }
       if (!sig && sk === 0 && on) for (const m of L.meteors) { const age = T - m.t; if (age <= 0 || age >= m.life) continue; // a shooting star: it lights, streaks and burns out
         const k = env(age, 0, .08, m.life - .22, m.life) * I, hx2 = m.x + m.dx * age, hy2 = m.y + m.dy * age, v = Math.hypot(m.dx, m.dy), ux = m.dx / v, uy = m.dy / v, n = Math.round(m.len * clamp(age / .15));
-        for (let j = n; j >= 0; j--) { const x = hx2 - ux * j, y = hy2 - uy * j, a = k * (1 - j / (m.len + 1)) * shadeB(x, y, 5); if (a < .03) continue; b.globalAlpha = a; b.fillStyle = j < 2 ? "#FFFFFF" : j < m.len * .45 ? "#9AE7FF" : "#FF9AF0"; b.fillRect(Math.round(x), Math.round(y), 1, 1); } b.globalAlpha = 1; }
+        for (let j = n; j >= 0; j--) { const x = hx2 - ux * j, y = hy2 - uy * j, a = k * (1 - j / (m.len + 1)) * shadeB(x, y, 5) * S.hzFade(Math.round(x), Math.round(y)); if (a < .03) continue; b.globalAlpha = a; b.fillStyle = j < 2 ? "#FFFFFF" : j < m.len * .45 ? "#9AE7FF" : "#FF9AF0"; b.fillRect(Math.round(x), Math.round(y), 1, 1); } b.globalAlpha = 1; }
       if (sk === 4 && on) { const k = env(T, .3, 2.4, 12.4, 14.5) * I; // the aurora: two curtains drifting apart, breathing
         if (k > .01) for (let i = 0; i < 2; i++) { const o = (((i ? -3.2 : 4.4) * A) % bw + bw) % bw, y = Math.round(gy * (i ? .13 : .05)); b.globalAlpha = k * (.6 + .3 * Math.sin(A * (.6 + .25 * i) + i * 2)); b.drawImage(S.aur[i], Math.round(o) - bw, y); b.drawImage(S.aur[i], Math.round(o), y); } b.globalAlpha = 1; }
       if (sk === 2 && on) {
         for (const bo of L.bolts) { const k = env(T, bo.t, bo.t + .02, bo.t + .1, bo.t + .3) * I; if (k < .02) continue;
-          for (const [col, a, w] of [["#8FB8FF", .45, 3], ["#FFFFFF", 1, 1]]) { b.fillStyle = col; b.globalAlpha = k * a; for (let i = 1; i < bo.pts.length; i++) { const [x0, y0] = bo.pts[i - 1], [x1, y1] = bo.pts[i], n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)); for (let j = 0; j <= n; j++) { const x = Math.round(lerp(x0, x1, j / n)), y = Math.round(lerp(y0, y1, j / n)); b.globalAlpha = k * a * shadeB(x, y, 6); b.fillRect(x - (w - 1) / 2, y, w, 1); } } } b.globalAlpha = 1; }
+          for (const [col, a, w] of [["#8FB8FF", .45, 3], ["#FFFFFF", 1, 1]]) { b.fillStyle = col; b.globalAlpha = k * a; for (let i = 1; i < bo.pts.length; i++) { const [x0, y0] = bo.pts[i - 1], [x1, y1] = bo.pts[i], n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)); for (let j = 0; j <= n; j++) { const x = Math.round(lerp(x0, x1, j / n)), y = Math.round(lerp(y0, y1, j / n)); b.globalAlpha = k * a * shadeB(x, y, 6) * S.hzFade(x, y); b.fillRect(x - (w - 1) / 2, y, w, 1); } } } b.globalAlpha = 1; }
         for (const cl of L.clouds) { const c = S.clouds[cl.i], x = Math.round(cl.x0 - cl.v * T); if (x < bw && x + c.width > 0) { b.globalAlpha = I * .94; b.drawImage(c, x, cl.y); } } b.globalAlpha = 1;
       }
       // the city: the far layer, the near one with its flickering windows, antenna lights and the sign (b381: snow on the roofs)
@@ -691,7 +711,7 @@ export default function arcade(K) {
         if (sk === 2 && on) {
           const v0 = (gy + 10) / .5, per = .78; b.fillStyle = "#A9C8FF";
           for (const d of S.drops) { const t0 = .45 + d.ph * per; if (T < t0) continue; const s = t0 + Math.floor((T - t0) / per) * per; if (s > 12.4) continue; const age = T - s, v = v0 * d.v, tg = (gy + 6) / v, x = Math.round(((d.x - (XF(T) - XF(s)) * .8 - age * 30 * U) % (bw + 30) + bw + 30) % (bw + 30) - 15);
-            if (age < tg) { const y2 = Math.round(age * v - 6), hl = Math.floor(d.l / 2); b.globalAlpha = d.a * I; b.fillRect(x, y2, 1, d.l - hl); b.fillRect(x + 1, y2 - hl, 1, hl); }
+            if (age < tg) { const y2 = Math.round(age * v - 6), hl = Math.floor(d.l / 2); b.globalAlpha = d.a * I * S.hzFade(x, y2); b.fillRect(x, y2, 1, d.l - hl); b.fillRect(x + 1, y2 - hl, 1, hl); }
             else if (age < tg + .07) { b.globalAlpha = d.a * I; b.fillRect(x - 1, gy - 1, 1, 1); b.fillRect(x + 1, gy - 1, 1, 1); b.fillRect(x, gy - 2, 1, 1); } }
           b.globalAlpha = 1;
           flashL = Math.max(...L.bolts.map(bo => env(T, bo.t, bo.t + .02, bo.t + .06, bo.t + .45))) * .1 * I;
@@ -699,7 +719,7 @@ export default function arcade(K) {
         if (sk === 3 && on) {
           for (const sz of [1, 2]) { b.fillStyle = sz === 1 ? "#BFD6FF" : "#FFFFFF";
             for (const f of S.flakes) { if (f.s !== sz) continue; const vs = (sz > 1 ? 46 : 36) * f.v * gy / 135, per = (gy + 6) / vs + .25, t0 = .3 + f.ph * per; if (T < t0) continue; const s = t0 + Math.floor((T - t0) / per) * per; if (s > 10.2) continue; const age = T - s, y2 = age * vs - 3; if (y2 > gy) continue;
-              const x = ((f.x - (XF(T) - XF(s)) * (sz > 1 ? .75 : .45) + Math.sin(A * 1.3 + f.sw) * 3) % (bw + 20) + bw + 20) % (bw + 20) - 10; b.globalAlpha = f.a * I; b.fillRect(Math.round(x), Math.round(y2), sz, sz); } }
+              const x = ((f.x - (XF(T) - XF(s)) * (sz > 1 ? .75 : .45) + Math.sin(A * 1.3 + f.sw) * 3) % (bw + 20) + bw + 20) % (bw + 20) - 10; b.globalAlpha = f.a * I * S.hzFade(Math.round(x), Math.round(y2)); b.fillRect(Math.round(x), Math.round(y2), sz, sz); } }
           b.globalAlpha = 1;
         }
         if (L.bonus && on) { const B0 = L.bonus.t0, u = T - B0; // the bonus room, through an iris: dark, blue bricks, a trail of coins to run through

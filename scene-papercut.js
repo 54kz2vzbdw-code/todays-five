@@ -27,6 +27,10 @@
 // zeppelin, by day; curtains of tissue paper, the northern lights, let down on threads, and a comet on a wire, by
 // night. Every one comes on from past an edge (or up from behind the bank, or lights, or is sewn) and goes all the way
 // off (or back down, or out, or melts); nothing carries from one pass to the next.
+// 1.12 b385: a long list's last lines lie over the town, and a struck line's quiet grey has no room for the hills, the
+// trees and the river under it (the stage's pad leaves a fifth of the picture showing). By day the picture is put in
+// the paper's own ground under each line that reaches down over the town, softly, over whatever passes there; above
+// it, and everywhere else, it keeps its colour.
 export default function papercut(K, id) {
   const night = id === "midnight";
   const { clamp, lerp, E, seg, env, rng, canvas, grain, noise1, fbm } = K;
@@ -239,11 +243,13 @@ export default function papercut(K, id) {
       // grain, the paper's own
       const tile = grain(140, 140, night ? 29 : 11, P.grainK); bg.fillStyle = bg.createPattern(tile, "repeat"); bg.fillRect(0, 0, W, H);
       gen++; extras(W, H, u, pr, frontY); /* b384: what the passes after the first bring, made from dice of their own */
+      if (!night) { S.pad = make(160, 80, x => { for (let q = 0; q < 12; q++) { x.fillStyle = "rgba(247,242,232,.15)"; x.beginPath(); x.roundRect(q * 2.4, q * 1.8, 160 - q * 4.8, 80 - q * 3.6, 34 - q * 2); x.fill(); } }); /* the paper's ground, soft at its edges */
+        let top = 1e9; for (let x = 0; x <= W; x += 8) top = Math.min(top, backY(x)); S.townTop = top; } /* where the town begins: the back hills' highest point */
       if (S.raw) S.words(S.raw);
     },
     /** where the words are (scenes.js): by day the kite flies no higher than clears them — it and its tail keep off the lines */
     words(rects) {
-      S.raw = rects; S.rects = rects; S.wr = rects.map(([x0, y0, x1, y1]) => [x0 - 10, y0 - 8, x1 + 10, y1 + 8]); if (night || !S.W || !S.kiteTop0) return;
+      S.raw = rects; S.rects = rects; S.wr = rects.map(([x0, y0, x1, y1]) => [x0 - 10, y0 - 8, x1 + 10, y1 + 8]); S.lines = rects.filter(r => r[4] === 1); if (night || !S.W || !S.kiteTop0) return;
       const { u } = S, x = S.kiteTop0[0];
       const hit = y => rects.some(([x0, y0, x1, y1]) => x > x0 - 9 * u && x < x1 + 9 * u && y + 17 * u > y0 - 2 * u && y - 5 * u < y1 + 2 * u); /* the kite and its tail; the string goes behind the words */
       const y0 = S.kiteTop0[1], lo = S.H * .1 + 5 * u, hi = S.townY(x) - 16 * u; let y = null; /* the nearest clear height, above or below where it likes to be */
@@ -320,6 +326,8 @@ export default function papercut(K, id) {
         const cl = pl.close; if (cl.k === "birds") dBirds(T, I, A, cl); else if (cl.k === "leaves") dLeaves(T, I, cl); else dFlies(T, I, A, cl);
         // the finale: paper cranes up past the sun
         if (F >= 0) for (const c of S.cranes) { const k = clamp((F - c.d) / (1 - c.d)); if (k <= 0 || k >= 1) continue; const e = E.io(k), x = c.x0 + c.dx * e + Math.sin(k * 6 + c.ph) * 2 * u, y = lerp(c.y0, -H * .08, e); put(S.crane[c.c * 2 + Math.floor(A * 8 + c.ph) % 2], x, y, .5, .5, -.25 + Math.sin(k * 5 + c.ph) * .1, c.s, c.s, k < .12 ? k / .12 : k > .86 ? (1 - k) / .14 : 1); }
+        // 1.12 b385: the paper's ground under each line that reaches down over the town (the stage lays its pad over this)
+        if (S.lines && S.lines.length) { g.globalAlpha = 1; for (const [x0, y0, x1, y1] of S.lines) if (y1 > S.townTop) { const mx = 18 + (y1 - y0) * .5, my = 6 + (y1 - y0) * .3; g.drawImage(S.pad, x0 - mx, y0 - my, x1 - x0 + mx * 2, y1 - y0 + my * 2); } g.globalAlpha = 1; }
       } else {
         // the windows: a few lit always, the rest light across the town (in the pass's own order) and go out again
         for (let i = 0; i < S.windows.length; i++) {

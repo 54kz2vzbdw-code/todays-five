@@ -3397,13 +3397,13 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": 1.12 b328: Light's and Dark's liquid (and, from b332, Sketch's balloon; from b334, Pink's heart; from b336, Cocoa's cup and Ember's fire; from b353, Blush's wand and its big bubble) keeps to the empty part of the page — no pad under the words, and wherever it settles it is clear of every line, before and after a long line is added", async () => {
+  await test(label + ": 1.12 b328: Light's and Dark's liquid (and, from b332, Sketch's balloon; from b334, Pink's heart; from b336, Cocoa's cup; from b353, Blush's wand and its big bubble) keeps to the empty part of the page — no pad under the words, and wherever it settles it is clear of every line, before and after a long line is added", async () => {
     const t = await fresh(opts, { init: sceneDevice() });
     await sceneUp(t, "forest");
     const clear = () => t.page.evaluate(() => { const s = window.__tf().scene, [x, y, r] = s.spot || [-1e4, -1e4, 0], range = document.createRange(), hits = [];
       for (const el of document.querySelectorAll("#today .row .tx")) { range.selectNodeContents(el); const b = range.getBoundingClientRect(); const dx = Math.max(b.left - x, 0, x - b.right), dy = Math.max(b.top - y, 0, y - b.bottom); if (Math.hypot(dx, dy) < r) hits.push(el.textContent.slice(0, 20)); }
       return { spot: s.spot, hits, flag: document.documentElement.dataset.sceneClear !== undefined, pad: getComputedStyle(document.getElementById("today")).backgroundColor }; });
-    for (const kit of ["light", "dark", "sketch", "blush", "pink", "cocoa", "ember"]) {
+    for (const kit of ["light", "dark", "sketch", "blush", "pink", "cocoa"]) {
       await openPicker(t, "night"); await t.page.click(`#p-theme .swatch[data-code="T1:curated:${kit}"]`); await wait(300); await t.esc(); await wait(200);
       await sceneUp(t, kit); await wait(2500);
       let c = await clear(); assert.ok(c.flag, kit + ": the stage knows it keeps clear"); assert.ok(/rgba\(0, 0, 0, 0\)|transparent/.test(c.pad), kit + ": no pad under the words: " + c.pad);

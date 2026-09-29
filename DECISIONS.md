@@ -2167,3 +2167,48 @@ pictures; for Terminal, a nineties-style demo—plasma, tunnel and fire, drawn i
 
 **What did not change.** The kits; first paint; no stored setting; nothing in `apple/` but the stamp. The old scenes'
 modules are gone from the site and from the worker's list.
+
+# 1.12 b358 decisions — Scenes: Ember in colour-cycling pixel art
+
+**What Price asked for.** The campfire was fine but a little boring, and it was the art style he didn't care for. So
+the fire stays and the style changes.
+
+**Colour cycling.** The games of the early nineties made a still picture live by turning its palette instead of
+redrawing it: water that ripples, stars that twinkle, a fire that breathes, all from one painting in a small palette.
+`scene-ember.js` paints its picture once, when the scene starts and on a resize, at a low resolution (four CSS pixels to
+a picture pixel on a wide screen, three on a phone) as indexes into a palette of 256, and each frame it only works out
+the palette — the stars' eight steps round their twinkle, the moon's glitter on the water, the firelight on the ripples
+by the shore, the coals — and copies the picture through it. The firelight is six steps on the ground, dithered into
+each other, and four on the pines' faces toward the fire, brightening and dimming with the flames. The flames are the
+one thing drawn each frame: a small field of heat, each cell rising into the one above, cooling and drifting a little
+either way, fed from the logs in three tongues that sway; its dark tips are left out. Sparks ride up out of it. A soft
+bloom goes over the whole.
+
+**The picture.** A lake at night: the sky from deep blue to a last warm glow at the horizon, the Milky Way, a full moon
+in its halo over the fire so the flames stand against its path on the water, hills lit along their ridges, a line of
+small pines on the far shore, the tall pines framing it all, the tent and a log to sit on in the firelight, grass along
+the water's edge, pebbles.
+
+**The loop.** The fire flares; a log settles in a burst of sparks and the flames dip and roar back; a star falls; an
+owl crosses the moon, from past one edge to past the other; a fish jumps and its rings spread across the water; the
+fire settles. While the list is in use the palette turns slowly and the fire burns low. The finale: a column of sparks
+goes up and opens into new stars, which twinkle and go. Its beats are a table.
+
+**The words.** The lines and the finale's words sit on pads of the night (`hug`); the bar and the footer keep their
+washes. The fire keeps to the lower right on a wide screen and the foot of a phone, below where the seed lines sit.
+
+**No longer a keep-clear scene.** The old fire moved to the largest open space; the new picture is one painting, its
+fire where the composition puts it. So the keep-clear test no longer includes Ember.
+
+**What it costs.** Less than the fire it replaces: the loop 3.57 → 3.10 % of a core, in use 2.75 → 2.35 %, on a phone
+4.27 → 2.70 %, back to back on the same machine: each frame is a palette of 256 worked out, one copy of the picture
+through it, the small field of flames and a bloom.
+
+**Contrast.** Every reading at or above plain but three, none under 4.5: a long list's crossed-off line on a phone,
+6.30 → 5.51, where it lies over the fire — the first measure read 3.51, before the scene put its own night in shade
+under each line; the keyboard line on a wide screen in use, 6.52 → 6.35; and the finale's line on a phone, 4.84 → 4.64.
+
+**The copy.** The changelog said "a campfire under the Milky Way"; it now says "a campfire by a lake at night in
+color-cycling pixel art", through Price's voice.
+
+**What did not change.** The kit; first paint; no stored setting; nothing in `apple/` but the stamp.

@@ -2942,3 +2942,36 @@ decisions — Scenes: Teletype's split flaps and Terminal's demo". Web only; the
 | Focused runs | on a checkout of the change alone: the Scenes tests, the full session and the worker's two tests, both viewports: 18 passed; again on the stamp |
 | Looked at | both kits through the loop in the lab and in the app, both viewports; the long list; Terminal's first cut profiled (the glyphs drawn, not the arithmetic, were the cost) |
 | Screenshots | `shots/scenes-9/`: each kit mid-loop, phone and desktop (JPEG) |
+
+# Today's Five 1.12 b358 — Scenes: Ember in colour-cycling pixel art
+
+*Shipped as build 359. b358 is the change's commit.*
+
+Ember's campfire, painted again in colour-cycling pixel art: a lake at night under the Milky Way, a full moon over the
+fire, pines, a tent, the palette turning so the stars, the water, the coals and the firelight move, and the flames
+their own field of heat. The decisions are in DECISIONS.md under "1.12 b358 decisions — Scenes: Ember in colour-cycling
+pixel art". Web only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Ember in colour-cycling pixel art** (b358). `scene-ember.js`; the changelog's clause (through Price's voice); the
+   keep-clear test lets Ember go.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: the change is `scene-ember.js`, the changelog and a test; the stamp moves the build number | `git diff --stat` 357..358 |
+| lazy, Scenes on only | `scene-ember.js` 8,928 → **8,790** gzipped | `gzip -9 -n` |
+| CPU, desktop (share of one core) | the loop 3.57 → **3.10 %** (14.15 → 14.06 %); in use 2.75 → **2.35 %** | `tools/idle.mjs 60`, `SCENES=1`, `SCENES=1 USE=5`; the old scene against this, back to back |
+| CPU, phone (390×844 at 2×) | 4.27 → **2.70 %** | `tools/idle.mjs 60`, `VP=phone SCENES=1` |
+| contrast | every reading at or above plain but: a long list's crossed-off line on a phone, 6.30 → 5.51 (over the fire, in the scene's shade and the stage's pad); the keyboard line on a wide screen in use, 6.52 → 6.35; the finale's line on a phone, 4.84 → 4.64 | `tools/contrast.mjs`: the seed lines, `FIXTURE=1 CLOCK=2026-09-28T15:00:00`, `FIXTURE=1 VIEW=all` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests (the keep-clear test without Ember), the full session and the worker's two tests, both viewports: 18 passed; again on the stamp |
+| Looked at | both viewports in the lab through every beat and the finale, full size; the phone's long list over the fire, before and after the shade |
+| Screenshots | `shots/scenes-9/`: the log settling and the owl crossing the moon, phone and desktop (JPEG) |

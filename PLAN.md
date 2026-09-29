@@ -2800,3 +2800,43 @@ DECISIONS.md under "1.12 b345 decisions — Scenes, polished: Light and Dark ste
 | Focused runs | on a checkout of the change alone: the Scenes tests, the full session and the worker's two tests, both viewports: 18 passed; again on the stamp |
 | Looked at | both kits on both viewports in the lab through the loop and the finale, and in the app beside the live build |
 | Screenshots | `shots/scenes-9/`: each kit mid-loop, phone and desktop (JPEG) |
+
+# Today's Five 1.12 b347 — Scenes, polished: Sunset and Dusk
+
+*Shipped as build 350. b347–b349 are its commits.*
+
+Sunset and Dusk, cleaned up: the flock, the egret and the loop's new stars now come and go whole; and, found on the way,
+a long list's last lines put in shade over the sunset. The decisions are in DECISIONS.md under "1.12 b347 decisions —
+Scenes, polished: Sunset and Dusk". Web only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Sunset and Dusk, polished** (b347). `scene-bay.js`: the flock, the stars, the quiet lanterns, the egret.
+2. **A long list's last lines in shade over the sunset** (b348). `scene-bay.js`: the scene's own shade under each line
+   low on the page.
+3. **The contrast instrument can pin the clock** (b349). `tools/contrast.mjs`: `CLOCK=`.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: the change is `scene-bay.js` and `tools/contrast.mjs`; the stamp moves the build number | `git diff --stat` 346..349 |
+| lazy, Scenes on only | `scene-bay.js` 9,619 → **10,463** gzipped | `gzip -9 -n` |
+| CPU, desktop (share of one core; every Chrome process) | Sunset's loop 2.45 → **2.42 %** (12.19 → 12.14 %), in use 2.85 → **2.71 %**; Dusk's loop 2.96 → **2.84 %** (13.10 → 12.46 %), in use 3.19 → **3.14 %** | `tools/idle.mjs 60`, `SCENES=1` and `SCENES=1 USE=5`, 346 (port 8800) and this build back to back; another program held a core (load 3.3–4.5) |
+| CPU, phone (390×844 at 2×) | Sunset 2.52 → **2.47 %**; Dusk 3.25 → **3.17 %** | `tools/idle.mjs 60`, `VP=phone SCENES=1` |
+| contrast | the table below; the rest at or above 346's but the tools in the app's idle fade | `tools/contrast.mjs`: the seed lines, `FIXTURE=1 CLOCK=2026-09-28T15:00:00`, `FIXTURE=1 VIEW=all` |
+
+| p1 in a long list, plain → 346 → this | Sunset, wide screen | Sunset, phone | Dusk, wide screen | Dusk, phone |
+| --- | --- | --- | --- | --- |
+| a crossed-off line | 6.22 → 3.52 → **5.98** | 6.11 → 2.61 → **5.30** | 6.70 → 4.36 → **6.26** | 6.60 → 4.00 → **6.02** |
+| the lines | 12.69 → 8.79 → **9.85** | 12.28 → 7.92 → **8.97** | 14.19 → 10.68 → **11.91** | 13.57 → 10.28 → **10.99** |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests, the full session and the worker's two tests, both viewports: 18 passed; again on the stamp |
+| Pops | each kit stepped through the loop and across its seam in the lab at thirty frames a second, both viewports, the change from frame to frame measured (a scratch check): no frame changes far more than its neighbours |
+| Looked at | both kits on both viewports in the lab; a phone's long list with the sun behind its last lines, before and after |
+| Screenshots | `shots/scenes-9/`: each kit mid-loop, phone and desktop (JPEG) |

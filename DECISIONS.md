@@ -1975,3 +1975,43 @@ of focus—", through Price's voice.
 
 **What did not change.** The forms, the loop, where it settles; first paint; no stored setting; nothing in `apple/` but
 the stamp.
+
+# 1.12 b347 decisions — Scenes, polished: Sunset and Dusk
+
+**What Price asked for.** Great, needing a little polishing and cleaning up.
+
+**What was rough.** Things that came and went without finishing the trip. By day, the flock crossing the sun was gone
+with the last birds of its V still on the page. At blue hour, the stars that prick in at the start of the loop stayed
+lit until the loop came round, then all went out at once; the quiet lanterns that rise while the list is in use
+appeared at the water already lit; and the egret flew up out of the shallows and faded away in mid-air, then stood
+back in its place when the loop came round.
+
+**The fix.** The flock flies on until its last bird is past the right edge. The loop's new stars go out again, one by
+one, before it comes round. A quiet lantern fades up as it leaves the water. The egret flies away past the right edge
+and, later in the loop, comes home from the left, settles into the shallows where it stood and lands in a ring of
+ripples; touched mid-flight, it settles back where it stands.
+
+**Found on the way: a long list's last lines over the sunset** (b348, a commit of its own). Measured against the
+long-time fixture, a crossed-off line near the foot of a long list read 2.61 against 6.11 plain on a phone (Sunset) and
+4.00 against 6.60 (Dusk), and 3.52 and 4.36 on a wide screen — in the live build exactly as in this one, and under the
+4.4 b330 recorded, so older than this round. Those lines lie over the brightest part of the bay: the sun on the
+horizon, its reflection, the moon's path. The sun slides along the horizon clear of the lines' ends, but on a narrow
+screen with a long list it has nowhere clear left to go. Now the scene puts its own picture in shade under each line low
+on the page, and the stage's pad goes over that, as in Cocoa and Ember; the rest keeps its colour. The same line reads
+5.30 and 6.02 on a phone, 5.98 and 6.26 on a wide screen, and the lines themselves come up with it (Sunset's on a phone
+7.92 → 8.97).
+
+**The long-time fixture and the date.** The fixture's Today depends on the day of the week — a repeat on chosen days —
+and a run that crossed midnight measured Tuesday's seven lines, none crossed off, against Monday's nine. From here the
+long-list runs pin the page's clock to one Monday afternoon — the harness's clock, and the fixture seeded for that
+day — so two builds are measured on the same list whatever the date: `CLOCK=` on `tools/contrast.mjs` (b349, a commit
+of its own).
+
+**What it costs.** Nothing measurable: back to back with 346 on the same machine, Sunset's loop 2.45 → 2.42 % of a
+core, in use 2.85 → 2.71 %, on a phone 2.52 → 2.47 %; Dusk's 2.96 → 2.84 %, 3.19 → 3.14 % and 3.25 → 3.17 %.
+
+**Everything.** Its section names read as b339 left them — on a wide screen the caret still a little under plain,
+6.03 against 6.22 (Sunset) and 6.32 against 6.65 (Dusk), and on a phone at or above it.
+
+**What did not change.** The sun, the lanterns' festival, the finales, the pads; first paint; no stored setting;
+nothing in `apple/` but the stamp.

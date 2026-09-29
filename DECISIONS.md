@@ -2212,3 +2212,58 @@ under each line; the keyboard line on a wide screen in use, 6.52 → 6.35; and t
 color-cycling pixel art", through Price's voice.
 
 **What did not change.** The kit; first paint; no stored setting; nothing in `apple/` but the stamp.
+
+# 1.12 b361 decisions — Scenes for the hidden kits, one: Birthday and Superpink
+
+**What Price asked for.** Scenes for Birthday and Superpink, Bark and Char, Whiteboard and Chalkboard. This build is the
+first pair. They are the Secret pair, so nothing on a public page names them, and nothing here writes the word that
+unlocks them.
+
+**One party, by day and by night.** `scene-party.js`, drafted by a helper working to the round's brief and looked over
+here on both viewports.
+
+**Birthday.** A bouquet of seven glossy latex balloons sits in the largest open space on the page. Each has a soft
+darker edge, light showing through low on its far side, a soft shine with a sharp window highlight, a tied knot and a
+curled ribbon, the strings gathering below the page. A thin pennant garland swags across the top under the bar's wash.
+The loop: a gust runs along the garland; a balloon rises from below to join the bouquet; a party popper comes up in the
+corner on the bouquet's side, shivers and pops — its cap blows off, curly streamers unfurl, and confetti flips as it
+falls, bright face and dull back; the new balloon swells, trembles and pops into rubber shreds, its string dropping away;
+the top three slip free and float off past the top; three come up from below to take their places. The kit's own finale
+is a cake, so the scene's is a balloon release under it.
+
+**Superpink.** A mirror ball on its chain in the open space, its tiles showing what they reflect — a pink light, a gold
+one, a slowly moving white one, the dark room — throwing soft round spots across the page in curved rows, slow near the
+ball and faster toward the sides, over a velvet room. The loop: the ball is let down and swings; spotlights come up from
+below and sweep, and where one crosses the ball its spots brighten; the beams swing onto the ball, it spins up and the
+spots streak; glitter falls, brightest inside a beam; the beams go down and the ball is taken back up. Its glints soften
+as it spins faster, so the fast spin shimmers rather than flashes. The kit's own finale is a bloom; the scene's sends
+every beam onto the ball, spins it its fastest and pours gold glitter.
+
+**The words.** Each showpiece keeps to the largest open space and goes when there is none; what crosses the page
+(confetti, streamers, spots, glitter, a loose balloon) dims near words; the lines and the finale's words sit on pads,
+and by night the room is put in shade under each line, deeper while the beams are on.
+
+**In place of the kit's own layer.** With Scenes on, the scene takes the place Superpink's field of twinkles holds
+(Birthday has none); the kits' own finales play over it as before.
+
+**Contrast.** No reading under 4.5 anywhere, and every one at or above plain but a few: Birthday's finale line on a phone
+as the released balloons rise behind it, 5.69 → 4.77; Superpink's count on a wide screen as the spots slide behind it,
+5.32 → 4.93 (the long list 5.06); Birthday's count while its garland sways, 5.96 → 5.65; a crossed-off line in a long
+list on Birthday's phone, 6.19 → 5.93; and the tools in the app's idle fade.
+
+**What it costs.** Birthday's loop 3.80 % of a core, in use 2.00 %, on a phone 3.03 %; Superpink's 4.22 %, 2.54 % and
+3.74 %. Superpink's loop was 5.03 % in the first cut: every spot, fleck and twinkle asked how far it was from every word,
+each frame. Now the page's distance from the words is worked out once on a grid of 8 px when the words move, and read
+off it, and the lattice of spots is a third sparser — the same room of spots. With Scenes off the kits' own layers cost
+next to nothing (0.04 % and 0.11 %), so that is what turning Scenes on under them costs. First paint: `app.js` +9 bytes
+gzipped for the two names, and no measurable cost.
+
+**Wiring.** The app lists the two with the kits that have scenes; the stage maps them to the module; the worker
+precaches it (as it precaches the modules the hidden kits already bring). A new browser test gives a device the pair by
+its own latch — the one the picker writes — and checks each kit brings its module in place of its layer, draws, loops,
+has its finale and throws nothing; the keep-clear test takes the bouquet and the ball. The two instruments learned the
+same latch (b360, a commit of its own), so no word is typed to measure them.
+
+**What did not change.** The kits, their fields and finales with Scenes off; every public page (the test that holds the
+changelog, README, About, How it works and the markup to not naming them passes); first paint but the list in `app.js`;
+nothing in `apple/` but the stamp.

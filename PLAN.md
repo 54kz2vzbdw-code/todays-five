@@ -2975,3 +2975,40 @@ pixel art". Web only; the version holds at 1.12, and nothing in `apple/` changed
 | Focused runs | on a checkout of the change alone: the Scenes tests (the keep-clear test without Ember), the full session and the worker's two tests, both viewports: 18 passed; again on the stamp |
 | Looked at | both viewports in the lab through every beat and the finale, full size; the phone's long list over the fire, before and after the shade |
 | Screenshots | `shots/scenes-9/`: the log settling and the owl crossing the moon, phone and desktop (JPEG) |
+
+# Today's Five 1.12 b361 — Scenes for the hidden kits, one: Birthday and Superpink
+
+*Shipped as build 362. b360 and b361 are its commits.*
+
+The first of the three hidden pairs Price asked for: one party by day and by night, a balloon bouquet and a popper for
+Birthday, a mirror ball in a velvet room for Superpink. No public page names them, and nothing here writes the word
+that unlocks them. The decisions are in DECISIONS.md under "1.12 b361 decisions — Scenes for the hidden kits, one:
+Birthday and Superpink". Web only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **The instruments reach the hidden kits by the device's latch** (b360). `tools/contrast.mjs`, `tools/idle.mjs`
+   (`UNLOCK=1`).
+2. **Birthday and Superpink** (b361). `scene-party.js` (new); `app.js` lists them with the kits that have scenes; the
+   stage maps them; the worker precaches the module; the features test's list; a new browser test for the hidden kits'
+   scenes; the keep-clear test takes the bouquet and the ball.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `app.js` **+9 bytes** gzipped (55,321 → 55,330); `sw.js` +3; `index.html`, `styles.css` unchanged | `gzip -9 -n` |
+| first paint | desktop FCP **56 → 52 ms** (48–64 against 52–60); mobile **1304 → 1312 ms** (1296–1308 against 1296–1316): no cost | `tools/paint.mjs 8`, 359 (port 8830) beside this build (8831) |
+| lazy, Scenes on under a hidden kit only | `scene-party.js` **18,561** gzipped | `gzip -9 -n` |
+| CPU, desktop (share of one core) | Birthday's loop **3.80 %**, in use **2.00 %**; Superpink's loop **4.22 %** (5.03 % in the first cut), in use **2.54 %**; their own layers with Scenes off 0.04 % and 0.11 % | `tools/idle.mjs 60`, `SCENES=1 UNLOCK=1` (and `USE=5`) |
+| CPU, phone (390×844 at 2×) | Birthday **3.03 %**; Superpink **3.74 %** | `tools/idle.mjs 60`, `VP=phone SCENES=1 UNLOCK=1` |
+| contrast | no reading under 4.5; at or above plain but Birthday's finale line on a phone (5.69 → 4.77), Superpink's count (5.32 → 4.93), Birthday's count (5.96 → 5.65), a crossed-off line in Birthday's long list on a phone (6.19 → 5.93), and the tools in the app's idle fade | `tools/contrast.mjs`: the seed lines, `FIXTURE=1 CLOCK=2026-09-28T15:00:00`, `FIXTURE=1 VIEW=all` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30 (its public pages still name neither), compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests (the keep-clear test with the bouquet and the ball), the new hidden-kits test, the full session and the worker's two tests, both viewports: 20 passed; again on the stamp |
+| Looked at | both kits on both viewports in the lab and in the app, the loop and the finale; the helper's sheets with live words |
+| Screenshots | sent to Price; not kept in the repo, which doesn't publish the hidden kits' looks |

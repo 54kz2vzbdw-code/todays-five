@@ -3511,3 +3511,39 @@ changed but the stamp.
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on a checkout of the change alone: the new test, the Scenes tests (the cadence test among them), the forever-cycle test, the hidden-kits test, panels are one stack, the Share sheet by intent, the full session and the worker's two tests, both viewports: 28 passed; again on the stamp |
 | Looked at | the probe's figures on 394, on 395 and with Scenes off |
+
+# Today's Five 1.12 b397 — Arcade's score carries from level to level, and every fiftieth level a boss of its own
+
+*Shipped as build 399. b397 and b398 are its commits.*
+
+Two of Price's asks for Arcade. Its score carried nothing from one level to the next; now a bank takes each level's
+score as the pass moves on — all of it when the level played out, what the hero had when the list cut it short — and the
+score on the bricks is the bank and this level's so far. And every fiftieth level brings a boss of its own, as an easter
+egg for whoever leaves the screen on: the mothership at 50, 150, 250…, the moon itself at 100, 200, 300…, each worth a
+thousand points a level. The decisions are in DECISIONS.md under "1.12 b397 decisions" and "1.12 b398 decisions". Web
+only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Arcade's score carries from level to level** (b397). `scene-arcade.js` (the bank); `scenes.js` (`state().info`,
+   what a scene tells the instruments of itself); a new browser test.
+2. **Every fiftieth level of Arcade, a boss of its own** (b398). `scene-arcade.js`: the mothership and the moon, their
+   sprites drawn by rule, the moon's faces drawn to size; the test goes on to levels 50 and 100.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: lazy modules only, loaded with Arcade and Scenes on (`scene-arcade.js` 33,373 → 33,953 → **38,665 bytes** gzipped; `scenes.js` 10,146 → 10,180); the worker precaches them, +5.3 KB | `gzip -9 -n` |
+| pass 0 | canvas-identical to 396 at eleven moments and three of the finale, both viewports | `samecv.mjs`, 396 (port 8841) against the change |
+| the seams | 0.00 % into levels 50, 51, 100 and 101 | `tools/scene-seams.mjs` from passes 47 and 98 |
+| CPU, the loop playing (share of one core, 15 s) | desktop: level 49 4.79 → level 50 **5.70 %**; level 99 4.94 → level 100 **5.08 %**. phone: 4.41 → **4.70 %**; 4.16 → **4.57 %** | `tools/idle.mjs 15`, `SCENES=1 PASS=48, 49, 98, 99` |
+| contrast | nothing under 4.5 over levels 50, 51, 100 and 101, seed lines and the long fixture, both viewports; the lowest, the date at 4.62 in level 50's storm (396: 4.55) | `tools/contrast.mjs` `PASS=49 PASSES=2`, `PASS=99 PASSES=2`; `FIXTURE=1 CLOCK=2026-09-28T15:00:00` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Arcade test (failing on 396), the hold test, the Scenes tests, the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 26 passed; again on the stamp |
+| Looked at | levels 50 and 100 in the lab at every beat, full size, and in the app with the real list on both viewports: the mothership coming to rest below a phone's list, the moon cross, pleased and winking |

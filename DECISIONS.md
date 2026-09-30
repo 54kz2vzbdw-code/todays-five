@@ -2974,3 +2974,67 @@ sheet, and at rest under a popover. It fails on 394, both viewports.
 
 **What did not change.** The panels, their blur and their motion; every scene's pictures; first paint (`scenes.js` is
 lazy: 9,609 → 10,146 bytes gzipped, most of it the comment); nothing in `apple/` but the stamp.
+
+# 1.12 b397 decisions — Arcade's score carries from level to level
+
+**What Price asked.** "The score should probably increase with each level rather than resetting per level and the level
+increments. You know? Like if we're still progressing in levels why is the score resetting?"
+
+**Before.** Each level of Arcade's forever cycle (b381) counted its score back to nothing over its last half second, so
+that a pass ended on the picture the next opened with; the level number went on rising.
+
+**The bank.** The score carries, as a game's does. When the pass moves on, a bank takes what the last level scored: all
+of it when the level played out; what the hero had when the loop let go when the list cut it short (the stage moves on
+to the next level either way, b367); and whole, a level the instruments skip past. The score on the bricks is the bank
+and what this level has scored so far; a page opens on nothing, and a quiet page shows the bank. The bank is kept by the
+scene from the frames it draws (the level and loop time it last drew), not worked out from the pass alone: a level cut
+short has to bank what it had, and only the frames know that. A level cut short is not counted whole, because the score
+would then jump by the rest of it the moment the page went quiet.
+
+**The seams.** A level ends on the total the next opens with, so nothing counts back. The first level at full strength
+is canvas-identical to 396 (samecv, eleven moments and three of the finale, both viewports); the only difference in its
+own frames is while it eases in or out, where the score no longer fades with the picture.
+
+**For the instruments.** The stage's `state().info` passes on what a scene tells of itself; Arcade's is the level on
+screen, the score shown, the bank and the boss (−1 for the signature). A new browser test: a page opens on nothing; the
+first level, cut short a few seconds in, banks between 50 and 6,349 and a quiet page shows it; skipping to level 50
+counts the levels skipped whole. It fails on 396 (no info).
+
+# 1.12 b398 decisions — Every fiftieth level of Arcade, a boss of its own
+
+**What Price asked.** "May as well add some easter egg bosses in there like for level 50 and 100 and so on (just as like
+an easter egg for the people who keep the screen on and are watching)." A level takes fifteen seconds, so level 50 comes
+after about twelve minutes of the screen left alone and level 100 after twenty-five.
+
+**Two bosses, turn about.** At 50, 150, 250… the mothership; at 100, 200, 300… the moon. Each is the level's boss in the
+frame every level keeps (WARNING, three shots jumped, three hits, the burst at 11.25 s, the closing words), so the
+hero's run, power-up and jumps are dealt as for any level, and the next level follows as usual. A milestone boss is
+worth a thousand points a level (50,000 at 50, 100,000 at 100), with the burst's words in the rainbow, and the level's
+number goes up in the rainbow too. Its closing words are its own: LEGENDARY! and TO THE MOON!
+
+**The mothership**, the saucer's big sister, drawn by rule like the saucer: a glass dome with its pilot at the controls
+(deep glass, so the green pilot shows), a tier of portholes, a wide disc with lights chasing round its waist, a ribbed
+belly with a hatch, a spire with a light, three engines. It comes down out of the sky on a rumble and a thud and hovers
+as high as it may while clear of the words, its health above it (on a phone the list sits where it would otherwise
+hover, so it comes to rest below the list). It sweeps a tractor beam below, lit at its edges, bands running down it and
+motes rising up it; drops a fighter from its hatch at each shot, which runs along the street at the hero; takes the
+hero's lasers up at its hatch (the only boss the lasers go up to; the flower's fireballs arc up to it); puts a third of
+its lights out at each hit; and goes in a chain of blasts across its hull before the burst. Its first draft was the
+saucer made wide, a thin disc with a small eye, and was redrawn before anyone saw it.
+
+**The moon.** Its level plays under the aurora, so no cloud or sunset crosses it. The big moon over the city is asleep;
+at WARNING it opens its eyes, notices the hero (a "!"), glares, and comes down to meet it, growing half as big again as
+it comes. It spits moon rocks that bounce at the hero, takes three hits, and gives up pleased instead of bursting —
+sparkles for pieces — then winks, lets a heart float up, and drifts back to its place asleep as TO THE MOON! goes up; by
+the level's end the backdrop's moon is back under it. The moon that wakes is drawn into the frame, where the bloom would
+have washed it white (the backdrop's moon has none), so its colours are taken down by a third; its faces (asleep, awake,
+cross, spitting, pleased, winking) are drawn to its size at every size it passes through.
+
+**Checks.** The seams around both hold (0.00 % into 50, 51, 100 and 101; the 0.40–0.88 % the tool reads at the second
+seam of any run is the wall clock's flicker at that moment, the same on 394). The words keep their contrast over levels
+50, 51, 100 and 101, both viewports, the seed lines and the long fixture: the lowest reading is the date at 4.62 during
+level 50's storm, which 396 reads at 4.55 (its own storm). A milestone level costs up to about a point of a core more
+while it plays: the mothership 4.79 → 5.70 % on a wide screen (15-s windows, level 49 against 50), the moon 4.94 → 5.08
+%.
+
+**Not in the changelog.** They are easter eggs, for whoever leaves the screen on long enough to find them.

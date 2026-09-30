@@ -1007,11 +1007,11 @@ export function openTemplates() {
   openPick({
     title: "Templates",
     msg: tpls.length ? "Saved in this list, synced with it. Insert one from any section's menu." : "Nothing saved yet. A section's menu has “Save as template”: its lines, without their done state.",
-    rows: tpls.map(t => ({ label: t.name, sub: t.lines.map(l => l.text).join(" · ").slice(0, 120), danger: "Delete", run: () => { showLines(t); }, del: async () => {
+    rows: tpls.map(t => ({ label: t.name, sub: t.lines.map(l => l.text).join(" · ").slice(0, 120), run: () => { showLines(t); }, ...(A.canEdit() ? { danger: "Delete", del: async () => { /* 1.12 b387: only where the list can be changed */
       const ok = await A.ask({ title: "Delete template?", msg: `“${t.name}” goes away. Lines already inserted stay where they are.`, confirm: "Delete", danger: true });
       if (!ok) return;
       A.doc = M.deleteTemplate(A.doc, t.id); A.afterChange({ animate: false }); openTemplates();
-    } })),
+    } } : {}) })),
     actions: A.canEdit() && A.doc && M.liveSections(A.doc).length + 1 ? [{ label: "Insert into Unsorted", run: () => pickTemplate("") }] : []
   });
 }

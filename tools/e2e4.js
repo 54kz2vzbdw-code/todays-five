@@ -2938,6 +2938,39 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 
+  // 1.12 b387: a View link's holder has the rail's tools again. The view rule that hides a line's tools (v3) matched the
+  // rail's own wrapper once 1.9 grouped the sun/moon, Share and ⋯ as `.tools`, so a viewer lost ⋯ and with it the device's
+  // own theme, sound and settings; everything behind ⋯ was already made safe for a View link
+  await test(label + ": 1.12 b387: a View link's holder has the rail's tools — the sun/moon, ⋯, and Share where the rail has room — and ⋯ offers only what is the device's or safe to show: Share the View link, Theme, Sound, Lists, Settings, How it works, About, no Save and no Delete everywhere; Appearance sets this device's theme; Templates offers no Delete", async () => {
+    const t = await fresh(opts);
+    await t.page.click("#v-all"); await wait(300); await t.esc(); await t.page.click("#addsec"); await t.page.fill("#ask-input", "Work"); await t.page.click("#ask-ok"); await wait(300);
+    await t.press("#all .sec .sec-more"); await t.page.waitForSelector("#p-sec[open]");
+    await t.page.click('#p-sec [data-sact="template"]'); await t.page.waitForSelector("#ask[open]"); await t.page.fill("#ask-input", "Five"); await t.page.click("#ask-ok"); await wait(600);
+    const { R } = await t.s();
+    const v = await fresh(opts, { url: BASE + "?transport=local#/r/" + R, list: false, ctx: t.ctx });
+    await v.page.waitForSelector("#ro:not([hidden])"); await wait(300);
+    const shown = id => v.page.evaluate(id => { const e = document.getElementById(id); return !!e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden"; }, id);
+    assert.equal(await shown("more"), true, "⋯ on the rail"); assert.equal(await shown("daynight"), true, "the sun/moon on the rail"); assert.equal(await shown("share"), !touch, "Share where the rail has room (a phone keeps it in ⋯)");
+    assert.equal(await v.page.$$eval("#list .row .tools, #all .row .tools", els => els.filter(e => e.getClientRects().length).length), 0, "a line's own tools stay hidden");
+    await v.press("#more"); await v.page.waitForSelector("#p-menu[open]"); await wait(200);
+    const acts = await v.page.$$eval("#p-menu [data-act], #p-menu #menu-about", els => els.filter(e => e.getClientRects().length).map(e => e.dataset.act || e.id));
+    for (const a of ["share", "theme", "sound", "lists", "settings", "help", "menu-about"]) assert.ok(acts.includes(a), a + " is offered: " + acts);
+    for (const a of ["save", "delete"]) assert.ok(!acts.includes(a), a + " is not: " + acts);
+    assert.equal(await v.page.getAttribute("#menu-share", "aria-label"), "Share the View link");
+    await v.page.click('#p-menu [data-act="theme"]'); await v.page.waitForSelector("#p-appear[open]");
+    await v.page.click('#p-appear .slot[data-slot="day"]'); await v.page.waitForSelector("#p-theme[open]");
+    await v.page.click('#p-theme .swatch[data-code="T1:curated:harbor"]'); await wait(300);
+    assert.equal(await v.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device.day), "T1:curated:harbor", "the viewer's own Day theme, on this device");
+    await v.esc(); await wait(200); await v.esc(); await wait(200);
+    await v.press("#more"); await v.page.click('#p-menu [data-act="settings"]'); await v.page.waitForSelector("#p-settings[open]"); await wait(200);
+    await v.page.click('#p-settings [data-set="templates"]'); await v.page.waitForSelector("#p-pick[open]"); await wait(200);
+    assert.ok(/Five/.test(await v.page.textContent("#pick-menu")), "the list's template shows");
+    assert.equal(await v.page.locator('#pick-menu [aria-label="Delete Five"]').count(), 0, "with no Delete for a viewer");
+    await v.esc();
+    assert.equal(v.errors.length, 0, v.errors.join("; ")); await v.close();
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
+  });
+
   await test(label + ": panels are one stack — a sub-panel shows ‹ Back and returns to its parent with its scroll and its changed value, × closes the whole stack, Escape goes back a level and closes at the root, one history entry per level so the browser's Back goes back a level" + (touch ? ", and an edge swipe from the left goes back" : ""), async () => {
     const t = await fresh(opts);
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await wait(300);

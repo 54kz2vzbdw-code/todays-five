@@ -361,7 +361,8 @@ body.is-dragging .row:hover{background:transparent}
 .no-hover .row.moving:hover{background:var(--ink)}
 
 /* ---------------- view-only mode: nothing that edits is rendered ---------------- */
-html[data-mode="view"] .tools,html[data-mode="view"] .add,html[data-mode="view"] #addtoday,html[data-mode="view"] .sec-more,
+/* 1.12 b387: a line's tools, not the rail's (the sun/moon, Share and ⋯ are `.tools` too since 1.9, and a viewer needs ⋯) */
+html[data-mode="view"] .row .tools,html[data-mode="view"] .add,html[data-mode="view"] #addtoday,html[data-mode="view"] .sec-more,
 html[data-mode="view"] #again,html[data-mode="view"] #c-save,html[data-mode="view"] .swatch .del,html[data-mode="view"] #l-rename,
 html[data-mode="view"] #toast-undo{display:none !important}
 html[data-mode="view"] .check{cursor:default}

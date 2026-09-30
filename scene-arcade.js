@@ -96,6 +96,14 @@ export default function arcade(K) {
   // a segment of its body, 9×9: a spine spike, a paler belly
   const DSEG = ["....YY....", "...OYYO...", "..OSSSSO..", ".OSSsSSSO.", "OSSSSSSSSO", "OSSSSSSsSO", ".ObbbbbbO.", "..OOOOOO.."];
   const CROWN = ["Y...Y...Y", "YY.YYY.YY", "YYYYRYYYY", "YYYYYYYYY", "yyyyyyyyy"], CRP = pal({ Y: "#FFE14D", y: "#C9A21A", R: "#FF2B5E" });
+  // 1.12 b398: the milestone bosses' pieces. The moon's craters, as the backdrop's; its faces are drawn to its size (in
+  // layout); the fighters off the mothership, and the alien at its controls
+  const CRATERS = [[-.35, -.2, .22], [.25, .3, .16], [.1, -.45, .12]];
+  const HEART = [".P.P.", "PPPPP", "PPPPP", ".PPP.", "..P.."], HTP = pal({ P: "#FF5AB4" });
+  const ROCK = [".GGG.", "GgGGG", "GGGhG", "GGGGG", ".GGG."], RKP = pal({ G: "#B7AEE8", g: "#8A80C8", h: "#8A80C8" });
+  // a fighter off the mothership, 9×5: a dome on a disc, lights under it
+  const MINI = ["...ccc...", "..cCCCc..", "HHHHHHHHH", ".hhhhhhh.", "..y.y.y.."], MNP = pal({ c: "#1E6F9E", C: "#3FB8E0", H: "#DAD6F5", h: "#58538A", y: "#FFE14D" });
+  const ALIEN = [[".GGGGG.", "GGGGGGG", "KKGGGKK", "KKGGGKK", ".GGGGG.", "..GGG.."], [".GGG.", "GGGGG", "KGGGK", ".GGG."]], ALP = pal({ G: "#7CFF6B", K: "#0B0820" });
   const OBST = ["coins", "block", "slime", "shell", "bats", "bricks", "spring", "pit", "pipe", "cannon"];
   const PRE = { coins: .31, block: .28, slime: .416, shell: .3, bats: .38, bricks: .25, spring: .32, pit: .35, pipe: .33, cannon: .38, oneup: .28 }; // from the jump to the moment it meets the thing
   const POST = { coins: .31, block: .28, slime: .56, shell: .3, bats: .5, bricks: .25, spring: 1.1, pit: .35, pipe: .33, cannon: .62, oneup: .28 }; // and from then to the landing
@@ -103,7 +111,8 @@ export default function arcade(K) {
   // the first level's points, each at the moment it is scored: five coins, the block, the slime, the star, the boss
   const SIGPTS = [[2.25 + .62 * .12, 10], [2.25 + .62 * .31, 10], [2.25 + .62 * .5, 10], [2.25 + .62 * .69, 10], [2.25 + .62 * .88, 10], [4.4, 100], [4.62 + .52 * .8, 200], [6.55, 1000], [11.3, 5000]];
   const BURST = [{ ring: ["#FF2BD6", "#FFFFFF"], bits: ["#DAD6F5", "#3FB8E0", "#FF2BD6", "#FFE14D"] }, { ring: ["#FF7A3C", "#FFFFFF"], bits: ["#DAD6F5", "#9B96C8", "#FF2B4E", "#2BE8FF"] },
-    { ring: ["#B388FF", "#FFFFFF"], bits: ["#FF2BD6", "#B388FF", "#FFE14D", "#7C4DFF"] }, { ring: ["#7CFF6B", "#FFFFFF"], bits: ["#7CFF6B", "#2FB84A", "#D8FFD0", "#FFE14D"] }];
+    { ring: ["#B388FF", "#FFFFFF"], bits: ["#FF2BD6", "#B388FF", "#FFE14D", "#7C4DFF"] }, { ring: ["#7CFF6B", "#FFFFFF"], bits: ["#7CFF6B", "#2FB84A", "#D8FFD0", "#FFE14D"] },
+    { ring: ["#FF2BD6", "#FFFFFF"], bits: ["#DAD6F5", "#9B96C8", "#FF2BD6", "#2BE8FF"] }, { ring: ["#FFE14D", "#FFFFFF"], bits: ["#FFE14D", "#FFFFFF", "#FF8AD8", "#9AE7FF"] }]; // b398: the mothership's, the moon's sparkles
   /** a sprite's pixels moved one to one — turned a quarter at a time, or flipped — so pixel art keeps its pixels */
   const xform = (s, w2, h2, map) => { const d = s.getContext("2d").getImageData(0, 0, s.width, s.height).data, [c, x] = canvas(w2, h2), im = x.createImageData(w2, h2);
     for (let y = 0; y < s.height; y++) for (let xx = 0; xx < s.width; xx++) { const [X2, Y2] = map(xx, y), i = (y * s.width + xx) * 4, j = (Y2 * w2 + X2) * 4; im.data[j] = d[i]; im.data[j + 1] = d[i + 1]; im.data[j + 2] = d[i + 2]; im.data[j + 3] = d[i + 3]; }
@@ -161,7 +170,31 @@ export default function arcade(K) {
       S.boss = K.paint(30, 16, (x, y) => bossPix(x, y, false)); S.bossWhite = K.paint(30, 16, (x, y) => bossPix(x, y, true));
       // the moon, big and pale, with its craters
       const mr = pr ? 8 : 12; S.moonR = mr;
-      S.moon = K.paint(mr * 2 + 1, mr * 2 + 1, (x, y) => { const dx = x - mr, dy = y - mr, d = Math.hypot(dx, dy); if (d > mr + .3) return null; for (const [cx, cy, cr] of [[-.35, -.2, .22], [.25, .3, .16], [.1, -.45, .12]]) if (Math.hypot(dx - cx * mr, dy - cy * mr) < cr * mr) return hex("#A89EE2"); return dx + dy * .3 > mr * .45 ? hex("#9A90D6") : hex("#CFC8F5"); });
+      const moonPix = (x, y) => { const dx = x - mr, dy = y - mr, d = Math.hypot(dx, dy); if (d > mr + .3) return null; for (const [cx, cy, cr] of CRATERS) if (Math.hypot(dx - cx * mr, dy - cy * mr) < cr * mr) return hex("#A89EE2"); return dx + dy * .3 > mr * .45 ? hex("#9A90D6") : hex("#CFC8F5"); };
+      S.moon = K.paint(mr * 2 + 1, mr * 2 + 1, moonPix);
+      // 1.12 b398: the moon that wakes, at every size from the sky's to half as big again (it grows as it comes down), each
+      // face drawn to the size: asleep, awake, cross, spitting, pleased, winking, and the white of a hit. Its colours are
+      // taken down by a third, since the frame's bloom brings them back up (the backdrop's moon has none)
+      const faceAt = (kind, u, v, R) => {
+        const p1 = 1 / R, th = Math.max(.75 * p1, .065), INK = "#2A1458", ex = .36, ey = -.1, er = Math.max(1.6 * p1, .17);
+        for (const sd of [-1, 1]) {
+          const du = u - sd * ex, dv = v - ey, shut = kind === "sleep" || kind === "pleased" || (kind === "wink" && sd > 0);
+          if (shut) { if (Math.abs(du) <= er * 1.05) { const cv = kind === "sleep" ? ey + .45 * er * (du / er) ** 2 - .1 * er : ey + .25 * er - .55 * er * (1 - (du / er) ** 2); if (Math.abs(v - cv) <= th) return INK; } continue; }
+          const cut = (kind === "cross" || kind === "spit") ? ey - .25 * er - sd * du * .55 : -9; // a cross eye is lidded by its brow, lower toward the nose
+          if (cut > -9 && Math.abs(v - (cut - th * .9)) <= th * .9 && Math.abs(du) <= er * 1.25) return INK;
+          if (du * du + dv * dv <= er * er && v >= cut) { const pu = du + .06, pv = dv - .01, pr2 = Math.max(.95 * p1, .085); return pu * pu + pv * pv <= pr2 * pr2 ? "#1A0414" : "#FFFFFF"; }
+        }
+        if (kind === "pleased" || kind === "wink") { for (const sd of [-1, 1]) if ((u - sd * .56) ** 2 + (v - .2) ** 2 <= .012) return "#FF8AD8"; }
+        const mu = u / .3;
+        if (kind === "awake" || kind === "sleep") { const d = Math.hypot(u, (v - .45) * 1.1); if (kind === "awake" ? d > .07 && d <= .07 + th * 1.4 : Math.abs(v - .45) <= th * .8 && Math.abs(u) <= .09) return INK; }
+        else if (kind === "spit") { const e = (u / .19) ** 2 + ((v - .46) / .15) ** 2; if (e <= 1) return e > .55 ? INK : "#5A0F2E"; }
+        else if (Math.abs(mu) <= 1) { const cv = kind === "cross" ? .4 + .15 * mu * mu : .36 + .16 * (1 - mu * mu); /* a frown, or a smile */ if (Math.abs(v - cv) <= th) return INK; }
+        return null; };
+      const moonArt = (R, kind) => K.paint(R * 2 + 1, R * 2 + 1, (x, y) => { const dx = x - R, dy = y - R; if (Math.hypot(dx, dy) > R + .3) return null;
+        const u = dx / R, v = dy / R; let c = kind === "white" ? "#FFFFFF" : faceAt(kind, u, v, R);
+        if (!c) { c = dx + dy * .3 > R * .45 ? "#9A90D6" : "#CFC8F5"; for (const [cx, cy, cr] of CRATERS) if (Math.hypot(u - cx, v - cy) < cr) { c = "#A89EE2"; break; } }
+        return hex(c).map(n => Math.round(n * .66)); });
+      S.moonR2 = Math.round(mr * 1.6); S.moonArt = {}; for (const k of ["sleep", "awake", "cross", "spit", "pleased", "wink", "white"]) { S.moonArt[k] = []; for (let R = mr; R <= S.moonR2; R++) S.moonArt[k][R] = moonArt(R, k); }
       S.moonAt = pr ? [Math.round(bw * .74), Math.round(bh * .12)] : [Math.round(bw * .84), Math.round(bh * .16)];
       // the city: a far layer and a near one, each a strip one period wide that repeats
       const strip = (Pw, hMax, near) => { const Hh = Math.ceil(hMax) + 8; return [K.paint(Pw, Hh, () => null), Hh]; };
@@ -236,6 +269,24 @@ export default function arcade(K) {
         if (y <= 6 && dx < -2 && dx > -8 && (x + y) % 3 === 0) return KH;
         return dx > hw * .45 || y > 16 ? Kg : KG; });
       S.kingW = whiten(S.king);
+      // 1.12 b398: the mothership, the saucer's big sister, drawn by rule: a glass dome (its pilot drawn live), a tier of
+      // portholes round it, the wide disc with a dark waist where its lights run (lit live), and a ribbed belly with a
+      // hatch; the engines under it and the spire's light are lit live too
+      const MW = pr ? 48 : 76, MH = pr ? 22 : 30; S.MW = MW; S.MH = MH; S.rimY = Math.round(MH * .63);
+      const shipPix = (x, y, white) => {
+        const cx = MW / 2, X2 = x + .5 - cx, Y = y + .5, ax = Math.abs(X2), w = [255, 255, 255];
+        if (ax < 1 && Y < MH * .16) return white ? w : hex("#9B96C8"); // the spire
+        const dxd = X2 / (MW * .19), dyd = (Y - MH * .43) / (MH * .33), rd = dxd * dxd + dyd * dyd; // the dome
+        if (Y < MH * .47 && rd <= 1) return white ? w : dxd < -.2 && dyd < -.25 && rd > .3 && rd < .75 ? hex("#E6FEFF") : rd > .74 ? hex("#3FB8E0") : hex("#14506F"); // deep glass, so its pilot shows
+        const dxu = X2 / (MW * .37), dyu = (Y - MH * .52) / (MH * .1); // the tier of portholes
+        if (dxu * dxu + dyu * dyu <= 1) { if (white) return w; if (y === Math.round(MH * .52) - 1 + (MH > 24 ? 1 : 0) && x % 5 === 2 && ax > MW * .06) return hex("#FFE9A8"); return Y < MH * .5 ? hex("#F2F0FF") : hex("#C8C3EE"); }
+        const dxh = X2 / (MW * .5), dyh = (Y - MH * .63) / (MH * .12); // the disc and its dark waist
+        if (dxh * dxh + dyh * dyh <= 1) { if (white) return w; if (y === S.rimY) return hex("#2A2650"); if (Y < MH * .63) return dxh < -.55 && Y < MH * .6 ? hex("#FFFFFF") : hex("#DAD6F5"); return Y < MH * .7 ? hex("#9B96C8") : hex("#6B66A8"); }
+        const dxb = X2 / (MW * .31), dyb = (Y - MH * .72) / (MH * .24); // the ribbed belly and its hatch
+        if (Y > MH * .7 && dxb * dxb + dyb * dyb <= 1) return white ? w : ax < MW * .06 && Y > MH * .84 ? hex("#0B0820") : x % 4 === 0 || Y > MH * .86 ? hex("#2A2650") : hex("#403C6E");
+        return null; };
+      S.ship = K.paint(MW, MH, (x, y) => shipPix(x, y, false)); S.shipW = K.paint(MW, MH, (x, y) => shipPix(x, y, true)); S.alien = sprite(ALIEN[pr ? 1 : 0], ALP);
+      S.mini = sprite(MINI, MNP); S.heart = sprite(HEART, HTP); S.rock = sprite(ROCK, RKP);
       // the synthwave sun for a level at sunset: yellow to magenta, sliced by the sky toward its foot
       const R = pr ? 13 : 20, SUNC = ["#FFF6B8", "#FFE14D", "#FFB02E", "#FF7A3C", "#FF4F86", "#FF2BD6"].map(hex); S.sunR = R;
       S.sun = K.paint(R * 2 + 1, R * 2 + 1, (x, y) => { const dx = x - R, dy = y - R; if (dx * dx + dy * dy > (R + .4) * (R + .4)) return null;
@@ -333,6 +384,9 @@ export default function arcade(K) {
       // the sky from five (a night of shooting stars, a synthwave sunset, a storm, snow, the aurora: never the signature's
       // plain night, so no level looks like the first), the power-up and the boss from four each, the closing words from five
       const L = { P, hx, sig: false, sky: K.bag(P, 5, 302), power: K.bag(P, 4, 303), boss: K.bag(P, 4, 304), end: K.bag(P, 5, 305) }, oneUp = K.bag(P, 8, 307) === 3;
+      // 1.12 b398: every fiftieth level, for whoever has left the screen on that long, a boss of its own: the mothership at
+      // 50, 150, 250…, and at 100, 200, 300… the moon itself, under the aurora so nothing crosses it; a thousand points a level
+      if ((P + 1) % 50 === 0) { L.mile = P + 1; L.boss = L.mile % 100 ? 4 : 5; if (L.boss === 5) L.sky = 4; }
       // the scroll: still until GO!, a run, faster with the star or the jetpack, easing to a stop for the boss — covering
       // D like the signature's, so the city comes to rest where it began
       const vp = t => t < 1.2 ? 0 : t < 1.7 ? E.out((t - 1.2) / .5) : L.power === 0 ? (t < 6.6 ? 1 : t < 6.9 ? lerp(1, 1.7, (t - 6.6) / .3) : t < 7.8 ? 1.7 : t < 8.5 ? 1.7 * (1 - E.io((t - 7.8) / .7)) : 0)
@@ -378,7 +432,7 @@ export default function arcade(K) {
       else if (L.power) jumps.push([5.92, .56, 16]);
       pts.push([6.55, 1000]);
       // the boss: three shots jumped, three hits, the burst; a hop to close
-      jumps.push([9.4, .46, 12], [10.0, .46, 12], [10.6, .46, 12], [11.75, .44, 9]); pts.push([11.3, 5000]);
+      jumps.push([9.4, .46, 12], [10.0, .46, 12], [10.6, .46, 12], [11.75, .44, 9]); pts.push([11.3, L.mile ? 1000 * L.mile : 5000]);
       L.jumps = jumps; L.pts = pts; L.beats = beats; L.lands = jumps.filter(j => !jumps.some(o => o !== j && Math.abs(o[0] - (j[0] + j[1])) < 1e-6)).map(j => j[0] + j[1]);
       // the storm's clouds cross the moon and are gone by the end; lightning once in the run and once as the boss arrives
       if (L.sky === 0) L.meteors = Array.from({ length: 7 }, (_, i) => { const big = i === 3, v = (pr ? 95 : 190) * (.85 + r() * .35), an = Math.PI * (.12 + r() * .1);
@@ -399,6 +453,7 @@ export default function arcade(K) {
       S.heroX += (S.heroTx - S.heroX) * glide; S.bx += (S.btx - S.bx) * glide; S.by += (S.bty - S.by) * glide;
       const hx = Math.round(S.heroX), L = S.plan(P, hx), sig = L.sig, XF = L.X; S.lastX = XF;
       if (P !== S.bankP) S.bankTo(P, hx); S.bankL = L; S.bankT = T; // b397: the score carries on
+      S.moonAway = 0; // b398: how far the backdrop's moon gives way to the one that wakes
       const X = (S.base || 0) + XF(T), wX = t => XF(t) - XF(T); // where a thing placed at loop time t is now, relative to then
       b.clearRect(0, 0, bw, bh); b.globalAlpha = 1;
       const put = (spr, x, y, a = 1, sx = 1, sy = 1) => { if (a <= .01) return; b.globalAlpha = clamp(a); const w = spr.width * sx, h = spr.height * sy; b.drawImage(spr, Math.round(x + (spr.width - w) / 2), Math.round(y + spr.height - h), Math.round(w), Math.round(h)); b.globalAlpha = 1; };
@@ -661,6 +716,49 @@ export default function arcade(K) {
             if (!dead) { const open = SH.some(t => T > t - .15 && T < t + .14), a = I * shadeB(hxN + 10, hyN + 7, 10); put(flick ? S.dheadW[open ? 1 : 0] : S.dhead[open ? 1 : 0], hxN, hyN, a); health(hxN - 6, hyN - 7, a); if (hitNow) shake = 1.2; }
           }
           if (on) for (const t of SH) { const k = (T - t) / .7; if (k <= 0) continue; const [mx, my] = head(t), x = lerp(mx + 1, hx - 26, k); if (x < -5) continue; const y = k < .25 ? lerp(my + 10, gy - 5, (k / .25) * (k / .25)) : gy - 5 - Math.abs(Math.sin((k - .25) * Math.PI * 4)) * 3; dot(x - 1, y - 1, "#FF7A3C", I, 4); dot(x, y, "#FFE14D", I, 2); dot(x + 3, y - 1, "#FF7A3C", I * .55); dot(x + 5, y, "#FF2B4E", I * .3); }
+        } else if (L.boss === 4) { // the mothership (b398): down out of the sky on a rumble, its pilot at the glass, its lights
+          // chasing round the waist and a tractor beam swept below, motes rising up it; a fighter dropped from its hatch at each
+          // shot, a third of its lights out at each hit, and a chain of blasts across it before the burst
+          const MW = S.MW, MH = S.MH, sx0 = clamp(Math.round(bossX + 15 - MW / 2), 1, bw - MW - 1), drop = seg(T, 8.3, 9.3, E.out);
+          // it hovers as high as it may and stays clear of the words, its health above it, leaving its beam room to the street
+          // (on a phone the list sits where it would otherwise hover)
+          const clearAt = y => !(S.wr || []).some(r => r[0] < (sx0 + MW) * PS && r[2] > sx0 * PS && r[1] < (y + MH) * PS && r[3] > (y - 9) * PS);
+          let top1 = gy - (pr ? 62 : 70) - MH; for (let y = top1; y <= gy - 30 - MH; y++) if (clearAt(y)) { top1 = y; break; }
+          const sy0 = Math.round(lerp(-MH - 6, top1, drop) + (T > 9.3 ? Math.sin(A * 2) * 1.2 : 0)), sxN = sx0 + Math.round(knock) + jit, hcx = sxN + Math.round(MW / 2), hcy = sy0 + MH - 2;
+          if (on && T > 8.3 && T < 9.4) shake = Math.max(shake, T > 9.25 ? 1.4 : .45); // the rumble, and a thud as it stops
+          hpX = hcx; hpY = hcy; bcx = hcx; bcy = sy0 + Math.round(MH * .55);
+          if (on && T > 8.3 && !dead) {
+            const a = I * shadeB(hcx, sy0 + MH / 2, MW * .6), beam = env(T, 9.05, 9.3, 10.95, 11.15) * I, hwAt = y => Math.round(2 + (y - hcy) / (gy - hcy) * (pr ? 7 : 12));
+            if (beam > .02) { b.fillStyle = "#7FF7FF"; for (let y = hcy + 1; y < gy; y++) { const hw = hwAt(y), band = ((y - Math.floor(A * 30)) % 5 + 5) % 5 < 2; b.globalAlpha = beam * (band ? .24 : .1) * shadeB(hcx, y, 10); b.fillRect(hcx - hw, y, hw * 2, 1); b.globalAlpha = beam * .5 * shadeB(hcx, y, 10); b.fillRect(hcx - hw, y, 1, 1); b.fillRect(hcx + hw - 1, y, 1, 1); } b.globalAlpha = 1;
+              for (let m = 0; m < 7; m++) { const ph = (A * .7 + m / 7) % 1, y = gy - 2 - ph * (gy - hcy - 4), x = hcx + Math.sin(A * 2.6 + m * 1.7) * hwAt(y) * .55; dot(x, y, m % 2 ? "#FFFFFF" : "#BFFBFF", beam * (1 - ph) * .9); } } // the beam's edges, its bands running down, motes rising
+            put(flick ? S.shipW : S.ship, sxN, sy0, a);
+            if (!flick) { const look = hx < hcx ? -1 : 1, al = S.alien; put(al, hcx - Math.floor(al.width / 2) + look, sy0 + Math.round(MH * .43) - Math.round(al.height * .6) + (Math.floor(A * 1.3) % 5 === 0 ? 1 : 0), a * .92); // its pilot, eyes on the hero
+              dot(hcx, sy0, "#FF2B5E", a * (Math.floor(A * 3) % 2 ? 1 : .25)); // the spire's light
+              for (const [fx, c2] of [[-.2, "#2BE8FF"], [0, "#FF2BD6"], [.2, "#2BE8FF"]]) dot(hcx + Math.round(MW * fx) - (fx ? 1 : 0), sy0 + Math.round(MH * .88), c2, a * (.55 + .45 * Math.sin(A * 9 + fx * 20)), 2); } // its engines
+            const nL = Math.floor((MW - 8) / 4), out = HT.filter(t => T > t).length; // the lights round its waist, chasing; each hit puts a third of them out
+            for (let k = 0; k < nL; k++) { if (Math.floor(k * 3 / nL) < out && !flick) continue; dot(sxN + 4 + k * 4, sy0 + S.rimY - 1, flick ? "#FFFFFF" : NEON[(k + Math.floor(A * 12)) % 6], a, 2); }
+            health(hcx - 16, sy0 - 8, a); if (hitNow) shake = 1.2;
+          }
+          // where each hit landed a blast on the hull, and in its last moments a chain of them across it
+          if (on && T > 9.8) for (const [t, fx] of [[9.86, .2], [10.46, .5], [11.06, .8], [11.0, .36], [11.1, .64], [11.17, .12], [11.23, .9]]) ring(sxN + MW * fx, sy0 + S.rimY, seg(T, t, t + .3, x => x), 8, 7, t > 10.99 && t !== 11.06 ? "#FFE14D" : "#FF7A3C", I);
+          // the fighters: out of the hatch at each shot, down to the street and across at the hero
+          if (on) for (const t of SH) { const u = seg(T, t - .15, t + .05, x => x); if (u <= 0) continue; const k = (T - t - .05) / .6; if (k >= 1) continue;
+            const x = k < 0 ? hcx - 4 : lerp(hcx - 4, hx - 26, k), y = k < 0 ? Math.round(lerp(hcy, gy - 6, E.in(u))) : gy - 6; if (x < -9) continue; put(S.mini, x, y, I); if (k > 0) for (let q = 1; q < 4; q++) dot(x + 9 + q * 2, y + 2, "#7FF7FF", I * (1 - q / 4)); }
+        } else if (L.boss === 5) { // the moon (b398): the big moon over the city wakes, glares and comes down to meet the hero,
+          // growing as it comes; it spits moon rocks, takes three hits, and gives up pleased — a wink, a heart, and back up to
+          // its place, asleep
+          const mr = S.moonR, R2 = S.moonR2, [mx0, my0] = S.moonAt, down = seg(T, 8.3, 9.15, E.io), back = seg(T, 12.35, 13.75, E.io), at = down * (1 - back);
+          const R = Math.round(lerp(mr, R2, at)), c0x = mx0 + mr, c0y = my0 + mr, c1x = clamp(bossX + 15, R2 + 1, bw - R2 - 2), c1y = gy - 2 - R2;
+          const cxN = Math.round(lerp(c0x, c1x, at) + knock + jit), cyN = Math.round(lerp(c0y, c1y, at) - Math.sin(at * Math.PI) * 10 + (T > 9.15 && T < 12.35 ? Math.sin(A * 2.2) * 1.2 : 0));
+          S.moonAway = env(T, 7.5, 7.9, 14.0, 14.4) * I;
+          const spitting = SH.some(t => T > t - .15 && T < t + .1), kind = flick && T < 11.3 ? "white" : T < 7.95 ? "sleep" : T < 8.2 ? "awake" : T < 11.25 ? (spitting ? "spit" : "cross") : T >= 12.0 && T < 12.3 ? "wink" : T < 13.8 ? "pleased" : "sleep";
+          const hy = clamp(ly + 1 - cyN, -R, R); hpX = Math.round(cxN - Math.sqrt(Math.max(0, R * R - hy * hy))) + 1; hpY = ly + 1; bcx = cxN; bcy = cyN;
+          if (S.moonAway > .01) put(S.moonArt[kind][R], cxN - R, cyN - R, S.moonAway * shadeB(cxN, cyN, R + 6));
+          if (on) { const al = env(T, 7.95, 8.0, 8.2, 8.28) * I; if (al > .02) txt("!", c0x - 2, my0 - 9, "#FFE14D", al); } // it has noticed
+          if (on && T > 8.3 && T < 11.3) { health(cxN - 16, cyN - R - 8, I); if (hitNow) shake = 1.2; }
+          if (on && T > 9.1 && T < 9.2) shake = Math.max(shake, 1.3); // it lands
+          if (on) for (const t of SH) { const k = (T - t) / .7; if (k <= 0 || k >= 1) continue; const x = lerp(cxN - R * .3, hx - 26, k); if (x < -6) continue; const y = k < .15 ? lerp(cyN + R * .4, gy - 6, k / .15) : gy - 6 - Math.round(Math.abs(Math.sin((k - .15) * Math.PI * 2.5)) * 7 * Math.max(.35, 1 - k * .5)); put(S.rock, x, y, I); } // its rocks, bouncing at the hero
+          if (on && T > 12.0 && T < 13.0) { const u = seg(T, 12.0, 13.0, x => x); put(S.heart, cxN + R * .6 + Math.round(Math.sin(u * 9) * 2), Math.round(cyN - R - 2 - u * 16), I * (1 - seg(u, .6, 1))); } // and a heart, as it winks
         } else { // the slime king: two hops in, a slime spat at each shot, a wobble at each hit; four little slimes and a crown at the end
           const kx0 = bossX - 1; let kx = kx0, lift = 0;
           if (T < 8.66) { const u = seg(T, 8.3, 8.66, x => x); kx = lerp(bw + 4, kx0 + 16, u); lift = Math.sin(u * Math.PI) * 22 * jk; }
@@ -678,7 +776,8 @@ export default function arcade(K) {
         }
         // the hero's answer — lasers, or with the flower, fireballs bouncing along — and the sparks where they land
         if (on) for (const t of HT) {
-          if (L.power === 2) { const k = seg(T, t - .35, t, x => x); if (k > 0 && k < 1) { const x = lerp(gun, hpX, k), y = ly + 3 - Math.abs(Math.sin(k * Math.PI * 2)) * 9; dot(x - 1, y - 1, "#FF7A3C", I, 3); dot(x, y, "#FFE14D", I); dot(x - 3, y, "#FF7A3C", I * .5); } }
+          if (L.power === 2) { const k = seg(T, t - .35, t, x => x); if (k > 0 && k < 1) { const x = lerp(gun, hpX, k), y = L.boss === 4 ? lerp(ly + 3, hpY, k * k) - Math.abs(Math.sin(k * Math.PI * 2)) * 9 * (1 - k) : ly + 3 - Math.abs(Math.sin(k * Math.PI * 2)) * 9; dot(x - 1, y - 1, "#FF7A3C", I, 3); dot(x, y, "#FFE14D", I); dot(x - 3, y, "#FF7A3C", I * .5); } }
+          else if (L.boss === 4) { const k = seg(T, t - .08, t + .1, x => x); if (k > 0 && k < 1) { const n = Math.max(Math.abs(hpX - gun), Math.abs(hpY - ly)); b.globalAlpha = I * (1 - k); for (let j = 0; j <= n; j++) { const x = Math.round(lerp(gun, hpX, j / n)), y = Math.round(lerp(ly, hpY, j / n)); b.fillStyle = "#2BE8FF"; b.fillRect(x, y, 1, 2); b.fillStyle = "#FFFFFF"; b.fillRect(x, y, 1, 1); } b.globalAlpha = 1; } } // b398: up at the mothership's hatch
           else { const k = seg(T, t - .08, t + .1, x => x); if (k > 0 && k < 1 && hpX > gun) { b.globalAlpha = I * (1 - k); b.fillStyle = "#2BE8FF"; b.fillRect(gun, ly, hpX - gun, 2); b.fillStyle = "#FFFFFF"; b.fillRect(gun, ly, hpX - gun, 1); b.globalAlpha = 1; } }
           const sp = seg(T, t, t + .3, x => x); if (sp > 0 && sp < 1) for (let q = 0; q < 8; q++) { const an = q / 8 * TAU + t; dot(hpX + Math.cos(an) * sp * 7, hpY + Math.sin(an) * sp * 7, q % 2 ? "#FFFFFF" : L.power === 2 ? "#FF7A3C" : "#2BE8FF", I * (1 - sp)); }
         }
@@ -687,8 +786,8 @@ export default function arcade(K) {
         if (boom > 0 && boom < 1) { const bu = BURST[L.boss], rr = E.out(boom) * 34;
           for (let q = 0; q < 48; q++) { const an = q / 48 * TAU; dot(bcx + Math.cos(an) * rr, bcy + Math.sin(an) * rr * .7, bu.ring[q % 2], I * (1 - boom)); }
           for (const p of S.bits) { const d2 = E.out(boom) * 30 * p.v; dot(bcx + Math.cos(p.a) * d2, bcy + Math.sin(p.a) * d2 * .8 + boom * boom * 20, bu.bits[p.c], I * (1 - boom), p.s); }
-          if (boom < .2) shake = 2.5 * (1 - boom / .2);
-          txt("+5000", bcx - 14, bcy - 18 - boom * 10, "#FFE14D", I * (1 - seg(boom, .7, 1)), 1, true); }
+          if (boom < .2) shake = (L.boss === 5 ? .8 : 2.5) * (1 - boom / .2);
+          const ps = L.mile ? "+" + 1000 * L.mile : "+5000"; txt(ps, L.mile ? bcx - Math.round(tw(ps) / 2) : bcx - 14, bcy - 18 - boom * 10, "#FFE14D", I * (1 - seg(boom, .7, 1)), 1, true); }
         // the hero: its jumps from the level's table, a somersault off the spring; big with the mushroom, in fire colours
         // with the flower, flying with the jetpack; wearing the slime king's crown
         const jy = on ? jumpAt(T) : null, run = on && T > 1.2 && T < 8.6, spd = XF(T + .05) - XF(T), fire = L.power === 2 && on && T >= 6.8 && T < 12.47, set = S.norm;
@@ -751,11 +850,11 @@ export default function arcade(K) {
             if (u < .65) iris(hx + 6, gy - PH, R0 * (1 - E.io(seg(u, .35, .65)))); else if (u < .95) iris(ex + pw / 2, cy0 + 10, R0 * E.io(seg(u, .65, .95)));
             else if (u > 2.2 && u < 2.45) iris(xx + pw / 2, gy - PH, R0 * (1 - E.io(seg(u, 2.2, 2.45)))); else if (u >= 2.45) iris(hx + 6, gy - PH, R0 * E.io(seg(u, 2.5, 2.75))); } }
         if (on && F < 0) {
-          const lv = env(T, .3, .4, 1.0, 1.15) * I; if (lv > .02) panel("LEVEL " + (L.P + 1), lv);
+          const lv = env(T, .3, .4, 1.0, 1.15) * I; if (lv > .02) panel("LEVEL " + (L.P + 1), lv, 1, "#FFFFFF", !!L.mile);
           if (L.bonus) { const B0 = L.bonus.t0, bb = env(T, B0 + .95, B0 + 1.05, B0 + 1.85, B0 + 2.0) * I; if (bb > .02) panel("BONUS!", bb, 1, "#7CFF6B", true); }
           const go = env(T, 1.2, 1.26, 1.7, 1.9) * I; if (go > .02) panel("GO!", go, 2, "#7CFF6B");
           if (warn > .02 && Math.floor(A * 6) % 2) panel("WARNING", warn, 1, "#FF2B4E");
-          const hs = env(T, 12.0, 12.2, 13.8, 14.3) * I; if (hs > .02) panel(ENDS[L.end], hs, 1, "#FFFFFF", true);
+          const hs = env(T, 12.0, 12.2, 13.8, 14.3) * I; if (hs > .02) panel(L.boss === 5 ? "TO THE MOON!" : L.boss === 4 ? "LEGENDARY!" : ENDS[L.end], hs, 1, "#FFFFFF", true);
         }
       }
       if (F >= 0) {
@@ -776,7 +875,7 @@ export default function arcade(K) {
       if (!sig) shake *= I; // b381: a level's shakes ease away with it when the list is used
       const jr = shake ? rng(Math.floor(A * 30) + 7) : null, ox = shake ? Math.round((jr() - .5) * 2 * shake) * PS : 0, oy = shake ? Math.round((jr() - .5) * 2 * shake) * PS : 0;
       g.clearRect(0, 0, W, H); g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
-      if (sk === 1 && skyK > .01) { const [pc, x0, y0, w0, h0] = S.noMoon; g.globalAlpha = skyK; g.drawImage(pc, x0, y0, w0, h0); g.globalAlpha = 1; } // b381: at sunset the moon gives way
+      const away = Math.max(sk === 1 ? skyK : 0, S.moonAway); if (away > .01) { const [pc, x0, y0, w0, h0] = S.noMoon; g.globalAlpha = away; g.drawImage(pc, x0, y0, w0, h0); g.globalAlpha = 1; } // b381: at sunset the moon gives way (b398: and while it's down fighting)
       g.imageSmoothingEnabled = false; g.drawImage(pb, ox, oy, bw * PS, bh * PS);
       g.imageSmoothingEnabled = true; g.globalCompositeOperation = "lighter";
       for (const [t, a] of [[S.tiny1, .42], [S.tiny2, .5]]) { const x = t.getContext("2d"); x.clearRect(0, 0, t.width, t.height); x.drawImage(pb, 0, 0, t.width, t.height); g.globalAlpha = a; g.drawImage(t, ox, oy, bw * PS, bh * PS); }

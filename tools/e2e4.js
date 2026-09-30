@@ -3395,8 +3395,8 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  // 1.12 b397: Arcade's score carries from level to level, as a game's does
-  await test(label + ": 1.12 b397: Arcade's score carries from level to level — a page opens on nothing, a level the list cuts short banks what it had and a quiet page shows the bank, levels skipped count whole", async () => {
+  // 1.12 b397: Arcade's score carries from level to level, as a game's does; b398: every fiftieth level a boss of its own
+  await test(label + ": 1.12 b397: Arcade's score carries from level to level — a page opens on nothing, a level the list cuts short banks what it had and a quiet page shows the bank, levels skipped count whole; b398: level 50 brings the mothership, worth 50,000, and level 100 the moon", async () => {
     const t = await fresh(opts, { init: `try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: { day: "T1:curated:light", night: "T1:curated:arcade", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }, scenes: true } })); } catch (e) {}` });
     await sceneUp(t, "arcade"); await wait(300);
     const info = () => t.page.evaluate(() => window.__tf().scene.info);
@@ -3409,7 +3409,13 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.ok(i.bank >= 50 && i.bank < 6350, "the level cut short banked what it had, not all of it: " + i.bank); assert.equal(i.score, i.bank, "and a quiet page shows the bank");
     const cut = i.bank;
     await t.page.evaluate(() => window.__tfTest.scenePass(49, 1)); await wait(300);
-    i = await info(); assert.equal(i.level, 50); assert.ok(i.bank > cut + 48 * 5000, "the levels skipped count whole: " + i.bank);
+    i = await info(); assert.equal(i.level, 50); assert.equal(i.boss, 4, "level 50: the mothership"); assert.ok(i.bank > cut + 48 * 5000, "the levels skipped count whole: " + i.bank);
+    const at50 = i.bank;
+    await t.page.evaluate(() => window.__tfTest.sceneIdle());
+    await t.page.waitForFunction(() => window.__tf().scene.t > 11.8, null, { timeout: 16000, polling: 50 });
+    i = await info(); assert.equal(i.level, 50); assert.ok(i.score >= at50 + 50000 + 1000, "its fall is worth 50,000 on top of the level's own: " + (i.score - at50));
+    await t.page.evaluate(() => window.__tfTest.scenePass(99, 1)); await wait(300);
+    i = await info(); assert.equal(i.level, 100); assert.equal(i.boss, 5, "level 100: the moon");
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 

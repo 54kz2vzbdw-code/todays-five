@@ -754,6 +754,11 @@ body.welcome #demo-foot .paste{max-width:30rem}
    on the right where they always sit, and the list's chip and the pills keep the first; where it all fits nothing moves */
 html[data-mode="view"] .rail{flex-wrap:wrap;row-gap:.4rem}
 html[data-mode="view"] .rail-r{margin-left:auto}
+/* 1.12 b393: so does the rail of someone else's list one can edit, which carries the Shared pill and the list's chip
+   besides the tools (on a phone its tabs were clipped). Rules of their own: a browser without :has() keeps the rail as
+   it was, and the View link's rules above never depend on it */
+.rail:has(#shared:not([hidden])){flex-wrap:wrap;row-gap:.4rem}
+.rail:has(#shared:not([hidden])) .rail-r{margin-left:auto}
 
 /* shuffle (1.3): ↻ beside the count, only inside one-thing mode; the shown line slides out and the next slides in */
 #shuffle{display:none;color:var(--muted);letter-spacing:0;font-size:1.15em;padding:.2em .35em;min-width:32px;line-height:1}

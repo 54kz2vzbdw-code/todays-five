@@ -3002,6 +3002,21 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 
+  // 1.12 b393: the rail of someone else's list one can edit carries the Shared pill and the list's chip besides the tools,
+  // and on a phone its tabs were clipped; it wraps where its line runs out, as a View link's does (b389)
+  await test(label + ": 1.12 b393: someone else's list one can edit keeps its rail whole — the list's chip, the Shared pill, the count, the tabs and the tools, wrapped where the line runs out, nothing cut short", async () => {
+    const t = await fresh(opts);
+    const g = await makeList(t, "Groceries"); await forget(t.page, g.id);
+    await t.page.goto(BASE + "?transport=local#/l/" + g.id); await t.page.waitForFunction(() => document.getElementById("whose").open, null, { timeout: 9000 });
+    await t.press('#whose [data-whose="shared"]'); await onList(t.page, g.id); await wait(600);
+    assert.equal((await t.s()).mode, "edit"); assert.equal((await t.s()).origin, "shared");
+    const rail = await t.page.evaluate(() => ["listname", "shared", "count", "daynight", "more"].filter(id => document.getElementById(id).getClientRects().length > 0));
+    assert.deepEqual(rail, ["listname", "shared", "count", "daynight", "more"], "the whole rail: " + rail); assert.equal(await t.page.textContent("#listname"), "Groceries");
+    assert.ok(await t.page.evaluate(() => { const cut = e => e.scrollWidth > e.clientWidth + 1, r = document.querySelector(".rail"), s = document.querySelector(".rail .seg"); return !cut(r) && !cut(s) && ![...s.children].some(cut) && !cut(document.getElementById("listname")); }), "nothing on the rail cut short: the tabs and the list's name whole");
+    if (touch) assert.ok(await t.page.evaluate(() => document.querySelector(".rail .seg").getBoundingClientRect().top >= document.getElementById("shared").getBoundingClientRect().bottom - 1), "a phone's rail wraps: the tabs below the pill");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
+  });
+
   await test(label + ": panels are one stack — a sub-panel shows ‹ Back and returns to its parent with its scroll and its changed value, × closes the whole stack, Escape goes back a level and closes at the root, one history entry per level so the browser's Back goes back a level" + (touch ? ", and an edge swipe from the left goes back" : ""), async () => {
     const t = await fresh(opts);
     await t.press("#more"); await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await wait(300);

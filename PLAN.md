@@ -3477,3 +3477,37 @@ nothing in `apple/` changed but the stamp.
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on a checkout of the change alone: the new test, the View link test, the rail's baseline and its 1.9 wrap test, the shared list test, whose list, every View link test, the names everywhere, the full session and the worker's two tests, both viewports: 24 passed; again on the stamp |
 | Looked at | the rail at 375 and 390 px on 392 and 393 |
+
+# Today's Five 1.12 b395 — A scene holds still under a panel
+
+*Shipped as build 396. b395 is the change's commit.*
+
+Price found the menus still drag over Arcade. The page's thread doesn't: a tap reaches its panel in about 20 ms and the
+page keeps sixty frames a second. What a scene adds is work for the GPU process, which blurs the page behind every panel
+and, under a moving picture, blurs it again every frame. A scene now holds still under a panel — at once under one that
+blurs the page, at rest under a popover — and goes on when the panels close. The decisions are in DECISIONS.md under
+"1.12 b395 decisions — A scene holds still under a panel". Web only; the version holds at 1.12, and nothing in `apple/`
+changed but the stamp.
+
+## What shipped
+
+1. **A scene holds still under a panel** (b395). `scenes.js`: the stage watches the dialogs; `state().shaded` tells the
+   instruments which kind of panel is over it. A new browser test.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: the change is a lazy module (`scenes.js` 9,609 → **10,146 bytes** gzipped, most of it the comment) | `gzip -9 -n` |
+| walking the menus over Arcade, phone | scene frames 428 → **63**; GPU process 17.5 → **10.6 %** of a core (Scenes off 9.6 %); all processes 33.7 → **24.6 %** (22.9 %) | `menuprobe.mjs` (scratch): ⋯, Settings, Appearance, Back, Back, close, three times; `SystemInfo.getProcessInfo` |
+| the same, wide screen | scene frames 422 → **63**; all processes 32.3 → **28.0 %** | the same |
+| a tap to its panel, the page's frames | about 20 ms and 59.5 a second, before and after, with or without a scene, at full speed and throttled 4× | the same |
+| the fix | the new test fails on 394 (the scene draws on under the panel) and passes on 395, both viewports | `tools/e2e4.js` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the new test, the Scenes tests (the cadence test among them), the forever-cycle test, the hidden-kits test, panels are one stack, the Share sheet by intent, the full session and the worker's two tests, both viewports: 28 passed; again on the stamp |
+| Looked at | the probe's figures on 394, on 395 and with Scenes off |

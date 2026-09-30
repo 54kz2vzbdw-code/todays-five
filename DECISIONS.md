@@ -2934,3 +2934,43 @@ on 392's styles on a phone and passes on 393.
 
 **What did not change.** The copy: the changelog's clause about a phone's rail taking a second line sits in the View
 link paragraph, and a shared list's rail doing the same needs no line of its own. Nothing in `apple/` but the stamp.
+
+# 1.12 b395 decisions — A scene holds still under a panel
+
+**What Price asked.** "The menu still seems to lag on the arcade screen. I love the arcade screen and don't want to lose
+quality, just wondering if there's a fix for what appears to be a slow/laggy menu navigation on the arcade scene."
+
+**What it was: the GPU process, not the page.** A probe (`menuprobe.mjs`, scratch) walks the menus as a person does — ⋯,
+Settings, Appearance, Back, Back, close, three times — and on 394 a tap reached its panel in about 20 ms and the page
+kept 59.5 frames a second, with Arcade's scene or with Scenes off, at full speed or with the CPU throttled four times.
+What a scene adds is work for the GPU process. Every panel but a wide screen's ⋯ popover dims and blurs the page behind
+it (`backdrop-filter: blur(6px)` on the dialog's backdrop, and on the scrim a closing panel folds away over), and a
+moving picture has that blur worked out again every frame. Over the walk Arcade drew 428 frames behind the blur, and
+Chrome's GPU process ran at 17.5 % of a core against 9.6 % with Scenes off. Headless Chrome paces its own frames, so the
+probe sees the work rather than the drag; a real screen feels it where the compositor is busy.
+
+**The fix.** The stage watches the dialogs (a MutationObserver on their `open` attribute). Under a panel that blurs the
+page the picture holds still at once; under a popover, which blurs nothing, it holds once it has come to rest (a loop
+that was playing eases out first, as at any touch); 260 ms after the last panel closes, when the fold is done, it goes
+on. Through a 45 % dim and a 6 px blur a held picture looks like the quiet one, so nothing of the scene is lost. Every
+scene holds this way, not only Arcade.
+
+**Measured** (`menuprobe.mjs`, Arcade on a phone, the walk three times, 14.3 s; `SystemInfo.getProcessInfo` for each
+process's CPU as a share of one core):
+
+| | 394 | 395 | Scenes off |
+| --- | --- | --- | --- |
+| scene frames drawn | 428 | 63 (in the moments after each close) | 0 |
+| GPU process | 17.5 % | 10.6 % | 9.6 % |
+| renderer | 13.3 % | 11.0 % | 10.3 % |
+| all of Chrome's processes | 33.7 % | 24.6 % | 22.9 % |
+
+On a wide screen the same walk: 422 frames → 63; all processes 32.3 % → 28.0 %. A tap's time to its panel and the page's
+own frames are unchanged, as they were never the problem the probe could see.
+
+**Tests.** A new browser test: the picture holds under ⋯ (a sheet on a phone, a popover on a wide screen) and under
+Settings, draws nothing while held, and goes on when the panels close; with the loop playing it holds at once under a
+sheet, and at rest under a popover. It fails on 394, both viewports.
+
+**What did not change.** The panels, their blur and their motion; every scene's pictures; first paint (`scenes.js` is
+lazy: 9,609 → 10,146 bytes gzipped, most of it the comment); nothing in `apple/` but the stamp.

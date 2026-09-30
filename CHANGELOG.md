@@ -54,6 +54,10 @@ while you use the list and play out when you leave it alone—a little different
 now and then, so you never see the same fifteen seconds twice in a row. Off by default—with them off, the app runs
 exactly as before.
 
+Two fixes for anyone holding a View link. The sun/moon and ⋯ are back on the rail—a style meant for a line's own
+tools had been hiding them since 1.9—so you can set your own theme, sound and settings. And a device in one-thing
+mode shows a View link's whole Today instead of an empty one.
+
 ## 1.11 — A look of its own.
 
 - **New** — The same check, in colours of its own instead of borrowed ones.

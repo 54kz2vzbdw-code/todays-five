@@ -2938,6 +2938,24 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 
+  // 1.12 b388: one-thing mode is a way to work one's own list; on a device that has it on, a View link still shows its
+  // whole Today (the body's class came from the device's setting at start-up, before any list said whether it can edit)
+  await test(label + ": 1.12 b388: a device in one-thing mode opens a View link on its whole Today, and its own list in one-thing mode again", async () => {
+    const t = await fresh(opts);
+    const rows = await t.page.locator("#list .row").count(); assert.ok(rows >= 3, "the owner's Today: " + rows);
+    await t.page.click("#count"); await wait(400);
+    assert.equal(await t.page.evaluate(() => document.body.classList.contains("one")), true, "one-thing mode on, on the owner's list");
+    const { R } = await t.s();
+    const v = await fresh(opts, { url: BASE + "?transport=local#/r/" + R, list: false, ctx: t.ctx });
+    await v.page.waitForSelector("#ro:not([hidden])"); await wait(400);
+    assert.equal(await v.page.evaluate(() => document.body.classList.contains("one")), false, "a View link has no one thing");
+    assert.equal(await v.page.$$eval("#list .row", els => els.filter(e => e.getClientRects().length).length), rows, "the whole Today, on the View link");
+    assert.equal(v.errors.length, 0, v.errors.join("; ")); await v.close();
+    await t.page.reload(); await t.page.waitForSelector("#list .row"); await wait(400);
+    assert.equal(await t.page.evaluate(() => document.body.classList.contains("one")), true, "the owner's list comes back in one-thing mode");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
+  });
+
   // 1.12 b387: a View link's holder has the rail's tools again. The view rule that hides a line's tools (v3) matched the
   // rail's own wrapper once 1.9 grouped the sun/moon, Share and ⋯ as `.tools`, so a viewer lost ⋯ and with it the device's
   // own theme, sound and settings; everything behind ⋯ was already made safe for a View link

@@ -576,6 +576,7 @@ async function openList(r) {
     if (roll.moved.length || roll.doc !== doc) { doc = roll.doc; rolled = true; }
   }
   document.documentElement.dataset.mode = mode;
+  document.body.classList.toggle("one", !!dev.oneThing && mode === "edit"); // 1.12 b388: the device's one-thing mode works one's own list; a View link shows its whole Today
   document.body.classList.remove("welcome"); document.documentElement.classList.remove("welcome"); // the boot script's guess ends here
   history.replaceState(null, "", BASE + SEARCH + frag({ id: r.id, mode }));
   if (window.__tfManifest) window.__tfManifest(frag({ id: r.id, mode }));
@@ -2424,7 +2425,7 @@ function wireUi() {
   $("#install-x").addEventListener("click", () => { $("#install").hidden = true; document.body.classList.remove("install-on"); dev.installHint = true; saveDevice(); });
   if (IOS && !STANDALONE && !dev.installHint) setTimeout(() => { if (doc && !demo && !openPanel) { $("#install").hidden = false; document.body.classList.add("install-on"); document.body.style.setProperty("--install-h", $("#install").offsetHeight + "px"); } }, 2500); // 1.11: its real height, like --shake-h — the stack above it is no longer tuned to one font's metrics
   document.addEventListener("pointerdown", () => { sound.prime(); setTimeout(() => panels(), 300); }, { once: true, capture: true }); // 1.7: the panels warm on the first gesture
-  document.body.classList.toggle("one", !!dev.oneThing);
+  document.body.classList.toggle("one", !!dev.oneThing && listMode === "edit" && !demo); // (b388: as openList decides it)
 }
 function toggleMute() { dev.muted = !dev.muted; saveDevice(); paintMute(); if (!dev.muted) sound.tick(); dispatchEvent(new CustomEvent("tf:settings")); }
 function paintMute() { $("#menu-sound-k").textContent = dev.muted ? "Off" : "On"; $('#p-menu [data-act="sound"]').setAttribute("aria-pressed", dev.muted ? "false" : "true"); }

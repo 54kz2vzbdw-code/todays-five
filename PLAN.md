@@ -3446,3 +3446,34 @@ the list is in use too". Web only; the version holds at 1.12, and nothing in `ap
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on a checkout of the change alone: the Scenes tests (the cadence test among them, failing on 390's stage and passing on this), the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
 | Looked at | the probe's second-by-second record on 390 and 391, at full speed and throttled |
+
+# Today's Five 1.12 b393 — The rail of someone else's list wraps before it clips
+
+*Shipped as build 394. b393 is the change's commit.*
+
+An editable list filed under Shared with me carries the Shared pill and the list's chip besides the tools, and on a
+phone its tabs were clipped. Its rail now wraps where its line runs out, as a View link's has since 390. Found while
+measuring that rail; unrequested, so its own commit and its own build. The decisions are in DECISIONS.md under "1.12
+b393 decisions — The rail of someone else's list wraps before it clips". Web only; the version holds at 1.12, and
+nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **The rail of someone else's list wraps before it clips** (b393). `styles.css` (two rules on `:has()`); a new browser test.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `styles.css` **+127 bytes** gzipped (13,687 → 13,814), mostly the comment | `gzip -9 -n` |
+| first paint | desktop FCP **56 → 52 ms** (48–64 against 48–64); mobile **1308 → 1304 ms** (1300–1324 against 1296–1312): no cost | `tools/paint.mjs 8`, 392 (port 8841) beside 393 (8830) |
+| the rail, someone else's list one can edit | 375–430 px: the tabs clipped, the chip cut to 37–53 px → **two lines, nothing cut**; 360 and 682–1440 px: as they were | `rail.mjs` (scratch) `MODE=edit`, nine widths |
+| the fix | the new test fails on 392's styles on a phone and passes on 393 | `tools/e2e4.js` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the new test, the View link test, the rail's baseline and its 1.9 wrap test, the shared list test, whose list, every View link test, the names everywhere, the full session and the worker's two tests, both viewports: 24 passed; again on the stamp |
+| Looked at | the rail at 375 and 390 px on 392 and 393 |

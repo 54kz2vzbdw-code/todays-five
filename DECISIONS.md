@@ -2901,3 +2901,36 @@ viewports) and passes on 391.
 **What did not change.** The loop, the passes, the finales; first paint (`scenes.js` is lazy, and its gzipped size is
 the same, 9,609 bytes); anything with Scenes off; the changelog, whose Scenes paragraph already says what a scene does
 in use; nothing in `apple/` but the stamp.
+
+# 1.12 b393 decisions — The rail of someone else's list wraps before it clips
+
+**Found while measuring the View link's rail (b389).** A list filed under Shared with me that one can edit carries the
+Shared pill and the list's chip besides everything an owner's rail has, and on a phone its line ran out: at 375, 390 and
+430 px the Today/Everything switch was clipped ("EVERY") and the chip cut to 37–53 px of 67, on the live site.
+Unrequested, so its own commit; and it moves the screens of people holding someone else's list, so its own build, after
+the View link's (390) and the scenes' cadence (392).
+
+**The fix.** The View link's rule (b389), for a rail that shows the Shared pill: where the line runs out the count, the
+tabs and the tools take a line of their own, on the right, and the chip and the pill keep the first. Rules of their own
+on `:has(#shared:not([hidden]))` rather than a selector added to the View link's: in a selector list an unknown `:has()`
+voids the whole rule, so a browser without it would have lost the View link's wrap too. This way such a browser keeps
+the rail as it was, for a shared list only.
+
+**Measured** (`rail.mjs` `MODE=edit`: a named list opened by its Private link, the whose question answered "Someone
+else's"; 392 on port 8841 beside the change on 8840):
+
+| width | before (392) | after |
+| --- | --- | --- |
+| 360 px | the 1.9 narrow rail, whole | the same |
+| 375, 390, 430 px | one line: the tabs clipped, the chip cut to 37–53 px of 67 | two lines (113 px), nothing cut |
+| 682, 768, 820, 1024, 1440 px | one line, whole | the same |
+
+**The cost.** On a phone, about 50 px more above the list (62 → 113 px), on a list someone else shared that one can
+edit; no other rail moves.
+
+**Tests.** A new browser test opens someone else's list by its Private link and checks the whole rail shows (the chip,
+the Shared pill, the count, the sun/moon and ⋯) with nothing cut short, and on a phone the tabs below the pill. It fails
+on 392's styles on a phone and passes on 393.
+
+**What did not change.** The copy: the changelog's clause about a phone's rail taking a second line sits in the View
+link paragraph, and a shared list's rail doing the same needs no line of its own. Nothing in `apple/` but the stamp.

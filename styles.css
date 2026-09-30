@@ -749,6 +749,11 @@ body.welcome #demo-foot .paste{max-width:30rem}
 
 /* the view-only pill names the link on the desktop; the phone's rail has room for the state alone */
 @media (max-width:680px){ .ro-l{display:none} }
+/* 1.12 b389: a View link's rail wraps before it clips. It carries the View only pill (and Shared, for someone else's list)
+   besides all an owner's rail has, so where the line runs out the count, the tabs and the tools take a line of their own,
+   on the right where they always sit, and the list's chip and the pills keep the first; where it all fits nothing moves */
+html[data-mode="view"] .rail{flex-wrap:wrap;row-gap:.4rem}
+html[data-mode="view"] .rail-r{margin-left:auto}
 
 /* shuffle (1.3): ↻ beside the count, only inside one-thing mode; the shown line slides out and the next slides in */
 #shuffle{display:none;color:var(--muted);letter-spacing:0;font-size:1.15em;padding:.2em .35em;min-width:32px;line-height:1}

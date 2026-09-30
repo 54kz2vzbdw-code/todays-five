@@ -2959,7 +2959,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   // 1.12 b387: a View link's holder has the rail's tools again. The view rule that hides a line's tools (v3) matched the
   // rail's own wrapper once 1.9 grouped the sun/moon, Share and ⋯ as `.tools`, so a viewer lost ⋯ and with it the device's
   // own theme, sound and settings; everything behind ⋯ was already made safe for a View link
-  await test(label + ": 1.12 b387: a View link's holder has the rail's tools — the sun/moon, ⋯, and Share where the rail has room — and ⋯ offers only what is the device's or safe to show: Share the View link, Theme, Sound, Lists, Settings, How it works, About, no Save and no Delete everywhere; Appearance sets this device's theme; Templates offers no Delete", async () => {
+  await test(label + ": 1.12 b387: a View link's holder has the rail's tools — ⋯ and the sun/moon, and Share where the rail has room — and ⋯ offers only what is the device's or safe to show: Share the View link, Theme, Sound, Lists, Settings, How it works, About, no Save and no Delete everywhere; Appearance sets this device's theme; Templates offers no Delete; b389: someone else's View link keeps the whole rail, wrapped where the line runs out, the tabs and the list's name whole", async () => {
     const t = await fresh(opts);
     await t.page.click("#v-all"); await wait(300); await t.esc(); await t.page.click("#addsec"); await t.page.fill("#ask-input", "Work"); await t.page.click("#ask-ok"); await wait(300);
     await t.press("#all .sec .sec-more"); await t.page.waitForSelector("#p-sec[open]");
@@ -2968,7 +2968,9 @@ for (const [label, opts, touch] of VIEWPORTS) {
     const v = await fresh(opts, { url: BASE + "?transport=local#/r/" + R, list: false, ctx: t.ctx });
     await v.page.waitForSelector("#ro:not([hidden])"); await wait(300);
     const shown = id => v.page.evaluate(id => { const e = document.getElementById(id); return !!e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden"; }, id);
-    assert.equal(await shown("more"), true, "⋯ on the rail"); assert.equal(await shown("daynight"), true, "the sun/moon on the rail"); assert.equal(await shown("share"), !touch, "Share where the rail has room (a phone keeps it in ⋯)");
+    assert.equal(await shown("more"), true, "⋯ on the rail"); assert.equal(await shown("daynight"), true, "the sun/moon"); assert.equal(await shown("share"), !touch, "Share where the rail has room (a phone keeps it in ⋯)");
+    const whole = page => page.evaluate(() => { const cut = e => e.scrollWidth > e.clientWidth + 1, r = document.querySelector(".rail"), s = document.querySelector(".rail .seg"); return !cut(r) && !cut(s) && ![...s.children].some(cut) && !cut(document.getElementById("listname")); });
+    assert.ok(await whole(v.page), "b389: the rail fits, the tabs whole");
     assert.equal(await v.page.$$eval("#list .row .tools, #all .row .tools", els => els.filter(e => e.getClientRects().length).length), 0, "a line's own tools stay hidden");
     await v.press("#more"); await v.page.waitForSelector("#p-menu[open]"); await wait(200);
     const acts = await v.page.$$eval("#p-menu [data-act], #p-menu #menu-about", els => els.filter(e => e.getClientRects().length).map(e => e.dataset.act || e.id));
@@ -2986,6 +2988,17 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(await v.page.locator('#pick-menu [aria-label="Delete Five"]').count(), 0, "with no Delete for a viewer");
     await v.esc();
     assert.equal(v.errors.length, 0, v.errors.join("; ")); await v.close();
+    // b389: someone else's list on a View link carries the list's chip and both pills besides all an owner's rail has; where
+    // the line runs out (a phone) the rail wraps, the count, the tabs and the tools on a line of their own, nothing cut short
+    const g = await makeList(t, "Groceries"); await forget(t.page, g.id);
+    const o = await fresh(opts, { url: BASE + "?transport=local#/r/" + g.R, list: false, ctx: t.ctx });
+    await o.page.waitForFunction(() => document.getElementById("whose").open, null, { timeout: 9000 });
+    await o.press('#whose [data-whose="shared"]'); await o.page.waitForFunction(() => window.__tf().mode === "view" && !document.getElementById("whose").open, null, { timeout: 9000 }); await wait(500);
+    const rail = await o.page.evaluate(() => ["listname", "ro", "shared", "count", "daynight", "more"].filter(id => document.getElementById(id).getClientRects().length > 0));
+    assert.deepEqual(rail, ["listname", "ro", "shared", "count", "daynight", "more"], "the whole rail: " + rail); assert.equal(await o.page.textContent("#listname"), "Groceries");
+    assert.ok(await whole(o.page), "nothing on the rail cut short: the tabs and the list's name whole");
+    if (touch) assert.ok(await o.page.evaluate(() => document.querySelector(".rail .seg").getBoundingClientRect().top >= document.getElementById("shared").getBoundingClientRect().bottom - 1), "a phone's rail wraps: the tabs below the pills");
+    assert.equal(o.errors.length, 0, o.errors.join("; ")); await o.close();
     assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 

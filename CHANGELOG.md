@@ -55,8 +55,9 @@ now and then, so you never see the same fifteen seconds twice in a row. Off by d
 exactly as before.
 
 Two fixes for anyone holding a View link. The sun/moon and ⋯ are back on the rail—a style meant for a line's own
-tools had been hiding them since 1.9—so you can set your own theme, sound and settings. And a device in one-thing
-mode shows a View link's whole Today instead of an empty one.
+tools had been hiding them since 1.9—so you can set your own theme, sound and settings, and when a phone's rail runs
+out of room it takes a second line instead of cutting the tabs short. And a device in one-thing mode shows a View
+link's whole Today instead of an empty one.
 
 ## 1.11 — A look of its own.
 

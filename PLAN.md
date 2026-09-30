@@ -3412,3 +3412,37 @@ the version holds at 1.12, and nothing in `apple/` changed but the stamp.
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on a checkout of the change alone: the two new tests, the rail's baseline and its 1.9 wrap test, every View link test (Share by intent, whose list, add from anywhere, the names everywhere), one-thing mode and its shuffle, the Scenes cadence test, the full session and the worker's two tests, both viewports: 32 passed; again on the stamp |
 | Looked at | a View link at 360, 375, 390 and 430 px and at 682, 768 and 1024 px, someone else's list with both pills and its chip: the rail; ⋯, Appearance, Settings, Templates |
+
+# Today's Five 1.12 b391 — A scene draws at thirty frames a second while the list is in use too
+
+*Shipped as build 392. b391 is the change's commit.*
+
+Price found the lists "a little laggy on first load until the loop starts." The page wasn't: a probe found no dropped
+frame or long task from the list showing into the loop, at full speed or throttled. What changed where the loop started
+was the scene's cadence, fifteen frames a second in use and thirty in the loop. A scene now draws at thirty in use too,
+one cadence on one callback, for 0.9 to 1.8 points of a core more on the page's thread while a list is in use with
+Scenes on. The decisions are in DECISIONS.md under "1.12 b391 decisions — A scene draws at thirty frames a second while
+the list is in use too". Web only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **One cadence** (b391). `scenes.js`: thirty frames a second in use as in the loop, on the vsync callback; the quiet
+   timer goes. The cadence test expects thirty in use.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: the change is a lazy module (`scenes.js`, **9,609 bytes** gzipped before and after) | `gzip -9 -n` |
+| first load into the loop | 390: fifteen frames a second for 19 s, then thirty; 391: **thirty from the first second**; both: no frame dropped, no long task after the list showed, at full speed and throttled 4× (Terminal, wide, 6×: the same) | `lagprobe.mjs` (scratch), Forest on a phone, 26 s from the list showing |
+| CPU in use, desktop | page thread 1.62–2.46 % → **3.14–4.13 %**; all processes **+1.8 to +7.9 points** (eight kits) | `tools/idle.mjs 60`, `SCENES=1 USE=5`, 386 (8841) beside the change (8840), back to back |
+| CPU in use, phone (390×844 at 2×) | Forest 1.55 → **2.41 %**, Sketch 1.90 → **3.34 %**, Superpink 1.85 → **3.05 %**; all processes +3.9 to +4.9 points | the same, `VP=phone` |
+| CPU left alone | unchanged: the loop was at thirty already | |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests (the cadence test among them, failing on 390's stage and passing on this), the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
+| Looked at | the probe's second-by-second record on 390 and 391, at full speed and throttled |

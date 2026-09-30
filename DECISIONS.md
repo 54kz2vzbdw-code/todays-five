@@ -2850,3 +2850,54 @@ and about 40 on a 682 or 1024 px screen (60 → 99 px). Only a View link's rail,
 Shared pill and the chip too, and on a phone its tabs clip (measured at 375, 390 and 430 px, on the live site). The same
 rule for any rail with a pill fixes it, but it moves the screens of people holding someone else's list, not this build's
 viewers: it ships on its own build, after the scenes' cadence.
+
+# 1.12 b391 decisions — A scene draws at thirty frames a second while the list is in use too
+
+**What Price asked.** "The sheets are a little laggy on first load until the loop starts. No lag once it is looping.
+What's the fix there?"
+
+**What it was: the scene's quiet cadence, not the page.** A probe (`lagprobe.mjs`, scratch) opens a list with a scene
+and records, second by second from the list showing through the quiet twenty seconds into the loop, the frames the page
+dropped (requestAnimationFrame gaps over 25 ms), its long tasks, how often the stage re-measured the words, and the
+scene's cadence. On 390, Forest on a phone: no frame dropped and no long task in 26 seconds, at full speed and with the
+CPU throttled four times; the one thing that changed where the loop started was the cadence, fifteen frames a second for
+the first nineteen seconds and thirty from the loop's ease-in on. Quiet, a scene drew at fifteen on a timer, b318's
+choice because it was the cheaper way at fifteen; the loop draws at thirty. A picture drawn in whole pixels and scaled
+up crisp steps visibly at fifteen, and the loop starting is exactly where Price's lag went away.
+
+**The fix: one cadence.** Thirty frames a second in use too, on the callback the loop already used (every vsync, drawing
+every other one), so nothing changes pace when the loop starts or eases back. The timer, its wake-up arithmetic and the
+finale's case for it go; `state()` reports thirty whenever the scene runs. On 391 the same probe reads thirty from the
+first second, with no frame dropped and no long task, at full speed and throttled four times; Terminal, the costliest
+style, on a wide screen throttled six times, the same.
+
+**What it costs.** `tools/idle.mjs 60` with `SCENES=1 USE=5` (a key every five seconds: a list in use), 386 at fifteen
+(port 8841) beside the change at thirty (8840), back to back; the page's own thread as a share of one core, then all of
+Chrome's processes, where a canvas's raster and compositing run:
+
+| kit | viewport | page thread, 15 → 30 | all processes, 15 → 30 |
+| --- | --- | --- | --- |
+| Forest | desktop | 1.77 → 3.15 % | 11.16 → 15.14 % |
+| Light | desktop | 2.07 → 3.46 % | 11.30 → 15.30 % |
+| Sketch | desktop | 2.46 → 3.39 % | 12.86 → 14.66 % |
+| Cocoa | desktop | 2.29 → 3.75 % | 12.77 → 17.29 % |
+| Arcade | desktop | 2.17 → 4.00 % | 11.98 → 19.92 % |
+| Superpink | desktop | 2.41 → 4.13 % | 11.67 → 16.93 % |
+| Paper | desktop | 1.93 → 3.42 % | 11.84 → 16.73 % |
+| Blush | desktop | 1.62 → 3.14 % | 10.03 → 15.73 % |
+| Forest | phone | 1.55 → 2.41 % | 11.35 → 15.27 % |
+| Sketch | phone | 1.90 → 3.34 % | 10.93 → 15.84 % |
+| Superpink | phone | 1.85 → 3.05 % | 11.04 → 15.56 % |
+
+So a list in use with a scene costs 0.9 to 1.8 points of a core more on the page's thread, and 1.8 to 7.9 across
+Chrome's processes (Arcade the most). Only with Scenes on, which is off by default; left alone nothing changes, the loop
+was at thirty already. Thirty is the loop's own pace, the one Price found smooth ("No lag once it is looping"), so the
+fix matches it rather than finding a pace between.
+
+**Tests.** The cadence test expects thirty in use, drawn at more than twenty and no more than 31.5 a second, and waits
+on the scene's own idle state and level where it waited on fifteen. It fails on 390's stage (fifteen in use, both
+viewports) and passes on 391.
+
+**What did not change.** The loop, the passes, the finales; first paint (`scenes.js` is lazy, and its gzipped size is
+the same, 9,609 bytes); anything with Scenes off; the changelog, whose Scenes paragraph already says what a scene does
+in use; nothing in `apple/` but the stamp.

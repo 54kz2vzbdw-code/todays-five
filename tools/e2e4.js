@@ -3395,6 +3395,29 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  // 1.12 b395: a panel over the page holds the picture still: at once under one that blurs the page (every panel on a
+  // phone, and a page such as Settings anywhere), once at rest under a wide screen's ⋯ popover; it goes on as the last closes
+  await test(label + ": 1.12 b395: a scene holds still under a panel — at once under one that blurs the page, at rest under a wide screen's ⋯ popover — and goes on when the last panel closes", async () => {
+    const t = await fresh(opts, { init: sceneDevice() });
+    await sceneUp(t, "forest"); await wait(500);
+    assert.equal((await t.s()).scene.running, true, "running before");
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]");
+    await t.page.waitForFunction(() => !window.__tf().scene.running, null, { timeout: 3000, polling: 50 });
+    let sc = (await t.s()).scene; assert.equal(sc.shaded, touch ? 2 : 1, "under ⋯, a sheet on a phone and a popover on a wide screen: " + JSON.stringify(sc));
+    const f0 = sc.frames; await wait(700); assert.equal((await t.s()).scene.frames, f0, "and nothing drawn while it is open");
+    await t.page.click('#p-menu [data-act="settings"]'); await t.page.waitForSelector("#p-settings[open]"); await wait(300);
+    sc = (await t.s()).scene; assert.equal(sc.shaded, 2, "Settings blurs the page on every screen"); assert.equal(sc.running, false);
+    await t.esc(); await t.page.waitForFunction(() => window.__tf().scene.running, null, { timeout: 3000, polling: 50 });
+    const f1 = (await t.s()).scene.frames; await wait(500); assert.ok((await t.s()).scene.frames > f1 + 5, "drawing again once the panels are closed");
+    // the loop playing: under a sheet it holds at once; under a popover it eases to rest, then holds
+    await t.page.evaluate(() => window.__tfTest.sceneIdle()); await t.page.waitForFunction(() => window.__tf().scene.idle, null, { timeout: 4000, polling: 100 });
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]");
+    if (touch) { await wait(150); assert.equal((await t.s()).scene.running, false, "held at once under the sheet"); }
+    else await t.page.waitForFunction(() => { const s = window.__tf().scene; return !s.running && s.level === 0; }, null, { timeout: 4000, polling: 100 });
+    await t.esc(); await t.page.waitForFunction(() => window.__tf().scene.running, null, { timeout: 3000, polling: 50 });
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
+  });
+
   await test(label + ": 1.12 b318: a scene is nearly still while the list is in use (at thirty frames a second since b391, as the loop), plays its loop after twenty seconds alone and eases back at a touch, has its own moment at the finale, stops with the tab, and under reduced motion is one still frame", async () => {
     const t = await fresh(opts, { init: sceneDevice() });
     await sceneUp(t, "forest"); await t.page.keyboard.press("Shift"); await wait(300);

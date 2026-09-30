@@ -7,8 +7,9 @@
 // second since 1.12 b391, as the loop: fifteen read as a stutter).
 // Left alone for twenty seconds on Today it plays its fifteen-second loop, choreographed beat by beat, at 30, and eases
 // back the moment anything is touched; Everything, a page of words, keeps it quiet behind a veil. The finale has a
-// moment of its own. prefers-reduced-motion gets one still frame; a hidden page gets nothing at all. Each scene is its
-// own module (scene-<id>.js), handed the drawing kit below; the words' side of it is scenes.css.
+// moment of its own. prefers-reduced-motion gets one still frame; a hidden page gets nothing at all; a panel over the
+// page holds it still (1.12 b395). Each scene is its own module (scene-<id>.js), handed the drawing kit below; the
+// words' side of it is scenes.css.
 //
 // 1.12 b367: the forever cycle. Left alone, a scene no longer plays one fifteen-second loop over and over: each time
 // round is a pass, and the scene deals each pass its own — which of its beats play and when, from which side, in which
@@ -120,7 +121,7 @@ function linkCss(build) {
 export function createScene(host, id, { build = "", reduced = () => false, ink = "#000000", busy = false, visit = 0 } = {}) {
   let alive = true, scene = null, raf = 0, last = 0, T = 0, I = 0, A = 12, F = -1, P = 0, frames = 0, fps = 30, lastInput = performance.now();
   VISIT = visit || Math.floor(Date.now() / 1000) % 999983 + 1; // this visit's sequence of passes (b367)
-  let W = 0, H = 0, PXS = 4, resizeT = 0, coverT = 0, crowd = !!busy, veilAt = .5;
+  let W = 0, H = 0, PXS = 4, resizeT = 0, coverT = 0, crowd = !!busy, veilAt = .5, shaded = 0, shadeT = 0, shadeWatch = null;
   const [cv, g] = canvas(1, 1), [bd, bg] = canvas(1, 1); // the moving picture, and (smooth styles) what never moves under it
   cv.setAttribute("aria-hidden", "true"); bd.setAttribute("aria-hidden", "true");
   const scrim = document.createElement("div");
@@ -163,6 +164,18 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
   const hidden = () => document.visibilityState === "hidden";
   const onVis = () => { if (hidden()) halt(); else run(); };
   document.addEventListener("visibilitychange", onVis);
+  /* 1.12 b395: a panel over the page. Every panel is a modal dialog, and all but a wide screen's small ⋯ popover dim and
+     blur the page behind them. Under one the picture holds still: through the blur there is nothing to see move, and a
+     moving picture has the blur worked out again every frame (twice while a panel folds away over its blurred scrim).
+     Walking the menus over Arcade (⋯, Settings, Appearance and back, three times), Chrome's GPU process ran at 17.5 % of
+     a core against 9.6 % with Scenes off; held, 10.6 %. Under a popover, which blurs nothing, the picture holds once it
+     has come to rest. It goes on a moment after the last panel closes, once the fold is done. */
+  const held = () => shaded === 2 || (shaded === 1 && I <= .005 && F < 0);
+  const reshade = () => {
+    let s = 0; for (const d of document.querySelectorAll("dialog[open]")) s = Math.max(s, d.classList.contains("pop") ? 1 : 2);
+    if (s === shaded) return; shaded = s; clearTimeout(shadeT);
+    if (held()) halt(); else if (!s) shadeT = setTimeout(run, 260); else run();
+  };
   const onResize = () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (alive && scene) { size(); draw(); } }, 150); };
   addEventListener("resize", onResize);
   /* 1.12 b328: a scene that keeps to the empty part of the page (its `words(rects)`) is told where the words are: each
@@ -231,9 +244,10 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     if (want || I > .005) { T += dt; if (T >= LOOP) { T -= LOOP; P++; } } else { if (T > 0 && !scene.carry) P++; T = 0; }
     if (F >= 0) { F += dt / 3.4; if (F >= 1) F = -1; }
     draw();
+    if (held()) return; // under a panel, at rest (b395)
     raf = requestAnimationFrame(tick);
   }
-  const covered = () => crowd && veilAt > .98;
+  const covered = () => (crowd && veilAt > .98) || held();
   function run() { if (!alive || !scene || raf || hidden() || covered()) return; if (reduced()) { draw(); return; } last = 0; raf = requestAnimationFrame(tick); }
   function halt() { if (raf) cancelAnimationFrame(raf); raf = 0; }
 
@@ -245,6 +259,7 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     wash(scene.wash || weight); if (scene.veil) { veilAt = scene.veil; paintVeil(); }
     size();
     if (scene.words || scene.hug) { const shell = document.getElementById("shell"); if (shell) { watch = new MutationObserver(remeasure); watch.observe(shell, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["class", "hidden", "style"] }); } addEventListener("resize", remeasure); addEventListener("scroll", remeasure, opt); measure(); }
+    shadeWatch = new MutationObserver(reshade); shadeWatch.observe(document.body, { subtree: true, attributes: true, attributeFilter: ["open"] }); reshade(); // (b395; Scenes are turned on in a panel)
     draw();
     requestAnimationFrame(() => { if (alive) hs.opacity = "1"; });
     run();
@@ -264,9 +279,9 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     /** as if nothing had been touched for the twenty seconds (the suite's way in; see app.js's __tfTest) */
     leaveAlone() { lastInput = performance.now() - IDLE_AFTER - 1; run(); },
     ready,
-    state() { return { id, idle: I > .5, level: +I.toFixed(2), finale: F >= 0, frames, fps: raf ? fps : 0, running: !!raf, busy: crowd, px: PXS, size: [W, H], t: +T.toFixed(2), pass: P, carry: !!(scene && scene.carry), spot: scene && scene.spot ? scene.spot() : null }; }, // spot: where a scene that keeps to the empty page has settled
+    state() { return { id, idle: I > .5, level: +I.toFixed(2), finale: F >= 0, frames, fps: raf ? fps : 0, running: !!raf, busy: crowd, shaded, px: PXS, size: [W, H], t: +T.toFixed(2), pass: P, carry: !!(scene && scene.carry), spot: scene && scene.spot ? scene.spot() : null }; }, // spot: where a scene that keeps to the empty page has settled
     stop() {
-      alive = false; halt(); clearTimeout(resizeT); clearTimeout(coverT);
+      alive = false; halt(); clearTimeout(resizeT); clearTimeout(coverT); clearTimeout(shadeT); if (shadeWatch) shadeWatch.disconnect();
       INPUTS.forEach(t => removeEventListener(t, touched, opt));
       document.removeEventListener("visibilitychange", onVis); removeEventListener("resize", onResize);
       if (watch) watch.disconnect(); removeEventListener("resize", remeasure); removeEventListener("scroll", remeasure, opt); cancelAnimationFrame(wordsF);

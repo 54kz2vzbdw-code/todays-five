@@ -3373,3 +3373,42 @@ Midnight, Sunset and Dusk". Web only; the version holds at 1.12, and nothing in 
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on a checkout of the change alone: the Scenes tests, the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
 | Looked at | passes 1–6 and 7–8 of each kit on both viewports, each new beat full size, in the app with the real list, the thread behind the count caught on camera |
+
+# Today's Five 1.12 b387 — A View link's holder has the rail's tools again
+
+*Shipped as build 390. b387, b388 and b389 are its commits.*
+
+A View link's holder had no ⋯, sun/moon or Share on the rail: a rule meant for a line's own tools had hidden the rail's
+too since 1.9, and with them the device's own theme, sound and settings. The rail's tools are back, and everything
+behind ⋯ was already made for a viewer but Templates' Delete, now offered only where the list can be changed. A device
+in one-thing mode opens a View link on its whole Today. And a View link's rail, which carries more than an owner's,
+wraps where its line runs out rather than clipping the tabs. The decisions are in DECISIONS.md under "1.12 b387
+decisions — A View link's holder has the rail's tools again", "1.12 b388 decisions" and "1.12 b389 decisions". Web only;
+the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **A View link's holder has the rail's tools again** (b387). `styles.css` (the view rule names a line's tools);
+   `panels.js` (Templates' Delete only where the list can be changed); a new browser test.
+2. **One-thing mode leaves a View link's Today whole** (b388). `app.js`; the changelog's closing paragraph (through
+   Price's voice); a new browser test.
+3. **A View link's rail wraps before it clips** (b389). `styles.css` (two rules); the changelog's clause (through
+   Price's voice); the View link test checks the rail fits, and a second viewer, holding someone else's list, sees the
+   whole rail, wrapped on a phone.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | `app.js` **+71 bytes** gzipped (55,371 → 55,442), `styles.css` **+200** (13,487 → 13,687), mostly the comments; `panels.js` (lazy) +31 | `gzip -9 -n` |
+| first paint | desktop FCP **56 → 52 ms** (52–64 against 48–60); mobile **1300 → 1300 ms** (1288–1308 against 1288–1320): no cost | `tools/paint.mjs 8`, 386 (port 8841) beside 389 (8830) |
+| the rail, someone else's View link | 375–430 px: the tabs clipped, the chip cut to 8–20 px → **two lines, nothing cut**; 682 and 1024 px: clipped → two lines; 360, 768, 820 and 1440 px: as they were | `rail.mjs` (scratch): a named list, the whose question answered, nine widths |
+| the fixes | each new check fails before its fix (⋯ not on the rail; the one-thing class on a View link; a phone's rail not fitting) and passes after | `tools/e2e4.js` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the two new tests, the rail's baseline and its 1.9 wrap test, every View link test (Share by intent, whose list, add from anywhere, the names everywhere), one-thing mode and its shuffle, the Scenes cadence test, the full session and the worker's two tests, both viewports: 32 passed; again on the stamp |
+| Looked at | a View link at 360, 375, 390 and 430 px and at 682, 768 and 1024 px, someone else's list with both pills and its chip: the rail; ⋯, Appearance, Settings, Templates |

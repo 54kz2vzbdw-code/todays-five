@@ -2773,3 +2773,80 @@ keeps its colour. By night nothing changes: Midnight's lines already read well a
 **After.** The crossed-off line 5.01 in use and 4.98 left alone on a wide screen, 5.03 and 5.02 on a phone (plain 5.12
 and 5.08). Its own commit, in this build.
 
+# 1.12 b387 decisions — A View link's holder has the rail's tools again
+
+**What Price asked.** No way to reach the theme from a view-only list: "maybe it's as simple as giving access to the
+settings button, but maybe not" — a viewer shouldn't be able to share an edit link, but might want other settings
+besides themes.
+
+**What it was: a bug, not a missing feature.** The view rule from v3 hides `.tools` — then only a line's tools. In 1.9
+the rail's sun/moon, Share and ⋯ were grouped as one `<span class="tools">` so a narrow rail wraps them together, and
+the old rule began hiding them on a View link too. Everything behind ⋯ had already been made for a View link: Share
+offers the View link alone (and Tell a friend), Save your link and Delete everywhere don't show, Add from anywhere asks
+for the Private link, the theme builder can't save to the list. So a viewer had lost a menu that was ready for them; on a
+wide screen the T, Shift+T and M keys still reached the theme and the sound, and on a phone nothing did.
+
+**The fix.** The rule names a line's tools (`.row .tools`), and the rail keeps its own. One gap behind ⋯: Templates
+offered Delete, which on a View link would have gone into a local copy that never syncs; it is offered only where the
+list can be changed.
+
+**What a viewer reaches now.** On the rail, ⋯ and the sun/moon, and Share where the rail has room (a phone keeps Share
+in ⋯, as it does for an owner). Behind ⋯: Share (the View link, Tell a friend); Theme (their own Day and Night themes,
+the switch, Scenes — all this device's); Sound; Full screen; Lists; Settings (this device's, and This list's rows as
+they already were for a View link: Add from anywhere asks for the Private link, Export into a new list, Templates
+without Delete); How it works; About. Never the Private link, Save your link, New keys or Delete everywhere.
+
+# 1.12 b388 decisions — One-thing mode leaves a View link's Today whole
+
+**Found while checking the viewer's rail.** Start-up set the body's one-thing class from the device's setting before any
+list said whether it could be edited, and a View link never marks a line as the one: a device in one-thing mode opened
+a View link on an empty Today. One-thing mode is a way to work one's own list, so the class now follows the list's mode
+where the list opens. Its own commit, in this build; both fixes are about a View link.
+
+**The copy.** The 1.12 changelog closes on the two fixes, through Price's voice (the phone's second line joined it with
+b389): "Two fixes for anyone holding a View link. The sun/moon and ⋯ are back on the rail—a style meant for a line's own
+tools had been hiding them since 1.9—so you can set your own theme, sound and settings, and when a phone's rail runs out
+of room it takes a second line instead of cutting the tabs short. And a device in one-thing mode shows a View link's
+whole Today instead of an empty one."
+
+**Tests.** Two new browser tests, each failing before its fix (⋯ absent; the one-thing class set on a View link) and
+passing after.
+
+**What did not change.** Anything a viewer can change in the list: nothing. Scenes; nothing in `apple/` but the stamp.
+
+# 1.12 b389 decisions — A View link's rail wraps before it clips
+
+**Found by looking.** With ⋯ and the sun/moon back, a View link's rail carries more than an owner's: the View only pill,
+and for someone else's list the Shared pill and the list's chip. On a 390 px phone the Today/Everything switch clipped
+to "EVERYTHIN" and the chip squeezed to "L…". A first try hid the sun/moon and the chip on a phone's View link rail,
+since ⋯ reaches Theme and Lists; it passed for the test's viewer, who holds their own list, but someone else's list adds
+the Shared pill, and at 375–430 px the tabs still clipped. That case clipped before b387 as well: with the rail's tools
+hidden as they were, the tabs were cut at 375, 390 and 430 px.
+
+**The fix: 1.9's rule, wherever the line runs out.** 1.9's rail wraps before it truncates, but only under 341 px, a
+threshold measured against an owner's rail. A View link's rail now wraps wherever its line runs out: the count, the tabs
+and the tools take a line of their own, on the right where they always sit, and the list's chip and the pills keep the
+first. Nothing is hidden to make room, so a viewer on a phone keeps the sun/moon and the list's name. Where it all fits
+nothing moves. Two rules: `flex-wrap` on a View link's rail and `margin-left:auto` on its right half; under 341 px the
+narrow rail's own `flex:1 1 auto` leaves the auto margin nothing to take, so the 1.9 narrow rail is as it was.
+
+**Measured**, someone else's View link: a named list, the whose question answered "Someone else's", so the chip and both
+pills show (`rail.mjs`, a scratch instrument, the rail's height and whether the rail, the tabs or the chip are cut
+short):
+
+| width | before (b388) | after |
+| --- | --- | --- |
+| 360 px | the 1.9 narrow rail, two lines, whole | the same |
+| 375, 390, 430 px | one line: the tabs clipped, the chip cut to 8–20 px of 67 | two lines (113 px), nothing cut |
+| 682 px | one line: the tabs clipped, the chip cut to 42 px of 72 | two lines (99 px), nothing cut |
+| 768, 820 px | one line, whole | the same |
+| 1024 px (the date shows) | one line: the tabs clipped, the chip cut to 68 px of 81 | two lines (99 px), nothing cut |
+| 1440 px | one line, whole | the same |
+
+**The cost.** A phone's View link rail takes two lines where it had one: about 50 px more above the list (62 → 113 px),
+and about 40 on a 682 or 1024 px screen (60 → 99 px). Only a View link's rail, and only where its line runs out.
+
+**Also found: an owner's rail for someone else's list.** A list filed under Shared with me that one can edit carries the
+Shared pill and the chip too, and on a phone its tabs clip (measured at 375, 390 and 430 px, on the live site). The same
+rule for any rail with a pill fixes it, but it moves the screens of people holding someone else's list, not this build's
+viewers: it ships on its own build, after the scenes' cadence.

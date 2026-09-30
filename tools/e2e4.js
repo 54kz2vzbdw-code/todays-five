@@ -3380,33 +3380,33 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": 1.12 b318: a scene is nearly still at fifteen frames a second while the list is in use, plays its loop at thirty after twenty seconds alone and eases back at a touch, has its own moment at the finale, stops with the tab, and under reduced motion is one still frame", async () => {
+  await test(label + ": 1.12 b318: a scene is nearly still while the list is in use (at thirty frames a second since b391, as the loop), plays its loop after twenty seconds alone and eases back at a touch, has its own moment at the finale, stops with the tab, and under reduced motion is one still frame", async () => {
     const t = await fresh(opts, { init: sceneDevice() });
     await sceneUp(t, "forest"); await t.page.keyboard.press("Shift"); await wait(300);
     const rate = async ms => { const a = (await t.s()).scene.frames; await wait(ms); return ((await t.s()).scene.frames - a) / (ms / 1000); };
-    let sc = (await t.s()).scene; assert.equal(sc.fps, 15, "in use: fifteen: " + JSON.stringify(sc)); assert.equal(sc.t, 0, "the loop waits at its start");
-    const amb = await rate(2000); assert.ok(amb > 4 && amb <= 16.5, "and no more than that: " + amb);
+    let sc = (await t.s()).scene; assert.equal(sc.fps, 30, "in use: thirty, as the loop (b391: fifteen read as a stutter): " + JSON.stringify(sc)); assert.equal(sc.idle, false); assert.equal(sc.t, 0, "the loop waits at its start");
+    const amb = await rate(2000); assert.ok(amb > 20 && amb <= 31.5, "drawn at that, and no more: " + amb);
     // left alone
     await t.page.evaluate(() => window.__tfTest.sceneIdle());
     await t.page.waitForFunction(() => window.__tf().scene.idle, null, { timeout: 4000, polling: 100 });
     sc = (await t.s()).scene; assert.equal(sc.fps, 30, "the loop at thirty");
-    const loop = await rate(2000); assert.ok(loop > amb && loop <= 31.5, "drawn at that: " + loop + " against " + amb);
+    const loop = await rate(2000); assert.ok(loop > 20 && loop <= 31.5, "drawn at that: " + loop);
     assert.ok((await t.s()).scene.t > 1, "with its clock running");
     // a touch, and it eases back to the start of its loop
     await t.page.keyboard.press("Shift");
     await t.page.waitForFunction(() => !window.__tf().scene.idle, null, { timeout: 3000, polling: 50 });
-    await t.page.waitForFunction(() => { const s = window.__tf().scene; return s.level === 0 && s.t === 0 && s.fps === 15; }, null, { timeout: 5000, polling: 100 });
+    await t.page.waitForFunction(() => { const s = window.__tf().scene; return s.level === 0 && s.t === 0 && !s.idle; }, null, { timeout: 5000, polling: 100 });
     // Everything is a page of words: the picture steps back behind a veil and its loop waits for Today
     await t.press("#v-all"); await t.page.waitForSelector("#all .row"); await wait(700);
     assert.equal((await t.s()).scene.busy, true, "Everything is busy");
     assert.equal(await t.page.$eval("#field", f => getComputedStyle(f.lastElementChild).opacity), "0.5", "the veil is up");
     await t.page.evaluate(() => window.__tfTest.sceneIdle()); await wait(1500);
-    sc = (await t.s()).scene; assert.ok(!sc.idle && sc.fps === 15, "left alone on Everything, it stays quiet: " + JSON.stringify(sc));
+    sc = (await t.s()).scene; assert.ok(!sc.idle && sc.level === 0 && sc.t === 0, "left alone on Everything, it stays quiet: " + JSON.stringify(sc));
     await t.press("#v-today"); await t.page.waitForSelector("#list .row"); await wait(700);
     assert.equal((await t.s()).scene.busy, false); assert.equal(await t.page.$eval("#field", f => getComputedStyle(f.lastElementChild).opacity), "0", "and down again on Today");
     await t.page.evaluate(() => window.__tfTest.sceneIdle());
     await t.page.waitForFunction(() => window.__tf().scene.idle, null, { timeout: 4000, polling: 100 });
-    await t.page.keyboard.press("Shift"); await t.page.waitForFunction(() => window.__tf().scene.fps === 15, null, { timeout: 5000, polling: 100 });
+    await t.page.keyboard.press("Shift"); await t.page.waitForFunction(() => !window.__tf().scene.idle, null, { timeout: 5000, polling: 100 });
     // the finale: its own moment, then back
     for (const box of await t.page.$$("#list .row:not(.done) .check")) { await box.click(); await wait(300); }
     await t.page.waitForFunction(() => window.__tf().scene.finale, null, { timeout: 4000, polling: 50 });

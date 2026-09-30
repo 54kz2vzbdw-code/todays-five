@@ -3,7 +3,8 @@
 // never asks for it or runs it (the worker precaches it like every module, so a page open across a deploy still gets
 // its own build's). A scene is drawn in whole pixels on a small canvas, about 190 tall, scaled up crisp.
 //
-// Two moods. While the list is in use the scene is nearly still: stars, a firefly now and then, 15 frames a second.
+// Two moods. While the list is in use the scene is nearly still: stars, a firefly now and then (at thirty frames a
+// second since 1.12 b391, as the loop: fifteen read as a stutter).
 // Left alone for twenty seconds on Today it plays its fifteen-second loop, choreographed beat by beat, at 30, and eases
 // back the moment anything is touched; Everything, a page of words, keeps it quiet behind a veil. The finale has a
 // moment of its own. prefers-reduced-motion gets one still frame; a hidden page gets nothing at all. Each scene is its
@@ -117,7 +118,7 @@ function linkCss(build) {
 }
 /** Mount scene `id` in `host` (#field). Returns { stop, finale, state }; stop() leaves the host as it found it. */
 export function createScene(host, id, { build = "", reduced = () => false, ink = "#000000", busy = false, visit = 0 } = {}) {
-  let alive = true, scene = null, raf = 0, timer = 0, last = 0, T = 0, I = 0, A = 12, F = -1, P = 0, frames = 0, fps = 15, lastInput = performance.now();
+  let alive = true, scene = null, raf = 0, last = 0, T = 0, I = 0, A = 12, F = -1, P = 0, frames = 0, fps = 30, lastInput = performance.now();
   VISIT = visit || Math.floor(Date.now() / 1000) % 999983 + 1; // this visit's sequence of passes (b367)
   let W = 0, H = 0, PXS = 4, resizeT = 0, coverT = 0, crowd = !!busy, veilAt = .5;
   const [cv, g] = canvas(1, 1), [bd, bg] = canvas(1, 1); // the moving picture, and (smooth styles) what never moves under it
@@ -211,11 +212,13 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     scene.layout(W, H, bg);
   }
   function draw() { g.globalAlpha = 1; scene.draw(T, I, A, F, P); frames++; }
-  /* Two cadences, two ways of asking for frames, each the cheaper one where it is used (measured in Chrome with
-     tools/idle.mjs, A against B on the same build): quiet at fifteen, a timer wakes half a display frame before the
-     next is due and that one frame is asked for (1.6 % of a core against 2.4 % with a callback on every vsync); at
-     thirty, in the loop, the callback stays on every vsync and draws every other one (2.8 % against 4.1 % for the
-     timer, whose stopping and starting the frame pipeline thirty times a second cost more than it saved). */
+  /* One cadence (1.12 b391): the callback stays on every vsync and draws every other one, thirty frames a second, in
+     the loop and quiet alike. Quiet ran at fifteen until then, on a timer that woke half a display frame before each
+     frame was due (1.6 % of a core against 2.4 % for a callback on every vsync), but fifteen read as a stutter in the
+     twenty seconds before the loop began. In use a scene now costs one to two points of a core more on the page's own
+     thread, two to eight across all of Chrome's processes (tools/idle.mjs `USE=5`, 15 against 30). At thirty the timer
+     was the dearer way: stopping and starting the frame pipeline thirty times a second cost more than it saved (4.1 %
+     against 2.8 %). */
   function tick(now) {
     raf = 0;
     if (last && now - last < 1000 / fps - 2) { raf = requestAnimationFrame(tick); return; }
@@ -227,14 +230,12 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     // loop comes back after the list was used (b367) — but a pass cut short in a scene that carries plays again
     if (want || I > .005) { T += dt; if (T >= LOOP) { T -= LOOP; P++; } } else { if (T > 0 && !scene.carry) P++; T = 0; }
     if (F >= 0) { F += dt / 3.4; if (F >= 1) F = -1; }
-    fps = want || I > .01 ? 30 : 15;
     draw();
-    if (fps === 30) raf = requestAnimationFrame(tick);
-    else timer = setTimeout(() => { timer = 0; raf = requestAnimationFrame(tick); }, Math.max(0, last + 1000 / fps - 8 - performance.now()));
+    raf = requestAnimationFrame(tick);
   }
   const covered = () => crowd && veilAt > .98;
-  function run() { if (!alive || !scene || raf || timer || hidden() || covered()) return; if (reduced()) { draw(); return; } last = 0; raf = requestAnimationFrame(tick); }
-  function halt() { if (raf) cancelAnimationFrame(raf); clearTimeout(timer); raf = timer = 0; }
+  function run() { if (!alive || !scene || raf || hidden() || covered()) return; if (reduced()) { draw(); return; } last = 0; raf = requestAnimationFrame(tick); }
+  function halt() { if (raf) cancelAnimationFrame(raf); raf = 0; }
 
   const ready = import(MODS[id] + "?v=" + build).then(m => {
     if (!alive) return;
@@ -251,7 +252,7 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
 
   return {
     /** the day is done: the scene's own moment, then back to where it was */
-    finale() { if (!scene || reduced()) return; F = 0; if (timer) { halt(); run(); } else run(); }, // now, not after a quiet frame's wait
+    finale() { if (!scene || reduced()) return; F = 0; run(); }, // from the next frame
     /** a change of reduced motion: a still frame, or the loop again */
     motion() { halt(); if (scene) { draw(); run(); } },
     /** the page is full of words (Everything) or not (Today): the veil, and whether the loop may play */
@@ -263,7 +264,7 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     /** as if nothing had been touched for the twenty seconds (the suite's way in; see app.js's __tfTest) */
     leaveAlone() { lastInput = performance.now() - IDLE_AFTER - 1; run(); },
     ready,
-    state() { return { id, idle: I > .5, level: +I.toFixed(2), finale: F >= 0, frames, fps: raf || timer ? fps : 0, running: !!(raf || timer), busy: crowd, px: PXS, size: [W, H], t: +T.toFixed(2), pass: P, carry: !!(scene && scene.carry), spot: scene && scene.spot ? scene.spot() : null }; }, // spot: where a scene that keeps to the empty page has settled
+    state() { return { id, idle: I > .5, level: +I.toFixed(2), finale: F >= 0, frames, fps: raf ? fps : 0, running: !!raf, busy: crowd, px: PXS, size: [W, H], t: +T.toFixed(2), pass: P, carry: !!(scene && scene.carry), spot: scene && scene.spot ? scene.spot() : null }; }, // spot: where a scene that keeps to the empty page has settled
     stop() {
       alive = false; halt(); clearTimeout(resizeT); clearTimeout(coverT);
       INPUTS.forEach(t => removeEventListener(t, touched, opt));

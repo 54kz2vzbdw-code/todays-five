@@ -3395,6 +3395,24 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  // 1.12 b397: Arcade's score carries from level to level, as a game's does
+  await test(label + ": 1.12 b397: Arcade's score carries from level to level — a page opens on nothing, a level the list cuts short banks what it had and a quiet page shows the bank, levels skipped count whole", async () => {
+    const t = await fresh(opts, { init: `try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: { day: "T1:curated:light", night: "T1:curated:arcade", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }, scenes: true } })); } catch (e) {}` });
+    await sceneUp(t, "arcade"); await wait(300);
+    const info = () => t.page.evaluate(() => window.__tf().scene.info);
+    let i = await info(); assert.equal(i.level, 1); assert.equal(i.score, 0, "a page opens on nothing"); assert.equal(i.boss, -1, "the first level is the signature");
+    await t.page.evaluate(() => window.__tfTest.sceneIdle());
+    await t.page.waitForFunction(() => { const s = window.__tf().scene; return s.t > 3.2 && s.info.score >= 50; }, null, { timeout: 9000, polling: 50 });
+    await t.page.keyboard.press("Shift"); // the list is used: the loop lets go
+    await t.page.waitForFunction(() => { const s = window.__tf().scene; return s.level === 0 && s.t === 0 && s.pass === 1; }, null, { timeout: 6000, polling: 50 }); await wait(200);
+    i = await info(); assert.equal(i.level, 2, "the next stretch left alone plays the next level");
+    assert.ok(i.bank >= 50 && i.bank < 6350, "the level cut short banked what it had, not all of it: " + i.bank); assert.equal(i.score, i.bank, "and a quiet page shows the bank");
+    const cut = i.bank;
+    await t.page.evaluate(() => window.__tfTest.scenePass(49, 1)); await wait(300);
+    i = await info(); assert.equal(i.level, 50); assert.ok(i.bank > cut + 48 * 5000, "the levels skipped count whole: " + i.bank);
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
+  });
+
   // 1.12 b395: a panel over the page holds the picture still: at once under one that blurs the page (every panel on a
   // phone, and a page such as Settings anywhere), once at rest under a wide screen's ⋯ popover; it goes on as the last closes
   await test(label + ": 1.12 b395: a scene holds still under a panel — at once under one that blurs the page, at rest under a wide screen's ⋯ popover — and goes on when the last panel closes", async () => {

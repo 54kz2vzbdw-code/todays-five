@@ -100,6 +100,8 @@ export default function arcade(K) {
   const PRE = { coins: .31, block: .28, slime: .416, shell: .3, bats: .38, bricks: .25, spring: .32, pit: .35, pipe: .33, cannon: .38, oneup: .28 }; // from the jump to the moment it meets the thing
   const POST = { coins: .31, block: .28, slime: .56, shell: .3, bats: .5, bricks: .25, spring: 1.1, pit: .35, pipe: .33, cannon: .62, oneup: .28 }; // and from then to the landing
   const ENDS = ["HIGH SCORE!", "NEW RECORD!", "PERFECT!", "BOSS DOWN!", "YOU WIN!"];
+  // the first level's points, each at the moment it is scored: five coins, the block, the slime, the star, the boss
+  const SIGPTS = [[2.25 + .62 * .12, 10], [2.25 + .62 * .31, 10], [2.25 + .62 * .5, 10], [2.25 + .62 * .69, 10], [2.25 + .62 * .88, 10], [4.4, 100], [4.62 + .52 * .8, 200], [6.55, 1000], [11.3, 5000]];
   const BURST = [{ ring: ["#FF2BD6", "#FFFFFF"], bits: ["#DAD6F5", "#3FB8E0", "#FF2BD6", "#FFE14D"] }, { ring: ["#FF7A3C", "#FFFFFF"], bits: ["#DAD6F5", "#9B96C8", "#FF2B4E", "#2BE8FF"] },
     { ring: ["#B388FF", "#FFFFFF"], bits: ["#FF2BD6", "#B388FF", "#FFE14D", "#7C4DFF"] }, { ring: ["#7CFF6B", "#FFFFFF"], bits: ["#7CFF6B", "#2FB84A", "#D8FFD0", "#FFE14D"] }];
   /** a sprite's pixels moved one to one — turned a quarter at a time, or flipped — so pixel art keeps its pixels */
@@ -306,6 +308,20 @@ export default function arcade(K) {
     hzFade(x, y) { let f = 1; for (const z of S.hz || []) { if (x < z[4] || x >= z[6] || y < z[5] || y >= z[7]) continue; f = Math.min(f, clamp(Math.max(z[0] - x, 0, x - z[2] + 1, z[1] - y, y - z[3] + 1) / 3.5)); } return f; },
     /** 1 clear of the words, down to a trace behind them (CSS pixels) */
     shade(x, y, rad) { let d = 1e9; for (const [x0, y0, x1, y1] of S.wr || []) d = Math.min(d, Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(y0 - y, 0, y - y1))); return lerp(.15, 1, clamp(d / rad)); }, // full once clear of the word, faint only behind it
+    /** for the instruments (the stage's state().info, b397): the level on screen, the score shown, the bank, the boss */
+    info() { return S.lastInfo || null; },
+    /** a level's points scored by loop time t, each counted up over .4 s as the signature always counted them */
+    earned(L, t) { return Math.round((L.sig ? SIGPTS : L.pts).reduce((s, [t0, p]) => s + p * clamp((t - t0) / .4), 0) / 10) * 10; },
+    /** 1.12 b397: the score carries from level to level, as a game's does. The level being played is pass P; when the pass
+     *  moves on, the bank takes what the last one scored — all of it when it played out, what the hero had when the loop
+     *  let go when the list cut it short (the next stretch left alone plays the next level either way) — and a pass the
+     *  instruments skip past counts whole. A page opens on nothing; a quiet page shows the bank. */
+    bankTo(P, hx) {
+      if (S.bankP === undefined || P < S.bankP) { S.bank = 0; for (let p = 0; p < P; p++) S.bank += S.earned(S.level0(p, hx), 15); }
+      else { S.bank += S.earned(S.bankL, S.bankT); for (let p = S.bankP + 1; p < P; p++) S.bank += S.earned(S.level0(p, hx), 15); }
+      S.bankP = P;
+    },
+    level0(p, hx) { return p > 0 ? S.level(p, hx) : S.sigL; },
     /** the level pass P deals, for a hero standing in column hx (b381); pass 0 is the signature, drawn as it always was */
     plan(P, hx) {
       if (!(P > 0)) return S.sigL;
@@ -382,6 +398,7 @@ export default function arcade(K) {
       const dt = S.lastA === undefined ? 0 : clamp(A - S.lastA, 0, .1); S.lastA = A; const glide = 1 - Math.exp(-dt * 3);
       S.heroX += (S.heroTx - S.heroX) * glide; S.bx += (S.btx - S.bx) * glide; S.by += (S.bty - S.by) * glide;
       const hx = Math.round(S.heroX), L = S.plan(P, hx), sig = L.sig, XF = L.X; S.lastX = XF;
+      if (P !== S.bankP) S.bankTo(P, hx); S.bankL = L; S.bankT = T; // b397: the score carries on
       const X = (S.base || 0) + XF(T), wX = t => XF(t) - XF(T); // where a thing placed at loop time t is now, relative to then
       b.clearRect(0, 0, bw, bh); b.globalAlpha = 1;
       const put = (spr, x, y, a = 1, sx = 1, sy = 1) => { if (a <= .01) return; b.globalAlpha = clamp(a); const w = spr.width * sx, h = spr.height * sy; b.drawImage(spr, Math.round(x + (spr.width - w) / 2), Math.round(y + spr.height - h), Math.round(w), Math.round(h)); b.globalAlpha = 1; };
@@ -528,9 +545,6 @@ export default function arcade(K) {
           if (warn > .02 && Math.floor(A * 6) % 2) panel("WARNING", warn, 1, "#FF2B4E");
           const hs = env(T, 12.0, 12.2, 13.8, 14.3) * I; if (hs > .02) panel("HIGH SCORE!", hs, 1, "#FFFFFF", true);
         }
-        // the score
-        const PTS = [[2.25 + .62 * .12, 10], [2.25 + .62 * .31, 10], [2.25 + .62 * .5, 10], [2.25 + .62 * .69, 10], [2.25 + .62 * .88, 10], [4.4, 100], [ts, 200], [tp, 1000], [11.3, 5000]];
-        const score = on ? Math.round(PTS.reduce((s, [t, p]) => s + p * clamp((T - t) / .4), 0) / 10) * 10 * I : 0; sc = String(Math.round(score)).padStart(6, "0");
       } else {
         // ---- a dealt level (b381) ----
         const U = D / 800, jumps = L.jumps, SH = [9.2, 9.8, 10.4], HT = [9.86, 10.46, 11.06];
@@ -743,8 +757,6 @@ export default function arcade(K) {
           if (warn > .02 && Math.floor(A * 6) % 2) panel("WARNING", warn, 1, "#FF2B4E");
           const hs = env(T, 12.0, 12.2, 13.8, 14.3) * I; if (hs > .02) panel(ENDS[L.end], hs, 1, "#FFFFFF", true);
         }
-        // the score, counted back to nothing before the next level begins
-        const score = on ? Math.round(L.pts.reduce((s, [t, p]) => s + p * clamp((T - t) / .4), 0) / 10) * 10 * I * (1 - seg(T, 14.35, 14.85)) : 0; sc = String(Math.round(score)).padStart(6, "0");
       }
       if (F >= 0) {
         const a = 1 - seg(F, .88, 1); panel("LEVEL CLEAR", a, 1, "#FFFFFF", true, i => seg(F, .05 + i * .035, .17 + i * .035, x => x));
@@ -753,7 +765,8 @@ export default function arcade(K) {
           const q = (k - .2) / .8; for (const p of f.parts) { const d = E.out(q) * 14 * p.v; dot(cx + Math.cos(p.a) * d, cy + Math.sin(p.a) * d + q * q * 6, NEON[(f.c + (p.v > .8 ? 1 : 0)) % 6], (1 - q) * shadeB(cx, cy, 14)); } }
         for (const c of S.confetti) { const k = seg(F, .25 + c.d, 1, x => x); if (k <= 0 || k >= 1) continue; const x = c.x * bw + Math.sin(k * 12 + c.x * 30) * 2, yy = k * c.v * gy; dot(x, yy, NEON[c.c], (1 - k) * shadeB(x, yy, 3), c.w ? 2 : 1); }
       }
-      // the score, on the bricks
+      // the score, on the bricks: the bank and what this level has scored so far (b397: it carries from level to level)
+      const score = S.bank + (T > 0 ? S.earned(L, T) : 0); sc = String(score).padStart(6, "0"); S.lastInfo = { level: P + 1, score, bank: S.bank, boss: sig ? -1 : L.boss };
       txt(pr ? sc : "SCORE " + sc, bw - tw(pr ? sc : "SCORE " + sc) - 4, gy + (pr ? 3 : 5), "#FFE14D", 1);
       // under the words the moving picture is cut back, so the backdrop's dark sky is what's behind them (and the bloom with it)
       b.globalCompositeOperation = "destination-out"; for (const [x0, y0, x1, y1, k] of S.wr || []) { b.globalAlpha = k === 1 ? .7 : .4; b.fillRect(Math.floor(x0 / PS), Math.floor(y0 / PS), Math.ceil((x1 - x0) / PS) + 1, Math.ceil((y1 - y0) / PS) + 1); } b.globalCompositeOperation = "source-over"; b.globalAlpha = 1;

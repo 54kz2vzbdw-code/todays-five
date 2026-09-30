@@ -279,7 +279,7 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     /** as if nothing had been touched for the twenty seconds (the suite's way in; see app.js's __tfTest) */
     leaveAlone() { lastInput = performance.now() - IDLE_AFTER - 1; run(); },
     ready,
-    state() { return { id, idle: I > .5, level: +I.toFixed(2), finale: F >= 0, frames, fps: raf ? fps : 0, running: !!raf, busy: crowd, shaded, px: PXS, size: [W, H], t: +T.toFixed(2), pass: P, carry: !!(scene && scene.carry), spot: scene && scene.spot ? scene.spot() : null }; }, // spot: where a scene that keeps to the empty page has settled
+    state() { return { id, idle: I > .5, level: +I.toFixed(2), finale: F >= 0, frames, fps: raf ? fps : 0, running: !!raf, busy: crowd, shaded, px: PXS, size: [W, H], t: +T.toFixed(2), pass: P, carry: !!(scene && scene.carry), spot: scene && scene.spot ? scene.spot() : null, info: scene && scene.info ? scene.info() : null }; }, // spot: where a scene that keeps to the empty page has settled; info: what a scene tells the instruments of itself (b397)
     stop() {
       alive = false; halt(); clearTimeout(resizeT); clearTimeout(coverT); clearTimeout(shadeT); if (shadeWatch) shadeWatch.disconnect();
       INPUTS.forEach(t => removeEventListener(t, touched, opt));

@@ -2700,3 +2700,76 @@ the dealt levels' shooting stars, lightning, rain and snow fade the same way as 
 **After.** On a wide screen the count 7.96 (plain 7.14), its "/3" 9.22, the date 5.77 (plain 5.23), in use and left
 alone; the pills and tabs at or above plain in every phase. On a phone no star sat behind them before, and nothing
 changes there.
+
+# 1.12 b384 decisions — the forever cycle, eight: Paper and Midnight, Sunset and Dusk
+
+**The last scenes to deal their passes.** Drafted by a helper to the forever cycle's brief and checked here. Pass 0 is
+each loop as it was; nothing carries. A pass fills each of its slots from a pool of its own, which plays through before
+repeating and never gives the same beat twice running; sides, heights, counts, colours and timings are dealt; the rare
+beats come up about once in eight passes. Whatever crosses the sky still comes on from past one edge and goes all the
+way off another (Price's note on this pair this round), and every new beat was stepped frame by frame for pops.
+
+**Paper.** The breeze early or late, the sun's notch either way. Across the sky: the plane's loop, two coloured planes
+through a double loop, or a biplane towing a striped streamer. On the viaduct: the red train either way, a blue express,
+a goods train with its caboose, or a cyclist with flowers. The showpiece: the kite, a dragon kite flown from below the
+page, or a paper balloon rising from behind the bank. To close: birds, a gust that bends the trees and sends leaves
+tumbling, or butterflies. Rare: a rainbow of six paper bands laid across the valley; a zeppelin.
+
+**Midnight.** The windows light in one of four orders. Along the viaduct: the lit train either way, or a cyclist with a
+lamp. At the moon: the cloud from either side, an owl, or geese. The showpiece: fireworks (shards, paper stars or
+willow), a balloon lit from inside, or a needle sewing a constellation in gold thread. To close: the star on its wire,
+fireflies, or paper snow. Rare: tissue-paper curtains of the northern lights; a comet on a wire.
+
+**Sunset.** The slits quicken early or late. In the air: the flock, a pelican that plunges into the sun's path, or
+flamingos. By the sun: the cloud bank, a liner or a junk passing from behind one headland to behind the other, or a
+jet's contrail. On the water: one or two sailboats, a windsurfer, or leaping dolphins. To close: the flare, a run of
+light down the sun's path, or flying fish. Rare: a whale's spout and flukes; a seaplane landing.
+
+**Dusk.** The lanterns come up the shore from the left, the right or everywhere, from both headlands, or are set
+floating on the water, in orange, rose, gold or mixed. On the water: the egret's flight, the egret fishing, a rowboat
+(along the shore it flushes the egret, which comes home behind it), or fireflies. In the sky: a falling star, bats, a
+lighthouse's beam from the point, or a veil of cloud across the moon. Rare: a meteor shower; the shallows glowing blue.
+
+**Checked.** Pass 0 of all four kits the same to the byte as before, both viewports; the resting picture of dealt
+passes the same too. Twelve passes each: no pass like the one before but one Midnight pair at the tool's cut (dark
+paper on a dark sky: those two passes differ in every beat); every seam at most the drift of Dusk's lanterns in a
+thirtieth of a second (0.05 %).
+
+**Contrast.** The first draft hung the needle's constellation on gold threads that ran up off the top edge, and one ran
+through the header right beside the count on a wide screen: Midnight's count read 3.86–4.14 against a plain 8.4–9.0 (the
+untouched scene 9.28). The threads and the other new sky beats now fade near the header's small words, and the count
+reads 9.28. Over dealt passes 1 to 3, the seed lines and the long list, both viewports: no reading under 4.9 on the long
+list; at or above plain but the finale's words fading in and a few tenths in the app's idle fade. One reading was under
+4.5 before this build: Paper's crossed-off line in a wide screen's long list, 5.12 → 4.37 in use as much as left alone,
+the same in the untouched scene. It is fixed in its own commit (b385, below).
+
+**What it costs.** The loop over pass 0 and over dealt passes 1 to 4, sixty seconds each, back to back on one quiet
+machine, as a share of one core, with this build's ground under Paper's lines: Paper 3.06 → 3.15 % on a wide screen and
+2.95 → 2.98 % on a phone; Midnight 3.04 → 3.18 % and 2.81 → 2.89 %; Sunset 2.74 → 2.77 % and 2.54 → 2.61 %; Dusk 3.32 →
+3.42 % and 2.76 → 2.79 %. `scene-papercut.js` 13,218 → 37,198 and `scene-bay.js` 10,463 → 29,081 gzipped.
+
+**The worker's precache, now every scene deals its passes.** Every lazy module is precached (COMPATIBILITY.md §6), so
+each device's worker now fetches the sixteen scene modules at 380 KB gzipped where they were 166 KB before the forever
+cycle — 662 KB for the whole shell, once per deploy, in the background, whether or not Scenes are on. First paint is
+untouched. A later build could have the worker precache the scene modules only on a device with Scenes on.
+
+**The copy.** The changelog's Scenes paragraph gains, through Price's voice, what the whole cycle adds: "They stay nearly
+still while you use the list and play out when you leave it alone—a little different each time around, with something
+rare now and then, so you never see the same fifteen seconds twice in a row."
+
+**What did not change.** Pass 0 and the finales; the kits; first paint; nothing in `apple/` but the stamp.
+
+# 1.12 b385 decisions — Paper's own ground under a long list's lines
+
+**Before this build.** By day a long list's last lines lie over the paper town, and a struck line's quiet grey has no
+room for the hills, the trees and the river under it — the stage's pad leaves a fifth of the picture showing: Paper's
+crossed-off line read 4.37 against a plain 5.12 on a wide screen, with the list in use as much as left alone, in the
+untouched scene too; its caption 4.69 and ↻ 4.67. Found by this build's contrast runs.
+
+**The fix.** By day the scene lays the paper's own ground, soft at its edges, under each line that reaches down over the
+town (below the back hills' highest point), over whatever passes there; above the town, and everywhere else, the picture
+keeps its colour. By night nothing changes: Midnight's lines already read well above plain.
+
+**After.** The crossed-off line 5.01 in use and 4.98 left alone on a wide screen, 5.03 and 5.02 on a phone (plain 5.12
+and 5.08). Its own commit, in this build.
+

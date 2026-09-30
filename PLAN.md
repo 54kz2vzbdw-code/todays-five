@@ -3334,3 +3334,42 @@ Arcade, Teletype, Terminal". Web only; the version holds at 1.12, and nothing in
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on a checkout of the change alone: the Scenes tests, the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
 | Looked at | passes 1–6 of each kit on both viewports, each new level, pattern and effect, the star behind the count caught on camera |
+
+# Today's Five 1.12 b384 — the forever cycle, eight: Paper and Midnight, Sunset and Dusk
+
+*Shipped as build 386. b384 is the change's commit. b385 is its own fix, Paper's own ground under a long list's lines.*
+
+The last scenes deal their passes, each slot from a pool that plays through before repeating: Paper's planes, trains,
+kites and closers (rarely a paper rainbow or a zeppelin), Midnight's trains, moon visitors and showpieces (rarely paper
+northern lights or a comet), Sunset's birds, ships, water and closers (rarely a whale or a seaplane), Dusk's lanterns,
+water and sky (rarely a meteor shower or glowing shallows). Every scene now deals its passes, so the changelog's Scenes
+paragraph says what the cycle adds. And, found by this build's contrast runs, Paper lays its own ground under a long
+list's lines. The decisions are in DECISIONS.md under "1.12 b384 decisions — the forever cycle, eight: Paper and
+Midnight, Sunset and Dusk". Web only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Paper and Midnight, Sunset and Dusk deal their passes** (b384). `scene-papercut.js`, `scene-bay.js`; the
+   changelog's Scenes paragraph gains its closing words (through Price's voice).
+2. **Paper's own ground under a long list's lines** (b385). `scene-papercut.js`: the crossed-off line 4.37 → 5.01 on a
+   wide screen.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first-paint path | unchanged: the change is two lazy modules and the changelog | `git diff --stat` 383..384 |
+| lazy, Scenes on under the kit only | `scene-papercut.js` 13,218 → **37,198**; `scene-bay.js` 10,463 → **29,081** gzipped; the worker's precache of the sixteen scene modules 166 → **380 KB** since the forever cycle began (662 KB for the whole shell) | `gzip -9 -n` |
+| pass 0 | the same to the byte as 383's at b384, all four kits, both viewports, eleven moments of the loop and three of the finale (b385's ground needs the words, which the lab has none of) | `samecv.mjs`, 365's checkout (port 8833) against this |
+| the passes | twelve each, both viewports: no pass like the one before but one Midnight pair (dark paper on a dark sky, different in every beat); the seams at most Dusk's lanterns drifting (0.05 %) | `tools/scene-seams.mjs` |
+| CPU, desktop (share of one core) | the loop, pass 0 → dealt passes 1–4, with b385: Paper 3.06 → **3.15 %**, Midnight 3.04 → **3.18 %**, Sunset 2.74 → **2.77 %**, Dusk 3.32 → **3.42 %** | `tools/idle.mjs 60`, `SCENES=1` (`UNLOCK=1` for hidden kits), `PASS=0` against `PASS=1` (passes 1–4), back to back |
+| CPU, phone (390×844 at 2×) | Paper 2.95 → **2.98 %**, Midnight 2.81 → **2.89 %**, Sunset 2.54 → **2.61 %**, Dusk 2.76 → **2.79 %** | the same, `VP=phone` |
+| contrast | no reading under 4.9 on the long list; at or above plain but the finale's words fading in and the idle fade; Midnight's count, **9.28** (the first draft's constellation thread 3.86–4.14); Paper's crossed-off line, under 4.5 before (4.37, the untouched too), **5.01 / 4.98** with b385 | `tools/contrast.mjs` `PASS=1 PASSES=3`: the seed lines; `FIXTURE=1 CLOCK=2026-09-28T15:00:00` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the Scenes tests, the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 22 passed; again on the stamp |
+| Looked at | passes 1–6 and 7–8 of each kit on both viewports, each new beat full size, in the app with the real list, the thread behind the count caught on camera |

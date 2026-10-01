@@ -387,6 +387,15 @@ html[data-mode="view"] #hint{visibility:hidden}
 #finale .chip{font-family:var(--font-ui);font-weight:700;font-size:clamp(10px,1.05vw,12px);letter-spacing:.15em;text-transform:uppercase} /* 1.7: the rail's chip style, not body text */
 #finale.on{display:flex;animation:finale-in .5s ease}
 @keyframes finale-in{from{opacity:0}to{opacity:1}}
+/* 1.12 b401: the day stamps itself sealed, where no scene is playing (a scene's own moment is its finish there). A rubber
+   stamp in the kit's own ink, pressed a little askew, its ink a little worn: a still speckle mask, nothing that moves at
+   rest. The words are the material's (app.js stampWords). A seal's double frame: the border, and a hairline inside it.
+   Its room on the card is kept from the first frame (.wait), so the card never re-wraps when it comes down. A digital
+   material's stamp is crisp: no wear, square corners (Pixel's inner frame dashed, like a sprite's). */
+#finale .stamp{display:inline-block;font:700 clamp(10px,1.05vw,12px)/1 var(--font-ui);letter-spacing:.2em;text-transform:uppercase;white-space:nowrap;color:var(--accent-text);border:2px solid currentColor;border-radius:5px;outline:1px solid currentColor;outline-offset:-5px;padding:.86em 1.1em .82em;transform:rotate(-4deg);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='32'%3E%3Cfilter id='w' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 -3.2 0 0 0 2.75'/%3E%3C/filter%3E%3Crect width='96' height='32' filter='url(%23w)'/%3E%3C/svg%3E") 0 0/96px 32px;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='32'%3E%3Cfilter id='w' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 -3.2 0 0 0 2.75'/%3E%3C/filter%3E%3Crect width='96' height='32' filter='url(%23w)'/%3E%3C/svg%3E") 0 0/96px 32px}
+#finale .stamp.wait{visibility:hidden}
+html[data-mat="phosphor"] #finale .stamp,html[data-mat="pixel"] #finale .stamp{border-radius:0;-webkit-mask:none;mask:none}
+html[data-mat="pixel"] #finale .stamp{outline-style:dashed} /* a pixel frame */
 #finale span{
   font-family:var(--font-task);font-weight:var(--task-w);letter-spacing:var(--task-ls);
   font-size:clamp(1.1rem,2.7vh,1.9rem);color:var(--accent-text);font-style:var(--finale-style);

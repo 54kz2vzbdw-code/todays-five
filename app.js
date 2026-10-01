@@ -217,8 +217,47 @@ const rawFx = createFx($("#fx"), { palette: () => theme ? theme.confetti : ["#A8
 const fx = { burst: (...a) => { stats.burst++; return rawFx.burst(...a); }, volley: () => { stats.volley++; return rawFx.volley(); } };
 /** The finale's confetti: the volley every kit throws, or the bloom or the cake a Secret kit names (1.6). That
     module is fetched the first time one of those two finales runs — never on a device that has not unlocked them. */
+/* 1.12 b401: the day stamps itself sealed — the finisher where no scene is playing (a scene's own moment is its finish
+   there). Once the line has landed (finale.js landsAt) the stamp comes down onto the card: in from twice its size and a
+   little more askew, with a thud (packs.js CUES.stamp) and, on the iPhone, a knock under the thumb (tf:stamp). Its room
+   on the card is kept from the first frame. A page that opens on a finished day finds it already there; a line taken
+   back lifts it. The words are the material's: a bracketed date in phosphor, a stage in pixels, the date in the rest. */
+let stampTok = 0, stampDue = 0;
+function stampWords() {
+  const d = new Date(), mat = document.documentElement.dataset.mat;
+  if (mat === "phosphor") return `[ sealed ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ]`;
+  if (mat === "pixel") return `Sealed · stage ${d.getMonth() + 1}-${d.getDate()}`;
+  return "Sealed · " + d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+}
+/** From paint(): the card's own state. On, and no scene: the stamp is on the card (still, unless it is due to come down). */
+function paintStamp(on) {
+  const st = $("#stamp"); if (!st) return;
+  if (!on || sceneFor(theme)) { if (!st.hidden) { stampTok++; st.getAnimations().forEach(a => a.cancel()); st.hidden = true; st.classList.remove("wait"); } return; }
+  if (st.hidden) { st.textContent = stampWords(); st.classList.toggle("wait", performance.now() < stampDue); st.hidden = false; }
+}
+/** From finaleFx: the stamp comes down once the line has landed, `at` ms from now. */
+function stampIn(at) {
+  const st = $("#stamp"); stampDue = 0;
+  if (!st || sceneFor(theme)) return;
+  const tok = ++stampTok; st.textContent = stampWords(); st.classList.add("wait");
+  setTimeout(() => {
+    if (tok !== stampTok) return;
+    st.classList.remove("wait");
+    if (st.hidden || RM.matches) return;
+    const stepped = document.documentElement.dataset.mat === "pixel";
+    st.animate([{ opacity: 0, transform: "scale(1.9) rotate(-11deg)" }, { opacity: 1, transform: "rotate(-4deg)" }], { duration: 260, easing: stepped ? "steps(3,end)" : "cubic-bezier(.2,1.4,.4,1)" });
+    setTimeout(() => {
+      if (tok !== stampTok || st.hidden) return;
+      if (!dev.muted && sound.cue) sound.cue("stamp", 0.5, { running: true });
+      moment("tf:stamp");
+      $("#finale").animate([{ transform: "none" }, { transform: "translateY(1.5px)" }, { transform: "none" }], { duration: 140, easing: "ease-out" });
+    }, 170);
+  }, at);
+}
 function finaleFx() {
   if (field && field.finale) field.finale(); // 1.12 b318: a scene has its own moment under the kit's
+  const line = $("#finale span"); // b401: the stamp comes down once the line has landed, whichever way it is written
+  stampIn(finaleMod && finaleMod.landsAt ? finaleMod.landsAt(theme, { mat: document.documentElement.dataset.mat, text: line ? line.textContent : "", reduced: RM.matches }) : (RM.matches ? 0 : 900));
   const kind = theme && theme.finale;
   if (!kind) { // 1.12 b293: a curated kit's own ending (finale.js), on the volley's rhythm; the volley itself if that is not here yet
     if (finaleMod && finaleMod.finale(theme, rawFx, { span: $("#finale span"), w: innerWidth, h: innerHeight, reduced: RM.matches, spring: motionMod && motionMod.spring, shell: $("#shell"), mat: document.documentElement.dataset.mat, emit: motionMod && motionMod.emit, line: theme.finaleText || FINALE_LINES[theme.id] || FINALE_LINE })) { stats.volley++; return; }
@@ -1228,6 +1267,7 @@ function paint() {
   const finale = allDoneInView() && !editing && !finaleHold; // 1.9: the card waits for the chord; 1.12: each view finishes on its own
   if (finale) { fin.classList.add("on"); hint.classList.add("off"); }
   else { fin.classList.remove("on"); hint.classList.remove("off"); }
+  paintStamp(finale); // 1.12 b401
   { // 1.12 b293: a finale card that wraps (a mono kit's line and its chip on a phone) lifts the toast by its extra row, as --shake-h does
     const extra = finale ? fin.offsetHeight - $("#again").offsetHeight : 0, tall = extra > 12;
     document.body.classList.toggle("fin-tall", tall); if (tall) document.body.style.setProperty("--fin-extra", extra + "px");
@@ -1302,6 +1342,7 @@ function applyRemote(prev) {
   if (drag && (drag.moved || !drag.li.isConnected)) abortDrag(); // a moved drag or a lost row: abort; 1.7: an unmoved hold rides the render
   const before = wasAll;
   const nowAll = allDoneToday();            // the remote celebration is about the day, as it has always been
+  if (prev && (listMode === "view" || dev.celebrateRemote) && nowAll && !before) stampDue = performance.now() + 600; // 1.12 b401: the card painted now keeps its stamp for the moment celebrateRemote plays
   render({ animate: true, quiet: true });
   wasAll = allDoneInView();
   paintListName();

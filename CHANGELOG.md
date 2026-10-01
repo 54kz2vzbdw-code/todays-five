@@ -59,6 +59,9 @@ tools had been hiding them since 1.9—so you can set your own theme, sound and 
 out of room it takes a second line instead of cutting the tabs short. And a device in one-thing mode shows a View
 link's whole Today instead of an empty one.
 
+A finished day now stamps itself sealed—once the last line lands, a stamp in your theme's own ink comes down on the
+card with the date. If a scene is playing, the scene's own finish takes its place.
+
 ## 1.11 — A look of its own.
 
 - **New** — The same check, in colours of its own instead of borrowed ones.

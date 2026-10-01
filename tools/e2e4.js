@@ -3397,6 +3397,36 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  // 1.12 b401: the day stamps itself sealed — the finisher where no scene plays
+  await test(label + ": 1.12 b401: the day stamps itself sealed where no scene plays — its room kept on the card from the first frame, it comes down once the line has landed and knocks (tf:stamp), it holds on a page that opens on a finished day and lifts when a line is taken back; with a scene on, the scene's moment is the whole finish", async () => {
+    const t = await fresh(opts);
+    await t.page.evaluate(() => { window.__stamps = 0; addEventListener("tf:stamp", () => window.__stamps++); });
+    for (const b of await t.page.$$("#list .row:not(.done) .check")) { if (touch) await b.tap(); else await b.click(); await wait(320); }
+    await t.page.waitForSelector("#finale.on");
+    let st = await t.page.$eval("#stamp", e => ({ hidden: e.hidden, wait: e.classList.contains("wait"), vis: getComputedStyle(e).visibility, w: e.getBoundingClientRect().width }));
+    assert.ok(!st.hidden && st.wait && st.vis === "hidden" && st.w > 40, "its room is on the card while the line is written: " + JSON.stringify(st));
+    await t.page.waitForFunction(() => { const e = document.getElementById("stamp"); return !e.hidden && !e.classList.contains("wait"); }, null, { timeout: 4000, polling: 50 });
+    await t.page.waitForFunction(() => window.__stamps === 1, null, { timeout: 1500, polling: 30 });
+    st = await t.page.$eval("#stamp", e => ({ text: e.textContent, vis: getComputedStyle(e).visibility, color: getComputedStyle(e).color, line: getComputedStyle(document.querySelector("#finale span")).color }));
+    const date = await t.page.evaluate(() => new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }));
+    assert.equal(st.text, "Sealed · " + date, "the day's date"); assert.equal(st.vis, "visible"); assert.equal(st.color, st.line, "in the line's own ink");
+    // a page that opens on a finished day: there already, no knock
+    await t.reload(); await t.page.waitForSelector("#finale.on"); await wait(400);
+    st = await t.page.$eval("#stamp", e => ({ hidden: e.hidden, wait: e.classList.contains("wait"), anims: e.getAnimations().length }));
+    assert.deepEqual(st, { hidden: false, wait: false, anims: 0 }, "still on a finished day");
+    // a line taken back lifts it
+    await t.press("#list .row.done .check"); await wait(400);
+    assert.equal(await t.page.$eval("#stamp", e => e.hidden), true, "a line taken back lifts it");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
+    // with a scene on, the scene's own moment is the finish
+    const s = await fresh(opts, { init: sceneDevice() });
+    await sceneUp(s, "forest");
+    for (const b of await s.page.$$("#list .row:not(.done) .check")) { if (touch) await b.tap(); else await b.click(); await wait(320); }
+    await s.page.waitForSelector("#finale.on"); await wait(2600);
+    assert.equal(await s.page.$eval("#stamp", e => e.hidden), true, "no stamp under a scene");
+    assert.equal(s.errors.length, 0, s.errors.join("; ")); await s.close();
+  });
+
   // 1.12 b397: Arcade's score carries from level to level, as a game's does; b398: every fiftieth level a boss of its own
   await test(label + ": 1.12 b397: Arcade's score carries from level to level — a page opens on nothing, a level the list cuts short banks what it had and a quiet page shows the bank, levels skipped count whole; b398: level 50 brings the mothership, worth 50,000, and level 100 the moon", async () => {
     const t = await fresh(opts, { init: `try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: { day: "T1:curated:light", night: "T1:curated:arcade", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }, scenes: true } })); } catch (e) {}` });

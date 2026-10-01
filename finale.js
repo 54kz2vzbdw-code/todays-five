@@ -48,6 +48,21 @@ function typeOut(span, text, ms, mine) {
   });
 }
 
+/** 1.12 b401: when the line has landed, in ms from the finale's start: the moment the day's stamp comes down (app.js).
+    It reads finale()'s own timings below, so the two move together: letters that rise, pop or float in on their gaps; a
+    pen's swash after them; a pencil's stroke; a typed line and a beat. A named finale (the Secret and Extra kits') writes
+    its line in CSS by about 1.75 s. */
+export function landsAt(kit, { mat = "clean", text = "", reduced = false } = {}) {
+  if (reduced) return 0;
+  const n = [...text].length;
+  if (!kit || kit.finale) return 1750;
+  if (mat === "phosphor" || mat === "pixel") return 160 + n * (mat === "pixel" ? 55 : 38) + 300;
+  if (mat === "pencil") return 180 + 1000 + 120;
+  if (mat === "ink") return 140 + n * 30 + 160 + 440 + 80;
+  const gap = { candy: 34, tide: 45, glass: 22, glow: 38, ember: 38 }[mat] || 26, dur = { tide: 700, glass: 700, glow: 700, ember: 700 }[mat] || 520;
+  return 140 + Math.max(0, n - 1) * gap + dur + 60;
+}
+
 /** Play kit `kit`'s finale: the line in `span`, the confetti through `fx`. False when there is nothing of this module's to play. */
 export function finale(kit, fx, { span, w, h, reduced, spring, shell, mat = "clean", emit = null, line = "" } = {}) {
   if (!kit || kit.finale || reduced) return false;

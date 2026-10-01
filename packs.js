@@ -312,7 +312,8 @@ const PHRASE = { knock: 2, bell: 2, pop: 2, blip: 1, marble: 3 };
 export function phrase(engine, step) { return PHRASE[engine] ? PENTA[(step || 0) % PENTA.length] * PHRASE[engine] : step || 0; }
 
 /** 1.12 b293: small sounds the packs never needed, the same whatever pack is on and quieter than any of them — a whoosh
-    for a surface opening, a tick for a step inside one, a key for a character, the lock opening as a list unseals. A
+    for a surface opening, a tick for a step inside one, a key for a character, the lock opening as a list unseals (b401:
+    and the day's stamp coming down). A
     digital material (Phosphor, Pixel) hears square waves. sound.js plays them (cue). */
 export const CUES = {
   whoosh(env) { noiseShape(env, env.c.currentTime, { attack: 0.05, hold: 0.04, release: 0.12, filt: "bandpass", freq: 600, f1: 2400, q: 0.6, gain: 0.05 }); },
@@ -322,6 +323,12 @@ export const CUES = {
     const t = env.c.currentTime;
     if (digital) { tone(env, { type: "square", f0: 880, t, attack: 0.003, peak: 0.06, len: 0.05 }); tone(env, { type: "square", f0: 1320, t: t + 0.09, attack: 0.003, peak: 0.06, len: 0.07 }); }
     else { noiseBurst(env, t, 260, 5, "bandpass", 2600, 0.22); noiseBurst(env, t + 0.11, 380, 5, "bandpass", 1900, 0.26); }
+  },
+  // 1.12 b401: the day's stamp coming down on the card — a felt-backed thud, or a square drop in a digital material
+  stamp(env, digital) {
+    const t = env.c.currentTime;
+    if (digital) { tone(env, { type: "square", f0: 220, f1: 110, t, attack: 0.003, peak: 0.07, len: 0.09, bend: 0.06 }); return; }
+    noiseBurst(env, t, 1800, 4, "lowpass", 700, 0.3); tone(env, { f0: 120, f1: 58, t, attack: 0.003, peak: 0.22, len: 0.14, bend: 0.08 });
   }
 };
 

@@ -140,7 +140,7 @@ export function createSound(opts) {
     /** 1.12 b279: the scratch under a drawing finger, for whichever engine is on — { speed(v, x), stop() }, or null when
         muted or before the engines have landed (then the strike is silent, and the check-off still sounds). */
     scratch() { const c = ctx(); if (!c) return null; if (!packsMod) { loadPacks(); return null; } const to = stage(); roomFor(); try { return packsMod.scratch({ c, master: to, kit: kit() }); } catch (e) { return null; } },
-    /** 1.12 b293: one of the app's own small sounds (packs.js CUES: whoosh, tick, key, unlock), placed at x. With
+    /** 1.12 b293: one of the app's own small sounds (packs.js CUES: whoosh, tick, key, unlock, stamp), placed at x. With
         `running`, only on a context that is already playing: a cue never makes one (a cold open's unseal has had no tap). */
     cue(name, x, { running = false } = {}) {
       if (get("muted") || (running && !(ac && ac.state === "running"))) return false;

@@ -21,6 +21,12 @@ import TodaysFiveCore
 import UIKit
 import WidgetKit
 
+/// The lab's stand-in for what a box does: the views are compiled into this debug app to be drawn, never tapped, and the
+/// real check-off (CheckLineIntent) must exist in the widget extension alone (WidgetEntry.swift says why).
+enum WidgetActions {
+    static func check(list: String, line: String, done: Bool) -> OpenTodayIntent { OpenTodayIntent() }
+}
+
 @MainActor
 enum WidgetDebug {
     static let args = ProcessInfo.processInfo.arguments
@@ -33,7 +39,14 @@ enum WidgetDebug {
 
     /// `-TFWidgetReset`: the stand-in forgotten, the seeded list let go, the shelf emptied — the app back to normal.
     static func reset() {
-        if let id = UserDefaults.standard.string(forKey: AddService.openListKey) { try? KeychainLinkVault().remove(id: id) }
+        // the lists the seed made, by the keys it wrote down — and, for what older harnesses left, by the seed's own names
+        let seeded = Set(WidgetShelf.read("debug-seeded.json")?["keys"] as? [String] ?? [])
+        let names = Set(seedLists.map(\.name) + ["Kitchen"])
+        for link in (try? KeychainLinkVault().all()) ?? []
+        where seeded.contains(WidgetShelf.key(for: link.id)) || (link.origin == "mine" && names.contains(link.name)) {
+            try? KeychainLinkVault().remove(id: link.id)
+        }
+        WidgetShelf.remove("debug-seeded.json")
         UserDefaults.standard.removeObject(forKey: AddService.openListKey)
         for name in ["debug-server.json", WidgetIndex.file, WidgetLook.file, WidgetPending.file] { WidgetShelf.remove(name) }
         for key in WidgetShelf.dayKeys() { WidgetShelf.remove(WidgetDay.file(key)) }
@@ -50,6 +63,7 @@ enum WidgetDebug {
     static func run() async {
         if let server = WidgetShelf.debugServer { AddService.debugConfig = server }
         if args.contains("-TFWidgetSeed") { await seed() }
+        if let index = value(after: "-TFWidgetOpen").flatMap(Int.init) { openSeeded(index) }
         if args.contains("-TFWidgetDump") { await dump() }
         if args.contains("-TFWidgetSelfTest") { await selfTest() }
         if args.contains("-TFWidgetLab") { lab() }
@@ -60,41 +74,67 @@ enum WidgetDebug {
     static let seedLines = ["Call the plumber about the upstairs sink", "Walk Biscuit before dinner", "Pick up the prescription",
                             "Reply to Sam about Saturday", "Empty the dishwasher"]
 
+    /// Three lists, the way a person with a home list, a work list and a shopping list has them: made on the stand-in
+    /// server, kept in the vault, the first one open.
+    static let seedLists: [(name: String, lines: [String], done: Set<Int>)] = [
+        ("Home to-do", seedLines, [3, 4]),
+        ("Work", ["Send the Henderson draft", "Call back about the lease", "Book the Thursday room", "Expense report"], [3]),
+        ("Groceries", ["Coffee", "Lemons", "Bread"], [])
+    ]
+
     static func seed() async {
         let port = value(after: "-TFWidgetSeed") ?? "8899"
         let config = SupabaseConfig(url: "http://127.0.0.1:\(port)", key: "mock")
         WidgetShelf.write("debug-server.json", ["url": config.url, "key": config.key])
         AddService.debugConfig = config
-        let id = Model.newId()
-        guard let keys = try? Keys.fromLink(.edit, id), let transport = try? SupabaseTransport(config: config) else {
-            print("[tfive] widgets: seed could not start"); return
-        }
-        var doc = CalendarDates.withZone(Model.normalize(.object(JSONObject()), id))
-        doc.json.set("name", "Kitchen")
-        var at = CalendarDates.now() - 60_000
+        guard let transport = try? SupabaseTransport(config: config) else { print("[tfive] widgets: seed could not start"); return }
         var ids: [String] = []
-        for line in seedLines {
-            if let r = Model.addToToday(doc, text: line, at: at) { doc = r.doc; ids.append(r.id) }
-            at += 1_000
+        var at = CalendarDates.now() - 600_000
+        for list in seedLists {
+            let id = Model.newId()
+            guard let keys = try? Keys.fromLink(.edit, id) else { continue }
+            var doc = CalendarDates.withZone(Model.normalize(.object(JSONObject()), id))
+            doc.json.set("name", list.name)
+            var lineIds: [String] = []
+            for line in list.lines {
+                if let r = Model.addToToday(doc, text: line, at: at) { doc = r.doc; lineIds.append(r.id) }
+                at += 1_000
+            }
+            for i in list.done where i < lineIds.count { doc = Model.setDone(doc, lineIds[i], true, at: at + Double(i)) }
+            let engine = SyncEngine(transport: transport, store: nil)
+            await engine.open(keys, ListRecord(doc: doc, rev: 0, dirty: true, created: true, mode: .edit, origin: "mine"))
+            await engine.push()
+            guard await engine.status == .synced else { continue }
+            try? KeychainLinkVault().put(VaultedLink(id: id, mode: .edit, origin: "mine", name: list.name))
+            ids.append(id)
         }
-        for i in [3, 4] where i < ids.count { doc = Model.setDone(doc, ids[i], true, at: at + Double(i)) }
-        let engine = SyncEngine(transport: transport, store: nil)
-        await engine.open(keys, ListRecord(doc: doc, rev: 0, dirty: true, created: true, mode: .edit, origin: "mine"))
-        await engine.push()
-        let status = await engine.status, rev = await engine.current()?.rev ?? 0
-        try? KeychainLinkVault().put(VaultedLink(id: id, mode: .edit, origin: "mine", name: "Kitchen"))
-        UserDefaults.standard.set(id, forKey: AddService.openListKey)
+        guard let first = ids.first else { print("[tfive] widgets: seed made nothing"); return }
+        WidgetShelf.write("debug-seeded.json", ["keys": ids.map(WidgetShelf.key(for:))]) // what -TFWidgetReset lets go of
+        UserDefaults.standard.set(first, forKey: AddService.openListKey)
         let kits = (value(after: "-TFWidgetKits") ?? "paper,terminal").split(separator: ",").map(String.init)
         var look = WidgetLook()
         look.mode = "system"
         look.day = labLook(kits.first ?? "paper")
         look.night = labLook(kits.count > 1 ? kits[1] : "terminal")
         look.write()
-        WidgetFeed.live().publishIndex(openId: id)
-        let day = await WidgetFeed.live().refresh(WidgetShelf.key(for: id))
+        WidgetFeed.live().publishIndex(openId: first)
+        for id in ids { await WidgetFeed.live().refresh(WidgetShelf.key(for: id)) }
         WidgetCenter.shared.reloadAllTimelines()
         if #available(iOS 18.0, *) { ControlCenter.shared.reloadAllControls() }
-        print("[tfive] widgets: seed status=\(status.rawValue) rev=\(rev) shelf=\(day.map { "\($0.done)/\($0.total)" } ?? "none")")
+        print("[tfive] widgets: seed made \(ids.count) list(s), the first open")
+    }
+
+    /// `-TFWidgetOpen <n>`: the app's open list becomes the nth seeded list (0, 1, 2, in `seedLists` order), as if the
+    /// person had opened it on the page — which is what a widget left on "Same as the app" follows.
+    static func openSeeded(_ index: Int) {
+        guard index >= 0, index < seedLists.count,
+              let link = ((try? KeychainLinkVault().all()) ?? []).first(where: { $0.name == seedLists[index].name }) else {
+            print("[tfive] widgets: no seeded list \(index)"); return
+        }
+        UserDefaults.standard.set(link.id, forKey: AddService.openListKey)
+        WidgetFeed.live().publishIndex(openId: link.id)
+        WidgetCenter.shared.reloadAllTimelines()
+        print("[tfive] widgets: the open list is now seeded list \(index)")
     }
 
     static func dump() async {
@@ -120,6 +160,8 @@ enum WidgetDebug {
         let port = value(after: "-TFWidgetSelfTest") ?? "8899"
         let config = SupabaseConfig(url: "http://127.0.0.1:\(port)", key: "mock")
         let vault = MemoryVault()
+        // the lists this phone really holds, in memory only: the self-test's own publishIndex then keeps their shelf files
+        for link in (try? KeychainLinkVault().all()) ?? [] { try? vault.put(link) }
         /// The self-test's clock: a box the feeds read, so a step can move it.
         final class Clock: @unchecked Sendable { var ms = CalendarDates.now() }
         let tick = Clock()
@@ -234,6 +276,22 @@ enum WidgetDebug {
             try? vault.remove(id: link.id)
         } else { failed.append("could not make list 4") }
 
+        // 9. which list a widget shows: "Same as the app" follows the open list; a pinned list stays until it is let go
+        if let a = await make(["A"]), let b = await make(["B"]) {
+            let keyA = WidgetShelf.key(for: a.link.id), keyB = WidgetShelf.key(for: b.link.id)
+            WidgetIndex(lists: [], open: keyA).write()
+            check(feed.key(chosen: WidgetFeed.followApp) == keyA, "same as the app: the open list")
+            check(feed.key(chosen: nil) == keyA, "unset: the open list")
+            check(feed.key(chosen: keyB) == keyB, "pinned: the pinned list, whatever is open")
+            WidgetIndex(lists: [], open: keyB).write()
+            check(feed.key(chosen: WidgetFeed.followApp) == keyB, "same as the app: follows a change of open list")
+            check(feed.key(chosen: keyA) == keyA, "pinned: stays put when the open list changes")
+            try? vault.remove(id: a.link.id)
+            check(feed.key(chosen: keyA) == keyB, "pinned to a list let go: the open list")
+            check(feed.key(chosen: WidgetFeed.followApp) != WidgetFeed.followApp, "the follow value never reads as a key")
+            try? vault.remove(id: b.link.id)
+        } else { failed.append("could not make lists 5 and 6") }
+
         // 8. never read against gone
         let ghost = VaultedLink(id: Model.newId(), mode: .edit, name: "Not yet")
         try? vault.put(ghost)
@@ -245,6 +303,8 @@ enum WidgetDebug {
         check(goneDay?.gone == true && goneDay?.lines.isEmpty == true, "read before: gone")
         try? vault.remove(id: ghost.id)
         feed.publishIndex(openId: nil)
+        // the shelf back as the app keeps it: the lists this phone really holds, and the one open
+        WidgetFeed.live().publishIndex(openId: UserDefaults.standard.string(forKey: AddService.openListKey))
 
         print("[tfive] widgets: selftest \(passed)/\(passed + failed.count) passed" + (failed.isEmpty ? "" : " — failed: " + failed.joined(separator: "; ")))
     }

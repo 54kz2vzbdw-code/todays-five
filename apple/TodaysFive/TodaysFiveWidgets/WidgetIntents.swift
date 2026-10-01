@@ -9,56 +9,60 @@ import Foundation
 import TodaysFiveCore
 import WidgetKit
 
-struct ListEntity: AppEntity, Identifiable {
-    static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "List")
-    static let defaultQuery = ListQuery()
-
-    /// The key, never the id.
-    let id: String
-    let name: String
-    let viewOnly: Bool
-
-    var displayRepresentation: DisplayRepresentation {
-        viewOnly ? DisplayRepresentation(title: "\(name)", subtitle: "View only") : DisplayRepresentation(title: "\(name)")
-    }
-
-    init(_ ref: WidgetListRef) { id = ref.key; name = ref.name; viewOnly = ref.viewOnly }
-}
-
-struct ListQuery: EntityQuery {
-    /// What the phone holds, as the app last wrote it, else as the vault has it.
-    static func held() -> (lists: [WidgetListRef], open: String) {
+/// The lists this phone holds, as the widgets offer them: what the app last wrote, else what the vault has.
+enum HeldLists {
+    static func current() -> (lists: [WidgetListRef], open: String) {
         if let ix = WidgetIndex.read(), !ix.lists.isEmpty { return (ix.lists, ix.open) }
         let links = WidgetFeed.live().links()
         let refs = links.map { WidgetListRef(key: WidgetShelf.key(for: $0.id), name: WidgetFeed.displayName($0),
                                              viewOnly: $0.mode == .view, shared: $0.origin == "shared") }
         return (refs, refs.first?.key ?? "")
     }
-
-    func entities(for identifiers: [ListEntity.ID]) async throws -> [ListEntity] {
-        Self.held().lists.filter { identifiers.contains($0.key) }.map(ListEntity.init)
-    }
-
-    func suggestedEntities() async throws -> [ListEntity] {
-        Self.held().lists.map(ListEntity.init)
-    }
-
-    func defaultResult() async -> ListEntity? {
-        let h = Self.held()
-        return (h.lists.first { $0.key == h.open } ?? h.lists.first).map(ListEntity.init)
-    }
 }
 
-/// The one setting a list widget has: which list. Left unset, it follows the list open in the app.
+/// What the List setting offers: "Same as the app" first, then each list by name. A choice is stored as a key — the
+/// words a person sees are the list's name, and the value kept is `WidgetShelf.key`, never the id.
+///
+/// **Options, not an `AppEntity`** (b407). 406 offered the lists as an entity, and the system has to recognise an
+/// entity's type before it will hand a chosen one back to the widget; where it would not (seen in the simulator:
+/// "ListEntity is not a registered AppEntity identifier"), the choice came back empty and every widget showed the open
+/// list whatever was picked. A plain value has nothing to recognise, so a choice is a choice everywhere.
+struct ListChoices: DynamicOptionsProvider {
+    func results() async throws -> IntentItemCollection<String> {
+        var items = [IntentItem(WidgetFeed.followApp, title: "Same as the app", subtitle: "The list open in Today's Five")]
+        for ref in HeldLists.current().lists {
+            items.append(IntentItem(ref.key, title: "\(ref.name)", subtitle: ref.viewOnly ? "View only" : nil))
+        }
+        return IntentItemCollection(sections: [IntentItemSection(items: items)])
+    }
+
+    /// A widget follows the app until it is pinned to a list.
+    func defaultResult() async -> String? { WidgetFeed.followApp }
+}
+
+/// The one setting a list widget has: which list. "Same as the app" (and no choice at all) follows the list open in
+/// the app; a list chosen by name stays put until this phone lets go of it.
+///
+/// The parameter is `choice`, not 406's `list`: a widget set up on 406 was pinned, the moment it was added, to whichever
+/// list happened to be open, and a new name lets those widgets start again on "Same as the app" rather than carry that
+/// accident forward.
 struct ListConfiguration: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "List"
-    static let description = IntentDescription("Choose the list this widget shows. Left as it is, it shows the list open in Today's Five.")
+    static let description = IntentDescription("Choose the list this widget shows. Same as the app follows the list open in Today's Five.")
 
-    @Parameter(title: "List")
-    var list: ListEntity?
+    @Parameter(title: "List", optionsProvider: ListChoices())
+    var choice: String?
 
     init() {}
-    init(list: ListEntity?) { self.list = list }
+    init(choice: String?) { self.choice = choice }
+}
+
+/// What a box on a widget does: cross its line off. A factory, so the views never name the intent — the debug app's widget
+/// lab compiles the views with a stand-in of its own (WidgetDebug.swift), and an intent in both targets is one too many.
+enum WidgetActions {
+    static func check(list: String, line: String, done: Bool) -> CheckLineIntent {
+        CheckLineIntent(list: list, line: line, done: done)
+    }
 }
 
 /// A line crossed off, or brought back, from a widget. Runs in the widget extension: the shelf changes at once, the

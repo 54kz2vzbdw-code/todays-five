@@ -2795,3 +2795,36 @@ scene of its own; on an iPhone there is still only ever one window of the app.
 `-TFWidgetLab`, `-TFWidgetReset`, `-TFScreenCheck`, and `apple/tools/mockserver.mjs`, a stand-in for the three RPCs and
 the doorbell so a simulator never spends from the real backend's create limit. While the shelf names the stand-in, a
 debug app does not load the page (it would talk to the real backend, and its registry would let go of the seeded list).
+
+
+## Choosing a widget's list (1.12 b407, shipped as build 408)
+
+**What Price asked.** "Is there a way to change the list? I have three lists and all my widgets are basing off my
+Home-To-do list instead of my work list and there's no way (that I can tell easily) to change lists."
+
+**What was wrong, in two parts.**
+
+1. *A widget kept whatever list was open when it was added.* 406 offered the lists as an `AppEntity` whose default
+   was the open list, and WidgetKit stores the default the moment a widget is added, so every widget was pinned to the
+   list that happened to be open then. Opening another list in the app moved nothing.
+2. *A choice made in Edit Widget could come back empty.* Before the system hands a widget an entity it has chosen, it
+   has to recognise the entity's type through its App Intents service; in the simulator it would not ("ListEntity is not
+   a registered AppEntity identifier", the service unable to read a team from the ad-hoc signature), so every choice
+   resolved to nothing and the widget drew the open list whatever was picked. Whether a team-signed TestFlight build
+   meets the same refusal could not be measured here — a team-signed build will not launch in the simulator without a
+   profile — so the design no longer depends on it.
+
+**What changed.** The List setting is a plain value with a dynamic options provider (`ListChoices`): the options are
+shown by name and the value kept is the list's key, never its id, so there is no entity for the system to recognise
+and a choice is a choice everywhere (in the simulator: picked, honoured, and its boxes write to that list). The first
+option, and the default, is **Same as the app**: the widget follows the list open in the app, which is what 406 meant
+to do and did only at the moment of adding. A list pinned and later let go falls back to following. The parameter is
+renamed (`choice`, was `list`), so widgets set up on 406 start again on Same as the app instead of carrying the
+accident of their adding forward; checked on a widget configured under the old setting, which drew the open list and
+offered Same as the app after the update. The gallery's descriptions say it: "Follows the open list, or one you pick."
+
+**Also, in the debug app only.** The widget lab had compiled the extension's configuration intent into the app too,
+and with two types answering to one identifier the system made the app's, which the extension cannot: every timeline
+failed (`intentNotFound`). The entry moved to `WidgetEntry.swift`, the views name the check-off through a factory, and
+the intents live in the extension alone. The publisher reads its feed when it acts, so a debug run pointed at the
+stand-in server after launch reads the stand-in. Release was never affected (406's app excluded those files).

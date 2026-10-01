@@ -7,10 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		TF0000000000000000000650 /* WidgetEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000529 /* WidgetEntry.swift */; };
+		TF0000000000000000000651 /* WidgetEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000529 /* WidgetEntry.swift */; };
 		TF0000000000000000000590 /* WidgetStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000501 /* WidgetStyle.swift */; };
 		TF0000000000000000000591 /* WidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000504 /* WidgetViews.swift */; };
-		TF0000000000000000000592 /* WidgetTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000503 /* WidgetTimeline.swift */; };
-		TF0000000000000000000593 /* WidgetIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000502 /* WidgetIntents.swift */; };
 		TF0000000000000000000594 /* WidgetDebug.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000528 /* WidgetDebug.swift */; };
 		TF0000000000000000000540 /* WidgetStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000501 /* WidgetStyle.swift */; };
 		TF0000000000000000000541 /* WidgetIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = TF0000000000000000000502 /* WidgetIntents.swift */; };
@@ -177,6 +177,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		TF0000000000000000000529 /* WidgetEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetEntry.swift; sourceTree = "<group>"; };
 		TF0000000000000000000528 /* WidgetDebug.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDebug.swift; sourceTree = "<group>"; };
 		TF0000000000000000000501 /* WidgetStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetStyle.swift; sourceTree = "<group>"; };
 		TF0000000000000000000502 /* WidgetIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetIntents.swift; sourceTree = "<group>"; };
@@ -307,6 +308,7 @@
 			children = (
 				TF0000000000000000000505 /* TodaysFiveWidgets.swift */,
 				TF0000000000000000000503 /* WidgetTimeline.swift */,
+				TF0000000000000000000529 /* WidgetEntry.swift */,
 				TF0000000000000000000502 /* WidgetIntents.swift */,
 				TF0000000000000000000504 /* WidgetViews.swift */,
 				TF0000000000000000000501 /* WidgetStyle.swift */,
@@ -751,6 +753,7 @@
 				TF0000000000000000000540 /* WidgetStyle.swift in Sources */,
 				TF0000000000000000000541 /* WidgetIntents.swift in Sources */,
 				TF0000000000000000000542 /* WidgetTimeline.swift in Sources */,
+				TF0000000000000000000650 /* WidgetEntry.swift in Sources */,
 				TF0000000000000000000543 /* WidgetViews.swift in Sources */,
 				TF0000000000000000000544 /* TodaysFiveWidgets.swift in Sources */,
 				TF0000000000000000000545 /* WidgetShelf.swift in Sources */,
@@ -816,8 +819,7 @@
 				TF0000000000000000000556 /* ExternalDisplay.swift in Sources */,
 				TF0000000000000000000590 /* WidgetStyle.swift in Sources */,
 				TF0000000000000000000591 /* WidgetViews.swift in Sources */,
-				TF0000000000000000000592 /* WidgetTimeline.swift in Sources */,
-				TF0000000000000000000593 /* WidgetIntents.swift in Sources */,
+				TF0000000000000000000651 /* WidgetEntry.swift in Sources */,
 				TF0000000000000000000594 /* WidgetDebug.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1066,7 +1068,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				EXCLUDED_SOURCE_FILE_NAMES = "WidgetStyle.swift WidgetViews.swift WidgetTimeline.swift WidgetIntents.swift WidgetDebug.swift";
+				EXCLUDED_SOURCE_FILE_NAMES = "WidgetStyle.swift WidgetViews.swift WidgetEntry.swift WidgetDebug.swift";
 				CODE_SIGN_ENTITLEMENTS = Config/TodaysFive.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 406;

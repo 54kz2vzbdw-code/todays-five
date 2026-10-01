@@ -165,3 +165,20 @@ flags** — the App Manager key cannot add a capability (DECISIONS-apple.md, Pha
   display, and a line crossed off on the phone should play on the TV.
 - **Face ID before a check-off from the Lock Screen and StandBy**, and the line hidden until the phone knows its person.
 - The tap of the sealed stamp in the hand (`tf:stamp`: a heavy knock and a soft settle 75 ms later).
+
+### After 406: choosing a widget's list (b407, shipped as build 408)
+
+Price, with three lists: every widget showed his home list and there was no easy way to change it. Two causes, both
+fixed (DECISIONS-apple.md, "Choosing a widget's list"): 406 pinned each widget to whichever list was open when it was
+added, and a choice made in Edit Widget came back empty wherever the system would not recognise the list entity (the
+simulator, at least). The setting is now a plain value offered by name, defaulting to **Same as the app**.
+
+Measured on the iPhone 17 simulator with three lists on the stand-in server ("Home to-do", "Work", "Groceries"):
+
+- Edit Widget → List offers *Same as the app* (with "The list open in Today's Five" under it), then each list by name.
+- A Today widget set to Work drew Work (1/4) and its box crossed off "Send the Henderson draft" on Work (2/4 on the
+  server, rev 2); Home to-do and Groceries untouched.
+- A Next up widget left on Same as the app followed the app from Home to-do to Groceries while the Work widget stayed
+  on Work.
+- A widget configured under 406's setting kept drawing after the update and offered Same as the app.
+- `-TFWidgetSelfTest`: 29/29 (seven new checks: following, pinning, a pin let go, the follow value never a key).

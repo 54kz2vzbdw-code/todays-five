@@ -2,6 +2,8 @@
 //
 // Three widgets, each named for what it is for, so the gallery reads as a choice rather than a list of sizes:
 //
+// Each follows the list open in the app unless it is pinned to one (Edit Widget → List; WidgetIntents.swift, b407).
+//
 //   Next up    Home Screen and StandBy (small), Lock Screen (rectangular): one line, and its box.
 //   Today      Home Screen (medium, large): the day's lines, each a box to tap.
 //   Progress   Home Screen and StandBy (small), Lock Screen (circular, inline): how much is left.
@@ -33,7 +35,7 @@ struct NextUpWidget: Widget {
             NextUpFamilies(entry: entry)
         }
         .configurationDisplayName("Next up")
-        .description("The next line on Today, and a box to cross it off.")
+        .description("The next line on Today, with a box to cross it off. Follows the open list, or one you pick.")
         .supportedFamilies([.systemSmall, .accessoryRectangular])
     }
 }
@@ -45,7 +47,7 @@ struct TodayWidget: Widget {
             TodayView(entry: entry)
         }
         .configurationDisplayName("Today")
-        .description("Today's lines. Tap a box to cross one off.")
+        .description("Today's lines—tap a box to cross one off. Follows the open list, or one you pick.")
         .supportedFamilies([.systemMedium, .systemLarge])
     }
 }
@@ -57,7 +59,7 @@ struct ProgressWidget: Widget {
             ProgressFamilies(entry: entry)
         }
         .configurationDisplayName("Progress")
-        .description("How much of today is left.")
+        .description("How much of today is left. Follows the open list, or one you pick.")
         .supportedFamilies([.systemSmall, .accessoryCircular, .accessoryInline])
     }
 }

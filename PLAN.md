@@ -3634,3 +3634,12 @@ TV shows the kitchen display (`?kitchen=screen`) while the phone stays the remot
 results are `apple/PLAN-apple-phase6.md`; the calls are `apple/DECISIONS-apple.md` under Phase 6. COMPATIBILITY.md §8
 gains `tf:stamp`, the widgets' contract and `?kitchen=screen`; the changelog's 1.12 entry gains a paragraph. The web's
 code does not change; the version holds at 1.12.
+
+# Today's Five 1.12 b407 — Choosing a widget's list
+
+*Shipped as build 408. b407 is its commit.*
+
+The widgets follow the list open in the app, or a list chosen per widget in Edit Widget → List, which 406 offered and
+did not reliably honour. iPhone only; the web's code does not change. The design and the measurements are in
+`apple/PLAN-apple-phase6.md` and `apple/DECISIONS-apple.md` under "Choosing a widget's list"; the changelog's widgets
+paragraph gains a sentence.

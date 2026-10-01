@@ -20,7 +20,9 @@ import WidgetKit
 final class WidgetPublisher {
     static let shared = WidgetPublisher()
 
-    private let feed = WidgetFeed.live()
+    /// Made when it is used, not once at launch: a debug run points the shelf at the stand-in server after the app has
+    /// started (WidgetDebug.swift), and a feed made before that would read the open list from the real backend.
+    private var feed: WidgetFeed { WidgetFeed.live() }
     private var changeTask: Task<Void, Never>?
     private var lookTask: Task<Void, Never>?
     private var background: UIBackgroundTaskIdentifier = .invalid

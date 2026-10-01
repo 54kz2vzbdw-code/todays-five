@@ -31,6 +31,17 @@ struct WidgetFeed: Sendable {
         return links().first { WidgetShelf.key(for: $0.id) == key }
     }
 
+    /// What a widget's List setting says when it has not been pinned to a list: whichever list is open in the app. Not a
+    /// key (a key is twenty hex digits), so it can never name a list.
+    static let followApp = "same-as-the-app"
+
+    /// The list a widget shows: the one its setting pins, while this phone still holds it; else, for a widget left on
+    /// "Same as the app" (or pinned to a list since let go), the list open in the app.
+    func key(chosen: String?) -> String? {
+        if let chosen, chosen != Self.followApp, link(forKey: chosen) != nil { return chosen }
+        return defaultKey()
+    }
+
     /// The list a widget shows when it has not been told which: the one open in the app, else the first held.
     func defaultKey() -> String? {
         if let open = WidgetIndex.read()?.open, !open.isEmpty, link(forKey: open) != nil { return open }

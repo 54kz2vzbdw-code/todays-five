@@ -199,7 +199,7 @@ struct NextUpView: View {
                 Spacer(minLength: 8)
                 HStack(alignment: .center, spacing: 9) {
                     if entry.interactive {
-                        Toggle(isOn: false, intent: CheckLineIntent(list: entry.day.key, line: next.id, done: true)) { EmptyView() }
+                        Toggle(isOn: false, intent: WidgetActions.check(list: entry.day.key, line: next.id, done: true)) { EmptyView() }
                             .toggleStyle(KitCheckStyle(size: 26, pal: d.pal, mat: d.mat))
                             .accessibilityLabel(Text("Cross off \(next.text)"))
                     } else {
@@ -313,7 +313,7 @@ struct TodayView: View {
     @ViewBuilder private func row(_ line: WidgetLine, _ d: Dressed, size: CGFloat) -> some View {
         let label = StruckText(text: line.text, done: line.done, size: size, pal: d.pal, kit: d.kit)
         if entry.interactive {
-            Toggle(isOn: line.done, intent: CheckLineIntent(list: entry.day.key, line: line.id, done: !line.done)) { label }
+            Toggle(isOn: line.done, intent: WidgetActions.check(list: entry.day.key, line: line.id, done: !line.done)) { label }
                 .toggleStyle(KitCheckStyle(size: size * 0.92, pal: d.pal, mat: d.mat))
         } else {
             HStack(spacing: size * 0.92 * 0.62) {
@@ -446,7 +446,7 @@ struct LockRectangularView: View {
             // the box, beside a line the person can see: on a locked phone that does not know them yet the line is
             // hidden, and a box for a hidden line is nothing to tap
             if entry.interactive, let next = day.next, !redaction.contains(.privacy) {
-                Toggle(isOn: false, intent: CheckLineIntent(list: day.key, line: next.id, done: true)) { EmptyView() }
+                Toggle(isOn: false, intent: WidgetActions.check(list: day.key, line: next.id, done: true)) { EmptyView() }
                     .toggleStyle(KitCheckStyle(size: 17, pal: d.pal, mat: d.mat))
                     .accessibilityLabel(Text("Cross off \(next.text)"))
             }

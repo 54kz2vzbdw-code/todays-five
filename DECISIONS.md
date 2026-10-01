@@ -3038,3 +3038,51 @@ while it plays: the mothership 4.79 → 5.70 % on a wide screen (15-s windows, l
 %.
 
 **Not in the changelog.** They are easter eggs, for whoever leaves the screen on long enough to find them.
+
+# 1.12 b400 decisions — The Extra kits' finishers come off the screen
+
+**What Price asked.** "Please remove some of the cluttered lower-quality finishers (like the carve in the middle in
+bark, the burn line in char, and the erase line in whiteboard/blackboard."
+
+**Before.** Each of the four Extra kits drew its finale across the whole screen on the confetti canvas, on top of the
+list: Chalkboard's felt eraser swept the board in three passes and left bands of haze; Whiteboard drew one big marker
+check over the words and wiped it; Bark drove a gouge across the middle; Char ran an ember the length of the line.
+
+**After.** All four are gone. What is left is what every other kit has: the line writes itself into the kit's own
+material (extrafx.css, unchanged), and the kit's own confetti flies. `extrafx.js`'s `finale()` returns false, which is
+the app's existing signal for "throw the kit's volley", so no new path was needed. Char keeps the one wisp of smoke it
+sends up through the ground's layer, since that is not a stroke across the words and Price named only the burn line.
+`extrafx.js` loses 144 lines.
+
+**Tests.** The Extra and wood tests now check that the line writes itself, that the kit's own confetti is on the canvas
+(its dust, its shavings) and that none of the four draws a stroke across the screen.
+
+# 1.12 b401 decisions — The day stamps itself sealed
+
+**What Price asked.** "Put the sealed stamp, but only if there is not a scene active (so that is the finisher without a
+scene)." Bet 05 of the moat plan said the last strike writes the line and the day stamps itself sealed. The endings
+shipped in 306 and the stamp did not.
+
+**When.** The stamp comes down once the day's line has landed, not with the last strike, so the two do not fight.
+`finale.js` `landsAt()` reads `finale()`'s own timings to say when: letter by letter (a gap and a duration per
+material), a pen's swash, a pencil's stroke, a typed line, or 1.75 s for a named finale whose line is CSS. Under
+reduced motion it is there at once, with no motion.
+
+**What.** A rubber stamp onto the finale card: in from twice its size and a little more askew, landing at −4°, with a
+thud (`packs.js` `CUES.stamp`: a low knock under a short noise; a square drop in a digital material), a 1.5-px jolt of
+the card and, on the iPhone, a knock under the thumb (`tf:stamp`, which the shell learns in this round's native build;
+an older shell ignores it). It is in the line's own ink (`--accent-text`) with a seal's double frame and slightly worn
+ink (a still speckle mask, so nothing moves at rest), and crisp, square-cornered and unworn in Phosphor and Pixel. The
+words are the material's: "Sealed · Wed, Sep 30" from the locale, "[ sealed 2026-09-30 ]" in Phosphor, "Sealed · stage
+9-30" in Pixel.
+
+**Its room.** The card keeps the stamp's room from the first frame (`.wait`, hidden but laid out), so the card never
+re-wraps when it lands. A page that opens on a finished day finds it already there, and a line taken back lifts it.
+
+**With a scene on**, the scene's own moment is the whole finish, so there is no stamp, and none is laid out. A remote
+finale (another device finishing the list, on a View link or with *Celebrate others' check-offs* on) brings it down the
+same way, after the line; where others' check-offs are quiet, it is simply there with the card.
+
+**Test.** A new browser test: the room kept from the first frame, the stamp visible after the line with one `tf:stamp`,
+the date in the words, its colour the line's, still there on reload without moving, lifted by an uncheck, and never
+under a scene (Forest).

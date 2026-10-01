@@ -3547,3 +3547,40 @@ only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on a checkout of the change alone: the Arcade test (failing on 396), the hold test, the Scenes tests, the forever-cycle test, the hidden-kits test, the full session and the worker's two tests, both viewports: 26 passed; again on the stamp |
 | Looked at | levels 50 and 100 in the lab at every beat, full size, and in the app with the real list on both viewports: the mothership coming to rest below a phone's list, the moon cross, pleased and winking |
+
+# Today's Five 1.12 b400 — The Extra kits' finishers come off the screen, and the day stamps itself sealed
+
+*Shipped as build 402. b400 and b401 are its commits.*
+
+Two of Price's asks for the finish. The four Extra kits drew their finales across the whole screen (an eraser, a marker
+check and its wipe, a gouge, an ember run); they are gone, and each kit's line writes itself in its material under its
+own confetti, as every kit's does. And where no scene is playing, a finished day stamps itself sealed: once the line
+has landed, a stamp in the line's own ink comes down onto the finale card with the date, a thud and, on the iPhone, a
+knock. With a scene on, the scene's moment is the whole finish. The decisions are in DECISIONS.md under "1.12 b400
+decisions" and "1.12 b401 decisions". Web only; the version holds at 1.12, and nothing in `apple/` changed but the stamp
+(the shell learns `tf:stamp` in the native build that follows).
+
+## What shipped
+
+1. **The Extra kits' finishers come off the screen** (b400). `extrafx.js` loses 144 lines; its `finale()` returns
+   false, so the app throws the kit's volley; Char keeps its wisp of smoke. The Extra and wood tests check that nothing
+   crosses the screen.
+2. **The day stamps itself sealed** (b401). `index.html` (the stamp's element on the finale card), `styles.css` (the
+   stamp, its worn ink, crisp in Phosphor and Pixel), `finale.js` (`landsAt`), `app.js` (when and what it says, its
+   room, its lift, none under a scene, the remote finale), `packs.js` (`CUES.stamp`), `sound.js` (the cue's name); the
+   changelog's 1.12 entry gains a closing sentence; a new browser test.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first paint | desktop FCP 56 → **56 ms**; mobile 1,308 → **1,304 ms** (8 runs a side, interleaved) | `tools/paint.mjs 8`, 399 (port 8841) against the change (8830) |
+| bytes, gzipped | `app.js` 55,442 → **56,577**; `styles.css` 13,814 → **14,515**; `index.html` 14,876 → 14,889; `finale.js` 3,568 → 3,918; `packs.js` 8,218 → 8,334; `extrafx.js` 7,911 → **4,934** (lazy, Extra kits only) | `gzip -9 -n` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the stamp's test (new), the Extra and wood finales, the smoke, every curated kit's ending, a finale started again, the screen reader's view, the glow under reduced motion, the Scenes tests, the full session and the worker's two tests, both viewports: 28 passed; the stamp's test again on the stamp |
+| Looked at | the stamp landing on a wide screen in Paper, Terminal, Arcade, Light, Sketch and Bark, and on a phone in Paper, Arcade and Terminal |

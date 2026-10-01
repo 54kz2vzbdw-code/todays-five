@@ -128,6 +128,8 @@ let undoStack = [];
 let toastTimer = 0;
 let drag = null;
 let wakeLock = null;
+let kitchenOn = false, kitchenMod = null, kitchenP = null; // 1.12 b403: the kitchen display (kitchen.js)
+let KITCHEN_ASK = new URLSearchParams(SEARCH).get("kitchen"); // ?kitchen asks without keeping (dev.kitchen keeps); forgotten on leaving
 let openPanel = null;
 // 1.4: panels are one stack (see showPanel): the frames below the open panel, the history entries pushed for them, and the flags the moves set
 const panelStack = []; let panelDepth = 0, panelSwitching = false, panelRestoring = false, historyGuard = 0, pendingPush = 0;
@@ -629,6 +631,7 @@ async function openList(r) {
   try { setView(view, { force: true }); } catch (e) { console.error("render at open", e); } // 1.7: a bad row must not stop the engine
   if (!fromDemo) unseal();
   paintListName();
+  if (KITCHEN_ASK !== null || dev.kitchen) setKitchen(true, { persist: false, screen: KITCHEN_ASK === "screen" }); // 1.12 b403
   syncLive = false; lastCat = ""; paintStatus(transport || TRANSPORT_KIND ? "syncing" : "off");
   if (legacy) {
     const outcome = await migrateLegacy(r.id, legacy, null, gen);
@@ -705,6 +708,7 @@ addEventListener("pointerdown", endUnseal, true); addEventListener("keydown", en
     throws confetti as on any list; adding a line or crossing off all three offers Keep, which turns the document
     into a real list, lines and check marks included. No rail, no footer, no tour, no hints, no toast. */
 function showWelcome(msg) {
+  if (kitchenOn) setKitchen(false, { persist: false }); // 1.12 b403: nothing to put on the wall
   if (sync) { flushQuick().then(() => { if (sync) { sync.close(); sync = null; } }); }
   if (editing) cancelEdit(true);
   if (drag) abortDrag();
@@ -951,7 +955,7 @@ function makeRow(it) {
   li.querySelector(".check").addEventListener("click", e => { if (clickAfterDrag()) return; if (recentlyTapped(it.id)) return; toggle(it.id, e.clientX, e.clientY, e.detail > 0); });
   li.querySelector(".check").addEventListener("focus", () => { lastRowId = it.id; });
   li.addEventListener("pointerenter", () => { lastRowId = it.id; });
-  li.addEventListener("dblclick", e => { if (!HOVER.matches) return; e.preventDefault(); startEdit(it.id); });
+  li.addEventListener("dblclick", e => { if (!HOVER.matches || kitchenOn) return; e.preventDefault(); startEdit(it.id); });
   li.addEventListener("pointerdown", e => { onPress(li, e); longPressStart(li, e); swipeStart(li, e); });
   li.addEventListener("contextmenu", e => { if (e.pointerType === "touch" || !HOVER.matches) e.preventDefault(); });
   li.addEventListener("animationend", () => { li.classList.remove("kick"); li.classList.remove("arrive"); li.classList.remove("shuffle-in"); li.classList.remove("wobble"); });
@@ -959,7 +963,7 @@ function makeRow(it) {
 }
 /** ⋯ pressed with a mouse: a drag once the pointer moves, otherwise the click that follows opens the menu. */
 function gripPress(li, e) {
-  if (!canEdit() || drag || editing) return;
+  if (!canEdit() || drag || editing || kitchenOn) return;
   const sx = e.clientX, sy = e.clientY, pid = e.pointerId;
   const stop = () => { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", stop); document.removeEventListener("pointercancel", stop); };
   const move = ev => { if (ev.pointerId !== pid) return; if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 4) { stop(); beginDrag(li, ev); } };
@@ -1342,12 +1346,12 @@ function applyRemote(prev) {
   if (drag && (drag.moved || !drag.li.isConnected)) abortDrag(); // a moved drag or a lost row: abort; 1.7: an unmoved hold rides the render
   const before = wasAll;
   const nowAll = allDoneToday();            // the remote celebration is about the day, as it has always been
-  if (prev && (listMode === "view" || dev.celebrateRemote) && nowAll && !before) stampDue = performance.now() + 600; // 1.12 b401: the card painted now keeps its stamp for the moment celebrateRemote plays
+  if (prev && (listMode === "view" || dev.celebrateRemote || kitchenOn) && nowAll && !before) stampDue = performance.now() + 600; // 1.12 b401: the card painted now keeps its stamp for the moment celebrateRemote plays
   render({ animate: true, quiet: true });
   wasAll = allDoneInView();
   paintListName();
   if (editing && !doc.items[editing.id]) cancelEdit(true);
-  if (prev && (listMode === "view" || dev.celebrateRemote)) celebrateRemote(prev, before, nowAll);
+  if (prev && (listMode === "view" || dev.celebrateRemote || kitchenOn)) celebrateRemote(prev, before, nowAll); // 1.12 b403: a kitchen display always does
 }
 /** 1.9: a pull replaced the words this device wrote in the last minute — say so once, with an Undo that writes them back as a new edit (proposal 13). */
 function noteLostEdits(prev) {
@@ -1489,7 +1493,7 @@ function swipeStart(li, e) {
     if (!swipe.moving) {
       if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { end(); return; } // a scroll
       if (Math.abs(dx) < 14) return;
-      if (drag || (dx < 0 && (dev.swipeOff || kind !== "touch"))) { end(); return; } // Not today stays a touch swipe
+      if (drag || (dx < 0 && (dev.swipeOff || kind !== "touch" || kitchenOn))) { end(); return; } // Not today stays a touch swipe, and a kitchen display has none
       swipe.moving = true; swipe.dir = dx < 0 ? "left" : "right"; press = null; li.classList.add("swiping");
       try { li.setPointerCapture(ev.pointerId); } catch (x) { /* ignore */ }
     }
@@ -1845,7 +1849,7 @@ document.addEventListener("pointerup", e => downPointers.delete(e.pointerId), tr
 document.addEventListener("pointercancel", e => downPointers.delete(e.pointerId), true);
 /* a hold on the phone: the line lifts; drag to move it, let go without moving for its menu (a done line goes straight to the menu) */
 function longPressStart(li, e) {
-  if (!canEdit()) return;
+  if (!canEdit() || kitchenOn) return;
   if (e.pointerType !== "touch" || e.button !== 0) return;
   if (editing || drag || e.target.closest(".tool")) return;
   const id = li.dataset.id, it = doc.items[id];
@@ -2193,6 +2197,7 @@ function paintMenu() {
   $("#menu-theme-k").textContent = theme ? theme.name : "";
   paintMute();
   $("#menu-full").hidden = !document.fullscreenEnabled;
+  $("#menu-kitchen").hidden = !doc || demo; // 1.12 b403: a list to put on the wall
   $("#menu-delete").hidden = !doc || listMode !== "edit" || isShared(); // 1.4: never for a list shared with this device
   $("#menu-end").hidden = $("#menu-delete").hidden; // and no empty card where it stood
   $("#settings-k").textContent = "";
@@ -2205,11 +2210,12 @@ $("#p-menu").addEventListener("click", e => {
   // 1.12: a panel follows, so the menu stays open underneath it and becomes the frame below in the 1.4 stack —
   // which is the whole of ‹ Back from ⋯ (showPanel renders it whenever there is a frame below). Full screen opens
   // no panel, and Delete everywhere is a decision rather than a place worth going back from, so those two still close.
-  if (act === "full" || act === "delete") closePanel();
+  if (act === "full" || act === "delete" || act === "kitchen") closePanel();
   if (act === "save") panels().then(p => p.showSaveLink());
   else if (act === "share") panels().then(p => p.openShare());
   else if (act === "theme") panels().then(p => p.openAppearance()); // 1.12 b309: both slots side by side, how they switch, and the pairs
   else if (act === "full") toggleFullscreen();
+  else if (act === "kitchen") setKitchen(true, { full: true }); // 1.12 b403
   else if (act === "help") panels().then(p => p.openHelp());
   else if (act === "lists") panels().then(p => p.openLists());
   else if (act === "settings") panels().then(p => p.openSettings());
@@ -2235,18 +2241,34 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
 $("#volume").addEventListener("input", e => { dev.volume = (+e.target.value) / 100; saveDevice(); });
 $("#volume").addEventListener("change", () => { if (!dev.muted) sound.tick(); });
 
+/* 1.12 b403: the kitchen display. On and off here, inside the press (full screen is granted to a gesture and to nothing
+   else); everything else is kitchen.js, loaded with it. */
+function setKitchen(on, o = {}) {
+  on = !!on && !!doc && !demo;
+  if (o.persist !== false && !!dev.kitchen !== on) { dev.kitchen = on; saveDevice(); }
+  if (on === kitchenOn) return;
+  kitchenOn = on; if (!on) KITCHEN_ASK = null;
+  const r = document.documentElement; r.classList.toggle("kitchen", on); r.classList.remove("k-ready");
+  if (on && o.full && document.fullscreenEnabled && !document.fullscreenElement) r.requestFullscreen().catch(() => {});
+  if (on) requestWake(); else if (!dev.wake && wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+  (kitchenP || (kitchenP = import("./kitchen.js?v=" + BUILD).catch(() => (kitchenP = null)))).then(m => {
+    if (m) (kitchenMod = m).set(api, kitchenOn, o);
+    else if (kitchenOn) { setKitchen(false, { persist: false }); toast("Couldn't load the kitchen display—check the connection and try again"); }
+  });
+}
+
 /* wake lock */
 async function setWake(on) {
   dev.wake = !!on; saveDevice();
-  if (on) await requestWake(); else if (wakeLock) { try { await wakeLock.release(); } catch (e) { /* ignore */ } wakeLock = null; }
+  if (on) await requestWake(); else if (wakeLock && !kitchenOn) { try { await wakeLock.release(); } catch (e) { /* ignore */ } wakeLock = null; }
 }
 async function requestWake() {
-  if (!("wakeLock" in navigator) || !dev.wake || document.visibilityState !== "visible") return;
+  if (!("wakeLock" in navigator) || !(dev.wake || kitchenOn) || document.visibilityState !== "visible") return;
   try { wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", () => { wakeLock = null; }); }
   catch (e) { wakeLock = null; }
 }
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") { if (dev.wake && !wakeLock) requestWake(); sound.foreground(); tickDay(); }
+  if (document.visibilityState === "visible") { if ((dev.wake || kitchenOn) && !wakeLock) requestWake(); sound.foreground(); tickDay(); }
 });
 if (dev.wake) requestWake();
 if (dev.oneThing && dev.shake === "allowed") startMotion(); // a phone that said yes keeps listening from the next open
@@ -2503,8 +2525,9 @@ document.addEventListener("keydown", e => {
   if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) { if (edit) { e.preventDefault(); moveFocused(e.key === "ArrowUp" ? -1 : 1); announceMove(e.key === "ArrowUp" ? -1 : 1); } return; }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key;
-  if (k === "Escape") { hideToast(); if (query) setSearch(""); return; }
+  if (k === "Escape") { if (kitchenOn && !document.fullscreenElement) { setKitchen(false); return; } hideToast(); if (query) setSearch(""); return; }
   if (dev.keysOff) return; // single-character shortcuts can be switched off (Settings → Keyboard)
+  if (kitchenOn && !/^[kKmMtTfF1-9]$/.test(k)) return; // 1.12 b403: a wall is looked at, not edited
   if (demo && ["a", "A", "o", "O", "/", "-", "s", "S"].includes(k)) return; // the welcome's list is Today, whole, and nothing else
   if (k >= "1" && k <= "9") {
     if (!edit) return;
@@ -2523,6 +2546,7 @@ document.addEventListener("keydown", e => {
   else if (k === "/") { e.preventDefault(); openSearch(); }
   else if (k === "-") { if (!edit) return; e.preventDefault(); const id = focusedRowId(); if (id && doc.items[id] && doc.items[id].today) notToday(id); }
   else if (k === "?") { e.preventDefault(); panels().then(p => p.openKeys()); }
+  else if ((k === "k" || k === "K") && !demo) { e.preventDefault(); setKitchen(!kitchenOn, { full: !kitchenOn }); }
 });
 function sectionOfFocused() {
   const id = focusedRowId();
@@ -2590,6 +2614,7 @@ const api = {
   saveDevice, registerList, switchTo, openList, showWelcome, createList, parseLink, flushQuick, flushOthers, killRemote, queueKill, retryPendingKills,
   reveal, exits, get motion() { return motionMod; }, rawFx,
   setScenes, scenesOn: () => !!dev.scenes, sceneKits: SCENE_KITS, // 1.12 b318
+  setKitchen, get kitchen() { return kitchenOn; }, // 1.12 b403
   applyThemeCode, currentThemeCode, tickTheme, setSlotTheme, flipSlot, setSwitchMode, setSwitchTimes, unlockSecret, forgetSecret, unlockExtra, forgetExtra, activeSlot: () => T.activeSlot(dev, envNow()), autoSlot: () => T.autoSlot(dev, envNow()),
   slotCode: slot => dev[slot] || T.SLOT_DEFAULT[slot], packFor, setSoundPack, soundPacks: () => ({ day: "", night: "", ...(dev.soundPacks || {}) }), soundPins: () => ({ day: "", night: "", ...(dev.soundPins || {}) }), setWake, toggleMute, toggleFullscreen, setOneThing, setSearch, ruleLabel, idleReset,
   editLink, viewLink, copyText, nativeShare, escapeHtml, drawQr, frag,
@@ -2600,9 +2625,9 @@ const api = {
 
 /* test hook (read-only) */
 // 1.7: the secrets only on the local transport
-window.__tf = () => ({ stats: { ...stats }, view, listId: TRANSPORT_KIND === "local" ? listId : (listId ? "held" : null), mode: listMode, lookupId: TRANSPORT_KIND === "local" && ref ? ref.lookupId : null, R: TRANSPORT_KIND === "local" && ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, secret: !!dev.secret, extras: T.unlockedExtras(dev), field: !!field, demo, soundPacks: { ...(dev.soundPacks || {}) }, soundPins: { ...(dev.soundPins || {}) }, shuffled: shuffledId, zone: doc && doc.zone ? doc.zone : null, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry(), origin: (entryOf(listId) || {}).origin || null, nickname: (entryOf(listId) || {}).nickname || null, whose: $("#whose").open, panels: panelStackIds(), scene: field && field.state ? field.state() : null });
+window.__tf = () => ({ stats: { ...stats }, view, listId: TRANSPORT_KIND === "local" ? listId : (listId ? "held" : null), mode: listMode, lookupId: TRANSPORT_KIND === "local" && ref ? ref.lookupId : null, R: TRANSPORT_KIND === "local" && ref ? ref.R : null, dragging: !!drag, editing: editing ? editing.id : null, status: syncStatus, live: syncLive, cur: sync ? sync.current() : null, tab: TAB_ID, hints: { ...(dev.hints || {}) }, mark: markTarget ? markKey : "", menuHintFor, panel: openPanel ? openPanel.id : null, editByUser: editing ? !!editing.byUser : null, idle: idleOn, migrations: (meta.migrations || []).length, pendingKill: (meta.pendingKill || []).length, who: whoCount, one: !!dev.oneThing, query, audio: sound.state(), version: VERSION, seenVersion: dev.seenVersion, presenceKey: PRESENCE_KEY, theme: theme ? theme.id : null, slot: T.activeSlot(dev, envNow()), auto: T.autoSlot(dev, envNow()), switchMode: dev.switch ? dev.switch.mode : null, hold: dev.holdAuto || null, day: dev.day, night: dev.night, fading: !!fadeRaf, secret: !!dev.secret, extras: T.unlockedExtras(dev), field: !!field, demo, soundPacks: { ...(dev.soundPacks || {}) }, soundPins: { ...(dev.soundPins || {}) }, shuffled: shuffledId, zone: doc && doc.zone ? doc.zone : null, oneNow: (() => { const r = $("#list .row.one-now"); return r ? r.dataset.id : null; })(), shake: dev.shake || null, motion: motionOn, unsaved: !!unsavedEntry(), origin: (entryOf(listId) || {}).origin || null, nickname: (entryOf(listId) || {}).nickname || null, whose: $("#whose").open, panels: panelStackIds(), scene: field && field.state ? field.state() : null, kitchen: kitchenOn ? (kitchenMod && kitchenMod.state ? kitchenMod.state() : { on: true }) : null });
 // test-only controls, on the local transport: simulate what iOS does to the audio context
-if (TRANSPORT_KIND === "local") window.__tfTest = { sceneIdle: () => { if (field && field.leaveAlone) field.leaveAlone(); }, scenePass: (p, v) => { if (field && field.pass) field.pass(p, v); }, sceneFinale: () => { if (field && field.finale) field.finale(); }, suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneInView(); } }, presence: n => paintWho(n) };
+if (TRANSPORT_KIND === "local") window.__tfTest = { sceneIdle: () => { if (field && field.leaveAlone) field.leaveAlone(); }, scenePass: (p, v) => { if (field && field.pass) field.pass(p, v); }, sceneFinale: () => { if (field && field.finale) field.finale(); }, suspendAudio: () => rawSound.debugContext("suspend"), killAudio: () => rawSound.debugContext("close"), rollover: today => { if (!doc) return; const r = M.rollover(doc, today); if (r.doc !== doc) { doc = r.doc; afterChange(); wasAll = allDoneInView(); } }, presence: n => paintWho(n), kitchenDrift: () => (kitchenMod && kitchenOn ? kitchenMod.driftNow() : -1) };
 
 /* debug badge (?debug=1): the audio state machine, readable from a simulator screenshot */
 if (new URLSearchParams(SEARCH).get("debug") === "1") {

@@ -452,14 +452,14 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": 1.12 b315: the ⋯ menu is four tiles, then four rows, then Delete everywhere on its own, " + (touch ? "a bottom sheet" : "a popover under the button") + ", and the Sound tile toggles in place", async () => {
+  await test(label + ": 1.12 b315: the ⋯ menu is four tiles, then five rows (b403: Kitchen display), then Delete everywhere on its own, " + (touch ? "a bottom sheet" : "a popover under the button") + ", and the Sound tile toggles in place", async () => {
     const t = await fresh(opts);
     await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await wait(300);
     await t.page.waitForFunction(() => !document.getElementById("p-menu").getAnimations({ subtree: true }).length); // 1.12 b293: it rises (or grows out of ⋯) first
     const tiles = await t.page.$$eval("#menu-tiles > *:not([hidden]) .lb", els => els.map(e => e.textContent.trim()));
     assert.equal(tiles.join("|"), "Share|Theme|Sound|Full screen", "the four reached for most, as tiles");
     const rows = await t.page.$$eval("#menu > *:not([hidden]) .lb", els => els.map(e => e.textContent.trim()));
-    assert.equal(rows.join("|"), "Lists|Settings|How it works|About & privacy", "the places, as rows");
+    assert.equal(rows.join("|"), "Lists|Kitchen display|Settings|How it works|About & privacy", "the places, as rows, and the kitchen display after Lists (b403)");
     assert.ok(await t.page.$("#menu-end #menu-delete.danger") && await t.page.locator("#menu-delete").isVisible(), "Delete everywhere, on a card of its own");
     assert.equal(await t.page.getAttribute("#menu-share", "aria-label"), "Share this list", "the tile says Share; its name says which");
     const tr = await t.page.$$eval("#menu-tiles > *:not([hidden])", els => els.map(e => e.getBoundingClientRect()).map(r => ({ top: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) })));
@@ -3395,6 +3395,80 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device.scenes), true, "on after a reload");
     assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0, "csp: " + t.csp.join("; ")); assert.equal(t.thirdParty.length, 0, "third party: " + t.thirdParty); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join("; "));
     await t.close();
+  });
+
+  // 1.12 b403: the kitchen display — the list as a screen on the wall
+  await test(label + ": 1.12 b403: the kitchen display — ⋯ puts the list on the wall: Today in type that fills the screen, the time beside the date, nothing to edit but a tap, the screen kept awake, what others cross off celebrated, a slow drift, sound asked for once; Esc leaves it, a device that kept it comes back to it, and ?kitchen asks without keeping", async () => {
+    const t = await fresh(opts, { init: `window.__wakes = 0; try { if (navigator.wakeLock) { const r = navigator.wakeLock.request.bind(navigator.wakeLock); navigator.wakeLock.request = (...a) => { window.__wakes++; return r(...a); }; } } catch (e) {}` });
+    const { listId } = await t.s();
+    await t.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
+    const everyday = await t.page.$eval("#list .row", r => parseFloat(getComputedStyle(r).fontSize));
+    // chosen from ⋯, and kept by the device
+    await t.press("#more"); await t.page.waitForSelector("#p-menu[open]"); await wait(250);
+    assert.ok(await t.page.$eval("#menu-kitchen", e => !e.hidden), "⋯ offers it");
+    await t.press("#menu-kitchen");
+    await t.page.waitForFunction(() => document.documentElement.classList.contains("k-ready"), null, { timeout: 5000 });
+    let k = (await t.s()).kitchen;
+    assert.ok(k.on && k.ready && k.fits, "on, laid out, and every line fits: " + JSON.stringify(k));
+    const big = await t.page.$eval("#list .row", r => parseFloat(getComputedStyle(r).fontSize));
+    assert.ok(big > everyday * 1.25, `the type fills the screen: ${everyday} → ${big}`);
+    assert.ok(Math.abs(big - k.size) < 1, "at the size the fit chose");
+    assert.ok(/\d/.test(k.clock), "the time is up beside the date: " + k.clock);
+    const shown = await t.page.evaluate(() => ["#more", "#daynight", "#share", "#v-today", "#addtoday", "#date", "#count", "#k-clock"].map(q => { const e = document.querySelector(q); return [q, !!e && !!e.offsetParent]; }));
+    assert.deepEqual(Object.fromEntries(shown), { "#more": false, "#daynight": false, "#share": false, "#v-today": false, "#addtoday": false, "#date": true, "#count": true, "#k-clock": true }, "the rail keeps the date, the count and the time, and nothing to press");
+    assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device.kitchen), true, "kept by the device");
+    assert.ok(await t.page.evaluate(() => window.__wakes) >= 1, "the screen is kept awake");
+    // a screen on the wall that reloads comes back to it, and keeps the screen awake again
+    await t.reload(); await t.page.waitForSelector("#list .row");
+    await t.page.waitForFunction(() => document.documentElement.classList.contains("k-ready"), null, { timeout: 5000 });
+    assert.ok((await t.s()).kitchen.fits, "back on the wall after a reload");
+    assert.ok(await t.page.evaluate(() => window.__wakes) >= 1, "and awake");
+    // nothing to edit but a tap
+    const n0 = await t.page.$$eval("#list .row", r => r.length);
+    await t.page.keyboard.press("n"); await wait(300);
+    if (!touch) { await t.page.dblclick("#list .row:first-child .tx"); await wait(300); }
+    else { await t.hold("#list .row:first-child .tx", 700); await wait(300); assert.equal((await t.s()).panel, null, "a hold opens no line menu"); }
+    assert.equal((await t.s()).editing, null, "no editor");
+    assert.equal(await t.page.$$eval("#list .row", r => r.length), n0, "no new line");
+    const d0 = await t.page.$$eval("#list .row.done", r => r.length);
+    if (!touch) await t.page.keyboard.press("1"); else await t.press("#list .row:not(.done) .check");
+    await wait(600);
+    assert.notEqual(await t.page.$$eval("#list .row.done", r => r.length), d0, "a tap or its number still crosses a line off");
+    // the drift: a step moves the shell a couple of pixels, never more
+    await t.page.evaluate(() => window.__tfTest.kitchenDrift()); await wait(8400);
+    const tr = await t.page.$eval("#shell", e => new DOMMatrix(getComputedStyle(e).transform));
+    assert.ok((tr.e !== 0 || tr.f !== 0) && Math.abs(tr.e) <= 2 && Math.abs(tr.f) <= 2, `drifted a little: ${tr.e},${tr.f}`);
+    // sound: asked for once while the page cannot play, gone with the tap that lets it
+    await t.page.evaluate(() => window.__tfTest.suspendAudio()); await wait(1800);
+    assert.equal((await t.s()).kitchen.sound, true, "a page that cannot play asks for a tap");
+    await t.page.evaluate(() => document.dispatchEvent(new PointerEvent("pointerdown"))); await wait(1800);
+    assert.equal((await t.s()).kitchen.sound, false, "and stops asking once it can");
+    // what others cross off is celebrated, on an edit link with the setting off
+    const o = await fresh(opts, { url: BASE + "?transport=local#/l/" + listId, list: false, ctx: t.ctx });
+    await o.page.waitForSelector("#list .row"); await o.page.waitForFunction(() => window.__tf().status === "synced", null, { polling: 200 });
+    // (a second tab of the same browser is the same device, so it came up on the wall too: K takes it back down, for the device)
+    await o.page.waitForFunction(() => document.documentElement.classList.contains("k-ready"), null, { timeout: 5000 });
+    await o.page.keyboard.press("k"); await wait(300);
+    assert.equal(await o.page.evaluate(() => document.documentElement.classList.contains("kitchen")), false, "K leaves it");
+    await t.front(); await wait(300);
+    const q0 = (await t.s()).stats;
+    await o.press("#list .row:not(.done) .check"); await wait(1800);
+    assert.ok((await t.s()).stats.check > q0.check, "the wall played what was crossed off elsewhere");
+    await o.close();
+    // Esc leaves it; the type and the clock go with it
+    await t.front(); await t.page.keyboard.press("Escape"); await wait(400);
+    assert.equal(await t.page.evaluate(() => [document.documentElement.classList.contains("kitchen"), !!document.getElementById("k-clock"), document.getElementById("list").style.getPropertyValue("--k-size")].join("|")), "false|false|", "Esc leaves it");
+    assert.ok(Math.abs(await t.page.$eval("#list .row", r => parseFloat(getComputedStyle(r).fontSize)) - everyday) < 0.5, "the everyday type is back");
+    // ?kitchen asks for it without keeping it
+    await t.page.goto(BASE + "?transport=local&kitchen#/l/" + listId); await t.page.waitForSelector("#list .row");
+    await t.page.waitForFunction(() => document.documentElement.classList.contains("k-ready"), null, { timeout: 5000 });
+    assert.ok(!(await t.page.evaluate(() => JSON.parse(localStorage.getItem("tf/v2/meta")).device.kitchen)), "asked by the address, not kept");
+    // ?kitchen=screen: a screen nobody can touch has no way out to show and asks for no sound
+    await t.page.goto(BASE + "?transport=local&kitchen=screen#/l/" + listId); await t.page.waitForSelector("#list .row");
+    await t.page.waitForFunction(() => document.documentElement.classList.contains("k-ready"), null, { timeout: 5000 });
+    await t.page.evaluate(() => window.__tfTest.suspendAudio()); await t.page.mouse.move(300, 300); await t.page.mouse.move(400, 420); await wait(1800);
+    k = (await t.s()).kitchen; assert.ok(k.screen && !k.leave && !k.sound, "nothing to touch: " + JSON.stringify(k));
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); await t.close();
   });
 
   // 1.12 b401: the day stamps itself sealed — the finisher where no scene plays

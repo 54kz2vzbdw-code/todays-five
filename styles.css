@@ -54,6 +54,10 @@ button{font:inherit;color:inherit}
   padding:calc(clamp(.9rem,2.2vh,1.6rem) + env(safe-area-inset-top,0px)) calc(clamp(1rem,4vw,3.4rem) + env(safe-area-inset-right,0px)) calc(7px + env(safe-area-inset-bottom,0px)) calc(clamp(1rem,4vw,3.4rem) + env(safe-area-inset-left,0px));
 }
 
+/* 1.12 b403: a kitchen display (kitchen.js) shows nothing until its first fit, or the type would show at its everyday
+   size for a frame and then jump; its own rules come with kitchen.css */
+html.kitchen:not(.k-ready) #shell{visibility:hidden}
+
 /* ---------------- rail ---------------- */
 .rail{
   flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;

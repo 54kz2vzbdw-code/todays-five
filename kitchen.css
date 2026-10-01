@@ -1,0 +1,49 @@
+/* kitchen.css — 1.12 b403: the kitchen display's look. Loaded with kitchen.js (app.js setKitchen), never at first paint;
+   every rule here hangs off html.kitchen, so the stylesheet can stay on the page after the display is left. */
+
+/* the rail: the date, the list's name, the count and the time, set larger and quieter, and nothing to press */
+html.kitchen .rail{font-size:clamp(12px,1.35vw,22px);border-bottom-color:transparent;min-height:0}
+html.kitchen .rail-r .tools,html.kitchen .rail-r .seg,html.kitchen #shuffle,html.kitchen #who,html.kitchen #shared{display:none}
+html.kitchen #date{display:inline}
+html.kitchen #count,html.kitchen #listname,html.kitchen #dot{pointer-events:none}
+html.kitchen #listname{max-width:24em;border-color:transparent;background:transparent}
+html.kitchen #count{font-size:1em;padding:0;min-width:0;min-height:0;background:transparent;border:0}
+#k-clock{font-variant-numeric:tabular-nums;letter-spacing:.08em;color:var(--text);white-space:nowrap}
+
+/* Today, in type that fills the screen: kitchen.js finds the largest size at which every line fits (--k-size) */
+html.kitchen #list{max-height:none;overflow:visible}
+html.kitchen .row{font-size:var(--k-size,clamp(1.45rem,min(5.5vw,var(--unit)),4.7rem))}
+html.kitchen .row:hover,html.kitchen .no-hover .row:hover{background:transparent}
+html.kitchen .row:hover:not(.done):not(.editing) .ghost{opacity:0}
+html.kitchen .row:hover:not(.done) .box{border-color:var(--hair-solid)} /* a touch screen's hover sticks to the last line touched; a wall has no hover to show */
+html.kitchen .row .tools,html.kitchen #addtoday,html.kitchen #today-empty,html.kitchen #hint{display:none}
+html.kitchen .note{font-size:.36em}
+html.kitchen .cap{font-size:.3em}
+
+/* the finish, sized for across the room; nothing on it to press (Bring them all back is for the list itself) */
+html.kitchen #finale span{font-size:clamp(1.4rem,5vh,3.6rem)}
+html.kitchen #finale .stamp{font-size:clamp(11px,1.6vh,17px)}
+html.kitchen #again,html.kitchen #install,html.kitchen #whatsnew{display:none} /* no install hint or what's-new on a screen on the wall */
+html.kitchen #toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))} /* Undo, clear of the way out */
+html.kitchen #bar{height:5px}
+
+/* a slow drift, a couple of pixels every few minutes, so a screen left on for days keeps no ghost of the rail */
+html.kitchen #shell{transform:translate(var(--k-dx,0px),var(--k-dy,0px));transition:transform 8s ease}
+
+/* the way out, which shows when the screen is touched or the mouse moves, and the one-time ask for sound */
+#k-leave,#k-sound{
+  position:fixed;left:50%;z-index:55;display:flex;align-items:center;gap:.6em;
+  font:700 clamp(11px,1.1vw,14px)/1 var(--font-ui);letter-spacing:.14em;text-transform:uppercase;
+  border-radius:999px;padding:.95em 1.4em;cursor:pointer;white-space:nowrap;
+  opacity:0;pointer-events:none;transform:translate(-50%,8px);transition:opacity .3s ease,transform .3s ease;
+}
+#k-leave{bottom:calc(16px + env(safe-area-inset-bottom,0px));color:var(--muted);background:var(--ink-2);border:1px solid var(--hair-hi)}
+#k-sound{top:calc(clamp(4.2rem,11vh,7rem) + env(safe-area-inset-top,0px));color:var(--accent-text);background:var(--ink-2);border:1px solid var(--accent)}
+#k-leave.on,#k-sound.on{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+#k-leave svg,#k-sound svg{width:1.25em;height:1.25em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#k-leave:focus-visible,#k-sound:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media (hover:hover){ #k-leave:hover{color:var(--text)} }
+@media (prefers-reduced-motion:reduce){
+  html.kitchen #shell{transition:none}
+  #k-leave,#k-sound{transition:opacity .2s ease;transform:translate(-50%,0)}
+}

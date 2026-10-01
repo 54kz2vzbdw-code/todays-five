@@ -62,6 +62,11 @@ link's whole Today instead of an empty one.
 A finished day now stamps itself sealed—once the last line lands, a stamp in your theme's own ink comes down on the
 card with the date. If a scene is playing, the scene's own finish takes its place.
 
+The list can go on the wall. ⋯ → Kitchen display turns any screen—a tablet on the fridge, a laptop, a TV's
+browser—into Today in type that fills it, with the time beside the date. The screen stays awake, a line crossed off
+on another device plays its sound there, and with Scenes on, the theme's scene plays behind it. Esc, or the button
+that shows when you touch the screen, takes it back down.
+
 ## 1.11 — A look of its own.
 
 - **New** — The same check, in colours of its own instead of borrowed ones.

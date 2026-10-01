@@ -3086,3 +3086,47 @@ same way, after the line; where others' check-offs are quiet, it is simply there
 **Test.** A new browser test: the room kept from the first frame, the stamp visible after the line with one `tf:stamp`,
 the date in the words, its colour the line's, still there on reload without moving, lifted by an uncheck, and never
 under a scene (Forest).
+
+# 1.12 b403 decisions — The kitchen display: the list as a screen on the wall
+
+**What Price asked.** "Do Bet 06 and take it all the way." Bet 06 of the moat plan is *own the room*: the widget,
+StandBy, the TV, the Action button. This is its web half — any screen the list can be opened on — and the native half
+(widgets, controls, the iPhone's external display) follows in its own build.
+
+**What it is.** ⋯ → Kitchen display (K on a keyboard) turns the screen into Today and nothing else: a tablet on the
+fridge, a laptop on the counter, a TV's browser. The lines are set as large as the room allows: kitchen.js halves its
+way to the largest size at which every line fits between the rail and the foot, and fits again when the window, the
+lines or the fonts change; a single short line is held to a headline (a sixth of the height, an eighth of the width).
+The rail keeps the date, the list's name, the count and the time, on the minute; the tabs, the tools and the sync
+details go. The finale and the stamp come up larger, and Bring them all back is not offered (a wall is shared).
+
+**Nothing to edit but a tap.** A tap or a drawn strike crosses a line off; there is no hold, no line menu, no grip, no
+double-click editor, no swipe left, and only K, M, T, F and the numbers on a keyboard. A wall is looked at, not edited.
+
+**What changes underneath.** The screen is kept awake (the wake lock, as if *Keep the screen on* were set), and what
+others cross off is celebrated with its sound and its confetti, as on a View link, whatever the device's setting says.
+With Scenes on, the theme's scene plays behind it — and on a screen nobody touches, the loop is what plays.
+
+**Burn-in.** A screen left on for days keeps the rail on the same pixels; so the whole shell drifts two pixels every
+four minutes through eight offsets, eased over eight seconds, which nobody watching sees.
+
+**Sound.** A browser plays nothing until it has been touched, and a screen on the wall may go days without a touch
+after a reload. On entering, a context is asked for outside any gesture: where the browser allows it, it plays (the
+iPhone's shell does); where it does not, a chip asks for one tap, and goes once the page can play. Never on a muted
+device.
+
+**Kept per device.** `dev.kitchen` (a key inside `meta.device`, COMPATIBILITY.md §5), so a tablet on the wall that
+reloads comes back to it. `?kitchen` asks for it without keeping it, and `?kitchen=screen` is a screen nobody can
+touch — the iPhone's external display, in the native build — with no way out to show and no ask for sound. Esc, K, or
+the button that shows on a touch of the background or a move of the mouse leaves it; leaving forgets the address's ask,
+so a list switched to later does not bring it back.
+
+**First paint.** app.js keeps only what has to run inside the press (the class, full screen, the wake lock) and the
+gates that hold editing back; the rest is kitchen.js and kitchen.css, lazy and precached, plus one rule in styles.css
+that keeps the shell hidden until the first fit (the type would otherwise show at its everyday size and jump). The
+first cut kept the on/off logic in app.js and read 40–50 ms slower on the throttled phone profile; moving it out did
+not change the reading, and bisecting showed why: **402's app.js sat exactly at a step of the instrument.** Either half
+of the change costs the same 40 ms, and so does 402's app.js with nothing but a one-line, 104-byte comment added
+(1,308 → 1,328 ms, disjoint ranges). Under the emulated network (150 ms, 1.6 Mbps, gzip as GitHub Pages serves it)
+0.8 KB is about 4 ms of transfer, so the step is how the throttled connection delivers the file, not the code in it —
+and any byte added to app.js now crosses it. The reading is reported as measured (see PLAN.md).

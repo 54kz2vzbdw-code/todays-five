@@ -3584,3 +3584,39 @@ decisions" and "1.12 b401 decisions". Web only; the version holds at 1.12, and n
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on a checkout of the change alone: the stamp's test (new), the Extra and wood finales, the smoke, every curated kit's ending, a finale started again, the screen reader's view, the glow under reduced motion, the Scenes tests, the full session and the worker's two tests, both viewports: 28 passed; the stamp's test again on the stamp |
 | Looked at | the stamp landing on a wide screen in Paper, Terminal, Arcade, Light, Sketch and Bark, and on a phone in Paper, Arcade and Terminal |
+
+# Today's Five 1.12 b403 — The kitchen display: the list as a screen on the wall
+
+*Shipped as build 404. b403 is its commit.*
+
+The web half of Bet 06 (*own the room*). ⋯ → Kitchen display turns any screen into Today in type that fills it, with
+the time beside the date; the screen stays awake, what others cross off is celebrated, a scene plays behind it when
+Scenes are on, nothing can be edited but by a tap, and a slow drift keeps a screen left on from burning in. Kept per
+device; `?kitchen` asks for it without keeping it and `?kitchen=screen` is the iPhone's external display, which the
+native build that follows uses. The decisions are in DECISIONS.md under "1.12 b403 decisions". Web only; the version
+holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **The kitchen display** (b403). `kitchen.js` and `kitchen.css` (new, lazy, precached); `app.js` (the hooks: on and
+   off inside the press, the wake lock, others' check-offs celebrated, the editing gates, Esc and K, the boot and the
+   address's ask); `index.html` (the ⋯ row); `styles.css` (one rule, the shell hidden until the first fit); `sw.js`
+   (precache); `panels.js` (K in the keys reference); the changelog's 1.12 entry gains a paragraph; a new browser test,
+   and the ⋯ menu's test learns its fifth row.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| first paint, desktop | FCP 56 → 52–56 ms | `tools/paint.mjs 10`, 402 (port 8841) against the change |
+| first paint, mobile profile | FCP 1,300 → **1,340 ms** (10 runs a side, disjoint ranges). 402's app.js with a 104-byte comment added reads 1,328 ms and with a 786-byte one 1,328 ms; the change with 402's app.js swapped back reads 1,300 ms: a step of the throttled connection at this file size, which any byte added to app.js crosses | `tools/paint.mjs 10`, three and four sides interleaved |
+| bytes, gzipped | `app.js` 56,577 → **57,339**; `styles.css` 14,515 → 14,617; `index.html` 14,888 → 14,965; `kitchen.js` **3.5 KB** and `kitchen.css` **1.6 KB**, lazy | `gzip -9 -n` |
+| the fit | every line fits at 1920×1080 (83–136 px type), 1440×900, 1180×820, 820×1180 and 390×844 (36–51 px), with three and with six lines | `kitchenprobe.mjs`, `window.__tf().kitchen` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on a checkout of the change alone: the kitchen display's test (new), the ⋯ menu, a View link's holder, others' check-offs celebrated, the stamp, Settings, the screen reader's view, the leak check, the full session and the worker's two tests, both viewports: 29 passed; the kitchen display and the menu again after app.js was trimmed: 4 passed |
+| Looked at | Paper, Terminal and Ember (Scenes on, the campfire behind the lines) at TV, laptop, tablet both ways and phone sizes; the finish and the stamp on a TV |

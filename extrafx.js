@@ -1,5 +1,6 @@
 // extrafx.js — what an Extra kit (1.12 b262) draws that no other kit does: the material ground behind the words, and
-// the finale drawn for it. Loaded by app.js only when one of those kits is the theme that is on, so a device that
+// Char's wisp at the finale (b400: the finales that crossed the screen are gone; each kit's line writes itself in
+// extrafx.css). Loaded by app.js only when one of those kits is the theme that is on, so a device that
 // never unlocked never asks for it (COMPATIBILITY.md §6: asked for with the page's build, precached beside it).
 // Nothing here touches the document, the registry or the server.
 //
@@ -133,147 +134,12 @@ export function createGround(host, kit, { build = "" } = {}) {
 
 /* ---------------- the finales ---------------- */
 
-/** Chalkboard: a felt eraser sweeps the board in three passes, each leaving a band of haze that settles, and dust
-    goes up as it lifts. The line then writes itself (extrafx.css). Drawn on the confetti canvas through fx.scene(). */
-function eraser(fx, { w, h }, kit) {
-  const haze = (kit.grain && kit.grain[3]) || "#33463F";
-  const [hr, hg, hb] = [1, 3, 5].map(i => parseInt(haze.slice(i, i + 2), 16));
-  const T = 2.1, passes = 3, top = h * 0.22, span = h * 0.5;
-  const ew = Math.min(w * 0.16, 180), eh = Math.min(h * 0.055, 44);
-  const at = t => { // where the eraser is at t: left→right, right→left, left→right, sinking a band each pass
-    const p = Math.min(1, Math.max(0, t / T)) * passes, i = Math.min(passes - 1, Math.floor(p)), f = p - i;
-    const e = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
-    const x = i % 2 ? w * (0.92 - 0.84 * e) : w * (0.08 + 0.84 * e), y = top + span * ((i + f) / passes);
-    return { x, y, i, f };
-  };
-  fx.scene((g, t) => {
-    if (t > T + 1.1) return false;
-    const fade = t > T + 0.4 ? Math.max(0, 1 - (t - T - 0.4) / 0.7) : 1;
-    // the haze the passes have laid down so far: one band per pass, up to where the eraser is
-    for (let i = 0; i < passes; i++) {
-      const done = Math.min(1, Math.max(0, t / T * passes - i));
-      if (done <= 0) continue;
-      const y0 = top + span * (i / passes), y1 = top + span * ((i + 1) / passes);
-      const from = i % 2 ? w * 0.92 - w * 0.84 * done : w * 0.08, to = i % 2 ? w * 0.92 : w * 0.08 + w * 0.84 * done;
-      const grd = g.createLinearGradient(0, y0, 0, y1);
-      grd.addColorStop(0, `rgba(${hr},${hg},${hb},0)`); grd.addColorStop(0.5, `rgba(${hr},${hg},${hb},${0.42 * fade})`); grd.addColorStop(1, `rgba(${hr},${hg},${hb},0)`);
-      g.fillStyle = grd; g.fillRect(from, y0 - eh, to - from, y1 - y0 + eh * 2);
-    }
-    if (t < T) {
-      const { x, y, i } = at(t), tilt = (i % 2 ? -1 : 1) * 0.08;
-      g.save(); g.translate(x, y); g.rotate(tilt); g.globalAlpha = 0.96;
-      g.fillStyle = "#2B2B2B"; roundRect(g, -ew / 2, -eh / 2 - eh * 0.55, ew, eh * 0.6, 4); g.fill();                  // the wooden back
-      g.fillStyle = "#D9D7CC"; roundRect(g, -ew / 2, -eh / 2, ew, eh, 5); g.fill();                                       // the felt
-      g.fillStyle = `rgba(${hr},${hg},${hb},.55)`; roundRect(g, -ew / 2 + 6, eh * 0.18, ew - 12, eh * 0.26, 3); g.fill();  // its dusty edge
-      g.restore();
-    }
-    return true;
-  });
-  // the dust: a puff as each pass ends, and a cloud as the eraser lifts
-  for (let i = 1; i <= passes; i++) setTimeout(() => { const { x, y } = at((i / passes) * T - 0.01); fx.burst(x, y, 22, 7, 2.4); }, (i / passes) * T * 1000 - 40);
-  setTimeout(() => fx.burst(w * 0.5, h * 0.62, 70, 11, 6.283), T * 1000 + 60);
-}
-
-/** Whiteboard: one big marker check drawn across the board, stroke by stroke, translucent where it crosses the
-    words, held, then wiped. */
-function marker(fx, { w, h }, kit) {
-  const c = kit.colors.accent, [r, gg, b] = [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
-  const A = [w * 0.30, h * 0.54], B = [w * 0.45, h * 0.72], C = [w * 0.74, h * 0.34];
-  const L1 = Math.hypot(B[0] - A[0], B[1] - A[1]), L2 = Math.hypot(C[0] - B[0], C[1] - B[1]), L = L1 + L2;
-  const DRAW = 0.62, HOLD = 2.2, END = 3.0, lw = Math.min(w, h) * 0.05;
-  fx.scene((g, t) => {
-    if (t > END) return false;
-    const p = Math.min(1, t / DRAW), ease = 1 - Math.pow(1 - p, 2), d = ease * L;
-    const fade = t > HOLD ? Math.max(0, 1 - (t - HOLD) / (END - HOLD)) : 1;
-    g.save(); g.globalCompositeOperation = "multiply"; g.globalAlpha = 0.78 * fade;
-    g.strokeStyle = `rgb(${r},${gg},${b})`; g.lineWidth = lw; g.lineCap = "round"; g.lineJoin = "round";
-    g.beginPath(); g.moveTo(A[0], A[1]);
-    if (d <= L1) { const f = d / L1; g.lineTo(A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f); }
-    else { const f = (d - L1) / L2; g.lineTo(B[0], B[1]); g.lineTo(B[0] + (C[0] - B[0]) * f, B[1] + (C[1] - B[1]) * f); }
-    g.stroke();
-    if (t > HOLD) { // the wipe: a band of the board's own white crossing it — nothing here is a colour outside the grain
-      const x = w * (0.2 + 0.7 * (t - HOLD) / (END - HOLD));
-      g.globalCompositeOperation = "source-over"; g.globalAlpha = 0.9;
-      const grd = g.createLinearGradient(x - lw * 3, 0, x + lw * 3, 0);
-      grd.addColorStop(0, "rgba(251,251,250,0)"); grd.addColorStop(0.5, "rgba(251,251,250,.9)"); grd.addColorStop(1, "rgba(251,251,250,0)");
-      g.fillStyle = grd; g.fillRect(x - lw * 3, h * 0.25, lw * 6, h * 0.55);
-    }
-    g.restore();
-    return true;
-  });
-  setTimeout(() => fx.burst(C[0], C[1], 26, 10, 2.2), DRAW * 1000);
-}
-
-/** Bark: a gouge is driven across the plank left to right, cutting a channel of fresh wood behind the blade —
-    a dark edge above, a pale core, a light edge below — and throwing shavings as it goes. The blade lifts at the
-    end and is set down (the knock is the pack's). The line then carves itself in (extrafx.css). */
-function carve(fx, { w, h }, kit) {
-  const pal = kit.confetti || ["#FBF3E2"], dark = kit.colors.boxCheck || "#5A4432", core = pal[0], lipHi = pal[3] || pal[0];
-  const steel = kit.colors.accent || "#3F6076", handle = kit.colors.dim || "#604C39";
-  const T = 1.7, y = h * 0.55, x0 = w * 0.16, x1 = w * 0.86, ch = Math.max(10, Math.min(h * 0.035, 30));
-  const at = t => { const p = Math.min(1, Math.max(0, t / T)), e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; return x0 + (x1 - x0) * e; };
-  fx.scene((g, t) => {
-    if (t > T + 1.2) return false;
-    const fade = t > T + 0.5 ? Math.max(0, 1 - (t - T - 0.5) / 0.7) : 1;
-    const x = at(t), lift = t > T ? Math.min(1, (t - T) / 0.35) : 0;
-    g.save(); g.globalAlpha = fade;
-    // the channel cut so far: the dark lip above, the fresh core, the light lip below
-    const grd = g.createLinearGradient(0, y - ch / 2, 0, y + ch / 2);
-    grd.addColorStop(0, dark); grd.addColorStop(0.16, dark); grd.addColorStop(0.34, core); grd.addColorStop(0.8, core); grd.addColorStop(0.86, lipHi); grd.addColorStop(1, lipHi);
-    g.fillStyle = grd; roundRect(g, x0, y - ch / 2, Math.max(0, x - x0), ch, ch / 2); g.fill();
-    if (lift < 1) {
-      // the chisel, held the way a hand holds one: a bevelled steel blade, a collar, a turned handle, all on one axis
-      const s0 = Math.max(30, Math.min(w * 0.055, 76)), up = ch * 0.18 + lift * h * 0.16;
-      g.translate(x, y - up); g.rotate(-0.42); g.globalAlpha = fade * (1 - lift * 0.75);
-      g.fillStyle = steel; g.beginPath();                                   // the blade: a long wedge to a flat edge
-      g.moveTo(-s0 * 0.16, 0); g.lineTo(s0 * 0.16, 0); g.lineTo(s0 * 0.20, -s0 * 1.05); g.lineTo(-s0 * 0.20, -s0 * 1.05); g.closePath(); g.fill();
-      g.fillStyle = lipHi; g.globalAlpha = fade * 0.42 * (1 - lift);        // the bevel catching the light
-      g.beginPath(); g.moveTo(-s0 * 0.02, 0); g.lineTo(s0 * 0.12, 0); g.lineTo(s0 * 0.15, -s0 * 1.0); g.lineTo(s0 * 0.01, -s0 * 1.0); g.closePath(); g.fill();
-      g.globalAlpha = fade * (1 - lift * 0.75);
-      g.fillStyle = dark; roundRect(g, -s0 * 0.26, -s0 * 1.22, s0 * 0.52, s0 * 0.2, s0 * 0.05); g.fill();   // the collar
-      g.fillStyle = handle; g.beginPath();                                  // the handle, wider at the shoulder
-      g.moveTo(-s0 * 0.22, -s0 * 1.2); g.lineTo(s0 * 0.22, -s0 * 1.2); g.lineTo(s0 * 0.30, -s0 * 1.9); g.lineTo(s0 * 0.20, -s0 * 2.45);
-      g.lineTo(-s0 * 0.20, -s0 * 2.45); g.lineTo(-s0 * 0.30, -s0 * 1.9); g.closePath(); g.fill();
-      g.fillStyle = dark; g.globalAlpha = fade * 0.32 * (1 - lift); g.fillRect(-s0 * 0.30, -s0 * 1.98, s0 * 0.6, s0 * 0.07);
-    }
-    g.restore();
-    return true;
-  });
-  for (let i = 1; i <= 6; i++) setTimeout(() => fx.burst(at((i / 6) * T), y - ch * 0.6, 9, 6, 1.5), (i / 6) * T * 1000 - 60);  // the shavings curling off
-  setTimeout(() => fx.burst(x1, y - ch, 34, 9, 3.0), T * 1000 + 40);
-}
-
-/** Char: an ember runs the length of the last line, leaving char behind it and throwing sparks; it dies down and
-    smoulders, one wisp of smoke goes up through the ground's own layer (compositor-only, once), and the line
-    burns itself in (extrafx.css). */
-function burn(fx, { w, h }, kit) {
-  // the ember's hex comes from the kit's own confetti (the sparks), not from --strike-hot: that token is a gradient,
-  // because the strike wants shading across its height and the canvas wants three numbers
-  const hot = (kit.confetti && kit.confetti[0]) || "#FF7A18", cool = kit.colors.strikeBg || "#554A41";
-  const [hr, hg, hb] = [1, 3, 5].map(i => parseInt(hot.slice(i, i + 2), 16));
-  const T = 1.8, y = h * 0.55, x0 = w * 0.14, x1 = w * 0.88, lw = Math.max(7, Math.min(h * 0.026, 22));
-  const at = t => x0 + (x1 - x0) * Math.min(1, Math.max(0, t / T));
-  fx.scene((g, t) => {
-    if (t > T + 2.0) return false;
-    const x = at(t), after = Math.max(0, t - T);
-    const glow = after ? Math.max(0, 1 - after / 1.6) : 1;                       // it dies down rather than going out
-    g.save();
-    g.fillStyle = cool; roundRect(g, x0, y - lw / 2, Math.max(0, x - x0), lw, lw / 2); g.fill();   // the char left behind
-    // the last hand's length still smouldering, brightest at the head
-    const heat = g.createLinearGradient(Math.max(x0, x - w * 0.22), 0, x, 0);
-    heat.addColorStop(0, `rgba(${hr},${hg},${hb},0)`); heat.addColorStop(1, `rgba(${hr},${hg},${hb},${0.9 * glow})`);
-    g.fillStyle = heat; roundRect(g, Math.max(x0, x - w * 0.22), y - lw / 2, Math.min(x - x0, w * 0.22), lw, lw / 2); g.fill();
-    if (t < T) {                                                                 // the ember itself
-      const r = lw * 2.6, rg = g.createRadialGradient(x, y, 0, x, y, r);
-      rg.addColorStop(0, "rgba(255,244,214,.95)"); rg.addColorStop(0.35, `rgba(${hr},${hg},${hb},.7)`); rg.addColorStop(1, `rgba(${hr},${hg},${hb},0)`);
-      g.fillStyle = rg; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill();
-    }
-    g.restore();
-    return true;
-  });
-  for (let i = 1; i <= 7; i++) setTimeout(() => fx.burst(at((i / 7) * T), y - lw, 7, 7, 1.2), (i / 7) * T * 1000 - 50);   // the sparks
-  setTimeout(() => { fx.burst((x0 + x1) / 2, y - lw, 16, 5, 2.6); smoke(); }, T * 1000 + 120);
-}
+/* 1.12 b400: what an Extra kit's finale draws is its line, writing itself into the material (extrafx.css: chalk on the
+   board, marker on the whiteboard, carved into the plank, burned in with the scorch cooling behind it), under the kit's
+   own confetti. Until b399 each also drew across the whole screen on the confetti canvas — Chalkboard's eraser in three
+   passes, Whiteboard's marker check and its wipe, Bark's gouge driven across the middle, Char's ember run the length of
+   the line — and Price took them off as clutter: the line is the finish, and the screen is not a second one. Char keeps
+   its one wisp of smoke, which is the ground's own layer breathing once, not a stroke across the words. */
 
 /** One wisp of smoke, through the ground's own layer: a still gradient moved by transform and opacity alone
     (extrafx.css, tf-wisp), removed when it has gone. Nothing under reduced motion — the sheet hides it, and the
@@ -289,18 +155,9 @@ function smoke() {
   host.appendChild(el);
 }
 
-function roundRect(g, x, y, w, h, r) {
-  if (g.roundRect) { g.beginPath(); g.roundRect(x, y, w, h, r); return; }
-  g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
-}
-
-/** The finale an Extra kit names. Returns true when it played one, false for a name it does not know. */
-export function finale(kind, fx, opts = {}) {
-  const geom = { w: opts.w || (typeof innerWidth === "number" ? innerWidth : 1440), h: opts.h || (typeof innerHeight === "number" ? innerHeight : 900) };
-  const kit = opts.kit || { colors: { accent: "#2457C5" }, grain: [] };
-  if (kind === "eraser") { eraser(fx, geom, kit); return true; }
-  if (kind === "marker") { marker(fx, geom, kit); return true; }
-  if (kind === "carve") { carve(fx, geom, kit); return true; }   // 1.12 b268
-  if (kind === "burn") { burn(fx, geom, kit); return true; }
+/** The finale an Extra kit names: Char's wisp, when its line has burned in. Returns false, so app.js throws the kit's
+    own confetti, the volley every kit ends with (b400: no canvas finale of its own any more). */
+export function finale(kind) {
+  if (kind === "burn") setTimeout(smoke, 1250);
   return false;
 }

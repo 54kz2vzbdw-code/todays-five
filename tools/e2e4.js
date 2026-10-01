@@ -2123,14 +2123,16 @@ for (const [label, opts, touch] of VIEWPORTS) {
     ink = await t.page.$eval("#list .row:not(.done) .ink", e => { const c = getComputedStyle(e); return { dur: c.transitionDuration, op: c.opacity }; });
     assert.ok(/0\.42s/.test(ink.dur) && +ink.op < 1, "brushed away over .42s, fading: " + JSON.stringify(ink));
     await wait(600);
-    // the finale: the eraser on the confetti canvas, dust, and the line
+    // the finale: the line writes itself under the kit's own chalk dust (1.12 b400: the eraser no longer sweeps the screen)
     for (const b of await t.page.$$("#list .row:not(.done) .check")) { await b.click(); await wait(320); }
     await wait(1500);
     assert.equal(await t.page.textContent("#finale span"), "Class dismissed.");
     st = await t.s(); assert.ok(st.stats.finish >= 1 && st.stats.volley >= 1, "the finale fired: " + JSON.stringify(st.stats));
     assert.equal(await t.page.$eval("#finale span", e => getComputedStyle(e).animationName), "tf-write", "the line writes itself");
     const painted = await t.page.evaluate(() => { const c = document.getElementById("fx"); const g = c.getContext("2d"); const d = g.getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 400) if (d[i] > 0) n++; return n; });
-    assert.ok(painted > 0, "the eraser is on the canvas mid-sweep");
+    assert.ok(painted > 0, "its own dust is on the canvas");
+    const cross = await t.page.evaluate(async () => { const m = await import("./extrafx.js"); let drew = 0; const fx = { scene() { drew++; }, burst() { drew++; }, volley() { drew++; } }; return { kinds: ["eraser", "marker", "carve", "burn"].map(k => m.finale(k, fx, { w: 400, h: 400 })), drew }; });
+    assert.deepEqual(cross, { kinds: [false, false, false, false], drew: 0 }, "b400: no Extra kit draws across the screen at its finale, so the app throws the kit's own confetti");
     // the flip: Whiteboard, the same hand with a marker in it, a fat translucent strike that smears away
     for (const b of await t.page.$$("#list .row.done .check")) { await b.click(); await wait(240); }
     await t.press("#daynight"); await wait(900);
@@ -2169,7 +2171,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     assert.equal(await r.page.textContent("#finale span"), "Class dismissed.", "the line still lands");
     assert.equal(await r.page.$eval("#finale span", e => getComputedStyle(e).animationName), "none", "and stands still");
     const drew = await r.page.evaluate(() => { const c = document.getElementById("fx"); const g = c.getContext("2d"); const d = g.getImageData(0, 0, c.width, c.height).data; for (let i = 3; i < d.length; i += 4000) if (d[i] > 0) return true; return false; });
-    assert.equal(drew, false, "no eraser under reduced motion, like every other effect");
+    assert.equal(drew, false, "nothing drawn under reduced motion, like every other effect");
     assert.equal(r.errors.length, 0, r.errors.join("; "));
     await r.close();
   });
@@ -2320,13 +2322,13 @@ for (const [label, opts, touch] of VIEWPORTS) {
     ink = await t.page.$eval("#list .row:not(.done) .ink", e => { const c = getComputedStyle(e); return { dur: c.transitionDuration, op: c.opacity }; });
     assert.ok(/0\.46s/.test(ink.dur) && +ink.op < 1, "the shavings are brushed back over .46s: " + JSON.stringify(ink));
     await wait(700);
-    // the finale: the chisel on the confetti canvas, and the line carving itself in
+    // the finale: the line carving itself in under the kit's own shavings (1.12 b400: no chisel across the screen)
     for (const b of await t.page.$$("#list .row:not(.done) .check")) { await b.click(); await wait(320); }
     await wait(1500);
     assert.equal(await t.page.textContent("#finale span"), "Whittled down.");
     st = await t.s(); assert.ok(st.stats.finish >= 1 && st.stats.volley >= 1, "the finale fired: " + JSON.stringify(st.stats));
     assert.equal(await t.page.$eval("#finale span", e => getComputedStyle(e).animationName), "tf-write", "the line carves itself in");
-    assert.ok(await t.page.evaluate(() => { const c = document.getElementById("fx"), g = c.getContext("2d"), d = g.getImageData(0, 0, c.width, c.height).data; for (let i = 3; i < d.length; i += 400) if (d[i] > 0) return true; return false; }), "the chisel is on the canvas mid-cut");
+    assert.ok(await t.page.evaluate(() => { const c = document.getElementById("fx"), g = c.getContext("2d"), d = g.getImageData(0, 0, c.width, c.height).data; for (let i = 3; i < d.length; i += 400) if (d[i] > 0) return true; return false; }), "its own shavings are on the canvas");
     // the flip: Char, the same hand with a hot tip, a strike born ember that cools to char and holds
     for (const b of await t.page.$$("#list .row.done .check")) { await b.click(); await wait(240); }
     await t.press("#daynight"); await wait(900);

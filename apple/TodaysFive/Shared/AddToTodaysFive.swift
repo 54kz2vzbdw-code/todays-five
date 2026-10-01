@@ -194,11 +194,21 @@ struct AddService: Sendable {
 
     // ---------------------------------------------------------------- the real one
 
+    #if DEBUG
+    /// Debug builds only: a stand-in server for the simulator (apple/tools/mockserver.mjs), set at launch.
+    nonisolated(unsafe) static var debugConfig: SupabaseConfig?
+    #endif
+
     static func live() -> AddService {
-        AddService(
+        #if DEBUG
+        let config = debugConfig ?? .fromRepo
+        #else
+        let config = SupabaseConfig.fromRepo
+        #endif
+        return AddService(
             vault: KeychainLinkVault(),
             store: liveStore(),
-            makeTransport: { try? SupabaseTransport() },
+            makeTransport: { try? SupabaseTransport(config: config) },
             pickList: Self.selectedList,
             now: { CalendarDates.now() }
         )

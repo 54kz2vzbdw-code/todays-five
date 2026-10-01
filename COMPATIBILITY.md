@@ -221,15 +221,27 @@ A `WKWebView` on **the live site**, not a copy of it, plus the three things a br
 haptics, a Keychain link vault, and links that open in the app. It is an old client the moment it
 stops loading the current page, which is why it never bundles one.
 
-- **The `tf:*` events are the contract.** The page dispatches six `CustomEvent`s on `window`: from
+- **The `tf:*` events are the contract.** The page dispatches seven `CustomEvent`s on `window`: from
   the same places the sound plays, **`tf:check`, `tf:uncheck`, `tf:finale`, `tf:shuffle`**; and
   since 1.12 b279, around a strike drawn by hand, **`tf:draw`** when the finger starts drawing
   and **`tf:lift`** when it leaves the glass, committed or not — a commit then sends `tf:check`, so a
   drawn strike is always `tf:draw`, `tf:lift`, `tf:check`, in that order, and a tap never sends the
-  first two. They carry **no `detail`** — a haptic needs the moment, never the list, and the drawn
-  strike's speed is the shell's own measurement of the finger, never sent. Renaming one, or dropping
-  a dispatch, silently takes a feeling away from the app; `tools/e2e4.js` asserts all six at both
-  viewports so it cannot happen quietly.
+  first two; and since 1.12 b401, **`tf:stamp`** when the sealed stamp comes down on a finished day
+  (the shell answers it from build 406; an older shell ignores it). They carry **no `detail`** — a
+  haptic needs the moment, never the list, and the drawn strike's speed is the shell's own
+  measurement of the finger, never sent. Renaming one, or dropping a dispatch, silently takes a
+  feeling away from the app; `tools/e2e4.js` asserts the first six at both viewports and the stamp's
+  in its own test, so it cannot happen quietly.
+- **The widgets learn nothing from the page but its look** (1.12 b405). The shell reads the device's
+  Day and Night out of `tf/v2/meta` and the page's own `theme.js` (in the page world, as the Secret
+  kits are read), and leaves them in the App Group with the lists the vault holds, named by a key that
+  is a hash of the link — never the link. A widget reads Today **from the server**, through the vault
+  and the Swift core, exactly as the Watch does; no line of a list ever crosses the bridge. A widget's
+  check-off is a write like the Watch's: it rolls the list over first, as the page does on opening it,
+  and rings the doorbell, so an open page pulls at once. `meta.device.day`, `night`, `switch`, `slot`
+  and `holdAuto` are therefore read outside the browser too, as the registry is.
+- **`?kitchen=screen`** (1.12 b403) is the shell's address for a connected TV: the kitchen display with
+  nothing to touch. The page must go on honouring it, and `?kitchen`, as long as the shell asks.
 - The shell announces itself with a **user-agent token** (`TodaysFive/…`), not an injected flag, so
   the page's CSP never comes into it. `SHELL` in `app.js` reads it, and exactly two things turn on
   it: `HAPTIC` stands down (the shell has real generators; without this a check-off buzzes twice) and

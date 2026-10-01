@@ -9,5 +9,18 @@
 	<array>
 		<string>applinks:54kz2vzbdw-code.github.io</string>
 	</array>
+	<!-- 1.12 b405: the shelf the widgets read (WidgetShelf.swift): the device's look, which lists it holds by key,
+	     Today's lines. No secret is in it; the links stay in the Keychain. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.pricebrannen.todaysfive</string>
+	</array>
+	<!-- 1.12 b405: the vault's items are in the app's own access group, which is its application identifier; naming
+	     it here changes nothing for the app (it stays the default, first in the list) and is the half of keychain
+	     sharing the widget extension's entitlement matches. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.pricebrannen.todaysfive</string>
+	</array>
 </dict>
 </plist>

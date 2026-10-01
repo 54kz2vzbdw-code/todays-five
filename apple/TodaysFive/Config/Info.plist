@@ -39,8 +39,10 @@
 
 	<key>UIApplicationSceneManifest</key>
 	<dict>
+		<!-- 1.12 b405: YES so a connected screen can be a scene of its own (ExternalDisplay.swift). On an iPhone it
+		     changes nothing else: there is only ever one window of the app. -->
 		<key>UIApplicationSupportsMultipleScenes</key>
-		<false/>
+		<true/>
 		<key>UISceneConfigurations</key>
 		<dict>
 			<key>UIWindowSceneSessionRoleApplication</key>
@@ -50,6 +52,17 @@
 					<string>Default</string>
 					<key>UISceneDelegateClassName</key>
 					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+				</dict>
+			</array>
+			<!-- 1.12 b405: a connected screen (AirPlay to an Apple TV, or a cable) shows the list as the kitchen
+			     display while the phone stays the remote (ExternalDisplay.swift). -->
+			<key>UIWindowSceneSessionRoleExternalDisplayNonInteractive</key>
+			<array>
+				<dict>
+					<key>UISceneConfigurationName</key>
+					<string>External</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).ExternalDisplaySceneDelegate</string>
 				</dict>
 			</array>
 		</dict>

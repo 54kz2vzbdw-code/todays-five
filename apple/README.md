@@ -13,10 +13,12 @@ language mode.
 apple/
   PLAN-apple.md         Phase 1: the core — the design, and the results
   PLAN-apple-phase2.md  Phase 2: the iPhone shell — the design, and the results
+  PLAN-apple-phase3.md … phase6.md  the Watch, its kits, the wrist, and the room (widgets, controls, the TV)
   DECISIONS-apple.md    the calls made, and why
   TodaysFiveCore/       the Swift package
   TodaysFive/           the iOS app
   tools/interop.mjs     the live interop run, against the deployed site and the real backend
+  tools/mockserver.mjs  the three RPCs and the doorbell in memory, for the widgets' simulator checks
 ```
 
 ## Running the tests

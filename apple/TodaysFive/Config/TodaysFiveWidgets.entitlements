@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- The shelf the app leaves for the widgets (WidgetShelf.swift). -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.pricebrannen.todaysfive</string>
+	</array>
+	<!-- The app's own keychain group, so a widget can read a list's link from the vault when it has to reach the
+	     server — to read Today, or to cross a line off. It never writes there. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.pricebrannen.todaysfive</string>
+	</array>
+</dict>
+</plist>

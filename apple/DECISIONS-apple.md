@@ -2744,3 +2744,54 @@ Symbol lock, light on a dark ink and dark on a light one. Nothing is read from t
 colour and a symbol, so the web contract (COMPATIBILITY.md §8) does not move. It is iPhone-only, as the app is
 (`TARGETED_DEVICE_FAMILY = 1`), so there is no Split View in which it would cover a list someone is looking at. It is
 not a setting.
+
+
+# Phase 6 — own the room (1.12 b405, shipped as build 406)
+
+The plan and the results are `PLAN-apple-phase6.md`. The calls, and why:
+
+**The widgets read the server, not the page.** The obvious design was a bridge message carrying Today from the page
+to the shell. It was rejected for the same reason Phase 3 kept list contents off the Watch's channel: the bridge
+carries moments and never a list (COMPATIBILITY.md §8), and a second path for list contents is a second place for them
+to leak. So a widget does what the Watch does — vault, keys, core, server — and the page gives only its look. The cost
+is a read per refresh (an unchanged poll is 29 bytes) and a short wait after a change on the page: the shell asks for
+the read 1.8 s after the last `tf:check`, since sync.js pushes 250 ms after a change.
+
+**Phase 3's rule that a widget never reaches the server is lifted, for the iPhone's widgets only.** It was right for a
+complication that only ever shows a count. A widget whose box crosses a line off has to write, and a write has to
+reach the list; handing the tap to the app was not available (the app may not be running, and on the phone the list
+lives in a web page). The secret still never leaves the Keychain: the extension reads it through a keychain access
+group that names the app's own application identifier, which changes nothing for the app.
+
+**A key, not an id.** Every place a list's name is kept outside the app — a widget's configuration, an intent's
+parameter, a file name — holds the first ten bytes of a SHA-256 over the id.
+
+**The shelf holds Today and nothing more**, in four files with COMPATIBILITY.md §3's rules (`v`, defaults, refuse a
+future `v`, atomic writes), protected until first unlock.
+
+**Toggles, not buttons.** A `Toggle` driven by an intent is drawn in its new state the moment it is tapped, before the
+intent runs; a `Button` waits for the reload. The box is the kit's own (`KitCheckStyle`).
+
+**A write rolls the list over first.** See the results: without it a repeating line crossed off from a widget the
+morning after came back. The Watch has always rolled over before writing; the widget now does too. A passive read does
+not push a rollover — a widget refreshing at midnight is not a reason to write to somebody's list.
+
+**StandBy wears the Night theme.** StandBy takes the ground away and is, by Apple's design, the nightstand. A light
+Day theme's cream on a black StandBy reads as a hole in the dark; the Night theme was drawn for it.
+
+**The line on a locked Lock Screen is the system's to hide.** `privacySensitive` and the `.privacy` redaction show the
+count ("2 lines left on Today") until the phone knows its person, and the box goes with the line. A check-off from a
+widget requires an unlocked phone.
+
+**Controls open the app, they do not act blind.** "Check off the next line" from Control Center would cross off a line
+the person cannot see; the two controls are a composer and the list. The composer is native because a web view raises
+the keyboard only for a focus that follows a tap, and *Add a line* from the Action button must be typing at once.
+
+**The TV is the web's kitchen display**, not a native layout: one look, kept in one place (`kitchen.js`), and a TV
+showing what any wall tablet shows. `UIApplicationSupportsMultipleScenes` is now YES so the connected screen can be a
+scene of its own; on an iPhone there is still only ever one window of the app.
+
+**Debug-only instruments, compiled out of Release.** `-TFWidgetSeed`, `-TFWidgetDump`, `-TFWidgetSelfTest`,
+`-TFWidgetLab`, `-TFWidgetReset`, `-TFScreenCheck`, and `apple/tools/mockserver.mjs`, a stand-in for the three RPCs and
+the doorbell so a simulator never spends from the real backend's create limit. While the shelf names the stand-in, a
+debug app does not load the page (it would talk to the real backend, and its registry would let go of the seeded list).

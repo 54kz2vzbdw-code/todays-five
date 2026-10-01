@@ -67,6 +67,12 @@ browser—into Today in type that fills it, with the time beside the date. The s
 on another device plays its sound there, and with Scenes on, the theme's scene plays behind it. Esc, or the button
 that shows when you touch the screen, takes it back down.
 
+On the iPhone, the list has widgets now, in your theme's own type and colours. Next up shows the next line with a box
+to cross it off—on the Home Screen, in StandBy and on the Lock Screen. Today shows the day's lines, each with its box,
+and Progress shows what's left as a ring. A finished day seals itself there too. Two controls, Add a line and Today, go
+in Control Center, on the Lock Screen or on the Action button. And with the phone on a TV over AirPlay, the TV shows the
+kitchen display while the phone stays in your hand.
+
 ## 1.11 — A look of its own.
 
 - **New** — The same check, in colours of its own instead of borrowed ones.

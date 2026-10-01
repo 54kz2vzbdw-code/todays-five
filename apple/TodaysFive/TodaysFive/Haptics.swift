@@ -1,6 +1,6 @@
 // Haptics.swift — the reason the app exists.
 //
-// Six moments, and nothing else. No haptic on an ordinary tap; the page's own sound still plays,
+// Seven moments, and nothing else. No haptic on an ordinary tap; the page's own sound still plays,
 // and muting the sound does not mute these — they are different senses. 1.12 b279 added the two
 // around a drawn strike, `tf:draw` and `tf:lift`: the scratch in the hand while a finger draws.
 //
@@ -27,6 +27,7 @@ final class Haptics {
         case shuffle = "tf:shuffle"
         case draw = "tf:draw"   // 1.12 b279: a finger has started drawing a strike
         case lift = "tf:lift"   // …and has left the glass, committed or not (a commit then sends tf:check)
+        case stamp = "tf:stamp" // 1.12 b401: the sealed stamp comes down on a finished day (b405 here)
     }
 
     /// The volley, from `fx.js`: `for (let i = 0; i < 7; i++) … i * 65` along the bottom, then one
@@ -40,6 +41,8 @@ final class Haptics {
     }
 
     private let medium = UIImpactFeedbackGenerator(style: .medium)
+    private let heavy = UIImpactFeedbackGenerator(style: .heavy)
+    private let soft = UIImpactFeedbackGenerator(style: .soft)
     private let light = UIImpactFeedbackGenerator(style: .light)
     private let notice = UINotificationFeedbackGenerator()
 
@@ -54,6 +57,7 @@ final class Haptics {
     /// first haptic of a session is late enough to feel disconnected from the check-off.
     func prepare() {
         medium.prepare()
+        heavy.prepare()
         light.prepare()
         notice.prepare()
         startEngine()
@@ -67,9 +71,20 @@ final class Haptics {
         case .finale: if !playFinale() { notice.notificationOccurred(.success) } // 1.10's tap, where there is no engine
         case .draw: startScratch()
         case .lift: stopScratch()
+        case .stamp: knock()
         }
         // keep them warm for the next line in the same burst
         prepare()
+    }
+
+    /// The stamp, in the hand: a heavy knock as it lands, then the softer settle of the rubber a beat later — the page's
+    /// thud (packs.js CUES.stamp) and its 1.5-px jolt of the card, felt.
+    private func knock() {
+        heavy.impactOccurred(intensity: 1)
+        Task { @MainActor [soft] in
+            try? await Task.sleep(for: .milliseconds(75))
+            soft.impactOccurred(intensity: 0.45)
+        }
     }
 
     // ---------------------------------------------------------------- the scratch (1.12 b279)

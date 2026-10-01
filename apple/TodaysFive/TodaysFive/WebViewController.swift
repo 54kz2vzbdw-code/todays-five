@@ -41,6 +41,11 @@ final class WebViewController: UIViewController {
     private let vault: any LinkVault = KeychainLinkVault()
 
     private var urlObservation: NSKeyValueObservation?
+    #if DEBUG
+    /// Widget test mode's one line on screen (WidgetDebug.swift): what the app was opened for.
+    private var testNote: UILabel?
+    private var screenChecked = false
+    #endif
     private var themeObservation: NSKeyValueObservation?
     private var statusBarStyle: UIStatusBarStyle = .lightContent
     private var restoreAttempted = false
@@ -93,6 +98,22 @@ final class WebViewController: UIViewController {
         WatchLinkSender.shared.start()
 
         #if DEBUG
+        // 1.12 b405: the widgets' instruments (WidgetDebug.swift). While the shelf names the stand-in server the page
+        // stays unloaded: it would talk to the real backend, and its registry would let go of the seeded list.
+        if ProcessInfo.processInfo.arguments.contains("-TFWidgetReset") { WidgetDebug.reset() }
+        if WidgetDebug.testMode {
+            let note = UILabel()
+            testNote = note
+            note.text = "Widget test mode\nthe page is not loaded"
+            note.numberOfLines = 0; note.textAlignment = .center; note.textColor = .lightGray
+            note.font = .systemFont(ofSize: 15, weight: .semibold)
+            note.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(note)
+            NSLayoutConstraint.activate([note.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                                         note.centerYAnchor.constraint(equalTo: view.centerYAnchor)])
+            Task { await WidgetDebug.run() }
+            return
+        }
         if ProcessInfo.processInfo.arguments.contains("-TFWipeVault") { try? (vault as? KeychainLinkVault)?.removeAll() }
         if ProcessInfo.processInfo.arguments.contains("-TFDumpVault") { dumpVault() }
         if ProcessInfo.processInfo.arguments.contains("-TFWipeWebStore") { wipeWebStoreThenLoad(); return }
@@ -125,15 +146,16 @@ final class WebViewController: UIViewController {
         return config
     }
 
-    /// Six names, and nothing that identifies a list. `ready` carries no `tf:` prefix because it is
+    /// Seven names, and nothing that identifies a list. `ready` carries no `tf:` prefix because it is
     /// the bridge announcing itself, not one of the page's events. 1.12 b279 added `tf:draw` and
-    /// `tf:lift`, still with no detail: the drawn strike's speed is measured here, never sent.
+    /// `tf:lift`, still with no detail: the drawn strike's speed is measured here, never sent. 1.12 b401
+    /// added `tf:stamp`, the sealed stamp coming down (a page from before it never sends it).
     static let bridgeSource = """
     (function () {
       var send = function (name) {
         try { window.webkit.messageHandlers.tf.postMessage(name); } catch (e) { /* nothing to do */ }
       };
-      ["tf:check", "tf:uncheck", "tf:finale", "tf:shuffle", "tf:draw", "tf:lift"].forEach(function (name) {
+      ["tf:check", "tf:uncheck", "tf:finale", "tf:shuffle", "tf:draw", "tf:lift", "tf:stamp"].forEach(function (name) {
         window.addEventListener(name, function () { send(name); }, { passive: true });
       });
       send("ready");
@@ -150,7 +172,10 @@ final class WebViewController: UIViewController {
         // The page changes its theme-color with the theme; the status bar and the safe areas follow,
         // so a light theme does not sit under a dark bar.
         themeObservation = webView.observe(\.themeColor, options: [.new, .initial]) { [weak self] webView, _ in
-            MainActor.assumeIsolated { self?.applyTheme(webView.themeColor) }
+            MainActor.assumeIsolated {
+                self?.applyTheme(webView.themeColor)
+                WidgetPublisher.shared.readLook(from: webView) // 1.12 b405: the widgets wear the device's Day and Night
+            }
         }
     }
 
@@ -204,9 +229,46 @@ final class WebViewController: UIViewController {
     /// A universal link, or a URL handed to the app. Vault it, then let the page have it whole —
     /// /add?text=, /mine and /shared pass through untouched, because the page handles them.
     func open(_ url: URL) {
+        if url.scheme == "todaysfive" { openFromWidget(url); return }
         guard url.host == Self.host else { return }
         noticeLink(url)
         webView.load(URLRequest(url: url))
+    }
+
+    // ---------------------------------------------------------------- the widgets and controls (1.12 b405)
+
+    /// `todaysfive://list/<key>` from a widget's tap, `todaysfive://add` from its +, `todaysfive://open` from a widget
+    /// with no list. A key is never an id (WidgetShelf.key): it is looked up in the vault, and a key this phone does
+    /// not hold opens the app as it is.
+    private func openFromWidget(_ url: URL) {
+        #if DEBUG
+        if WidgetDebug.testMode { testNote?.text = "Widget test mode\nopened from a widget: \(url.host ?? "?")"; if url.host == "list" { return } }
+        #endif
+        switch url.host {
+        case "add":
+            presentComposer()
+        case "list":
+            let key = url.lastPathComponent
+            guard let link = (try? vault.all())?.first(where: { WidgetShelf.key(for: $0.id) == key }) else { return }
+            if UserDefaults.standard.string(forKey: AddService.openListKey) == link.id, webView.url != nil { return }
+            let target = Self.startURL.absoluteString + Links.fragment(id: link.id, mode: link.mode)
+            if let to = URL(string: target) { noticeLink(to); webView.load(URLRequest(url: to)) }
+        default:
+            break
+        }
+    }
+
+    /// The Add a line control, the Action button, a widget's +: the composer, with the keyboard out.
+    func presentComposer() {
+        ComposerViewController.present(over: self)
+    }
+
+    /// What an intent that opened the app asked for.
+    func answer(_ knock: AppDoor.Knock) {
+        switch knock {
+        case .compose: presentComposer()
+        case .today: break
+        }
     }
 
     /// Learn a link the app saw go by. Parsed with the core's own parser — the same one the web uses.
@@ -216,13 +278,19 @@ final class WebViewController: UIViewController {
         // stamps every held link with the same `lastSeenAt` on each reconcile — so the app writes it
         // down here, where it genuinely knows, and the App Intent reads it back (§3). The key holds
         // an id, so it lives in the app's own defaults and never in the page's storage.
+        let moved = UserDefaults.standard.string(forKey: AddService.openListKey) != parsed.id
         UserDefaults.standard.set(parsed.id, forKey: AddService.openListKey)
+        if moved {
+            NotificationCenter.default.post(name: .tfOpenListChanged, object: nil) // the TV follows (ExternalDisplay.swift)
+            WidgetPublisher.shared.listsMoved()
+        }
         do {
             let current = try vault.all()
             if let write = VaultReconciler.seen(parsed, vault: current) {
                 try vault.put(write)
                 log("vault: kept a link")
                 WatchLinkSender.shared.sendVaultNow()
+                WidgetPublisher.shared.listsMoved()
             }
         } catch {
             log("vault: could not write")
@@ -233,6 +301,13 @@ final class WebViewController: UIViewController {
 
     func cameToForeground() {
         Task { await reconcileVault() }
+        WidgetPublisher.shared.readLook(from: webView) // a slot changed in Settings moves no theme colour
+    }
+
+    /// The app is going to the background (1.12 b405): the widgets' look and Today, read once more.
+    func goingAway() {
+        WidgetPublisher.shared.readLook(from: webView)
+        WidgetPublisher.shared.leaving()
     }
 
     // ---------------------------------------------------------------- the app switcher (1.12 b293)
@@ -357,6 +432,7 @@ final class WebViewController: UIViewController {
 
             for link in plan.upsert { try vault.put(link) }
             for id in plan.remove { try vault.remove(id: id) }
+            WidgetPublisher.shared.listsMoved() // 1.12 b405: names and which is open, and a list let go comes off the shelf
             if !plan.upsert.isEmpty || !plan.remove.isEmpty {
                 log("vault: +\(plan.upsert.count) −\(plan.remove.count)")
                 // The vault moved, which is the only moment §2 says the phone speaks. *Remove from
@@ -534,6 +610,18 @@ extension WebViewController: WKNavigationDelegate {
         Task {
             await reconcileVault()
             #if DEBUG
+            // -TFScreenCheck: the TV's screen (ExternalDisplay.swift), shown here, over the app, for a capture — the
+            // whole of the external display but the cable, which a simulator cannot plug in without its I/O menu
+            if ProcessInfo.processInfo.arguments.contains("-TFScreenCheck"), !screenChecked,
+               UserDefaults.standard.string(forKey: AddService.openListKey) != nil {
+                screenChecked = true
+                let screen = KitchenScreenController()
+                screen.modalPresentationStyle = .fullScreen
+                present(screen, animated: false)
+                log("screen check: the TV's screen is up")
+            }
+            #endif
+            #if DEBUG
             if ProcessInfo.processInfo.arguments.contains("-TFSelfTest") { await runSelfTest() }
             #endif
         }
@@ -572,6 +660,8 @@ extension WebViewController: WKScriptMessageHandler {
         guard let moment = Haptics.Moment(rawValue: name) else { return }
         haptics.play(moment)
         log("haptic: \(haptics.tally)")
+        // 1.12 b405: the list changed under the widgets; they are read again once the page has pushed
+        if moment == .check || moment == .uncheck || moment == .finale { WidgetPublisher.shared.listChanged() }
     }
 }
 

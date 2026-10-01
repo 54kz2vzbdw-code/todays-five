@@ -3620,3 +3620,17 @@ holds at 1.12, and nothing in `apple/` changed but the stamp.
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on a checkout of the change alone: the kitchen display's test (new), the ⋯ menu, a View link's holder, others' check-offs celebrated, the stamp, Settings, the screen reader's view, the leak check, the full session and the worker's two tests, both viewports: 29 passed; the kitchen display and the menu again after app.js was trimmed: 4 passed |
 | Looked at | Paper, Terminal and Ember (Scenes on, the campfire behind the lines) at TV, laptop, tablet both ways and phone sizes; the finish and the stamp on a TV |
+
+# Today's Five 1.12 b405 — Widgets, controls and the TV, on the iPhone
+
+*Shipped as build 406. b405 is its commit.*
+
+The native half of Bet 06 (*own the room*); the web half is b403 (build 404). Three widgets — **Next up** (small and
+Lock Screen rectangular, StandBy-ready), **Today** (medium and large) and **Progress** (small, Lock Screen circular and
+inline) — each with the kit's own type, box, strike and sealed stamp, the device's Day or Night by its own switch, and
+boxes that cross lines off from the Home Screen and the Lock Screen. Two iOS 18 controls, **Add a line** (a native
+composer with the keyboard out) and **Today**, for Control Center, the Lock Screen and the Action button. A connected
+TV shows the kitchen display (`?kitchen=screen`) while the phone stays the remote. The design, the instruments and the
+results are `apple/PLAN-apple-phase6.md`; the calls are `apple/DECISIONS-apple.md` under Phase 6. COMPATIBILITY.md §8
+gains `tf:stamp`, the widgets' contract and `?kitchen=screen`; the changelog's 1.12 entry gains a paragraph. The web's
+code does not change; the version holds at 1.12.

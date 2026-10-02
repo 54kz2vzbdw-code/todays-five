@@ -20,6 +20,15 @@
 // shadow flitting up the light, or a gust in the leaves. The rare ones, about one pass in eight each: a swan, a rosetta
 // bent into a wing, a neck drawn up in an S, a head and a flick of a beak; and a ginger cat's paw, reaching in from the
 // edge away from the words to pat the saucer.
+//
+// 1.12 b416: the egg. Every twelfth pass (K.egg: three minutes of the list left alone) the spoon stirs and the new art
+// is poured as on any pass, and then, in place of what drops in and what crosses the window's light, a little cat of milk
+// foam rises out of the cup, the way a barista builds one up out of a cup's foam: the art's foam draws up into a dome,
+// ears prick up, a sleepy face; it climbs to the rim and hooks its paws over it, its tail curling up out of the foam
+// behind it; it opens its eyes, looks one way and the other, tilts its head at you and gives you a slow blink (the way a
+// cat says it's fond of you), a small mew, an ear flicked; then it lets go and slides back down into the cup, the foam
+// closes over it in rings, and the art comes back together as it was. It peeks out on the side away from the words. The
+// pass's dusting falls after it, so the pass ends on the very picture the next one starts from.
 export default function cocoa(K) {
   const { clamp, lerp, E, seg, env, rng, canvas } = K;
   const TAU = Math.PI * 2;
@@ -244,11 +253,114 @@ export default function cocoa(K) {
      *  what goes over the light and when, whether the cat comes */
     passPlan(P) {
       if (S.plP === P && S.pl) return S.pl;
+      if (K.egg(P)) { S.pl = S.eggPlanOf(P); S.plP = P; return S.pl; } // b416: every twelfth pass, the egg
       const cur = planOf(P), prev = planOf(P - 1), pr = PROGS[cur.art], end = pr ? pr.end : 5.8, r = rng(cur.seed + 7), t0 = Math.max(6.25, end + .4);
       const n = [3, 5, 9, 0][cur.drop], small = cur.drop === 2, o = r() * TAU;
       const mallows = Array.from({ length: n }, (_, i) => { const a = o + i / Math.max(1, n) * TAU + (r() - .5) * .6, d = small ? .2 + r() * .34 : .22 + r() * .22; return { u: Math.cos(a) * d, v: Math.sin(a) * d, rot: r() * TAU, t: t0 + i * (small ? .08 : .4) + r() * .08, ph: r() * TAU, s: small ? .06 + r() * .025 : .14 + r() * .025, pink: r() < .45 }; });
       S.pl = { P, cur, prev, end, mallows, lt: cur.light, c0: 8.0 + r() * 1.3, deep: .55 + r() * .4, paw: pawP(P) }; S.plP = P;
       return S.pl;
+    },
+    /** 1.12 b416: the egg's pass. It pours as any pass pours (the art the pass before left stirred away, this pass's poured
+     *  in its place), and then, instead of what drops in and what crosses the window's light, the cat (see `catAt`); its
+     *  dusting comes after it, so the pass ends where the next one starts. `te` when the cat starts, `k` how its six seconds
+     *  are squeezed if the pour ran long (the swan's), `dust` how much later than a pass's the dusting falls */
+    eggPlanOf(P) {
+      const cur = planOf(P), prev = planOf(P - 1), pr = PROGS[cur.art], still = (pr ? pr.k1 : K1) * DT, te = Math.max(6.45, still + .35), dur = Math.min(6.2, 13.1 - te);
+      return { P, cur, prev, end: pr ? pr.end : 5.8, mallows: [], lt: -1, c0: 0, deep: 0, paw: false, egg: { te, k: dur / 6.2, dust: Math.min(te + dur + .15, 13.3) - 9.0 } };
+    },
+    /** which way the cat peeks out: away from the words, and down the page if it can, so its face stays the right way up */
+    eggDir() {
+      const { cx, cy } = S, key = Math.round(cx) + "," + Math.round(cy) + ":" + (S.raw ? S.raw.length : 0); if (S.eggD && S.eggD.key === key && S.eggD.raw === S.raw) return S.eggD.a;
+      let near = null, nd = 1e9; for (const [x0, y0, x1, y1] of S.raw || []) { const qx = clamp(cx, x0, x1), qy = clamp(cy, y0, y1), d = Math.hypot(qx - cx, qy - cy); if (d < nd) { nd = d; near = [qx, qy]; } }
+      const ax = near && nd > 1 ? (cx - near[0]) / nd : 0, ay = near && nd > 1 ? (cy - near[1]) / nd : 1, a = clamp(Math.atan2(ay + .9, ax), .45, Math.PI - .45);
+      S.eggD = { key, raw: S.raw, a }; return a;
+    },
+    /** The cat, at T: a little cat of foam, the way a barista builds one up out of a cup, but alive. A dome of foam swells
+     *  out of the cup's middle and rises into a round head, ears pricking up, eyes shut, wobbling as it comes up; it climbs
+     *  to the rim and hooks its paws over it, its tail curling up out of the foam behind it; it opens its eyes, looks one
+     *  way and the other, tilts its head at you and gives you a slow blink (a cat's way of saying it's fond of you), a
+     *  small mew, an ear flicked; and it lets go and slides back down into the cup, and the foam closes over it, rings
+     *  going out, the art as it was. Its own seconds, `u`, 0 → 6.2; null before and after. */
+    catAt(pl, T, A, I) {
+      const e = pl.egg, u = (T - e.te) / e.k; if (u <= 0 || u >= 6.2 || I <= .01) return null;
+      const th = S.eggDir(), dir = [Math.cos(th), Math.sin(th)], peek = env(u, 1.35, 2.05, 4.95, 5.45, E.io);
+      const h = seg(u, 0, 1.25, E.back) * (1 - seg(u, 5.25, 6.0, E.in)), at = [dir[0] * .56 * peek, dir[1] * .56 * peek - .04 * (1 - peek)];
+      const land = u > .95 ? Math.sin((u - .95) * 15) * Math.exp(-(u - .95) * 4.2) * .07 : 0; // the wobble as it comes up
+      const close = env(u, 3.75, 4.05, 4.18, 4.5, E.sine) + env(u, 2.88, 2.92, 2.95, 3.0) * .9;
+      return { u, th, dir, peek, h, at, I, s: (.4 + .6 * h) * (1 + .07 * peek), sq: 1 + land, alpha: I * seg(u, 0, .32) * (1 - seg(u, 5.8, 6.05)),
+        tilt: peek * dir[0] * -.12 + .2 * env(u, 3.25, 3.42, 3.62, 3.8, E.sine) * (dir[0] >= 0 ? -1 : 1), ears: seg(u, .48, .95, E.back), flick: env(u, 4.58, 4.62, 4.65, 4.8),
+        open: seg(u, 2.12, 2.32) * (1 - close), look: [env(u, 2.4, 2.52, 2.62, 2.74, E.sine) * -1 + env(u, 2.78, 2.9, 3.02, 3.14, E.sine), 0], mew: env(u, 4.72, 4.8, 4.9, 5.02),
+        face: seg(u, .7, 1.1) * (1 - seg(u, 5.35, 5.75)), paws: env(u, 1.8, 2.12, 4.92, 5.2, E.out), tail: env(u, 1.55, 1.95, 4.85, 5.3, E.sine), sway: Math.sin(A * 2.3) * .3 + Math.sin(A * 3.7) * .1,
+        rings: [seg(u, .05, 1.35, x => x), seg(u, 5.5, 6.2, x => x)] };
+    },
+    /** the cat's pieces, drawn once for a size: its head — a ball of milk foam, full at the cheeks, glossy where the
+     *  window catches it and warmer where it turns away, its fine bubbles — at `r` CSS px */
+    catHead(r) {
+      const k = Math.round(r * px * 4); if (S.catH && S.catH.k === k) return S.catH;
+      const c = r * 1.25, spr = make(c * 2, c * 2, x => {
+        const shape = () => { x.beginPath(); x.ellipse(c, c - r * .03, r, r * .92, 0, 0, TAU); x.moveTo(c + r * .06 + r * .5, c + r * .34); x.ellipse(c + r * .4, c + r * .34, r * .5, r * .42, 0, 0, TAU); x.moveTo(c - r * .4 + r * .5, c + r * .34); x.ellipse(c - r * .4, c + r * .34, r * .5, r * .42, 0, 0, TAU); };
+        const gr = x.createRadialGradient(c - r * .38, c - r * .42, r * .04, c - r * .05, c, r * 1.32); gr.addColorStop(0, "#FFFEF9"); gr.addColorStop(.42, "#FBF1E0"); gr.addColorStop(.78, "#EDD6B4"); gr.addColorStop(1, "#D6B48A");
+        shape(); x.strokeStyle = "rgba(160,112,72,.4)"; x.lineWidth = Math.max(1.4, r * .05); x.stroke(); x.fillStyle = gr; x.fill("nonzero"); // its edge: the stroke's outer half, the fill over the rest
+        x.save(); shape(); x.clip("nonzero");
+        const ao = x.createRadialGradient(c - r * .25, c - r * .3, r * .55, c, c + r * .1, r * 1.3); ao.addColorStop(0, "rgba(150,100,60,0)"); ao.addColorStop(1, "rgba(150,100,60,.32)"); x.fillStyle = ao; x.fillRect(0, 0, c * 2, c * 2); // warmer as it turns away
+        const r2 = rng(5151); for (let i = 0; i < 70; i++) { const a = r2() * TAU, d = Math.sqrt(r2()) * r * 1.05, bx = c + Math.cos(a) * d, by = c + Math.sin(a) * d * .95, br = r * (.012 + r2() * .03); x.fillStyle = "rgba(255,255,255,.45)"; x.beginPath(); x.arc(bx, by, br, 0, TAU); x.fill(); x.strokeStyle = "rgba(180,135,95,.2)"; x.lineWidth = Math.max(.5, br * .3); x.stroke(); } // the foam's fine bubbles
+        const hl = x.createRadialGradient(c - r * .36, c - r * .44, 0, c - r * .36, c - r * .44, r * .34); hl.addColorStop(0, "rgba(255,255,255,.95)"); hl.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = hl; x.fillRect(0, 0, c * 2, c * 2); // the window's gloss
+        x.restore(); });
+      spr.k = k; spr.c = c; return (S.catH = spr);
+    },
+    /** the cat, drawn in the surface's units (the cup's middle at the origin, the cocoa's radius 1): under the foam's edge
+     *  the rings and the shade where it comes up through it (`under`, inside the cocoa's clip), else its shadow, tail, paws,
+     *  ears, head and face */
+    drawCat(c, LR, under) {
+      if (!c) return;
+      const a = S.vis * c.alpha, r = .46 * c.s, [hx, hy] = c.at;
+      if (under) { // rings going out where it comes up and where it goes down, and the foam darker round its foot
+        g.lineWidth = .012; for (const [q, x0] of [[c.rings[0], [0, -.04]], [c.rings[1], [0, -.04]]]) if (q > 0 && q < 1) for (const d of [0, .22]) { const k = clamp(q - d), rr = .1 + k * .75; if (k <= 0) continue; g.strokeStyle = `rgba(250,240,222,${(.5 * (1 - k) * S.vis * c.I).toFixed(3)})`; g.beginPath(); g.arc(x0[0], x0[1], rr, 0, TAU); g.stroke(); }
+        if (c.h > .01) { g.globalAlpha = S.vis * c.I * .35 * Math.min(1, c.h * 2); g.drawImage(S.soft, hx - r * 1.35, hy - r * 1.2, r * 2.7, r * 2.5); g.globalAlpha = S.vis; }
+        return; }
+      const sh = .05 + .16 * c.h; // its shadow, on the cocoa and, when it peeks, over the rim
+      g.globalAlpha = a * .4 * c.h; g.drawImage(S.soft, hx - r * 1.2 + sh * .9, hy - r * 1.1 + sh * 1.2, r * 2.4, r * 2.3); g.globalAlpha = a;
+      const foam = (x0, y0, rr) => { const gr = g.createRadialGradient(x0 - rr * .4, y0 - rr * .45, rr * .05, x0, y0, rr * 1.15); gr.addColorStop(0, "#FFFDF7"); gr.addColorStop(.6, "#F6E8D0"); gr.addColorStop(1, "#DDBF96"); return gr; };
+      if (c.tail > .01) { // its tail, up out of the foam behind it (the rest of it under the foam), the tip curling and swaying
+        const tb = [-c.dir[0] * .5, -c.dir[1] * .5];
+        const base = [tb[0] - c.dir[0] * .06 - c.dir[1] * .05, tb[1] - c.dir[1] * .06 + c.dir[0] * .05], a0 = c.th + Math.PI + .55, L2 = .5 * c.tail, curl = 2.3 + c.sway * 1.3, n = 14, mid = [], wd = [];
+        let p0 = base.slice(), ang = a0; for (let i = 0; i <= n; i++) { const f = i / n; mid.push(p0.slice()); wd.push(lerp(.072, .03, f) * (.6 + .4 * c.tail)); ang += curl * Math.pow(f, 1.6) / n * 2.2; p0 = [p0[0] + Math.cos(ang) * L2 / n, p0[1] + Math.sin(ang) * L2 / n]; }
+        const side = (k) => mid.map((q, i) => { const d = mid[Math.min(n, i + 1)], e = mid[Math.max(0, i - 1)], tx = d[0] - e[0], ty = d[1] - e[1], tl = Math.hypot(tx, ty) || 1; return [q[0] - ty / tl * wd[i] * k, q[1] + tx / tl * wd[i] * k]; });
+        const L = side(1), Rr = side(-1), tip = mid[n], outline = () => { g.beginPath(); L.forEach(([u, v], i) => i ? g.lineTo(u, v) : g.moveTo(u, v)); g.arc(tip[0], tip[1], wd[n], 0, TAU); [...Rr].reverse().forEach(([u, v]) => g.lineTo(u, v)); g.closePath(); };
+        g.globalAlpha = a * .35; g.save(); g.translate(.025, .035); outline(); g.fillStyle = "rgba(40,20,10,.6)"; g.fill(); g.restore(); g.globalAlpha = a; // its shadow on the foam
+        outline(); g.strokeStyle = "rgba(160,112,72,.45)"; g.lineWidth = .02; g.stroke(); g.fillStyle = foam(mid[6][0], mid[6][1], .32); g.fill();
+        g.strokeStyle = "rgba(255,255,255,.55)"; g.lineWidth = .014; g.beginPath(); L.slice(2, n - 1).forEach(([u, v], i) => i ? g.lineTo(u * .6 + mid[i + 2][0] * .4, v * .6 + mid[i + 2][1] * .4) : g.moveTo(u * .6 + mid[i + 2][0] * .4, v * .6 + mid[i + 2][1] * .4)); g.stroke(); // its sheen
+        g.fillStyle = "#FBF1E0"; g.beginPath(); g.arc(base[0], base[1], wd[0] * 1.25, 0, TAU); g.fill(); } // where it comes out of the foam
+      if (c.paws > .01) for (const sd of [-1, 1]) { // its front paws, hooked over the rim
+        const pa = c.th + sd * .36, out = lerp(.88, 1.12, c.paws), px2 = Math.cos(pa) * out, py2 = Math.sin(pa) * out, pr = .13 * (.6 + .4 * c.paws);
+        g.save(); g.translate(px2, py2); g.rotate(pa - Math.PI / 2);
+        g.globalAlpha = a * .35 * c.paws; g.drawImage(S.soft, -pr * 1.2 + .03, -pr + .045, pr * 2.4, pr * 2.1); g.globalAlpha = a * Math.min(1, c.paws * 1.6);
+        g.fillStyle = foam(0, 0, pr); g.beginPath(); g.ellipse(0, 0, pr, pr * .82, 0, 0, TAU); g.fill(); g.strokeStyle = "rgba(160,112,72,.4)"; g.lineWidth = .01; g.stroke();
+        g.strokeStyle = "rgba(92,50,26,.55)"; g.lineWidth = .011; for (const tx of [-.045, .045]) { g.beginPath(); g.moveTo(tx, pr * .82); g.lineTo(tx * .8, pr * .3); g.stroke(); } // its toes, in cocoa
+        g.restore(); g.globalAlpha = a; }
+      g.save(); g.translate(hx, hy); g.rotate(c.tilt); g.scale(1 / c.sq, c.sq);
+      for (const sd of [-1, 1]) { // ears, pricking up (one flicks)
+        const k = c.ears * (1 + (sd > 0 ? .08 * c.flick : 0)), rot = sd * (.18 + (sd > 0 ? .35 * c.flick : 0)); if (k <= .01) continue;
+        g.save(); g.translate(sd * r * .52, -r * .62); g.rotate(rot); g.scale(k, k);
+        g.fillStyle = foam(-sd * r * .05, -r * .1, r * .45); g.beginPath(); g.moveTo(-r * .3, r * .12); g.quadraticCurveTo(-r * .2, -r * .38, -r * .02, -r * .5); g.quadraticCurveTo(r * .06, -r * .52, r * .1, -r * .42); g.quadraticCurveTo(r * .24, -r * .16, r * .32, r * .12); g.closePath(); g.fill(); g.strokeStyle = "rgba(160,112,72,.38)"; g.lineWidth = .012; g.stroke();
+        g.fillStyle = "rgba(150,82,58,.42)"; g.beginPath(); g.moveTo(-r * .16, r * .06); g.quadraticCurveTo(-r * .1, -r * .24, r * .02, -r * .33); g.quadraticCurveTo(r * .12, -r * .14, r * .18, r * .06); g.closePath(); g.fill(); // cocoa dusted in it
+        g.restore(); }
+      const Rp = .5 * LR, hs = S.catHead(Rp), half = hs.c * r / Rp; g.globalAlpha = a; g.drawImage(hs, -half, -half, half * 2, half * 2); // the head, drawn once at its biggest and scaled
+      if (c.face > .01) { // its face, drawn in chocolate as a barista draws one: eyes, a nose, a mouth, whiskers, cocoa on its cheeks
+        const fa = a * c.face, ey = -r * .02, ex = r * .36, ew = r * .17, eh = r * .2;
+        g.globalAlpha = fa * .5; g.fillStyle = "rgba(214,120,96,.55)"; for (const sd of [-1, 1]) { g.beginPath(); g.ellipse(sd * r * .52, r * .3, r * .15, r * .09, 0, 0, TAU); g.fill(); } g.globalAlpha = fa;
+        for (const sd of [-1, 1]) { const x0 = sd * ex, o = c.open;
+          if (o > .08) { g.save(); g.beginPath(); g.ellipse(x0, ey, ew, eh, 0, 0, TAU); g.clip(); g.fillStyle = "#3A1D0F"; g.fillRect(x0 - ew, ey - eh, ew * 2, eh * 2);
+            const lx = x0 + c.look[0] * ew * .35; g.fillStyle = "rgba(255,255,255,.95)"; g.beginPath(); g.arc(lx - ew * .32, ey - eh * .38, ew * .34, 0, TAU); g.fill(); g.beginPath(); g.arc(lx + ew * .3, ey + eh * .32, ew * .14, 0, TAU); g.fill(); // its eyes, a glint in each
+            if (o < .99) { const ly = ey - eh + eh * 1.75 * (1 - o), sag = eh * (.4 + .7 * (1 - o)); g.fillStyle = foam(x0, ey - eh, ew * 1.6); g.beginPath(); g.moveTo(x0 - ew - .01, ey - eh - .01); g.lineTo(x0 + ew + .01, ey - eh - .01); g.lineTo(x0 + ew + .01, ly); g.quadraticCurveTo(x0, ly + sag, x0 - ew - .01, ly); g.closePath(); g.fill(); g.strokeStyle = "#3A1D0F"; g.lineWidth = .016; g.beginPath(); g.moveTo(x0 - ew, ly); g.quadraticCurveTo(x0, ly + sag, x0 + ew, ly); g.stroke(); } // the lid coming down, its edge curved like the eye's foot: a content squint
+            g.restore(); }
+          else { g.strokeStyle = "#3A1D0F"; g.lineWidth = .02; g.lineCap = "round"; g.beginPath(); g.moveTo(x0 - ew * .9, ey - eh * .05); g.quadraticCurveTo(x0, ey + eh * .55, x0 + ew * .9, ey - eh * .05); g.stroke(); } } // shut: a curve
+        g.fillStyle = "#B8665A"; g.beginPath(); g.moveTo(-r * .075, r * .17); g.lineTo(r * .075, r * .17); g.quadraticCurveTo(r * .02, r * .26, 0, r * .27); g.quadraticCurveTo(-r * .02, r * .26, -r * .075, r * .17); g.fill(); // its nose
+        g.strokeStyle = "#4A2614"; g.lineWidth = .014; g.lineCap = "round"; g.beginPath(); g.moveTo(0, r * .27); g.lineTo(0, r * .33); g.quadraticCurveTo(-r * .06, r * .41, -r * .14, r * .36); g.moveTo(0, r * .33); g.quadraticCurveTo(r * .06, r * .41, r * .14, r * .36); g.stroke();
+        if (c.mew > .01) { g.fillStyle = "#7A2E2A"; g.beginPath(); g.ellipse(0, r * .4, r * .07 * c.mew, r * .09 * c.mew, 0, 0, TAU); g.fill(); g.fillStyle = "#E58A8F"; g.beginPath(); g.ellipse(0, r * .43, r * .045 * c.mew, r * .04 * c.mew, 0, 0, TAU); g.fill(); } // a small mew
+        g.strokeStyle = "rgba(74,38,20,.6)"; g.lineWidth = .009; for (const sd of [-1, 1]) for (const [dy, d2] of [[-.02, -.08], [.04, .02], [.1, .12]]) { g.beginPath(); g.moveTo(sd * r * .22, r * (.3 + dy)); g.quadraticCurveTo(sd * r * .5, r * (.28 + (dy + d2) / 2), sd * r * .78, r * (.28 + d2)); g.stroke(); } // whiskers
+      }
+      g.restore(); g.globalAlpha = S.vis;
     },
     /** how far the window's light is dimmed at T: a cloud going over, or two small ones, or none (the bird and the gust are drawn) */
     dimOf(pl, T) { const c = pl.c0; return pl.lt === 0 ? env(T, c, c + .8, c + 1.4, c + 2.4, E.sine) * pl.deep : pl.lt === 3 ? env(T, c, c + .45, c + .7, c + 1.3, E.sine) * .6 + env(T, c + 1.5, c + 1.9, c + 2.2, c + 2.9, E.sine) * .75 : 0; },
@@ -263,7 +375,8 @@ export default function cocoa(K) {
       const { cur, prev } = pl, pr = PROGS[cur.art], k1 = pr ? pr.k1 : K1, imgO = S.artImg(prev.art, LR), imgN = S.artImg(cur.art, LR);
       const put = (img, ang, a) => { g.save(); g.rotate(ang); g.globalAlpha = a; g.drawImage(img, -1, -1, 2, 2); g.restore(); };
       if (on) { S.simPass(T, cur, prev);
-        if (T < KS * DT) put(imgO, prev.ang, S.vis); else if (T >= k1 * DT) put(imgN, cur.ang, S.vis);
+        const drawn = pl.egg ? (c2 => c2 ? 1 - .86 * clamp(c2.h * 1.15) * c2.I : 1)(S.catAt(pl, T, A, I)) : 1; // (b416: the art's foam drawn up into the egg's cat, and back)
+        if (T < KS * DT) put(imgO, prev.ang, S.vis); else if (T >= k1 * DT) put(imgN, cur.ang, S.vis * drawn);
         else { g.save(); g.rotate(T < POUR0 ? prev.ang : cur.ang); S.lay(S.pa, S.vis * (T < POUR0 ? 1 - seg(T, 1.2, 2.25, E.in) * I : 1), foam); g.restore(); } }
       if (I < .99) put(imgO, prev.ang, S.vis * (1 - (on ? I : 0)));
       const [sx, sy, kind] = pr ? progAt(pr, T) : pourIs(T) >= 0 ? [...pourAt(T), T > 5.25 ? 2 : 1] : [0, 0, 0];
@@ -272,7 +385,7 @@ export default function cocoa(K) {
     },
     /** the dusts: the pass before's, there until the spoon stirs it in; this pass's, sifted on at its moment */
     dusts(pl, T, I, on, stir) {
-      const kp = lerp(1, T < 2.3 ? 1 - stir : 0, I); S.dustOf(pl.prev.dust, () => kp); if (on) S.dustOf(pl.cur.dust, d => T >= d.t ? I : 0);
+      const kp = lerp(1, T < 2.3 ? 1 - stir : 0, I), late = pl.egg ? pl.egg.dust : 0; S.dustOf(pl.prev.dust, () => kp); if (on) S.dustOf(pl.cur.dust, d => T >= d.t + late ? I : 0); // (b416: in the egg's pass, after the cat)
       g.globalAlpha = S.vis;
     },
     /** one dust: cinnamon (the signature's), cocoa sifted from one side, chocolate shavings, or none */
@@ -397,7 +510,9 @@ export default function cocoa(K) {
       } else S.mallowsOf(pl, T, I, A, on);
       // the finale: small foam hearts bloom round the big one
       if (F >= 0) for (const m of S.minis) { const k = seg(F, m.t, m.t + .25, E.back), s = .1 * k * (1 - seg(F, .85, 1)); if (s <= 0) continue; g.globalAlpha = S.vis; g.fillStyle = FOAM; g.beginPath(); shape(s, 0, 1, 0, 0, 32).forEach(([u, v], j) => j ? g.lineTo(m.u + u, m.v + v) : g.moveTo(m.u + u, m.v + v)); g.closePath(); g.fill(); }
+      const cat = pl && pl.egg && on ? S.catAt(pl, T, A, I) : null; if (cat) S.drawCat(cat, LR, true); // b416: the egg's cat, where it comes up through the foam
       g.restore();
+      if (cat) { g.save(); g.translate(cx, cy); g.scale(LR, LR); g.lineCap = "round"; g.lineJoin = "round"; S.drawCat(cat, LR, false); g.restore(); } // and the cat itself, over the rim
       if (pl && pl.paw && on) S.pawAt(pl, T, I, cx, cy, R); // the rare one: a cat's paw reaching in from the edge (b375)
       // the steam, curling up off it; stronger at first and in the finale, a heart in the finale
       const hot = .55 + (on ? env(T, 11.5, 12.5, 14, 15) * .45 * I : 0) + (F >= 0 ? .5 : 0);

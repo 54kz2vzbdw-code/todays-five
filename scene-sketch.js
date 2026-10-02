@@ -22,6 +22,18 @@
 // colours, and which way the eraser scrubs. The rare one, about one pass in eight: a cat on its rug by a ball of yarn,
 // whose eyes, once they're drawn, follow the pencil and then the brush round the page; then it watches the brush go,
 // yawns, bats its yarn twice and gives a slow blink.
+//
+// 1.12 b416: the egg. Every twelfth pass (K.egg: three minutes of the list left alone), before anything else, the pencil
+// doodles a little figure in the margin beside the drawing — a round head with a curl, a hatched body, stick arms and
+// legs, a smile, its eyes last — and it blinks. It's alive: it looks one way and the other, looks up at the pencil and
+// waves, and the pencil waggles back and goes. Then the eraser comes, as it always does, and rubs the drawing out, and
+// the figure watches with its hands to its face, its face long, shaking — a doodle's Scream; the eraser turns on it and
+// scrapes like a bull, the figure jumps out of its skin ("!"), and as the eraser charges it runs off the page, its legs a
+// blur, the eraser after it, the line it stood on rubbed out behind it. The pass's subject is then drawn and painted as
+// any pass's is, a little later and without its moment, so the pass ends on the very picture the next one starts from
+// and nothing in the passes either side of it changes; and at the very end the figure leans back in from the edge it ran
+// off, blinks at the new drawing, waggles its fingers, and is gone. It stands where the words leave room beside the
+// drawing, on the side with a clear run to the page's edge.
 export default function sketch(K) {
   const { clamp, lerp, E, seg, env, rng, canvas, boil } = K;
   const TAU = Math.PI * 2;
@@ -348,7 +360,7 @@ export default function sketch(K) {
         const f = st.live ? st.I * env(st.T, 10.15, 10.35, 11.35, 11.75) : 0; // the stream: out of the spout's tip and down into the cup
         if (f > .01) { const ex = U(46.5), ey = U(134); x.strokeStyle = rgba([150, 88, 40], .88 * f); x.lineCap = "round"; let p0 = [tx, ty]; for (let i = 1; i <= 16; i++) { const q = i / 16, p1 = [lerp(tx, ex, q) - .035 * Math.sin(q * Math.PI) * (1 - q), lerp(ty, ey, q)]; x.lineWidth = lerp(.024, .012, q) * (.5 + .5 * f); x.beginPath(); x.moveTo(p0[0], p0[1]); x.lineTo(p1[0], p1[1]); x.stroke(); p0 = p1; }
           x.strokeStyle = rgba([255, 236, 204], .5 * f); x.lineWidth = .004; x.beginPath(); x.moveTo(tx + .004, ty + .01); x.lineTo(lerp(tx, ex, .5) - .004, lerp(ty, ey, .5)); x.stroke(); }
-        const full = st.live ? st.I * seg(st.T, 10.35, 11.5) : 1; // the tea in the cup: poured in the moment, there at rest; and its steam
+        const full = st.live ? st.I * seg(st.T, 10.35, 11.5) : st.redraw ? st.prog(8.26, 8.4) : 1; // the tea in the cup: poured in the moment, there at rest; and its steam (b416: in the egg's pass, with no moment, the brush lays it in last)
         if (full > .01) { x.globalAlpha = ga * full; x.fillStyle = rgba([150, 88, 40], .88); x.beginPath(); TEA.forEach(([u, v], i) => i ? x.lineTo(u, v) : x.moveTo(u, v)); x.fill(); x.fillStyle = rgba([255, 236, 200], .4); x.beginPath(); x.ellipse(U(42), U(133.6), .03, .006, 0, 0, TAU); x.fill(); x.globalAlpha = ga; }
         if (f > .01) { x.strokeStyle = rgba([255, 240, 214], .7 * f); x.lineWidth = .8 / S.RR; for (let q = 0; q < 2; q++) { const rr = ((st.A * 1.8 + q / 2) % 1); x.beginPath(); x.ellipse(U(46.5), U(134.2), .01 + rr * .08, .003 + rr * .015, 0, 0, TAU); x.stroke(); } }
         const hot = (st.live ? st.I * env(st.T, 11.3, 12, 13.8, 14.6) : 0) * .8 + full * .2 + st.fin * .5; if (hot > .02) { x.globalAlpha = ga * clamp(hot); steam(x, st, U(47), U(127), .15 + hot * .12, .7); x.globalAlpha = ga; }
@@ -502,6 +514,90 @@ export default function sketch(K) {
   const GPAL = [GCOL, [PIG.coral, [244, 128, 40], PIG.sun, [112, 176, 76], PIG.teal, PIG.sky, [118, 96, 196], [220, 86, 146]], [[56, 106, 188], PIG.sun, [56, 106, 188], PIG.sun, [56, 106, 188], PIG.sun, [56, 106, 188], PIG.sun]];
   /** a sprite drawn smooth at the screen's density, `w` by `h` CSS pixels */
   const mk = (w, h, fn) => { const [c, x] = canvas(Math.ceil(w * px), Math.ceil(h * px)); x.imageSmoothingEnabled = true; x.scale(px, px); x.lineCap = "round"; x.lineJoin = "round"; fn(x); c.w2 = w; c.h2 = h; return c; };
+
+  /* ---------------- 1.12 b416: the egg ---------------- */
+  /** its beats, in the pass's seconds: the pencil doodles the little figure (`draw`); it blinks, looks about, looks up at
+   *  the pencil and waves (`wave`), the pencil waggling back; the pencil goes; the eraser rubs the drawing out (`erase`)
+   *  while the figure watches, its hands to its face (`scream`); the eraser comes round at it (`aim`), scrapes like a bull
+   *  (`scrape`), the figure jumps (`gulp`), and as it charges (`charge`) the figure runs off the page (`zip`); this pass's
+   *  subject is then drawn and painted as any pass's is, `shift` seconds later and without its moment; and at the end
+   *  the figure peeks back in from the edge it ran off (`peek`) */
+  const EB = { draw: [.3, 1.55], blink: 1.85, wave: [2.7, 3.46], waggle: [2.92, 3.4], penOut: [3.42, 3.68], erase: [3.6, 5.0], scream: [3.82, 5.2], aim: [5.0, 5.24], scrape: [5.24, 5.6], gulp: 5.28, zip: [5.58, 5.88], charge: [5.6, 5.95], shift: 4.4, peek: [13.85, 14.8] };
+  const EPE = []; [-.84, -.5, -.17, .17, .5, .84].forEach((y, i) => { const w = Math.min(1.02, Math.sqrt(Math.max(0, 1 - Math.min(1, (Math.abs(y) + .1) ** 2))) + .24), xs = i % 2 ? [w, -w] : [-w, w]; for (let k = 0; k <= 20; k++) EPE.push([lerp(xs[0], xs[1], k / 20), y + (k / 20 - .5) * .1]); });
+  const EPEM = EPE.map(([u, v]) => [-u, v]), ELE = lens(EPE); // the egg's eraser rows: as wide as the circle is at each, ending low on the figure's side
+  const way = (a, l) => [Math.sin(a) * l, Math.cos(a) * l]; // a limb's way: its angle from straight down, positive to the right
+  const dotRing = (cx, cy, rx, ry = rx, n = 14) => Array.from({ length: n + 1 }, (_, i) => { const a = i / n * TAU; return [cx + Math.cos(a) * rx, cy + Math.sin(a) * ry]; });
+  /** the figure at rest, as the pencil leaves it: a round head, a little hatched body, arms a little out, smiling */
+  const REST = () => ({ x: 0, y: 0, lean: 0, sq: 1, face: 0, look: [0, 0], open: 1, wide: 0, mouth: 0, grin: .45, aR: [.35, .15], aL: [-.35, -.15], kR: 1, kL: 1, lR: [.1, .04], lL: [-.1, -.04], wheel: 0, hair: 0, bang: 0, sweat: 0, wv: 0, shiver: 0, long: 0, show: 1 });
+  /** how it stands at T: alive from the blink on; `sd` the side of the drawing it stands on and runs off toward (so it
+   *  looks and waves toward -sd), `run` how far it is to that edge of the page, in its heights */
+  const figPose = (T, A, sd, run) => {
+    const m = -sd, p = REST(), to = (k, v, w) => { if (w <= 0) return; p[k] = Array.isArray(v) ? p[k].map((q, i) => lerp(q, v[i], w)) : lerp(p[k], v, w); }, near = sd > 0 ? "aL" : "aR";
+    if (T < EB.draw[1] + .05) return p;
+    if (T > EB.zip[1] + .03 && T < EB.peek[0]) { p.show = 0; return p; }
+    if (T >= EB.peek[0]) { // back for a look: leaning in from past the edge, a blink, a smile and a wave of its fingers, and gone
+      const k = env(T, EB.peek[0], EB.peek[0] + .28, EB.peek[1] - .26, EB.peek[1], E.io);
+      p.x = sd * (run + .62 - .6 * k); p.lean = m * .62 * k; p.face = m * .8; p.look = [m * .9, .1]; p.grin = 1;
+      p.open = 1 - env(T, 14.3, 14.34, 14.38, 14.44); to(near, [m * 1.4, m * (2.45 + .4 * Math.sin((T - EB.peek[0]) * TAU * 3))], k); p[sd > 0 ? "kL" : "kR"] = 1 + .4 * k; // out from its side and up, clear of its head p.wv = k * env(T, 14.05, 14.15, 14.5, 14.6);
+      return p; }
+    p.open = 1 - env(T, EB.blink, EB.blink + .05, EB.blink + .09, EB.blink + .15); // alive
+    to("look", [sd * .9, .1], env(T, 2.04, 2.12, 2.22, 2.3, E.sine)); to("look", [m * .9, .1], env(T, 2.3, 2.38, 2.5, 2.58, E.sine)); // a look one way, and the other
+    to("look", [m * .55, -.95], seg(T, 2.58, 2.68) * (1 - seg(T, 3.62, 3.72))); p.y -= .06 * env(T, 2.62, 2.67, 2.68, 2.8, E.out); // up at the pencil: it hops
+    p.face = p.look[0] * .42;
+    const wv = env(T, EB.wave[0], EB.wave[0] + .1, EB.wave[1] - .1, EB.wave[1], E.out), ph = Math.sin((T - EB.wave[0]) * TAU * 3.2); // a wave, the arm on the pencil's side
+    to(near, [m * 2.45, m * (3.0 + .5 * ph)], wv); p[sd > 0 ? "kL" : "kR"] = 1 + .55 * wv; p.wv = wv; p.grin = lerp(p.grin, 1, wv); p.y -= .025 * Math.abs(Math.sin((T - EB.wave[0]) * TAU * 1.6)) * wv; p.lean = m * .07 * wv;
+    to("look", [m * .3, -1], env(T, EB.penOut[0], EB.penOut[0] + .1, EB.penOut[1], EB.penOut[1] + .08)); // watching it go
+    const tn = seg(T, 3.62, 3.74) * (1 - seg(T, 5.45, 5.52)); to("look", [m * .9, .08], tn); p.face = lerp(p.face, m * .45, tn); // round to the drawing as the eraser starts
+    const sc = env(T, EB.scream[0], EB.scream[0] + .12, EB.scream[1] - .09, EB.scream[1], E.out); // the scream: its hands to its face, its face long
+    to("aR", [2.4, 3.12], sc); to("aL", [-2.4, -3.12], sc); to("lR", [.03, -.22], sc); to("lL", [-.03, .22], sc); p.sq = lerp(1, .95, sc); p.x += Math.sin(A * 57) * .008 * sc; p.long = sc; p.shiver = sc; to("look", [m * .4, .1], sc);
+    p.wide = env(T, EB.scream[0], EB.scream[0] + .08, EB.zip[1], EB.zip[1] + .02); p.mouth = T > EB.scream[0] && T < EB.scream[1] ? 1 : T >= EB.scream[1] && T < EB.zip[0] ? 2 : 0;
+    p.sweat = env(T, 4.15, 4.3, 5.05, 5.2);
+    p.bang = E.back(seg(T, EB.gulp, EB.gulp + .1, x => x)) * (1 - seg(T, EB.zip[0] + .02, EB.zip[0] + .1)); p.hair = env(T, EB.gulp, EB.gulp + .03, EB.zip[0], EB.zip[0] + .1); // "!"
+    p.y -= .2 * env(T, EB.gulp, EB.gulp + .07, EB.gulp + .09, EB.gulp + .19, E.out); // it jumps
+    const turn = seg(T, 5.45, 5.52); p.face = lerp(p.face, sd, turn); to("look", [sd, 0], turn); // round to its way out
+    const wind = env(T, 5.47, 5.52, 5.55, EB.zip[0]); p.lean += -sd * .22 * wind; p.sq = lerp(p.sq, .86, wind);
+    p.wheel = seg(T, 5.47, 5.55); to("aR", [sd * 1.3, sd * 2], wind); to("aL", [sd * 1.15, sd * 1.9], wind); // its legs a blur on the spot
+    const z = seg(T, EB.zip[0], EB.zip[1], E.in); if (z > 0) { p.x = sd * (run + 1.3) * z; p.lean = sd * .42; p.sq = lerp(.86, 1, Math.min(1, z * 4)); to("aR", [-sd * 1.35, -sd * 1.8], 1); to("aL", [-sd * 1.1, -sd * 1.55], 1); }
+    return p;
+  };
+  /** the figure's lines for a pose, in its own units (its height 1, its feet at the origin, y down): polylines, the dots of
+   *  its eyes, and its parts by name (for the pencil, which draws it at rest) */
+  const figLines = (p, A) => {
+    const L = [], D = [], c = Math.cos(p.lean), s = Math.sin(p.lean), kx = 1 + (1 - p.sq) * .4, m = p.face < 0 ? -1 : 1, Hy = -.3;
+    const at = q => [q[0] * kx + p.x, q[1] * p.sq + p.y]; // squashed about its feet, and moved
+    const up = q => { const dx = q[0], dy = q[1] - Hy; return at([dx * c - dy * s, Hy + dx * s + dy * c]); }; // the body leans about its hips
+    const ry = .19 * (1 + .24 * p.long), rx = .2 * (1 - .1 * p.long), hc = up([0, -.585 - ry]), tilt = q => [hc[0] + q[0] * c - q[1] * s, hc[1] + q[0] * s + q[1] * c];
+    const head = dotRing(hc[0], hc[1], rx, ry, 26);
+    const body = [[-.062, -.57], [.062, -.57], [.088, -.47], [.104, -.33], [.088, -.296], [-.088, -.296], [-.104, -.33], [-.088, -.47], [-.062, -.57]].map(up);
+    const hatch = [[[.012, -.31], [.09, -.42]], [[.045, -.31], [.098, -.385]], [[-.02, -.31], [.078, -.455]]].map(l => l.map(up)); // shade down its right side, the light from the left
+    const hair = p.hair > .5 ? [[[-.08, -.17], [-.11, -.3]], [[0, -.188], [.005, -.33]], [[.08, -.17], [.115, -.3]]].map(h => h.map(tilt)) : [[[.005, -.186], [-.022, -.245], [.03, -.29], [.085, -.262], [.072, -.212], [.03, -.226]].map(tilt)];
+    const fx = hc[0] + p.face * .075, fy = hc[1] + .012, es = .075 * (1 - .3 * Math.abs(p.face)), eyes = [], my = fy + .068;
+    for (const e of [-1, 1]) { const ex = fx + e * es, ey = fy - .02;
+      if (p.wide > .5) { eyes.push(dotRing(ex, ey, .05, .056, 12)); D.push([ex + p.look[0] * .022, ey + p.look[1] * .022, .021]); }
+      else if (p.open < .45) eyes.push([[ex - .03, ey + .006], [ex, ey + .012], [ex + .03, ey + .006]]);
+      else D.push([ex + p.look[0] * .02, ey + p.look[1] * .016, .029]); }
+    const blush = p.wide > .5 ? [] : [-1, 1].flatMap(e => [0, 1].map(k => { const bx = fx + e * (es + .045) + k * .026 - .013, by = fy + .035; return [[bx - .009, by + .014], [bx + .009, by - .012]]; }));
+    const mouth = p.mouth > 1.5 ? Array.from({ length: 7 }, (_, i) => [fx - .05 + i * .0167, my + .012 + (i % 2 ? -.012 : .008)]) : p.mouth > .5 ? dotRing(fx, my + .02 + .03 * p.long, .03, .046 * (1 + .3 * p.long), 12) : Array.from({ length: 7 }, (_, i) => { const t = i / 6; return [fx - .052 + .104 * t, my - .006 + Math.sin(t * Math.PI) * (.014 + .036 * p.grin)]; });
+    const shR = up([.072, -.535]), shL = up([-.072, -.535]);
+    const arms = [[p.aR, shR, p.kR], [p.aL, shL, p.kL]].map(([a, sh, k]) => { const e = [sh[0] + way(a[0], .135 * k)[0], sh[1] + way(a[0], .135 * k)[1]]; return [sh, e, [e[0] + way(a[1], .125 * k)[0], e[1] + way(a[1], .125 * k)[1]]]; });
+    const hands = arms.map(a => dotRing(a[2][0], a[2][1], .03, .03, 10));
+    let legs = [], feet = [], wheel = null;
+    if (p.wheel > .5) { const o = at([0, -.15]), ph = A * 34; wheel = [0, 1].map(j => Array.from({ length: 31 }, (_, i) => { const a = ph + j * 2.6 + i / 30 * TAU * 1.08, r = .15 + .028 * Math.sin(i * 1.9 + j * 3); return [o[0] + Math.cos(a) * r, o[1] + Math.sin(a) * r * .8]; })); }
+    else { legs = [[p.lR, .055], [p.lL, -.055]].map(([a, ox]) => { const h = at([ox, Hy]), k = [h[0] + way(a[0], .155)[0], h[1] + way(a[0], .155)[1]]; return [h, k, [k[0] + way(a[1], .15)[0], k[1] + way(a[1], .15)[1]]]; });
+      feet = legs.map((l, i) => { const f = l[2], d = Math.abs(p.face) > .5 ? m : i ? -1 : 1; return [f, [f[0] + d * .07, f[1] + .004]]; }); }
+    L.push(head, ...hair, body, ...hatch, ...arms, ...hands, ...legs, ...feet, mouth, ...eyes, ...blush); if (wheel) L.push(...wheel);
+    if (p.wv > .05) { const h = arms[m > 0 ? 0 : 1][2]; for (const [r, a0, a1] of [[.08, -.9, .2], [.125, -.8, .1]]) { const pts = Array.from({ length: 6 }, (_, i) => { const a = lerp(a0, a1, i / 5); return [h[0] + m * Math.cos(a) * r, h[1] + Math.sin(a) * r]; }); L.push(pts); } } // wave lines by its hand
+    if (p.shiver > .05) for (const e of [-1, 1]) for (const yy of [-.5, -.34]) { const b = up([e * .19, yy]), j = Math.sin(A * 40 + yy * 9) * .008; L.push([[b[0] + j, b[1] - .05], [b[0] + e * .02 - j, b[1] - .017], [b[0] + j, b[1] + .017], [b[0] + e * .02 - j, b[1] + .05]]); } // shaking
+    if (p.bang > .01) { const b = p.bang, bx = hc[0] - m * .03, by = hc[1] - ry - .2; L.push([[bx, by - .2 * b], [bx + .008, by - .03 * b]], [[bx - .012, by - .2 * b], [bx + .012, by - .2 * b]]); D.push([bx + .008, by + .04 * b, .026 * b]); } // "!"
+    if (p.sweat > .01) { const sx = hc[0] + (rx + .05) * (p.face < 0 ? 1 : -1), sy = hc[1] - .06 + (1 - p.sweat) * .05; L.push([[sx, sy - .06], [sx - .026, sy + .008], [sx, sy + .036], [sx + .026, sy + .008], [sx, sy - .06]]); }
+    return { L, D, parts: { head, hair, body, hatch, arms, hands, legs, feet, mouth, blush } };
+  };
+  /** the order the pencil draws it in, and when: the head, its curl, the body and its shading, the arms and hands, the
+   *  legs and feet, the smile, the eyes last and its blush; then the line it stands on (laid out once, in its own units) */
+  const FIG_PEN = (() => { const { parts: q } = figLines(REST(), 0), hc = [0, -.775], eyes = [-1, 1].map(e => dotRing(e * .075, hc[1] + .012 - .02, .029, .029, 8));
+    const list = [[q.head], [q.hair[0]], [q.body], q.hatch, [q.arms[1], q.hands[1]], [q.arms[0], q.hands[0]], [q.legs[1], q.feet[1]], [q.legs[0], q.feet[0]], [q.mouth], [eyes[0]], [eyes[1]], q.blush, [[[-.5, .012], [.52, .012]]]].flat().map(pts => [pts, 0, 0]);
+    pace(list, EB.draw[0], EB.draw[1], .025); return list.map(e => [...e, lens(e[0]), eyes.includes(e[0]) ? [e[0][0][0] - .029, e[0][0][1]] : null]); })(); // (an eye is filled in once it's drawn round)
+
   const S = {
     res: "dpr",
     wash: 1.6, veil: 1, // a light kit (scenes.js)
@@ -720,6 +816,110 @@ export default function sketch(K) {
       // the finale: stars sketched in round it
       if (F >= 0) for (const s of S.stars) { const p = seg(F, s.t, s.t + .16, x => x); if (p <= 0) continue; const pts = Array.from({ length: 11 }, (_, k) => { const a = -Math.PI / 2 + k * TAU * 2 / 5, rr = s.s; return [s.x + Math.cos(a) * rr, s.y + Math.sin(a) * rr]; }); g.save(); g.translate(cx, cy); g.scale(R, R); g.lineWidth = 1.4 / R; g.strokeStyle = rgba([157, 119, 0], .9 * (1 - seg(F, .82, 1)) * S.vis); K.partial(g, pts.map(([u, v]) => jit(u, v)), p); g.restore(); }
     },
+    /** 1.12 b416: where the egg's figure stands — beside the drawing, on open paper, with a clear run to the page's edge
+     *  on its side: [its feet x, y, its height, the side it stands on (and runs off toward), how far that edge is] */
+    eggSpot() {
+      const { cx, cy, R, W, H, pr } = S, key = [cx, cy, R].map(Math.round).join(",") + ":" + (S.raw ? S.raw.length : 0);
+      if (S.eggAt && S.eggAt.key === key && S.eggAt.raw === S.raw) return S.eggAt;
+      const fh = clamp(R * .5, 34, 88), top = pr ? 96 : 122, foot = H - (pr ? 104 : 128), rs = S.raw || [], gap = 10;
+      const free = (x0, y0, x1, y1) => rs.every(([a, b, c, d]) => x1 < a - gap || x0 > c + gap || y1 < b - gap || y0 > d + gap);
+      let best = null;
+      for (const sd of [1, -1]) for (const k of [.62, .5, .74, .4, .84]) {
+        const fy = cy + R * k, dy = fy - fh * .5 - cy, half = Math.abs(dy) < R ? Math.sqrt(R * R - dy * dy) : 0, fx = cx + sd * (half + fh * .45 + 8), edge = sd > 0 ? W : 0, run = Math.abs(edge - fx);
+        if (fx - fh * .55 < 4 || fx + fh * .55 > W - 4 || fy - fh * 1.45 < top || fy + 4 > foot + 8 || !free(fx - fh * .55, fy - fh * 1.45, fx + fh * .55, fy + 4) || !free(Math.min(fx, edge), fy - fh, Math.max(fx, edge), fy)) continue;
+        const score = -Math.abs(k - .62) * 1.5 - Math.max(0, run / fh - 5) * .12 - (run < fh * .6 ? 1 : 0); // low beside it, with a short dash to the edge
+        if (!best || score > best.score) best = { fx, fy, fh, sd, run: run / fh, score };
+      }
+      if (!best) { const sd = cx > W / 2 ? 1 : -1, fh2 = fh * .85, fx = cx + sd * R * .5, fy = cy + R * .72; best = { fx, fy, fh: fh2, sd, run: Math.abs((sd > 0 ? W : 0) - fx) / fh2 }; } // no room beside it: on the drawing itself, low down
+      return (S.eggAt = Object.assign(best, { key, raw: S.raw }));
+    },
+    /** 1.12 b416: the egg pass — the drawing the pass before left, the little figure the pencil doodles beside it and what
+     *  becomes of it, then this pass's subject made as any pass makes it (only later, and without its moment, so the pass
+     *  ends on the very picture the next one starts from); worked out from the pass and the time alone */
+    eggPass(T, I, A, F, P) {
+      const { W, H } = S, on = I > .01;
+      g.clearRect(0, 0, W, H);
+      const jump = S.lastA === undefined || A < S.lastA || A - S.lastA > .15, dt = jump ? 0 : A - S.lastA; S.lastA = A;
+      const gl = jump ? 1 : 1 - Math.exp(-dt * 2.2); S.cx += (S.tx - S.cx) * gl; S.cy += (S.ty - S.cy) * gl; S.R += (S.tR - S.R) * gl; S.vis += ((S.room === 0 ? 0 : 1) - S.vis) * (jump ? 1 : 1 - Math.exp(-dt * 4)); if (S.vis < .01) return;
+      if (!S.RR || (Math.abs(S.R / S.RR - 1) > .08 && Math.abs(S.tR - S.R) < 2)) S.build();
+      if (S.plP !== P) { const cur = planOf(P), prev = planOf(P - 1); S.pl = { cur, prev }; S.plP = P; for (const k of [...S.subs.keys()]) if (k !== cur.key + "@" + S.RR && k !== prev.key + "@" + S.RR) S.subs.delete(k); }
+      const { cx, cy, R } = S, { cur, prev } = S.pl, iN = S.inst(cur), iO = S.inst(prev), sp = S.eggSpot(), { fx, fy, fh, sd } = sp;
+      const Ts = T - EB.shift, [e0, e1] = EB.erase, gone = on && T >= e1, erasing = on && T > e0 && T < e1, fin = F >= 0 ? env(F, .05, .15, .55, .85, E.sine) : 0;
+      const fr = Math.floor(A * 8), jit = boil(fr, .35 / S.RR), stO = S.stOf(iO, false, T, I, A, F, fin, jit, fr);
+      // this pass's subject, as the pencil and the brush have it by Ts: a pass's lines and washes, its tools, its drops, with
+      // none of its moment (so its rest, when it's done, is the rest the next pass starts from)
+      const pr2 = (t0, t1) => seg(Ts, t0, t1, x => x), inkKey = fr + ":" + (Ts < 6.5 ? Math.round(Ts * 30) : "all") + ":" + S.RR, finD = F >= 0 ? S.fin.map(d => ({ ...d, k: seg(F, d.t, d.t + .12, x => x), a: 1 - seg(F, .8, 1) })) : [];
+      const dropsOf = list => [...list.map(d => ({ ...d, k: seg(Ts, d.t + .1, d.t + .25, x => x), a: 1 })), ...finD];
+      const stN = !gone ? null : iN.balloon ? { A, jit, prog: pr2, inkKey, w: WASH.map(([, , , t0, t1]) => pr2(t0, t1)), wet: WASH.map(([, , , t0, t1]) => env(Ts, t0, t0 + .1, t1 + .2, t1 + .9) * I), cp: CSTROKES.map(([, t0, t1]) => pr2(t0, t1)), ghost: [1, 1], ghostB: 1, cloud: [Math.sin(A * .12) * .03, Math.sin(A * .1 + 2) * .025], birds: seg(Ts, 6.16, 6.4, x => x), fly: 0, lift: -fin * .12 + Math.sin(A * .9) * .01, sway: Math.sin(A * .7) * .025 * .35, flame: (.15 + .1 * Math.sin(A * 5) * Math.sin(A * 3.3) + fin) * pr2(4.65, 4.75), drops: dropsOf(S.drops) } // (its flame lit once its burner is drawn)
+        : { A, T: Ts, I, jit, fin, live: false, redraw: true, alive: 0, prog: pr2, inkKey, w: iN.sub.parts.map(pt => pt.washes.map(w => pr2(w[3], w[4]))), wet: iN.sub.parts.map(pt => pt.washes.map(w => env(Ts, w[3], w[3] + .1, w[4] + .2, w[4] + .9) * I)), birds: seg(Ts, 6.16, 6.4, x => x), fly: 0, drops: dropsOf(iN.drops) };
+      const rows = sd > 0 ? EPEM : EPE; // the eraser's rows end on the figure's side
+      if (!gone && !erasing) { g.save(); g.globalAlpha = S.vis; g.translate(cx, cy); g.scale(R, R); S.pieceOf(iO, g, stO, prev.mirror); g.restore(); }
+      else if (erasing) { // the drawing the pass before left, drawn aside and rubbed out there, row after row
+        const size = Math.ceil(2.3 * R * px); if (!S.comp || S.comp.width !== size) [S.comp] = canvas(size, size);
+        const x = S.comp.getContext("2d"); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.clearRect(0, 0, size, size); x.setTransform(px * R, 0, 0, px * R, 1.15 * R * px, 1.15 * R * px); x.imageSmoothingEnabled = true; x.lineCap = "round"; x.lineJoin = "round";
+        S.pieceOf(iO, x, stO, prev.mirror);
+        const e = seg(T, e0, e1, x2 => x2), s = ELE[ELE.length - 1] * e; x.globalCompositeOperation = "destination-out"; x.strokeStyle = `rgba(0,0,0,${I.toFixed(3)})`; x.lineWidth = .46; x.beginPath(); x.moveTo(rows[0][0], rows[0][1]); for (let i = 1; i < rows.length && ELE[i - 1] < s; i++) { const f = clamp((s - ELE[i - 1]) / (ELE[i] - ELE[i - 1])); x.lineTo(lerp(rows[i - 1][0], rows[i][0], f), lerp(rows[i - 1][1], rows[i][1], f)); } x.stroke(); x.globalCompositeOperation = "source-over";
+        g.globalAlpha = S.vis; g.drawImage(S.comp, cx - 1.15 * R, cy - 1.15 * R, 2.3 * R, 2.3 * R); g.globalAlpha = 1;
+      } else { // rubbed out: its ghost a while, and this pass's subject coming; a touch brings the old one back as it eases
+        g.save(); g.translate(cx, cy); g.scale(R, R);
+        if (I < .99) { g.globalAlpha = S.vis * (1 - I); S.pieceOf(iO, g, stO, prev.mirror); }
+        if (Ts < 6.5) { g.globalAlpha = S.vis * .07 * I; S.pieceOf(iO, g, stO, prev.mirror, true); }
+        g.globalAlpha = S.vis * I; S.pieceOf(iN, g, stN, cur.mirror);
+        g.restore(); g.globalAlpha = 1;
+      }
+      const tool = (spr, sh, [sx, sy], lift, ang, a) => { if (a <= .005) return; g.globalAlpha = a * S.vis; g.save(); g.translate(sx + 6 + lift * 10, sy + 9 + lift * 14); g.rotate(ang); g.drawImage(sh, -sh.w2 * .06, -sh.h2 / 2, sh.w2, sh.h2); g.restore(); g.save(); g.translate(sx, sy - lift * 6); g.rotate(ang); g.drawImage(spr, 0, -spr.h2 / 2, spr.w2, spr.h2); g.restore(); g.globalAlpha = 1; };
+      const rubber = (sx, sy, rt, a) => { if (a <= .005) return; const spr = S.eraserS, sh = S.eraserSh; g.globalAlpha = a * S.vis; g.save(); g.translate(sx + 5, sy + 7); g.rotate(rt); g.drawImage(sh, -sh.w2 / 2, -sh.h2 / 2, sh.w2, sh.h2); g.restore(); g.save(); g.translate(sx, sy); g.rotate(rt); g.drawImage(spr, -spr.w2 / 2, -spr.h2 / 2, spr.w2, spr.h2); g.restore(); g.globalAlpha = 1; };
+      const ta = S.toolAng || -.62, ew = S.eraserS.w2, eh = S.eraserS.h2;
+      // where the eraser is from the rows' end on: round to face the figure, scraping, then charging after it off the page
+      const rowEnd = rows[rows.length - 1], endP = [cx + rowEnd[0] * R, cy + rowEnd[1] * R], endA = along(rows, ELE, 1)[2], faceA = endA - Math.PI * sd; // it turns half round, to lead with its rubber at the figure
+      const stand = [fx - sd * (fh * .78 + ew * .5), fy - eh * .5 - 1], gone2 = sd > 0 ? W + ew * 1.4 : -ew * 1.4;
+      const ex = T < EB.aim[0] ? null : T < EB.charge[0] ? (() => { const k = seg(T, EB.aim[0], EB.aim[1], E.io), sc = Math.sin(seg(T, EB.scrape[0], EB.scrape[1], x => x) * TAU * 2) * env(T, EB.scrape[0], EB.scrape[0] + .05, EB.scrape[1] - .05, EB.scrape[1]); return [lerp(endP[0], stand[0], k) - sd * sc * fh * .1, lerp(endP[1], stand[1], k) - Math.sin(k * Math.PI) * fh * .3, lerp(endA, faceA, k) + sc * .16 * sd]; })()
+        : [lerp(stand[0], gone2, seg(T, EB.charge[0], EB.charge[1], t => t * t * (3 - 2 * t))), stand[1] + Math.sin(A * 47) * .6, faceA + Math.sin(A * 30) * .05]; // a lunge
+      // the figure: its line under it (rubbed out where the charging eraser has been), the dust it kicks up, its speed lines
+      const fa = I * S.vis, fj = boil(fr + 50000, .55 / fh), lw = clamp(fh / 34, 1.3, 2.3);
+      const strokeIn = (pts, a, w = lw, k = 1) => { const q = pts.map(([u, v]) => fj(u, v)), o = [.5 / fh, .35 / fh]; g.lineWidth = w / fh; g.strokeStyle = rgba(INK, .9 * a); K.partial(g, q, k); g.lineWidth = w * .7 / fh; g.strokeStyle = rgba(INK, .2 * a); K.partial(g, q.map(([u, v]) => [u + o[0], v + o[1]]), k); }; // a line, and the graphite's second, fainter one
+      if (on && T > EB.draw[0] && T < EB.charge[1] + .1) {
+        g.save(); g.translate(fx, fy); g.scale(fh, fh); g.lineCap = "round"; g.lineJoin = "round";
+        const drawing = T < EB.draw[1] + .05, pose = figPose(T, A, sd, sp.run);
+        // its ground: the pencil's last line; rubbed out where the charging eraser has been
+        const gp = FIG_PEN[FIG_PEN.length - 1], gk = drawing ? seg(T, gp[1], gp[2], x => x) : 1, cut = ex && T >= EB.charge[0] ? (ex[0] + sd * ew * .45 - fx) / fh : null;
+        if (gk > 0) { let [a0, a1] = [gp[0][0][0], lerp(gp[0][0][0], gp[0][1][0], gk)]; if (cut !== null) { if (sd > 0) a0 = Math.max(a0, cut); else a1 = Math.min(a1, cut); } if (a1 > a0) strokeIn([[a0, .012], [a1, .012]], fa); }
+        if (drawing) { g.fillStyle = rgba(INK, .9 * fa); for (const [pts, t0, t1, , dot] of FIG_PEN.slice(0, -1)) { const k = seg(T, t0, t1, x => x); if (k <= 0) continue; strokeIn(pts, fa, lw, k); if (dot && k >= 1) { g.beginPath(); g.arc(dot[0], dot[1], .021, 0, TAU); g.fill(); } } }
+        else if (pose.show) { const { L, D } = figLines(pose, A); for (const l of L) strokeIn(l, fa); g.fillStyle = rgba(INK, .9 * fa); for (const [u, v, r] of D) { g.beginPath(); g.arc(u, v, r, 0, TAU); g.fill(); } }
+        const z = seg(T, EB.zip[0], EB.zip[1], E.in); // off it goes: speed lines after it, a puff of dust where it stood (rubbed out as the eraser goes over)
+        if (z > 0 && z < 1) { const hx = sd * (sp.run + 1.3) * z; for (const [y, l] of [[-.26, .9], [-.52, 1.3], [-.76, .8]]) strokeIn([[hx - sd * (.35 + l * z), y], [hx - sd * .3, y]], fa * .8, lw * .8); }
+        const dk = env(T, EB.zip[0], EB.zip[0] + .05, EB.zip[0] + .3, EB.zip[0] + .6) * (cut !== null && (sd > 0 ? cut > 0 : cut < 0) ? 0 : 1);
+        if (dk > .01) { const gr = seg(T, EB.zip[0], EB.zip[0] + .5, E.out); for (const [u, v, r, q] of [[-.16, -.08, .085, 0], [.02, -.12, .11, 1], [.2, -.07, .08, 2], [.08, -.03, .065, 3]]) strokeIn(Array.from({ length: 25 }, (_, i) => { const a = i / 24 * TAU + q, rr = r * (.75 + .45 * gr) * (1 + .16 * Math.pow(Math.abs(Math.sin(i / 24 * Math.PI * 4 + q)), .5)); return [-sd * u * (1 + gr * .7) + Math.cos(a) * rr, v - gr * .06 + Math.sin(a) * rr * .82]; }), fa * dk * .7, lw * .8); } // puffs, scalloped like cartoon dust
+        g.restore();
+      }
+      // the pencil: drawing the figure along each line, then hanging over it, waggling back at its wave, and away
+      const hover = [fx - sd * fh * .55, fy - fh * 1.22];
+      if (on && T > EB.draw[0] - .06 && T < EB.penOut[1]) {
+        let at, lift = 0;
+        if (T < EB.draw[1]) { let hit = null; for (const [pts, t0, t1, L] of FIG_PEN) if (T >= t0 && T <= t1) { hit = along(pts, L, (T - t0) / (t1 - t0)); break; }
+          if (!hit) { let pv = null, nx = null; for (const s of FIG_PEN) { if (s[2] <= T && (!pv || s[2] > pv[2])) pv = s; if (s[1] >= T && (!nx || s[1] < nx[1])) nx = s; } const pe = pv ? pv[0][pv[0].length - 1] : FIG_PEN[0][0][0], ns = nx ? nx[0][0] : pe, q = pv && nx ? clamp((T - pv[2]) / ((nx[1] - pv[2]) || 1)) : 1; hit = [lerp(pe[0], ns[0], E.io(q)), lerp(pe[1], ns[1], E.io(q))]; lift = Math.sin(q * Math.PI); }
+          at = [fx + hit[0] * fh, fy + hit[1] * fh]; }
+        else { const k = seg(T, EB.draw[1], EB.draw[1] + .22, E.io), out = seg(T, EB.penOut[0], EB.penOut[1], E.in), end = [fx + FIG_PEN[FIG_PEN.length - 1][0][1][0] * fh, fy]; at = [lerp(end[0], hover[0], k) + Math.sin(A * 2.1) * 1.5 * k - sd * out * fh * .6, lerp(end[1], hover[1], k) + Math.sin(A * 1.7) * 1.2 * k - out * fh * 1.6]; lift = .4 * k; }
+        const wag = Math.sin((T - EB.waggle[0]) * TAU * 3) * .24 * env(T, EB.waggle[0], EB.waggle[0] + .06, EB.waggle[1] - .06, EB.waggle[1]);
+        tool(S.pencil, S.pencilSh, at, lift, ta + wag, I * env(T, EB.draw[0] - .06, EB.draw[0] + .04, EB.penOut[0] + .05, EB.penOut[1]));
+      }
+      // the eraser: rubbing the drawing out, its crumbs flying; then round at the figure, scraping, and charging off the page after it
+      if (on && T > e0 && T < EB.charge[1]) {
+        const e = seg(T, e0, e1, x => x);
+        for (const c of S.crumbs) { if (c.e > e) continue; const te = e0 + c.e * (e1 - e0), dtc = T - te; if (dtc > .9) continue; const [u, v] = along(rows, ELE, c.e), x = cx + (u + c.vx * dtc) * R, y = cy + (v + c.vy * dtc + .9 * dtc * dtc) * R; g.strokeStyle = rgba(c.c, (1 - dtc / .9) * .8 * I * S.vis); g.lineWidth = 1.2; g.beginPath(); g.arc(x, y, 2.2, c.rot, c.rot + 2.4); g.stroke(); }
+        if (erasing) { const [u0, v0, a0] = along(rows, ELE, e), sc = Math.sin(A * 34) * .09, sx = cx + (u0 - Math.sin(a0) * sc) * R, sy = cy + (v0 + Math.cos(a0) * sc) * R; rubber(sx, sy, a0 + Math.sin(A * 24) * .12, I * env(T, e0, e0 + .08, e1, e1 + 1)); }
+        else if (ex) { rubber(ex[0], ex[1], ex[2], I);
+          if (T > EB.scrape[0]) for (let k = 0; k < 7; k++) { const t0 = EB.scrape[0] + k * .1, d = T - t0; if (d < 0 || d > .5) continue; const x = ex[0] - sd * (ew * .4 + d * fh * 1.1), y = ex[1] + eh * .3 - d * fh * .5 + d * d * fh * 2.4; g.strokeStyle = rgba(S.crumbs[k].c, (1 - d / .5) * .8 * I * S.vis); g.lineWidth = 1.2; g.beginPath(); g.arc(x, y, 2.2, k, k + 2.4); g.stroke(); } } // crumbs kicked back as it scrapes and charges
+      }
+      // then this pass's subject: the pencil while it draws, the brush while it paints (Ts: the time a pass would have)
+      if (gone && Ts > 1.95 && Ts < 9.1) { const tl = S.toolsAt(iN, Ts);
+        if (tl.pen) tool(S.pencil, S.pencilSh, S.toScr(iN, stN, cur.mirror, tl.pen.k, tl.pen.at[0], tl.pen.at[1]), tl.pen.lift, ta + tl.pen.lift * .06, I * env(Ts, 1.95, 2.05, 6.35, 6.5));
+        if (tl.brush) { const fl = (iN.balloon ? FLICKS : iN.sub.flicks).reduce((m, t) => Math.max(m, env(Ts, t - .06, t, t + .02, t + .14)), 0); tool(S.brush, S.brushSh, S.toScr(iN, stN, cur.mirror, tl.brush.k, tl.brush.at[0], tl.brush.at[1]), tl.brush.lift * .4, ta * 1.12 - Math.sign(ta) * fl * .5, I * env(Ts, 6.4, 6.5, 9.0, 9.1)); } }
+      // the peek, at the very end: the figure's head round the edge of the page
+      if (on && T > EB.peek[0] && T < EB.peek[1]) { const pose = figPose(T, A, sd, sp.run), { L, D } = figLines(pose, A); g.save(); g.translate(fx, fy); g.scale(fh, fh); g.lineCap = "round"; g.lineJoin = "round"; for (const l of L) strokeIn(l, fa); g.fillStyle = rgba(INK, .9 * fa); for (const [u, v, r] of D) { g.beginPath(); g.arc(u, v, r, 0, TAU); g.fill(); } g.restore(); }
+      // the finale: stars sketched in round it
+      if (F >= 0) for (const s of S.stars) { const p = seg(F, s.t, s.t + .16, x => x); if (p <= 0) continue; const pts = Array.from({ length: 11 }, (_, k) => { const a = -Math.PI / 2 + k * TAU * 2 / 5, rr = s.s; return [s.x + Math.cos(a) * rr, s.y + Math.sin(a) * rr]; }); g.save(); g.translate(cx, cy); g.scale(R, R); g.lineWidth = 1.4 / R; g.strokeStyle = rgba([157, 119, 0], .9 * (1 - seg(F, .82, 1)) * S.vis); K.partial(g, pts.map(([u, v]) => jit(u, v)), p); g.restore(); }
+    },
     /** the pencil lines, drawn into the cache for this boil frame and this much of the drawing */
     inkInto(x, prog, jit, ghost, list = STROKES) {
       const RR = S.RR, stroke = (pts, p, w, a) => {
@@ -769,7 +969,7 @@ export default function sketch(K) {
       g.restore();
     },
     paint(T, I, A, F, P = 0) {
-      if (P > 0) { S.drawPass(T, I, A, F, P); return; }
+      if (P > 0) { if (K.egg(P)) S.eggPass(T, I, A, F, P); else S.drawPass(T, I, A, F, P); return; } // b416: every twelfth pass, the egg
       const { W, H } = S, on = I > .01;
       g.clearRect(0, 0, W, H);
       // glide to the room the words leave, and draw the caches again if the size has changed much

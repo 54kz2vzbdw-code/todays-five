@@ -19,6 +19,12 @@
 // a big bubble with a small one blown inside it, let out when the big one pops; or a big bubble that freezes, frost
 // feathering up its film from below, glitters, and shatters, the pieces falling. The small ones drift up all through,
 // as they always have. Every pass starts and ends with the wand off the page and only the small ones up; nothing carries.
+// 1.12 b416: the egg. Every twelfth pass (K.egg: three minutes of the list left alone) no wand comes. Among the small ones
+// drifting up, a bubble comes up from below the page that is a cube, which no bubble can be: turning slowly, its film
+// coloured as every film here is, clear across its faces and bright along its edges, its colours running along them,
+// the window caught flat in its faces and slipping from one to the next as it turns. It hangs in the open a while; then
+// it gives in — its faces swell and its edges round off until it is a ball, wobbling as it settles, an ordinary bubble
+// after all, the window bowed round it like the rest — its film thins at the top, and it pops.
 export default function bubbles(K) {
   const { clamp, lerp, E, seg, env, rng, canvas } = K;
   const TAU = Math.PI * 2;
@@ -72,6 +78,39 @@ export default function bubbles(K) {
     else if (head === "train") Object.assign(pl, { sweeps: [[1.9, 4.5, .12, .5]], wout: [5.2, 6.4], chainA: -1.94 + (r() - .5) * .5, cpop: 9.6 + r() * .6 });
     return pl;
   };
+  /* ---------------- 1.12 b416: the egg ---------------- */
+  // A bubble that is a cube, which no bubble can be. It comes up from below the page among the small ones, turning slowly,
+  // its six faces flat and its film coloured as a film is (the same reckoning as every bubble here: the light off its two
+  // faces interfering, by how thick it is, drained thicker low down, swirling) — thinner and brighter along its edges,
+  // where a real film is drawn into the borders, so its colours run along them; the window shines in its faces, a flat
+  // pane of light that slips from one face to the next as it turns. It hangs in the open a while; then it gives in: its
+  // faces swell and its edges round off until it is a sphere, wobbling as it settles, an ordinary bubble after all, whose
+  // film thins to gold at the top; and it pops. The cube is worked out by tracing a ray from each point of a small image
+  // to a box whose edges are rounded (rounded more and more, until it is a ball), its film's colour found where the ray
+  // goes in and where it comes out; its edges and outline drawn over it in lines.
+  const EGB = { rise: [.35, 4.1], relax: [8.6, 10.3], thin: [10.4, 12.0], pop: 12.0 };
+  /** where a ray o + t·d (in the box's own frame, d of unit length) first meets a box of half-size b whose edges are
+   *  rounded by r: t, or -1 (Inigo Quilez's rounded-box intersector: the faces, then the edges as cylinders, the corners
+   *  as spheres) */
+  const rbox = (ox, oy, oz, dx, dy, dz, b, r) => {
+    const mx = 1 / dx, my = 1 / dy, mz = 1 / dz, nx = mx * ox, ny = my * oy, nz = mz * oz, kx = Math.abs(mx) * (b + r), ky = Math.abs(my) * (b + r), kz = Math.abs(mz) * (b + r);
+    const tN = Math.max(-nx - kx, -ny - ky, -nz - kz), tF = Math.min(-nx + kx, -ny + ky, -nz + kz); if (tN > tF || tF < 0) return -1;
+    let t = tN; const px = ox + t * dx, py = oy + t * dy, pz = oz + t * dz, sx = px < 0 ? -1 : 1, sy = py < 0 ? -1 : 1, sz = pz < 0 ? -1 : 1;
+    const qx = sx * px - b, qy = sy * py - b, qz = sz * pz - b; if (Math.min(Math.max(qx, qy), Math.max(qy, qz), Math.max(qz, qx)) < 0 || r < 1e-6) return t; // on a face
+    const rox = sx * ox - b, roy = sy * oy - b, roz = sz * oz - b, rdx = sx * dx, rdy = sy * dy, rdz = sz * dz, ra2 = r * r; // into the first octant, from the corner
+    const ddx = rdx * rdx, ddy = rdy * rdy, ddz = rdz * rdz, odx = rox * rdx, ody = roy * rdy, odz = roz * rdz, oox = rox * rox, ooy = roy * roy, ooz = roz * roz;
+    t = 1e20;
+    { const B = odx + ody + odz, h = B * B - (oox + ooy + ooz - ra2); if (h > 0) t = -B - Math.sqrt(h); } // the corner
+    { const a = ddy + ddz, B = ody + odz, h0 = B * B - a * (ooy + ooz - ra2); if (h0 > 0) { const h = (-B - Math.sqrt(h0)) / a; if (h > 0 && h < t && Math.abs(rox + b + rdx * h) < b) t = h; } } // the edges
+    { const a = ddz + ddx, B = odz + odx, h0 = B * B - a * (ooz + oox - ra2); if (h0 > 0) { const h = (-B - Math.sqrt(h0)) / a; if (h > 0 && h < t && Math.abs(roy + b + rdy * h) < b) t = h; } }
+    { const a = ddx + ddy, B = odx + ody, h0 = B * B - a * (oox + ooy - ra2); if (h0 > 0) { const h = (-B - Math.sqrt(h0)) / a; if (h > 0 && h < t && Math.abs(roz + b + rdz * h) < b) t = h; } }
+    return t > 1e19 ? -1 : t;
+  };
+  /** a turn, as a matrix (rows): about the vertical first, then tipped toward us by `tip`, then leant by `roll` */
+  const turn = (yaw, tip, roll) => { const cy = Math.cos(yaw), sy = Math.sin(yaw), cx = Math.cos(tip), sx = Math.sin(tip), cz = Math.cos(roll), sz = Math.sin(roll);
+    const Ry = [[cy, 0, sy], [0, 1, 0], [-sy, 0, cy]], Rx = [[1, 0, 0], [0, cx, -sx], [0, sx, cx]], Rz = [[cz, -sz, 0], [sz, cz, 0], [0, 0, 1]], mul = (A2, B2) => A2.map(r2 => [0, 1, 2].map(j => r2[0] * B2[0][j] + r2[1] * B2[1][j] + r2[2] * B2[2][j]));
+    return mul(Rz, mul(Rx, Ry)); };
+
   const S = {
     res: "dpr",
     wash: 1.6, veil: 1, hug: .85, hugFinale: true, // a light kit: the lines and the finale's words sit on pads, and Everything shows the plain ground
@@ -218,6 +257,86 @@ export default function bubbles(K) {
       // the wand over them, in the pass's colour, its frame a ring, a star or a heart
       const wa = wandAt(bt); if (on && wa.wx < W + Rr * 2) S.wand2(wa, pl, flat, V);
     },
+    /** 1.12 b416: the egg's cube at T: where it is, how big, how it's turned, how far it has rounded (0 a cube … 1 a ball),
+     *  its wobble, how thin its film has worn at the top; null when it's gone */
+    cubeAt(T, A, P) {
+      if (T < EGB.rise[0] || T > EGB.pop + .5) return null;
+      const r = K.deal(P, 97), spin = r() < .5 ? 1 : -1, yaw0 = r() * TAU, { home, R, H } = S, a = clamp(R * .4, 34, 84), s = seg(T, EGB.relax[0], EGB.relax[1], E.io);
+      const up = E.out(seg(T, EGB.rise[0], EGB.rise[1], x => x)), y = lerp(H + a * 2.4, home[1] + R * .06, up) - seg(T, EGB.rise[1], EGB.pop, E.sine) * R * .12 + Math.sin(A * .47 + 1) * R * .03 * up, x = home[0] + Math.sin(A * .6) * R * .05 * up;
+      const set = T > EGB.relax[1] - .25 ? T - EGB.relax[1] + .25 : -1, shiver = env(T, EGB.relax[0] - .5, EGB.relax[0] - .4, EGB.relax[0] - .2, EGB.relax[0] - .05) * Math.sin(T * 42) * .03; // a shiver as if caught at it; then it settles, jelly-like, as it rounds
+      const wob = shiver + (set > 0 ? Math.exp(-set * 3.2) * .1 * Math.sin(set * 13) : 0) + Math.sin(A * 3.1) * .01 * s;
+      return { x, y, a, s, wob, rot: turn(yaw0 + spin * (T * .34 + .25 * Math.sin(T * .5)), .56 + .1 * Math.sin(T * .63), .1 * Math.sin(T * .41 + 1)), thin: seg(T, EGB.thin[0], EGB.thin[1], E.in), ts: T * .9 };
+    },
+    /** the cube's film, traced: a small image, `N` across, of the cube (or the rounded box it's becoming) as the film's
+     *  colour where each ray goes in and where it comes out, the window's panes caught in it */
+    cubeImg(c, N) {
+      const L = S.cubeL || (S.cubeL = (() => { const [cv2, x2] = canvas(N, N); return { cv: cv2, x: x2, im: x2.createImageData(N, N) }; })());
+      const { a, s, rot: M, thin, ts } = c, b = a * (1 - s), ext = Math.sqrt(3) * b + a * 1.2407 * s + 3, rr = a * 1.2407 * s + ext * 1.4 / N, d = L.im.data, half = N / 2; d.fill(0); L.ext = ext; // (traced a hair fat: the outline's clip trims it)
+      const dx = M[2][0], dy = M[2][1], dz = M[2][2], fz = Math.max(dx * dx, dy * dy, dz * dz) > .999 ? 1e-4 : 0; // the view's way in the cube's own frame (never exactly along an axis)
+      const shadeAt = (px2, py2, pz2, wy, back) => { // the film at a point of the box (its own frame): its colour [r,g,b] and how much light it sends back
+        let nx2 = Math.abs(px2) - b, ny2 = Math.abs(py2) - b, nz2 = Math.abs(pz2) - b; nx2 = Math.max(nx2, 0) * Math.sign(px2); ny2 = Math.max(ny2, 0) * Math.sign(py2); nz2 = Math.max(nz2, 0) * Math.sign(pz2);
+        let nl = Math.hypot(nx2, ny2, nz2); if (nl < 1e-6) { const m2 = Math.max(Math.abs(px2), Math.abs(py2), Math.abs(pz2)); nx2 = Math.abs(px2) === m2 ? Math.sign(px2) : 0; ny2 = nx2 ? 0 : Math.abs(py2) === m2 ? Math.sign(py2) : 0; nz2 = nx2 || ny2 ? 0 : Math.sign(pz2); nl = 1; }
+        nx2 /= nl; ny2 /= nl; nz2 /= nl;
+        const Nx = M[0][0] * nx2 + M[0][1] * ny2 + M[0][2] * nz2, Ny = M[1][0] * nx2 + M[1][1] * ny2 + M[1][2] * nz2, Nz = (M[2][0] * nx2 + M[2][1] * ny2 + M[2][2] * nz2) * (back ? -1 : 1), cs = Math.min(1, Math.abs(Nz));
+        const u = px2 / a, v = py2 / a, w = pz2 / a, au = Math.abs(u), av = Math.abs(v), aw = Math.abs(w), mx2 = Math.max(au, av, aw), edge = 1 - Math.min(1, mx2 === au ? Math.max(av, aw) : mx2 === av ? Math.max(au, aw) : Math.max(au, av)); // how near an edge, across the face it's on
+        const sw = Math.sin(u * 2.6 + .8 * Math.sin(v * 3.4 + ts) + w * 1.3) + .55 * Math.sin(w * 3.1 - u * 1.5 + 2 * ts + v), vy = clamp(wy / (a * 1.6), -1, 1), near = Math.exp(-edge * 4.5) * (1 - s);
+        const th = (520 + 160 * vy + 140 * sw + 120 * near * Math.sin((u + v + w) * 4 - ts * 2.6)) * (1 - .45 * near) * (1 - thin * clamp(.8 - vy * 1.2)), te = th * Math.sqrt(1 - (1 - cs * cs) / 1.77), k = clamp(Math.round(te / 2), 0, 599) * 4;
+        const al = clamp((.07 + .78 * Math.pow(1 - cs, 1.6)) * (.3 + 1.05 * FILM[k + 3] / 255) * (back ? .6 : 1) + near * .4 + s * .06 * Math.pow(1 - cs, 3)) * clamp(th / 70); // clear across a face, bright where it's seen slant and along its edges
+        const cr = FILM[k], cg = FILM[k + 1], cb = FILM[k + 2];
+        return [cr, cg, cb, al]; };
+      for (let j = 0; j < N; j++) { const wy = (j + .5 - half) / half * ext; for (let i = 0; i < N; i++) {
+        const wx = (i + .5 - half) / half * ext; if (wx * wx + wy * wy > ext * ext) continue;
+        const ox = M[0][0] * wx + M[1][0] * wy - dx * ext * 2, oy = M[0][1] * wx + M[1][1] * wy - dy * ext * 2, oz = M[0][2] * wx + M[1][2] * wy - dz * ext * 2; // the ray, in the cube's frame
+        const tf = rbox(ox, oy, oz, dx + fz, dy + fz, dz + fz, b, rr); if (tf < 0) continue;
+        const f = shadeAt(ox + dx * tf, oy + dy * tf, oz + dz * tf, wy, false), ex = ox + dx * ext * 4, ey = oy + dy * ext * 4, ez = oz + dz * ext * 4, tb = rbox(ex, ey, ez, -dx - fz, -dy - fz, -dz - fz, b, rr);
+        const bk = tb < 0 ? [0, 0, 0, 0] : shadeAt(ex - dx * tb, ey - dy * tb, ez - dz * tb, wy, true), A2 = f[3] + bk[3] * (1 - f[3]); if (A2 <= .002) continue;
+        const o = (j * N + i) * 4; for (let q = 0; q < 3; q++) d[o + q] = (f[q] * f[3] + bk[q] * bk[3] * (1 - f[3])) / A2; d[o + 3] = 255 * A2; } }
+      L.x.putImageData(L.im, 0, 0); return L;
+    },
+    /** 1.12 b416: the egg's pass (see EGB): the small ones drifting up as always, and the cube */
+    eggCube(T, I, A, P, pop, on, V) {
+      const c = on ? S.cubeAt(T, A, P) : null; if (!c) return;
+      const { x, y, a, s, wob, rot: M } = c, rs = a * 1.2407, tear = clamp((T - EGB.pop) / .1), sh = V * S.shade(x, y, a * 1.4);
+      if (T >= EGB.pop) pop(x, y, rs * (1 + wob), T - EGB.pop, V);
+      if (tear >= 1) return;
+      const key = Math.round(T * (s > 0 && s < 1 ? 30 : 15)) + ":" + P + ":" + Math.round(a), N = 80; // (a trace of 80: 96 cost the pass 9 % of a core against the others' 4)
+      if (S.cubeK !== key) { S.cubeImg(c, N); S.cubeK = key; }
+      const L = S.cubeL, ext = L.ext, b = a * (1 - s), rr = rs * s, P3 = (u, v, w) => [M[0][0] * u + M[0][1] * v + M[0][2] * w, M[1][0] * u + M[1][1] * v + M[1][2] * w, M[2][0] * u + M[2][1] * v + M[2][2] * w];
+      // its outline: the hull of the box's corners, rounded out by its rounding
+      const hull = []; for (const u of [-1, 1]) for (const v of [-1, 1]) for (const w of [-1, 1]) { const q = P3(u * b, v * b, w * b); hull.push([q[0], q[1]]); }
+      hull.sort((p, q) => p[0] - q[0] || p[1] - q[1]); const cross = (o, p, q) => (p[0] - o[0]) * (q[1] - o[1]) - (p[1] - o[1]) * (q[0] - o[0]), lo = [], hi = [];
+      for (const p of hull) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+      for (const p of [...hull].reverse()) { while (hi.length >= 2 && cross(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) hi.pop(); hi.push(p); }
+      const H2 = lo.slice(0, -1).concat(hi.slice(0, -1)), rim = new Path2D();
+      if (H2.length < 3 || b < .4) rim.arc(0, 0, Math.max(rr, b), 0, TAU); // a ball by now (its corners all but met)
+      else if (rr < .5) H2.forEach(([u, v], i) => i ? rim.lineTo(u, v) : rim.moveTo(u, v)); else H2.forEach((p, i) => { const q = H2[(i + 1) % H2.length], o = H2[(i + H2.length - 1) % H2.length], a0 = Math.atan2(o[0] - p[0], p[1] - o[1]), a1 = Math.atan2(p[0] - q[0], q[1] - p[1]); let da = a1 - a0; while (da < 0) da += TAU; rim.arc(p[0], p[1], rr, a0, a0 + da); });
+      rim.closePath();
+      g.save(); g.translate(x, y); g.scale(1 + wob, 1 - wob * .9); g.globalAlpha = sh;
+      if (tear > 0) { const hx = Math.cos(-1.9) * rs, hy = Math.sin(-1.9) * rs; g.beginPath(); g.arc(0, 0, ext + 2, 0, TAU); g.moveTo(hx + tear * 2.2 * rs, hy); g.arc(hx, hy, tear * 2.2 * rs, 0, TAU, true); g.clip("evenodd"); } // torn open from the top as it pops
+      g.save(); g.clip(rim); g.imageSmoothingEnabled = true; g.drawImage(L.cv, -ext, -ext, ext * 2, ext * 2);
+      // the window, caught flat in each face that turns to it: four panes lying on the face, sliding across it as it turns
+      const fk = Math.pow(1 - s, 2); if (fk > .01) for (let ax = 0; ax < 3; ax++) for (const sg of [-1, 1]) {
+        const n = [0, 0, 0]; n[ax] = sg; const N3 = P3(...n); if (N3[2] > -.12) continue;
+        const j = (ax + 1) % 3, k2 = (ax + 2) % 3, e1 = [0, 0, 0], e2 = [0, 0, 0], o = [0, 0, 0]; e1[j] = b; e2[k2] = b; o[ax] = sg * b;
+        const C = P3(...o), U = P3(...e1), V2 = P3(...e2), rx = -2 * N3[2] * N3[0], ry = -2 * N3[2] * N3[1], dxw = rx + .49, dyw = ry + .57, det = U[0] * V2[1] - U[1] * V2[0]; if (Math.abs(det) < 1e-3) continue;
+        const sx2 = -dxw * a * 1.3, sy2 = -dyw * a * 1.3, u0 = (sx2 * V2[1] - sy2 * V2[0]) / det, v0 = (U[0] * sy2 - U[1] * sx2) / det, lit = clamp(1 - Math.hypot(dxw, dyw) * 1.1) * fk * clamp((-N3[2] - .12) * 3);
+        if (lit < .02) continue;
+        g.save(); g.beginPath(); for (const [p2, q2] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) g.lineTo(C[0] + U[0] * p2 + V2[0] * q2, C[1] + U[1] * p2 + V2[1] * q2); g.closePath(); g.clip();
+        g.fillStyle = `rgba(255,255,255,${(.78 * lit).toFixed(3)})`; g.shadowColor = "rgba(255,255,255,.9)"; g.shadowBlur = 3 * px;
+        for (const pu of [-1, 1]) for (const pv of [-1, 1]) { const cu = u0 + pu * .17, cv = v0 + pv * .21, hu = .14, hv = .18; g.beginPath(); for (const [p2, q2] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) g.lineTo(C[0] + U[0] * (cu + p2 * hu) + V2[0] * (cv + q2 * hv), C[1] + U[1] * (cu + p2 * hu) + V2[1] * (cv + q2 * hv)); g.closePath(); g.fill(); }
+        g.restore(); }
+      if (s > .01) { g.globalAlpha = sh * s * s; g.drawImage(S.shine, -rs, -rs, 2 * rs, 2 * rs); g.globalAlpha = sh; } // round now: the window bowed round it, as in every bubble
+      g.restore();
+      // its edges, where its faces meet (fading as they round off), and its outline
+      const ek = Math.pow(1 - s, 1.6); if (ek > .01) for (let ax = 0; ax < 3; ax++) for (const s1 of [-1, 1]) for (const s2 of [-1, 1]) {
+        const j = (ax + 1) % 3, k = (ax + 2) % 3, n = [0, 0, 0], p0 = [0, 0, 0], p1 = [0, 0, 0]; n[j] = s1 * Math.SQRT1_2; n[k] = s2 * Math.SQRT1_2;
+        for (const [p, e] of [[p0, -1], [p1, 1]]) { p[ax] = e * b; p[j] = s1 * b + n[j] * rr; p[k] = s2 * b + n[k] * rr; }
+        const nz = P3(n[0], n[1], n[2])[2], front = nz < .05, q0 = P3(...p0), q1 = P3(...p1);
+        g.lineCap = "round"; g.lineWidth = clamp(a * .028, .8, 2.2); g.strokeStyle = `rgba(160,64,112,${((front ? .32 : .14) * ek).toFixed(3)})`; g.beginPath(); g.moveTo(q0[0], q0[1]); g.lineTo(q1[0], q1[1]); g.stroke();
+        g.lineWidth *= .5; g.strokeStyle = `rgba(255,246,252,${((front ? .9 : .4) * ek).toFixed(3)})`; g.stroke(); }
+      g.lineWidth = clamp(rs * .02, .6, 1.6); g.strokeStyle = "rgba(160,64,112,.3)"; g.stroke(rim);
+      g.restore();
+    },
     /** the wall between two bubbles joined: an arc across where they meet, bowed into the bigger one */
     wall(pa, ra, pb, rb, V) {
       const dx = pb[0] - pa[0], dy = pb[1] - pa[1], d = Math.hypot(dx, dy); if (d >= ra + rb || d <= Math.abs(ra - rb) || d < 1) return;
@@ -330,7 +449,8 @@ export default function bubbles(K) {
         if (b.pop !== null) { pop(x, b.py, b.R, A - b.pop, 1); continue; }
         bubble(x, y, b.R, S.smalls[b.tex], A * b.spin + b.ph, wob, .9 * S.shade(x, y, b.R));
       }
-      if (P > 0) S.pass2(T, I, A, S.plan && S.plan.P === P ? S.plan : (S.plan = dealPass(P)), bubble, pop, on, V); // a dealt pass
+      if (P > 0 && K.egg(P)) S.eggCube(T, I, A, P, pop, on, V); // b416: every twelfth pass, the egg
+      else if (P > 0) S.pass2(T, I, A, S.plan && S.plan.P === P ? S.plan : (S.plan = dealPass(P)), bubble, pop, on, V); // a dealt pass
       else {
       // the wand: in from the right, still while the bubble is blown, sweeping for the stream, and out again
       const { Rr, ring } = S, L = Rr * 4.4, hyp = Math.hypot(L, L * .2);

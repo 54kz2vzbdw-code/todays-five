@@ -3651,3 +3651,39 @@ paragraph gains a sentence.
 Next up, in StandBy, shows all of Today — the next line first — instead of the next line alone: what a person sees
 going to sleep and waking up. iPhone only; the web's code does not change. See `apple/DECISIONS-apple.md`, "StandBy
 shows the whole day"; the changelog's widgets paragraph says it.
+
+# Today's Five 1.12 b411 — Light and Dark: water
+
+*Shipped as build 412. b411 is its commit.*
+
+Light's and Dark's scene is new for the third time: marbling, worked out as water — the Navier–Stokes equations for an
+incompressible flow, solved on the graphics card thirty times a second, with the list's words solid in it so the paint
+flows round them and never under them. Inks on paper by day, liquid metal by night; a loop and a forever cycle of their
+own, a finale of flowers, and every twelfth pass an egg. The decisions are in DECISIONS.md under "1.12 b411 decisions".
+Web only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **The water** (b411). `scene-fluid.js` (new) in place of `scene-orbit.js` (gone); `scenes.js` (a scene may bring
+   its own canvas, `el`, and is told to `stop`; the kit's `egg(P)`, the passes an easter egg plays on); `sw.js` and
+   `test/features.test.js` (the precache list); the changelog's Scenes paragraph (its Light and Dark clause, through
+   Price's voice); a new browser test (the water on the graphics card, keeping off the words), and the b321 and b328
+   tests learn the module's name.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| CPU, the loop (share of one core; every Chrome process) | desktop: Dark **2.45 %** (**15.76 %**); in the first cut's run, 2.53 % (18.44 %) against Arcade 5.17 % (18.75 %) and Forest 4.88 % (21.14 %); phone: **2.40 %** (**16.14 %**), against Arcade 4.29 % (16.76 %) | `tools/idle.mjs 60`, `SCENES=1` (`VP=phone`) |
+| CPU, in use | desktop: Dark **3.08 %** (**16.68 %**); in the first cut's run, 3.61 % (18.11 %) against Arcade 4.61 % (18.62 %) and Forest 3.74 % (15.68 %) | `tools/idle.mjs 60`, `SCENES=1 USE=5` |
+| contrast | over the water at least the plain page's reading for every piece of text, both kits, both viewports, three ways — but the keyboard line's −.03 to −.07 in use (the same over identical ink) and, on a wide screen in the loop while the idle fade has them out, the bar's chips and the keyboard line: Light's long list after the shelf, Share and ⋯ 4.07 → 4.04, Today 4.82 → 4.72, the keyboard line 4.13 → 3.99 (Everything, where Light's veil covers the water entirely, reads dips of the same size: the fade, not the paint) | `tools/contrast.mjs light,dark desktop,phone`, three ways (the seed lines; `FIXTURE=1`; `FIXTURE=1 VIEW=all`), `CLOCK=2026-09-28T15:00:00` |
+| bytes, gzipped | `scene-fluid.js` **17,173** (`scene-orbit.js` was 10,981), lazy, Scenes on under Light or Dark only; `scenes.js` 10,180 → **10,441**; nothing on the first-paint path | `gzip -9 -n` |
+| the grid | about 48,000 cells (149 × 322 on a 390 × 844 phone, 277 × 173 at 1440 × 900); the paint on one three times as fine; drawn at up to 1.6 million pixels | `state().info` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on the change: every scene test (Scenes off and on, nearly still in use, every kit's module, the hidden kits', the keep-clear, the water's new test, Sunset's pads, Everything's sections, the forever cycle, the panel's hold, Arcade's score, the stamp), the kitchen display, the ⋯ menu, a page open across a deploy and the worker's test, both viewports: 31 passed, and the water's test on a phone failed on the test's own stale pointer over a row (a row's hover is a tint); parked, both viewports: 2 passed |
+| Looked at | Light and Dark on a phone and a laptop through pass 0, three dealt passes, the rare one, the egg (pass 11) and the finale; a tap's ring; the long-time fixture on a laptop; a Chrome with WebGL switched off (the canvas hidden, the kit's own ink, nothing thrown) |

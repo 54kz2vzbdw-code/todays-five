@@ -3130,3 +3130,93 @@ of the change costs the same 40 ms, and so does 402's app.js with nothing but a 
 (1,308 → 1,328 ms, disjoint ranges). Under the emulated network (150 ms, 1.6 Mbps, gzip as GitHub Pages serves it)
 0.8 KB is about 4 ms of transfer, so the step is how the throttled connection delivers the file, not the code in it —
 and any byte added to app.js now crosses it. The reading is reported as measured (see PLAN.md).
+
+# 1.12 b411 decisions — Light and Dark, the third time: water
+
+Price, on the liquid drops (b328, softened in b345): "I still hate light/dark. I do not like the scene at all. It's just
+not what I was picturing." What he asked for was something so good that people would stop asking what made it and ask
+how it was done — "some sort of just absolutely mind-blowing animation in the background of the light/dark scene that
+enthralls the viewer" — and he named the kind of thing he meant: solving the Navier–Stokes equations.
+
+**A fluid, really solved.** `scene-fluid.js`, one module for the pair, in place of `scene-orbit.js`. The water is a grid
+over the whole page (about 48,000 cells whatever the screen: 149 × 322 on a phone, 277 × 173 on a laptop), stepped
+thirty times a second on the graphics card in WebGL2: the velocity carried along itself and damped, the loop's forces
+and vorticity confinement applied, the pressure solved so the water neither gathers nor spreads (Jacobi, two
+iterations a pass, 22 in the loop and 16 at rest, warm-started from the step before), and the paint carried on a grid
+three times finer by MacCormack's scheme — a step forward, corrected by what a step back misses, kept within what was
+there — so it draws out into threads instead of blurring. Back-traces go by the midpoint rather than a single Euler
+step: in an eddy, Euler drifts outward, and the same way whichever way the eddy turns. Half floats throughout, the
+pressure in full floats where the card can render them.
+
+**The words are solid.** The stage's `words()` gives every line's text (taken left to cover its box), the pills, the
+date, the count and the keyboard line; each becomes a rounded block in the grid, padded 14 × 10 px, its cells flagged
+solid and its faces closed, and the bar along the top is one shelf from edge to edge, so the water stays under it. The
+water parts round a line and curls off its end, and the paint thins out over the last 10 px before a block, so nothing
+is ever under a word and the stage lays no pad and no list wash (`clear: true`; the washes along the top and over the
+footer at .6 by day, .7 by night). Before the shelf, a long list on a wide screen let the paint rise round the bar's
+chips while they were faded out. A new browser test plays the loop on to where the comb drags the paint about and reads
+the page's own ground in a band above and below every line, by day and by night.
+
+**Light: marbling.** The inks are the kit's own — burnt orange, slate, a steel blue, rust — and they mix as ink does:
+each takes its share of the light (Beer–Lambert, worked in linear light), so orange over blue goes brown, thin paint is
+a tint and thick paint the full colour, with a faint wet sheen where an edge stands up. A drop is a source in the flow
+— the divergence the pressure solve aims for is raised inside it, and lowered a little everywhere else so the sum
+holds — so it pushes every ring before it outward, as a drop does on a marbler's tray: stones, rings within rings.
+
+**Dark: metals.** The same water poured in gold, copper, bronze and a pale silver, lit the way metal is, by what it
+reflects: a studio (a soft light overhead, a key from the upper left, a cool strip from the right) seen from a little
+way off, so a flat pool shows a gradient across it and an edge goes dark, then bright as it turns to a light. Each
+metal stands at its own height, as mokume-gane's metals do once it is etched, so where two meet there is a step that
+catches the light. It reads as liquid brass. The first cut, lit by a glow of its own, read as caramel; flat pools read
+as plastic until the view was given perspective, and a stone at rest as a sticker until its rings had steps.
+
+**The loop, and the forever cycle.** Pass 0: stones land in the three biggest open spaces; a comb is drawn through
+each; two vortices wind them into spirals; a last drop blooms; it rests. Each pass after it deals an opening (stones, a
+rain of small drops, a target of fine rings, a ring of drops burst outward by water poured in its middle), a middle (a
+comb, and back half a tine over; two jets that trade partners where they meet; a Kelvin–Helmholtz shear the paint rolls
+up in; a stylus round a figure of eight; tulips pulled down through the stones; four eddies turning against each other)
+and a close (spirals, a bloom, one great whirl, a wave), in colours, sides and turns of its own. One pass in eight is
+the rare one: rows of drops raked down and back (gel-git), then combed across in waves. The first cut combed the whole
+tray and left the ghost of every comb as a haze over the page; a comb now reaches only across the stone it is drawn
+through, and thin paint clears away as it fades (a little taken off every channel each step, besides the share that
+fades), so the page never silts up. The water carries on from pass to pass as water does.
+
+**The egg.** On every twelfth pass (`K.egg`, new in the stage's kit for every scene that will have one: three minutes
+of the list left alone), the water remembers. A drop of clear water opens a pool; a check is drawn in it; the water is
+stirred until the check is gone into the swirls round it — and then the stir runs backward, and every thread of it
+finds its way home, the check whole again. It is G. I. Taylor's un-mixing, and two things make it work here: the stir
+is laid down as a velocity rather than pushed, so it can be played in reverse to the step (projected round the words
+the same way each way, each step forced at its middle so the two halves meet step for step); and the check is drawn
+through a map of where each drop of water started, carried with the water, so it comes back sharp where the paint
+itself would come back blurred. With first-order back-traces it came back as a "W"; with the midpoint, a check. Then
+it is pressed into the paint, and the water takes it. A touch cuts it short and leaves the check, as far as it got, in
+the paint.
+
+**At rest, and the finale.** Three slow, wide eddies wander over the page; the pointer or a finger drags the water it
+passes over; a line crossed off with a tap puts a small ring of ink by its end. The finale is a flower in each of the
+biggest open spaces, made the way a marbler makes one: a stone of rings, then a stylus drawn in from beyond it toward
+its middle at each petal, five at once. The first cut (stones in every colour at once) read as the loop starting over,
+and the second (a ring of drops burst outward by water poured in the middle) as holes.
+
+**A moment out of turn.** The lab and the instruments hold a moment with `seek`, and a fluid has no formula for a
+moment: the scene works it out again from the start of the visit, thirty steps a second, as if left alone throughout
+(or on from where the last seek got to). A live frame is a step on from the last, two at most however late the frame
+(on a card that falls behind, the water slows rather than the page); a resize carries the paint across to the new grid
+where it was on the page, measured from the top.
+
+**The stage.** A scene may bring its own canvas (`el`): the stage puts it where the moving picture's canvas would be,
+leaves its sizing to the scene, and passes `stop` on so it can let go of the graphics card. A lost context hides the
+canvas (a lost WebGL canvas would show black) until it comes back, then everything is made again from rest. Without
+WebGL2 or a float target the scene draws nothing, and the kit's own ground shows, as with Scenes off (checked with
+WebGL switched off in Chrome: the canvas hidden, the page's own ink behind the list, nothing thrown).
+
+**Contrast.** Over the water, every piece of text reads at least as well as over the plain page, both kits, both
+viewports, three ways — but for a few hundredths on the keyboard line, which reads the same over identical ink, and
+small dips on the bar's chips and the keyboard line in the loop on a wide screen, while the app's idle fade has them
+faded out: dips of the same size read on Everything, where Light's veil covers the water completely, so they are the
+fade read at a different moment, not the paint. With the shelf, Light's long list on a wide screen reads within .03
+of the plain page on the bar's chips (.14 on the keyboard line, in the fade).
+
+**Cost.** About twenty passes a step on the graphics card. The first cut had thirty-one; folding the curl into the
+forces and taking the pressure two iterations a pass took 2.7 points off Chrome's processes on a laptop. In the loop
+it costs less than Arcade and Forest on the page's own thread and across all of Chrome's processes (PLAN.md).

@@ -24,7 +24,7 @@
 
 export const LOOP = 15;
 const IDLE_AFTER = 20000;
-const MODS = { forest: "./scene-forest.js", harbor: "./scene-harbor.js", paper: "./scene-papercut.js", midnight: "./scene-papercut.js", teletype: "./scene-flap.js", terminal: "./scene-demo.js", light: "./scene-orbit.js", dark: "./scene-orbit.js", sunset: "./scene-bay.js", dusk: "./scene-bay.js", arcade: "./scene-arcade.js", sketch: "./scene-sketch.js", blush: "./scene-bubbles.js", pink: "./scene-heart.js", cocoa: "./scene-cocoa.js", ember: "./scene-ember.js", birthday: "./scene-party.js", superpink: "./scene-party.js", whiteboard: "./scene-board.js", chalkboard: "./scene-board.js", bark: "./scene-wood.js", char: "./scene-wood.js" }; // a pair can share one world
+const MODS = { forest: "./scene-forest.js", harbor: "./scene-harbor.js", paper: "./scene-papercut.js", midnight: "./scene-papercut.js", teletype: "./scene-flap.js", terminal: "./scene-demo.js", light: "./scene-fluid.js", dark: "./scene-fluid.js", sunset: "./scene-bay.js", dusk: "./scene-bay.js", arcade: "./scene-arcade.js", sketch: "./scene-sketch.js", blush: "./scene-bubbles.js", pink: "./scene-heart.js", cocoa: "./scene-cocoa.js", ember: "./scene-ember.js", birthday: "./scene-party.js", superpink: "./scene-party.js", whiteboard: "./scene-board.js", chalkboard: "./scene-board.js", bark: "./scene-wood.js", char: "./scene-wood.js" }; // a pair can share one world
 export const SCENE_IDS = Object.keys(MODS);
 
 /* ---------------- the drawing kit a scene is handed ---------------- */
@@ -65,6 +65,9 @@ const bag = (P, n, salt = 0) => {
   if (a[0] === before) [a[0], a[1]] = [a[1], a[0]];
   return a[(P - 1) % n];
 };
+/** 1.12 b411: the passes an easter egg plays on, for a scene that has one: every twelfth, three minutes of the list left
+ *  alone (the first is pass 11); the scene plays it in place of the pass it would have dealt */
+const egg = P => P > 0 && (P + 1) % 12 === 0;
 /** a sprite from a function of (x, y) → [r,g,b,a?] or null, written straight into pixels */
 function paint(w, h, fn) {
   const [c, x2] = canvas(w, h), im = x2.createImageData(c.width, c.height), d = im.data;
@@ -108,7 +111,7 @@ const boil = (frame, amp = .8) => { const r = rng(frame * 7919 + 13); return (x,
 function grain(w, h, seed = 1, k = .06) { const r = rng(seed); return paint(w, h, () => { const v = r(); return v < .5 ? [0, 0, 0, Math.round(255 * k * r())] : [255, 255, 255, Math.round(255 * k * .8 * r())]; }); }
 /** a layer redrawn only when what is in it moves: `key` says what it looks like now */
 function layer() { let c = null, k = null; return (w, h, key, draw) => { if (!c || c.width !== w || c.height !== h) { [c] = canvas(w, h); k = null; } if (key !== k) { const x = c.getContext("2d"); x.clearRect(0, 0, w, h); draw(x); k = key; } return c; }; }
-export const KIT = { LOOP, deal, bag, clamp, lerp, E, spring, seg, env, rng, dith, rgb, mixc, css, canvas, paint, noise1, fbm, glowSpr, pine, sprite, layer, partial, boil, grain };
+export const KIT = { LOOP, deal, bag, egg, clamp, lerp, E, spring, seg, env, rng, dith, rgb, mixc, css, canvas, paint, noise1, fbm, glowSpr, pine, sprite, layer, partial, boil, grain };
 
 /* ---------------- the stage ---------------- */
 /** The words' side of it (scenes.css), asked for with the page's build (COMPATIBILITY.md §6), and only once. */
@@ -219,6 +222,7 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     }
     PXS = scene.res === "dpr" ? Math.min(2, devicePixelRatio || 1) : +scene.res || 1;
     W = innerWidth; H = innerHeight;
+    if (scene.el) { bd.width = bd.height = 1; bs.display = "none"; scene.layout(W, H, bg); return; } // it sizes its own canvas (b411)
     for (const [c, x, st] of [[cv, g, cs], [bd, bg, bs]]) { c.width = Math.round(W * PXS); c.height = Math.round(H * PXS); x.setTransform(PXS, 0, 0, PXS, 0, 0); x.imageSmoothingEnabled = true; st.width = W + "px"; st.height = H + "px"; st.imageRendering = "auto"; }
     bs.display = "";
     bg.clearRect(0, 0, W, H);
@@ -254,6 +258,7 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
   const ready = import(MODS[id] + "?v=" + build).then(m => {
     if (!alive) return;
     scene = m.default(KIT, id); scene.bind(g);
+    if (scene.el) { const e = scene.el, st = e.style; st.position = "absolute"; st.left = "0"; st.top = "0"; e.setAttribute("aria-hidden", "true"); cv.replaceWith(e); } // a scene that brings its own canvas draws there instead (b411: Light's and Dark's water, on the graphics card)
     if (scene.clear) { listW = 0; document.documentElement.dataset.sceneClear = ""; } else if (scene.list) listW = scene.list; // it keeps out of the words' way
     if (scene.hug) document.documentElement.dataset.sceneClear = ""; // the list's pad gives way to one hugging each line
     wash(scene.wash || weight); if (scene.veil) { veilAt = scene.veil; paintVeil(); }
@@ -281,7 +286,7 @@ export function createScene(host, id, { build = "", reduced = () => false, ink =
     ready,
     state() { return { id, idle: I > .5, level: +I.toFixed(2), finale: F >= 0, frames, fps: raf ? fps : 0, running: !!raf, busy: crowd, shaded, px: PXS, size: [W, H], t: +T.toFixed(2), pass: P, carry: !!(scene && scene.carry), spot: scene && scene.spot ? scene.spot() : null, info: scene && scene.info ? scene.info() : null }; }, // spot: where a scene that keeps to the empty page has settled; info: what a scene tells the instruments of itself (b397)
     stop() {
-      alive = false; halt(); clearTimeout(resizeT); clearTimeout(coverT); clearTimeout(shadeT); if (shadeWatch) shadeWatch.disconnect();
+      alive = false; halt(); if (scene && scene.stop) scene.stop(); /* (b411: a scene on the graphics card lets it go) */ clearTimeout(resizeT); clearTimeout(coverT); clearTimeout(shadeT); if (shadeWatch) shadeWatch.disconnect();
       INPUTS.forEach(t => removeEventListener(t, touched, opt));
       document.removeEventListener("visibilitychange", onVis); removeEventListener("resize", onResize);
       if (watch) watch.disconnect(); removeEventListener("resize", remeasure); removeEventListener("scroll", remeasure, opt); cancelAnimationFrame(wordsF);

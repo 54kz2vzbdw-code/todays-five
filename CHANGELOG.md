@@ -43,8 +43,8 @@ used to be filed under day—sit with the other dark ones.
 Scenes: turn them on in Appearance, and every built-in theme gets a moving picture behind the list—a moonlit forest
 with fireflies and a doe for Forest; a harbor with gulls and a lighthouse for Harbor; one pop-up paper town for Paper
 and Midnight, by day and by night; for Teletype, a wall of split flaps flipping through pictures; for Terminal, a
-nineties-style demo—plasma, tunnel, fire and over a dozen more, drawn in green characters; for Light and Dark, a ring
-of soft liquid drops—a little out of focus—that spins like a loader and keeps to the empty part of the page; one bay
+nineties-style demo—plasma, tunnel, fire and over a dozen more, drawn in green characters; for Light and Dark,
+marbling—paint swirling on water that flows around your words, inks on paper by day and liquid metal by night; one bay
 for Sunset and Dusk, a striped sun going down by day and paper lanterns rising at blue hour; a neon pixel-art game
 playing its attract mode for Arcade; for Sketch, a pencil and a brush drawing in watercolor—a hot-air balloon first,
 then a lighthouse, sailboat, whale, teapot or hummingbird; for Blush, soap bubbles blown from a wand, their films

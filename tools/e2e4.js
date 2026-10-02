@@ -3325,7 +3325,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
   });
 
   /* 1.12 b321: the kits that carry a scene, and the module each one's is in (a pair can share one) */
-  const SCENE_MODS = { forest: "scene-forest.js", harbor: "scene-harbor.js", paper: "scene-papercut.js", midnight: "scene-papercut.js", teletype: "scene-flap.js", terminal: "scene-demo.js", light: "scene-orbit.js", dark: "scene-orbit.js", sunset: "scene-bay.js", dusk: "scene-bay.js", arcade: "scene-arcade.js", sketch: "scene-sketch.js", blush: "scene-bubbles.js", pink: "scene-heart.js", cocoa: "scene-cocoa.js", ember: "scene-ember.js" };
+  const SCENE_MODS = { forest: "scene-forest.js", harbor: "scene-harbor.js", paper: "scene-papercut.js", midnight: "scene-papercut.js", teletype: "scene-flap.js", terminal: "scene-demo.js", light: "scene-fluid.js", dark: "scene-fluid.js", sunset: "scene-bay.js", dusk: "scene-bay.js", arcade: "scene-arcade.js", sketch: "scene-sketch.js", blush: "scene-bubbles.js", pink: "scene-heart.js", cocoa: "scene-cocoa.js", ember: "scene-ember.js" };
   const SCENE_KITS = Object.keys(SCENE_MODS);
   /* 1.12 b318: Scenes. A device that has them on, Forest in Night and Harbor in Day (a dark system: Forest on) */
   const sceneDevice = (on = true) => `try { if (!localStorage.getItem("tf/v2/meta")) localStorage.setItem("tf/v2/meta", JSON.stringify({ device: { day: "T1:curated:harbor", night: "T1:curated:forest", switch: { mode: "system", dayAt: "07:00", nightAt: "19:00" }${on ? ", scenes: true" : ""} } })); } catch (e) {}`;
@@ -3674,7 +3674,7 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
-  await test(label + ": 1.12 b328: Light's and Dark's liquid (and, from b332, Sketch's balloon; from b334, Pink's heart; from b336, Cocoa's cup; from b353, Blush's wand and its big bubble; from b361, Birthday's bouquet and Superpink's mirror ball; from b363, Whiteboard's plan and Chalkboard's lesson; from b365, Bark's inlay and Char's burned medallion) keeps to the empty part of the page — no pad under the words, and wherever it settles it is clear of every line, before and after a long line is added", async () => {
+  await test(label + ": 1.12 b328: Light's and Dark's scene (a liquid that kept to one place until b411, then water that flows round the words; and, from b332, Sketch's balloon; from b334, Pink's heart; from b336, Cocoa's cup; from b353, Blush's wand and its big bubble; from b361, Birthday's bouquet and Superpink's mirror ball; from b363, Whiteboard's plan and Chalkboard's lesson; from b365, Bark's inlay and Char's burned medallion) keeps to the empty part of the page — no pad under the words, and wherever it settles it is clear of every line, before and after a long line is added", async () => {
     const t = await fresh(opts, { init: hiddenDevice });
     await sceneUp(t, "forest");
     const clear = () => t.page.evaluate(() => { const s = window.__tf().scene, [x, y, r] = s.spot || [-1e4, -1e4, 0], range = document.createRange(), hits = [];
@@ -3690,6 +3690,26 @@ for (const [label, opts, touch] of VIEWPORTS) {
     }
     await openPicker(t, "night"); await t.page.click(`#p-theme .swatch[data-code="T1:curated:forest"]`); await wait(300); await t.esc(); await sceneUp(t, "forest");
     assert.equal(await t.page.evaluate(() => document.documentElement.dataset.sceneClear), undefined, "a scene that doesn't keep clear has its pad back");
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join("; "));
+    await t.close();
+  });
+
+  await test(label + ": 1.12 b411: Light's and Dark's water is worked out on the graphics card and keeps off the words — played on to where the comb drags the paint about, the page's own ground lies all round every line", async () => {
+    const t = await fresh(opts, { init: sceneDevice() });
+    await sceneUp(t, "forest");
+    for (const kit of ["light", "dark"]) {
+      await openPicker(t, "night"); await t.page.click(`#p-theme .swatch[data-code="T1:curated:${kit}"]`); await wait(300); await t.esc(); await wait(200);
+      await sceneUp(t, kit); await t.page.mouse.move(2, 2); // (on a phone too: the picker's click leaves the pointer over a row, and a row's hover is a tint)
+      const info = (await t.s()).scene.info; assert.ok(info && info.gl && !info.err, kit + ": the solver is up: " + JSON.stringify(info));
+      assert.equal(await t.page.$$eval("#field canvas", els => els.length), 2, kit + ": its own canvas in the picture's place, and the backdrop");
+      await t.page.evaluate(() => { window.__tfTest.scenePass(0, 1); window.__tfTest.sceneIdle(); });
+      await t.page.waitForFunction(() => { const s = window.__tf().scene; return s.idle && s.t >= 5.2; }, null, { timeout: 30000, polling: 50 });
+      const png = PNG.sync.read(await t.page.screenshot()), k = opts.deviceScaleFactor || 1;
+      const { ink, lines } = await t.page.evaluate(() => { const range = document.createRange(); return { ink: getComputedStyle(document.documentElement).getPropertyValue("--ink").trim(), lines: [...document.querySelectorAll("#today .row .tx")].map(el => { range.selectNodeContents(el); const b = range.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; }).filter(b => b[2] > b[0]) }; });
+      const ground = [1, 3, 5].map(i => parseInt(ink.slice(i, i + 2), 16)), bad = [];
+      for (const [l, tp, r, b] of lines) for (const y of [tp - 5, b + 5]) for (let x = Math.ceil(l); x < r; x += 3) { const i = (png.width * Math.round(y * k) + Math.round(x * k)) * 4, d = Math.max(...[0, 1, 2].map(c => Math.abs(png.data[i + c] - ground[c]))); if (d > 3) bad.push([x, y, d].map(Math.round).join(":")); }
+      assert.ok(lines.length >= 3, kit + ": the lines are there"); assert.deepEqual(bad.slice(0, 6), [], kit + ": paint by the words (x:y:off by)");
+    }
     assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join("; "));
     await t.close();
   });

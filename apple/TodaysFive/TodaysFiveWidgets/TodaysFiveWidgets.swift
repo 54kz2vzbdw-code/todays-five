@@ -4,7 +4,8 @@
 //
 // Each follows the list open in the app unless it is pinned to one (Edit Widget → List; WidgetIntents.swift, b407).
 //
-//   Next up    Home Screen and StandBy (small), Lock Screen (rectangular): one line, and its box.
+//   Next up    Home Screen (small): one line, and its box; StandBy (small): the whole day, the next line first (b409);
+//              Lock Screen (rectangular): one line, and its box.
 //   Today      Home Screen (medium, large): the day's lines, each a box to tap.
 //   Progress   Home Screen and StandBy (small), Lock Screen (circular, inline): how much is left.
 //
@@ -35,7 +36,7 @@ struct NextUpWidget: Widget {
             NextUpFamilies(entry: entry)
         }
         .configurationDisplayName("Next up")
-        .description("The next line on Today, with a box to cross it off. Follows the open list, or one you pick.")
+        .description("The next line, with a box to cross it off—in StandBy, the whole day. Follows the open list, or one you pick.")
         .supportedFamilies([.systemSmall, .accessoryRectangular])
     }
 }

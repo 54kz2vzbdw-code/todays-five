@@ -2828,3 +2828,21 @@ and with two types answering to one identifier the system made the app's, which 
 failed (`intentNotFound`). The entry moved to `WidgetEntry.swift`, the views name the check-off through a factory, and
 the intents live in the extension alone. The publisher reads its feed when it acts, so a debug run pointed at the
 stand-in server after launch reads the stand-in. Release was never affected (406's app excluded those files).
+
+
+## StandBy shows the whole day (1.12 b409, shipped as build 410)
+
+**What Price asked.** "People using the standby widget will be using that in bed when they sleep and it will be what
+they see when they wake up, so I don't think it's useful to have the widget just display the first task. Probably
+better to have the whole 'Today' list in view."
+
+**What changed.** StandBy takes only small widgets, so the change is Next up's own: on the Home Screen it is still the
+next line with its box; in StandBy (a small widget whose ground the system has taken away) it is the whole of Today —
+the next line first and a size up, the rest under it, the done ones sunk to the bottom and struck. Each row is its box.
+The square is fitted, not cut: every line on two lines when they fit, else the next one on two and the rest on one,
+else the done ones folded into a count ("+2 done") so the next line keeps its two, else one line each. On a black
+StandBy the boxes sit by each line's first line.
+
+**Why Next up and not a new small Today widget.** StandBy is where the small widget lives, and the person who put Next
+up there already has it; a second, nearly identical small widget would ask them to find it and swap. The name still
+fits: the next line leads.

@@ -3643,3 +3643,11 @@ The widgets follow the list open in the app, or a list chosen per widget in Edit
 did not reliably honour. iPhone only; the web's code does not change. The design and the measurements are in
 `apple/PLAN-apple-phase6.md` and `apple/DECISIONS-apple.md` under "Choosing a widget's list"; the changelog's widgets
 paragraph gains a sentence.
+
+# Today's Five 1.12 b409 — StandBy shows the whole day
+
+*Shipped as build 410. b409 is its commit.*
+
+Next up, in StandBy, shows all of Today — the next line first — instead of the next line alone: what a person sees
+going to sleep and waking up. iPhone only; the web's code does not change. See `apple/DECISIONS-apple.md`, "StandBy
+shows the whole day"; the changelog's widgets paragraph says it.

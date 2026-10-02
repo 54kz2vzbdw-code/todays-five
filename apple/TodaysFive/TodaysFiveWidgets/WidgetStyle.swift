@@ -141,10 +141,14 @@ struct KitCheckStyle: ToggleStyle {
     let size: CGFloat
     let pal: Palette
     let mat: String
+    /// `.top` for a label that may wrap: the box sits by its first line (`nudge` down to that line's middle)
+    var alignment: VerticalAlignment = .center
+    var nudge: CGFloat = 0
 
     func makeBody(configuration: Configuration) -> some View {
-        HStack(alignment: .center, spacing: size * 0.62) {
+        HStack(alignment: alignment, spacing: size * 0.62) {
             KitBox(on: configuration.isOn, size: size, pal: pal, mat: mat)
+                .padding(.top, nudge)
             configuration.label
         }
         .contentShape(Rectangle())

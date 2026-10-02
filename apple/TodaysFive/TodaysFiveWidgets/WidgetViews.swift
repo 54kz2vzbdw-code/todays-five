@@ -178,6 +178,20 @@ struct NextUpView: View {
 
     var body: some View {
         let d = entry.dressed(scheme, mode, background: background, family: family)
+        // StandBy (a small widget with its ground taken away): the nightstand. There the next line alone is the wrong
+        // thing to wake up to — the whole of Today is (1.12 b409, Price: "it will be what they see when they wake up")
+        if !background && family == .systemSmall {
+            StandByDay(entry: entry, d: d)
+                .containerBackground(for: .widget) { KitGround(pal: d.pal) }
+                .widgetURL(entry.listURL)
+        } else {
+            homeScreen(d)
+                .containerBackground(for: .widget) { KitGround(pal: d.pal) }
+                .widgetURL(entry.listURL)
+        }
+    }
+
+    @ViewBuilder private func homeScreen(_ d: Dressed) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Caps(text: entry.day.name.isEmpty ? "Today" : entry.day.name, d: d, size: 9.5)
@@ -213,8 +227,78 @@ struct NextUpView: View {
                 Spacer(minLength: 0)
             }
         }
-        .containerBackground(for: .widget) { KitGround(pal: d.pal) }
-        .widgetURL(entry.listURL)
+    }
+}
+
+/// Next up in StandBy: the whole of Today in a small square, read from across a dark room — the next line first and a size
+/// up, the rest under it, the done ones sunk to the bottom and struck. Each row is its box: a tap crosses its line off
+/// (once the phone knows its person: CheckLineIntent asks). Six lines or more and the last row says what didn't fit.
+struct StandByDay: View {
+    let entry: DayEntry
+    let d: Dressed
+
+    var body: some View {
+        let day = entry.day
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Caps(text: day.name.isEmpty ? "Today" : day.name, d: d, size: 8.5)
+                Spacer(minLength: 4)
+                if day.total > 0 && !day.gone && !day.finished { CountText(done: day.done, total: day.total, d: d, size: 9.5) }
+            }
+            Spacer(minLength: 5)
+            if let (title, detail) = entry.notice(compact: true) {
+                Notice(title: title, detail: detail, d: d, size: 15)
+                Spacer(minLength: 0)
+            } else if day.finished {
+                FinaleBlock(d: d, date: entry.date, size: 18, stamp: 8, compact: true)
+                Spacer(minLength: 0)
+            } else {
+                // as much of each line as the square holds: every line on two lines if they fit, else the next one on
+                // two and the rest on one, else the done ones folded into a count so the next one keeps its two, else
+                // one each — what is still to do comes before what is done, and nothing is cut where there was room
+                ViewThatFits(in: .vertical) {
+                    rows(day, leadLines: 2, restLines: 2)
+                    rows(day, leadLines: 2, restLines: 1)
+                    rows(day, leadLines: 2, restLines: 1, foldDone: true)
+                    rows(day, leadLines: 1, restLines: 1)
+                    rows(day, leadLines: 1, restLines: 1, foldDone: true)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    private func rows(_ day: WidgetDay, leadLines: Int, restLines: Int, foldDone: Bool = false) -> some View {
+        let lines = foldDone ? day.lines.filter { !$0.done } : day.lines
+        let shown = lines.count > 5 ? Array(lines.prefix(4)) : lines
+        let folded = day.lines.count - lines.count
+        return VStack(alignment: .leading, spacing: 5) {
+            ForEach(shown) { line in
+                let lead = line.id == day.next?.id
+                row(line, lead: lead, lines: line.done ? 1 : (lead ? leadLines : restLines))
+            }
+            if lines.count > shown.count || folded > 0 {
+                Caps(text: TodayView.rest(Array(lines.dropFirst(shown.count)) + day.lines.filter(\.done).prefix(folded)), d: d, size: 8)
+                    .padding(.leading, 11 + 7)
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// One line: the next one a size up so it leads the eye; the rest one size; a done one in the kit's done ink, struck.
+    @ViewBuilder private func row(_ line: WidgetLine, lead: Bool, lines: Int) -> some View {
+        let size: CGFloat = lead ? 14 : 12
+        let label = StruckText(text: line.text, done: line.done, size: size, pal: d.pal, kit: d.kit, lines: lines)
+        let box: CGFloat = lead ? 12.5 : 11, nudge = max(0, (size * 1.22 - box) / 2)
+        if entry.interactive {
+            Toggle(isOn: line.done, intent: WidgetActions.check(list: entry.day.key, line: line.id, done: !line.done)) { label }
+                .toggleStyle(KitCheckStyle(size: box, pal: d.pal, mat: d.mat, alignment: .top, nudge: nudge))
+        } else {
+            HStack(alignment: .top, spacing: 7) {
+                KitBox(on: line.done, size: box, pal: d.pal, mat: d.mat).padding(.top, nudge)
+                label
+            }
+        }
     }
 }
 

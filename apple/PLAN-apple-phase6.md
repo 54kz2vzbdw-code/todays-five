@@ -182,3 +182,9 @@ Measured on the iPhone 17 simulator with three lists on the stand-in server ("Ho
   on Work.
 - A widget configured under 406's setting kept drawing after the update and offered Same as the app.
 - `-TFWidgetSelfTest`: 29/29 (seven new checks: following, pinning, a pin let go, the follow value never a key).
+
+### StandBy, the whole day (b409, shipped as build 410)
+
+Next up in StandBy shows all of Today (DECISIONS-apple.md, "StandBy shows the whole day"). Looked at in the widget lab
+for Paper, Terminal, Arcade and Sunset, with five lines (two done) and three (one done): five fold the done ones into
+"+2 done" so the next line keeps two lines; three fit whole on two lines each.

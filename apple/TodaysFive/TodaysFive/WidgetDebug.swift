@@ -401,6 +401,7 @@ private struct LabSheet: View {
             Text("StandBy · tinted · Lock Screen").font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.7))
             HStack(alignment: .top, spacing: 18) {
                 tile(158, 158, .systemSmall, background: false) { NextUpView(entry: progress) }
+                tile(158, 158, .systemSmall, background: false) { NextUpView(entry: entry(1, total: 3)) }
                 tile(158, 158, .systemSmall, background: false) { ProgressSmallView(entry: progress) }
                 tile(158, 158, .systemSmall, mode: .accented) { NextUpView(entry: progress) }
                 tile(338, 158, .systemMedium, mode: .accented) { TodayView(entry: progress) }

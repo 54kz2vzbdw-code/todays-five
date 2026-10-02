@@ -14,6 +14,14 @@
 // rare ones take a pass's place about once in eight passes each: a stretch of the tube fails in a shower of sparks and
 // catches again, or a moth comes in off the edge to the light, knocks against it twice and goes. Every pass starts and
 // ends on the lit heart and its arrow; nothing carries.
+// 1.12 b414: the egg. Every twelfth pass left alone (three minutes of the list untouched), the sign shows where its arrow
+// came from. The arrow goes out, leaving its empty glass; Cupid flies in off the nearer edge — a neon sign of his own, his
+// wings in three frames that take turns as an animated sign's do, the unlit frames' glass dark on the bricks — settles
+// behind the arrow's tail, draws his bow a notch at a time and looses: his arrow streaks in and runs along the empty
+// glass, lighting the sign's arrow behind it as it goes, and flares at the head. The heart beats twice for it, small
+// hearts rise, and he hops, blows it a kiss and flies off the way he came. Where the words leave no room behind the tail
+// he shoots from the nearest place round it that is clear (overhead, if it's below), and his arrow curves in; he fades
+// where he passes a word, as the moth does.
 export default function heart(K) {
   const { clamp, lerp, E, seg, env, rng, canvas } = K;
   const TAU = Math.PI * 2;
@@ -49,6 +57,8 @@ export default function heart(K) {
     const mir = r() < .5 ? -1 : 1; // the crown and the moon on the other side, the nested hearts lit the other way, the bulbs chasing the other way
     return { P, head, rare, off, back, tint, beat, float, flick, sparks, moth, mir };
   };
+  // 1.12 b414: the egg's beats: the arrow out, Cupid in, the bow drawn, loosed, the arrow's flight, the kiss, Cupid away
+  const EGG = { out: 1.1, in0: 1.6, in1: 3.9, loose: 5.6, fly: .5, kiss: 7.7, off0: 8.9, off1: 10.9 };
   const S = {
     res: "dpr",
     wash: 1, veil: .6, hug: .72, list: .4, // the wall is behind the words and the lines sit on pads
@@ -261,6 +271,146 @@ export default function heart(K) {
       if (fill) { g.fillStyle = fill; for (const sx of [-1, 1]) { g.save(); g.translate(0, -sz * .12); wing(sx, -.35, sz, sz * .42); g.fill(); g.restore(); g.save(); g.translate(0, sz * .18); wing(sx, .4, sz * .75, sz * .3); g.fill(); g.restore(); } g.beginPath(); g.ellipse(0, 0, sz * .12, sz * .42, 0, 0, TAU); g.fill(); return; }
       g.strokeStyle = rim; g.lineWidth = Math.max(1, sz * .06); const ca = Math.cos(litAng), sa = Math.sin(litAng); g.beginPath(); for (const sx of [-1, 1]) { if (sx * ca < -.2) continue; g.save(); g.translate(0, -sz * .12); wing(sx, -.35, sz, sz * .42); g.restore(); } g.stroke();
     },
+    /** 1.12 b414: Cupid as a neon sign of his own, in his own units (his head a unit round, y down), at (x, y), `u` px a
+     *  unit, facing `mir` (1 right, -1 left), leaning `tilt`, aiming along `aim` (screen radians) with the bow drawn `dr`
+     *  (0 … 1) and an arrow on the string while `nock`; his wings at frame `wf` (0 up, 1 level, 2 down: the other two
+     *  frames' glass stays dark on the wall, as an animated sign's does); his drawing hand `arm` (0 on the string, 1 at
+     *  rest, 2 at his lips, 3 blowing the kiss); lit `lv`. Returns where the arrow's head is, for the shot. */
+    cupid(c) {
+      const { x, y, u, mir, tilt, lv, dr, wf } = c, w = clamp(S.R * .045, 2.2, 7), ct = Math.cos(tilt), st = Math.sin(tilt), gl = .5;
+      const parts = [], tb = (pts, lv2, h, w2, glass) => parts.push([pts, lv2, h, w2, glass]); // his tubes, gathered and drawn by colour at the end
+      const Q = ([lx, ly]) => { const rx = lx * ct - ly * st, ry = lx * st + ly * ct; return [x + mir * rx * u, y + ry * u]; };
+      const ad = [mir * Math.cos(c.aim), Math.sin(c.aim)], d = [ad[0] * ct + ad[1] * st, -ad[0] * st + ad[1] * ct], p = [-d[1], d[0]]; // the aim in his own frame, and across it
+      const add = (a, b, k = 1) => [a[0] + b[0] * k, a[1] + b[1] * k], T2 = pts => pts.map(Q);
+      const ring = (cx2, cy2, r, n = 16) => Array.from({ length: n + 1 }, (_, i) => [cx2 + Math.cos(i / n * TAU) * r, cy2 + Math.sin(i / n * TAU) * r]);
+      const smooth = (P0, n = 6) => { const out = [], m = P0.length; for (let i = 0; i < m; i++) { const p0 = P0[(i - 1 + m) % m], p1 = P0[i], p2 = P0[(i + 1) % m], p3 = P0[(i + 2) % m]; for (let k = 0; k < n; k++) { const t = k / n, t2 = t * t, t3 = t2 * t; out.push([0, 1].map(j => .5 * (2 * p1[j] + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3))); } } out.push(out[0]); return out; };
+      // his glow on the bricks, a warm one
+      const [gx, gy] = Q([.2, -1.4]), gr = g.createRadialGradient(gx, gy, 0, gx, gy, u * 4.6); gr.addColorStop(0, hsl(28, 100, 60, .2 * lv)); gr.addColorStop(1, hsl(28, 100, 50, 0)); g.globalCompositeOperation = "lighter"; g.fillStyle = gr; g.fillRect(gx - u * 4.6, gy - u * 4.6, u * 9.2, u * 9.2); g.globalCompositeOperation = "source-over";
+      // the wings, three frames (the far one a little behind the near), each frame's glass there whether it's lit or not
+      const WING = [[0, 0], [-.8, -1.2], [-1.9, -2.1], [-2.55, -2.2], [-2.2, -1.55], [-2.5, -1.3], [-1.85, -.95], [-2.0, -.6], [-1.3, -.45], [-1.2, -.1], [-.5, -.05], [0, 0]];
+      for (const [ox, oy, k, h, f] of [[.3, -.18, .82, 200, .7], [0, 0, 1, 192, 1]]) [-.8, -.15, .5].forEach((a, i) => { const ca = Math.cos(a), sa = Math.sin(a); tb(T2(WING.map(([wx, wy]) => [-.55 + ox + (wx * ca - wy * sa) * k, -1.55 + oy + (wx * sa + wy * ca) * k])), i === wf ? lv * f : 0, h, w * .55, gl * .8); });
+      // the legs, the body, the head and its curls, a happy closed eye
+      const cv = (P0, n = 5) => { const out = []; for (let i = 0; i < P0.length - 1; i++) { const p0 = P0[Math.max(0, i - 1)], p1 = P0[i], p2 = P0[i + 1], p3 = P0[Math.min(P0.length - 1, i + 2)]; for (let k = 0; k < n; k++) { const t = k / n, t2 = t * t, t3 = t2 * t; out.push([0, 1].map(j => .5 * (2 * p1[j] + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3))); } } out.push(P0[P0.length - 1]); return out; }; // a smooth stroke through points
+      tb(T2(cv([[-.3, .05], [-.42, .62], [-.78, 1.02], [-1.28, 1.08], [-1.52, .9]])), lv, 22, w * .7, gl); // the far leg, trailing
+      tb(T2(cv([[.55, -.12], [1.15, -.12], [1.58, .18], [1.45, .62], [1.12, .82], [1.42, .98]])), lv, 22, w * .7, gl); // the near one, its knee up
+      tb(T2(smooth([[.2, -2.12], [.78, -1.85], [1.05, -1.0], [.86, -.18], [.22, .16], [-.48, .02], [-.8, -.7], [-.52, -1.72]])), lv, 22, w * .7, gl); // the body
+      tb(T2(ring(.32, -3.15, 1.06, 18)), lv, 22, w * .7, gl); // the head
+      for (const [hx, hy, r0] of [[.12, -4.28, .36], [-.58, -3.98, .32], [.78, -4.12, .28]]) tb(T2(Array.from({ length: 12 }, (_, i) => { const a = -Math.PI / 2 + i / 11 * TAU * 1.15, r = r0 * (1 - i / 16); return [hx + Math.cos(a) * r, hy + .1 + Math.sin(a) * r]; })), lv, 46, w * .55, gl); // his curls
+      tb(T2([[.74, -3.32], [.9, -3.44], [1.06, -3.32]]), lv, 22, w * .45, 0); tb(T2(ring(1.0, -2.78, .2, 8)), lv * .8, 345, w * .4, 0); // a happy closed eye, a blush
+      // the bow arm, the bow and its string, the arrow on it
+      const sb = [.5, -1.75], hb = add(sb, d, 2.15 + 1.6 * Math.max(0, -d[1] - .55)), back = .7 + .3 * dr, t1 = add(add(hb, d, -back), p, 2.1), t2 = add(add(hb, d, -back), p, -2.1), nk = add(add(hb, d, -back), d, c.nock || c.arm === 0 ? -1.35 * dr : 0);
+      const bow = Array.from({ length: 11 }, (_, i) => { const t = i / 10, m = add(hb, d, .75); return [(1 - t) * (1 - t) * t1[0] + 2 * (1 - t) * t * m[0] + t * t * t2[0], (1 - t) * (1 - t) * t1[1] + 2 * (1 - t) * t * m[1] + t * t * t2[1]]; });
+      tb(T2([sb, add(sb, d, 1.05), hb]), lv, 22, w * .62, gl); tb(T2(bow), lv, 42, w * .7, gl); tb(T2([t1, nk, t2]), lv * .8, 335, w * .3, 0);
+      let tip = null;
+      if (c.nock) { tip = add(nk, d, 3.0); const hd = [add(add(tip, d, -.45), p, .3), tip, add(add(tip, d, -.45), p, -.3)]; tb(T2([nk, tip]), lv, 45, w * .5, gl); tb(T2(hd), lv, 45, w * .5, gl); tb(T2([add(add(nk, d, .45), p, .28), add(nk, d, .1), add(add(nk, d, .45), p, -.28)]), lv, 45, w * .4, gl); }
+      // the drawing arm: on the string, at rest, at his lips, out with the kiss
+      const sd = [.2, -1.85], hd2 = c.arm === 0 ? nk : [[0, 0], [.95, -.95], [1.15, -2.85], [2.05, -2.6]][c.arm], el = c.arm === 0 ? add(add(sd, add(hd2, sd, -1), .5), p, -.55) : [[0, 0], [.85, -1.45], [.95, -1.95], [1.3, -2.05]][c.arm];
+      tb(T2([sd, el, hd2]), lv, 22, w * .62, gl);
+      // the glass, all of it, then each colour's light, every tube of it in one stroke a layer (his tubes are many and small)
+      const poly = (path, pts) => { path.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) path.lineTo(pts[i][0], pts[i][1]); }, glass = new Map(), lit = new Map();
+      for (const [pts, l2, h, w2, gs0] of parts) { const gs = gs0 * Math.min(1, lv * 2); if (gs > .005) { const k = w2 + "|" + gs; if (!glass.has(k)) glass.set(k, [w2, gs, new Path2D()]); poly(glass.get(k)[2], pts); } if (l2 > .01) { const k = h + "|" + w2 + "|" + l2.toFixed(3); if (!lit.has(k)) lit.set(k, [h, w2, l2, new Path2D()]); poly(lit.get(k)[3], pts); } }
+      g.globalCompositeOperation = "source-over"; for (const [w2, gs, path] of glass.values()) { g.strokeStyle = `rgba(70,30,52,${(.95 * gs).toFixed(3)})`; g.lineWidth = w2 * 1.25; g.stroke(path); g.strokeStyle = `rgba(255,255,255,${(.08 * gs).toFixed(3)})`; g.lineWidth = w2 * .3; g.stroke(path); }
+      g.globalCompositeOperation = "lighter"; for (const [h, w2, l2, path] of lit.values()) { for (const [k, a2] of [[7, .06], [3.6, .12], [1.9, .3]]) { g.strokeStyle = hsl(h, 100, 62, a2 * l2); g.lineWidth = w2 * k; g.stroke(path); } g.strokeStyle = hsl(h, 100, 66, .95 * l2); g.lineWidth = w2; g.stroke(path); g.strokeStyle = hsl(h, 100, 92, .9 * l2); g.lineWidth = w2 * .35; g.stroke(path); }
+      g.globalCompositeOperation = "source-over";
+      return tip && Q(tip);
+    },
+    /** 1.12 b414: the egg's plan for pass P: where Cupid stops to shoot (just behind the arrow's tail when that's clear of
+     *  the words and the screen's edges, else the nearest place round the tail that is), the side he comes in from and goes
+     *  out at (the nearer), and so where his arrow flies from */
+    cupidPlan(P) {
+      const o = S.ep; if (o && o.P === P && o.raw === S.raw && o.tx === S.tx && o.ty === S.ty && o.tR === S.tR && o.W === S.W) return o;
+      const { W, H, tx, ty, tR: R, raw } = S, a0 = [tx - R * .9, ty + R * .52], dir = [.8437, -.5369];
+      let best = null, bs = -1e9;
+      const tg = [a0[0] - dir[0] * R * .2, a0[1] - dir[1] * R * .2]; // what he aims at (cupidAim)
+      for (const z of [1, .82]) for (const dist of [.62, .5, .8, .98]) for (const k of [0, -.4, .4, -.8, .8, -1.2, 1.2, -1.6, 1.6]) {
+        const v = [-dir[0] * Math.cos(k) + dir[1] * Math.sin(k), -dir[0] * Math.sin(k) - dir[1] * Math.cos(k)], sx = a0[0] + v[0] * R * dist * z, sy = a0[1] + v[1] * R * dist * z, rc = R * .45 * z, cxs = sx, cys = sy - R * .12 * z;
+        let room = Math.min(cxs - rc, W - rc - cxs, cys - rc - 84, H - 72 - rc - cys); // the screen's edges, the bar along the top, the footer
+        for (const [x0, y0, x1, y1] of raw || []) room = Math.min(room, Math.hypot(Math.max(x0 - cxs, 0, cxs - x1), Math.max(y0 - cys, 0, cys - y1)) - rc - 8);
+        const steep = Math.abs(Math.cos(Math.atan2(tg[1] - (sy - 1.75 * R * .11 * z), tg[0] - sx))) < .45; // a shot nearly straight up is a last resort
+        const sc = room >= 0 ? 100 - Math.abs(k) * 12 - (1 - z) * 40 - Math.abs(.62 - dist) * 30 - (steep ? 30 : 0) : room; if (sc > bs) { bs = sc; best = [sx, sy, z]; } // behind the tail, full size, if he can
+      }
+      const side = best[0] < W / 2 ? -1 : 1;
+      return S.ep = { P, raw, tx, ty, tR: S.tR, W, spot: best, z: best[2], side };
+    },
+    /** 1.12 b414: Cupid at loop time T of the egg, or null while he's off the wall: in from the nearer side on a swoop,
+     *  settling where he shoots from and turning his bow on the sign, drawing it a notch at a time, loosing, hopping when
+     *  it lands, blowing the heart a kiss, and up and away the way he came. The aim and the arrow's way are worked out
+     *  from where he hovers. */
+    cupidAt(T, A, ep) {
+      const { R, W } = S, u = R * .11 * ep.z, [sx, sy] = ep.spot, sd = ep.side; if (T < EGG.in0 || T > EGG.off1) return null;
+      const bz = (q, a, b, c2, d2) => { const m = 1 - q; return [0, 1].map(k => m * m * m * a[k] + 3 * m * m * q * b[k] + 3 * m * q * q * c2[k] + q * q * q * d2[k]); };
+      const ent = [sd < 0 ? -u * 7 : W + u * 7, sy + R * .35], ext = [sd < 0 ? -u * 7 : W + u * 7, sy + R * .15];
+      const aim = S.cupidAim(ep), hover = [sx, sy + Math.sin(A * TAU * .62) * u * .22];
+      let pos = hover, vel = [0, 0], mir = S.cupidFace(ep, aim), ang = aim, k = 0;
+      if (T < EGG.in1) { k = clamp((T - EGG.in0) / (EGG.in1 - EGG.in0)); const q = 1 - Math.pow(1 - k, 2.2), q2 = 1 - Math.pow(1 - Math.min(1, k + .01), 2.2), C = [ent, [ent[0] + (sx - ent[0]) * .35, ent[1] + R * .55], [sx - sd * R * .45, sy + R * .3], [sx, sy]]; pos = bz(q, ...C); const nx = bz(q2, ...C); vel = [nx[0] - pos[0], nx[1] - pos[1]]; pos = [pos[0] + (hover[0] - sx) * k, pos[1] + (hover[1] - sy) * k]; }
+      else if (T > EGG.off0) { k = clamp((T - EGG.off0) / (EGG.off1 - EGG.off0)); const q = Math.pow(k, 2), q2 = Math.pow(Math.min(1, k + .01), 2), C = [hover, [sx + sd * R * .3, sy + R * .25], [sx + (ext[0] - sx) * .45, sy + R * .6], ext]; pos = bz(q, ...C); const nx = bz(q2, ...C); vel = [nx[0] - pos[0], nx[1] - pos[1]]; }
+      const sp = Math.hypot(vel[0], vel[1]);
+      if (sp > .01) { if (T < EGG.in1 && k > .82) { ang = aim; mir = S.cupidFace(ep, aim); } else { ang = Math.atan2(vel[1], vel[0]); mir = vel[0] < 0 ? -1 : 1; } } // flying: facing the way he goes, the bow leading; turning to his aim as he arrives
+      const fly = clamp(sp / (u * .5), 0, 1), tilt = fly * .22 + (1 - fly) * S.cupidLean(aim) * env(T, EGG.in1 - .4, EGG.in1, EGG.loose + .1, EGG.loose + .6), dr = T < 4.6 ? 0 : T < 5.0 ? .33 : T < 5.35 ? .67 : T < EGG.loose ? 1 : 0, hop = env(T, 6.15, 6.3, 6.4, 6.75) * u * .9;
+      const arm = T < EGG.loose ? 0 : T < EGG.kiss ? 1 : T < EGG.kiss + .35 ? 2 : T < EGG.kiss + .9 ? 3 : 1, wf = [0, 1, 2, 1][Math.floor(A * 5) % 4];
+      return { x: pos[0], y: pos[1] - hop, u, mir, tilt, aim: ang, dr, nock: T < EGG.loose, arm, wf };
+    },
+    /** 1.12 b414: how far Cupid leans back to shoot: as an archer at the sky does, when he aims nearly straight up */
+    cupidLean(aim) { return Math.abs(Math.cos(aim)) < .45 ? -.25 : 0; },
+    /** 1.12 b414: which way Cupid faces as he shoots: the way he aims, or toward the heart when he aims nearly straight up */
+    cupidFace(ep, aim) { const c = Math.cos(aim); return Math.abs(c) < .45 ? (S.tx >= ep.spot[0] ? 1 : -1) : c < 0 ? -1 : 1; },
+    /** 1.12 b414: the way Cupid aims from where he hovers: at the line of the sign's arrow, a little behind its tail */
+    cupidAim(ep) { const { tx, ty, tR: R } = S, [sx, sy] = ep.spot, u = R * .11 * ep.z, tg = [tx - R * .9 - .8437 * R * .2, ty + R * .52 + .5369 * R * .2]; return Math.atan2(tg[1] - (sy - 1.75 * u), tg[0] - sx); },
+    /** 1.12 b414: the arrow's way: from the head of the arrow on his string, curving into the line of the sign's arrow at its
+     *  tail, and along it through the heart to where its head sits — sampled, with how far along it the tail is */
+    shotPath(ep) {
+      const { cx, cy, R } = S, u = R * .11 * ep.z, [sx, sy] = ep.spot, aim = S.cupidAim(ep), mir = S.cupidFace(ep, aim), d = [Math.cos(aim), Math.sin(aim)], tl = S.cupidLean(aim), ct = Math.cos(tl), st = Math.sin(tl);
+      const dl1 = -(mir * d[0]) * st + d[1] * ct, arm = 2.15 + 1.6 * Math.max(0, -dl1 - .55) + .65; // his drawn arrow's head: the shoulder, out along the aim (as cupid() lays it)
+      const p0 = [sx + mir * (.5 * ct + 1.75 * st) * u + d[0] * arm * u, sy + (.5 * st - 1.75 * ct) * u + d[1] * arm * u], a0 = [cx - R * .9, cy + R * .52], a1 = [cx + R * .86, cy - R * .6], dv = [.8437, -.5369], kk = Math.hypot(a0[0] - p0[0], a0[1] - p0[1]) * .45 + R * .05;
+      const c1 = [p0[0] + d[0] * kk, p0[1] + d[1] * kk], c2 = [a0[0] - dv[0] * kk, a0[1] - dv[1] * kk], pts = [];
+      for (let i = 0; i <= 16; i++) { const q = i / 16, m = 1 - q; pts.push([0, 1].map(k => m * m * m * p0[k] + 3 * m * m * q * c1[k] + 3 * m * q * q * c2[k] + q * q * q * a0[k])); }
+      let L = 0; for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); const La = Math.hypot(a1[0] - a0[0], a1[1] - a0[1]);
+      for (let i = 1; i <= 12; i++) pts.push([a0[0] + (a1[0] - a0[0]) * i / 12, a0[1] + (a1[1] - a0[1]) * i / 12]);
+      return { pts, at: L / (L + La) }; // `at`: the share of the way at which it reaches the sign's arrow's tail
+    },
+    /** 1.12 b414: the egg's pass. The heart lit all through; its arrow goes out, leaving its empty glass; Cupid flies in,
+     *  draws, and looses: his arrow streaks in on a curve and runs through the heart along the empty glass, lighting the
+     *  sign's arrow behind it; the heart beats for it and small hearts rise; he hops, blows it a kiss, and flies off. */
+    eggPass(T, I, A, F, P) {
+      const { cx, cy, R } = S, on = I > .01, s = R * 1.5, w = clamp(R * .045, 2.2, 7), ep = S.cupidPlan(P);
+      const buzz = t => (Math.sin(t * 67) > .96 ? .55 : 1) * (Math.sin(t * 13.3) > .985 ? .3 : 1);
+      const out = t0 => { const d = T - t0; return d < .12 ? 1 : d < .24 ? .15 : d < .42 ? .9 : 0; };
+      const glow2 = (x, y, rad, h, a) => { if (a <= .005) return; const gr = g.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, hsl(h, 100, 55, .5 * a)); gr.addColorStop(1, hsl(h, 100, 45, 0)); g.globalCompositeOperation = "lighter"; g.fillStyle = gr; g.fillRect(x - rad, y - rad, rad * 2, rad * 2); g.globalCompositeOperation = "source-over"; };
+      // the shot: how far along its way the arrow's head is (0 … 1, -1 before it's loosed), and so how much of the sign's arrow is lit
+      const sh = S.shotPath(ep), q = T < EGG.loose ? -1 : clamp((T - EGG.loose) / EGG.fly), f = q < 0 ? 0 : clamp((q - sh.at) / (1 - sh.at));
+      const gone = T < EGG.out ? 1 : T < EGG.out + .5 ? out(EGG.out) : q < sh.at ? 0 : 1; // out, then back as the shot reaches it
+      const arrowLv = lerp(1, gone, I), arrowUpto = lerp(1, T < EGG.out + .5 ? 1 : f, I), headLit = lerp(1, T < EGG.out + .5 ? gone : f >= 1 ? 1 : 0, I);
+      const beat = on ? Math.max(env(T, 6.2, 6.28, 6.32, 6.5), env(T, 6.58, 6.66, 6.7, 6.95) * .7) * I : 0, hue = 330 + beat * 12 + (F >= 0 ? Math.sin(F * 20) * 25 : 0), pulse = 1 + beat * .07 + (F >= 0 ? env(F, 0, .05, .2, .5) * .06 : 0);
+      const heartLv = buzz(A);
+      // its glow on the bricks, swelling with the beat
+      const glowA = (.28 * heartLv + .1 * arrowLv) * (1 + beat * .75), gr = g.createRadialGradient(cx, cy, R * .2, cx, cy, R * 2.3);
+      gr.addColorStop(0, hsl(hue, 100, 55, .5 * glowA)); gr.addColorStop(.5, hsl(hue, 100, 45, .18 * glowA)); gr.addColorStop(1, hsl(hue, 100, 40, 0)); g.globalCompositeOperation = "lighter"; g.fillStyle = gr; g.fillRect(cx - R * 2.3, cy - R * 2.3, R * 4.6, R * 4.6); g.globalCompositeOperation = "source-over";
+      // the heart, in its tube
+      S.tube(HEART.map(([u2, v]) => [cx + u2 * s * pulse, cy + v * s * pulse + R * .05]), heartLv, hue, w, 1);
+      // the sign's arrow: its glass always, its light out while Cupid comes, back behind his arrow as it runs through
+      const a0 = [cx - R * .9, cy + R * .52], a1 = [cx + R * .86, cy - R * .6], shaft = Array.from({ length: 24 }, (_, i) => [lerp(a0[0], a1[0], i / 23), lerp(a0[1], a1[1], i / 23)]);
+      const ang = Math.atan2(a1[1] - a0[1], a1[0] - a0[0]), hdl = R * .16, ahead = [[a1[0] - Math.cos(ang - .5) * hdl, a1[1] - Math.sin(ang - .5) * hdl], a1, [a1[0] - Math.cos(ang + .5) * hdl, a1[1] - Math.sin(ang + .5) * hdl]];
+      const tail = [0, 1, 2].map(k => { const b0 = [lerp(a0[0], a1[0], .04 + k * .05), lerp(a0[1], a1[1], .04 + k * .05)]; return [[b0[0] - Math.cos(ang - 2.4) * hdl * .8, b0[1] - Math.sin(ang - 2.4) * hdl * .8], b0, [b0[0] - Math.cos(ang + 2.4) * hdl * .8, b0[1] - Math.sin(ang + 2.4) * hdl * .8]]; });
+      S.tube(shaft, arrowLv * buzz(A + 3), 45, w * .8, arrowUpto, arrowLv > .5 && arrowUpto >= 1 ? A * .25 % 1 : null); S.tube(ahead, arrowLv * headLit, 45, w * .8, 1); tail.forEach(t2 => S.tube(t2, arrowLv * (arrowUpto > .05 ? 1 : 0), 45, w * .7, 1));
+      // the sparkles, as they always are
+      S.sparks.forEach(([u2, v, sz], i) => { const kk = .75 + .25 * Math.sin(A * 3 + i * 2), sx2 = cx + u2 * R, sy2 = cy + v * R, r2 = sz * R * kk; S.tube([[sx2, sy2 - r2], [sx2 + r2 * .22, sy2 - r2 * .22], [sx2 + r2, sy2], [sx2 + r2 * .22, sy2 + r2 * .22], [sx2, sy2 + r2], [sx2 - r2 * .22, sy2 + r2 * .22], [sx2 - r2, sy2], [sx2 - r2 * .22, sy2 - r2 * .22], [sx2, sy2 - r2]], 1, 190 + i * 20, w * .5); });
+      if (on) {
+        // Cupid, fading where he passes a word (as the moth does)
+        const cu = S.cupidAt(T, A, ep);
+        if (cu) { let dw = 1e9; const mx = cu.x, my = cu.y - R * .12; for (const [x0, y0, x1, y1] of S.raw || []) dw = Math.min(dw, Math.hypot(Math.max(x0 - mx, 0, mx - x1), Math.max(y0 - my, 0, my - y1))); cu.lv = I * lerp(.2, 1, clamp((dw - R * .3) / (R * .25))); S.cupid(cu); }
+        // the arrow in flight: a streak of light, brightest at its head, fading behind
+        if (q >= 0 && T < EGG.loose + EGG.fly + .2) { const fade = 1 - clamp((T - EGG.loose - EGG.fly) / .2); for (const [a, b, m] of [[.3, .14, .2], [.14, .05, .5], [.05, 0, 1]]) S.tube(sh.pts, I * m * fade, 45, w * .75, clamp(q - b), null, clamp(q - a), 0); }
+        // where it lands, a flare at the head; the kiss, a small heart flying to the big one
+        const pop = env(T, EGG.loose + EGG.fly - .05, EGG.loose + EGG.fly, EGG.loose + EGG.fly + .05, EGG.loose + EGG.fly + .35) * I; if (pop > .01) glow2(a1[0], a1[1], R * .45, 45, .75 * pop);
+        const kq = (T - EGG.kiss - .55) / 1.3; if (kq > 0 && kq < 1) { const c0 = S.cupidAt(EGG.kiss + .5, A, ep); if (c0) { const h0 = [c0.x + c0.mir * 2.05 * c0.u, c0.y - 2.6 * c0.u], e2 = E.out(kq), bx = lerp(h0[0], cx, e2), by = lerp(h0[1], cy - R * .1, e2) - Math.sin(kq * Math.PI) * R * .25, sc = R * (.035 + .05 * kq); S.tube(HEART.filter((_, i) => i % 3 === 0).map(([u2, v]) => [bx + u2 * sc * 2, by + v * sc * 2]).concat([[bx, by + .36 * sc * 2]]), I * (1 - Math.pow(kq, 3)), 340, w * .45, 1, null, 0, 0); } }
+        // small hearts rising from it after the beat
+        for (const b of S.bubbles) { const kk = seg(T, b.t0 - 7.6 + 6.5, b.t0 - 7.6 + 6.5 + 2.4, x => x); if (kk <= 0 || kk >= 1) continue; const bx = cx + b.x * R + Math.sin(kk * 5 + b.sway) * R * .08, by = cy - R * .2 - kk * R * .95, sc = b.s * R * 1.1, lv = (1 - seg(kk, .7, 1)) * I * (Math.sin(T * 40 + b.sway) > -.9 ? 1 : .3);
+          S.tube(HEART.filter((_, i) => i % 3 === 0).map(([u2, v]) => [bx + u2 * sc * 2, by + v * sc * 2]).concat([[bx, by + .36 * sc * 2]]), lv, hue + 20, w * .45); }
+      }
+      // the finale: neon hearts bursting round it like fireworks
+      if (F >= 0) for (const f2 of S.fire) { const kk = clamp((F - f2.t) / .7); if (kk <= 0 || kk >= 1) continue; const fx = cx + Math.cos(f2.a) * R * .75, fy = cy + Math.sin(f2.a) * R * .75;
+        for (const p of f2.parts) { const d = E.out(kk) * R * .55 * p.v, hx = fx + Math.cos(p.a) * d, hy2 = fy + Math.sin(p.a) * d + kk * kk * R * .2, sc = R * .045 * (1 - kk * .4); S.tube(HEART.filter((_, i) => i % 4 === 0).map(([u2, v]) => [hx + u2 * sc * 2, hy2 + v * sc * 2]), (1 - kk), (hue + p.a * 40) % 360, w * .35); } }
+    },
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; P: the pass */
     draw(T, I, A, F, P = 0) {
       const { W, H } = S;
@@ -268,7 +418,7 @@ export default function heart(K) {
       const jump = S.lastA === undefined || A < S.lastA || A - S.lastA > .15, dt = jump ? 0 : A - S.lastA; S.lastA = A;
       const gl = jump ? 1 : 1 - Math.exp(-dt * 2.2); S.cx += (S.tx - S.cx) * gl; S.cy += (S.ty - S.cy) * gl; S.R += (S.tR - S.R) * gl;
       S.vis += ((S.room === 0 ? 0 : 1) - S.vis) * (jump ? 1 : 1 - Math.exp(-dt * 4)); if (S.vis < .01) return;
-      g.save(); g.globalAlpha = S.vis; if (P > 0) S.neon2(T, I, A, F, S.plan && S.plan.P === P ? S.plan : (S.plan = dealPass(P))); else S.neon(T, I, A, F); g.restore();
+      g.save(); g.globalAlpha = S.vis; if (P > 0 && K.egg(P)) S.eggPass(T, I, A, F, P); else if (P > 0) S.neon2(T, I, A, F, S.plan && S.plan.P === P ? S.plan : (S.plan = dealPass(P))); else S.neon(T, I, A, F); g.restore();
     },
   };
   return S;

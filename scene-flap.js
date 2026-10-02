@@ -25,6 +25,16 @@
 // pass goes on. Each flap keeps its own list of changes, so a flap still turning when the next one comes simply keeps
 // going, forward, as a real flap does; a touch mid-pass sends the flaps back to plain in a scatter of flips rather than a
 // jump; and every flip is drawn once, so a busy pass lays each turning flap in a single stroke.
+//
+// 1.12 b414: the egg. Every twelfth pass left alone (three minutes of the list untouched), the wall plays the first motion
+// picture: Muybridge's horse, 1878. A run of flaps in the open part of the wall clatters over to a sheet ruled and
+// numbered the way his backdrop at Palo Alto was, a track along its foot; a horse and rider gallop in from the left,
+// printed across the flaps, and every frame of the stride is a flip — only the flaps the horse moves through turn, so the
+// clatter runs with its legs. The board slows, a frame at a time, to the moment all four hooves are off the ground, holds
+// it a second, picks the gallop up again, and the horse runs out at the right; the sheet flips back to plain. The horse
+// is worked out, not traced: a gallop on the right lead, each leg fitted to the path its hoof takes, the body pitching
+// and the rider sitting it, in the wall's own greens. The flaps under the words stay plain, as always; with no run of
+// flaps clear of them, the wall rests plain all pass.
 export default function flap(K) {
   const { clamp, rng, canvas } = K;
   const TAU = Math.PI * 2;
@@ -119,6 +129,72 @@ export default function flap(K) {
       return 0; },
   };
   const KINS = Object.keys(KIN), STAGES = Object.keys(STAGE), TWIN = { spiral: "turn", pinwheel: "spin", stripes: "barber", rings: "ripple", waves: "sea" }; // a still pattern never shares a pass with itself in motion
+  /** 1.12 b414: the egg's horse and rider, a silhouette worked out from a gallop rather than traced. Units: the withers 1
+   *  high, x forward, y up, the ground at 0; u the stride, 0…1 — a transverse gallop on the right lead (left hind, right
+   *  hind, left fore, right fore, then all four gathered under it in the air, the moment Muybridge's camera caught).
+   *  Each fetlock follows a path (on the ground it runs back as the body goes over it; in the air it flicks up, folds
+   *  and reaches) and its leg is fitted to it, two bones, the knee forward and the hock back; the body bobs and pitches
+   *  with the stride, the head nods, the tail streams, the rider sits it. drawHorse(g, u, X, Y, s): facing right, its
+   *  ground point at (X, Y), s px a unit, filled in the current fill. */
+  const HORSE = (() => {
+    const cr = (Q, s) => { const n = Q.length - 1, f = Math.min(n - 1e-9, Math.max(0, s * n)), i = Math.floor(f), t = f - i, p0 = Q[Math.max(0, i - 1)], p1 = Q[i], p2 = Q[i + 1], p3 = Q[Math.min(n, i + 2)], t2 = t * t, t3 = t2 * t;
+      return [0, 1].map(k => .5 * (2 * p1[k] + (-p0[k] + p2[k]) * t + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t2 + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * t3)); }; // through the path's points
+    const ik = (A, T, a, b, bend) => { const dx = T[0] - A[0], dy = T[1] - A[1], d0 = Math.hypot(dx, dy) || 1e-6, d = Math.max(Math.abs(a - b) + .02, Math.min(d0, a + b - 1e-4)), ux = dx / d0, uy = dy / d0, x = (a * a - b * b + d * d) / (2 * d), h = Math.sqrt(Math.max(0, a * a - x * x)); return [A[0] + ux * x - uy * h * bend, A[1] + uy * x + ux * h * bend]; }; // the joint between two bones reaching from A to T
+    const rot = (p, o, a) => { const c = Math.cos(a), s = Math.sin(a), x = p[0] - o[0], y = p[1] - o[1]; return [o[0] + x * c - y * s, o[1] + x * s + y * c]; };
+    const DUTY = .32, LEGS = [[1, 0], [1, .1], [0, .3], [0, .42]]; // each leg: hind or fore, and when in the stride it lands
+    // a leg's joint at rest (the elbow, the stifle) and how far it slides with the leg's swing, its two bones, where its
+    // fetlock lands and leaves the ground, and the path the fetlock swings back along in the air
+    const FORE = { piv: [.3, .56], slide: [.12, .02], a: .34, b: .24, td: .4, lo: -.4, sw: [[-.4, .085], [-.44, .2], [-.4, .34], [-.28, .41], [-.02, .41], [.3, .35], [.52, .22], [.48, .12], [.4, .085]] };
+    const HIND = { piv: [-.4, .6], slide: [.1, .04], a: .37, b: .27, td: .34, lo: -.36, sw: [[-.36, .085], [-.46, .2], [-.44, .32], [-.28, .38], [-.02, .36], [.24, .26], [.38, .15], [.34, .085]] };
+    const BODY = [[.2, 1.0], [-.02, .955], [-.26, .965], [-.5, .995], [-.72, .935], [-.82, .82], [-.83, .7], [-.74, .58], [-.52, .54], [-.32, .575], [-.08, .5], [.18, .45], [.36, .5], [.53, .64], [.61, .8], [.53, .94], [.36, 1.02]];
+    const NECK = [[.32, 1.03], [.56, 1.2], [.77, 1.31], [.91, 1.36], [.99, 1.33], [1.1, 1.22], [1.24, 1.07], [1.3, 1.0], [1.27, .95], [1.18, .95], [1.06, 1.03], [.97, 1.08], [.88, 1.12], [.73, 1.0], [.62, .85], [.57, .76]], NB = [.45, .95]; // the neck and head, nodding about the neck's root
+    const smooth = (g, Q) => { const n = Q.length, at = i => Q[(i + n) % n]; g.moveTo(at(0)[0], at(0)[1]); for (let i = 0; i < n; i++) { const p0 = at(i - 1), p1 = at(i), p2 = at(i + 1), p3 = at(i + 2); g.bezierCurveTo(p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6, p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6, p2[0], p2[1]); } g.closePath(); };
+    const fill = (g, fn) => { g.beginPath(); fn(); g.fill(); }; // each part filled alone, so where parts overlap the ink stays even
+    const limb = (g, A, B, w0, w1) => { const dx = B[0] - A[0], dy = B[1] - A[1], L = Math.hypot(dx, dy) || 1e-6, nx = -dy / L, ny = dx / L; // a bone, tapering, round at both ends
+      fill(g, () => { g.moveTo(A[0] + nx * w0 / 2, A[1] + ny * w0 / 2); g.lineTo(B[0] + nx * w1 / 2, B[1] + ny * w1 / 2); g.lineTo(B[0] - nx * w1 / 2, B[1] - ny * w1 / 2); g.lineTo(A[0] - nx * w0 / 2, A[1] - ny * w0 / 2); g.closePath(); });
+      fill(g, () => g.arc(A[0], A[1], w0 / 2, 0, TAU)); fill(g, () => g.arc(B[0], B[1], w1 / 2, 0, TAU)); };
+    const pose = u => {
+      const bob = .035 * Math.cos(TAU * (u - .85)), pitch = .06 * Math.cos(TAU * (u - .17)), nod = .07 * Math.cos(TAU * (u - .9)), O = [0, .7];
+      const B = p => { const q = rot(p, O, pitch); return [q[0], q[1] + bob]; }; // the body's frame into the ground's
+      const legs = LEGS.map(([hind, td]) => {
+        const D = hind ? HIND : FORE, ph = ((u - td) % 1 + 1) % 1, s = ph < DUTY ? ph / DUTY : (ph - DUTY) / (1 - DUTY), on = ph < DUTY;
+        const F = on ? [D.piv[0] + D.td + (D.lo - D.td) * s, .085 - .03 * Math.sin(Math.PI * s)] : (q => [D.piv[0] + q[0], q[1]])(cr(D.sw, s)); // the fetlock
+        const r = B(D.piv), th = Math.atan2(F[0] - r[0], r[1] - F[1]), top = B([D.piv[0] + D.slide[0] * Math.sin(th), D.piv[1] + D.slide[1] * Math.sin(th)]), knee = ik(top, F, D.a, D.b, hind ? -1 : 1);
+        const cd = (v => { const n = Math.hypot(v[0], v[1]) || 1; return [v[0] / n, v[1] / n]; })([F[0] - knee[0], F[1] - knee[1]]), al = Math.asin(Math.min(1, Math.max(.25, F[1] / .1))), down = [Math.cos(al), -Math.sin(al)];
+        let pa = down; // the pastern: on the ground it reaches down to the hoof; in the air it curls back, and straightens to land
+        if (!on) { const curl = rot(cd, [0, 0], -(hind ? .8 : 1.3) * Math.sin(Math.PI * Math.min(1, s / .8))), k = clamp((s - .8) / .2), v = [curl[0] + (down[0] - curl[0]) * k, curl[1] + (down[1] - curl[1]) * k], n = Math.hypot(v[0], v[1]) || 1; pa = [v[0] / n, v[1] / n]; }
+        return { hind, root: B(hind ? [-.55, .8] : [.47, .78]), top, knee, F, hoof: [F[0] + pa[0] * .1, F[1] + pa[1] * .1], pa };
+      });
+      return { bob, pitch, nod, B, legs };
+    };
+    return (g, u, X, Y, s) => {
+      const P = pose(u), B = P.B, N = p => B(rot(p, NB, P.nod));
+      g.save(); g.translate(X, Y); g.scale(s, -s);
+      for (const L of P.legs) {
+        if (L.hind) { limb(g, L.root, L.top, .3, .22); limb(g, L.top, L.knee, .2, .075); const d = [L.knee[0] - L.top[0], L.knee[1] - L.top[1]], n = Math.hypot(d[0], d[1]) || 1, k = L.knee; fill(g, () => { g.moveTo(k[0] - d[1] / n * .045, k[1] + d[0] / n * .045); g.lineTo(k[0] + d[0] / n * .055 - d[1] / n * .005, k[1] + d[1] / n * .055 + d[0] / n * .005); g.lineTo(k[0] + d[1] / n * .04, k[1] - d[0] / n * .04); g.closePath(); }); } // the thigh, the gaskin, the point of the hock
+        else { limb(g, L.root, L.top, .24, .17); limb(g, L.top, L.knee, .155, .07); } // the shoulder, the forearm
+        limb(g, L.knee, L.F, .058, .05); limb(g, L.F, L.hoof, .05, .046); // the cannon, the pastern
+        const h = L.hoof, d = L.pa, n = [-d[1], d[0]]; fill(g, () => { g.moveTo(h[0] + n[0] * .03, h[1] + n[1] * .03); g.lineTo(h[0] + d[0] * .055 + n[0] * .042, h[1] + d[1] * .055 + n[1] * .042); g.lineTo(h[0] + d[0] * .055 - n[0] * .042, h[1] + d[1] * .055 - n[1] * .042); g.lineTo(h[0] - n[0] * .03, h[1] - n[1] * .03); g.closePath(); }); // the hoof
+      }
+      fill(g, () => smooth(g, BODY.map(B))); fill(g, () => smooth(g, NECK.map(N)));
+      const ear = [[.85, 1.32], [.83, 1.43], [.92, 1.34]].map(N); fill(g, () => { g.moveTo(...ear[0]); g.lineTo(...ear[1]); g.lineTo(...ear[2]); g.closePath(); });
+      const tl = [[-.72, .93], [-.87, .965], [-1.02, .94], [-1.16, .87], [-1.27, .78]].map((p, k) => B([p[0], p[1] + .03 * k * Math.sin(TAU * (u - k * .16))])), tw = [.08, .15, .17, .13, .05]; // the tail, a ripple running down it
+      for (let k = 0; k < 4; k++) limb(g, tl[k], tl[k + 1], tw[k], tw[k + 1]);
+      // the rider: sitting up, 1878's way, his hands down on the reins, steady over the horse's pitch
+      const J = p => { const q = rot(p, [.05, 1.05], -P.pitch * .6); return B([q[0], q[1] - P.bob * .5]); };
+      const hip = J([.02, 1.07]), kn = J([.17, .87]), ft = J([.1, .68]), sh = J([.13, 1.34]), el = J([.25, 1.21]), hand = J([.41, 1.14]), hd = J([.18, 1.45]);
+      limb(g, hip, sh, .16, .15); limb(g, hip, kn, .12, .08); limb(g, kn, ft, .07, .055); limb(g, sh, el, .065, .055); limb(g, el, hand, .055, .045); limb(g, ft, J([.18, .66]), .055, .045);
+      fill(g, () => g.arc(hd[0], hd[1], .07, 0, TAU));
+      const c0 = J([.12, 1.47]), c1 = J([.3, 1.465]), c2 = J([.25, 1.5]); fill(g, () => { g.arc(hd[0], hd[1] + .012, .072, 0, Math.PI); g.lineTo(c0[0], c0[1]); g.lineTo(c1[0], c1[1]); g.lineTo(c2[0], c2[1]); g.closePath(); }); // his cap and its peak
+      limb(g, hand, N([1.26, .985]), .016, .016); // the reins
+      g.restore();
+    };
+  })();
+  // 1.12 b414: the egg's gallop, a frame at a time: ten a second, then slowing to the frame where all four hooves are off
+  // the ground, held a second, and the gallop again (the seconds each frame stays up); the held frame is the twelfth of
+  // the stride, so the first is the second
+  const INK = "#3B9462"; /* the horse's ink: the wall's deepest green, taken a step deeper, as his silhouettes were */
+  const GALLOP = [...Array(40).fill(.1), .13, .17, .21, .26, .31, .36, 1.0, .3, .22, .16, .12, .1, ...Array(21).fill(.1)], HOLD = 46, FE = .05; /* FE: a flap's fall in the egg, a touch quicker than the wall's */
   const S = {
     res: "dpr",
     wash: 1.6, veil: 1, // a light kit: the list's band keeps its wash, and Everything shows the plain ground
@@ -213,15 +289,116 @@ export default function flap(K) {
       const es = new Float32Array(tot), et = new Uint8Array(tot); for (let i = 0; i < n; i++) for (let k = 0; k < cnt[i]; k++) { es[off[i] + k] = lists[i][k * 3]; et[off[i] + k] = lists[i][k * 3 + 1] + lists[i][k * 3 + 2] * 8; }
       return S.pl = { key, off, cnt, es, et, names };
     },
+    /** 1.12 b414: the egg's plan — where it plays (the run of flaps clear of the words that holds the biggest horse, two to
+     *  six rows deep, kept out of the washes along the top and the foot), each frame of the gallop (when it goes up, the
+     *  stride, where the horse is), and each flap's moment in the waves that put the sheet up and take it down */
+    eggPlan(P) {
+      const o = S.ep; if (o && o.P === P && o.raw === S.raw && o.W === S.W && o.H === S.H) return o;
+      const { C, R, fw, fh, gap, ox, oy, W, H, pr } = S, cap = pr ? 100 : 150;
+      const masked = (c, rr) => S.raw ? S.mask[rr * C + c] : pr ? rr >= Math.round(R * .34) && rr <= Math.round(R * .56) : rr >= Math.round(R * .3) && rr <= Math.round(R * .62) && c <= Math.round(C * .64); // no words known yet (the lab): a list's usual place stands in
+      let bd = null, bs = 0;
+      for (let h = 2; h <= 6; h++) for (let r0 = 0; r0 + h <= R; r0++) {
+        const y0 = oy + r0 * (fh + gap), y1 = y0 + h * (fh + gap) - gap; if (y0 < 0 || y1 > H) continue;
+        const hb = y1 - y0, top = y0 + hb * .08, ground = Math.min(y1 - hb * .1, H - (pr ? 100 : 105)), s = Math.min(cap, (ground - top) / 1.62), hw = s * 2.66; // the hooves kept above the footer's wash
+        if (s < (pr ? 38 : 48)) continue;
+        const wash = clamp((132 - top) / hb) * .9; // the bar's wash along the top
+        for (let c = 0; c < C;) {
+          let e = c; while (e < C && ![...Array(h).keys()].some(k => masked(e, r0 + k))) e++;
+          if (e === c) { c++; continue; }
+          const x0 = Math.max(0, ox + c * (fw + gap)), x1 = Math.min(W, ox + e * (fw + gap) - gap), run = x1 - x0;
+          if (run >= hw * (pr ? 1.3 : 1.6)) { const sc = s * (1 + .3 * Math.min(4, run / hw)) * (1 - wash); if (sc > bs) { bs = sc; bd = { r0, h, c0: c, c1: e, s, x0, x1, y0, y1, ground }; } } // a big horse with room to run
+          c = e;
+        }
+      }
+      const E0 = { P, raw: S.raw, W, H, bd }; S.ep = E0; if (!bd) return E0; // no room anywhere: the wall rests plain
+      // the band's flaps, where each sits in the band's own picture, and its moments in the two waves
+      const bx = ox + bd.c0 * (fw + gap) - gap / 2, by = oy + bd.r0 * (fh + gap) - gap / 2, bw = (bd.c1 - bd.c0) * (fw + gap), bh = bd.h * (fh + gap), at = new Int16Array(C * R).fill(-1), fl = [];
+      for (let rr = bd.r0; rr < bd.r0 + bd.h; rr++) for (let c = bd.c0; c < bd.c1; c++) { const i = rr * C + c, lx = ox + c * (fw + gap) - bx, ly = oy + rr * (fh + gap) - by, k = clamp((bx + lx + fw / 2 - bd.x0) / (bd.x1 - bd.x0)); at[i] = fl.length; fl.push({ i, lx, ly, tin: .7 + k * 1.0 + S.hash[i] * .08, tout: 11.75 + k * 1.0 + S.hash[i] * .08 }); }
+      // the gallop: in from the left, easing to the middle; there through the slowing and the hold; away out at the right
+      const s = bd.s, Xin = bd.x0 - 1.45 * s, Xc = (bd.x0 + bd.x1) / 2, Xout = bd.x1 + 1.45 * s, ev = [{ t: 1.9, u: -1, x: 0 }];
+      for (let k = 0, t = 2.0; k < GALLOP.length; t += GALLOP[k++]) { const qi = clamp((t - 2) / 2.2), qo = clamp((t - 9.24) / 2.1); ev.push({ t, u: ((k + 1) / 12) % 1, x: t < 4.2 ? Xin + (Xc - Xin) * (1 - (1 - qi) * (1 - qi)) : t < 9.24 ? Xc : Xc + (Xout - Xc) * qo * qo }); }
+      // the pictures: every flap's plain face laid out once, the sheet (its rules, numbered, and the track) printed on them
+      // once, a small copy to tell which flaps a frame changes, a buffer to print into, and the frames made as they're asked for
+      const mk = (w, h2) => { const [c, x] = canvas(Math.ceil(w * px), Math.ceil(h2 * px)); x.imageSmoothingEnabled = true; return [c, x]; };
+      const [base, bx2] = mk(bw, bh), clip = new Path2D(); bx2.setTransform(px, 0, 0, px, 0, 0);
+      for (const f of fl) { bx2.drawImage(S.faces[0], f.lx + gap / 2, f.ly + gap / 2, fw, fh); clip.roundRect(f.lx + gap / 2, f.ly + gap / 2, fw, fh, fw * .1); }
+      const [print, pX] = mk(bw, bh), gy = bd.ground - by, top = gy - s * 1.62;
+      pX.setTransform(1, 0, 0, 1, 0, 0); pX.fillStyle = "#fff"; pX.fillRect(0, 0, print.width, print.height); pX.setTransform(px, 0, 0, px, 0, 0);
+      const step = s * .5, sx0 = ((Xc - bx) % step + step) % step; pX.fillStyle = TONE[2]; // the rules, half a horse apart, numbered along the top as his were
+      const fs = Math.max(9, s * .11); pX.font = `600 ${fs.toFixed(1)}px ui-monospace, Menlo, monospace`; pX.textAlign = "center"; pX.textBaseline = "top";
+      for (let x = sx0, n = 1; x < bw; x += step, n++) { pX.fillStyle = TONE[2]; pX.fillRect(x - .6, top + fs * 1.15, 1.2, gy - top - fs * 1.15); if (x > 8 && x < bw - 8) { pX.fillStyle = TONE[3]; pX.fillText(String(n), x, top); } }
+      pX.fillStyle = TONE[1]; pX.fillRect(0, gy, bw, bh - gy); pX.fillStyle = TONE[2]; pX.fillRect(0, gy, bw, 1); // the track
+      const [sheet, sX] = mk(bw, bh); sX.drawImage(base, 0, 0); sX.save(); sX.setTransform(px, 0, 0, px, 0, 0); sX.clip(clip); sX.setTransform(1, 0, 0, 1, 0, 0); sX.globalCompositeOperation = "multiply"; sX.drawImage(print, 0, 0); sX.restore();
+      const lo = document.createElement("canvas"); lo.width = Math.ceil(bw / 4); lo.height = Math.ceil(bh / 4); const loX = lo.getContext("2d", { willReadFrequently: true });
+      const lr = fl.map(f => [Math.floor((f.lx + gap / 2) / 4), Math.floor((f.ly + gap / 2) / 4), Math.ceil((f.lx + gap / 2 + fw) / 4), Math.ceil((f.ly + gap / 2 + fh) / 4)]);
+      return S.ep = Object.assign(E0, { bx, by, bw, bh, at, fl, ev, sheet, clip, print, pX, gy, lo, loX, lr, sig: [], cache: new Map() });
+    },
+    /** 1.12 b414: what frame e does to the band, in the flaps' own tones: its horse and rider, and their shadow under them */
+    eggInk(g, eg, e) {
+      const v = eg.ev[e], x = v.x - eg.bx, s = eg.bd.s;
+      g.fillStyle = TONE[1]; g.beginPath(); g.ellipse(x - .1 * s, eg.gy + .012 * s, .78 * s, .05 * s, 0, 0, TAU); g.fill(); // the shadow, the sun high over the track
+      g.fillStyle = INK; HORSE(g, v.u, x, eg.gy, s);
+    },
+    /** 1.12 b414: which flaps frame e changes: the frame drawn small, each flap's piece of it summed up as a number, so a flap
+     *  turns only where the horse moves through it and the clatter runs with its legs */
+    eggSig(eg, e) {
+      if (eg.sig[e]) return eg.sig[e];
+      const { lo, loX } = eg; loX.setTransform(1, 0, 0, 1, 0, 0); loX.clearRect(0, 0, lo.width, lo.height); loX.setTransform(.25, 0, 0, .25, 0, 0); if (e > 0) S.eggInk(loX, eg, e);
+      const d = loX.getImageData(0, 0, lo.width, lo.height).data, out = new Uint32Array(eg.fl.length);
+      eg.lr.forEach(([x0, y0, x1, y1], b) => { let h = 0; for (let y = y0; y < Math.min(y1, lo.height); y++) for (let x = x0; x < Math.min(x1, lo.width); x++) h = Math.imul(h ^ d[(y * lo.width + x) * 4 + 3], 16777619) >>> 0; out[b] = h; });
+      return eg.sig[e] = out;
+    },
+    /** 1.12 b414: frame e as the band's flaps show it: the sheet's faces with the frame printed on them (the few made last
+     *  are kept, so a flap turning from one frame to the next has both) */
+    eggFace(eg, e) {
+      if (e <= 0) return eg.sheet;
+      let c = eg.cache.get(e); if (c) { eg.cache.delete(e); eg.cache.set(e, c); return c; }
+      if (eg.cache.size >= 4) { const [k0, c0] = eg.cache.entries().next().value; eg.cache.delete(k0); c = c0; } else [c] = canvas(eg.sheet.width, eg.sheet.height);
+      const x = c.getContext("2d"), { print, pX } = eg; x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = "copy"; x.drawImage(eg.sheet, 0, 0); x.globalCompositeOperation = "source-over";
+      pX.setTransform(1, 0, 0, 1, 0, 0); pX.fillStyle = "#fff"; pX.fillRect(0, 0, print.width, print.height); pX.setTransform(px, 0, 0, px, 0, 0); S.eggInk(pX, eg, e);
+      x.save(); x.setTransform(px, 0, 0, px, 0, 0); x.clip(eg.clip); x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = "multiply"; x.drawImage(print, 0, 0); x.restore();
+      eg.cache.set(e, c); return c;
+    },
+    /** 1.12 b414: a band flap at time T of the egg: the face it turns from, the one it turns to (-1 plain, 0 the sheet, then
+     *  the frames), and how far through the fall */
+    eggFlap(eg, b, i, T, I) {
+      const f = eg.fl[b], ev = eg.ev, j = S.hash[i] * .03; let from = -1, to = -1, p = 0;
+      if (T >= f.tin) {
+        let e = 0; for (let k = 1; k < ev.length && ev[k].t <= T - j; k++) e = k; // the last frame put up, by this flap's clock
+        if (T < f.tin + FE) { to = 0; p = (T - f.tin) / FE; }
+        else if (T >= f.tout) { if (T < f.tout + FE) { from = e; p = (T - f.tout) / FE; } }
+        else { from = to = e; if (e > 0 && T - j - ev[e].t < FE && S.eggSig(eg, e)[b] !== S.eggSig(eg, e - 1)[b]) { from = e - 1; p = (T - j - ev[e].t) / FE; } }
+      }
+      if (I < S.back[i] && (to >= 0 || p)) { const q = clamp((S.back[i] - I) / Math.min(.12, S.back[i] - .012)); if (q > 0) { from = to >= 0 ? to : from; to = -1; p = q < 1 ? q : 0; } } // the list in use: back to plain, in a scatter, as the loop lets go
+      if (p <= 0 || p >= 1) { p = 0; from = to; }
+      return [from, to, p];
+    },
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; P: the pass */
     draw(T, I, A, F, P = 0) {
       const { W, H, C, R, fw, fh, gap, ox, oy, faces, wx } = S; let moved = S.full;
       const on = I > .01, fin = F >= 0, Tb = fin ? F * 3.4 : on ? T : 0, plan = fin ? [[0, "burst", "out"], [1.9, "plain", "out"]] : PLAN;
-      const pl = fin || !(P > 0) ? null : S.plan(P); // b381: a pass after the first plays its own changes (the finale is the same over any pass)
+      const egg = K.egg(P), eg = egg && on && !fin ? S.eggPlan(P) : null; if (!egg) S.ep = null; // 1.12 b414: the egg's pass plays the egg (its pictures let go after)
+      const pl = fin || !(P > 0) || egg ? null : S.plan(P); // b381: a pass after the first plays its own changes (the finale is the same over any pass)
       for (let rr = 0; rr < R; rr++) for (let c = 0; c < C; c++) {
         const i = rr * C + c, x = (ox + c * (fw + gap) + fw / 2) / W, y = (oy + rr * (fh + gap) + fh / 2) / H;
         let a, b, p;
-        if (!pl) [a, b, p] = S.flapAt(Tb, plan, i, x, y, 0);
+        if (eg) { // 1.12 b414: a flap in the egg's band shows its piece of the sheet or of the frame it last turned to, or turns
+          const bi = eg.bd ? eg.at[i] : -1;
+          if (bi >= 0) {
+            const [f0, f1, pp] = S.eggFlap(eg, bi, i, T, I), key = pp ? "e" + f0 + "," + f1 + "," + Math.round(pp * 16) : f1 < 0 ? "0,0,0" : "q" + S.eggSig(eg, f1)[bi]; // at rest, a flap the frame leaves as it was isn't drawn again
+            if (!S.full && S.drawn[i] === key) continue; S.drawn[i] = key; moved = true;
+            const fx = ox + c * (fw + gap), fy = oy + rr * (fh + gap), hh = fh / 2, fb = eg.fl[bi]; wx.clearRect(fx - gap / 2, fy - gap / 2, fw + gap, fh + gap);
+            const face = f => f < 0 ? [faces[0], 0, 0, faces[0].width, faces[0].height / 2] : [S.eggFace(eg, f), (fb.lx + gap / 2) * px, (fb.ly + gap / 2) * px, fw * px, fh * px / 2]; // a face, and where its top half is
+            const B0 = face(f1); if (!pp) { wx.drawImage(B0[0], B0[1], B0[2], B0[3], B0[4] * 2, fx, fy, fw, fh); continue; }
+            const A0 = face(f0);
+            wx.drawImage(B0[0], B0[1], B0[2], B0[3], B0[4], fx, fy, fw, hh); wx.drawImage(A0[0], A0[1], A0[2] + A0[4], A0[3], A0[4], fx, fy + hh, fw, hh); /* behind the falling flap */
+            if (pp < .5) { const k = Math.cos(pp * Math.PI); wx.drawImage(A0[0], A0[1], A0[2], A0[3], A0[4], fx, fy + hh - hh * k, fw, hh * k); wx.fillStyle = `rgba(20,38,27,${(pp * .18).toFixed(3)})`; wx.fillRect(fx, fy + hh - hh * k, fw, hh * k); }
+            else { const k = -Math.cos(pp * Math.PI); wx.drawImage(B0[0], B0[1], B0[2] + B0[4], B0[3], B0[4], fx, fy + hh, fw, hh * k); wx.fillStyle = `rgba(20,38,27,${((1 - pp) * .18).toFixed(3)})`; wx.fillRect(fx, fy + hh, fw, hh * k); }
+            continue;
+          }
+          a = b = 0; p = 0;
+        }
+        else if (!pl) [a, b, p] = S.flapAt(Tb, plan, i, x, y, 0);
         else { // the flap's own changes: it turns a tone every FLIP toward the latest, always forward, as far round as a reset asks
           let q = 0, qe = 0, t = 0; if (on) { for (let k = pl.off[i], e = k + pl.cnt[i]; k < e; k++) { const s = pl.es[k]; if (s > T) break; q = Math.min(qe, q + (s - t) / FLIP); t = s; const tg = pl.et[k] & 7, c0 = Math.ceil(q - 1e-6); qe = c0 + ((tg - c0) % NT + NT) % NT + (pl.et[k] >> 3) * NT; } q = Math.min(qe, q + (T - t) / FLIP); }
           if (on && I < S.back[i]) { const c0 = Math.ceil(q - 1e-6), home = c0 + ((NT - c0 % NT) % NT); q += (home - q) * clamp((S.back[i] - I) / Math.min(.12, S.back[i] - .012)); } // the list in use: the flaps flip back to plain, in a scatter, as the loop lets go

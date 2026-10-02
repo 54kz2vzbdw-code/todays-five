@@ -21,6 +21,14 @@
 // fills and the stars come back; and about one in eight a big five drops in, made of characters, wobbling, and falls
 // away. Nothing on the screen is ever a word. A touch mid-pass dissolves it back to the slow plasma. It still works the
 // screen out a dozen times a second and holds it between.
+//
+// 1.12 b414: the egg. Every twelfth pass left alone (three minutes of the list untouched), the demo plays its hidden part:
+// the Amiga's ball, 1984. A raster bar brings in a room — a wall ruled in squares, dotted with its paint, a floor running
+// away from it in perspective — and the checked ball bounces in from the left, spinning about its leaning axis the way it
+// travels, its shadow falling on the wall behind it; off the far wall, back, and out at a side, and a bar brings the
+// plasma back. Its light checks are drawn from the dense end of the ramp and its dark ones in dots, never in a glyph the
+// room is drawn in, so it reads as a ball against the lines. It bounces in the open space under the list — smaller, and
+// lower, when the list leaves it little — and the characters under the words stay blank, as they always do.
 export default function demo(K) {
   const { clamp, lerp, E, seg, rng, canvas } = K;
   const TAU = Math.PI * 2;
@@ -186,7 +194,13 @@ export default function demo(K) {
       S.tick = tick; S.tickT = T; S.tickF = F; S.tickP = P; g.clearRect(0, 0, W, H);
       if (!S.bufA || S.bufA.length !== cols * rows) { S.bufA = new Float32Array(cols * rows); S.bufB = new Float32Array(cols * rows); S.row = new Array(cols); S.glyB = new Uint8Array(cols * rows); }
       let tr = null, q = 0; // b381: a pass after the first — its own effects, and the way each comes in
-      if (dealt) {
+      if (dealt && K.egg(P)) { // 1.12 b414: the egg — the plasma; a bar brings in the room, the ball bounces through, a bar brings the plasma back
+        const room = T >= 2.1 && T < 14.2;
+        if (room) S.room(T, S.bufA, S.gly); else S.fill("plasma", S.bufA, S.gly, t, 0);
+        if ((T >= 2.1 && T < 2.8) || (T >= 13.5 && T < 14.2)) { q = (T - (T < 3 ? 2.1 : 13.5)) / BAR; if (T < 3) { S.bufB.set(S.bufA); S.glyB.set(S.gly); S.fill("plasma", S.bufA, S.gly, t, 0); } else S.fill("plasma", S.bufB, S.glyB, t, 0); S.mix("bar", q, t); bar = q; }
+        if (I < .6) { S.fill("plasma", S.bufB, S.glyB, A * .25, 0); const e = 1 - I / .6; for (let i = 0; i < S.bufA.length; i++) if (S.hsh[i] < e) { S.bufA[i] = S.bufB[i]; S.gly[i] = 0; } } // the list in use: back to the slow plasma, a dissolve
+      }
+      else if (dealt) {
         const pl = S.plan(P); let k = 0; while (k < 4 && T >= pl.at[k + 1]) k++;
         cur = pl.fx[k]; S.fill(cur, S.bufA, S.gly, t, T - pl.at[k]);
         if (k < 4 && T >= pl.at[k + 1] - BAR) { tr = pl.tr[k]; q = (T - (pl.at[k + 1] - BAR)) / BAR; next = pl.fx[k + 1]; S.fill(next, S.bufB, S.glyB, t, 0); S.mix(tr, q, t); if (tr === "bar") bar = q; }
@@ -216,6 +230,61 @@ export default function demo(K) {
       // under the words, the screen's own dark: the bloom and the raster bar spill light into the blank cells round them,
       // so it is taken out again there, soft at the edges
       g.save(); g.globalCompositeOperation = "destination-out"; for (const [x0, y0, x1, y1] of S.raw || []) { const mx = 16 + (y1 - y0) * .5, my = 6 + (y1 - y0) * .3; g.drawImage(S.soft, x0 - mx, y0 - my, x1 - x0 + mx * 2, y1 - y0 + my * 2); } g.restore();
+    },
+    /** 1.12 b414: the egg's room, worked out for the screen and the words: the floor the ball lands on (clear of the
+     *  footer's wash), where the wall meets the floor behind it, how big the ball is, and how high it bounces — clear of
+     *  the words where there's room, and a little up behind them where there isn't */
+    boingRoom() {
+      const o = S.br; if (o && o.raw === S.raw && o.W === S.W && o.H === S.H) return o;
+      const { W, H, ch, pr } = S, want = clamp(pr ? W * .46 : H * .27, (pr ? 9 : 10) * ch, (pr ? 12 : 13) * ch), least = 7.5 * ch;
+      let open = H * (pr ? .58 : .65); // the top of the open space under the lines (no words known yet, the lab: a list's usual place)
+      if (S.raw) { open = 0; for (const [, y0, , y1, kind] of S.raw) if (kind === 1) open = Math.max(open, (Math.ceil(y1 / ch) + 1) * ch); }
+      let floorY = H - (pr ? 82 : 70), D = Math.min(want, (floorY - open) / 1.3); // the floor clear of the footer's wash, if the ball fits over it
+      if (D < least) { floorY = H - 30; D = clamp((floorY - open) / 1.3, least, want); } // if not, down into it, and a smaller ball
+      return S.br = { raw: S.raw, W, H, floorY, wallY: floorY - D * .3, D, Hb: clamp(floorY - D - open, D * .25, D * .9), nl: D < 9 * ch ? 5 : 6 };
+    },
+    /** 1.12 b414: where the ball is at loop time T, or null: in at the left at the top of a bounce, bouncing on the floor as
+     *  it goes, off the far wall (and on a narrow screen off the near one too), and out at a side; it spins about its
+     *  leaning axis the way it travels, turning back when it does */
+    boingBall(T, br) {
+      const { W, D, Hb, floorY } = br, R = D / 2, t0 = 3.2, t1 = 12.8; if (T <= t0 || T >= t1) return null;
+      const legs = W < 800 ? [W, W - 2 * R, W] : [W, W], s = (T - t0) / (t1 - t0) * legs.reduce((a, b) => a + b, 0);
+      let k = 0, s0 = s; while (k < legs.length - 1 && s0 > legs[k]) { s0 -= legs[k]; k++; }
+      const x = k === 0 ? -R + s0 : k === 1 ? W - R - s0 : R + s0, Tb = W < 800 ? .86 : 1.02;
+      return { x, y: floorY - R - Hb * Math.abs(Math.cos(Math.PI * (T - t0) / Tb)), R, spin: x / R };
+    },
+    /** 1.12 b414: the egg, in characters: the room (a wall ruled in squares, a floor running away from it, dots for the
+     *  wall's paint), the ball (twelve checks round and six from pole to pole — ten and five on a small one — lit from the top left, a glint), and its shadow on the wall */
+    room(T, buf, gly) {
+      const { cols, rows, cw, ch, W, H, mask } = S, br = S.boingRoom(), { wallY } = br, gr = S.pr ? 3 : 4, gc = Math.max(4, Math.round(gr * ch / cw)), wr = Math.floor(wallY / ch), c0 = Math.round(cols / 2), b = S.boingBall(T, br);
+      buf.fill(0); gly.fill(0);
+      const sh = b && { x: b.x + b.R * .38, y: b.y + b.R * .16, r2: b.R * b.R };
+      for (let r = 0; r < Math.min(rows, wr); r++) for (let c = 0; c < cols; c++) { // the wall
+        const i = r * cols + c; if (mask[i]) continue;
+        const v = ((c - c0) % gc + gc) % gc === 0, h = (wr - r) % gr === 0;
+        let k = v && h ? .52 : h ? .34 : v ? .36 : (c + r) % 2 ? 0 : .11; if (v && !h) gly[i] = G_BAR;
+        if (sh && k) { const dx = (c + .5) * cw - sh.x, dy = (r + .5) * ch - sh.y; if (dx * dx + dy * dy < sh.r2) { k = 0; gly[i] = 0; } } // the ball's shadow falls on it
+        buf[i] = k;
+      }
+      const vpY = wallY - (H - wallY) * 2.4, u = y => 1 / (wallY - vpY) - 1 / (y - vpY), du = u(wallY + gr * ch * 1.15); // the floor, in perspective
+      for (let r = wr; r < rows; r++) {
+        const y = (r + .5) * ch, line = Math.floor(u(r * ch) / du) !== Math.floor(u((r + 1) * ch) / du);
+        if (line) for (let c = 0; c < cols; c++) { const i = r * cols + c; if (!mask[i]) buf[i] = .34; }
+        for (let j = -Math.ceil(c0 / gc) - 4; j <= Math.ceil(c0 / gc) + 4; j++) {
+          const xw = (c0 + j * gc + .5) * cw, x = W / 2 + (xw - W / 2) * (y - vpY) / (wallY - vpY), c = Math.floor(x / cw); if (c < 0 || c >= cols) continue;
+          const i = r * cols + c; if (mask[i]) continue; const sl = (xw - W / 2) / (wallY - vpY) * ch / cw;
+          buf[i] = line ? .52 : .36; gly[i] = line ? 0 : Math.abs(sl) < .35 ? G_BAR : sl > 0 ? G_BACK : G_SLASH;
+        }
+      }
+      if (!b) return;
+      const tl = .3, ct = Math.cos(tl), st = Math.sin(tl), Lx = -.42, Ly = .52, Lz = .74; // the axis leans to the right; the light from the top left
+      for (let r = Math.max(0, Math.floor((b.y - b.R) / ch)); r <= Math.min(rows - 1, Math.ceil((b.y + b.R) / ch)); r++) for (let c = Math.max(0, Math.floor((b.x - b.R) / cw)); c <= Math.min(cols - 1, Math.ceil((b.x + b.R) / cw)); c++) {
+        const i = r * cols + c; if (mask[i]) continue;
+        const dx = ((c + .5) * cw - b.x) / b.R, dy = (b.y - (r + .5) * ch) / b.R, d2 = dx * dx + dy * dy; if (d2 >= 1) continue;
+        const z = Math.sqrt(1 - d2), X = dx * ct - dy * st, Y = dx * st + dy * ct, lon = Math.atan2(X, z) + b.spin, lat = Math.asin(clamp(Y, -1, 1));
+        const chk = (Math.floor(lon / (Math.PI / br.nl)) + Math.floor(lat / (Math.PI / br.nl)) + 60) & 1, l = clamp(dx * Lx + dy * Ly + z * Lz);
+        buf[i] = l > .97 ? 1 : chk ? .72 + .27 * l : .2 + .09 * l; gly[i] = 0; // the light checks in the dense end of the ramp, the dark ones in dots, never a glyph the room is drawn in
+      }
     },
     /** b381: the change from the effect in bufA to the one in bufB, `q` of the way: the raster bar, a dissolve, a melt, a
      *  wipe, an iris or a glitch; the result in bufA */

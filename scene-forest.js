@@ -29,6 +29,22 @@
 // on into the pines across the way, their boughs shaking after it; the fireflies scatter round it and flare, startled. The
 // fog thins and the night is as it was. The walker is a rig of round limbs on a stride worked out from the ground it covers
 // (so its feet never slide), set down in whole pixels with a head drawn by hand, the first time an egg plays.
+//
+// 1.12 b429: the long day's hour eggs. For a list left up for hours, once an hour (K.long, the stage's clock of the loops
+// left alone) a night of its own in place of the one it would have dealt. In the odd hours, the pack: three wolves come
+// out along the ridge from behind the near pine, black against a moonlit mist lying along it, the moon bright along their
+// backs, and stand among the spires of the pines, lifting their heads to the moon, their eyes catching it; the leader
+// howls, and the moon answers — it comes down the sky toward them, growing as it comes, its face filling in, until it
+// stands enormous behind the ridge with the pack black against it; the leader sits and they howl together, the pup's yips
+// among the long notes, while the fireflies go quiet; then they trot back into the pines and the moon climbs back to its
+// place. (On a phone, where the ridge lies under the list, the moon swells over the list and the pack howls up at it out in
+// the clearing, in its light.) In the even hours, the visitors: a light comes swaying down across the face of the moon,
+// nearer and nearer, and is a saucer — its dome lit from inside, someone at the glass who blinks, amber and cyan lights
+// running round its rim — that comes to hover high beside the moon; below it the fireflies gather and dance in rings,
+// a light chasing round each, and it lets a beam all the way down into the middle of them, lighting the grass and the pines
+// either side; in the light lies a pine cone, which rises up the beam, turning, and is taken in; the beam draws up, the
+// rings break and drift away, and with a little hop it tips and is gone up the sky in a streak.
+// Neither is dealt; each keeps back from the words as the dealt nights do, and opens and closes on the resting picture.
 export default function forest(K) {
   const { LOOP, clamp, lerp, E, seg, env, rng, dith, rgb, mixc, css, canvas, paint, noise1, fbm, glowSpr, pine, sprite, layer, deal, bag } = K;
   let g = null;
@@ -47,6 +63,10 @@ export default function forest(K) {
     coatD: rgb("#101D17"), coat: rgb("#243A2F"), coatL: rgb("#4D7763"), coatH: rgb("#8FBAA3"), white: rgb("#DDE9D5"), antler: rgb("#B9CDB3"),
     bfFar: rgb("#0A0806"), bfFur: rgb("#140F0B"), bfEdge: rgb("#211812"), bfRim: rgb("#33402F"), bfRimL: rgb("#6E9A84"), bfRimH: rgb("#C4E3CF"), // b413: the egg's walker, brown under the moon's silver
     bfL1: rgb("#241A12"), bfL2: rgb("#3F2F22"), bfL3: rgb("#5E4733"), bfL4: rgb("#8D7A64"), bfL5: rgb("#C9D6C6"), // and in a shaft of its light
+    ufo: ["#4C6773", "#7E9EAB", "#BCD6DE", "#F4FEFF", "#43DCCE", "#EAFFFC", "#1C9E94", "#06221F", "#FFF7B8", "#18252B", "#A8FFF4", "#2E444C", "#FFFFFF", "#9FBAC4", "#A6FFF4"].map(rgb), // the saucer: its hull lit by the moon, its glass lit from inside, someone at it, its underside and port
+    ufoA: rgb("#FFA81E"), ufoM: rgb("#22F2FF"), ufoAc: rgb("#FFE6A8"), ufoMc: rgb("#D8FFFF"), ufoBeam: rgb("#BFFFF4"), ufoGlow: rgb("#5CF6E8"), // its running lights (amber and cyan, and their hot cores), its beam and its glow
+    cone: ["#1E140D", "#4A3322", "#7A5838", "#A9805A", "#E8D2A8"].map(rgb), // the pine cone: the gaps between its scales, their bodies, their lips, and the lips in the beam
+    wolfEye: rgb("#F6EC9A"), wolf: rgb("#030907"), wolfRim: rgb("#86B29B"), moonDeep: rgb("#A3B99C"), moonHi: rgb("#F6FBF1"), // the hour eggs: the pack, black against the moon; the moon's face, close
   };
   const midsLayer = layer(), nearsLayer = layer(), grassLayer = layer();
   const SL = .5; // b413: the egg's shaft of moonlight, how far it leans (across for each pixel down)
@@ -113,6 +133,7 @@ export default function forest(K) {
       b.drawImage(halo2, M.x - (halo2.width >> 1), M.y - (halo2.height >> 1)); b.drawImage(moon, M.x - M.r, M.y - M.r);
       b.drawImage(far, 0, 0); b.drawImage(mist, 0, hz - 20); b.drawImage(farTrees, 0, 0); b.drawImage(ground, 0, hz); b.drawImage(groundMist, 0, hz - 2);
       S.bg = bg;
+      S.skyC = sky; S.ridgeY = ridgeY; // (the hour eggs': the sky to lay over the moon's place when it moves, the ridge it moves behind)
       S.cast(W, H, portrait); S.planP = -1;
     },
     /** the forever cycle's cast, drawn once, each from dice of its own (the signature's are left as they were) */
@@ -392,16 +413,278 @@ export default function forest(K) {
       const C = [null, P.bfFar, P.bfFur, P.bfRim, P.bfRimL, P.bfRimH, P.eye, P.bfEdge], L = [null, P.bfL1, P.bfL2, P.bfL3, P.bfL4, P.bfL5, P.eye];
       return { c: paint(w, h, (x, y) => C[px[y * w + x]]), lit: paint(w, h, (x, y) => L[lt[y * w + x]]), w, h, ox, S: St, eyes: tu > .75 ? eyes : [] };
     },
+    /** 1.12 b429: the first hour egg (K.long 1, once in an odd hour of the list left alone): the pack, and the moon that comes
+     *  to it. Three wolves come out along the ridge from behind the near pine past the moon, black against the moonlit mist
+     *  lying along it, two pixels of the moon's light along their backs and heads, and stop among the spires of the pines on
+     *  it, lifting their heads to the moon, their eyes catching it; the leader lifts its head again and howls at the moon; and
+     *  the moon answers — it comes down the sky toward them, swelling as it comes, until it stands over the ridge enormous and
+     *  they are black against it; the leader sits, and the pack howls in chorus, the pup's short yips among the long ones,
+     *  while the fireflies go quiet; then the wolves turn and trot back the way they came, and the moon climbs back to its
+     *  place. On a phone, where the ridge lies under the list, the moon swells over the list and the pack howls up at it out in
+     *  the clearing, in its light. Composed, not dealt */
+    wolfPlan() {
+      const { W, H, hz, portrait: pr } = S, k = pr ? 1.1 : 1.3, mx = Math.round(W * (pr ? .58 : .78)), mr = Math.round(pr ? W * .21 : H * .2), my = pr ? Math.round(H * .19) : S.ridgeY(mx) - Math.round(H * .1);
+      const hide = S.nears.filter(t => t.x > (pr ? W * .7 : mx)).reduce((a, t) => !a || t.x < a.x ? t : a, null), x0 = hide ? hide.x + (pr ? 4 : 0) : W + 20; // out from behind the near pine past the moon, and back behind it
+      const at = pr ? [W * .2, W * .45, W * .63] : [mx - mr * .64, mx, mx + mr * .48], v = pr ? 24 : 21, vo = pr ? 28 : 26;
+      const pack = [[k * .82, at[0], .4, [[7.5, 8.1, 10.1, 10.7]], 11.4, 0], [k, at[1], 1.7, [[4.0, 4.6, 5.8, 6.3], [7.1, 7.7, 10.3, 10.9]], 11.1, [6.25, 6.85, 10.95, 11.25]], [k * .62, at[2], 2.8, [[8.15, 8.4, 8.85, 9.15], [9.35, 9.6, 10.2, 10.55]], 10.8, 0]] // the first out goes furthest; the leader, in the middle, howls first and sits for the chorus; the pup's are yips
+        .map(([kk, x1, a, howl, o, sit], i) => ({ k: kk, x1: Math.round(x1), howl, sit, y: pr ? hz + [15, 19, 23][i] : 0, t: [a, a + (x0 - x1) / v, o, o + (x0 - x1) / vo] })); // (on a phone, out in the clearing, under the list)
+      return { dealt: true, gust: { t: [.4, 1.4, 1.9, 3.3], dir: -1, amp: .45 }, fph: 1.3, fog: [5.4, 7.6, 10.6, 13.4], wake: [.8, 3.3], settle: [12.4, 14.6], hush: [4.6, 6.6, 10.6, 12.4],
+        wolves: { mx, my, mr, x0, pack, moon: [4.8, 7.4, 11.1, 13.9], glow: [[.2, 1.6, 4.9, 6.9], [11.2, 12.2, 13.0, 14.3]] } }; // (glow: the moonlight in the mist behind the ridge as they come out and as they go, the moon's own light between)
+    },
+    /** 1.12 b429: the second hour egg (K.long 2, once in an even hour): the visitors. A light high over the trees that is not
+     *  a star comes swaying down the sky across the face of the moon, nearer and nearer, and is a saucer — a disc with a glass
+     *  dome lit from inside, someone at the glass, its lights running round its rim — that comes to hover high beside the moon,
+     *  the brightest thing in the forest. Below it the fireflies gather and dance in rings, blinking in time with its lights;
+     *  it lets a beam all the way down into the middle of them, and in the light on the grass lies a pine cone, which rises up
+     *  the beam, turning, and is taken in; the beam draws up, the rings break and the fireflies drift away, and the saucer
+     *  hops, tips and is gone up the sky in a streak. On a phone it hovers low over the clearing under the list. Composed,
+     *  not dealt */
+    ufoPlan() {
+      // where it hovers, out of the band the list's pad darkens: on a desktop high in the sky beside the moon, its beam all the
+      // way down to the clearing below the list; on a phone low over the clearing under the list, its beam a short one
+      const { W, H, hz, portrait: pr, moon: M } = S, w = pr ? 24 : 34, hx = Math.round(W * (pr ? .42 : .735)), hy = pr ? Math.min(H - 54, hz + 18) : Math.max(M.y + 2, Math.round(H * .2)), gy = pr ? Math.min(H - 30, hz + 42) : Math.min(Math.round(H * .835), hz + 35);
+      const path = pr ? [[W + 14, -12], [M.x + 7, M.y - 8], [M.x - 1, M.y + 5], [W * .7, H * .5], [W * .5, hy - 12], [hx, hy]] : [[W + 16, -18], [M.x + 15, M.y - 15], [M.x - 2, M.y + 3], [M.x - 22, M.y + 12], [hx + 7, hy + 5], [hx, hy]];
+      const tin = [1.5, 4.7], out = [11.0, 11.85], bob = t => [Math.sin((t - tin[1]) * 1.3) * 1.3, Math.sin((t - tin[1]) * 2.1) * 1.1], [ex, ey] = bob(out[0]);
+      const exit = [[hx + ex, hy + ey], [hx + ex + 1, hy + ey - 5], [hx + W * (pr ? .2 : .12), hy - H * (pr ? .45 : .16)], [W + 40, -50]];
+      const ufo = { w, hx, hy, gy, path, exit, bob, in: tin, out, dance: [4.6, 6.4, 10.2, 11.6], beam: [6.9, 7.5, 9.95, 10.4], lift: [7.7, 9.85], hop: [10.45, 10.9], blink: [5.35, 9.95] };
+      S.ufoSpill(ufo); S.coneSpr(0); // (the light it will throw on the pines, worked out now, at the quiet start of the pass)
+      return { dealt: true, gust: { t: [.6, 1.6, 2.1, 3.5], dir: 1, amp: .5 }, fph: .7, fog: [3.5, 6, 9, 12], wake: [1.4, 4.0], settle: [11.4, 14.6], more: true, ufo };
+    },
+    /** where the saucer is at T, how near (its size, 0 … 1) and how it tips; null when it is not there */
+    ufoPos(T, u) {
+      const o = S.uo || (S.uo = [0, 0, 0, 0]); if (T <= u.in[0] || T >= u.out[1]) return null;
+      if (T < u.in[1]) { const q = seg(T, u.in[0], u.in[1], v => 1 - Math.pow(1 - v, 2.2)), [x, y] = along(u.path, q); o[0] = x; o[1] = y; o[2] = lerp(.32, 1, Math.pow(q, 1.3)); o[3] = Math.sin(q * Math.PI * 3) * 13 * (1 - q); return o; } // swaying down like a leaf, nearer and nearer
+      if (T < u.out[0]) { const [bx, by] = u.bob(T), hop = Math.sin(Math.PI * seg(T, u.hop[0], u.hop[1], x => x)); o[0] = u.hx + bx; o[1] = u.hy + by - hop * 3.5; o[2] = 1; o[3] = Math.sin((T - u.in[1]) * 1.7) * 3 + hop * 4; return o; } // hovering (and once it has what it came for, a little hop)
+      const q = seg(T, u.out[0], u.out[1], v => v * v * v), [x, y] = along(u.exit, q); o[0] = x; o[1] = y; o[2] = lerp(1, .5, q); o[3] = -12 * Math.min(1, q * 5); return o; // and away
+    },
+    /** the saucer at width w, tipped by ti × 6°: a lens of a hull lit from above by the moon, the bright edge of its rim and
+     *  the moon's glint on its shoulder, the underside dark round a glowing port, and a glass dome lit from inside, someone at
+     *  the glass; where its belly, dome and port are */
+    ufoSpr(w, ti) {
+      const key = w + "|" + ti, c = S.ufoC || (S.ufoC = new Map()); let o = c.get(key); if (o) return o;
+      const rx = w / 2, rT = w * .19, rB = w * .13, dR = w * .2, dH = w * .22, vd = -rT * .72, pad = Math.ceil(w * .12) + 2, cw = w + pad * 2, ch = Math.ceil(rT + dH + rB) + pad * 2, cx = cw / 2, cy = pad + Math.ceil(dH - vd) + 1;
+      const a = ti * Math.PI / 30, ca = Math.cos(a), sa = Math.sin(a), C = P.ufo, eyes = [];
+      const spr = paint(cw, ch, (px, py) => {
+        const dx = px + .5 - cx, dy = py + .5 - cy, u = dx * ca + dy * sa, v = -dx * sa + dy * ca, e = clamp(1 - (u / rx) ** 2);
+        const dd = (u / dR) ** 2 + ((v - vd) / dH) ** 2;
+        if (v <= vd + .3 && dd <= 1) { // the dome: glass lit from inside, someone at it, head and shoulders
+          const fig = (fu, fv) => w >= 16 && ((fu / (dR * .3)) ** 2 + ((fv - vd + dH * .4) / (dH * .33)) ** 2 < 1 || ((fu / (dR * .52)) ** 2 + ((fv - vd + dH * .02) / (dH * .24)) ** 2 < 1 && fv > vd - dH * .2)); // a round head on narrow shoulders
+          if (w >= 16 && Math.abs(Math.abs(u) - dR * .2) < .5 && Math.abs(v - vd + dH * .42) < .5) { eyes.push([px, py]); return C[8]; }
+          if (fig(u, v)) return C[7];
+          if (dd > .78) return C[6]; // the rim of the glass
+          if (u < -dR * .3 && v < vd - dH * .45 && dd < .66) return C[5]; // its glint
+          return fig(u + 1, v) || fig(u - 1, v) || fig(u, v + 1) || fig(u, v - 1) ? C[14] : C[4]; } // the glass lit from inside, brightest round the one at it
+        const top = rT * Math.pow(e, .75), bot = rB * Math.pow(e, .55);
+        if (v >= -.5 && v < .5 && e > 0) return u > -rx * .25 ? C[3] : C[13]; // the edge of the rim, catching the moon
+        if (v < 0 && v >= -top) { const t = -v / (top + .01); if (w >= 16 && t > .3 && t < .78 && Math.abs(u - rx * (.42 + (t - .54) * .3)) < .75) return C[12]; return t > .62 ? C[2] : t > .28 ? C[1] : C[0]; } // the upper hull, lit from above, the moon's glint on its shoulder
+        if (v > 0 && v <= bot) return Math.abs(u) < w * .1 && v > bot * .4 ? C[10] : v > bot - 1 ? C[11] : C[9]; // the underside round its port
+        return null;
+      });
+      o = { c: spr, w: cw, h: ch, cx, cy, rx, ca, sa, belly: rB, eyes, dome: [cx - (vd - dH * .25) * sa, cy + (vd - dH * .25) * ca], port: [cx - rB * .75 * sa, cy + rB * .75 * ca] }; c.set(key, o); return o;
+    },
+    /** the glows that go with the saucer at width w: the air round it, its dome's light, its port's */
+    ufoGlows(w) { const c = S.ufoGs || (S.ufoGs = new Map()); let o = c.get(w); if (!o) { o = { aura: glowSpr(Math.max(3, Math.round(w * .95)), P.ufoGlow, .2), dome: glowSpr(Math.max(2, Math.round(w * .36)), P.ufoGlow, .7), port: glowSpr(Math.max(2, Math.round(w * .2)), P.ufoGlow, .85) }; c.set(w, o); } return o; },
+    /** a pine cone of a size to read, its scales in rows, f (0 … 3) how far round it has turned */
+    coneSpr(f) {
+      const c = S.cones || (S.cones = new Map()), key = (S.portrait ? "p" : "d") + f; let o = c.get(key); if (o) return o;
+      const w = S.portrait ? 9 : 11, h = S.portrait ? 12 : 15, cx = (w - 1) / 2, ph = f * .75, C = P.cone;
+      o = paint(w, h, (x, y) => {
+        if (y < 2) return x === Math.round(cx) ? C[y ? 1 : 0] : null; // the stem
+        const t = (y - 2) / (h - 3), half = (w / 2 - .2) * Math.pow(Math.sin(Math.PI * Math.min(1, .14 + t * .9)), .7), dx = x - cx; if (Math.abs(dx) > half) return null;
+        const r = Math.floor((y - 2) / 2), sy = (y - 2) % 2, s = (((dx + (r & 1) * 1.5 + ph) % 3) + 3) % 3, side = Math.abs(dx) / (half + .01); // each row of scales half a scale round from the one above
+        let v = sy ? (s > .8 && s < 2.2 ? 3 : 2) : (s < .9 ? 0 : 1); // a scale: the gap beside it, its body, its lip
+        if (side > .72) v = Math.max(0, v - 1); // round the curve, darker
+        if (v === 3 && dx > -half * .15) v = 4; // the lips toward the light
+        return C[v];
+      });
+      c.set(key, o); return o;
+    },
+    /** the light the beam throws on the pines round it (the ones behind it, and the near ones in front): the edges of their
+     *  boughs and trunks facing it, brighter the nearer and the lower down, worked out once for where it hovers */
+    ufoSpill(u) {
+      const key = S.W + "|" + S.H + "|" + u.hx + "|" + u.gy + "|" + u.w; if (S.spill && S.spill.key === key) return S.spill;
+      const { W, H } = S, top = u.hy + Math.round(u.w * .13) + 1, hw0 = u.w * .17, hw1 = u.w * .56, R = u.w * .6, c = P.ufoBeam;
+      const build = trees => { const [cv, cx] = canvas(W, H), im = cx.createImageData(W, H), d = im.data;
+        for (const t of trees) { const sp = t.spr, w = sp.width, h = sp.height, x0 = t.x - (w >> 1), y0 = t.base - h; if (x0 > u.hx + hw1 + R + 2 || x0 + w < u.hx - hw1 - R - 2) continue;
+          const sd = sp.getContext("2d").getImageData(0, 0, w, h).data, on = (x, y) => x >= 0 && y >= 0 && x < w && y < h && sd[(y * w + x) * 4 + 3] > 0;
+          for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { if (!on(x, y)) continue; const X = x0 + x, Y = y0 + y; if (X < 0 || Y < 0 || X >= W || Y >= H) continue;
+            const sd2 = X < u.hx ? 1 : -1, e1 = !on(x + sd2, y), e2 = !e1 && !on(x + 2 * sd2, y); if (!e1 && !e2) continue; // the edge toward the beam, two pixels deep
+            const tt = clamp((Y - top) / (u.gy - top)), dist = Math.abs(X - u.hx) - lerp(hw0, hw1, tt); if (dist < 1) continue; const L = Math.pow(clamp(1 - dist / R), 1.6) * clamp((Y - top + 4) / 12) * clamp((u.gy + 8 - Y) / 10); // (beside it, not behind it: there the beam itself is the light)
+            const k = (Y * W + X) * 4, al = Math.round(255 * L * (e1 ? .9 : .42)); if (al > d[k + 3]) { d[k] = c[0]; d[k + 1] = c[1]; d[k + 2] = c[2]; d[k + 3] = al; } } }
+        cx.putImageData(im, 0, 0); return cv; };
+      return (S.spill = { key, mid: build(S.mids), near: build(S.nears) });
+    },
+    /** how far the beam is let down (0 … 1) */
+    beamExt(T, u) { return seg(T, u.beam[0], u.beam[1], E.out) * (1 - seg(T, u.beam[2], u.beam[3], E.in)); },
+    /** the near pines in the beam's light (drawn over them) */
+    ufoNear(T, I, u) { const ext = S.beamExt(T, u); if (ext <= .01) return; g.globalAlpha = ext * I; g.drawImage(S.ufoSpill(u).near, 0, 0); g.globalAlpha = 1; },
+    /** the saucer: the air round it lit, the beam it lets down and the pines and grass in its light, the pine cone in it, the
+     *  port and the dome glowing, the hull, and its lights running round the rim, amber and cyan, a light chasing round them */
+    ufoAt(T, I, A, u) {
+      const p = S.ufoPos(T, u); if (!p) return;
+      const [x, y, sc, tilt] = p, w = Math.max(6, Math.round(u.w * sc / 2) * 2), sp = S.ufoSpr(w, clamp(Math.round(tilt / 6), -2, 2)), X = Math.round(x), Y = Math.round(y), G = S.ufoGlows(w), ox0 = X - Math.round(sp.cx), oy0 = Y - Math.round(sp.cy);
+      const L = S.ufoL || (S.ufoL = { A: glowSpr(4, P.ufoA, 1), M: glowSpr(4, P.ufoM, 1), s: glowSpr(3, P.ufoGlow, .9) });
+      const add = (spr, cx, cy, k) => { if (k <= .01) return; g.globalCompositeOperation = "lighter"; g.globalAlpha = Math.min(1, k); g.drawImage(spr, Math.round(cx) - (spr.width >> 1), Math.round(cy) - (spr.height >> 1)); g.globalCompositeOperation = "source-over"; g.globalAlpha = 1; };
+      add(G.aura, X, Y, I); // the air round it, lit
+      // the beam: down from its belly to the grass, a bright core and a soft edge, a pool of light where it lands, the pines
+      // round it catching it; drawn down, and drawn up again from the bottom
+      const ext = S.beamExt(T, u), top = Y + Math.round(sp.belly) + 1;
+      if (ext > 0 && I > .01) {
+        g.globalAlpha = ext * I; g.drawImage(S.ufoSpill(u).mid, 0, 0); g.globalAlpha = 1; // the pines behind it in its light
+        const hw0 = w * .17, hw1 = w * .56, bw = Math.ceil(hw1 * 2.8) + 2, bh = Math.max(1, u.gy - u.hy + 12), bx0 = X - (bw >> 1), lim = top + (u.gy - top) * ext, c = P.ufoBeam; // (a buffer as tall as the beam can be, made once: the beam bobs with the saucer)
+        if (!S.beamB || S.beamB.w !== bw || S.beamB.h !== bh) { const [cv, cx] = canvas(bw, bh); S.beamB = { w: bw, h: bh, c: cv, x: cx, im: cx.createImageData(bw, bh) }; }
+        const beam = S.beamB.c, bx = S.beamB.x, im = S.beamB.im, d = im.data; d.fill(0);
+        for (let yy = 0; yy < bh; yy++) { const Yy = top + yy; if (Yy > lim + 3 || Yy > u.gy + 4) break; const t = clamp(yy / Math.max(1, u.gy - top)), hw = lerp(hw0, hw1, t), band = .9 + .1 * Math.sin(Yy * .75 - T * 9), cut = clamp((lim + 3 - Yy) / 3), fall = 1 - .35 * t;
+          for (let xx = 0; xx < bw; xx++) { const q = Math.abs(xx + bx0 + .5 - x) / hw; let al = q < 1.3 ? ((q < 1 ? .8 * Math.pow(1 - q * q, 1.5) : 0) + .2 * Math.exp(-(((q - .95) / .18) ** 2))) * band * fall : 0;
+            if (ext > .9) { const pq = ((xx + bx0 + .5 - x) / (hw1 * 1.4)) ** 2 + ((Yy - u.gy) / 2.8) ** 2; if (pq < 1) al += .7 * Math.pow(1 - pq, 1.2) * clamp((ext - .9) * 10); } // the pool on the grass
+            if (al > .004) { const k = (yy * bw + xx) * 4; d[k] = c[0]; d[k + 1] = c[1]; d[k + 2] = c[2]; d[k + 3] = Math.round(255 * clamp(al * cut * I)); } } }
+        bx.putImageData(im, 0, 0); g.drawImage(beam, bx0, top);
+        if (ext > .9) { const gw = S.groundGlow && S.groundGlow.width === Math.round(hw1 * 2.6) * 2 + 1 ? S.groundGlow : (S.groundGlow = paint(Math.round(hw1 * 2.6) * 2 + 1, 13, (gx, gy2) => { const r = Math.round(hw1 * 2.6), q = ((gx - r) / (r + .5)) ** 2 + ((gy2 - 6) / 6.5) ** 2; return q >= 1 ? null : [P.ufoGlow[0], P.ufoGlow[1], P.ufoGlow[2], Math.round(255 * .5 * Math.pow(1 - q, 1.6))]; }));
+          add(gw, X, u.gy, I * clamp((ext - .9) * 10)); } // the grass round the pool, lit
+      }
+      // the pine cone, lying in the grass where the light falls, then up the beam, turning, and in
+      const lq = seg(T, u.lift[0], u.lift[1], E.io), seen = T < u.lift[0] ? clamp((ext - .9) * 10) : 1;
+      if (ext > .9 && lq < .97 && seen > 0) { const cf = S.coneSpr(lq > 0 ? Math.floor(T * 8) & 3 : 0);
+        g.globalAlpha = I * seen; g.drawImage(cf, Math.round(x + (lq > 0 ? Math.sin(T * 5) * .7 : 0)) - (cf.width >> 1), Math.round(lerp(u.gy - cf.height + 2, top - (cf.height >> 1), lq))); g.globalAlpha = 1; }
+      // the streak it leaves as it goes
+      if (T > u.out[0]) for (let k = 1; k < 6; k++) { const q = S.ufoPos(T - k * .022, u); if (!q) break; add(L.s, q[0], q[1], I * .8 * (1 - k / 6)); }
+      // the port and the dome glowing, the hull, and someone at the glass, who blinks
+      add(G.port, ox0 + sp.port[0], oy0 + sp.port[1], I * (.75 + .25 * ext)); add(G.dome, ox0 + sp.dome[0], oy0 + sp.dome[1], I);
+      g.globalAlpha = I; g.drawImage(sp.c, ox0, oy0);
+      if (u.blink.some(b => T > b && T < b + .16)) { g.fillStyle = css(P.ufo[7]); for (const [ex, ey] of sp.eyes) g.fillRect(ox0 + ex, oy0 + ey, 1, 1); }
+      // the running lights round the rim, the near ones bright, a light chasing round them
+      const spin = T * 2.4 + 7 * E.io(seg(T, u.hop[0] - .2, u.out[1], x => x)), n = 10;
+      for (let j = 0; j < n; j++) { const th = j / n * 6.2832 + spin, fr = Math.sin(th); if (fr < .05) continue; const lu = Math.cos(th) * sp.rx * .88, lv = 1.2, lx = Math.round(X + lu * sp.ca - lv * sp.sa), ly = Math.round(Y + lu * sp.sa + lv * sp.ca), am = (j & 1) === 0;
+        const chase = Math.pow(.5 + .5 * Math.sin(j * 1.2566 - T * 6.5), 3), br = (.55 + .45 * fr) * (.45 + .55 * chase);
+        add(am ? L.A : L.M, lx + (w >= 20 ? .5 : 0), ly, I * br); g.globalAlpha = I * Math.min(1, .35 + br); g.fillStyle = css(am ? P.ufoAc : P.ufoMc); g.fillRect(lx, ly, w >= 20 ? 2 : 1, 1); }
+      g.globalAlpha = 1;
+    },
+    /** a firefly's place in the rings under the saucer, and how bright: three rings, widening downward like the beam, the
+     *  middle one turning the other way, a light running round each in time with the saucer's */
+    ringAt(T, i, n, u, x, y, b) {
+      const o = S.ro || (S.ro = [0, 0, 0]); o[0] = x; o[1] = y; o[2] = b;
+      const k = env(T, ...u.dance, E.io), p = k > 0 ? S.ufoPos(T, u) : null; if (!p) return o;
+      const ring = i % 3, m = Math.ceil(n / 3), j = Math.floor(i / 3), dir = ring === 1 ? -1 : 1, ang = dir * T * [1.5, 1.15, .95][ring] + j / m * 6.2832 + ring * .7;
+      const top = u.hy + u.w * .14, ry = u.gy - Math.min(u.gy - top - 4, 20) * [.7, .4, .1][ring], R = lerp(u.w * .17, u.w * .56, clamp((ry - top) / (u.gy - top))) + u.w * [.16, .3, .44][ring]; // round the foot of the beam, the lowest the widest
+      const fr = Math.sin(ang), chase = Math.pow(Math.max(0, Math.sin(ang * 2 - dir * T * 5)), 3);
+      o[0] = lerp(x, p[0] + Math.cos(ang) * R, k); o[1] = lerp(y, ry + fr * R * .12, k); o[2] = lerp(b, (fr > 0 ? 1 : .5) * (.42 + .58 * chase), k); return o;
+    },
+    /** moonlit mist lying along the ridge among the pine tops, so that what comes out along it stands black against it
+     *  (strongest on the moon's side, fading toward the words); a sprite made once */
+    ridgeGlow(T, I, w) {
+      const k = S.portrait ? 0 : Math.max(env(T, ...w.glow[0], E.sine), env(T, ...w.glow[1], E.sine)) * I; if (k <= .01) return; // (on a phone the pack is out in the clearing, in the moonlight, and the ridge lies under the list)
+      const { W, hz } = S; if (!S.rgS || S.rgS.width !== W || S.rgS.height !== hz + 4) { const x0 = w.mx - w.mr * 1.7, c = P.fog; S.rgS = paint(W, hz + 4, (x, y) => { const d = S.ridgeY(x) - y, a = (d >= 0 ? .24 * Math.exp(-d / 5) + .32 * Math.exp(-d / 15) : .5 * Math.exp(d / 2.5)) * Math.pow(clamp((x - x0) / (w.mr * 1.1)), 1.5); return a < .004 ? null : [c[0], c[1], c[2], Math.round(255 * a)]; }); }
+      S.masked(v => { v.globalAlpha = k; v.drawImage(S.rgS, 0, 0); v.globalAlpha = 1; });
+    },
+    /** where the moon is: 0 … 1 of the way from its place to the ridge, and its centre and radius there */
+    moonAt(T, I, w) { const M = S.moon, q = env(T, ...w.moon, E.io) * I, o = S.mo || (S.mo = [0, 0, 0, 0]); o[0] = q; o[1] = lerp(M.x, w.mx, q); o[2] = lerp(M.y, w.my, q); o[3] = lerp(M.r, w.mr, Math.pow(q, 1.25)); return o; },
+    /** its place in the sky, bare, once it has left it (the sky laid back over the moon and its halo in the backdrop) */
+    unmoon(T, I, w) { if (S.moonAt(T, I, w)[0] <= 0) return; const M = S.moon, r = S.halo.width >> 1, x0 = Math.max(0, M.x - r), y0 = Math.max(0, M.y - r), x1 = Math.min(S.W, M.x + r + 1), y1 = Math.min(S.skyC.height, M.y + r + 1); g.drawImage(S.skyC, x0, y0, x1 - x0, y1 - y0, x0, y0, x1 - x0, y1 - y0); },
+    /** the moon where it is now, with its halo, behind the ridge (a layer of its own, cut to the sky above the ridge) */
+    bigMoon(T, I, w) {
+      const [q, cx, cy, Rf] = S.moonAt(T, I, w); if (q <= 0) return;
+      const { W, hz } = S, M = S.moon, R = Math.round(Rf), X = Math.round(cx), Y = Math.round(cy);
+      if (!S.mL || S.mL.width !== W || S.mL.height !== hz + 4) { [S.mL, S.mLx] = canvas(W, hz + 4); S.skyMask = paint(W, hz + 4, (x, y) => y < S.ridgeY(x) ? [255, 255, 255] : null); S.halo2 = glowSpr(Math.round(M.r * 2.2), P.moon, .22); }
+      const x = S.mLx, sz = (c, s) => { const n = Math.round(c.width * s) | 1; return [X - (n >> 1), Y - (n >> 1), n]; };
+      x.globalCompositeOperation = "source-over"; x.globalAlpha = 1; x.clearRect(0, 0, W, hz + 4); x.imageSmoothingEnabled = true;
+      let [a, b, n] = sz(S.halo, Math.pow(R / M.r, .62)); x.globalAlpha = .75; x.drawImage(S.halo, a, b, n, n); // as the backdrop lays it: the halo, the glow round the disc, the disc
+      [a, b, n] = sz(S.halo2, R / M.r); x.globalAlpha = 1; x.drawImage(S.halo2, a, b, n, n);
+      if (q > .02) { [a, b, n] = sz(S.halo2, R / M.r * 1.5); x.globalAlpha = q * .6; x.drawImage(S.halo2, a, b, n, n); x.globalAlpha = 1; } // and close, brighter
+      const [old, neu] = S.moonSpr(R), f = clamp((R - M.r) / (M.r * 1.3)); x.imageSmoothingEnabled = false; x.drawImage(old, X - R, Y - R); if (f > 0) { x.globalAlpha = f; x.drawImage(neu, X - R, Y - R); x.globalAlpha = 1; } // its face as the backdrop has it, and the near one fading in over it as it grows
+      x.globalCompositeOperation = "destination-in"; x.drawImage(S.skyMask, 0, 0); x.globalCompositeOperation = "source-over";
+      S.masked(v => v.drawImage(S.mL, 0, 0));
+    },
+    /** the moon at radius R, twice: its face as the backdrop has it (at its own size, the very same pixels), and its face
+     *  close — the seas where they are on the real one, their shores worn, the bright craters, small ones scattered over the
+     *  highlands, the limb dimmer */
+    moonSpr(R) {
+      const c = S.moonSprs || (S.moonSprs = new Map()); let s = c.get(R); if (s) return s;
+      const n = S.moonN || (S.moonN = noise1(171, 64)), n2 = S.moonN2 || (S.moonN2 = noise1(173, 64)), hash = (x, y) => { const h = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return h - Math.floor(h); };
+      const SEAS = [[-.3, -.34, .27, .23], [.12, -.37, .17, .15], [.28, -.08, .19, .16], [.64, -.2, .09, .12], [-.56, .05, .26, .4], [-.18, .3, .17, .13], [.47, .15, .12, .15], [.32, .33, .08, .08], [-.43, .38, .09, .08], [-.06, -.66, .32, .07]]; // Imbrium, Serenitatis, Tranquillitatis, Crisium, Procellarum, Nubium, Fecunditatis, Nectaris, Humorum, Frigoris
+      const SPOTS = [[-.1, .63, .065], [-.25, -.06, .05], [-.47, -.03, .035], [-.62, -.22, .04]]; // Tycho, Copernicus, Kepler, Aristarchus
+      const disc = fn => paint(R * 2 + 1, R * 2 + 1, (x, y) => { const dx = x - R, dy = y - R, d = Math.hypot(dx, dy); if (d > R + .25) return null; if (d > R - 1.1 && dx + dy < 0) return P.moonLo; return fn(x, y, dx / R, dy / R, d); });
+      const old = disc((x, y, u, v) => (Math.hypot(u + .28, v + .12) < .3) || (Math.hypot(u - .05, v + .32) < .18) || (Math.hypot(u + .02, v - .38) < .16) ? P.moonMare : P.moon);
+      const neu = disc((x, y, u, v, d) => {
+        const wu = u + (fbm(n, v * 3.1 + 5, 2) - .5) * .16, wv = v + (fbm(n2, u * 3.3 + 9, 2) - .5) * .16; // the shores worn
+        let m = 0; for (const [a, b, rx, ry] of SEAS) m = Math.max(m, 1 - ((wu - a) / rx) ** 2 - ((wv - b) / ry) ** 2);
+        for (const [a, b, r] of SPOTS) { const e = Math.hypot(u - a, v - b) / r; if (e < 1) return e < .55 || R < 20 ? P.moonHi : P.moon; }
+        if (m > .5) return P.moonDeep;
+        if (m > .06) return P.moonMare;
+        if (R > 16 && d > R - 1.6) return P.moonLo; // the limb
+        if (R > 14) { if (hash(x, y) < .016) return P.moonLo; if (hash(x + 1, y + 1) < .016) return P.moonHi; } // small craters, lit on the upper side
+        return P.moon;
+      });
+      s = [old, neu]; c.set(R, s); return s;
+    },
+    /** a wolf: a rig of round parts set down in whole pixels, k its size, drawn the first time each pose is wanted — trotting
+     *  (ph, how far through its stride, in eighths) or standing (ph -1), its head lifted to howl (lift, in eighths), sat down
+     *  (sit, in quarters) — facing right and a copy facing left, each with the moonlight along its upper edges */
+    wolfSpr(k, ph, lift, sit = 0) {
+      const key = k + "|" + ph + "|" + lift + "|" + sit, c = S.wolfC || (S.wolfC = new Map()); let f = c.get(key); if (f) return f;
+      const SS = 4, w = Math.ceil(27 * k) + 3, h = Math.ceil(21 * k) + 2, ox = Math.ceil(12.5 * k) + 1, gy = h - 1, W2 = w * SS, H2 = h * SS, cov = new Uint8Array(W2 * H2);
+      const cap = (ax, ay, ar, bx, by, br) => { ax *= k; ay *= k; ar *= k; bx *= k; by *= k; br *= k; const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1e-6, X0 = Math.max(0, Math.floor((Math.min(ax - ar, bx - br) + ox) * SS) - 1), X1 = Math.min(W2, Math.ceil((Math.max(ax + ar, bx + br) + ox) * SS) + 1), Y0 = Math.max(0, Math.floor((gy - Math.max(ay + ar, by + br)) * SS) - 1), Y1 = Math.min(H2, Math.ceil((gy - Math.min(ay - ar, by - br)) * SS) + 1);
+        for (let Y = Y0; Y < Y1; Y++) for (let X = X0; X < X1; X++) { const px = (X + .5) / SS - ox, py = gy - (Y + .5) / SS, t = clamp(((px - ax) * dx + (py - ay) * dy) / L2), rr = lerp(ar, br, t), qx = ax + dx * t - px, qy = ay + dy * t - py; if (qx * qx + qy * qy <= rr * rr) cov[Y * W2 + X] = 1; } };
+      const ell = (cx, cy, rx, ry, rot = 0) => { cx *= k; cy *= k; rx *= k; ry *= k; const cs = Math.cos(rot), sn = Math.sin(rot), R = Math.max(rx, ry);
+        for (let Y = Math.max(0, Math.floor((gy - cy - R) * SS) - 1); Y < Math.min(H2, Math.ceil((gy - cy + R) * SS) + 1); Y++) for (let X = Math.max(0, Math.floor((cx - R + ox) * SS) - 1); X < Math.min(W2, Math.ceil((cx + R + ox) * SS) + 1); X++) { const px = (X + .5) / SS - ox - cx, py = gy - (Y + .5) / SS - cy, u = px * cs + py * sn, v = -px * sn + py * cs; if ((u / rx) ** 2 + (v / ry) ** 2 <= 1) cov[Y * W2 + X] = 1; } };
+      const L = lift, s = sit, trot = ph >= 0, sw = trot ? Math.sin(2 * Math.PI * ph) : 0, P2 = (a, b) => [lerp(a[0], b[0], s), lerp(a[1], b[1], s)];
+      // the body: the rump, the back, the deep chest, the ruff over the shoulders; sitting, the hindquarters down on the ground
+      const [rx0, ry0] = P2([-4.4, 8.5], [-2.9, 3.3]), [bx0, by0] = P2([-4.1, 8.9], [-2.6, 4.3]), [bx1, by1] = P2([3.6, 9.2], [3.8, 10.5]), [cx0, cy0] = P2([4.4, 7.9], [4.6, 8.5]), [wx0, wy0] = P2([4.5, 10.4], [4.4, 11.6]), [nx0, ny0] = P2([5.1, 10.0], [5.0, 11.3]);
+      ell(rx0, ry0, 2.5, 2.3); cap(bx0, by0, 2.1, bx1, by1 + .3 * L, 2.4); ell(cx0, cy0 + .3 * L, 2.3, 3.0, -.2 - .15 * L); ell(wx0, wy0 + .4 * L, 2.2, 1.7, -.3 - .3 * L);
+      if (s > 0) ell(-1.3, 2.4, 3.0 * s, 1.9 * s, .12); // the haunch, folded
+      // the neck and the head: carried level as it trots, thrown back to howl, the jaw dropped open and the ears laid back
+      const a = lerp(-.2, 1.25, L), hx = lerp(8.5, 6.9, L) - .3 * s, hy = lerp(11.2, 16.2, L) + 1.2 * s, ca = Math.cos(a), sa = Math.sin(a);
+      cap(nx0, ny0 + .3 * L, 2.1, hx, hy, 1.45); ell(hx, hy, 1.9, 1.6, a);
+      cap(hx + ca * .9, hy + sa * .9, 1.1, hx + ca * 4.1, hy + sa * 4.1, .45);
+      if (L > 0) { const jb = a - .55 * L; cap(hx + ca * .8 + sa * .5, hy + sa * .8 - ca * .5, .65, hx + Math.cos(jb) * 3.1 + sa * .4, hy + Math.sin(jb) * 3.1 - ca * .4, .3); }
+      for (const [ex0, ey0, ea, el] of [[-.4, 1.2, 1.65, 2.2], [-1.15, 1.0, 1.9, 1.8]]) { const ex = hx + ex0 * ca - ey0 * sa, ey = hy + ex0 * sa + ey0 * ca, e = a + ea + .6 * L; cap(ex, ey, .75, ex + Math.cos(e) * el, ey + Math.sin(e) * el, .15); }
+      cap(cx0 + 1.2, cy0 + .8, .8, cx0 + 2.2, cy0 - .9 + .2 * L, .3); cap(cx0 + 1.9, cy0 + 1.7, .7, cx0 + 3.2, cy0 + .5 + .3 * L, .25); // the ruff under the throat
+      // the tail: low and bushy, swinging a little with the trot; sitting, laid along the ground
+      const T1 = P2([-5.8, 9.2], [-4.6, 3.4]), T2 = P2([-7.3, 7.6 + sw * .35], [-7.0, 1.6]), T3 = P2([-8.1, 5.0 + sw * .5], [-9.2, 1.0]), T4 = P2([-8.2, 3.3 + sw * .6], [-10.4, 1.5]);
+      cap(T1[0], T1[1], .75, T2[0], T2[1], 1.25); cap(T2[0], T2[1], 1.25, T3[0], T3[1], 1.05); cap(T3[0], T3[1], 1.05, T4[0], T4[1], .4);
+      // the legs, across the body in pairs as it trots: each foot planted and sliding back under it, then lifted and swung
+      // through; the front ones fold at the wrist, the hind ones at the hock (and, sitting, all the way)
+      const St = 5, foot = (q, up) => { q = ((q % 1) + 1) % 1; if (q < .5) return [St / 2 - St * q / .5, 0]; const u = (q - .5) / .5, e = u * u * (3 - 2 * u); return [-St / 2 + St * e, Math.sin(Math.PI * Math.pow(u, .75)) * up]; };
+      const leg = (jx, jy, up, lo, rx, q, fwd, r1, r2, r3) => { const [fx, fl] = trot ? foot(q, fwd ? 1.9 : 1.6) : [0, 0], Fx = rx + fx, Fy = .45 + fl, dx = Fx - jx, dy = Fy - jy, d = Math.max(.5, Math.min(up + lo - .05, Math.hypot(dx, dy))), a0 = Math.atan2(dy, dx), b = Math.acos(clamp((up * up + d * d - lo * lo) / (2 * up * d), -1, 1)), kb = fwd ? a0 + b : a0 - b, kx = jx + Math.cos(kb) * up, ky = jy + Math.sin(kb) * up;
+        cap(jx, jy, r1, kx, ky, r2); cap(kx, ky, r2 * .8, Fx, Fy, r3); ell(Fx + (fwd ? .3 : .2), Fy - .05, .8, .42); };
+      const [fj, fjy] = P2([4.3, 7.0], [4.4, 7.4]), [hj, hjy] = P2([-3.9, 7.3], [-2.2, 3.4]);
+      leg(fj, fjy, 3.4, 3.3, lerp(4.5, 4.9, s), ph, true, .9, .65, .42); leg(fj, fjy, 3.4, 3.3, lerp(5.8, 5.9, s), ph + .5, true, .9, .65, .42);
+      leg(hj, hjy, 3.9, 3.3, lerp(-4.8, .6, s), ph + .5, false, 1.55, .7, .4); leg(hj, hjy, 3.9, 3.3, lerp(-3.5, 1.5, s), ph, false, 1.55, .7, .4);
+      const on = new Uint8Array(w * h); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let m = 0; for (let j = 0; j < SS; j++) for (let i = 0; i < SS; i++) m += cov[(y * SS + j) * W2 + x * SS + i]; if (m >= 7) on[y * w + x] = 1; }
+      const at = (x, y, fl) => x >= 0 && y >= 0 && x < w && y < h && on[y * w + (fl ? w - 1 - x : x)], rim = fl => paint(w, h, (x, y) => { if (!at(x, y, fl)) return null; const t1 = !at(x, y - 1, fl), t2 = !t1 && !at(x, y - 2, fl), r1 = !at(x + 1, y, fl) || !at(x + 1, y - 1, fl); return t1 ? P.moon : t2 ? P.moonLo : r1 ? P.wolfRim : null; }); // the moon is up and to the right of the ridge: two pixels of its own light along the backs and heads, and a third down the side toward it
+      const spr = paint(w, h, (x, y) => on[y * w + x] ? P.wolf : null), dep = new Uint8Array(w * h); for (let x = 0; x < w; x++) for (let y = 0, d = 0; y < h; y++) { d = on[y * w + x] ? d + 1 : 0; dep[y * w + x] = d; }
+      const LIT = [null, P.coatH, P.coatH, P.coatL, P.coatL, P.coatL, P.coat], lit = paint(w, h, (x, y) => { const d = dep[y * w + x]; return d ? (y + 1 < h && !on[(y + 1) * w + x] && d > 3 ? P.coat : LIT[Math.min(6, d)]) : null; }); // out in the clearing, lit from above: the moon along its back, its coat, its underside in shadow
+      const ex = hx + ca * 1.1 + sa * .4, ey = hy + sa * 1.1 - ca * .4, eX = Math.round(ox + ex * k - .5), eY = Math.round(gy - ey * k - .5); // the eye, forward of the middle of the head, under the moonlit edge
+      f = { c: spr, l: flip(spr), rc: rim(0), rl: rim(1), lc: lit, ll: flip(lit), w, h, ox, gy, eye: [eX, eY] }; c.set(key, f); return f;
+    },
+    /** the pack: out along the ridge from behind the pine, a stand among the spires to howl, and back the way they came; dark
+     *  shapes with the moonlight along their backs, black against the moon when it has come */
+    packAt(T, I, w, q) {
+      for (const p of w.pack) {
+        if (T <= p.t[0] || T >= p.t[3]) continue;
+        let x, ph = -1, dir = -1, lift = 0, sit = 0;
+        if (T < p.t[1]) { const d = (w.x0 - p.x1) * seg(T, p.t[0], p.t[1], u => 1 - Math.pow(1 - u, 1.6)); x = w.x0 - d; ph = d / (10 * p.k); }
+        else if (T < p.t[2]) { x = p.x1; for (const hw of p.howl) lift = Math.max(lift, env(T, ...hw, E.sine)); lift = Math.max(lift, .375 * env(T, p.t[1], p.t[1] + .35, p.t[1] + 1.0, p.t[1] + 1.45, E.sine)); if (p.sit) sit = env(T, ...p.sit, E.sine); } // (as each arrives it lifts its head to the moon)
+        else { const d = (w.x0 - p.x1) * seg(T, p.t[2], p.t[3], u => Math.pow(u, 1.6)); x = p.x1 + d; ph = d / (10 * p.k); dir = 1; }
+        const f = S.wolfSpr(p.k, ph < 0 ? -1 : Math.floor((ph % 1) * 8) / 8, Math.round(lift * 8) / 8, Math.round(sit * 4) / 4), X = Math.round(x), y = p.y || S.ridgeY(X), dx = dir > 0 ? X - f.ox : X - (f.w - 1 - f.ox), dy = y - f.gy;
+        g.globalAlpha = I; if (S.portrait) g.drawImage(dir > 0 ? f.lc : f.ll, dx, dy); // (on a phone, out in the clearing, in the moonlight)
+        else { g.drawImage(dir > 0 ? f.c : f.l, dx, dy); const rk = 1 - q; if (rk > .02) { g.globalAlpha = I * rk; g.drawImage(dir > 0 ? f.rc : f.rl, dx, dy); } } // the moonlight along their backs, gone when the moon is behind them
+        const gl = (T < p.t[2] ? env(T, p.t[1] + .15, p.t[1] + .45, p.t[1] + 1.0, p.t[1] + 1.5, E.sine) : 0) * (1 - q) * I; // the eyes catch the moon as they look up at it
+        if (gl > .02) { const ex = dx + (dir > 0 ? f.eye[0] : f.w - 1 - f.eye[0]), ey = dy + f.eye[1], es = S.eyeShine || (S.eyeShine = glowSpr(4, P.wolfEye, .75)); g.globalAlpha = gl; g.drawImage(es, ex - 4, ey - 4); g.fillStyle = css(P.wolfEye); g.fillRect(ex, ey, 1, 1); } // (eyeshine: the moon caught at the back of the eye)
+        g.globalAlpha = 1;
+      }
+    },
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; N: the pass (0, the signature) */
     draw(T, I, A, F, N = 0) {
       const { W, H, hz, moon: M } = S;
-      if (N !== S.planP) { S.pl = N > 0 ? (K.egg(N) ? S.eggPlan(N) : S.dealPass(N)) : S.sig(); S.planP = N; }
+      if (N !== S.planP) { const h = N > 0 ? K.long(N) : 0; S.pl = N > 0 ? (h === 1 ? S.wolfPlan(N) : h === 2 ? S.ufoPlan(N) : K.egg(N) ? S.eggPlan(N) : S.dealPass(N)) : S.sig(); S.planP = N; } // (a crown, long 3, is dealt as it always was)
       const pl = S.pl;
       g.drawImage(S.bg, 0, 0);
+      if (pl.wolves && I > .01) S.unmoon(T, I, pl.wolves); // the first hour egg: the moon's place in the sky, when it has left it
       // a colour string is parsed each time it is set, so two fixed ones and the twinkle in globalAlpha
       const cS = css(P.star), cH = css(P.starHi);
       for (const s of S.stars) { const tw = .55 + .45 * Math.sin(A * s.f + s.ph), a = s.b * tw; g.fillStyle = a > .78 ? cH : cS; g.globalAlpha = clamp(a); g.fillRect(s.x, s.y, 1, 1); if (s.big && tw > .9) { g.fillStyle = cS; g.globalAlpha = .3; g.fillRect(s.x - 1, s.y, 3, 1); g.fillRect(s.x, s.y - 1, 1, 3); } }
       g.globalAlpha = 1;
+      if (pl.wolves && I > .01) S.bigMoon(T, I, pl.wolves); // the first hour egg: the moon, come down to the ridge
       if (pl.aurora && I > .01) S.aurora(T, I, pl.aurora);
       if (pl.star) S.shoot(T, I, pl.star);
       if (pl.meteors) for (const m of pl.meteors) S.shoot(T, I, m);
@@ -420,6 +703,7 @@ export default function forest(K) {
       const q = v => Math.round(v * 4);
       const mSway = S.mids.map(t => gust(t.x) * 1.5);
       g.drawImage(midsLayer(W, H, mSway.map(q).join(), x => S.mids.forEach((t, i) => S.tree(x, t, mSway[i]))), 0, 0);
+      if (pl.wolves && I > .01) { S.ridgeGlow(T, I, pl.wolves); S.masked(() => S.packAt(T, I, pl.wolves, S.moonAt(T, I, pl.wolves)[0])); } // and the pack on the ridge, among the spires, against the moonlit mist
       if (dm) { S.fog(S.fogBands[1], hz - 1, o1, .25); if (fogE > 0) S.masked(x => S.fog(S.fogBands[1], hz - 1, o1, fogE * .5, x)); } else S.fog(S.fogBands[1], hz - 1, o1, .25 + fogE * .5);
       const bank = pl.bank ? env(T, ...pl.bank, E.sine) * I : 0;
       if (bank > 0) S.masked(x => S.fog(S.bankBands[0], hz - 4, A * 2.2 + T * 5 * I, bank, x));
@@ -429,11 +713,13 @@ export default function forest(K) {
       if (bank > 0) S.masked(x => { S.fog(S.bankBands[1], hz + 9, -A * 1.7 - T * 4 * I, bank * .9 * fb, x); S.fog(S.fogBands[1], hz + 24, A * 1.2 + T * 3 * I, bank * .5 * fb, x); });
       if (shaftE > 0) { const sw = S.shaft.width, lay = x => { for (let k = 0; k < 3; k++) { x.globalAlpha = pl.shaftK ? clamp(shaftE * [1, .7, .5][k] * pl.shaftK) : shaftE * [1, .7, .5][k]; x.drawImage(N > 0 ? S.shaftSoft : S.shaft, Math.round(M.x - sw * .62 - k * W * (S.portrait ? .17 : .1) + Math.sin(T * .7 + k) * 1.5), Math.round(M.y)); } x.globalAlpha = 1; }; if (N > 0) S.masked(lay); else lay(g); }
       if (pl.egg && I > .01) S.masked(x => S.beamAt(T, I, pl.egg, x, 1)); // the egg's shaft of moonlight, the air in front of the walker
+      if (pl.ufo && I > .01) S.masked(() => S.ufoAt(T, I, A, pl.ufo)); // the second hour egg: the saucer over the clearing
       const nSway = S.nears.map(t => gust(t.x) * 2.2);
       if (pl.owl && I > .01) S.owlAt(T, I, pl.owl, 0, nSway);
       const rus = pl.egg && I > .01 ? S.rustle(T, I, pl.egg) : null; // the egg: the boughs it pushes through
       g.drawImage(nearsLayer(W, H, nSway.map(q).join() + (rus ? "|" + rus.join() : ""), x => S.nears.forEach((t, i) => S.tree(x, t, nSway[i], rus && rus[i] ? [rus[i] / 4, Math.floor(T * 15)] : null))), 0, 0);
       if (pl.owl && I > .01) S.owlAt(T, I, pl.owl, 1, nSway);
+      if (pl.ufo && I > .01) S.masked(() => S.ufoNear(T, I, pl.ufo)); // the second hour egg: the near pines in its beam's light
       const leans = []; for (let x = 0; x < W + 8; x += 6) leans.push(Math.round(clamp(gust(x) * 1.7 - .35, -1, 1)));
       g.drawImage(grassLayer(W, 11, leans.join(), x => leans.forEach((l, i) => x.drawImage(S.grass[l + 1], i * 6, 0, 6, 11, i * 6, 0, 6, 11))), 0, H - 11);
       if (cover > 0) { g.globalAlpha = cover * .3; g.fillStyle = css(P.near); g.fillRect(0, 0, W, H); g.globalAlpha = 1; } // the clearing goes dark under the cloud
@@ -588,6 +874,8 @@ export default function forest(K) {
         let wave = 0;
         if (wv) { for (const [t0, dd] of wv) wave = Math.max(wave, env(T - (dd > 0 ? x / W : 1 - x / W) * 1.8, t0, t0 + .2, t0 + .45, t0 + 1.2, E.sine)); b = Math.max(b * .45, wave * up); }
         if (pl.egg) { const s = S.scatter(T, x, y, pl.egg); x += s[0]; y += s[1]; b = Math.max(b, s[2] * up); } // the egg: they scatter from it, startled bright
+        if (pl.hush) b *= 1 - .92 * env(T, ...pl.hush, E.sine); // the first hour egg: they go quiet while the pack howls
+        if (pl.ufo) { const r = S.ringAt(T, i, n, pl.ufo, x, y, b); x = r[0]; y = r[1]; b = r[2]; } // the second: they dance round under the saucer
         if (f.amb) glow(f.hx + Math.sin(A * .4 + f.ph) * 4, f.hy - 2 + Math.sin(A * .3 + f.ph) * 2, Math.pow(Math.max(0, Math.sin(A * (.8 + f.m * .06) + f.ph)), 10) * .75 * (1 - I * up));
         const dm = pl.dealt && S.wmOn, mf = dm ? S.m(x, y) : 1, mh = dm ? S.mb(x - 5, y - 5, 11, 11) : 1; // a dealt pass's fireflies keep back from the words
         if (b * I > 0) glow(x, y, dm ? b * I * mf : b * I);

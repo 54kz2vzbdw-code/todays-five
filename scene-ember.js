@@ -34,6 +34,20 @@
 // flames lick it, and it catches, a little fire of its own in the fire's own colours; the stick whips it up out of the heat,
 // the flame streaming, waves it, and it goes out in a puff of smoke; and the stick goes back the way it came, the
 // marshmallow burnt black on one side, an ember winking out in the char. Drawn at the picture's own pixels, like the rest.
+//
+// 1.12 b429: the long day's hour eggs. For a list left up for hours, once an hour (K.long, the stage's clock of the loops
+// left alone) a night of its own in place of the one it would have dealt, with only the fire's heartbeat about it. In the
+// odd hours, the sky's pictures: stars leave their places and slide across the sky to one another, the seven of the Plough
+// first and then the rest, lines running between them as they arrive, and the Great Bear is drawn in round them in pale
+// gold from the tail, as on an old star chart, and comes alive: it walks along the sky, the stars at its paws stepping, to
+// the moon, and stretches up to sniff at it, the moon glowing where its nose touches; then the picture fades, the lines
+// let go and the stars slide home — all of it in the lake too, broken by the ripples. In the even hours, a launch: far off
+// behind the hills a light comes up, and a rocket climbs out of it on a pillar of fire, slowly and then faster, leaning over
+// onto its long arc; two boosters fall away glowing; and as it climbs out of the earth's shadow into the sunlight still up
+// there, its plume opens behind it into a vast pale-blue bell, the jellyfish of a launch at dusk, the rocket a spark at its
+// tip going on alone over the edge of the sky; the plume drifts and thins and is gone, and its light lies in the lake all
+// the while. The sound never arrives. Painted as the rest is, at the picture's own pixels; each keeps back from the words
+// as the dealt nights do, and opens and closes on the resting picture.
 export default function ember(K) {
   const { clamp, lerp, E, seg, env, rng, canvas, noise1, fbm, dith, deal, bag } = K;
   let g = null;
@@ -52,6 +66,7 @@ export default function ember(K) {
     return Array.from({ length: 37 }, (_, i) => { const t = i / 36; let k = 0; while (k < st.length - 2 && t > st[k + 1][0]) k++; return pack(mix(st[k][1], st[k + 1][1], (t - st[k][0]) / (st[k + 1][0] - st[k][0]))); }); })();
   // the loop's beats: when each happens (the forever cycle can deal them differently)
   const B = { flare: [.8, 1.4, 2.6, 3.4], log: 4.6, star: [6.2, 7.0], owl: [8.3, 11.3], fish: 12.0 };
+  const BEAR = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 3], [4, 7], [7, 8], [8, 9], [8, 10], [5, 11], [11, 12], [12, 13], [6, 14], [14, 15]]; // the hour egg's Great Bear: the Plough, then the bear round it
   // the forever cycle's colours: a firefly's blink, round its ramp; the northern lights from the hem up, and the light
   // that runs along them; a cloud's body and its lit rim; ripples and a wake catching the moon
   const blend = (a, b, k) => { k = k < 0 ? 0 : k > 1 ? 1 : k; const r = a & 255, gg = a >> 8 & 255, bl = a >> 16 & 255; return (255 << 24 | Math.round(bl + ((b >> 16 & 255) - bl) * k) << 16 | Math.round(gg + ((b >> 8 & 255) - gg) * k) << 8 | Math.round(r + ((b & 255) - r) * k)) >>> 0; }; /* no arrays: it runs for every pixel a new thing tints */
@@ -281,10 +296,148 @@ export default function ember(K) {
         put(x, y, M.smoke, k2); put(x + 1, y, M.smoke, k2 * .8); if (q > .12) { put(x, y - 1, M.smoke, k2 * .7); put(x + 1, y - 1, M.smoke, k2 * .55); } if (q > .3) { put(x - 1, y, M.smoke, k2 * .45); put(x + 2, y - 1, M.smoke, k2 * .35); } } // (each a little cloud that grows as it rises)
       for (let i = 0; i < 6; i++) { const ag = ((T - t0 - .4) * .9 + i * .32) % 2; if (T < t0 + .4 || T > e.back[0] + 1 || ag < 0) continue; const k3 = (1 - ag / 2) * .35 * (1 - seg(T, e.back[0], e.back[0] + 1, x => x)); put(cx + fs * .5 + Math.sin(ag * 3 + i) * ag * .9 + ag * 1.2, cy - 4 - ag * 6, M.smoke, k3); } // the wisp
     },
+    /** 1.12 b429: the first hour egg (K.long 1, once in an odd hour of the list left alone): the sky's pictures. Stars leave
+     *  their places and slide across the sky to one another, and lines run between them, the Plough first and then the rest
+     *  of the Great Bear round it; the bear is drawn in about them from the tail in a pale gold line, as on an old star chart, and comes
+     *  alive — it walks along the sky over the hills, the stars at its paws stepping, until it stands under the moon and
+     *  lifts its nose to sniff at it; then the picture fades, the lines let go, and the stars slide home. Composed, not dealt */
+    bearPlan() {
+      const { bw, mx, my, mr, pr } = S, sc = .85, dx = pr ? 16 : 36, ex = mx - mr * (pr ? .75 : .85), ey = my + mr * (pr ? .65 : -.55), ox = Math.round(ex - 26.1 * sc) - dx, oy = Math.round(ey + 13.3 * sc); // it walks to where, nose up, it touches the moon's edge (on a desktop its upper edge, so that its paws stay above the list)
+      // the figure's stars as it stands to be drawn, and for each a star of the sky far enough off to be seen coming
+      const pts = S.bearPts(0, 0), used = new Set(), minD = pr ? 14 : 24, stars = [], idx = S.idx;
+      const free = ([x, y]) => { const v = idx[y * bw + x] - STAR; if (v < 0 || v > 7) return false; for (const [ax, ay] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const w = idx[(y + ay) * bw + x + ax] - ARM; if (w >= 0 && w <= 7) return false; } return true; }; // (one still showing, and without arms)
+      pts.forEach(([px, py], k) => { const tx = ox + px * sc, ty = oy + py * sc; let best = -1, bd = 1e9; S.stars.forEach((st, i) => { if (used.has(i) || !free(st)) return; const d = Math.hypot(st[0] - tx, st[1] - ty); if (d >= minD && d < bd) { bd = d; best = i; } });
+        if (best < 0) return; used.add(best); const [hx, hy] = S.stars[best], a = k < 7 ? .5 + k * .28 : 2.6 + (k - 7) * .14, b = 11.2 + (k * 5 % 18) * .07;
+        stars.push({ k, home: [hx, hy], ph: idx[hy * bw + hx] - STAR, under: S.skyAt(hx, hy), t: [a, a + 1.2, b, b + 1.3], bend: (k % 2 ? 1 : -1) * .16 }); });
+      return { dealt: true, flare: [.6, 1.2, 2.2, 3.0], heat: .04, bear: { sc, ox, oy, dx, stars, trace: [4.6, 5.6], walk: [5.8, 9.6], sniff: [9.5, 9.9, 10.5, 10.9], fade: [10.8, 11.6] } };
+    },
+    /** what the sky is at a pixel under a star (the backdrop's sky and Milky Way, worked out again) */
+    skyAt(x, y) {
+      const { bw, hy } = S, n1 = S.n7 || (S.n7 = noise1(7, 64)), n2 = S.n11 || (S.n11 = noise1(11, 64)), f = Math.pow(y / hy, 1.3) * 15, k = Math.floor(f); let v = SKY + Math.min(15, k + (f - k > dith(x, y) ? 1 : 0));
+      const u = x / bw, vv = y / hy, c = lerp(.95, -.05, u) + .04 * Math.sin(u * 6), d = Math.abs(vv - c), w = .15;
+      if (d <= w && vv <= .7) { const dens = (1 - d / w) * (.5 + .5 * fbm(n1, x * .07 + y * .04, 3)) * clamp((.7 - vv) / .25) - .5 * Math.exp(-(((vv - c + .02) / .025) ** 2)) * fbm(n2, x * .15, 2), lv = dens * 4 - dith(x, y) * 1.1; if (lv > 0) v = MILKY + Math.min(3, Math.floor(lv)); }
+      return v;
+    },
+    /** the Great Bear's stars, for a step of its walk (ph) and how far its nose is lifted (look): the Plough's handle its tail
+     *  and its bowl the bear's back and haunch, then its shoulder, head, nose and ear, and the legs, near ones joined up */
+    bearPts(ph, look) {
+      const o = S.bp || (S.bp = Array.from({ length: 18 }, () => [0, 0])), A = Math.PI * 2 * ph, bob = -Math.abs(Math.sin(A)) * .7, sw = Math.sin(A) * .7, set = (i, x, y) => { o[i][0] = x; o[i][1] = y; };
+      set(0, -47, -16 + sw); set(1, -38, -10 + sw * .6); set(2, -29, -5 + sw * .3); set(3, -20, -4 + bob); set(4, -4, -6 + bob); set(5, -5, 9 + bob); set(6, -19, 8 + bob);
+      const hx = 17, hy = -6 + bob * .6 - look * 2.5, a0 = Math.atan2(5, 9) - 1.0 * look; set(7, 7, -6 + bob); set(8, hx, hy); set(9, hx + Math.cos(a0) * 10.3, hy + Math.sin(a0) * 10.3); set(10, hx - 3 - look, hy - 5.5 + look);
+      const leg = (j0, j1, kx, ky, px, py, a, bend, far) => { const k1x = j0 + Math.sin(a) * 7, k1y = j1 + Math.cos(a) * 7, b = a + bend; if (!far) { set(kx, k1x, k1y); set(px, k1x + Math.sin(b) * 7.2, k1y + Math.cos(b) * 7.2); } else set(px, k1x + Math.sin(b) * 7.2 + 2.5, k1y + Math.cos(b) * 7.2); };
+      const aF = .45 * Math.sin(A), lF = Math.max(0, Math.cos(A)), aH = .45 * Math.sin(A + Math.PI), lH = Math.max(0, -Math.cos(A));
+      set(11, 6, 7 + bob); leg(6, 7 + bob, 12, null, 13, null, aF, -.7 * lF, 0); leg(-19, 8 + bob, 14, null, 15, null, aH, .6 * lH, 0);
+      leg(6, 7 + bob, null, null, 16, null, aH, -.7 * lH, 1); leg(-19, 8 + bob, null, null, 17, null, aF, .6 * lF, 1);
+      return o;
+    },
+    /** the bear as an old chart draws it, round its stars: which of the figure's pixels are its outline (2) and inside it (1),
+     *  for a step of its walk and a lift of its nose, worked out the first time each is wanted */
+    bearShape(sc, phi, li) {
+      const key = sc + "|" + phi + "|" + li, c = S.bearC || (S.bearC = new Map()); let m = c.get(key); if (m) return m;
+      const p = S.bearPts(phi / 16, li / 4).map(([x, y]) => [x * sc, y * sc]), A = Math.PI * 2 * phi / 16, bob = -Math.abs(Math.sin(A)) * .7 * sc, X0 = Math.floor(-52 * sc), Y0 = Math.floor(-24 * sc), w = Math.ceil(84 * sc), h = Math.ceil(50 * sc), sh = [];
+      const cap = (ax, ay, ar, bx, by, br) => sh.push([ax, ay, ar * sc, bx, by, br * sc]), circ = (x, y, r) => cap(x, y, r, x, y, r), at = (x, y) => [x * sc, y * sc + bob];
+      cap(...at(-18, 2), 8.4, ...at(3, 1), 9); circ(...at(-7, 5), 8.8); circ(...at(3, -2.5), 8.6); // the haunch, the heavy barrel, the hump over the shoulders
+      cap(...at(8, 0), 6.4, p[8][0], p[8][1] + 1.4 * sc, 5); circ(p[8][0], p[8][1] + .4 * sc, 5.6); cap(p[8][0] + .8 * sc, p[8][1] + 1 * sc, 3.9, p[9][0], p[9][1], 2.5); circ(p[10][0], p[10][1] + .8 * sc, 1.7); // the neck, the broad head, the long muzzle, a small round ear
+      cap(...at(-24, -1), 2.2, p[2][0], p[2][1], 1.6); cap(p[2][0], p[2][1], 1.6, p[1][0], p[1][1], 1.2); cap(p[1][0], p[1][1], 1.2, p[0][0], p[0][1], .8); // the long tail of the old charts, along the Plough's handle
+      cap(p[11][0], p[11][1], 4.9, p[12][0], p[12][1], 4); cap(p[12][0], p[12][1], 4, p[13][0], p[13][1], 3.3); cap(p[6][0], p[6][1], 6, p[14][0], p[14][1], 4.2); cap(p[14][0], p[14][1], 4.2, p[15][0], p[15][1], 3.3); // the near legs, thick
+      cap(p[11][0] + 2 * sc, p[11][1], 4, p[16][0], p[16][1], 2.9); cap(p[6][0] + 2 * sc, p[6][1], 4.8, p[17][0], p[17][1], 2.9); // the far ones
+      for (const i of [13, 15, 16, 17]) cap(p[i][0] - .5 * sc, p[i][1] + .6 * sc, 2.4, p[i][0] + 2.6 * sc, p[i][1] + .9 * sc, 1.8); // and the paws, flat on the sky
+      const inn = new Uint8Array(w * h); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const px = X0 + x + .5, py = Y0 + y + .5; for (const [ax, ay, ar, bx, by, br] of sh) { const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1e-6, t = clamp(((px - ax) * dx + (py - ay) * dy) / L2), rr = lerp(ar, br, t), qx = ax + dx * t - px, qy = ay + dy * t - py; if (qx * qx + qy * qy <= rr * rr) { inn[y * w + x] = 1; break; } } }
+      m = new Uint8Array(w * h); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; if (!inn[i]) continue; m[i] = x && y && x < w - 1 && y < h - 1 && inn[i - 1] && inn[i + 1] && inn[i - w] && inn[i + w] ? 1 : 2; }
+      m = { m, w, h, X0, Y0 }; c.set(key, m); return m;
+    },
+    /** the stars come, the lines run, the picture is drawn in and walks, sniffs at the moon, and comes apart */
+    bearAt(T, I, A, b) {
+      const { bw, out, pal } = S, sc = b.sc, wk = seg(T, ...b.walk, E.sine), ph = (wk * b.dx) / (14 * sc), look = env(T, ...b.sniff, E.sine), sn = look > .5 ? Math.max(0, Math.sin(T * 19)) * .25 : 0, fade = 1 - seg(T, ...b.fade, E.sine);
+      const OX = Math.round(b.ox + wk * b.dx), OY = b.oy, phi = Math.round(ph * 16) % 16, li = Math.round((look + sn) * 4), pts = S.bearPts(phi / 16, (look + sn)), at = new Map();
+      const BL = S.bearL || (S.bearL = { line: pack(hex("#A9B8F2")), gold: pack(hex("#E9C77E")), fill: pack(hex("#5B4F95")), star: pack(hex("#FFFFFF")), arm: pack(hex("#BDB6EE")), halo: pack(hex("#E8E2FF")) });
+      const { hy, sy, idx } = S, put = (x, y, c, k) => { S.tint(x, y, c, k); const yr = Math.round(hy + (hy - y) / 1.7); if (yr <= hy + 1 || yr >= sy || (yr - hy) & 1) return; const xr = Math.round(x + Math.sin(yr * 1.3 + T * 2.2) * .9), ix = idx[yr * bw + xr]; if (ix >= LAKE && ix < FREF) S.tint(xr, yr, c, k * .42); }; // and again in the lake, broken by the ripples
+      const boop = env(T, b.sniff[1] - .05, b.sniff[1] + .15, b.sniff[1] + .35, b.sniff[2] + .2, E.sine) * I; // the moon glows where its nose touches it
+      if (boop > .01) { const { mx, my, mr } = S; for (let y = Math.floor(my - mr * 2.4); y <= my + mr * 2.4; y++) for (let x = Math.floor(mx - mr * 2.4); x <= mx + mr * 2.4; x++) { const d = Math.hypot(x - mx, y - my) / mr; if (d > 1 && d < 2.4) S.tint(x, y, BL.halo, boop * .5 * Math.pow((2.4 - d) / 1.4, 1.6)); } }
+      // where each of the figure's stars is: on its way from its place, in the picture, or on its way home
+      for (const st of b.stars) {
+        const [h0, h1] = st.home, tx = OX + pts[st.k][0] * sc, ty = OY + pts[st.k][1] * sc, q1 = seg(T, st.t[0], st.t[1], E.io), q2 = seg(T, st.t[2], st.t[3], E.io);
+        if (q1 <= 0 || q2 >= 1) continue;
+        const [fx, fy] = q2 > 0 ? [tx, ty] : [h0, h1], [gx, gy] = q2 > 0 ? [h0, h1] : [tx, ty], q = q2 > 0 ? q2 : q1, mx = (fx + gx) / 2 - (gy - fy) * st.bend, my = (fy + gy) / 2 + (gx - fx) * st.bend, u = q, x = (1 - u) * (1 - u) * fx + 2 * u * (1 - u) * mx + u * u * gx, y = (1 - u) * (1 - u) * fy + 2 * u * (1 - u) * my + u * u * gy;
+        { const i = h1 * bw + h0; out[i] = blend(pal[st.under], out[i], 1 - I); } // its place, bare while it is away (and the star back in it as a touch eases the picture out)
+        const lit = q2 > 0 ? 1 - q2 : q1, tw = pal[STAR + st.ph]; at.set(st.k, [x, y, lit]);
+        const mv = q > 0 && q < 1 ? Math.sin(Math.PI * q) : 0; // (how fast it is going)
+        if (mv > 0) for (let j = 1; j < 7; j++) { const v = Math.max(0, u - j * .03), tx2 = (1 - v) * (1 - v) * fx + 2 * v * (1 - v) * mx + v * v * gx, ty2 = (1 - v) * (1 - v) * fy + 2 * v * (1 - v) * my + v * v * gy; put(tx2, ty2, BL.arm, I * (1 - j / 7) * .8 * mv); } // a trail as it slides
+        put(x, y, blend(tw, BL.star, Math.max(lit, mv)), I);
+        const arm = Math.max((lit - .5) * 1.3, mv * .7); if (arm > 0) for (const [ax, ay] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) put(x + ax, y + ay, BL.arm, I * Math.min(1, arm));
+      }
+      // the lines between them, run out as both ends are in place, let go as the picture comes apart
+      const lf = 1 - seg(T, 11.0, 11.8, E.sine);
+      for (const [a, c] of BEAR) { const pa = at.get(a), pc = at.get(c); if (!pa || !pc) continue; const arr = Math.max(b.stars.find(s => s.k === a).t[1], b.stars.find(s => s.k === c).t[1]), q = seg(T, arr - .1, arr + .35, E.out) * lf; if (q <= 0) continue;
+        const n = Math.ceil(Math.hypot(pc[0] - pa[0], pc[1] - pa[1]) * q); for (let i = 1; i < n; i++) { const f = i / Math.max(1, Math.hypot(pc[0] - pa[0], pc[1] - pa[1])); put(lerp(pa[0], pc[0], f), lerp(pa[1], pc[1], f), BL.line, I * .5 * Math.min(pa[2], pc[2], 1)); } }
+      // the picture round them: a pale gold line traced in from the tail, a light running along it, and a haze inside
+      const tr = seg(T, ...b.trace, E.sine) * fade; if (tr <= 0) return;
+      const sh = S.bearShape(sc, phi, li), { m, w, h, X0, Y0 } = sh;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const v = m[y * w + x]; if (!v) continue; const gx = OX + X0 + x, gy = OY + Y0 + y; if (v === 2) { const run = .7 + .3 * Math.sin((x + y) * .55 - T * 4); put(gx, gy, BL.gold, I * .5 * run * clamp(tr * 2.2 - (x / w) * 1.2)); } else S.tint(gx, gy, BL.fill, I * .22 * tr); }
+    },
+    /** 1.12 b429: the second hour egg (K.long 2, once in an even hour): a launch. Far off behind the hills a light comes up
+     *  under the sky, and a rocket climbs out of it on a pillar of fire, slowly and then faster, its light running down the
+     *  lake; it leans over on its long arc, drops two boosters that fall away glowing, and as it climbs into the sunlight
+     *  still up there its plume opens behind it into a vast pale-blue bell, the jellyfish of a launch at dusk, the rocket a
+     *  spark at its tip going on alone; the plume drifts and thins and is gone. The sound never arrives. Composed; the
+     *  plume's own dice */
+    launchPlan(n) {
+      const { bw, bh, pr } = S, lx = Math.round(bw * (pr ? .62 : .83)), ly = S.ridge(lx) - 1, sgn = pr ? -1 : 1, r = deal(n, 61);
+      const ctl = pr ? [[lx, ly + 3], [lx - 1, ly - 28], [lx - 8, ly - 56], [lx - 22, ly - 80], [lx - 42, ly - 96], [lx - 66, ly - 106], [lx - 100, ly - 113]] : [[lx, ly + 3], [lx + 1, ly - 28], [lx + 7, ly - 53], [lx + 21, ly - 73], [lx + 43, ly - 86], [lx + 73, ly - 94], [lx + 110, ly - 99]]; // up out of the light, leaning over onto its long arc, across the sky and away over the edge
+      const path = []; for (let i = 0; i <= 96; i++) { const f = i / 96 * (ctl.length - 1), j = Math.min(ctl.length - 2, Math.floor(f)), t = f - j, a = ctl[Math.max(0, j - 1)], b = ctl[j], c = ctl[j + 1], d = ctl[Math.min(ctl.length - 1, j + 2)]; path.push([0, 1].map(k => .5 * (2 * b[k] + (c[k] - a[k]) * t + (2 * a[k] - 5 * b[k] + 4 * c[k] - d[k]) * t * t + (3 * b[k] - a[k] - 3 * c[k] + d[k]) * t * t * t))); } // the arc, smoothed
+      const t0 = 2.1, t1 = 9.8, NP = pr ? 150 : 210, parts = Array.from({ length: NP }, (_, i) => ({ tb: t0 + .15 + (i + r() * .8) / NP * (t1 - t0 - .3), side: (i & 1 ? 1 : -1) * Math.pow(r(), .6), back: .2 + r() * .8, wob: r() * 6.28 }));
+      return { dealt: true, flare: [.4, 1.0, 2.0, 2.8], heat: .03, launch: { lx, ly, path, t0, t1, sun: Math.round(bh * (pr ? .2 : .26)), sep: .34, parts, glow: [.7, 2.1, 3.6, 5.2], fade: [10.8, 14.3], sgn } };
+    },
+    /** where the rocket is on its arc at progress u (0 … 1), and which way it is going */
+    arcAt(L, u) { const p = L.path, f = clamp(u) * (p.length - 1), i = Math.min(p.length - 2, Math.floor(f)), t = f - i, o = S.ao || (S.ao = [0, 0, 0, 0]), dx = p[i + 1][0] - p[i][0], dy = p[i + 1][1] - p[i][1], l = Math.hypot(dx, dy) || 1; o[0] = lerp(p[i][0], p[i + 1][0], t); o[1] = lerp(p[i][1], p[i + 1][1], t); o[2] = dx / l; o[3] = dy / l; return o; },
+    /** its progress at T: slow off the pad, faster and faster */
+    arcU(L, T) { return T <= L.t0 ? 0 : Math.pow((T - L.t0) / (L.t1 - L.t0), 1.7); },
+    /** the launch: the light behind the hills, the climb, the boosters, the plume in the sunlight, and all of it in the lake */
+    launchAt(T, I, A, L) {
+      const { bw, bh, hy, sy, idx, out } = S, C = S.lc || (S.lc = { glow: pack(hex("#F2A04E")), core: pack(hex("#FFF8E2")), flame: [pack(hex("#FFE7A0")), pack(hex("#FFB24A")), pack(hex("#F06A22")), pack(hex("#9C3418"))], smoke: pack(hex("#5A4E6E")), ramp: ["#1C2C78", "#2E5CC0", "#5C9CEA", "#A8D4FF", "#E8F6FF", "#FFFFFF"].map(h => pack(hex(h))), pink: pack(hex("#E9A6D8")) });
+      const sky = i => { const v = idx[i]; return v < MTN || (v >= MOON + 3 && v <= MOON + 4); }, lake = i => { const v = idx[i]; return v >= LAKE && v < FREF; };
+      const rip = S.rip && S.rip.length === bh ? S.rip : (S.rip = new Int8Array(bh)); for (let y = hy; y < sy; y++) rip[y] = Math.round(Math.sin(y * 1.1 + T * 2.6) * 1.1);
+      const put = (x, y, c, k) => { x = Math.round(x); y = Math.round(y); if (x < 0 || x >= bw || y < 0 || y >= bh || k <= 0) return; const i = y * bw + x; if (y < hy && !sky(i)) return; S.tint(x, y, c, k); const yr = Math.round(hy + (hy - y) / 1.7); if (yr <= hy + 1 || yr >= sy || (yr - hy) & 1) return; const xr = x + rip[yr]; if (xr >= 0 && xr < bw && lake(yr * bw + xr)) S.tint(xr, yr, c, k * .45); }; // (behind the hills, not over them; and again in the lake)
+      const fade = 1 - seg(T, ...L.fade, E.sine);
+      // the light coming up behind the hills, and lighting the underside of the smoke as it goes
+      const gl = env(T, ...L.glow, E.sine) * I, R = S.pr ? 16 : 22;
+      if (gl > .01) for (let y = Math.max(0, L.ly - R); y < L.ly + 3; y++) for (let x = L.lx - R * 1.6; x <= L.lx + R * 1.6; x++) { const d = Math.hypot((x - L.lx) / 1.6, y - L.ly) / R; if (d < 1) put(x, y, C.glow, gl * .5 * Math.pow(1 - d, 1.8)); }
+      // the plume: each puff left where the rocket was, spreading; in the dark below a smoke lit by the flame while it is new,
+      // above the shadow line out in the sunlight, opening wide into the bell
+      const u = S.arcU(L, T), pb = S.plumeB || (S.plumeB = { w: 0, h: 0 }), PW = S.pr ? 60 : 96, PH = S.pr ? 96 : 80; // (gathered at half the picture's pixels: it is soft, and the dither lays it back at whole ones)
+      if (pb.w !== PW) { pb.w = PW; pb.h = PH; pb.sun = new Float32Array(PW * PH); pb.dim = new Float32Array(PW * PH); pb.hot = new Float32Array(PW * PH); }
+      const bx0 = L.sgn > 0 ? L.lx - 40 : L.lx - PW * 2 + 40, by0 = L.ly + 6 - PH * 2; let x0 = PW, x1 = -1, y0 = PH, y1 = -1; // (the part of the buffer the puffs touch, and only that, mapped and cleared)
+      for (const q of L.parts) {
+        const age = T - q.tb; if (age <= 0 || T > L.fade[1]) continue;
+        const [px0, py0, dx, dy] = S.arcAt(L, S.arcU(L, q.tb)), lit = py0 < L.sun ? clamp((L.sun - py0) / 14) : 0, alt = clamp((L.sun - py0) / (L.sun * .75)), sp = lerp(1.1, 3.5 + 7 * alt, lit), nx = -dy, ny = dx; // (the higher, the thinner the air and the wider it opens)
+        const x = px0 + nx * q.side * sp * Math.pow(age, .7) - dx * q.back * (2 + 5 * lit) * Math.pow(age, .6) + Math.sin(age * .8 + q.wob) * .6 + age * .9 * L.sgn, y = py0 + ny * q.side * sp * Math.pow(age, .7) - dy * q.back * (2 + 5 * lit) * Math.pow(age, .6) + age * .25, rr = Math.min(10, 1.5 + (lit ? 2.4 + 2.4 * alt : .55) * Math.pow(age, .7));
+        const br = (lit ? 1.5 : .7) * 1.33 * Math.min(1, age * 3) * Math.exp(-age / (lit ? 7 : 2.6)) / (.6 + rr * .25), hot = Math.exp(-age / .35); if (br < .012 && hot < .03) continue; // (fewer, and none of them too wide: a puff past its size adds nothing but cost)
+        const cx = (x - bx0) / 2 - .25, cy = (y - by0) / 2 - .25, rh = Math.max(.8, rr / 2), r0 = Math.ceil(rh), ya = Math.max(0, Math.floor(cy - r0)), yb = Math.min(PH - 1, Math.ceil(cy + r0)), xa = Math.max(0, Math.floor(cx - r0)), xb = Math.min(PW - 1, Math.ceil(cx + r0)); if (xa > xb || ya > yb) continue; if (xa < x0) x0 = xa; if (xb > x1) x1 = xb; if (ya < y0) y0 = ya; if (yb > y1) y1 = yb;
+        for (let yy = ya; yy <= yb; yy++) for (let xx = xa; xx <= xb; xx++) { const d2 = ((xx - cx) ** 2 + (yy - cy) ** 2) / (rh * rh); if (d2 >= 1) continue; const k = (1 - d2) * (1 - d2), i = yy * PW + xx; if (lit > 0) pb.sun[i] += k * br * lit; if (lit < 1) pb.dim[i] += k * br * (1 - lit); pb.hot[i] += k * hot; }
+      }
+      if (x1 >= 0) { const sa = pb.sun, da = pb.dim, ha = pb.hot; // read back smoothly between its cells
+        if (x1 > x0 && y1 > y0)
+        for (let Y = by0 + y0 * 2; Y <= by0 + y1 * 2; Y++) { const fy = Math.min((Y - by0) / 2, y1 - .001), iy = fy | 0, ty = fy - iy;
+          for (let X = bx0 + x0 * 2; X <= bx0 + x1 * 2; X++) { const fx = Math.min((X - bx0) / 2, x1 - .001), ix = fx | 0, tx = fx - ix, i = iy * PW + ix, j = i + PW;
+            if (sa[i] + sa[i + 1] + sa[j] + sa[j + 1] + da[i] + da[i + 1] + da[j] + da[j + 1] + ha[i] + ha[i + 1] + ha[j] + ha[j + 1] < .02) continue;
+            const w00 = (1 - tx) * (1 - ty), w10 = tx * (1 - ty), w01 = (1 - tx) * ty, w11 = tx * ty, s2 = sa[i] * w00 + sa[i + 1] * w10 + sa[j] * w01 + sa[j + 1] * w11, d2 = da[i] * w00 + da[i + 1] * w10 + da[j] * w01 + da[j + 1] * w11, h2 = ha[i] * w00 + ha[i + 1] * w10 + ha[j] * w01 + ha[j + 1] * w11;
+            if (d2 > .02) put(X, Y, C.smoke, I * fade * Math.min(.55, d2 * .5));
+            if (h2 > .03) put(X, Y, C.flame[1 + (h2 < .5) + (h2 < .2)], I * Math.min(.9, h2 * .9));
+            if (s2 > .03) { const v = Math.min(1, s2 * .5), q = Math.min(4, Math.floor(v * 4 + dith(X, Y))) / 4; if (q > 0) put(X, Y, q < .5 ? blend(C.ramp[3], C.pink, .45 - q * .5) : blend(C.ramp[3], C.ramp[5], (q - .5) * 2), I * fade * (.18 + .72 * q)); } } } // in the sun: a pale blue light in four steps, dithered, whitest where it is thickest, its thin edges warm
+        for (let yy = y0; yy <= y1; yy++) { sa.fill(0, yy * PW + x0, yy * PW + x1 + 1); da.fill(0, yy * PW + x0, yy * PW + x1 + 1); ha.fill(0, yy * PW + x0, yy * PW + x1 + 1); } }
+      // the boosters, falling away glowing, and a puff where they part
+      const ts = L.t0 + (L.t1 - L.t0) * Math.pow(L.sep, 1 / 1.7);
+      if (T > ts && T < ts + 2.6) { const [sx, sy2, dx, dy] = S.arcAt(L, L.sep), a = T - ts; for (const sd of [-1, 1]) { for (let j = 0; j < 4; j++) { const aj = Math.max(0, a - j * .06), x = sx + (-dy * sd * 5 - dx * 2) * aj, y = sy2 + (dx * sd * 5 - dy * 2) * aj + 6 * aj * aj; put(x, y, C.flame[Math.min(3, 1 + j)], I * (1 - a / 2.6) * (1 - j / 4)); } }
+        if (a < .5) for (let k = 0; k < 12; k++) { const th = k / 12 * 6.283, rr = 1 + a * 9; put(sx + Math.cos(th) * rr, sy2 + Math.sin(th) * rr * .7, C.ramp[4], I * (1 - a / .5) * .6); } }
+      // the rocket: a white spark on a flame that lengthens as the air thins, flickering, gone over the edge
+      if (T > L.t0 - .2 && u < 1) { const [x, y, dx, dy] = S.arcAt(L, u), on = clamp((T - L.t0 + .2) / .4), len = 2 + Math.round(u * 7), fl = .82 + .18 * Math.sin(A * 13) * Math.sin(A * 7.3); // (a gentle flicker, slower than three a second)
+        for (let j = len; j >= 1; j--) put(x - dx * j, y - dy * j, C.flame[Math.min(3, Math.floor(j / len * 3.2))], I * on * fl * (1 - j / (len + 1)) * 1.1);
+        put(x, y, C.core, I * on); for (const [ax, ay] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) put(x + ax, y + ay, C.flame[0], I * on * .55 * fl); }
+    },
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; N: the pass (0, the signature) */
     draw(T, I, A, F, N = 0) {
       const { W, H, bw, bh, PS, out, idx, pal, fx, fy } = S;
-      if (N !== S.planP) { S.pl = N > 0 ? (K.egg(N) ? S.eggPlan(N) : S.dealPass(N)) : S.sig(); S.planP = N; }
+      if (N !== S.planP) { const h = N > 0 ? K.long(N) : 0; S.pl = N > 0 ? (h === 1 ? S.bearPlan(N) : h === 2 ? S.launchPlan(N) : K.egg(N) ? S.eggPlan(N) : S.dealPass(N)) : S.sig(); S.planP = N; } // (a crown, long 3, is dealt as it always was)
       const pl = S.pl;
       g.clearRect(0, 0, W, H);
       const dt = S.lastA === undefined ? 0 : clamp(A - S.lastA, 0, .1); S.lastA = A;
@@ -316,7 +469,7 @@ export default function ember(K) {
       const put = (x, y, c) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && x < bw && y >= 0 && y < bh) out[y * bw + x] = c; };
       S.dm = !!pl.dealt && !!S.emOn; const putB = S.dm ? (x, y, c) => S.tint(x, y, c, 1) : put; // a dealt pass's beats keep back from the words
       S.put = putB;
-      if (on) { if (pl.aurora) S.auroraAt(T, I, pl.aurora, t8); if (pl.cloud) S.cloudAt(T, I, pl.cloud); if (pl.deer) S.deerAt(T, I, pl.deer, 0); if (pl.moose) S.deerAt(T, I, pl.moose, 1); if (pl.loon) S.loonAt(T, I, pl.loon); if (pl.canoe) S.canoeAt(T, I, pl.canoe, t8); if (pl.mist) S.mistAt(T, I, A, pl.mist); }
+      if (on) { if (pl.aurora) S.auroraAt(T, I, pl.aurora, t8); if (pl.cloud) S.cloudAt(T, I, pl.cloud); if (pl.deer) S.deerAt(T, I, pl.deer, 0); if (pl.moose) S.deerAt(T, I, pl.moose, 1); if (pl.loon) S.loonAt(T, I, pl.loon); if (pl.canoe) S.canoeAt(T, I, pl.canoe, t8); if (pl.mist) S.mistAt(T, I, A, pl.mist); if (pl.bear) S.bearAt(T, I, A, pl.bear); if (pl.launch) S.launchAt(T, I, A, pl.launch); }
       // the flames: stepped at thirty a second, fed harder in the flare and after the log settles, low while the list is in use
       S.ft += dt; while (S.ft > 1 / 30) { S.ft -= 1 / 30; S.fire(clamp(.62 + .3 * I + flare * .3 + (on && pl.log ? env(T, pl.log + .1, pl.log + .4, pl.log + .9, pl.log + 1.8) * .25 * I : 0) + pop * .45 - settle * .35 + Math.min(0, heat)), A); } // a higher night swells the light, not the flames: they never stand taller than the first pass's
       { const { FW, FH, heat } = S, x0 = fx - Math.floor(FW / 2), y0 = fy - FH + 1; for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) { const h = heat[y * FW + x]; if (h > 7) put(x0 + x, y0 + y, FIRE[h]); /* the dark tips left out */ } }

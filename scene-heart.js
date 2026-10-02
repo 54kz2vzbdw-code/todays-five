@@ -22,6 +22,17 @@
 // hearts rise, and he hops, blows it a kiss and flies off the way he came. Where the words leave no room behind the tail
 // he shoots from the nearest place round it that is clear (overhead, if it's below), and his arrow curves in; he fades
 // where he passes a word, as the moth does.
+// 1.12 b426: the long day's hour eggs. Left up for hours, the sign shows two more of its own, one in an hour, taking turns
+// (scenes.js, `K.long`). The first is a neon cat. Its glass shows on the arrow's shaft by the feathers and it lights a
+// part at a time, asleep, and opens its eyes; a butterfly comes in and settles on the arrow's head; the cat gets up and
+// goes up the arrow after it, crouches, wiggles and swipes — and the butterfly is off, and the cat slides all the way
+// back down the arrow, scrabbling, into the feathers, and sees stars. The butterfly comes down and sits on its head a
+// moment and goes; the cat curls up to sleep again, and its sign goes out a part at a time and its glass leaves the wall.
+// The second is an aquarium. Bubbles come up and kelp grows round the heart; a school of little fish swims in and once
+// round it; a jellyfish pulses up past it; a pufferfish comes and noses at the tube — and the heart beats: the puffer
+// blows up into a ball of spines and the school scatters and comes back together. The puffer goes down with a puff of
+// bubbles and swims off, the school leaves, the kelp goes out from its tips and the last bubbles pop. Whatever lights
+// catches once and comes on, never flashing, and fades where it passes a word, as the moth does.
 export default function heart(K) {
   const { clamp, lerp, E, seg, env, rng, canvas } = K;
   const TAU = Math.PI * 2;
@@ -59,6 +70,34 @@ export default function heart(K) {
   };
   // 1.12 b414: the egg's beats: the arrow out, Cupid in, the bow drawn, loosed, the arrow's flight, the kiss, Cupid away
   const EGG = { out: 1.1, in0: 1.6, in1: 3.9, loose: 5.6, fly: .5, kiss: 7.7, off0: 8.9, off1: 10.9 };
+  // 1.12 b426: the long day's hour eggs. Their drawing kit: a smooth line through points (Catmull-Rom; closed, a loop), a
+  // two-bone reach (where the joint sits for a paw to land where it's put), and the cat's poses in its own units — its body
+  // one long, facing forward, y down, the ground its paws stand on at 0 — hip and shoulder, its four paws (near and far,
+  // front and hind), its back's arch and belly's hang, its head's nod and tilt, its tail (an angle, then each bend), its
+  // ears (pricked 1), its eye (open 1, a happy shut curve 0), a bend in the front legs' elbows (`elb`) and the hind feet's
+  // hocks (`hockA`)
+  const CR = (P0, n, closed) => { const out = [], m = P0.length, at = i => closed ? P0[(i + m) % m] : P0[Math.max(0, Math.min(m - 1, i))]; for (let i = 0; i < (closed ? m : m - 1); i++) { const p0 = at(i - 1), p1 = at(i), p2 = at(i + 1), p3 = at(i + 2); for (let k = 0; k < n; k++) { const t = k / n, t2 = t * t, t3 = t2 * t; out.push([0, 1].map(j => .5 * (2 * p1[j] + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3))); } } out.push(closed ? out[0] : P0[m - 1]); return out; };
+  const IK = (a, t, l1, l2, bend) => { const dx = t[0] - a[0], dy = t[1] - a[1], d = Math.min(l1 + l2 - 1e-4, Math.max(1e-4, Math.hypot(dx, dy))), an = Math.atan2(dy, dx), k = Math.acos(clamp((l1 * l1 + d * d - l2 * l2) / (2 * l1 * d), -1, 1)); return [a[0] + Math.cos(an + bend * k) * l1, a[1] + Math.sin(an + bend * k) * l1]; };
+  const VA = (a, b, k = 1) => [a[0] + b[0] * k, a[1] + b[1] * k], VR = (v, a) => [v[0] * Math.cos(a) - v[1] * Math.sin(a), v[0] * Math.sin(a) + v[1] * Math.cos(a)];
+  const CATP = {
+    loaf: { hip: [0, -.36], sh: [1, -.38], arch: .1, nod: -.15, tilt: 0, fn: [1.36, 0], ff: [1.28, -.02], elb: 1, hn: [.12, -.02], hf: [0, 0], hockA: -1.2, tail: [3.05, -.15, -.12, -.1], eye: 0, ears: .85, belly: -.4 },
+    alert: { hip: [0, -.36], sh: [1, -.4], arch: .1, nod: -.38, tilt: -.1, fn: [1.36, 0], ff: [1.28, -.02], elb: 1, hn: [.12, -.02], hf: [0, 0], hockA: -1.2, tail: [3.0, -.2, -.4, -.5], eye: 1, ears: 1.1, belly: -.4 },
+    stand: { hip: [0, -.62], sh: [1, -.66], arch: 0, nod: 0, tilt: 0, fn: [.98, 0], ff: [.84, 0], elb: 1, hn: [.06, 0], hf: [-.08, 0], hockA: 0, tail: [-2.3, .45, .55, .65], eye: 1, ears: 1, belly: 0 },
+    prowl: { hip: [0, -.5], sh: [1.02, -.46], arch: .2, nod: .55, tilt: 0, fn: [1.08, 0], ff: [.9, -.02], elb: 1, hn: [.02, 0], hf: [.12, -.04], hockA: 0, tail: [-2.95, .15, -.2, -.25], eye: 1, ears: .7, belly: 0 },
+    crouch: { hip: [0, -.46], sh: [1, -.26], arch: -.25, nod: .6, tilt: .15, fn: [1.25, 0], ff: [1.14, 0], elb: 1, hn: [.2, 0], hf: [.1, 0], hockA: -.4, tail: [-3.0, -.12, .15, .25], eye: 1, ears: .4, belly: .3 },
+    swipe: { hip: [0, -.5], sh: [.98, -.62], arch: -.1, nod: -.35, tilt: -.15, fn: [1.38, -.95], ff: [1.14, 0], elb: -1, hn: [.2, 0], hf: [.08, 0], hockA: 0, tail: [-2.6, .3, .3, .4], eye: 1, ears: 1, belly: 0 },
+    slide: { hip: [0, -.3], sh: [1, -.24], arch: .15, nod: .2, tilt: .35, fn: [1.42, -.02], ff: [1.3, -.12], elb: 1, hn: [-.48, -.06], hf: [-.36, -.18], hockA: -1.0, tail: [-2.2, .8, .7, .6], eye: 1, ears: .1, belly: -.2 },
+  };
+  // the cat's film: its glass comes up and it lights a part at a time, asleep; wakes; gets up and goes up the arrow after
+  // a butterfly on its head; crouches and wiggles; swipes; slides all the way back down and bumps into the feathers; sees
+  // stars; the butterfly settles on its head and leaves; and it goes back to sleep and its sign goes off, part by part
+  const CATK = [[0, "loaf"], [2.45, "loaf"], [2.8, "alert"], [3.3, "alert"], [3.75, "stand"], [5.35, "stand"], [5.9, "prowl"], [6.1, "crouch"], [6.9, "crouch"], [7.08, "swipe"], [7.45, "swipe"], [7.62, "slide"], [8.75, "slide"], [9.3, "alert"], [10.95, "alert"], [11.4, "loaf"]];
+  const CATB = { glass: .9, on: 1.45, eyes: 2.32, walk0: 3.75, walk1: 5.95, swipe: 6.95, flee: 7.04, slide0: 7.55, bonk: 8.72, land: 10.1, leave: 10.9, off: 11.9, gone: 12.75 };
+  // the second, the aquarium: bubbles rise and kelp grows round the heart; a school of fish swims once round it; a
+  // jellyfish pulses up past it; a pufferfish comes to nose at the tube — the heart beats, the puffer blows up into a
+  // ball of spines and the school scatters, and comes back together; the puffer goes down again and swims off, the school
+  // leaves, the kelp goes out from its tips, the last bubbles pop
+  const SEA = { bub0: .8, bub1: 10.3, kelp0: 1.0, kelp1: 11.2, school0: 2.0, school1: 11.0, jelly0: 2.9, jelly1: 12.1, puff0: 4.7, nose: 6.0, beat: 6.62, deflate: 8.7, puff1: 10.9 };
   const S = {
     res: "dpr",
     wash: 1, veil: .6, hug: .72, list: .4, // the wall is behind the words and the lines sit on pads
@@ -411,6 +450,203 @@ export default function heart(K) {
       if (F >= 0) for (const f2 of S.fire) { const kk = clamp((F - f2.t) / .7); if (kk <= 0 || kk >= 1) continue; const fx = cx + Math.cos(f2.a) * R * .75, fy = cy + Math.sin(f2.a) * R * .75;
         for (const p of f2.parts) { const d = E.out(kk) * R * .55 * p.v, hx = fx + Math.cos(p.a) * d, hy2 = fy + Math.sin(p.a) * d + kk * kk * R * .2, sc = R * .045 * (1 - kk * .4); S.tube(HEART.filter((_, i) => i % 4 === 0).map(([u2, v]) => [hx + u2 * sc * 2, hy2 + v * sc * 2]), (1 - kk), (hue + p.a * 40) % 360, w * .35); } }
     },
+    /** 1.12 b426: the sign as it rests through an hour egg — its glow on the bricks, the heart, the arrow and its chase
+     *  lights, the sparkles — drawn as a dealt pass draws it at rest, so the egg starts and ends where they do; `beat`
+     *  swells it. Returns the heart's hue. */
+    restSign(I, A, F, beat = 0) {
+      const { cx, cy, R } = S, s = R * 1.5, w = clamp(R * .045, 2.2, 7);
+      const buzz = t => (Math.sin(t * 67) > .96 ? .55 : 1) * (Math.sin(t * 13.3) > .985 ? .3 : 1);
+      const hue = 330 + beat * 12 + (F >= 0 ? Math.sin(F * 20) * 25 : 0), pulse = 1 + beat * .07 + (F >= 0 ? env(F, 0, .05, .2, .5) * .06 : 0), heartLv = buzz(A);
+      const glowA = (.28 * heartLv + .1) * (1 + beat * .8), gr = g.createRadialGradient(cx, cy, R * .2, cx, cy, R * 2.3);
+      gr.addColorStop(0, hsl(hue, 100, 55, .5 * glowA)); gr.addColorStop(.5, hsl(hue, 100, 45, .18 * glowA)); gr.addColorStop(1, hsl(hue, 100, 40, 0)); g.globalCompositeOperation = "lighter"; g.fillStyle = gr; g.fillRect(cx - R * 2.3, cy - R * 2.3, R * 4.6, R * 4.6); g.globalCompositeOperation = "source-over";
+      S.tube(HEART.map(([u, v]) => [cx + u * s * pulse, cy + v * s * pulse + R * .05]), heartLv, hue, w, 1);
+      const a0 = [cx - R * .9, cy + R * .52], a1 = [cx + R * .86, cy - R * .6], shaft = Array.from({ length: 24 }, (_, i) => [lerp(a0[0], a1[0], i / 23), lerp(a0[1], a1[1], i / 23)]);
+      const ang = Math.atan2(a1[1] - a0[1], a1[0] - a0[0]), hdl = R * .16, ahead = [[a1[0] - Math.cos(ang - .5) * hdl, a1[1] - Math.sin(ang - .5) * hdl], a1, [a1[0] - Math.cos(ang + .5) * hdl, a1[1] - Math.sin(ang + .5) * hdl]];
+      const tail = [0, 1, 2].map(k => { const b0 = [lerp(a0[0], a1[0], .04 + k * .05), lerp(a0[1], a1[1], .04 + k * .05)]; return [[b0[0] - Math.cos(ang - 2.4) * hdl * .8, b0[1] - Math.sin(ang - 2.4) * hdl * .8], b0, [b0[0] - Math.cos(ang + 2.4) * hdl * .8, b0[1] - Math.sin(ang + 2.4) * hdl * .8]]; });
+      S.tube(shaft, buzz(A + 3), 45, w * .8, 1, A * .25 % 1); S.tube(ahead, 1, 45, w * .8, 1); tail.forEach(t2 => S.tube(t2, 1, 45, w * .7, 1));
+      S.sparks.forEach(([u, v, sz], i) => { const kk = .75 + .25 * Math.sin(A * 3 + i * 2), sx = cx + u * R, sy = cy + v * R, r2 = sz * R * kk; S.tube([[sx, sy - r2], [sx + r2 * .22, sy - r2 * .22], [sx + r2, sy], [sx + r2 * .22, sy + r2 * .22], [sx, sy + r2], [sx - r2 * .22, sy + r2 * .22], [sx - r2, sy], [sx - r2 * .22, sy - r2 * .22], [sx, sy - r2]], 1, 190 + i * 20, w * .5); });
+      return hue;
+    },
+    /** 1.12 b426: the finale's fireworks over an hour egg, as over every pass */
+    finaleFire(F, hue) {
+      const { cx, cy, R } = S, w = clamp(R * .045, 2.2, 7); if (F < 0) return;
+      for (const f2 of S.fire) { const kk = clamp((F - f2.t) / .7); if (kk <= 0 || kk >= 1) continue; const fx = cx + Math.cos(f2.a) * R * .75, fy = cy + Math.sin(f2.a) * R * .75;
+        for (const q of f2.parts) { const d = E.out(kk) * R * .55 * q.v, hx = fx + Math.cos(q.a) * d, hy2 = fy + Math.sin(q.a) * d + kk * kk * R * .2, sc = R * .045 * (1 - kk * .4); S.tube(HEART.filter((_, i) => i % 4 === 0).map(([u2, v]) => [hx + u2 * sc * 2, hy2 + v * sc * 2]), (1 - kk), (hue + q.a * 40) % 360, w * .35); } }
+    },
+    /** 1.12 b426: neon drawn many tubes at once, as Cupid's is: [points, lit, hue, width, glass] each; the glass first, then
+     *  each colour's light, every tube of a colour in one stroke a layer (`only`: 1 the glass alone, 2 the light alone) */
+    batch(parts, only = 0) {
+      const poly = (path, pts) => { path.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) path.lineTo(pts[i][0], pts[i][1]); }, glass = new Map(), lit = new Map();
+      for (const [pts, l2, h, w2, gs0] of parts) { const gs = only === 2 ? 0 : gs0; if (only === 1) { if (gs > .005) { const k = w2.toFixed(2) + "|" + gs.toFixed(3); if (!glass.has(k)) glass.set(k, [w2, gs, new Path2D()]); poly(glass.get(k)[2], pts); } continue; } if (gs > .005) { const k = w2.toFixed(2) + "|" + gs.toFixed(3); if (!glass.has(k)) glass.set(k, [w2, gs, new Path2D()]); poly(glass.get(k)[2], pts); } if (l2 > .01) { const lq = Math.round(l2 * 24) / 24, k = h + "|" + w2.toFixed(2) + "|" + lq; if (!lit.has(k)) lit.set(k, [h, w2, lq, new Path2D()]); poly(lit.get(k)[3], pts); } } // (levels in 24 steps: a fade is a few strokes, not one a tube)
+      g.globalCompositeOperation = "source-over"; for (const [w2, gs, path] of glass.values()) { g.strokeStyle = `rgba(70,30,52,${(.95 * gs).toFixed(3)})`; g.lineWidth = w2 * 1.25; g.stroke(path); g.strokeStyle = `rgba(255,255,255,${(.08 * gs).toFixed(3)})`; g.lineWidth = w2 * .3; g.stroke(path); }
+      g.globalCompositeOperation = "lighter"; for (const [h, w2, l2, path] of lit.values()) { for (const [k, a2] of [[7, .06], [3.6, .12], [1.9, .3]]) { g.strokeStyle = hsl(h, 100, 62, a2 * l2); g.lineWidth = w2 * k; g.stroke(path); } g.strokeStyle = hsl(h, 100, 66, .95 * l2); g.lineWidth = w2; g.stroke(path); g.strokeStyle = hsl(h, 100, 92, .9 * l2); g.lineWidth = w2 * .35; g.stroke(path); }
+      g.globalCompositeOperation = "source-over";
+    },
+    /** 1.12 b426: the cat's tubes for pose `p`, in its own units: [points, part, hue, width, how lit] — the part says when it
+     *  lights (0 the body, 1 the tail, 2 the head, 3 the legs, 4 the whiskers, 5 the eye); and where its head is */
+    catParts(p) {
+      const parts = [], tb = (pts, part, h = 186, w = 1, lv = 1) => parts.push([pts, part, h, w, lv]);
+      const { hip, sh } = p, ax = [sh[0] - hip[0], sh[1] - hip[1]], L = Math.hypot(ax[0], ax[1]), up = [ax[1] / L, -ax[0] / L], B = (f, h) => VA(VA(hip, ax, f), up, h);
+      const S0 = B(.9, -.1), H0 = B(.08, -.08), elb = p.elb >= 0 ? 1 : -1;
+      const fleg = (paw, far) => { const j = IK(S0, paw, .34, .3, elb); tb(CR([S0, j, paw], 4), 3, 186, .9, far ? .45 : 1); tb([VA(paw, [-.04, 0]), VA(paw, [.08, 0])], 3, 186, .9, far ? .45 : 1); };
+      const hleg = (paw, far) => { const hock = VA(paw, VR([-.09, -.19], p.hockA)), kn = IK(H0, hock, .32, .29, 1); tb(CR([H0, kn, hock], 4).concat([paw]), 3, 186, .9, far ? .45 : 1); tb([VA(paw, [-.04, 0]), VA(paw, [.08, 0])], 3, 186, .9, far ? .45 : 1); };
+      fleg(p.ff, 1); hleg(p.hf, 1);
+      tb(CR([B(-.14, .02), B(-.06, .2), B(.22, .27), B(.52, .25 + p.arch * .14), B(.82, .3), B(1.04, .2), B(1.13, -.02), B(1, -.19), B(.7, -.15 - p.belly * .1), B(.42, -.12 - p.belly * .08), B(.16, -.19), B(-.06, -.17)], 4, true), 0); // the body: a round haunch, a waist, a deep chest
+      fleg(p.fn, 0); hleg(p.hn, 0);
+      const ta = p.tail; let a = ta[0], q = B(-.12, .1); const tp = [q]; for (let i = 1; i < ta.length; i++) { q = VA(q, [Math.cos(a) * .21, Math.sin(a) * .21]); tp.push(q); a += ta[i]; } q = VA(q, [Math.cos(a) * .15, Math.sin(a) * .15]); tp.push(q); tb(CR(tp, 5), 1);
+      const hc = VA(B(1.04, .34), VR([.2, -.14], p.nod)), hr = .26, HP = (x, y) => VA(hc, VR([x * hr, y * hr], p.tilt)), ear = p.ears;
+      tb(CR([HP(-.1, .92), HP(-.78, .6), HP(-.98, -.1), HP(-.78, -.6), HP(-.62, -1.05 - .5 * ear), HP(-.22, -.84), HP(.28, -.86), HP(.6, -1.1 - .5 * ear), HP(.78, -.5), HP(1.08, -.08), HP(1.2, .22), HP(.96, .52), HP(.5, .84)], 4, true), 2);
+      if (p.eye > .3) tb(CR([HP(.3, -.16), HP(.48, -.3 * p.eye), HP(.68, -.18), HP(.49, -.04 * p.eye), HP(.3, -.16)], 3), 5, 78, .72); else tb(CR([HP(.3, -.1), HP(.49, -.26), HP(.68, -.1)], 3), 5, 78, .66);
+      tb([HP(1.12, .14), HP(1.62, .04)], 4, 330, .5, .75); tb([HP(1.1, .3), HP(1.6, .4)], 4, 330, .5, .75);
+      return { parts, head: HP(-.1, -1.1 - .5 * ear) };
+    },
+    /** 1.12 b426: the cat at loop time T: its pose (the film's poses eased one into the next, a walk's paws going round as it
+     *  goes, a wiggle, a scrabble, a shake of the head) and how far up the arrow it stands, from the feathers' end (0) */
+    catAt(T) {
+      let k = 0; while (k < CATK.length - 2 && T >= CATK[k + 1][0]) k++;
+      const [t0, n0] = CATK[k], [t1, n1] = CATK[k + 1], q = E.io(clamp((T - t0) / (t1 - t0))), A0 = CATP[n0], B0 = CATP[n1], p = {};
+      for (const key in A0) { const a = A0[key], b = B0[key]; p[key] = key === "elb" ? (q < .5 ? a : b) : Array.isArray(a) ? a.map((v, i) => Array.isArray(v) ? [lerp(v[0], b[i][0], q), lerp(v[1], b[i][1], q)] : lerp(v, b[i], q)) : lerp(a, b, q); }
+      const b = CATB, s = T < b.walk0 ? .2 : T < b.walk1 ? lerp(.2, .55, E.io((T - b.walk0) / (b.walk1 - b.walk0))) : T < b.swipe ? .55 : T < b.swipe + .15 ? lerp(.55, .6, E.out((T - b.swipe) / .15)) : T < b.slide0 ? .6 : T < b.bonk ? lerp(.6, .16, Math.pow((T - b.slide0) / (b.bonk - b.slide0), 1.7)) : .16 + .03 * Math.sin(Math.PI * clamp((T - b.bonk) / .32)) * (T < b.bonk + .32 ? 1 : 0);
+      const ww = env(T, b.walk0, b.walk0 + .3, b.walk1 - .3, b.walk1), dist = (s - .2) * 2.086 / .37; // the walk: each paw planted, then lifted and swung through
+      if (ww > 0) for (const [key, off] of [["hn", 0], ["fn", .25], ["hf", .5], ["ff", .75]]) { const ph = ((dist / .667 + off) % 1 + 1) % 1, st = ph < .6, dx = st ? .4 * (.5 - ph / .6) : .4 * (-.5 + (ph - .6) / .4), dy = st ? 0 : -.13 * Math.sin(Math.PI * (ph - .6) / .4); p[key] = [p[key][0] + dx * ww, p[key][1] + dy * ww]; }
+      const wig = env(T, 6.15, 6.3, 6.72, 6.9); if (wig > 0) { p.hip = [p.hip[0], p.hip[1] - .06 * wig * Math.sin(TAU * 3.4 * (T - 6.15))]; p.tail = p.tail.map((v, i) => i === 3 ? v + .5 * wig * Math.sin(TAU * 3.4 * (T - 6.15)) : v); } // the wiggle before the swipe
+      if (T > b.slide0 && T < b.bonk) { const sc = Math.min(1, (T - b.slide0) / .2); p.fn = [p.fn[0], p.fn[1] - .16 * sc * Math.abs(Math.sin(T * 17))]; p.ff = [p.ff[0], p.ff[1] - .16 * sc * Math.abs(Math.sin(T * 17 + 1.6))]; } // scrabbling as it slides
+      if (T > b.bonk + .1 && T < b.bonk + .9) p.tilt += .3 * Math.sin(TAU * 4 * (T - b.bonk - .1)) * (1 - (T - b.bonk - .1) / .8); // a shake of the head
+      if (T > b.land - .2 && T < b.leave + .1) p.nod -= .22 * env(T, b.land - .2, b.land + .1, b.leave - .2, b.leave + .1); // looking up at what has landed on its head
+      p.eye = T < b.eyes ? 0 : T > 4.75 && T < 4.87 ? 0 : T > b.leave + .2 ? p.eye : Math.max(p.eye, 1); // its eyes open, and blink once
+      return { p, s };
+    },
+    /** 1.12 b426: a butterfly from above, its wings `open` (foreshortened as they beat), in its own units (its body two long) */
+    bflyParts(open) {
+      const parts = [], k = Math.max(.12, Math.abs(open)), tb = (pts, h, w = 1) => parts.push([pts, h, w]);
+      for (const sx of [-1, 1]) { const W = (x, y) => [sx * (.08 + x * k), y]; tb(CR([W(0, -.05), W(.35, -.75), W(.85, -.95), W(1.05, -.6), W(.8, -.2), W(.95, .1), W(.85, .55), W(.45, .7), W(.1, .35), W(0, .05)], 4, true), 88); tb(CR([W(.25, -.45), W(.55, -.55), W(.6, -.35)], 3), 288, .55); }
+      tb([[0, -.35], [0, .45]], 88, 1.2); for (const sx of [-1, 1]) tb(CR([[sx * .03, -.35], [sx * .18, -.75], [sx * .3, -.95]], 3), 88, .5);
+      return parts;
+    },
+    /** 1.12 b426: where the cat's butterfly is at loop time T: in from the open side to the arrow's head, sitting there
+     *  opening and closing its wings; off as the cat swipes, round over the heart, down onto the cat's head; and away */
+    bflyAt(T, ck) {
+      const { cx, cy, R, W } = S, a1 = [cx + R * .86, cy - R * .6], sd = cx > W / 2 ? 1 : -1, edge = sd > 0 ? W + R * .4 : -R * .4, b = CATB;
+      if (T < 1.8 || T > 12.4) return null;
+      const perch = [a1[0] - R * .02, a1[1] - R * .1], head = ck(b.land), onHead = [head[0], head[1] - R * .05];
+      const K2 = [[1.8, [edge, cy - R * 1.1]], [2.4, [cx + sd * R * 1.25, cy - R * 1.3]], [2.85, [perch[0] + sd * R * .28, perch[1] - R * .38]], [3.05, perch], [b.flee, perch], [7.4, [perch[0] - R * .08, perch[1] - R * .62]], [7.95, [cx - R * .15, cy - R * 1.2]], [8.55, [cx - R * .95, cy - R * .85]], [9.2, [cx - R * .5, cy - R * 1.15]], [9.7, [onHead[0] + R * .1, onHead[1] - R * .45]], [b.land, onHead], [b.leave, onHead], [11.3, [onHead[0] + sd * R * .35, onHead[1] - R * .55]], [11.85, [cx + sd * R * 1.05, cy - R * 1.3]], [12.4, [edge, cy - R * 1.2]]];
+      let k = 0; while (k < K2.length - 2 && T >= K2[k + 1][0]) k++;
+      const at = (tt, kk) => { const p0 = K2[Math.max(0, kk - 1)][1], p1 = K2[kk][1], p2 = K2[kk + 1][1], p3 = K2[Math.min(K2.length - 1, kk + 2)][1], u = clamp((tt - K2[kk][0]) / (K2[kk + 1][0] - K2[kk][0])), t2 = u * u, t3 = t2 * u; return [0, 1].map(j => .5 * (2 * p1[j] + (-p0[j] + p2[j]) * u + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3)); };
+      const sit = (T >= 3.05 && T < b.flee) || (T >= b.land && T < b.leave), pos = at(T, k), nx = at(Math.min(K2[k + 1][0], T + .03), k), fl = sit ? 0 : 1;
+      const x = pos[0] + fl * Math.sin(T * 7.3) * R * .04, y = pos[1] + fl * Math.sin(T * 9.1 + 1) * R * .05, ang = sit ? (T < b.flee ? .45 : -.2) : Math.atan2(nx[1] - pos[1], nx[0] - pos[0]) + Math.PI / 2;
+      return { x, y, ang: sit ? ang : clamp(((ang + Math.PI) % TAU + TAU) % TAU - Math.PI, -1.1, 1.1), open: sit ? .3 + .7 * (.5 + .5 * Math.cos(TAU * .55 * T)) : Math.sin(TAU * 5.5 * T) };
+    },
+    /** 1.12 b426: the first hour egg, the neon cat. A cat of glass on the arrow's shaft by the feathers, asleep, lights a part
+     *  at a time and opens its eyes; a butterfly comes in and settles on the arrow's head; the cat gets up and goes up the
+     *  arrow after it, crouches, wiggles and swipes — and the butterfly is off, and the cat slides all the way back down the
+     *  arrow, scrabbling, into the feathers, and sees stars. The butterfly comes down and sits on its head a moment, and
+     *  goes; the cat curls up to sleep again, and its sign goes out a part at a time, its glass fading from the wall. */
+    hourCat(T, I, A, F) {
+      const { cx, cy, R } = S, on = I > .01, w = clamp(R * .045, 2.2, 7), b = CATB, parts = [];
+      if (on) {
+        const a0 = [cx - R * .9, cy + R * .52], dv = [.8437, -.5369], nv = [-.5369, -.8437], ang = Math.atan2(dv[1], dv[0]), u = R * .37, Ls = R * 2.086;
+        const ck = tt => { const c2 = S.catAt(tt), o = VA(VA(a0, dv, c2.s * Ls), nv, w * .55), hd = S.catParts(c2.p).head; return VA(o, VR([hd[0] * u, hd[1] * u], ang)); };
+        const ct = S.catAt(T), O = VA(VA(a0, dv, ct.s * Ls), nv, w * .55), toS = ([x, y]) => VA(O, VR([x * u, y * u], ang)), cp = S.catParts(ct.p);
+        // how lit: the glass comes up, each part catches as it lights (one dip, never a flash) and drops as it goes out
+        const gA = clamp((T - b.glass) / .55) * (1 - clamp((T - b.gone) / .5)), catchOn = t0 => { const d = T - t0; return d < 0 ? 0 : d < .2 ? .8 * d / .2 : d < .45 ? .8 - .5 * (d - .2) / .25 : d < .7 ? .3 + .7 * (d - .45) / .25 : 1; }, dropOff = t0 => { const d = T - t0; return d < 0 ? 1 : d < .15 ? 1 - .6 * d / .15 : d < .35 ? .4 + .3 * (d - .15) / .2 : d < .55 ? .7 * (1 - (d - .35) / .2) : 0; };
+        let dw = 1e9; const mid = toS([.6, -.55]); for (const [x0, y0, x1, y1] of S.raw || []) dw = Math.min(dw, Math.hypot(Math.max(x0 - mid[0], 0, mid[0] - x1), Math.max(y0 - mid[1], 0, mid[1] - y1)));
+        const fade = I * lerp(.2, 1, clamp((dw - R * .3) / (R * .25)));
+        for (const [pts, part, h, wk, lv] of cp.parts) { const L2 = catchOn(b.on + part * .16) * dropOff(b.off + (5 - part) * .15) * lv * fade; parts.push([pts.map(toS), L2, h, w * .74 * wk, .5 * gA * fade]); }
+        // its bump into the feathers, and the stars it sees
+        const bump = env(T, b.bonk - .02, b.bonk, b.bonk + .04, b.bonk + .3) * I; if (bump > .01) { const pt = toS([-.15, -.25]), gr = g.createRadialGradient(pt[0], pt[1], 0, pt[0], pt[1], R * .3); gr.addColorStop(0, hsl(186, 100, 60, .45 * bump)); gr.addColorStop(1, hsl(186, 100, 50, 0)); g.globalCompositeOperation = "lighter"; g.fillStyle = gr; g.fillRect(pt[0] - R * .3, pt[1] - R * .3, R * .6, R * .6); g.globalCompositeOperation = "source-over"; }
+        const st = env(T, b.bonk + .05, b.bonk + .25, b.bonk + 1.05, b.bonk + 1.4) * fade; if (st > .01) { const hc = ck(T); for (let j = 0; j < 3; j++) { const a = T * 4.2 + j * TAU / 3, sx = hc[0] + Math.cos(a) * R * .2, sy = hc[1] - R * .09 + Math.sin(a) * R * .06, r2 = R * .045 * (.8 + .25 * Math.sin(a)); parts.push([[[sx, sy - r2], [sx + r2 * .25, sy - r2 * .25], [sx + r2, sy], [sx + r2 * .25, sy + r2 * .25], [sx, sy + r2], [sx - r2 * .25, sy + r2 * .25], [sx - r2, sy], [sx - r2 * .25, sy - r2 * .25], [sx, sy - r2]], st, 52, w * .4, 0]); } }
+        // the butterfly
+        const bf = S.bflyAt(T, ck); if (bf) { let dwb = 1e9; for (const [x0, y0, x1, y1] of S.raw || []) dwb = Math.min(dwb, Math.hypot(Math.max(x0 - bf.x, 0, bf.x - x1), Math.max(y0 - bf.y, 0, bf.y - y1))); const fb = I * lerp(.2, 1, clamp((dwb - R * .12) / (R * .2))), ub = R * .12;
+          for (const [pts, h, wk] of S.bflyParts(bf.open)) parts.push([pts.map(([x, y]) => { const r = VR([x * ub, y * ub], bf.ang); return [bf.x + r[0], bf.y + r[1]]; }), fb, h, w * .45 * wk, .4 * fb]); }
+      }
+      S.batch(parts, 1); // the cat's glass on the wall, behind the sign's light
+      const hue = S.restSign(I, A, F, 0);
+      S.batch(parts, 2);
+      S.finaleFire(F, hue);
+    },
+    /** 1.12 b426: a small fish, in its own units (a body long, facing forward, its tail swung `sw`): body, tail, eye */
+    fishParts(sw) {
+      const tj = [-.32, 0], tr = q => VA(tj, VR([q[0] - tj[0], q[1] - tj[1]], sw)), body = CR([[.5, 0], [.32, -.17], [.05, -.22], [-.22, -.13], tj, [-.22, .13], [.05, .2], [.32, .15]], 4, true);
+      return [[body, 0, 1], [[tj, [-.55, -.2], [-.47, 0], [-.55, .2], tj].map(tr), 0, .9], [CR([[.27, -.05], [.3, -.09], [.34, -.05], [.3, -.01]], 2, true), 1, .55], [CR([[.0, -.21], [-.08, -.33], [-.2, -.24]], 3), 0, .7]];
+    },
+    /** 1.12 b426: the pufferfish, in its own units, blown up `b` (0 a fish … 1 a ball of spines), its spines lit `sp` */
+    pufferParts(sw, b, sp) {
+      const out = [], rx = lerp(.42, .5, b), ry = lerp(.3, .5, b), cxp = lerp(.05, 0, b), body = Array.from({ length: 21 }, (_, i) => { const a = i / 20 * TAU; return [cxp + Math.cos(a) * rx, Math.sin(a) * ry]; });
+      out.push([body, 0, 1]);
+      const tj = [cxp - rx + .02, 0], tr = q => VA(tj, VR([q[0] - tj[0], q[1] - tj[1]], sw)); out.push([[tj, [tj[0] - .2, -.16], [tj[0] - .14, 0], [tj[0] - .2, .16], tj].map(tr), 0, .9]);
+      out.push([CR([[cxp + rx * .45, -ry * .35], [cxp + rx * .55, -ry * .5], [cxp + rx * .68, -ry * .35], [cxp + rx * .55, -ry * .2]], 2, true), 1, .6]); // a big round eye
+      out.push([[[cxp + rx * .9, ry * .05], [cxp + rx * 1.02, ry * .12]], 0, .55]); // its little mouth
+      if (sp > 0) for (let k = 0; k < 14; k++) { const a = k / 14 * TAU + .1, on = clamp(sp * 14 - k * .6); if (on <= 0) continue; const r0 = 1.02, r1 = 1.02 + .3 * on; out.push([[[cxp + Math.cos(a) * rx * r0, Math.sin(a) * ry * r0], [cxp + Math.cos(a) * rx * r1, Math.sin(a) * ry * r1]], 2, .55]); }
+      return out;
+    },
+    /** 1.12 b426: the jellyfish, in its own units (its bell one wide), squeezed `c` (0 open … 1 shut), its tentacles trailing
+     *  with the time `t` */
+    jellyParts(c, t) {
+      const out = [], bw = .5 * (1 - .22 * c), bh = .38 * (1 + .3 * c), bell = [];
+      for (let i = 0; i <= 16; i++) { const a = Math.PI + i / 16 * Math.PI; bell.push([Math.cos(a) * bw, Math.sin(a) * bh]); }
+      for (let i = 1; i < 8; i++) { const x = bw - i / 8 * 2 * bw; bell.push([x, (i % 2 ? .07 : 0) + .02]); } bell.push(bell[0]);
+      out.push([CR(bell, 2), 0, 1]); out.push([CR([[-bw * .55, -bh * .15], [0, -bh * .55], [bw * .55, -bh * .15]], 4), 0, .55]); // the bell, and a line inside it
+      for (let k = 0; k < 5; k++) { const x0 = (k / 4 - .5) * bw * 1.6, pts = []; for (let j = 0; j <= 7; j++) { const f = j / 7; pts.push([x0 * (1 - .25 * f) + Math.sin(t * 3.1 - f * 4.5 + k * 1.3) * .07 * f, .06 + f * (.7 + .1 * (k % 2)) * (1 - .25 * c)]); } out.push([CR(pts, 2), 1, .6]); }
+      return out;
+    },
+    /** 1.12 b426: the second hour egg, the aquarium. The wall round the heart goes under water: bubbles come up from below it
+     *  and kelp grows a stretch at a time either side; a school of little fish swims in from the open side and once round
+     *  the heart; a jellyfish pulses up past its far side; a pufferfish comes and noses at the tube, twice — and the heart
+     *  beats: the puffer blows up into a ball of spines, lit one by one round it, and the school scatters and comes back
+     *  together. The puffer goes down again with a puff of bubbles and swims off, the school goes, the kelp goes out from
+     *  its tips and the last bubbles pop. Everything fades where it passes a word, as the moth does. */
+    hourSea(T, I, A, F) {
+      const { cx, cy, R, W } = S, on = I > .01, w = clamp(R * .045, 2.2, 7), b = SEA, sd = cx > W / 2 ? 1 : -1, edge = sd > 0 ? W + R * .5 : -R * .5, parts = [];
+      const beat = on ? Math.max(env(T, b.beat, b.beat + .08, b.beat + .12, b.beat + .3), env(T, b.beat + .38, b.beat + .46, b.beat + .5, b.beat + .75) * .7) * I : 0;
+      if (on) {
+        const near = (x, y, k) => { let d = 1e9; for (const [x0, y0, x1, y1] of S.raw || []) d = Math.min(d, Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(y0 - y, 0, y - y1))); return I * lerp(.2, 1, clamp((d - R * k) / (R * .2))); }; // fading by a word
+        const catchOn = t0 => { const d = T - t0; return d < 0 ? 0 : d < .2 ? .8 * d / .2 : d < .45 ? .8 - .5 * (d - .2) / .25 : d < .7 ? .3 + .7 * (d - .45) / .25 : 1; }, dropOff = t0 => { const d = T - t0; return d < 0 ? 1 : d < .15 ? 1 - .6 * d / .15 : d < .35 ? .4 + .3 * (d - .15) / .2 : d < .55 ? .7 * (1 - (d - .35) / .2) : 0; };
+        const put = (list, x, y, u, ang, mir, lv, gl, hues, wk) => { for (const [pts, part, wq] of list) parts.push([pts.map(([px2, py2]) => { const r = VR([px2 * u * mir, py2 * u], ang); return [x + r[0], y + r[1]]; }), lv, hues[part], w * wk * wq, gl]); };
+        const floor = cy + R * 1.02;
+        // the kelp: four fronds from the floor, lit from the root up a stretch at a time, swaying in the current, and out from
+        // the tip down; each a stem with long blades off it, turn and turn about
+        [[-1.2, 1.0, 0], [-.94, .68, 1.7], [.96, .76, .9], [1.22, 1.04, 2.6]].forEach(([fx, fh, ph], k) => {
+          const x0 = cx + sd * fx * R, grow = clamp((T - b.kelp0 - k * .22) / 1.4), gone = clamp((T - b.kelp1 + (3 - k) * .15) / .8), upto = E.io(grow) * (1 - E.io(gone)); if (upto <= 0) return;
+          const lv = .82 * near(x0, floor - fh * R * .5, .2), pts = []; for (let j = 0; j <= 12; j++) { const f = j / 12; pts.push([x0 + Math.sin(A * 1.1 + ph - f * 2.6) * R * .13 * Math.pow(f, 1.4) + Math.sin(A * .6 + ph * 2 - f * 1.3) * R * .05 * f, floor - f * fh * R]); }
+          const n = Math.max(2, Math.round((pts.length - 1) * upto) + 1), stem = CR(pts.slice(0, n), 3); parts.push([stem, lv, 140, w * .5, .45 * lv]);
+          for (const [f, sx] of [[.22, 1], [.42, -1], [.6, 1], [.78, -1]]) { if (f > upto - .06) continue; const j = Math.round(f * 12), q = pts[j], q2 = pts[Math.min(12, j + 1)], a = Math.atan2(q2[1] - q[1], q2[0] - q[0]), L = R * .3 * fh * (1 - f * .35), bend = Math.sin(A * 1.4 + ph + f * 3) * .25, B2 = (t2, o) => { const aa = a + sx * (.42 - .25 * t2) + bend * t2; return [q[0] + Math.cos(aa) * L * t2 + Math.cos(aa + sx * 1.57) * o * L, q[1] + Math.sin(aa) * L * t2 + Math.sin(aa + sx * 1.57) * o * L]; };
+            parts.push([CR([q, B2(.3, .07), B2(.65, .08), B2(1, 0), B2(.62, -.03), B2(.3, -.02), q], 3), lv, 152, w * .4, .4 * lv]); } // a blade, long and curved
+        });
+        // the bubbles: two streams, each bubble lit as it appears, wobbling up, and popping
+        const BR = rng(91); for (let k = 0; k < 44; k++) { const st = k % 2, te = b.bub0 + Math.floor(k / 2) * .45 + BR() * .3, life = 2.4 + BR() * 1.0, r0 = R * (.032 + BR() * .03), ph = BR() * TAU, age = T - te; if (te > b.bub1 || age < 0 || age > life + .25) continue;
+          const x = cx + sd * (st ? .72 : -.62) * R + Math.sin(age * 3.4 + ph) * R * .05, y = floor - R * .1 - age * R * .55, lv = near(x, y, .1);
+          if (age < life) { const c = catchOn(te) * lv, ring = Array.from({ length: 11 }, (_, i) => [x + Math.cos(i / 10 * TAU) * r0, y + Math.sin(i / 10 * TAU) * r0]); parts.push([ring, c, 195, w * .4, .35 * lv]); parts.push([[[x - r0 * .45, y - r0 * .2], [x - r0 * .3, y - r0 * .5]], c, 195, w * .3, 0]); }
+          else { const q = (age - life) / .25; for (let j = 0; j < 5; j++) { const a = j / 5 * TAU + ph, d0 = r0 * (1 + 1.4 * q), d1 = r0 * (1.3 + 1.6 * q); parts.push([[[x + Math.cos(a) * d0, y + Math.sin(a) * d0], [x + Math.cos(a) * d1, y + Math.sin(a) * d1]], (1 - q) * lv, 195, w * .3, 0]); } } } // a pop
+        // the jellyfish: up past the far side, pulsing, its tentacles trailing
+        if (T > b.jelly0 && T < b.jelly1 + .6) { const tt = T - b.jelly0, per = 1.45, ph = tt / per, c = Math.pow(Math.max(0, Math.sin(Math.PI * (ph % 1))), 3) * (ph % 1 < .5 ? 1 : 0), rise = R * (.62 * tt + .16 * Math.sin(TAU * ph) / TAU * 0) - R * .1 * (Math.floor(ph) + E.io(clamp((ph % 1) * 2))) * 0;
+          const jy = cy + R * 1.35 - R * .3 * (Math.floor(ph) + E.io(clamp((ph % 1) * 2))) - R * .08 * tt, jx = cx - sd * R * (.98 - .12 * Math.sin(tt * .5)), u = R * .42, lv = near(jx, jy, .2) * catchOn(b.jelly0 + .1) * dropOff(b.jelly1), gl = .4 * near(jx, jy, .2) * clamp(tt / .5) * (1 - clamp((T - b.jelly1 - .1) / .5));
+          put(S.jellyParts(c, A), jx, jy, u, Math.sin(tt * .8) * .12, 1, lv, gl, [292, 312], .5); }
+        // the school: five little fish, each on the one path round the heart, a moment behind the one before, to one side of it
+        const SC = [[cx + edge - cx, cy + R * .45], [cx + sd * R * 1.28, cy + R * .78], [cx + sd * R * .3, cy + R * 1.0], [cx - sd * R * .75, cy + R * .88], [cx - sd * R * 1.3, cy + R * .2], [cx - sd * R * 1.08, cy - R * .58], [cx - sd * R * .28, cy - R * .98], [cx + sd * R * .58, cy - R * .92], [cx + sd * R * 1.32, cy - R * .38], [cx + sd * R * 1.38, cy + R * .38], [edge, cy + R * .2]];
+        const ST = [b.school0, 2.9, 3.7, 4.4, 5.15, 5.85, 6.6, 7.6, 8.55, 9.5, b.school1];
+        const path = tt => { let k = 0; while (k < ST.length - 2 && tt >= ST[k + 1]) k++; const p0 = SC[Math.max(0, k - 1)], p1 = SC[k], p2 = SC[k + 1], p3 = SC[Math.min(SC.length - 1, k + 2)], u2 = clamp((tt - ST[k]) / (ST[k + 1] - ST[k])), t2 = u2 * u2, t3 = t2 * u2; return [0, 1].map(j => .5 * (2 * p1[j] + (-p0[j] + p2[j]) * u2 + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3)); };
+        const burst = tt => tt < b.beat + .04 ? 0 : tt < b.beat + .34 ? E.out((tt - b.beat - .04) / .3) : tt < b.beat + .55 ? 1 : 1 - E.io(clamp((tt - b.beat - .55) / 1.2));
+        [[0, 0, 12], [.28, -.17, 22], [.33, .19, 16], [.6, .02, 26], [.7, -.28, 14]].forEach(([lag, side, hue], k) => {
+          const pos = tt => { const q = path(tt - lag), q2 = path(tt - lag + .02), dx = q2[0] - q[0], dy = q2[1] - q[1], L = Math.hypot(dx, dy) || 1, wob = Math.sin(tt * 2.3 + k * 1.7) * .03; let x = q[0] - dy / L * R * (side + wob), y = q[1] + dx / L * R * (side + wob); const bu = burst(tt); if (bu > 0) { const ox = x - cx, oy = y - cy, ol = Math.hypot(ox, oy) || 1, j = .2 + .08 * (k % 3); x += ox / ol * R * j * bu; y += oy / ol * R * j * bu * .7; } return [x, y]; };
+          const tt = T; if (tt - lag < b.school0 || tt - lag > b.school1) return; const [x, y] = pos(tt), [x2, y2] = pos(tt + .03), mir = x2 < x ? -1 : 1, ang = Math.atan2(y2 - y, (x2 - x) * mir) * mir, sp = Math.hypot(x2 - x, y2 - y) / .03 / R;
+          const lv = near(x, y, .1), sw = Math.sin(A * (7 + sp * 5) + k * 1.9) * (.35 + .2 * Math.min(1, sp));
+          put(S.fishParts(sw), x, y, R * .26, ang, mir, lv, .35 * lv, [hue, 52], .5); });
+        // the pufferfish: in from the open side, noses at the tube twice; blown up by the beat; down again, and away
+        if (T > b.puff0 && T < b.puff1) { const nose = [cx + sd * R * .86, cy + R * .04], rest = [cx + sd * R * 1.12, cy - R * .04];
+          const PP = [[b.puff0, [edge, cy + R * .1]], [5.4, [cx + sd * R * 1.45, cy + R * .2]], [b.nose, [nose[0] + sd * R * .1, nose[1]]], [b.beat + .02, [nose[0] + sd * R * .1, nose[1]]], [b.beat + .5, rest], [b.deflate + .6, [rest[0], rest[1] - R * .05]], [9.6, [cx + sd * R * 1.5, cy + R * .3]], [b.puff1, [edge, cy + R * .45]]];
+          let k = 0; while (k < PP.length - 2 && T >= PP[k + 1][0]) k++; const p0 = PP[Math.max(0, k - 1)][1], p1 = PP[k][1], p2 = PP[k + 1][1], p3 = PP[Math.min(PP.length - 1, k + 2)][1], u2 = clamp((T - PP[k][0]) / (PP[k + 1][0] - PP[k][0])), t2 = u2 * u2, t3 = t2 * u2;
+          let [x, y] = [0, 1].map(j => .5 * (2 * p1[j] + (-p0[j] + p2[j]) * u2 + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3));
+          if (T > b.nose && T < b.beat) x -= sd * R * .1 * Math.pow(Math.abs(Math.sin(Math.PI * (T - b.nose) / ((b.beat - b.nose) / 2))), 2); // two nudges at the tube
+          const bl = T < b.beat + .04 ? 0 : T < b.deflate ? E.back(clamp((T - b.beat - .04) / .35)) : 1 - E.io(clamp((T - b.deflate) / .5)), spn = T < b.deflate ? clamp((T - b.beat - .1) / .45) : 1 - clamp((T - b.deflate) / .3);
+          const fwd = T < b.beat + .2 ? -sd : T < b.deflate + .4 ? -sd : sd, bob = bl * Math.sin(T * 2.6) * R * .03, lv = near(x, y + bob, .15) * catchOn(b.puff0 + .05), sw = Math.sin(A * 6.5) * .3 * (1 - bl);
+          put(S.pufferParts(sw, bl, spn), x, y + bob, R * .34, bl * Math.sin(T * 1.7) * .25, fwd, lv, .35 * lv, [50, 30, 40], .55);
+          if (T > b.deflate && T < b.deflate + 1.2) for (let j = 0; j < 4; j++) { const age = T - b.deflate - j * .1; if (age <= 0 || age > 1) continue; const bx = x + fwd * R * (.2 + age * .25) + Math.sin(age * 9 + j) * R * .03, by = y - R * (.05 + age * .45), r0 = R * (.025 + .01 * j), lvb = (1 - age) * near(bx, by, .1); parts.push([Array.from({ length: 9 }, (_, i) => [bx + Math.cos(i / 8 * TAU) * r0, by + Math.sin(i / 8 * TAU) * r0]), lvb, 195, w * .35, 0]); } } // a puff of bubbles as it goes down
+      }
+      S.batch(parts, 1);
+      const hue = S.restSign(I, A, F, beat);
+      S.batch(parts, 2);
+      S.finaleFire(F, hue);
+    },
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; P: the pass */
     draw(T, I, A, F, P = 0) {
       const { W, H } = S;
@@ -418,7 +654,8 @@ export default function heart(K) {
       const jump = S.lastA === undefined || A < S.lastA || A - S.lastA > .15, dt = jump ? 0 : A - S.lastA; S.lastA = A;
       const gl = jump ? 1 : 1 - Math.exp(-dt * 2.2); S.cx += (S.tx - S.cx) * gl; S.cy += (S.ty - S.cy) * gl; S.R += (S.tR - S.R) * gl;
       S.vis += ((S.room === 0 ? 0 : 1) - S.vis) * (jump ? 1 : 1 - Math.exp(-dt * 4)); if (S.vis < .01) return;
-      g.save(); g.globalAlpha = S.vis; if (P > 0 && K.egg(P)) S.eggPass(T, I, A, F, P); else if (P > 0) S.neon2(T, I, A, F, S.plan && S.plan.P === P ? S.plan : (S.plan = dealPass(P))); else S.neon(T, I, A, F); g.restore();
+      const hl = P > 0 ? K.long(P) : 0; // 1.12 b426: an hour egg's pass (the crown, 3, plays as a dealt pass still)
+      g.save(); g.globalAlpha = S.vis; if (P > 0 && K.egg(P)) S.eggPass(T, I, A, F, P); else if (hl === 1) S.hourCat(T, I, A, F); else if (hl === 2) S.hourSea(T, I, A, F); else if (P > 0) S.neon2(T, I, A, F, S.plan && S.plan.P === P ? S.plan : (S.plan = dealPass(P))); else S.neon(T, I, A, F); g.restore();
     },
   };
   return S;

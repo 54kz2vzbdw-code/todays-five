@@ -68,6 +68,15 @@ const bag = (P, n, salt = 0) => {
 /** 1.12 b411: the passes an easter egg plays on, for a scene that has one: every twelfth, three minutes of the list left
  *  alone (the first is pass 11); the scene plays it in place of the pass it would have dealt */
 const egg = P => P > 0 && (P + 1) % 12 === 0;
+/** 1.12 b421: the long day, for a list left up for hours (a screen on a desk through a workday, a wall left on): eggs far
+ *  rarer than egg()'s, on the clock of the loops left alone (240 passes an hour). From the first hour on, one in each hour
+ *  at a pass dealt for the visit in its middle three fifths (so two never come within twenty-four minutes of each other,
+ *  nor more than an hour and a half apart) — the scene's two hour eggs taking turns (1 in odd hours, 2 in even) —
+ *  and in the sixth hour, and every sixth after, the scene's crown instead (3); never on a pass egg() has. long(P) says
+ *  which plays on pass P (0: none); longAt(h) is hour h's pass, for the instruments. */
+const HOUR = 240;
+const longAt = h => { const at = h * HOUR + 48 + Math.floor(deal(-7000 - h, 31)() * 144); return egg(at) ? at + 1 : at; };
+const long = P => { if (P < HOUR) return 0; const h = Math.floor(P / HOUR); return P !== longAt(h) ? 0 : h % 6 === 0 ? 3 : h % 2 ? 1 : 2; };
 /** a sprite from a function of (x, y) → [r,g,b,a?] or null, written straight into pixels */
 function paint(w, h, fn) {
   const [c, x2] = canvas(w, h), im = x2.createImageData(c.width, c.height), d = im.data;
@@ -111,7 +120,7 @@ const boil = (frame, amp = .8) => { const r = rng(frame * 7919 + 13); return (x,
 function grain(w, h, seed = 1, k = .06) { const r = rng(seed); return paint(w, h, () => { const v = r(); return v < .5 ? [0, 0, 0, Math.round(255 * k * r())] : [255, 255, 255, Math.round(255 * k * .8 * r())]; }); }
 /** a layer redrawn only when what is in it moves: `key` says what it looks like now */
 function layer() { let c = null, k = null; return (w, h, key, draw) => { if (!c || c.width !== w || c.height !== h) { [c] = canvas(w, h); k = null; } if (key !== k) { const x = c.getContext("2d"); x.clearRect(0, 0, w, h); draw(x); k = key; } return c; }; }
-export const KIT = { LOOP, deal, bag, egg, clamp, lerp, E, spring, seg, env, rng, dith, rgb, mixc, css, canvas, paint, noise1, fbm, glowSpr, pine, sprite, layer, partial, boil, grain };
+export const KIT = { LOOP, deal, bag, egg, long, longAt, clamp, lerp, E, spring, seg, env, rng, dith, rgb, mixc, css, canvas, paint, noise1, fbm, glowSpr, pine, sprite, layer, partial, boil, grain };
 
 /* ---------------- the stage ---------------- */
 /** The words' side of it (scenes.css), asked for with the page's build (COMPATIBILITY.md §6), and only once. */

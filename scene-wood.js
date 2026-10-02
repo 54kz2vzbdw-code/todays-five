@@ -48,6 +48,22 @@
 // By night the cuts smoulder while the tiles slide, and an ember glows down in the gap. It plays in place of the plane and
 // the rag (the glow and the pen) and leaves the picture that pass would have left, so the pass after it rests on what it
 // always would have; a touch eases back to the picture it began on, as any pass does.
+//
+// 1.12 b431: the long day's hour eggs. Once in each hour of the list left alone (K.long: the first in odd hours, the
+// second in even) a pass of its own, in place of the plane and the rag (the glow and the pen), from the picture the pass
+// began on to the one it would have left, so the pass after it rests where it always would. The first: the cuckoo. It is
+// an hour egg, so the medallion is a clock for the hour: its marks tapped in round it, its hands dropped on and set to
+// the hour before, a door cut in its top; the minute hand goes once round, an hour passing, and behind it the picture
+// turns to the next (by night it is burned again in the hand's wake, white-hot and cooling, the old lines catching and
+// crumbling ahead of it); at the hour the door opens and the cuckoo comes out on its perch and calls it, once for every
+// hour the list has been up (round again after twelve), bowing, beak and wings and tail, without a sound (by night a puff
+// of smoke with each call, the ember in its house behind it); it goes in, the door shuts, the clock is taken off again
+// and the cut closes. The second: the clockwork. The medallion opens like the iris of a lens — cuts run out from its
+// middle, and eight blades turn back under the banding, each carrying its piece of the picture — and behind it a clock
+// is going: a movement cut from the same woods, its wheels turning, the escape wheel stepping a tooth at each swing of a
+// long pendulum, and it strikes the hours the list has been up on a bell, each stroke's sound drawn as a ring running
+// out over the works (by night all of it charred, an ember glowing down in the works, a spark at every tick, the bell
+// glowing as it is struck). Then the blades come back, and the picture on them is the next.
 export default function wood(K, id) {
   const night = id === "char";
   const { clamp, lerp, E, seg, env, rng, canvas, noise1, fbm } = K;
@@ -354,7 +370,10 @@ export default function wood(K, id) {
     };
     const phase = !on || T < BD.plane[0] || T >= BD.rag[3] ? 0 : T < BD.ring[0] ? 1 : T < BD.done ? 2 : T < BD.rag[0] ? 3 : 4;
     const egg = K.egg(P) && pp.P > 0; // (1.12 b417: on an egg pass the puzzle plays instead of the plane, the pieces and the rag)
+    const lg = !egg && pp.P > 0 ? longOf(P) : 0, quiet = egg || lg > 0, hw = lg ? hourWin(P, lg) : null; // (1.12 b431: an hour egg plays instead of them too)
     if (egg) eggDay(T, I, prev, cur);
+    else if (lg === 1) cuckooDay(T, I, A, prev, cur, ckPlan(P));
+    else if (lg === 2) clockDay(T, I, A, prev, cur, P);
     else if (phase === 0) { if (!pp.P || !on || T < BD.plane[0]) put(prev.oiled); else { put(cur.oiled); put(prev.oiled, 1 - I); } }
     else if (phase === 1) { // the plane has taken these bands back to the plank
       g.save(); g.beginPath(); g.rect(cx - 1.1 * R, cy - 1.1 * R, 2.2 * R, 2.2 * R);
@@ -395,17 +414,17 @@ export default function wood(K, id) {
     } else if (phase === 3) { put(cur.dry); put(prev.oiled, 1 - I); }
     else { put(cur.dry); g.save(); wiped(); put(cur.oiled); g.restore(); if (pp.P) put(prev.oiled, 1 - I); } // the oil: what the rag has wiped deepens
     // the wet shine the rag leaves, drying
-    if (!egg && on && T > BD.wipes[0][0] && T < BD.wipes[2][1] + 1.9) BD.wipes.forEach(([, b], j) => { const wet = (1 - seg(T, b + .2, b + 1.9, E.sine)) * I; if (T < BD.wipes[j][0] || wet <= .01) return;
+    if (!quiet && on && T > BD.wipes[0][0] && T < BD.wipes[2][1] + 1.9) BD.wipes.forEach(([, b], j) => { const wet = (1 - seg(T, b + .2, b + 1.9, E.sine)) * I; if (T < BD.wipes[j][0] || wet <= .01) return;
       g.save(); wiped(j); g.globalCompositeOperation = "screen"; put(S.gloss, .55 * wet); g.restore(); });
     // the light over it: a sheen drifting while the list is in use, and one running across once the oil is on
     const sheen = (s, a, w = .5) => { if (a <= .004) return; const dx = .83, dy = .56, q = g.createLinearGradient(cx + dx * (s - w) * R, cy + dy * (s - w) * R, cx + dx * (s + w) * R, cy + dy * (s + w) * R);
       q.addColorStop(0, "rgba(255,246,226,0)"); q.addColorStop(.5, `rgba(255,246,226,${clamp(a).toFixed(3)})`); q.addColorStop(1, "rgba(255,246,226,0)");
       g.save(); g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.clip(); g.globalCompositeOperation = "soft-light"; g.fillStyle = q; g.fillRect(cx - R, cy - R, 2 * R, 2 * R); g.restore(); };
-    const present = lerp(1, 1 - (egg ? env(T, EW.crack[0] - .3, EW.crack[0] + .2, EW.seal[0], EW.seal[1], E.sine) : env(T, BD.plane[0] - .2, BD.plane[0] + .3, BD.rag[1], BD.rag[3], E.sine)), I);
+    const present = lerp(1, 1 - (hw ? env(T, hw[0] - .3, hw[0] + .2, hw[2], hw[3], E.sine) : egg ? env(T, EW.crack[0] - .3, EW.crack[0] + .2, EW.seal[0], EW.seal[1], E.sine) : env(T, BD.plane[0] - .2, BD.plane[0] + .3, BD.rag[1], BD.rag[3], E.sine)), I);
     sheen(Math.sin(A * .12) * 1.25, .5 * V * present);
-    if (on) { const sq = egg ? EW.seal : BD.sheen, q = seg(T, sq[0], sq[1], lin); if (q > 0 && q < 1) { sheen(lerp(-1.7, 1.7, E.io(q)), .95 * I * V, .42); sheen(lerp(-1.7, 1.7, E.io(q)), .35 * I * V, .12); } }
+    if (on) { const sq = hw ? [hw[2], hw[3]] : egg ? EW.seal : BD.sheen, q = seg(T, sq[0], sq[1], lin); if (q > 0 && q < 1) { sheen(lerp(-1.7, 1.7, E.io(q)), .95 * I * V, .42); sheen(lerp(-1.7, 1.7, E.io(q)), .35 * I * V, .12); } }
     // the plane and its curls
-    if (!egg && on && T > BD.plane[0] && T < BD.plane[3] + BD.roll) {
+    if (!quiet && on && T > BD.plane[0] && T < BD.plane[3] + BD.roll) {
       for (let j = 0; j < 3; j++) { const c = curlAt(j, T); if (c && !c.inPlane) S.curl(j, c, I * V, prev.shave); }
       const pl = planeAt(T);
       if (pl) { const bx = cx + pl.x * R, by = cy + pl.y * R, sc = 1 + .05 * pl.z, Lp = S.Lp * k, Wp = S.Wp * k, b = 7 * k, dim = I * V;
@@ -414,7 +433,7 @@ export default function wood(K, id) {
         for (let j = 0; j < 3; j++) { const c = curlAt(j, T); if (c && c.inPlane) S.curl(j, c, dim, prev.shave); } }
     }
     // the rag
-    if (!egg && on) { const rg = ragAt(T); if (rg) { const x = cx + rg.x * R + Math.sin(A * 23) * .012 * R * (rg.j !== undefined ? 1 : 0), y = cy + rg.y * R + Math.cos(A * 19) * .01 * R, rot = Math.sin(A * 3.1) * .08 + (rg.j !== undefined ? Math.sin(A * 17) * .05 : 0), sc = 1 + .06 * rg.z, rw = S.rw * k, rh = S.rh * k, b = 6 * k;
+    if (!quiet && on) { const rg = ragAt(T); if (rg) { const x = cx + rg.x * R + Math.sin(A * 23) * .012 * R * (rg.j !== undefined ? 1 : 0), y = cy + rg.y * R + Math.cos(A * 19) * .01 * R, rot = Math.sin(A * 3.1) * .08 + (rg.j !== undefined ? Math.sin(A * 17) * .05 : 0), sc = 1 + .06 * rg.z, rw = S.rw * k, rh = S.rh * k, b = 6 * k;
       g.save(); g.globalAlpha = I * V * .9; g.translate(x + (4 + 16 * rg.z) * k, y + (6 + 20 * rg.z) * k); g.rotate(rot); g.scale(sc, sc); g.drawImage(S.ragSh, -rw / 2 - 2 * b, -rh / 2 - 2 * b, rw + 4 * b, rh + 4 * b); g.restore();
       g.save(); g.globalAlpha = I * V; g.translate(x, y); g.rotate(rot); g.scale(sc, sc); g.drawImage(S.rag, -rw / 2, -rh / 2, rw, rh); g.restore(); } }
     if (egg && on) { eggCuts(T, I, false); eggClick(T, I, false); }
@@ -604,9 +623,13 @@ export default function wood(K, id) {
     g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = .13 * V; g.drawImage(S.moonGlow, cx - .62 * R, cy - .62 * R, 1.24 * R, 1.24 * R); g.restore();
     const [c0, c1] = BN.crumble, [p0, p1, p2, p3] = BN.pen, burnt = p2 + BN.cool, cEnd = c1 - .35;
     const phase = !on || T < BN.heat[0] || T >= burnt ? 0 : T < c1 ? 1 : T < p0 ? 2 : 3, egg = K.egg(P) && pp.P > 0; // (1.12 b417: an egg pass plays the puzzle instead)
-    if (egg) heat(0, 1.2, (.045 + .035 * Math.sin(A * .7)) * V * lerp(1, 1 - env(T, EW.crack[0] - .3, EW.crack[0], EW.seal[1] - .3, EW.seal[1] + .5, E.sine), I), false, on && T >= EW.seal[0] ? cur : prev);
+    const lg = !egg && pp.P > 0 ? longOf(P) : 0, quiet = egg || lg > 0, hw = lg ? hourWin(P, lg) : null; // (1.12 b431: and an hour egg's pass its hour egg)
+    if (hw) heat(0, 1.2, (.045 + .035 * Math.sin(A * .7)) * V * lerp(1, 1 - env(T, hw[0] - .3, hw[0], hw[3] - .3, hw[3] + .5, E.sine), I), false, on && T >= hw[1] ? cur : prev); // (the picture breathing, quiet while it plays)
+    else if (egg) heat(0, 1.2, (.045 + .035 * Math.sin(A * .7)) * V * lerp(1, 1 - env(T, EW.crack[0] - .3, EW.crack[0], EW.seal[1] - .3, EW.seal[1] + .5, E.sine), I), false, on && T >= EW.seal[0] ? cur : prev);
     else heat(0, 1.2, (.045 + .035 * Math.sin(A * .7)) * V * lerp(1, 1 - env(T, BN.heat[0] - .3, BN.heat[0], burnt - .2, burnt + 1.4, E.sine), I), false, pp.P && on && T >= burnt - .2 ? cur : prev); // the picture breathing a little, as embers do
     if (egg) eggNight(T, I, A, prev, cur);
+    else if (lg === 1) cuckooNight(T, I, A, prev, cur, ckPlan(P));
+    else if (lg === 2) clockNight(T, I, A, prev, cur, P);
     else if (phase === 0) { if (!pp.P || !on || T < BN.heat[0]) pic(prev.full, 1); else { pic(cur.full, 1); pic(prev.full, 1 - I); } } // (burned: the new picture, the old one back as the list is used)
     else if (phase === 1) { // it glows red-hot once, from the moon outward, and crumbles to ash behind the glow
       const rc = lerp(-.05, 1.12, seg(T, c0, cEnd, lin)), rh = lerp(0, 1.35, seg(T, BN.heat[0], BN.heat[1], E.sine));
@@ -615,10 +638,10 @@ export default function wood(K, id) {
       heat(rc, rh, I * V * .95 * (1 - seg(T, c1 - .5, c1, lin)), true, prev);
     } else if (phase === 2) pic(prev.full, 1 - I);
     // the ash, drifting up off the lines as the crumble passes them, and going
-    if (!egg && on && T > c0 && T < cEnd + BN.drift) { g.save(); for (const p of prev.ASHES) { const tr = lerp(c0, cEnd, clamp((p.d + .05) / 1.17)), a = (T - tr) / BN.drift; if (a < 0 || a >= 1) continue;
+    if (!quiet && on && T > c0 && T < cEnd + BN.drift) { g.save(); for (const p of prev.ASHES) { const tr = lerp(c0, cEnd, clamp((p.d + .05) / 1.17)), a = (T - tr) / BN.drift; if (a < 0 || a >= 1) continue;
       const x = cx + (p.x + Math.sin(a * 5 + p.s * 9) * .03 * a + (p.s - .5) * .08 * a) * R, y = cy + (p.y - a * (.1 + .16 * p.s) - a * a * .12) * R, hot = a < .2;
       g.globalAlpha = I * V * Math.pow(1 - a, 1.3) * (hot ? 1 : .8); g.fillStyle = hot ? "#FFB257" : rgba(ASH); const s = (1.7 - a * .9) * S.ws; g.fillRect(x - s / 2, y - s / 2, s, s); } g.restore(); }
-    if (!egg && phase === 3) { // the pen burns it in again: what has cooled is ash (kept on a canvas as it comes), what is new still glows
+    if (!quiet && phase === 3) { // the pen burns it in again: what has cooled is ash (kept on a canvas as it comes), what is new still glows
       pic(prev.full, 1 - I);
       const cool = T - BN.cool, SG = cur.SEGS; if (S.coldL !== SG || cool < S.coldT - 1e-6) { S.coldL = SG; S.coldX.save(); S.coldX.setTransform(1, 0, 0, 1, 0, 0); S.coldX.clearRect(0, 0, S.cold.width, S.cold.height); S.coldX.restore(); S.ci = 0; }
       while (S.ci < SG.length && SG[S.ci].t1 <= cool) { const s = SG[S.ci++]; ink(S.coldX, s, ASH, s.al); } S.coldT = cool;
@@ -1137,6 +1160,361 @@ export default function wood(K, id) {
       const x = cx + (hx + ex + ox * sp + (r() - .5) * .02) * R, y = cy + (hy + ey + oy * sp) * R - u * (6 + r() * 8) * k, s = (1.1 + r() * 1.6) * Math.max(1, k);
       g.globalAlpha = V * I * (1 - u) * .85; g.fillStyle = night ? (i % 5 === 0 ? "#FFB257" : "rgb(196,182,166)") : "#C9AD80"; g.fillRect(x - s / 2, y - s / 2, s, s); }
     g.restore(); g.globalAlpha = 1;
+  }
+
+  /* ---------------- 1.12 b431: the long day's hour eggs ----------------
+     Two, for a list left up for hours (K.long: once in each hour of loops left alone, the first in odd hours, the second
+     in even), each one idea by day and by night. Each plays in place of the plane and the rag (the glow and the pen),
+     from the picture the pass began on to the one the pass would have left, so the pass after it rests where it always
+     would; a touch eases back to the picture it began on, as any pass does. Neither draws a die any other pass draws. */
+  const longOf = P => { if (S.lgP !== P) { const l = K.long ? K.long(P) : 0; S.lgP = P; S.lgK = l === 1 || l === 2 ? l : 0; } return S.lgK; };
+  /** a piece of veneer for the hour eggs' things (a hand, a mark, a bird's wing), as the pictures' pieces are: its wood,
+   *  its shape, the way its grain runs */
+  const vpiece = (wood, pts, grain, seed) => { let x0 = 9, y0 = 9, x1 = -9, y1 = -9, sx = 0, sy = 0; for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); sx += x; sy += y; }
+    return { wood, polys: [poly(pts)], grain, seed, pts, c: [sx / pts.length, sy / pts.length], L: Math.hypot(x1 - x0, y1 - y0) / 2 + .06, bx: [x0, y0, x1, y1] }; };
+  /** things drawn once for this size (in the medallion's units, at its radius): by day pieces of veneer, oiled; by night
+   *  char cut out, its lines burned in ash; `extra` draws on top; the sprite knows its box */
+  const thing = (pieces, extra, pad = .03) => { let x0 = 9, y0 = 9, x1 = -9, y1 = -9; for (const p of pieces) { x0 = Math.min(x0, p.bx[0]); y0 = Math.min(y0, p.bx[1]); x1 = Math.max(x1, p.bx[2]); y1 = Math.max(y1, p.bx[3]); }
+    x0 -= pad; y0 -= pad; x1 += pad; y1 += pad; const R = S.RR, u = 1 / R;
+    const c = make((x1 - x0) * R, (y1 - y0) * R, x => { x.scale(R, R); x.translate(-x0, -y0);
+      if (!night) for (const p of pieces) pieceInto(x, p, true, u);
+      else for (const p of pieces) { x.save(); trace(x, p.pts); x.clip(); const q = x.createLinearGradient(p.bx[0], p.bx[1], p.bx[2], p.bx[3]); q.addColorStop(0, p.lit || "#3A2E26"); q.addColorStop(1, p.dark || "#211915"); x.fillStyle = q; x.fillRect(p.bx[0] - .1, p.bx[1] - .1, p.bx[2] - p.bx[0] + .2, p.bx[3] - p.bx[1] + .2); x.restore();
+        x.strokeStyle = rgba(ASH, .9); x.lineWidth = 1.3 * u * S.ws; x.lineJoin = "round"; trace(x, p.pts); x.stroke(); }
+      if (extra) extra(x, u); });
+    c.bx = [x0, y0, x1, y1]; return c; };
+  /** a thing drawn at (x, y) on the page (its own origin there), turned by `rot` about that origin, scaled by `sc` */
+  const put2 = (c, x, y, rot, sc, a) => { if (a <= .003) return; const R = S.R; g.save(); g.globalAlpha = a; g.translate(x, y); if (rot) g.rotate(rot); if (sc !== 1) g.scale(sc, sc); g.drawImage(c, c.bx[0] * R, c.bx[1] * R, (c.bx[2] - c.bx[0]) * R, (c.bx[3] - c.bx[1]) * R); g.restore(); };
+
+  // The first: the cuckoo. It is an hour egg, so the medallion is a clock for the hour: its marks let in round it, its
+  // hands dropped on; a door cut in its top; the minute hand goes once round, an hour passing, and behind it the picture
+  // turns to the next; at the hour the door opens and the cuckoo comes out on its perch and calls the hour — once for
+  // each hour the list has been up, round again after twelve — beak and wings and tail, without a sound (by night a puff
+  // of smoke with each call); it goes in, the door shuts, the clock is taken off again, and the cut closes.
+  const EC = { marks: [.5, 1.55], hands: [1.15, 2.2], cut: [1.95, 2.85], set: [2.3, 3.05], sweep: [3.2, 6.95], open: [7.05, 7.45], out: [7.35, 7.85], call0: 7.95 };
+  /** the cuckoo's pass: how many calls (the hours the list has been up, round again after twelve), how long each, and when
+   *  it goes in, the door shuts, the clock goes and the cut closes */
+  const ckPlan = P => { if (S.ckp && S.ckp.P === P) return S.ckp; const h = Math.max(1, Math.floor(P / 240)), n = (h - 1) % 12 + 1, d = Math.min(.8, 3.9 / n), ce = EC.call0 + n * d + .45;
+    return (S.ckp = { P, n, d, back: [ce, ce + .42], shut: [ce + .4, ce + .7], leave: [ce + .76, ce + 1.7], seal: [ce + .8, ce + 1.8], spin: K.deal(P, 471)() < .5 ? -1 : 1 }); };
+  const CKDOOR = [[-.115, -.67], [-.115, -.9], ...arcPts(0, -.9, .115, Math.PI, TAU, 18).slice(1, -1), [.115, -.9], [.115, -.67]];
+  const CKMARK = k => { const a = -Math.PI / 2 + k * Math.PI / 6, l = k % 3 ? .045 : .066, w = k % 3 ? .019 : .03, c = Math.cos(a), s = Math.sin(a), m = .81;
+    return [[c * (m - l) - s * w, s * (m - l) + c * w], [c * (m + l) - s * w, s * (m + l) + c * w], [c * (m + l) + s * w, s * (m + l) - c * w], [c * (m - l) + s * w, s * (m - l) - c * w]]; };
+  // the hands, pointing up from their pivot: a spade at the tip, a fret in it, a counterweight behind; the boss
+  const HANDM = [[0, -.67], [.056, -.565], [.02, -.47], [.014, -.42], [.016, .06], [-.016, .06], [-.014, -.42], [-.02, -.47], [-.056, -.565]];
+  const HANDH = [[0, -.47], [.075, -.37], [.026, -.29], [.02, .05], [-.02, .05], [-.026, -.29], [-.075, -.37]];
+  // the bird, facing left, in the medallion's units, its feet on its perch at (0, 0)
+  const CB = { tail: [[.1, -.135], [.36, -.085], [.4, -.042], [.12, -.075]], body: ellPts(.03, -.12, .158, .094, .2, 40), breast: ellPts(-.065, -.098, .09, .062, .45, 30),
+    head: ellPts(-.128, -.218, .088, .083, 0, 30), bill: [[-.2, -.245], [-.318, -.222], [-.206, -.2]], jaw: [[-.206, -.211], [-.296, -.207], [-.198, -.186]],
+    ring: ellPts(-.15, -.236, .032, .032, 0, 18), eye: ellPts(-.152, -.236, .019, .019, 0, 14), wing: [[-.07, -.165], [.04, -.208], [.2, -.18], [.275, -.118], [.12, -.088], [-.05, -.103]],
+    perch: [[-.15, .0], [.15, .0], [.15, .024], [-.15, .024]], legs: [[-.024, -.05], [-.012, -.05], [-.016, .0], [-.03, .0], [.024, -.05], [.036, -.05], [.034, .0], [.02, .0]],
+    pv: { tail: [.11, -.1], head: [-.08, -.155], jaw: [-.2, -.2], wing: [-.055, -.145] } };
+  /** the cuckoo's things for this size: the marks, the hands, the bird in its parts, its shadow, the door's back */
+  const ckThings = () => {
+    if (S.ckt && S.ckt.RR === S.RR) return S.ckt; const t = { RR: S.RR };
+    const lit = (p, a, b) => { p.lit = a; p.dark = b; return p; };
+    t.marks = Array.from({ length: 12 }, (_, k) => k ? thing([lit(vpiece("holly", CKMARK(k), -Math.PI / 2 + k * Math.PI / 6, 9100 + k), "#4A3B31", "#2E241E")]) : null);
+    const disc = (cx2, cy2, r2) => ellPts(cx2, cy2, r2, r2, 0, 24);
+    t.hm = thing([lit(vpiece("ebony", HANDM, Math.PI / 2, 9201), "#3C3029", "#1E1713"), lit(vpiece("ebony", disc(0, .085, .036), 0, 9202), "#3C3029", "#1E1713")], (x, u) => { if (night) return; trace(x, [[0, -.615], [.019, -.56], [0, -.505], [-.019, -.56]]); x.fillStyle = rgba(hex(WOOD.holly.oil[0])); x.fill(); x.lineWidth = 1.2 * u; x.strokeStyle = "rgba(36,20,10,.7)"; x.stroke(); });
+    t.hh = thing([lit(vpiece("ebony", HANDH, Math.PI / 2, 9203), "#3C3029", "#1E1713"), lit(vpiece("ebony", disc(0, .075, .044), 0, 9204), "#3C3029", "#1E1713")], (x, u) => { if (night) return; trace(x, [[0, -.42], [.027, -.365], [0, -.315], [-.027, -.365]]); x.fillStyle = rgba(hex(WOOD.holly.oil[0])); x.fill(); x.lineWidth = 1.2 * u; x.strokeStyle = "rgba(36,20,10,.7)"; x.stroke(); });
+    t.boss = thing([lit(vpiece("satin", disc(0, 0, .052), .4, 9205), "#5A4636", "#2E2219")], (x, u) => { x.fillStyle = night ? rgba(ASH, .9) : rgba(hex(WOOD.holly.oil[0])); x.beginPath(); x.arc(0, 0, .018, 0, TAU); x.fill(); });
+    // the bird: its tail, its body and barred breast, its wing, its head and bill, its jaw, its perch and legs
+    const ck = (w, pts, gr, s, a = "#3E312A", b = "#241B16") => lit(vpiece(w, pts, gr, s), a, b);
+    t.perch = thing([ck("satin", CB.perch, 0, 9301, "#5A4636", "#2E2219"), ck("ebony", CB.legs.slice(0, 4), Math.PI / 2, 9302), ck("ebony", CB.legs.slice(4), Math.PI / 2, 9303)]);
+    t.tail = thing([ck("walnut", CB.tail, .25, 9304)], (x, u) => { x.save(); trace(x, CB.tail); x.clip(); x.strokeStyle = night ? rgba(ASH, .75) : rgba(hex(WOOD.holly.oil[0]), .95); x.lineWidth = (night ? 1 : 2.2) * u; for (let k = 0; k < 3; k++) { x.beginPath(); x.moveTo(.31 - k * .028, -.1); x.lineTo(.3 - k * .028, -.02); x.stroke(); } x.restore(); });
+    const bars = (x, u, pts, col, w) => { x.save(); trace(x, pts); x.clip(); x.strokeStyle = col; x.lineWidth = w * u; for (let k = 0; k < 7; k++) { const y = -.15 + k * .018; x.beginPath(); x.moveTo(-.16, y + .02); x.quadraticCurveTo(-.07, y + .028, .02, y); x.stroke(); } x.restore(); };
+    t.body = thing([ck("walnut", CB.body, .2, 9305, "#3E312A", "#221A15"), ck("holly", CB.breast, .45, 9306, "#4B3D33", "#2E241E")], (x, u) => bars(x, u, CB.breast, night ? rgba(ASH, .8) : "rgba(46,30,20,.62)", night ? 1 : 1.6));
+    t.wing = thing([ck("teak", CB.wing, -.2, 9307)], (x, u) => { x.save(); trace(x, CB.wing); x.clip(); x.strokeStyle = night ? rgba(ASH, .7) : "rgba(40,22,10,.55)"; x.lineWidth = (night ? 1 : 1.4) * u; for (let k = 0; k < 4; k++) { x.beginPath(); x.moveTo(.07 + k * .045, -.2); x.quadraticCurveTo(.09 + k * .045, -.14, .06 + k * .05, -.09); x.stroke(); } x.restore(); });
+    t.head = thing([ck("walnut", CB.head, 0, 9308, "#3E312A", "#221A15"), ck("satin", CB.bill, 0, 9309, "#5A4636", "#2E2219"), ck("satin", CB.ring, 0, 9310, "#5A4636", "#2E2219"), ck("ebony", CB.eye, 0, 9311, "#140F0C", "#0A0706")], (x, u) => { x.fillStyle = night ? "#FFB257" : "#fff"; x.beginPath(); x.arc(-.157, -.242, .006, 0, TAU); x.fill(); });
+    t.jaw = thing([ck("satin", CB.jaw, 0, 9312, "#5A4636", "#2E2219")]);
+    // its shadow, in one piece, as it stands
+    const sil = make(.8 * S.RR, .45 * S.RR, x => { x.scale(S.RR, S.RR); x.translate(.4, .32); x.fillStyle = "#000"; for (const pts of [CB.tail, CB.body, CB.breast, CB.head, CB.bill, CB.wing, CB.perch]) { trace(x, pts); x.fill(); } });
+    sil.bx = [-.4, -.32, .4, .13]; t.birdSh = shadowOf(sil, 4, night ? "rgba(0,0,0,.8)" : "rgba(64,40,18,.55)"); t.birdSh.bx = [-.4 - 8 / S.RR, -.32 - 8 / S.RR, .4 + 8 / S.RR, .13 + 8 / S.RR];
+    if (night) { t.birdGlow = shadowOf(sil, 7, "rgba(255,112,34,.95)"); t.birdGlow.bx = [-.4 - 14 / S.RR, -.32 - 14 / S.RR, .4 + 14 / S.RR, .13 + 14 / S.RR]; } // (by night, the ember in the house behind it, round its edges)
+    return (S.ckt = t); };
+  /** the bird at loop time T: how far out of its door (0 … 1), how it bows, opens its beak, lifts its wings and its tail */
+  const ckBird = (T, pl) => {
+    const out = seg(T, EC.out[0], EC.out[1], E.out) * (1 - seg(T, pl.back[0], pl.back[1], E.in)); if (T < EC.out[0] || T > pl.back[1]) return null;
+    let bow = 0, beak = 0, wing = 0, tail = 0; const k = Math.floor((T - EC.call0) / pl.d);
+    if (k >= 0 && k < pl.n) { const u = (T - EC.call0 - k * pl.d) / pl.d, e = (a, b, c, d) => env(u, a, b, c, d, E.sine); // "cuck" — "oo"
+      bow = -.2 * e(0, .14, .3, .48) - .1 * e(.5, .6, .7, .9); beak = .55 * e(.04, .13, .24, .36) + .42 * e(.52, .6, .68, .8); wing = .85 * e(.02, .14, .3, .46) + .55 * e(.5, .6, .72, .88); tail = .45 * e(0, .14, .3, .5) + .3 * e(.5, .62, .72, .9); }
+    else if (T > EC.out[0] && T < EC.call0) { const s = T - EC.out[0]; bow = .06 * Math.sin(s * 9) * Math.exp(-s * 3); } // (a little bob as it comes out)
+    return { out, bow, beak, wing, tail };
+  };
+  /** the cuckoo's hands and marks at T: the angle each hand points (0 up), how high a mark or a hand is lifted, where a hand
+   *  is on its way in or out */
+  const ckHand = (T, pl, which) => {
+    const sw = seg(T, EC.sweep[0], EC.sweep[1], E.io), set = seg(T, EC.set[0], EC.set[1], E.back), n = pl.n;
+    const ang = which ? sw * TAU : ((n - 1) * set + sw) * Math.PI / 6; // the minute hand once round; the hour hand to the hour before, then on to the hour
+    const qi = seg(T, EC.hands[0] + (which ? .12 : 0), EC.hands[1] + (which ? .12 : 0), x => x), qo = seg(T, pl.leave[0] + (which ? .1 : .2), pl.leave[0] + (which ? .85 : .95), x => x);
+    return { ang, qi, qo };
+  };
+  /** a thing's flight to (or from) its place, on the side away from the words: where it is, how it turns, how lifted */
+  const flight = (q, tx, ty, spin, back) => { const [dx, dy] = S.away, D = out(tx, ty, dx, dy) + S.R * .8 + 30, e = back ? E.in(q) : 1 - E.out(q), side = Math.sin(Math.PI * q) * D * .1 * spin;
+    return { x: tx + dx * D * e - dy * side, y: ty + dy * D * e + dx * side, rot: spin * e * 2.2, z: back ? Math.min(1, q * 3) : 1 - seg(q, .7, 1, E.in) }; };
+  /** a puff of sawdust (by night of ash, and a spark or two) out of a spot, `u` 0 … 1 as it goes */
+  const puff = (x, y, rad, u, a, seed, n = 10) => { if (u <= 0 || u >= 1 || a <= .003) return; const r = rng(seed), k = S.R / S.RR;
+    for (let i = 0; i < n; i++) { const an = r() * TAU, d = rad + (.03 + r() * .08) * S.R * E.out(u), s = (1 + r() * 1.5) * Math.max(1, k); g.globalAlpha = a * (1 - u) * .85; g.fillStyle = night ? (i % 4 === 0 ? "#FFB257" : "rgb(196,182,166)") : "#C9AD80"; g.fillRect(x + Math.cos(an) * d - s / 2, y + Math.sin(an) * d - u * (5 + r() * 7) * k - s / 2, s, s); }
+    g.globalAlpha = 1; };
+  /** when an E.io easing reached y */
+  const invIo = y => { y = clamp(y); return y < .5 ? Math.cbrt(y / 4) : 1 - Math.cbrt(2 * (1 - y)) / 2; };
+  /** the door's outline, on the page, as a path */
+  const doorPath = (sx = 1, hx = -.115) => { const { cx, cy, R } = S; g.beginPath(); CKDOOR.forEach(([u, v], i) => { const x = cx + (hx + (u - hx) * sx) * R, y = cy + v * R; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath(); };
+  /** how far the door has swung open (0 shut … past a right angle), with a bounce as it shuts */
+  const doorAt = (T, pl) => { if (T < EC.open[0] || T > pl.shut[1] + .3) return 0; const o = E.back(seg(T, EC.open[0], EC.open[1], x => x)) * 1.95; if (T < pl.shut[0]) return o;
+    const s = seg(T, pl.shut[0], pl.shut[1], E.in), b = T > pl.shut[1] ? Math.exp(-(T - pl.shut[1]) * 14) * Math.sin((T - pl.shut[1]) * 40) * .12 : 0; return Math.max(0, 1.95 * (1 - s) + b); };
+  /** the cuckoo's clock, by day or by night: the marks, the hands, the door's leaf, the bird; what lies on the picture */
+  function ckClock(T, I, A, pl, pic, night2) {
+    const { cx, cy, R } = S, V = S.vis * I, k = R / S.RR, t = ckThings();
+    // the marks: tapped in one after another round the face, then lifted out and away
+    for (let m = 1; m < 12; m++) { const ti = EC.marks[0] + (m - 1) * .085, qi = seg(T, ti, ti + .3, x => x); if (qi <= 0) continue;
+      const to = pl.leave[0] + (m - 1) * .04, qo = seg(T, to, to + .62, x => x); if (qo >= 1) continue;
+      const z = qo > 0 ? 0 : 1 - E.in(qi), f = qo > 0 ? flight(qo, cx, cy, pl.spin, true) : { x: cx, y: cy, rot: 0, z: 0 }, zz = Math.max(z, f.z);
+      if (zz > .01) put2(t.marks[m], f.x + (3 + 9 * zz) * k, f.y + (4 + 12 * zz) * k, f.rot, 1 + .25 * zz, V * .35 * zz);
+      put2(t.marks[m], f.x, f.y - zz * 6 * k, f.rot, 1 + .25 * zz, V * Math.min(1, qi * 4));
+      if (!night2) { const [mx, my] = CKMARK(m).reduce((s, p) => [s[0] + p[0] / 4, s[1] + p[1] / 4], [0, 0]); puff(cx + mx * R, cy + my * R, .03 * R, (T - ti - .3) / .4, V, 9400 + m, 6); } }
+    // the door's leaf, swinging open on its hinge, the picture on its face, plain wood on its back
+    const th = doorAt(T, pl);
+    if (th > .001) { const c = Math.cos(th); g.save(); g.globalAlpha = V;
+      if (c >= 0) { doorPath(c); g.clip(); g.translate(cx + -.115 * R, 0); g.scale(c, 1); g.translate(-(cx + -.115 * R), 0); g.drawImage(pic, cx - 1.05 * R, cy - 1.05 * R, 2.1 * R, 2.1 * R); g.setTransform(px, 0, 0, px, 0, 0); g.fillStyle = night2 ? "#000" : "#2E1B0B"; g.globalAlpha = V * (1 - c) * .45; g.fillRect(cx - R, cy - 1.1 * R, 2 * R, R); }
+      else { doorPath(c); g.fillStyle = night2 ? "#2A211C" : "#D9C29C"; g.fill(); g.clip(); g.strokeStyle = night2 ? rgba(ASH, .25) : "rgba(150,112,70,.5)"; g.lineWidth = 1; for (let y = -1.02; y < -.67; y += .022) { g.beginPath(); g.moveTo(cx - .5 * R, cy + y * R); g.lineTo(cx, cy + (y + .004) * R); g.stroke(); } }
+      g.restore(); g.save(); g.globalAlpha = V; doorPath(c); g.lineWidth = 1.3; g.strokeStyle = night2 ? "rgba(156,128,106,.5)" : "rgba(36,20,10,.75)"; g.stroke(); g.restore(); }
+    // the door's knob, once the door is cut, riding on its leaf as it swings
+    if (T > EC.cut[1] && T < pl.seal[0] + .3) { const c = Math.cos(th), kx = cx + (-.115 + (.075 + .115) * c) * R, ky = cy - .84 * R, kr = Math.max(1.2, .016 * R), ka = V * Math.min(1, (T - EC.cut[1]) * 4) * (1 - seg(T, pl.seal[0], pl.seal[0] + .3, x => x)) * (c > 0 ? 1 : 0);
+      if (ka > .01) { g.save(); g.globalAlpha = ka; g.beginPath(); g.ellipse(kx, ky, kr * Math.max(.25, c), kr, 0, 0, TAU); g.fillStyle = night2 ? rgba(ASH, .9) : "#E9C77C"; g.fill(); g.lineWidth = 1; g.strokeStyle = night2 ? "rgba(0,0,0,.6)" : "rgba(60,36,10,.7)"; g.stroke(); g.restore(); } }
+    // the hands, flown in and dropped on, set to the hour before, the minute hand once round; flown off again
+    for (const which of [0, 1]) { const h = ckHand(T, pl, which); if (h.qi <= 0 || h.qo >= 1) continue; const f = h.qo > 0 ? flight(h.qo, cx, cy, pl.spin, true) : flight(h.qi, cx, cy, -pl.spin, false), z = f.z, spr = which ? t.hm : t.hh, rot = h.ang + f.rot;
+      if (z > .01) put2(spr, f.x + (4 + 14 * z) * k, f.y + (6 + 18 * z) * k, rot, 1 + .08 * z, V * .4 * Math.min(1, z * 2));
+      else put2(spr, f.x + 2.5 * k, f.y + 3.5 * k, rot, 1, V * .3); // (its shadow, lying on the face)
+      put2(spr, f.x, f.y - z * 8 * k, rot, 1 + .08 * z, V);
+      if (which && night2 && T > EC.sweep[0] - .3 && T < EC.sweep[1] + .6) { const hg = env(T, EC.sweep[0] - .3, EC.sweep[0] + .2, EC.sweep[1] - .1, EC.sweep[1] + .6, E.sine); if (hg > .01) { g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = V * hg * .55; const tip = [cx + Math.sin(rot) * .6 * R, cy - Math.cos(rot) * .6 * R], gr = .32 * R; g.drawImage(S.tipGlow, tip[0] - gr, tip[1] - gr, 2 * gr, 2 * gr); g.restore(); } } // (by night the hand burns as it goes: its tip glowing)
+      if (!night2 && z <= 0 && h.qo <= 0) puff(cx, cy, .06 * R, (T - EC.hands[1] - (which ? .12 : 0)) / .45, V, 9500 + which, 8); }
+    if (seg(T, EC.hands[0] + .12, EC.hands[1] + .12, x => x) >= 1 && seg(T, pl.leave[0] + .1, pl.leave[0] + .85, x => x) <= 0) put2(t.boss, cx, cy, 0, 1, V);
+    // the bird: out of its door on its perch, calling the hour, and in again
+    const b = ckBird(T, pl);
+    if (b) { const sc = lerp(.7, 1.5, b.out), fx = cx + .04 * R, fy = cy + lerp(-.72, -.5, b.out) * R, z = b.out, a = V * lerp(.35, 1, Math.min(1, b.out * 1.6));
+      g.save(); if (b.out < .8) { const rv = lerp(.12, .75, seg(b.out, .25, .8, E.in)), ry = lerp(.18, .6, seg(b.out, .25, .8, E.in)); g.beginPath(); g.ellipse(cx, cy - .84 * R, rv * R, ry * R, 0, 0, TAU); if (b.out < .25) { doorPath(); } g.clip(); } // (coming out of the doorway: only what the door shows, then more as it comes forward)
+      if (night2) { g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = V * .5 * (1 - .4 * z); const gr = .36 * R; g.drawImage(S.halo, fx - gr, fy - .18 * R - gr, 2 * gr, 2 * gr); g.restore(); } // (by night the ember in the house lights it from behind)
+      if (z > .3) put2(t.birdSh, fx + (5 + 12 * z) * k, fy + (7 + 14 * z) * k, b.bow, sc, a * .5 * z);
+      if (night2 && t.birdGlow) { g.save(); g.globalCompositeOperation = "lighter"; put2(t.birdGlow, fx, fy - 2 * k, b.bow, sc * 1.02, a * (.42 + .1 * Math.sin(A * 2.3))); g.restore(); }
+      const part = (spr, pv, ang) => { g.save(); g.globalAlpha = a; g.translate(fx, fy); g.scale(sc, sc); g.rotate(b.bow); if (pv) { g.translate(pv[0] * R, pv[1] * R); g.rotate(ang); g.translate(-pv[0] * R, -pv[1] * R); } g.drawImage(spr, spr.bx[0] * R, spr.bx[1] * R, (spr.bx[2] - spr.bx[0]) * R, (spr.bx[3] - spr.bx[1]) * R); g.restore(); };
+      part(t.perch); part(t.tail, CB.pv.tail, -b.tail); part(t.body); part(t.jaw, CB.pv.jaw, -b.beak * .9); part(t.head, CB.pv.head, b.beak * .22); part(t.wing, CB.pv.wing, -b.wing);
+      g.restore();
+      if (night2 && b.out > .5) for (let c = 0; c < pl.n; c++) { const t0 = EC.call0 + c * pl.d + .05 * pl.d, u = (T - t0) / 1.1; if (u <= 0 || u >= 1) continue; // (by night each call a puff of smoke out of its beak, curling up and thinning)
+        const bx = fx + (-.31 * sc) * R, by = fy + (-.215 * sc) * R; g.save(); g.lineCap = "round"; g.strokeStyle = "rgb(222,212,202)"; let p0 = null;
+        for (let j = 0; j <= 18; j++) { const f = j / 18 * Math.min(1, u * 2.4), x = bx - f * .26 * R * sc + Math.sin(f * 6 + c * 1.7 - u * 2) * .045 * R * f, y = by - f * .36 * R * (.45 + u) * sc; if (p0) { g.globalAlpha = V * .55 * Math.pow(1 - u, 1.2) * (1 - f * .55); g.lineWidth = (2 + f * 11 * (.6 + u)) * S.ws; g.beginPath(); g.moveTo(p0[0], p0[1]); g.lineTo(x, y); g.stroke(); } p0 = [x, y]; }
+        g.restore(); } }
+    // the door shut: a puff out of its joins
+    if (!night2) puff(cx, cy - .85 * R, .12 * R, (T - pl.shut[1]) / .5, V, 9600, 12); else puff(cx, cy - .85 * R, .12 * R, (T - pl.shut[1]) / .5, V, 9601, 9);
+    g.globalAlpha = 1;
+  }
+  /** the cut round the door, as it runs (a glint at its head; by night white-hot), and as it closes */
+  function ckCut(T, I, pl, night2) {
+    const { cx, cy, R } = S, V = S.vis * I, [c0, c1] = EC.cut; if (T < c0 || T > pl.seal[1]) return;
+    const run = seg(T, c0, c1, lin), close = seg(T, pl.seal[0], pl.seal[1], lin), dark = 1 - E.io(clamp(close / .8));
+    const n = CKDOOR.length, upto = run * (n - 1), path = () => { g.beginPath(); for (let i = 0; i <= Math.floor(upto); i++) { const [u, v] = CKDOOR[i]; i ? g.lineTo(cx + u * R, cy + v * R) : g.moveTo(cx + u * R, cy + v * R); } const i = Math.floor(upto), f = upto - i; if (i < n - 1) { const [u0, v0] = CKDOOR[i], [u1, v1] = CKDOOR[i + 1]; g.lineTo(cx + lerp(u0, u1, f) * R, cy + lerp(v0, v1, f) * R); } };
+    g.save(); g.lineCap = "round"; g.lineJoin = "round"; path(); g.globalAlpha = V * dark; g.strokeStyle = night2 ? "rgba(6,4,3,.95)" : "rgba(36,20,10,.8)"; g.lineWidth = night2 ? 1.6 : 1.9; g.stroke();
+    if (night2 && run < 1) { g.globalCompositeOperation = "lighter"; g.globalAlpha = V * .6; g.strokeStyle = "rgb(255,120,36)"; g.lineWidth = 3.5; g.stroke(); g.globalCompositeOperation = "source-over"; }
+    if (run < 1) { const i = Math.min(n - 2, Math.floor(upto)), f = upto - i, [u0, v0] = CKDOOR[i], [u1, v1] = CKDOOR[i + 1], x = cx + lerp(u0, u1, f) * R, y = cy + lerp(v0, v1, f) * R; g.globalCompositeOperation = "lighter"; g.globalAlpha = V; if (!S.glint) S.glint = K.glowSpr(10, [255, 252, 240], 1); g.drawImage(night2 ? S.halo : S.glint, x - 9, y - 9, 18, 18); g.globalCompositeOperation = "source-over"; }
+    if (night2 && close > 0) { const hk = env(close, 0, .22, .42, .95, E.sine); if (hk > .003) { g.globalCompositeOperation = "lighter"; path(); g.globalAlpha = V * hk * .6; g.strokeStyle = "rgb(255,120,36)"; g.lineWidth = 4; g.stroke(); g.globalAlpha = V * hk; g.strokeStyle = "#FFC46E"; g.lineWidth = 1.2; g.stroke(); g.globalCompositeOperation = "source-over"; } }
+    g.restore(); g.globalAlpha = 1;
+  }
+  /** the cuckoo by day: the picture the pass began on, turning to the next behind the minute hand; the house behind the
+   *  open door, raw wood in shadow; the clock over it */
+  function cuckooDay(T, I, A, prev, cur, pl) {
+    const { cx, cy, R } = S, V = S.vis, whole = (c, a = 1) => { if (a <= .003) return; g.globalAlpha = a * V; g.drawImage(c, cx - 1.05 * R, cy - 1.05 * R, 2.1 * R, 2.1 * R); g.globalAlpha = 1; };
+    if (I <= .01 || T < EC.marks[0]) { whole(prev.oiled); return; }
+    const sw = seg(T, EC.sweep[0], EC.sweep[1], E.io), a0 = -Math.PI / 2, a1 = a0 + sw * TAU;
+    if (sw <= 0) whole(prev.oiled); else if (sw >= 1) whole(cur.oiled);
+    else { whole(prev.oiled); g.save(); g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, 1.1 * R, a0, a1); g.closePath(); g.clip(); whole(cur.oiled);
+      g.globalCompositeOperation = "soft-light"; for (let j = 0; j < 5; j++) { g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R * .9, a1 - (j + 1) * .07, a1 - j * .07); g.closePath(); g.fillStyle = `rgba(255,248,228,${(.7 * (1 - j / 5)).toFixed(3)})`; g.fill(); } // (the new veneer catching the light just behind the hand)
+      g.restore(); }
+    const th = doorAt(T, pl); if (th > .001) { g.save(); g.globalAlpha = V; doorPath(); g.clip(); const q = g.createLinearGradient(cx, cy - 1.02 * R, cx, cy - .67 * R); q.addColorStop(0, "#1C110A"); q.addColorStop(1, "#4A3220"); g.fillStyle = q; g.fillRect(cx - .2 * R, cy - 1.1 * R, .4 * R, .5 * R); g.restore(); } // (the house behind the door)
+    whole(prev.oiled, 1 - I); // (the list touched: back to the picture the pass began on)
+    ckCut(T, I, pl, false); ckClock(T, I, A, pl, sw >= 1 ? cur.oiled : prev.oiled, false);
+  }
+  /** the cuckoo by night: the same, the picture burned again behind the minute hand — the old lines catching and
+   *  crumbling to ash ahead of it, the new ones white-hot in its wake, cooling — the house glowing with an ember */
+  function cuckooNight(T, I, A, prev, cur, pl) {
+    const { cx, cy, R } = S, V = S.vis, pic = (c, a = 1) => { if (a <= .003) return; g.globalAlpha = a * V; g.drawImage(c, cx - 1.05 * R, cy - 1.05 * R, 2.1 * R, 2.1 * R); g.globalAlpha = 1; };
+    if (I <= .01 || T < EC.marks[0]) { pic(prev.full); return; }
+    const sw = seg(T, EC.sweep[0], EC.sweep[1], E.io), a0 = -Math.PI / 2, a1 = a0 + sw * TAU, X = cx - 1.05 * R, Y = cy - 1.05 * R, D = 2.1 * R;
+    const sector = (b0, b1) => { g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, 1.1 * R, b0, b1); g.closePath(); };
+    if (sw <= 0) pic(prev.full, I); else if (sw >= 1) pic(cur.full, I); // (by night the picture is lines only, which cover nothing: what the egg draws eases out with the list touched, as the picture it began on comes back)
+    else { g.save(); sector(a1, a0 + TAU); g.clip(); pic(prev.full, I); g.restore(); g.save(); sector(a0, a1); g.clip(); pic(cur.full, I); g.restore(); }
+    if (sw > 0 && T < EC.sweep[1] + 1.4) { // the heat: behind the hand the new lines white-hot and cooling; just ahead of it the old ones catching
+      const cool = T > EC.sweep[1] ? seg(T, EC.sweep[1], EC.sweep[1] + 1.4, E.sine) : 0;
+      g.save(); for (let j = 0; j < 7; j++) { const b1 = a1 - j * .16, b0 = Math.max(a0, b1 - .16); if (b1 <= a0) break; const hk = Math.pow(1 - j / 7, 1.6) * (1 - cool); if (hk < .02) continue;
+        g.save(); sector(b0, b1); g.clip(); g.globalAlpha = V * I * hk; g.drawImage(cur.hotC, X, Y, D, D); g.globalCompositeOperation = "lighter"; g.globalAlpha = V * I * hk * .7; g.drawImage(cur.glowC, X, Y, D, D); g.restore(); }
+      if (sw < 1) { g.save(); sector(a1, a1 + .22); g.clip(); g.globalAlpha = V * I * .5; g.drawImage(prev.hotC, X, Y, D, D); g.globalCompositeOperation = "lighter"; g.globalAlpha = V * I * .4; g.drawImage(prev.glowC, X, Y, D, D); g.restore(); }
+      g.restore();
+      // the old lines' ash, drifting up off where the hand has passed
+      g.save(); for (const p of prev.ASHES) { let an = Math.atan2(p.y, p.x) - a0; while (an < 0) an += TAU; const tp = EC.sweep[0] + (EC.sweep[1] - EC.sweep[0]) * invIo(an / TAU), a = (T - tp) / .9; if (a < 0 || a >= 1) continue; // (when the hand passed it)
+        const x = cx + (p.x + Math.sin(a * 5 + p.s * 9) * .03 * a) * R, y = cy + (p.y - a * (.08 + .14 * p.s) - a * a * .1) * R; g.globalAlpha = I * V * Math.pow(1 - a, 1.3) * (a < .2 ? 1 : .8); g.fillStyle = a < .2 ? "#FFB257" : rgba(ASH); const s = (1.7 - a * .9) * S.ws; g.fillRect(x - s / 2, y - s / 2, s, s); }
+      g.restore(); }
+    const th = doorAt(T, pl); if (th > .001) { g.save(); g.globalAlpha = V * I; doorPath(); g.clip(); g.fillStyle = "#070504"; g.fillRect(cx - .2 * R, cy - 1.1 * R, .4 * R, .5 * R); g.globalCompositeOperation = "lighter"; g.globalAlpha = V * I * (.4 + .12 * Math.sin(A * 1.3)) * Math.min(1, th); const gr = .3 * R; g.drawImage(S.halo, cx - gr, cy - .8 * R - gr, 2 * gr, 2 * gr); g.restore(); } // (the house: the char gone deep, an ember in it)
+    pic(prev.full, 1 - I);
+    ckCut(T, I, pl, true); ckClock(T, I, A, pl, plateOf(sw >= 1 ? cur : prev), true);
+    // the marks, by night, burned in white-hot and cooling as they go in, and flaring as they go
+    if (I > .01) { g.save(); g.globalCompositeOperation = "lighter"; for (let m = 1; m < 12; m++) { const ti = EC.marks[0] + (m - 1) * .085, hk = env(T, ti + .2, ti + .3, ti + .35, ti + 1.3, E.sine) + env(T, pl.leave[0] + (m - 1) * .04 - .25, pl.leave[0] + (m - 1) * .04, pl.leave[0] + (m - 1) * .04 + .05, pl.leave[0] + (m - 1) * .04 + .35, E.sine); if (hk < .01) continue;
+      const [mx, my] = CKMARK(m).reduce((s, p) => [s[0] + p[0] / 4, s[1] + p[1] / 4], [0, 0]), gr = .07 * R; g.globalAlpha = V * I * hk * .8; g.drawImage(S.halo, cx + mx * R - gr, cy + my * R - gr, 2 * gr, 2 * gr); } g.restore(); }
+  }
+
+  /** an hour egg's span: when it begins, when the next picture is all in, and when its seal runs (by day a sheen runs
+   *  over it; by night the picture breathes again after it) */
+  const hourWin = (P, lg) => { if (lg === 1) { const pl = ckPlan(P); return [EC.marks[0], EC.sweep[1], pl.seal[0], pl.seal[1]]; } return [EK.cut[0], EK.shut, EK.seal[0], EK.seal[1]]; };
+  // The second: the clockwork. The medallion opens like the iris of a lens: cuts run out from its middle along eight
+  // curved seams, and its blades turn back on their pivots under the banding, each carrying its piece of the picture;
+  // behind it a clock is going — a movement cut from the same woods, its great wheel and second wheel turning, the escape
+  // wheel stepping a tooth at each swing of a long pendulum whose anchor rocks over it (by night the works charred, an
+  // ember glowing down in them, a spark at every tick). Then the blades come back, and the picture on them is the next.
+  const EK = { cut: [.55, 1.75], open: [1.95, 3.75], strike: 5.6, close: [10.75, 12.55], shut: 12.55, seal: [12.65, 13.75] };
+  const NB = 8, IR0 = .2; // the blades, and how the iris is turned
+  /** the iris open by o: the aperture an octagon whose corners run out from the middle on arcs about the blades' pivots
+   *  (just past the banding, under the plank), turning a little as it opens; each blade the part of the face beyond one
+   *  side of it, between that side and the one before, each produced to the banding; each blade's picture turned about its
+   *  pivot as far as takes its corner from the middle to where it is now (`s`) */
+  const irisGeo = o => { const rho = o, be = Math.acos(clamp(rho / 2.4)), V = [], Q = [], sp = [];
+    for (let j = 0; j < NB; j++) { const ph = j * TAU / NB + IR0; Q.push([Math.cos(ph) * 1.2, Math.sin(ph) * 1.2]); V.push([Math.cos(ph - be) * rho, Math.sin(ph - be) * rho]); }
+    for (let j = 0; j < NB; j++) sp.push(Math.atan2(V[j][1] - Q[j][1], V[j][0] - Q[j][0]) - Math.atan2(-Q[j][1], -Q[j][0]));
+    const dir = j => { const a = V[j], b = V[(j + 1) % NB], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy); if (l < 1e-6) { const an = j * TAU / NB + IR0 + Math.PI / NB; return [Math.cos(an), Math.sin(an)]; } return [dx / l, dy / l]; };
+    const D = Array.from({ length: NB }, (_, j) => dir(j));
+    const poly2 = j => { const v0 = V[j], v1 = V[(j + 1) % NB], d1 = D[j], d0 = D[(j + NB - 1) % NB]; return [v0, v1, [v1[0] + d1[0] * 3, v1[1] + d1[1] * 3], [v0[0] + d0[0] * 3, v0[1] + d0[1] * 3]]; };
+    return { rho, V, Q, sp, D, poly2 }; };
+  /** how far the iris is open (0 shut … 1 all the way, its blades under the banding) */
+  const irisAt = T => T < EK.open[0] || T > EK.close[1] ? 0 : T < EK.open[1] ? E.io(seg(T, EK.open[0], EK.open[1], x => x)) : T < EK.close[0] ? 1 : 1 - E.io(seg(T, EK.close[0], EK.close[1], x => x));
+  // the movement, in the medallion's units: wheels (teeth, pitch radius, middle), the pinions on their arbors, the escape
+  // wheel, the anchor and pendulum on one pivot
+  const MV = { g1: { n: 40, r: .4, at: [-.2, .22], wood: "cherry", sp: 6 }, p2: { n: 10, r: .1, wood: "walnut" }, g2: { n: 30, r: .3, wood: "maple", sp: 5 }, p3: { n: 8, r: .08, wood: "walnut" }, esc: { n: 15, r: .22, wood: "holly", sp: 4 }, piv: [.02, -.72], len: 1.3 };
+  MV.g2.at = [MV.g1.at[0] + (MV.g1.r + MV.p2.r) * Math.cos(-.61), MV.g1.at[1] + (MV.g1.r + MV.p2.r) * Math.sin(-.61)];
+  MV.esc.at = [MV.g2.at[0] + (MV.g2.r + MV.p3.r) * Math.cos(-2.09), MV.g2.at[1] + (MV.g2.r + MV.p3.r) * Math.sin(-2.09)];
+  MV.piv = [MV.esc.at[0], MV.esc.at[1] - MV.esc.r - .09];
+  MV.bell = { at: [-.47, -.43], r: .145 }; MV.hammer = { at: [-.76, -.12] }; MV.hammer.len = Math.hypot(MV.bell.at[0] - MV.hammer.at[0], MV.bell.at[1] - MV.hammer.at[1]) - MV.bell.r - .042; MV.hammer.rest = Math.atan2(MV.bell.at[1] - MV.hammer.at[1], MV.bell.at[0] - MV.hammer.at[0]);
+  /** the strike: the hours the list has been up (round again after twelve), struck on the bell from EK.strike on; how far
+   *  the hammer is lifted at T (0 on the bell), and how long since each stroke landed */
+  const strikeOf = P => { if (S.stk && S.stk.P === P) return S.stk; const h = Math.max(1, Math.floor(P / 240)), n = (h - 1) % 12 + 1, d = Math.min(.62, 4.0 / n); return (S.stk = { P, n, d, t0: EK.strike }); };
+  const hammerAt = (T, st) => { const k = Math.floor((T - st.t0) / st.d); if (k < 0 || k >= st.n) return 0; const u = (T - st.t0 - k * st.d) / st.d; return u < .7 ? .42 * E.io(clamp(u / .7)) : .42 * (1 - E.in(clamp((u - .7) / .3))); }; // (lifted, and let fall: each stroke lands as the period ends)
+  /** a wheel's outline: its teeth round it (rounded, or for the escape wheel hooked) and the windows between its spokes */
+  const wheelPath = (x, w, esc) => { const { n, r } = w, m = 2 * r / n, ra = r + m * (esc ? 1.5 : .95), rd = r - m * 1.15; x.beginPath();
+    for (let k = 0; k < n; k++) { const a = k / n * TAU, p = TAU / n;
+      if (esc) { x.lineTo(Math.cos(a) * rd, Math.sin(a) * rd); x.lineTo(Math.cos(a + p * .12) * ra, Math.sin(a + p * .12) * ra); x.lineTo(Math.cos(a + p * .32) * (rd + m * .4), Math.sin(a + p * .32) * (rd + m * .4)); x.lineTo(Math.cos(a + p * .9) * rd, Math.sin(a + p * .9) * rd); continue; }
+      for (const [f, rr] of [[0, rd], [.12, rd], [.22, r + m * .45], [.3, ra], [.42, ra], [.5, r + m * .45], [.6, rd]]) x.lineTo(Math.cos(a + f * p) * rr, Math.sin(a + f * p) * rr); }
+    x.closePath();
+    if (w.sp) { const ri = r * (esc ? .34 : .3), ro = rd - r * (esc ? .14 : .12), half = (TAU / w.sp - (esc ? .5 : .32) / (r * 3)) / 2; for (let k = 0; k < w.sp; k++) { const a = (k + .5) / w.sp * TAU; x.moveTo(Math.cos(a - half) * ro, Math.sin(a - half) * ro); x.arc(0, 0, ro, a - half, a + half); x.arc(0, 0, ri, a + half * ri / ro * .7, a - half * ri / ro * .7, true); x.closePath(); } } };
+  /** the movement's things for this size: each wheel and pinion, the anchor and its pendulum, the back plate; by day cut
+   *  from veneers, by night char with its lines burned in */
+  const mvThings = () => {
+    if (S.mvt && S.mvt.RR === S.RR) return S.mvt; const R = S.RR, u = 1 / R, t = { RR: R };
+    const wheel = (w, seed, esc) => { const ext = w.r + 2 * w.r / w.n * 1.6 + .02, c = make(2 * ext * R, 2 * ext * R, x => { x.scale(R, R); x.translate(ext, ext); wheelPath(x, w, esc);
+        if (!night) { x.save(); x.clip("evenodd"); woodInto(x, { wood: w.wood, grain: seed % 3, c: [0, 0], L: ext, seed }, true, u); x.restore(); wheelPath(x, w, esc); x.lineWidth = 1.4 * u; x.strokeStyle = "rgba(36,20,10,.72)"; x.stroke(); }
+        else { x.fillStyle = "#2E241E"; x.fill("evenodd"); x.lineWidth = 1.2 * u * S.ws; x.strokeStyle = rgba(ASH, .85); x.stroke(); }
+        // the hub, its arbor's pin
+        x.beginPath(); x.arc(0, 0, w.r * (w.n > 12 ? .22 : .5), 0, TAU); x.fillStyle = night ? "#251C17" : rgba(hex(WOOD.walnut.oil[0])); x.fill(); x.lineWidth = 1.2 * u; x.strokeStyle = night ? rgba(ASH, .8) : "rgba(36,20,10,.7)"; x.stroke();
+        x.beginPath(); x.arc(0, 0, Math.max(.012, w.r * .07), 0, TAU); x.fillStyle = night ? rgba(ASH, .9) : "#E9C77C"; x.fill(); });
+      c.ext = ext; c.sh = shadowOf(c, 4, night ? "rgba(0,0,0,.9)" : "rgba(30,16,6,.7)"); return c; };
+    t.g1 = wheel(MV.g1, 7101); t.p2 = wheel(MV.p2, 7102); t.g2 = wheel(MV.g2, 7103); t.p3 = wheel(MV.p3, 7104); t.esc = wheel(MV.esc, 7105, true);
+    // the anchor and its pendulum, hung from one pivot, drawn hanging straight down: the arms over the escape wheel, the
+    // pallets at their ends, the rod, the bob
+    const L = MV.len, pa = .7, ar = MV.esc.r + .09, arm = a => [Math.sin(a) * (MV.esc.r + .02) * 1.0, MV.esc.at[1] - MV.piv[1] - Math.cos(a) * MV.esc.r * .98];
+    const [lx, ly] = arm(-pa), [rx2, ry] = arm(pa), ext = L + .14;
+    t.pend = make(.6 * R, (ext + .1) * R, x => { x.scale(R, R); x.translate(.3, .05);
+      const anchor = [[0, -.03], [rx2 * .6, ry * .2], [rx2 + .025, ry - .01], [rx2 - .005, ry + .035], [rx2 * .55, ry * .45], [0, .04], [lx * .55, ly * .45], [lx + .005, ly + .035], [lx - .025, ly - .01], [lx * .6, ly * .2]];
+      const rod = [[-.011, 0], [.011, 0], [.011, L - .1], [-.011, L - .1]], bob = ellPts(0, L, .115, .115, 0, 40), ring = ellPts(0, L, .08, .08, 0, 32);
+      if (!night) { pieceInto(x, vpiece("ebony", rod, Math.PI / 2, 7201), true, u); pieceInto(x, vpiece("walnut", anchor, 0, 7202), true, u); pieceInto(x, vpiece("padauk", bob, .4, 7203), true, u); pieceInto(x, vpiece("satin", ring, 0, 7204), true, u); }
+      else for (const [pts, a2] of [[rod, .8], [anchor, .9], [bob, .95], [ring, .7]]) { trace(x, pts); x.fillStyle = "#2B221C"; x.fill(); x.lineWidth = 1.2 * u * S.ws; x.strokeStyle = rgba(ASH, a2); x.stroke(); }
+      x.beginPath(); x.arc(0, 0, .03, 0, TAU); x.fillStyle = night ? rgba(ASH, .9) : "#E9C77C"; x.fill(); x.lineWidth = u; x.strokeStyle = "rgba(36,20,10,.6)"; x.stroke(); });
+    t.pend.bx = [-.3, -.05, .3, ext + .05]; t.pendSh = shadowOf(t.pend, 4, night ? "rgba(0,0,0,.9)" : "rgba(30,16,6,.7)");
+    // the bell it strikes the hour on (seen from above: its rings), and the hammer, on its arm, drawn lying to the right
+    const br = MV.bell.r; t.bell = make(2.3 * br * R, 2.3 * br * R, x => { x.scale(R, R); x.translate(1.15 * br, 1.15 * br);
+      if (!night) { const q = x.createRadialGradient(-br * .35, -br * .4, br * .05, 0, 0, br); q.addColorStop(0, "#FFF0C2"); q.addColorStop(.45, "#E2B563"); q.addColorStop(.85, "#A8701E"); q.addColorStop(1, "#6E4510"); x.fillStyle = q; x.beginPath(); x.arc(0, 0, br, 0, TAU); x.fill();
+        x.strokeStyle = "rgba(90,52,10,.55)"; x.lineWidth = 1.2 * u; for (const k of [.78, .52, .22]) { x.beginPath(); x.arc(0, 0, br * k, 0, TAU); x.stroke(); } x.strokeStyle = "rgba(255,246,214,.7)"; x.beginPath(); x.arc(0, 0, br * .64, 3.6, 4.6); x.stroke(); }
+      else { x.fillStyle = "#2E241E"; x.beginPath(); x.arc(0, 0, br, 0, TAU); x.fill(); x.strokeStyle = rgba(ASH, .85); x.lineWidth = 1.2 * u * S.ws; for (const k of [1, .78, .52, .22]) { x.beginPath(); x.arc(0, 0, br * k * .99, 0, TAU); x.stroke(); } }
+      x.beginPath(); x.arc(0, 0, .016, 0, TAU); x.fillStyle = night ? rgba(ASH, .9) : "#6E4510"; x.fill(); });
+    t.bellSh = shadowOf(t.bell, 4, night ? "rgba(0,0,0,.9)" : "rgba(30,16,6,.7)");
+    const hl = MV.hammer.len; t.hammer = make((hl + .14) * R, .2 * R, x => { x.scale(R, R); x.translate(.05, .1); const arm = [[0, -.016], [hl - .04, -.012], [hl - .04, .012], [0, .016]], head = [[hl - .06, -.07], [hl + .04, -.07], [hl + .04, .07], [hl - .06, .07]];
+      if (!night) { pieceInto(x, vpiece("ebony", arm, 0, 7401), true, u); pieceInto(x, vpiece("walnut", head, Math.PI / 2, 7402), true, u); }
+      else for (const pts of [arm, head]) { trace(x, pts); x.fillStyle = "#2B221C"; x.fill(); x.lineWidth = 1.2 * u * S.ws; x.strokeStyle = rgba(ASH, .85); x.stroke(); }
+      x.beginPath(); x.arc(0, 0, .024, 0, TAU); x.fillStyle = night ? rgba(ASH, .9) : "#E9C77C"; x.fill(); });
+    t.hammer.bx = [-.05, -.1, hl + .09, .1]; t.hammerSh = shadowOf(t.hammer, 3, night ? "rgba(0,0,0,.9)" : "rgba(30,16,6,.7)");
+    // the back plate the works are set in: dark wood by day, deep char by night
+    t.plate = make(2.1 * R, 2.1 * R, x => { x.scale(R, R); x.translate(1.05, 1.05); x.beginPath(); x.arc(0, 0, RI, 0, TAU); x.clip();
+      if (!night) { woodInto(x, { wood: "walnut", grain: .15, c: [0, 0], L: 1, seed: 7301 }, true, u); const q = x.createRadialGradient(0, 0, RI * .55, 0, 0, RI); q.addColorStop(0, "rgba(20,10,4,.1)"); q.addColorStop(1, "rgba(20,10,4,.72)"); x.fillStyle = q; x.fillRect(-1, -1, 2, 2); }
+      else { x.fillStyle = "#0C0806"; x.fillRect(-1, -1, 2, 2); const q = x.createRadialGradient(.05, .45, 0, .05, .45, RI * 1.1); q.addColorStop(0, "rgba(255,96,24,.32)"); q.addColorStop(.5, "rgba(140,40,10,.12)"); q.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = q; x.fillRect(-1, -1, 2, 2); } });
+    return (S.mvt = t); };
+  /** the movement at T: the pendulum's swing, the escape wheel stepping half a tooth at each end of it, the train turning
+   *  with it (each wheel the other way to the one it is geared to, slower by their teeth), and when a tick lands */
+  const mvAt = T => { const Tp = 1.6, sw = .16 * Math.sin(TAU * T / Tp), s = (T - Tp / 4) / (Tp / 2), k = Math.floor(s), f = s - k, step = clamp(f / .14), rec = f > .14 ? -.12 * Math.exp(-(f - .14) * 18) * Math.sin((f - .14) * 40) : 0;
+    const ae = (Math.PI / MV.esc.n) * (k + E.out(step) + rec), a2 = -ae * MV.p3.n / MV.g2.n, a1 = -a2 * MV.p2.n / MV.g1.n; return { sw, ae, a2, a1, tick: f }; };
+  /** the movement, at the page's (cx, cy, R): the plate, then each wheel (its shadow under it), the pendulum over them */
+  function movement(T, A, V, night2) {
+    const { cx, cy, R } = S, t = mvThings(), m = mvAt(T), k = R / S.RR;
+    g.save(); g.beginPath(); g.arc(cx, cy, RI * R, 0, TAU); g.clip(); g.globalAlpha = V; g.drawImage(t.plate, cx - 1.05 * R, cy - 1.05 * R, 2.1 * R, 2.1 * R);
+    const wh = (c, at, ang) => { const e = c.ext, x = cx + at[0] * R, y = cy + at[1] * R; g.save(); g.globalAlpha = V * .75; g.translate(x + 3 * k, y + 4 * k); g.rotate(ang); g.drawImage(c.sh, -e * R - 8 * k, -e * R - 8 * k, 2 * e * R + 16 * k, 2 * e * R + 16 * k); g.restore();
+      g.save(); g.globalAlpha = V; g.translate(x, y); g.rotate(ang); g.drawImage(c, -e * R, -e * R, 2 * e * R, 2 * e * R); g.restore(); };
+    wh(t.g1, MV.g1.at, m.a1); wh(t.g2, MV.g2.at, m.a2); wh(t.p2, MV.g2.at, m.a2 + .2); wh(t.esc, MV.esc.at, m.ae); wh(t.p3, MV.esc.at, m.ae + .1);
+    if (night2) { // an ember down in the works, breathing, and a spark where the pallet lets a tooth go
+      g.globalCompositeOperation = "lighter"; g.globalAlpha = V * (.22 + .08 * Math.sin(A * 1.1)); const gr = .7 * R; g.drawImage(S.halo, cx + .05 * R - gr, cy + .5 * R - gr, 2 * gr, 2 * gr);
+      if (m.tick < .25) { const side = Math.floor((T - .4) / .8) % 2 ? 1 : -1, px2 = cx + (MV.esc.at[0] + side * MV.esc.r * .62) * R, py2 = cy + (MV.esc.at[1] - MV.esc.r * .8) * R, q = m.tick / .25; g.globalAlpha = V * (1 - q) * .8; g.drawImage(S.halo, px2 - 7, py2 - 7, 14, 14); g.fillStyle = "#FFD58A"; for (let i = 0; i < 3; i++) { const a = -1.2 - i * .5 + side * .4; g.fillRect(px2 + Math.cos(a) * q * 10 * k, py2 + Math.sin(a) * q * 10 * k + q * q * 6 * k, 1.4, 1.4); } }
+      g.globalCompositeOperation = "source-over"; }
+    // the bell, shivering as each stroke lands, the rings of it running out over the works; the hammer, lifted and let fall
+    const st = strikeOf(S.pp.P), bx2 = cx + MV.bell.at[0] * R, by2 = cy + MV.bell.at[1] * R, br = MV.bell.r, e2 = br * 1.15;
+    let shiv = 0; for (let j = 0; j < st.n; j++) { const a = T - (st.t0 + (j + 1) * st.d); if (a < 0) break; if (a < 1.2) { shiv += Math.exp(-a * 7) * Math.sin(a * 60) * .04;
+      const rr = br + a * .55, ra = Math.pow(1 - a / 1.2, 1.5); g.save(); g.globalAlpha = V * ra * (night2 ? .8 : .55); if (night2) g.globalCompositeOperation = "lighter"; g.strokeStyle = night2 ? "rgb(255,140,50)" : "rgba(255,240,200,.95)"; g.lineWidth = (night2 ? 2.4 : 2.2) * (1 - a / 1.6); g.beginPath(); g.arc(bx2, by2, rr * R, 0, TAU); g.stroke(); if (!night2) { g.strokeStyle = "rgba(90,52,10,.4)"; g.lineWidth = .8; g.beginPath(); g.arc(bx2, by2, rr * R + 1.6, 0, TAU); g.stroke(); } g.restore(); } } // (silent: its sound drawn as rings)
+    g.save(); g.globalAlpha = V * .7; g.drawImage(t.bellSh, bx2 - e2 * R + 3 * k - 8 * k, by2 - e2 * R + 4 * k - 8 * k, 2 * e2 * R + 16 * k, 2 * e2 * R + 16 * k); g.restore();
+    g.save(); g.globalAlpha = V; g.translate(bx2, by2); g.scale(1 + shiv, 1 - shiv); g.drawImage(t.bell, -e2 * R, -e2 * R, 2 * e2 * R, 2 * e2 * R); g.restore();
+    if (night2) { const hot = st.n ? Math.max(0, ...Array.from({ length: st.n }, (_, j) => { const a = T - (st.t0 + (j + 1) * st.d); return a < 0 ? 0 : Math.exp(-a * 3); })) : 0; if (hot > .01) { g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = V * hot * .55; const gr = br * 1.6 * R; g.drawImage(S.halo, bx2 - gr, by2 - gr, 2 * gr, 2 * gr); g.restore(); } } // (by night the bell glows as it's struck)
+    const hx = cx + MV.hammer.at[0] * R, hy = cy + MV.hammer.at[1] * R, ha = MV.hammer.rest + hammerAt(T, st), hb = t.hammer.bx;
+    g.save(); g.globalAlpha = V * .7; g.translate(hx + 3 * k, hy + 4 * k); g.rotate(ha); g.drawImage(t.hammerSh, hb[0] * R - 6 * k, hb[1] * R - 6 * k, (hb[2] - hb[0]) * R + 12 * k, (hb[3] - hb[1]) * R + 12 * k); g.restore();
+    g.save(); g.globalAlpha = V; g.translate(hx, hy); g.rotate(ha); g.drawImage(t.hammer, hb[0] * R, hb[1] * R, (hb[2] - hb[0]) * R, (hb[3] - hb[1]) * R); g.restore();
+    const pv = [cx + MV.piv[0] * R, cy + MV.piv[1] * R], pb = t.pend.bx;
+    g.save(); g.globalAlpha = V * .7; g.translate(pv[0] + 4 * k, pv[1] + 6 * k); g.rotate(m.sw); g.drawImage(t.pendSh, pb[0] * R - 8 * k, pb[1] * R - 8 * k, (pb[2] - pb[0]) * R + 16 * k, (pb[3] - pb[1]) * R + 16 * k); g.restore();
+    g.save(); g.globalAlpha = V; g.translate(pv[0], pv[1]); g.rotate(m.sw); g.drawImage(t.pend, pb[0] * R, pb[1] * R, (pb[2] - pb[0]) * R, (pb[3] - pb[1]) * R); g.restore();
+    if (night2) { g.globalCompositeOperation = "lighter"; const bx = pv[0] + Math.sin(-m.sw) * MV.len * R, by = pv[1] + Math.cos(m.sw) * MV.len * R, gr = .2 * R; g.globalAlpha = V * .3; g.drawImage(S.halo, bx - gr, by - gr, 2 * gr, 2 * gr); g.globalCompositeOperation = "source-over"; } // (the bob catching the ember's light)
+    // the shadow the banding casts in over the works
+    const q = g.createRadialGradient(cx, cy, RI * R * .8, cx, cy, RI * R); q.addColorStop(0, "rgba(0,0,0,0)"); q.addColorStop(1, night2 ? "rgba(0,0,0,.7)" : "rgba(30,16,6,.5)"); g.fillStyle = q; g.globalAlpha = V; g.fillRect(cx - R, cy - R, 2 * R, 2 * R);
+    g.restore(); }
+  /** the blades, open by `o`: each its piece of `pic`, turned on its pivot, clipped to its part of the face; their edges
+   *  where they meet, the aperture's edge catching the light and throwing a shadow in on the works */
+  function blades(o, pic, V0, night2) {
+    const { cx, cy, R } = S, G = irisGeo(o), path = pts => { g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(cx + x * R, cy + y * R) : g.moveTo(cx + x * R, cy + y * R)); g.closePath(); };
+    g.save(); g.beginPath(); g.arc(cx, cy, RI * R * .998, 0, TAU); g.clip();
+    if (o > .002) { g.save(); path(G.V); g.lineWidth = 9; g.strokeStyle = night2 ? "rgba(0,0,0,.55)" : "rgba(30,16,6,.3)"; g.globalAlpha = V0; g.translate(1.5, 2.5); g.stroke(); g.lineWidth = 3.5; g.stroke(); g.restore(); } // (their shadow in on the works)
+    for (let j = 0; j < NB; j++) { const q = G.Q[j]; g.save(); path(G.poly2(j)); g.clip(); g.globalAlpha = V0;
+      g.translate(cx + q[0] * R, cy + q[1] * R); g.rotate(G.sp[j]); g.translate(-(cx + q[0] * R), -(cy + q[1] * R)); g.drawImage(pic, cx - 1.05 * R, cy - 1.05 * R, 2.1 * R, 2.1 * R); g.restore(); }
+    if (o > .002) { const k = Math.min(1, o * 10); g.lineCap = "round";
+      for (let j = 0; j < NB; j++) { const v1 = G.V[(j + 1) % NB], d = G.D[j], e = [v1[0] + d[0] * 1.2, v1[1] + d[1] * 1.2]; // where blade meets blade: a dark joint, lit on one side
+        g.beginPath(); g.moveTo(cx + v1[0] * R, cy + v1[1] * R); g.lineTo(cx + e[0] * R, cy + e[1] * R); g.globalAlpha = V0 * k; g.lineWidth = 1.6; g.strokeStyle = night2 ? "rgba(4,3,2,.9)" : "rgba(36,20,10,.75)"; g.stroke(); g.save(); g.translate(.8, .8); g.lineWidth = .9; g.strokeStyle = night2 ? "rgba(156,128,106,.3)" : "rgba(255,248,230,.45)"; g.stroke(); g.restore(); }
+      path(G.V); g.globalAlpha = V0 * k; g.lineWidth = 1.8; g.strokeStyle = night2 ? "rgba(4,3,2,.9)" : "rgba(36,20,10,.8)"; g.stroke(); g.lineWidth = .9; g.strokeStyle = night2 ? "rgba(176,150,128,.55)" : "rgba(255,246,226,.75)"; g.save(); g.translate(-.7, -.7); g.stroke(); g.restore(); }
+    g.restore(); }
+  /** the seams as they are cut (a glint at each one's head, by night white-hot) and as they close */
+  function irisCuts(T, I, night2) {
+    const { cx, cy, R } = S, V = S.vis * I, [c0, c1] = EK.cut, [s0, s1] = EK.seal; if (T < c0 || (T > c1 && T < EK.close[1] - .01) || T > s1) return;
+    const run = T < c1, close = run ? 0 : seg(T, s0, s1, lin), dark = run ? 1 : 1 - E.io(clamp(close / .8)); if (!S.glint) S.glint = K.glowSpr(10, [255, 252, 240], 1);
+    g.save(); g.lineCap = "round"; g.lineJoin = "round";
+    for (let j = 0; j < NB; j++) { const t0 = c0 + j * .07, p = run ? seg(T, t0, t0 + .8, E.io) : 1; if (p <= 0) continue; const an = j * TAU / NB + IR0 + Math.PI / NB, pts = Array.from({ length: 25 }, (_, i) => [Math.cos(an) * i / 24 * RI, Math.sin(an) * i / 24 * RI]), n = Math.max(1, Math.round(p * (pts.length - 1)));
+      g.beginPath(); for (let i = 0; i <= n; i++) { const [x, y] = pts[i]; i ? g.lineTo(cx + x * R, cy + y * R) : g.moveTo(cx + x * R, cy + y * R); }
+      g.globalAlpha = V * dark; g.strokeStyle = night2 ? "rgba(6,4,3,.95)" : "rgba(36,20,10,.8)"; g.lineWidth = night2 ? 1.6 : 1.9; g.stroke();
+      if (night2 && run && p < 1) { g.globalCompositeOperation = "lighter"; g.globalAlpha = V * .6; g.strokeStyle = "rgb(255,120,36)"; g.lineWidth = 3.5; g.stroke(); g.globalCompositeOperation = "source-over"; }
+      if (night2 && !run) { const hk = env(close, 0, .22, .42, .95, E.sine); if (hk > .003) { g.globalCompositeOperation = "lighter"; g.globalAlpha = V * hk * .6; g.strokeStyle = "rgb(255,120,36)"; g.lineWidth = 4; g.stroke(); g.globalAlpha = V * hk; g.strokeStyle = "#FFC46E"; g.lineWidth = 1.2; g.stroke(); g.globalCompositeOperation = "source-over"; } }
+      if (run && p < 1) { const [x, y] = pts[n]; g.globalCompositeOperation = "lighter"; g.globalAlpha = V; g.drawImage(night2 ? S.halo : S.glint, cx + x * R - 9, cy + y * R - 9, 18, 18); g.globalCompositeOperation = "source-over"; } }
+    g.restore(); g.globalAlpha = 1; }
+  /** the clockwork by day: the picture the pass began on, opening on the works, closing on the next */
+  function clockDay(T, I, A, prev, cur) {
+    const { cx, cy, R } = S, V = S.vis, whole = (c, a = 1) => { if (a <= .003) return; g.globalAlpha = a * V; g.drawImage(c, cx - 1.05 * R, cy - 1.05 * R, 2.1 * R, 2.1 * R); g.globalAlpha = 1; };
+    if (I <= .01 || T < EK.cut[0]) { whole(prev.oiled); return; }
+    const o = irisAt(T), pic = T < EK.open[1] + .5 ? prev.oiled : cur.oiled;
+    if (o <= .001) whole(T < EK.open[1] ? prev.oiled : cur.oiled); // (shut: the one it began on until it has opened, the next once it has closed)
+    else { movement(T, A, V, false); blades(o, pic, V, false); g.save(); g.beginPath(); g.arc(cx, cy, 1.06 * R, 0, TAU); g.arc(cx, cy, RI * R * .998, 0, TAU, true); g.clip("evenodd"); whole(pic); g.restore(); } // (the banding over the blades' roots)
+    whole(prev.oiled, 1 - I);
+    irisCuts(T, I, false);
+  }
+  /** the clockwork by night: the same in the char, the works charred and lit from below by an ember */
+  function clockNight(T, I, A, prev, cur) {
+    const { cx, cy, R } = S, V = S.vis, pic = (c, a = 1) => { if (a <= .003) return; g.globalAlpha = a * V; g.drawImage(c, cx - 1.05 * R, cy - 1.05 * R, 2.1 * R, 2.1 * R); g.globalAlpha = 1; };
+    if (I <= .01 || T < EK.cut[0]) { pic(prev.full); return; }
+    const o = irisAt(T), d = T < EK.open[1] + .5 ? prev : cur;
+    if (o <= .001) pic(T < EK.open[1] ? prev.full : cur.full, I); // (eased out with the list touched, as the cuckoo's is)
+    else { movement(T, A, V * I, true); blades(o, plateOf(d), V * I, true); g.save(); g.beginPath(); g.arc(cx, cy, 1.06 * R, 0, TAU); g.arc(cx, cy, RI * R * .998, 0, TAU, true); g.clip("evenodd"); pic(d.full, I); g.restore(); }
+    pic(prev.full, 1 - I);
+    irisCuts(T, I, true);
   }
 
   const S = {

@@ -25,6 +25,19 @@
 // the window caught flat in its faces and slipping from one to the next as it turns. It hangs in the open a while; then
 // it gives in — its faces swell and its edges round off until it is a ball, wobbling as it settles, an ordinary bubble
 // after all, the window bowed round it like the rest — its film thins at the top, and it pops.
+// 1.12 b431: the long day's hour eggs. Once in each hour of the list left alone (K.long: the first in odd hours, the
+// second in even) a pass of its own, no wand coming, the small ones drifting up through it as always. The first: inside
+// the bubble. One comes up from below the page and hangs in the open, an ordinary bubble; then it swells with nothing
+// blowing it, its film thinning as it stretches so its colours run through their orders, the window growing in it, until
+// its rim has gone out past the page's edges and the page is inside it — the room seen through its far side, its colours
+// crowding into the corners, the window bowed huge across it. Its film drains and thins at the top, black spots open
+// there, and one bursts: the hole runs out across the whole page, its rim a bright lip of gathered film, leaving a mist
+// of drops that fall. Under the words its film is thinned (scenes.js says where they are). The second: the murmuration.
+// More and more of the small ones come up from below and, instead of drifting up as bubbles must, turn together like
+// starlings at dusk — a cloud, a ribbon with a wave running down it, the ribbon folded over, a ring rolling, a cloud
+// again, each a moment behind the one before, so that every change runs down the flock as a wave — each so thin all over
+// that it shows one of the film's colours, and the colours run through the flock as it turns; then they settle into a
+// heart, which goes to magenta, beats once, and pops away from its notch, one by one.
 export default function bubbles(K) {
   const { clamp, lerp, E, seg, env, rng, canvas } = K;
   const TAU = Math.PI * 2;
@@ -111,6 +124,186 @@ export default function bubbles(K) {
     const Ry = [[cy, 0, sy], [0, 1, 0], [-sy, 0, cy]], Rx = [[1, 0, 0], [0, cx, -sx], [0, sx, cx]], Rz = [[cz, -sz, 0], [sz, cz, 0], [0, 0, 1]], mul = (A2, B2) => A2.map(r2 => [0, 1, 2].map(j => r2[0] * B2[0][j] + r2[1] * B2[1][j] + r2[2] * B2[2][j]));
     return mul(Rz, mul(Rx, Ry)); };
 
+  /* ---------------- 1.12 b431: the long day's hour eggs ----------------
+     Two, for a list left up for hours (K.long: once in each hour of loops left alone, the first in odd hours, the second
+     in even): each is its whole pass, no wand coming, the small ones drifting up through it as always; each has its own
+     dice (salts 131 and 133), so no other pass draws a thing differently. */
+  // The first: inside the bubble. Up from below the page; swelling, nothing blowing it, until the page is inside it; its
+  // film draining and thinning, black spots opening at the top; the burst, its hole running out across the page.
+  const EH1 = { rise: [.4, 2.3], swell: [2.7, 6.7], thin: [8.2, 10.3], pop: 10.4, run: .95, fall: 1.5 };
+  /** the egg's big film, `N` across: reckoned as film() is, but stretched thinner by `st` as it swells, a little more of
+   *  its colour across its middle by `a0`, thinned from the top by `thin`, and opened by black spots ([u, v, radius]) */
+  const filmBig = (im, N, t, thin, st, a0, spots) => {
+    const d = im.data, h = (N - 1) / 2; d.fill(0);
+    for (let j = 0; j < N; j++) { const v = (j - h) / h; for (let i = 0; i < N; i++) {
+      const u = (i - h) / h, rr = Math.hypot(u, v); if (rr >= 1) continue;
+      const a = u * 2.6 + .8 * Math.sin(v * 3.4 + t), b = v * 2.3 + .8 * Math.sin(u * 3.1 - t), sw = Math.sin(a * 2.6 + Math.sin(b * 2.1 + t) * 1.7) + .55 * Math.sin(b * 3.7 - a * 1.5 + 2 * t);
+      let k = st * (1 - thin * clamp(.8 - v * 1.2));
+      for (const s of spots) if (s[2] > 0) { const q = Math.hypot(u - s[0], v - s[1]) / s[2]; if (q < 1.8) k *= Math.pow(clamp(q * 1.25 - .25), .7); } // (a black spot: the film gone to nothing, silver round it)
+      const th = (520 + 170 * v + 150 * sw) * k * Math.sqrt(1 - rr * rr / 1.77), kk = clamp(Math.round(th / 2), 0, 599) * 4;
+      const al = clamp((a0 + .85 * rr ** 3.2) * (.3 + 1.1 * FILM[kk + 3] / 255)) * clamp(th / 70) * clamp((1 - rr) * h);
+      const o = (j * N + i) * 4; d[o] = FILM[kk]; d[o + 1] = FILM[kk + 1]; d[o + 2] = FILM[kk + 2]; d[o + 3] = 255 * al;
+    } }
+  };
+  /** the half-axes of the bubble the page is inside: wider than tall as the page is (a little less so), its colours
+   *  crowding into the page's corners */
+  const inAxes = () => { const { W, H } = S, k = Math.pow(W / H, .55), ey = Math.sqrt(((W / 2) ** 2 / (k * k) + (H / 2) ** 2) / .9); return [ey * k, ey]; };
+  /** the first egg's dice for pass P: where its black spots open (on the page, the first the one that bursts) and when,
+   *  and the spray the burst throws */
+  const planOne = P => {
+    if (S.h1 && S.h1.P === P) return S.h1;
+    const r = K.deal(P, 131), spots = [];
+    for (let k = 0; k < 7; k++) { let x, y, n = 0; do { x = k ? .06 + r() * .88 : (S.pr ? .5 : .66) + (r() - .5) * .16; y = k ? .03 + r() * .25 : .1 + r() * .05; } while (k && n++ < 20 && spots.some(s => Math.hypot((s[0] - x) * 1.6, s[1] - y) < .12));
+      spots.push([x, y, k ? .45 + r() * .55 : 1, k ? EH1.thin[0] + .6 + r() * 1.3 : EH1.pop - 1.45]); } // (on the page, where the film has thinned most: the first the one that bursts, and the biggest)
+    const spray = Array.from({ length: S.pr ? 560 : 1000 }, (_, i) => { const mist = i % 4 > 0; return { a: -.6 + r() * (Math.PI + 1.2), f: r(), v: mist ? .01 + r() * .03 : .03 + r() * .12, s: mist ? .5 + r() * 1 : 1.1 + r() * 2.3, life: mist ? .1 + r() * .22 : .55 + r() * .8, mist }; }); // (a mist that trails the rim, and drops that fall behind it; thrown down the page, the way the hole runs)
+    return (S.h1 = { P, spots, spray });
+  };
+  /** a black spot's radius at T, on the page */
+  const spotR = (s, T) => S.m * (.012 + .024 * s[2]) * E.out(seg(T, s[3], s[3] + 1.4, x => x));
+  /** where it bursts, on the page, how big its spot was, how far its hole has to run to clear the page, and how fast */
+  const burstOf = pl => { const { W, H } = S, s = pl.spots[0], x = s[0] * W, y = s[1] * H; if (pl.pb && pl.pb.W === W && pl.pb.H === H) return pl.pb;
+    const d = Math.max(Math.hypot(x, y), Math.hypot(W - x, y), Math.hypot(x, H - y), Math.hypot(W - x, H - y)) + 40, r0 = spotR(s, EH1.pop); return (pl.pb = { W, H, x, y, d, r0, v: (d - r0) / EH1.run }); };
+  /** the bubble at T: its middle, its half-axes, how far it has swollen (0 … 1), its wobble; null when it is gone */
+  const bigAt = (T, A) => {
+    const { W, H, home, R } = S; if (T < EH1.rise[0] || T > EH1.pop + EH1.run + .05) return null;
+    const R0 = clamp(R * .42, 34, 104), ax = inAxes(), up = E.out(seg(T, EH1.rise[0], EH1.rise[1], x => x)), e = seg(T, EH1.swell[0], EH1.swell[1], E.sine); // (it swells from the start, slowly, then faster as it nears)
+    const hx = home[0] + Math.sin(A * .6) * R * .05 * up, hy = lerp(H + R0 * 2.4, home[1] + R * .06, up) + Math.sin(A * .47 + 1) * R * .03 * up;
+    const rx = R0 * Math.pow(ax[0] / R0, e), ry = R0 * Math.pow(ax[1] / R0, e), f = clamp((Math.sqrt(rx * ry) - R0) / (Math.sqrt(ax[0] * ax[1]) - R0)), br = 1 + .014 * Math.sin(A * .9) * e; // (it moves to the middle as it grows; inside, it breathes)
+    const set = T - EH1.rise[1], wob = (set > 0 ? Math.exp(-set * 2.2) * .1 * Math.sin(set * 13) : 0) * (1 - e) + Math.sin(A * 3.1) * .012 * (1 - e) + .018 * Math.sin(A * 1.7) * Math.sin(Math.PI * e);
+    return { x: lerp(hx, W / 2, f), y: lerp(hy, H / 2, f), ex: rx * br, ey: ry / br, e, wob };
+  };
+  /** the window, drawn big once, for a bubble the size of the page (the panes as every bubble's, sharp at that size) */
+  const shineBig = () => S.shB || (S.shB = (() => { const N = 520, c0 = N / 2, R0 = N / 2 - 6, [c, x] = canvas(N, N); x.imageSmoothingEnabled = true;
+    const pane = (a0, a1, r0, r1) => { x.beginPath(); x.arc(c0, c0, R0 * r1, a0, a1); x.arc(c0, c0, R0 * r0, a1, a0, true); x.closePath(); x.fill(); };
+    x.shadowColor = "rgba(255,255,255,.9)"; x.shadowBlur = 10; x.fillStyle = "rgba(255,255,255,.82)";
+    const A0 = -2.64, A1 = -1.8, Am = (A0 + A1) / 2, gp = .035; pane(A0, Am - gp, .5, .64); pane(Am + gp, A1, .5, .64); pane(A0, Am - gp, .67, .82); pane(Am + gp, A1, .67, .82);
+    x.shadowBlur = 0; x.fillStyle = "rgba(255,255,255,.42)"; pane(.3, .95, .8, .9);
+    const gl = x.createRadialGradient(c0 - R0 * .45, c0 - R0 * .5, 0, c0 - R0 * .45, c0 - R0 * .5, R0 * .55); gl.addColorStop(0, "rgba(255,255,255,.34)"); gl.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gl; x.fillRect(0, 0, N, N);
+    return c; })());
+  /** the words' shadow, for a film the size of the page: soft where the words are, on a small canvas drawn big (a line's
+   *  tools left out: they are there only on hover, and a hole under them would show as a box) */
+  const maskOf = () => { const { W, H } = S, rs = S.wk; if (!rs || !rs.length || !W) return null; const key = S.maskV + ":" + W + ":" + H; if (S.maskK === key) return S.mask;
+    const k = 1 / 8, [c, x] = canvas(Math.ceil(W * k), Math.ceil(H * k)); x.imageSmoothingEnabled = true; x.scale(k, k); x.fillStyle = "#fff"; x.shadowColor = "#fff"; x.shadowBlur = 3;
+    for (const [x0, y0, x1, y1, kind] of rs) { if (kind === 2) continue; x.beginPath(); x.roundRect(x0 - 16, y0 - 12, x1 - x0 + 32, y1 - y0 + 24, 18); x.fill(); }
+    S.mask = c; S.maskK = key; return c; };
+  /** the first egg, under the small ones: the bubble, swelling, the page inside it; once it bursts, the hole in it and the
+   *  rim running out; all of it thinned under the words */
+  const hourFilm = (T, A, P, V) => {
+    const b = bigAt(T, A); if (!b) return; const pl = planOne(P), { W, H } = S, N = 96, ax = inAxes();
+    const F = S.ebF || (S.ebF = (() => { const [c, x] = canvas(N, N); return { c, x, im: x.createImageData(N, N) }; })());
+    const Tq = Math.round(T * 15) / 15, Aq = Math.round(A * 15) / 15, key = P + ":" + Tq + ":" + Aq + ":" + W + ":" + H; // (the film is worked out fifteen times a second, from the moment rounded, so a moment held draws the same)
+    if (S.ebK !== key) { const bq = bigAt(Tq, Aq) || b, thin = .8 * seg(Tq, EH1.thin[0], EH1.thin[1], E.in);
+      filmBig(F.im, N, Aq * .35 + bq.e * 1.7, thin, lerp(1, .62, bq.e), .05, []); F.x.putImageData(F.im, 0, 0); S.ebK = key; }
+    const q = T - EH1.pop, pb = burstOf(pl), rh = q > 0 ? pb.r0 + q * pb.v : 0;
+    const holePath = () => { g.moveTo(pb.x + rh, pb.y); g.arc(pb.x, pb.y, rh, 0, TAU, true); g.closePath(); };
+    const sx = b.ex * (1 + b.wob), sy = b.ey * (1 - b.wob * .9);
+    g.save();
+    if (rh > 0) { g.beginPath(); g.rect(-60, -60, W + 120, H + 120); holePath(); g.clip("evenodd"); } // (burst: the film only outside the hole)
+    g.globalAlpha = V * lerp(1, .74, b.e); g.translate(b.x, b.y); g.scale(sx, sy); g.imageSmoothingEnabled = true; g.drawImage(F.c, -1, -1, 2, 2); // (the page inside it: a veil, its colour crowding the edges)
+    g.rotate(.2 * Math.sin(A * .21) * b.e); g.globalAlpha = V * lerp(1, .8, b.e); g.drawImage(shineBig(), -1, -1, 2, 2); // the window, turning a little as it does
+    g.setTransform(px, 0, 0, px, 0, 0); g.globalAlpha = V; g.lineWidth = clamp(Math.min(sx, sy) * .02, .6, 1.6); g.strokeStyle = "rgba(160,64,112,.3)"; g.beginPath(); g.ellipse(b.x, b.y, sx * .985, sy * .985, 0, 0, TAU); g.stroke();
+    // the black spots: where the film has drained to nothing it sends no light back, a hole edged in silver
+    for (const s of pl.spots) { const r2 = spotR(s, T), x = s[0] * W, y = s[1] * H; if (r2 < .5 || (rh > 0 && Math.hypot(x - pb.x, y - pb.y) + r2 < rh)) continue;
+      g.globalCompositeOperation = "destination-out"; g.globalAlpha = V * .94; g.fillStyle = "#000"; g.beginPath(); g.arc(x, y, r2, 0, TAU); g.fill(); g.globalCompositeOperation = "source-over";
+      g.globalAlpha = V; g.lineWidth = 3.2; g.strokeStyle = "rgba(255,222,160,.42)"; g.beginPath(); g.arc(x, y, r2 + 1.8, 0, TAU); g.stroke(); g.lineWidth = 1.1; g.strokeStyle = "rgba(255,255,255,.9)"; g.beginPath(); g.arc(x, y, r2, 0, TAU); g.stroke(); }
+    g.restore();
+    if (rh > 0) { // the rim of the hole: the film gathered into a lip as it runs, bright, edged dark, its colours crowding just outside it
+      g.save(); g.globalAlpha = V; const r0 = Math.max(0, rh - 26), r1 = rh + 18, f = r => clamp((r - r0) / (r1 - r0)), gr = g.createRadialGradient(pb.x, pb.y, r0, pb.x, pb.y, r1);
+      gr.addColorStop(0, "rgba(255,196,228,0)"); gr.addColorStop(f(rh - 9), "rgba(255,196,228,.3)"); gr.addColorStop(f(rh - 2), "rgba(255,255,255,.95)"); gr.addColorStop(f(rh + .6), "rgba(206,62,140,.55)"); gr.addColorStop(f(rh + 4.5), "rgba(255,206,120,.42)"); gr.addColorStop(f(rh + 10), "rgba(120,196,236,.3)"); gr.addColorStop(1, "rgba(120,196,236,0)");
+      g.beginPath(); g.arc(pb.x, pb.y, r1, 0, TAU); if (r0 > 0) g.arc(pb.x, pb.y, r0, TAU, 0, true); g.fillStyle = gr; g.fill("evenodd");
+      g.restore(); }
+    const mk = maskOf(); if (mk) { g.save(); g.globalCompositeOperation = "destination-out"; g.globalAlpha = .84; g.imageSmoothingEnabled = true; g.drawImage(mk, 0, 0, W, H); g.restore(); } // (thinned under the words)
+  };
+  /** the first egg, over the small ones: the moment it goes, and the drops its rim leaves behind it, falling */
+  const hourSpray = (T, P, V) => {
+    const q = T - EH1.pop; if (q < 0 || q > EH1.run + EH1.fall) return; const pl = planOne(P), pb = burstOf(pl), { W, H, m } = S, rh = pb.r0 + q * pb.v;
+    if (q < .3) { const r0 = m * .07; g.globalAlpha = V * .55 * (1 - q / .3); g.drawImage(S.flash, pb.x - r0, pb.y - r0, 2 * r0, 2 * r0); }
+    for (const d of pl.spray) { const ts = d.f * EH1.run, age = q - ts; if (age < 0 || age > d.life) continue; const r0 = pb.r0 + d.f * (pb.d - pb.r0), go = r0 + pb.v * d.v * age, x = pb.x + Math.cos(d.a) * go, y = pb.y + Math.sin(d.a) * go + m * .8 * age * age;
+      if (x < -6 || x > W + 6 || y < -6 || y > H + 6) continue; const k = age / d.life, a = V * (d.mist ? .7 : .9) * (1 - k * k) * S.shade(x, y, 5), s = d.s * (1 - .4 * k);
+      g.globalAlpha = a; g.fillStyle = d.mist ? "#F59AC6" : "#E4579B"; g.beginPath(); g.arc(x, y, s, 0, TAU); g.fill(); if (s > 1.3) { g.fillStyle = "#fff"; g.beginPath(); g.arc(x - s * .3, y - s * .3, s * .38, 0, TAU); g.fill(); } } // (each drop with a glint)
+    g.globalAlpha = 1;
+  };
+  // The second: the murmuration. More and more of the small ones come up from below and, instead of drifting up as bubbles
+  // must, turn together like starlings over a field at dusk: a cloud; a ribbon with a wave running down it; the ribbon
+  // folded over; a ring, rolling; a cloud again, each one a moment behind the one before it, so that every change runs
+  // down the flock as a wave; then they settle into a heart, which beats once and pops away from its notch, one by one.
+  const EH2 = { come: [.3, 3.1], keys: [3.1, 4.6, 6.3, 7.9, 9.4], heart: [9.7, 11.4], beat: [11.55, 12.25], pops: [12.4, 13.7] };
+  /** the flock, the same for every such pass: each bubble's place in a cloud and along the ribbon, its size, its film,
+   *  where it comes up from and when, how it wanders; and the heart's places, spread evenly through it */
+  const flock = () => {
+    const n = S.pr ? 150 : 230; if (S.fk && S.fk.n === n) return S.fk; const r = rng(2133), bs = [];
+    for (let i = 0; i < n; i++) { let x, y, z; do { x = r() * 2 - 1; y = r() * 2 - 1; z = r() * 2 - 1; } while (x * x + y * y + z * z > 1);
+      bs.push({ p: [x, y, z], s: r(), sz: Math.pow(r(), 1.6), tex: Math.floor(r() * 6), x0: r() * 2 - 1, ta: EH2.come[0] + Math.pow(r(), .8) * 1.7, ph: [r() * TAU, r() * TAU, r() * TAU], f: [.7 + r() * .9, .6 + r() * .9, .5 + r() * .8], arc: r() - .5 }); }
+    // the heart's places, in its own units (across -1 … 1, its point down): a lattice as fine as fills it with as many
+    const inH = (x, y) => { const X = x * 16, Y = y * 16; let c = false; for (let i = 0, j = HPT.length - 1; i < HPT.length; j = i++) { const [xi, yi] = HPT[i], [xj, yj] = HPT[j]; if ((yi > Y) !== (yj > Y) && X < (xj - xi) * (Y - yi) / (yj - yi) + xi) c = !c; } return c; };
+    const lattice = d => { const out = []; for (let row = 0, y = -.95; y < .95; y += d * .866, row++) for (let x = -1 + (row % 2) * d / 2; x < 1; x += d) if (inH(x, y)) out.push([x, y]); return out; };
+    let lo = .03, hi = .3; for (let k = 0; k < 18; k++) { const mid = (lo + hi) / 2; if (lattice(mid).length >= n) lo = mid; else hi = mid; }
+    const slots = lattice(lo); while (slots.length > n) slots.splice(Math.floor(r() * slots.length), 1);
+    slots.forEach(s => { s[0] += (r() - .5) * lo * .3; s[1] += (r() - .5) * lo * .3; });
+    return (S.fk = { n, bs, slots, d: lo });
+  };
+  /** the flock's shapes, in its own units: a cloud (0, 4); a ribbon, a wave running down it (1); folded over (2); a ring,
+   *  rolling (3) */
+  const shapeOf = (j, b, t, sp) => { const [x, y, z] = b.p, s = b.s - .5;
+    if (j === 1) return [s * 2.9, y * .13 + .27 * Math.sin(s * 4.6 - t * 2.3), z * .38];
+    if (j === 2) { const a = s * 2.7; return [Math.sin(a) * 1.15, y * .13 + .2 * Math.sin(s * 5 - t * 2.6), (1 - Math.cos(a)) * 1.15 - .55 + z * .3]; }
+    if (j === 3) { const a = b.s * TAU + t * .8 * sp; return [(.95 + x * .2) * Math.cos(a), y * .2 + .12 * Math.sin(3 * a + t), (.95 + x * .2) * Math.sin(a)]; }
+    const r2 = Math.hypot(x, z), a = Math.atan2(z, x) + t * sp * (1.1 - .6 * r2); return [Math.cos(a) * r2 * .9, y * .62, Math.sin(a) * r2 * .9]; }; // (a cloud, swirling, its middle faster)
+  /** the flock's turn at t, as a matrix */
+  const flockTurn = (t, pl) => turn(pl.spin * (.42 * t + .6 * Math.sin(.31 * t + pl.ph[0])), .42 * Math.sin(.43 * t + pl.ph[1]), .2 * Math.sin(.27 * t + pl.ph[2]));
+  /** a bubble's place in the flock at t, in the flock's own units seen from the front, and how near (its size) */
+  const swarmAt = (b, t, M, pl) => {
+    const ks = EH2.keys, tau = t - b.s * .8; let j = 0; while (j < ks.length - 2 && tau > ks[j + 1]) j++;
+    const w = E.io(clamp((tau - ks[j]) / (ks[j + 1] - ks[j]))), p0 = shapeOf(j, b, t, pl.spin), p1 = shapeOf(j + 1, b, t, pl.spin);
+    const x = lerp(p0[0], p1[0], w) + .05 * Math.sin(t * b.f[0] + b.ph[0]), y = lerp(p0[1], p1[1], w) + .05 * Math.sin(t * b.f[1] + b.ph[1]), z = lerp(p0[2], p1[2], w) + .05 * Math.sin(t * b.f[2] + b.ph[2]);
+    const X = M[0][0] * x + M[0][1] * y + M[0][2] * z, Y = M[1][0] * x + M[1][1] * y + M[1][2] * z, Z = M[2][0] * x + M[2][1] * y + M[2][2] * z, k = 2.8 / (2.8 + Z);
+    return [X * k, Y * k, k];
+  };
+  /** the second egg's dice for pass P: which way the flock turns, its path's phases; and who goes where in the heart —
+   *  each, from where the flock has it as the heart begins, to the nearest place still free, the outermost first */
+  const planTwo = P => {
+    const fk = flock(); if (S.h2 && S.h2.P === P && S.h2.n === fk.n) return S.h2;
+    const r = K.deal(P, 133), pl = { P, n: fk.n, spin: r() < .5 ? 1 : -1, ph: [r() * TAU, r() * TAU, r() * TAU, r() * TAU, r() * TAU] };
+    const M = flockTurn(EH2.heart[0], pl), at = fk.bs.map(b => swarmAt(b, EH2.heart[0], M, pl)), ext = Math.max(...at.map(a => Math.hypot(a[0], a[1]))) || 1;
+    const free = fk.slots.map((s, i) => i), slot = new Array(fk.n), order = at.map((a, i) => [Math.hypot(a[0], a[1]), i]).sort((p, q) => q[0] - p[0]);
+    for (const [, i] of order) { const ax2 = at[i][0] / ext, ay2 = at[i][1] / ext * .9; let best = 0, bd = 1e9; for (let k = 0; k < free.length; k++) { const s = fk.slots[free[k]], d = (s[0] - ax2) ** 2 + (s[1] - ay2) ** 2; if (d < bd) { bd = d; best = k; } } slot[i] = free.length ? fk.slots[free.splice(best, 1)[0]] : [0, 0]; }
+    const md = Math.max(...slot.map(s => Math.hypot(s[0], s[1] + .47)));
+    pl.slot = slot; pl.pop = slot.map(s => EH2.pops[0] + Math.hypot(s[0], s[1] + .47) / md * 1.15 + r() * .08); pl.late = fk.bs.map(b => b.s * .55 + r() * .15);
+    return (S.h2 = pl);
+  };
+  /** the flock's bubbles, drawn small once, thirty-two of them, each thin enough all over to show one of the film's colours
+   *  (round the film's colours from blue through gold, orange, magenta, violet and blue again to green; seen less slant at their rims than a bubble really is, so each shows one), a little swirled, the window in
+   *  it, its rim: as a wave runs through the flock its bubbles go from one to the next, so the colour runs through it too */
+  const FSPR = 32, flockSpr = () => { if (S.fsp && S.fspPx === px) return S.fsp; S.fspPx = px; const N = 40, n = Math.ceil(36 * px);
+    return (S.fsp = Array.from({ length: FSPR }, (_, k) => { const base = 300 + k * 10, [c0, x0] = canvas(N, N), im = x0.createImageData(N, N), d = im.data, h = (N - 1) / 2;
+      for (let j = 0; j < N; j++) { const v = (j - h) / h; for (let i = 0; i < N; i++) { const u = (i - h) / h, rr = Math.hypot(u, v); if (rr >= 1) continue; const sw = Math.sin(u * 3.1 + Math.sin(v * 2.7 + k) * 1.6) + .5 * Math.sin(v * 4.2 - u * 1.4 + k);
+        const th = (base + 24 * v + 18 * sw) * Math.sqrt(1 - rr * rr / 3.4), kk = clamp(Math.round(th / 2), 0, 599) * 4, al = clamp((.16 + .9 * rr ** 2.2) * (.4 + 1.1 * FILM[kk + 3] / 255)) * clamp((1 - rr) * h);
+        const o = (j * N + i) * 4; d[o] = FILM[kk]; d[o + 1] = FILM[kk + 1]; d[o + 2] = FILM[kk + 2]; d[o + 3] = 255 * al; } }
+      x0.putImageData(im, 0, 0); const [c, x] = canvas(n, n); x.imageSmoothingEnabled = true; x.translate(n / 2, n / 2); const R = n / 2 - 1;
+      x.drawImage(c0, -R, -R, 2 * R, 2 * R); x.drawImage(S.shine, -R, -R, 2 * R, 2 * R); x.lineWidth = Math.max(1, R * .055); x.strokeStyle = "rgba(150,56,104,.42)"; x.beginPath(); x.arc(0, 0, R * .965, 0, TAU); x.stroke(); return c; })); };
+  /** a small one popping, lightly: a few droplets flung out and falling */
+  const popLite = (x, y, R, age, a) => { if (age < 0 || age > .38 || a <= .01) return; const q = age / .38;
+    if (q < .3 && R > 3) { g.globalAlpha = clamp(a * (1 - q / .3) * .35); g.drawImage(S.flash, x - R * 1.3, y - R * 1.3, R * 2.6, R * 2.6); }
+    g.fillStyle = "#E4579B"; g.globalAlpha = clamp(a * (1 - q * q) * .8);
+    for (let k = 0; k < 6; k++) { const an = k / 6 * TAU + R, rr = R * (.9 + (.6 + (k % 3) * .4) * E.out(q)), xx = x + Math.cos(an) * rr, yy = y + Math.sin(an) * rr + q * q * R * 1.2; g.beginPath(); g.arc(xx, yy, clamp(R * .1, .6, 1.6) * (1 - q * .5), 0, TAU); g.fill(); } };
+  /** the second egg: the flock come up from below, turning together, the heart, its beat and its pops */
+  const hourFlock = (T, A, P, V) => {
+    const pl = planTwo(P), fk = flock(), spr = flockSpr(), { W, H, home, R, m, pr } = S, M = flockTurn(T, pl), Sc = R * (pr ? 1.02 : .8), Sh = R * (pr ? .84 : .7); // (a phone's open half is the whole width: bigger there)
+    const cx = home[0] + R * (.62 * Math.sin(.42 * T + pl.ph[3]) + .12 * Math.sin(1.1 * T + pl.ph[4])), cy = home[1] + R * (.34 * Math.sin(.67 * T + pl.ph[0]) + .06 * Math.sin(1.3 * T + pl.ph[1])); // where the flock is: sweeping round the open page
+    const [h0, h1] = EH2.heart, bt = (t0, d) => Math.sin(Math.PI * clamp((T - t0) / d)), beat = 1 + .075 * bt(EH2.beat[0], .24) + .05 * bt(EH2.beat[0] + .32, .3); // lub-dub
+    const hx = home[0], hy = home[1] - Sh * .02;
+    for (let i = 0; i < fk.n; i++) { const b = fk.bs[i], tp = pl.pop[i]; if (T < b.ta || T > tp + .4) continue;
+      const rad = clamp(m * (.0078 + .009 * b.sz), 3.2, 14), [lx, ly, k] = swarmAt(b, T, M, pl), sw = [cx + lx * Sc, cy + ly * Sc];
+      const wh = E.io(seg(T, h0 + pl.late[i], h1 - .75 + pl.late[i], x => x)), s = pl.slot[i], hp = [hx + s[0] * Sh * beat, hy + s[1] * Sh * beat];
+      let x = lerp(sw[0], hp[0], wh), y = lerp(sw[1], hp[1], wh), r2 = rad * lerp(k, 1, wh);
+      const cq = seg(T, b.ta, b.ta + 1.6, x2 => x2); if (cq < 1) { const e = E.io(cq), x0 = home[0] + b.x0 * R * 1.3, y0 = H + rad * 3; x = lerp(x0, x, e) + Math.sin(Math.PI * e) * R * .5 * b.arc; y = lerp(y0, y, e); }
+      if (T >= tp) { popLite(x, y, r2, T - tp, V * S.shade(x, y, r2)); continue; }
+      const wave = ((lx * .32 + ly * .2 + T * .3 + b.s * .22) % 1 + 1) % 1 * FSPR, home2 = 11.4 + (s[0] * .9 + s[1]) * .9, dw = ((home2 - wave) % FSPR + FSPR * 1.5) % FSPR - FSPR / 2; // (the colour running through the flock; in the heart, magenta)
+      const ci = Math.round(wave + dw * wh), tex = spr[((ci % FSPR) + FSPR) % FSPR];
+      g.globalAlpha = V * S.shade(x, y, r2); g.drawImage(tex, x - r2, y - r2, 2 * r2, 2 * r2); }
+    g.globalAlpha = 1;
+  };
+
   const S = {
     res: "dpr",
     wash: 1.6, veil: 1, hug: .85, hugFinale: true, // a light kit: the lines and the finale's words sit on pads, and Everything shows the plain ground
@@ -163,7 +356,7 @@ export default function bubbles(K) {
     /** where the words are (scenes.js): find the largest circle of empty page, clear of the words, the edges and the
      *  footer's pool; the wand and the big bubble go there, as big as the room allows, and glide there when it moves */
     words(rects) {
-      S.wr = rects.map(([x0, y0, x1, y1]) => [x0 - 6, y0 - 4, x1 + 6, y1 + 4]);
+      S.wr = rects.map(([x0, y0, x1, y1]) => [x0 - 6, y0 - 4, x1 + 6, y1 + 4]); S.wk = rects; S.maskV = (S.maskV || 0) + 1; // (b431: and as they are, for the first hour egg's film)
       const { W, H, pr } = S; if (!W) return; const gap = pr ? 12 : 22, top = pr ? 12 : 20, foot = H - (pr ? 96 : 104);
       let best = 0, bx = S.cx, by = S.cy;
       for (let gy = 0; gy <= 24; gy++) for (let gx = 0; gx <= 32; gx++) {
@@ -175,6 +368,8 @@ export default function bubbles(K) {
     },
     /** where the wand and the big bubble are (the stage's `spot`), or nothing while there's no room for them */
     spot() { return S.vis < .05 ? null : [Math.round(S.cx), Math.round(S.cy), Math.round(S.R)]; },
+    /** 1.12 b431: which hour egg pass P plays (1 or 2), or 0 (K.long, worked out once a pass) */
+    hourOf(P) { if (S.lgP !== P) { const l = K.long ? K.long(P) : 0; S.lgP = P; S.lgK = l === 1 || l === 2 ? l : 0; } return S.lgK; },
     /** 1 clear of the words, down to a trace behind them: a bubble drifting past a word fades there */
     shade(x, y, r) { let d = 1e9; for (const [x0, y0, x1, y1] of S.wr || []) d = Math.min(d, Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(y0 - y, 0, y - y1))); return lerp(.15, 1, clamp((d - r * .2) / (r + 8))); },
     /** a dealt pass (1.12 b369): the wand in the pass's colour and frame, and the pass's own bubbles out of it */
@@ -438,6 +633,8 @@ export default function bubbles(K) {
         for (const d of S.drops) { const rr = R * (.85 + d.v * E.out(q) * 1.3), xx = x + Math.cos(d.a) * rr, yy = y + Math.sin(d.a) * rr + q * q * R * 1.1; g.globalAlpha = clamp(a * (1 - q * q) * .85); g.beginPath(); g.arc(xx, yy, clamp(R * .03, .7, 2.2) * d.s * (1 - q * .5), 0, TAU); g.fill(); }
         g.globalAlpha = 1;
       };
+      const lg = P > 0 ? S.hourOf(P) : 0; // 1.12 b431: an hour egg's pass (1 or 2; a crown, 3, is dealt as it always was)
+      if (lg === 1 && on) hourFilm(T, A, P, V); // (the first's bubble under the small ones, which drift on through it)
       // the small bubbles, always drifting up the page: each comes up from below the foot and goes off the top, or pops
       // on the way (while the loop plays); a popped one waits below for its next time round
       const span = H + 2 * m * .06;
@@ -449,7 +646,8 @@ export default function bubbles(K) {
         if (b.pop !== null) { pop(x, b.py, b.R, A - b.pop, 1); continue; }
         bubble(x, y, b.R, S.smalls[b.tex], A * b.spin + b.ph, wob, .9 * S.shade(x, y, b.R));
       }
-      if (P > 0 && K.egg(P)) S.eggCube(T, I, A, P, pop, on, V); // b416: every twelfth pass, the egg
+      if (lg) { if (on) { if (lg === 1) hourSpray(T, P, V); else hourFlock(T, A, P, V); } } // b431: once an hour, an hour egg
+      else if (P > 0 && K.egg(P)) S.eggCube(T, I, A, P, pop, on, V); // b416: every twelfth pass, the egg
       else if (P > 0) S.pass2(T, I, A, S.plan && S.plan.P === P ? S.plan : (S.plan = dealPass(P)), bubble, pop, on, V); // a dealt pass
       else {
       // the wand: in from the right, still while the bubble is blown, sweeping for the stream, and out again

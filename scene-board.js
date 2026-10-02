@@ -57,6 +57,32 @@
 // off that crosses no words; then the hand gets on with the plan, briskly, a colour at a time. Either way the pass ends
 // on the picture it would have drawn, worked out as ever from its number, so the pass after it rests on just what it
 // always would; the egg has dice of its own, and nothing else on the board draws any differently.
+//
+// 1.12 b430: the long day's hour eggs. Once in each hour of the list left alone (scenes.js, `K.long`: the first in the
+// odd hours, the second in the even; never on an egg's pass, and not the sixth hour's crown) the hand draws something,
+// and then the drawing comes alive. By night, the proof: the chalk draws a right triangle on the square on its long side
+// and the squares on its legs, shades the two small squares in and cuts the larger in four through its middle, along the
+// long side and across it; the pieces lift off the slate one by one and slide, never turning, into the big square, the
+// smallest last into the hole the others leave in its middle (Perigal's dissection, 1873); the big square glows, and the
+// hand writes a² + b² = c² by it and boxes it; then the proof crumbles, its dust going up off the slate toward the
+// window, and a moment behind it dust comes down out of the air onto the next lesson, which is there where it settles.
+// Or the rocket: the chalk draws a rocket on its pad by its tower, shades its nose and fins, draws the moon in the corner,
+// counts down from three a beat at a time and draws the flame; the flame comes alive, the tower's arm swings away, smoke
+// rolls out lit by the fire, and the rocket goes, on its own, up and over toward the moon and away into the slate,
+// smaller and smaller, until it winks out as a star by the moon; then the moon breaks up into stardust that spreads out
+// over the room, and where it has been the launch is gone and the next lesson is there. By day, the machine: the marker
+// draws a contraption (a ball on a shelf, ramps zigzagging down, a row of dominoes, a seesaw, a switch on the wall wired
+// to a light bulb), colours it in and taps the ball, and it runs on its own: the ball rolls down the ramps (a little
+// simulation of it, turned back at each stop, bouncing on the floor), knocks the dominoes over one into the next, the last
+// onto the seesaw, which throws its other end up into the switch; a spark runs up the wire and the bulb lights; then the
+// eraser goes over it all, and behind the eraser is the plan, its notes slapped on. Or the maze: the marker draws a box
+// open at two corners, a star past one opening and a dot at the other, and the box grows its own walls in from its sides;
+// the dot sets off on its own, a line feeling its way through, stopping at each turning, trying a dead end and drawing
+// back out of it, until it comes out to the star, which lights; the way is gone over in green, the maze winds itself back
+// up into nothing the way it came, and the plan draws itself, every line of it at once. Each starts on what the pass
+// before it left and ends on what this pass would have drawn (pic(P)), so the pass after it rests on just what it always
+// would; each keeps to the room the words leave (what drifts goes out at its edge); the eggs have dice of their own, and
+// nothing else on the board draws any differently.
 export default function board(K, id) {
   const chalk = id !== "whiteboard";
   const { clamp, lerp, E, seg, env, rng, canvas, paint } = K;
@@ -819,6 +845,30 @@ export default function board(K, id) {
     d.cols = [0, inks[0], inks[1], inks[2], inks[3]]; d.wins = [[3.4, 6.2], [6.6, 8.4], [8.8, 10.4], [10.8, 12.3], [12.7, 13.9]]; return d;
   };
 
+  /* ---------------- 1.12 b430: the long day's hour eggs, their pieces ---------------- */
+  // their beats, in seconds: each opens as a pass does (by night the sponge, by day the old plan's notes and the eraser)
+  const HB = chalk ? {
+    proof: { wipe: [.5, 2.2], dry: [2.2, 5.6], fig: [2.4, 4.9], tintA: [5.1, 5.75], tintB: [5.95, 7.0], cut: [7.2, 7.55], slide: 7.75, eq: [10.95, 11.8], out: [12.2, 14.8] },
+    rocket: { wipe: [.5, 2.2], dry: [2.2, 5.6], white: [2.4, 4.6], pink: [4.85, 5.5], blue: [5.7, 6.0], count: [6.25, 7.9], flame: [8.1, 8.35], lit: 8.45, lift: [9.15, 11.3], sweep: [11.85, 13.75] },
+  } : {
+    machine: { black: [3.4, 6.5], red: [6.75, 7.45], blue: [7.7, 8.25], wipe: [12.45, 14.15] },
+    maze: { box: [3.4, 4.3], star: [4.55, 4.95], dot: [5.15, 5.4], grow: [5.6, 6.9], solve: [7.0, 10.75], rewind: [11.9, 12.75], bloom: [12.55, 14.5] },
+  };
+  /** inside a polygon (page points), and at least `inset` from its edges */
+  const inPoly = (q, inset = 0) => (x, y) => { let ins = false; for (let i = 0, j = q.length - 1; i < q.length; j = i++) { const [xi, yi] = q[i], [xj, yj] = q[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) ins = !ins; } if (!ins || inset <= 0) return ins;
+    for (let i = 0, j = q.length - 1; i < q.length; j = i++) { const [ax, ay] = q[j], [bx, by] = q[i], dx = bx - ax, dy = by - ay, t = clamp(((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy || 1)); if (Math.hypot(x - ax - dx * t, y - ay - dy * t) < inset) return false; } return true; };
+  /** a polygon cut by a half-plane: what of it lies where nx·x + ny·y ≥ c */
+  const clipHalf = (q, nx, ny, c) => { const out = [], f = p => p[0] * nx + p[1] * ny - c; for (let i = 0; i < q.length; i++) { const p = q[i], s = q[(i + 1) % q.length], fp = f(p), fs = f(s); if (fp >= 0) out.push(p); if ((fp >= 0) !== (fs >= 0)) { const t = fp / (fp - fs); out.push([lerp(p[0], s[0], t), lerp(p[1], s[1], t)]); } } return out; };
+  /** a canvas over a box of the page (`pad` round it) on the screen's own pixel grid, drawn on in page pixels: what is cut
+   *  onto it and drawn back where it was cut is the same pixels */
+  const boxCanvas = (x0, y0, x1, y1, pad = 0) => { const ox = Math.floor((x0 - pad) * px) / px, oy = Math.floor((y0 - pad) * px) / px, [c, x] = canvas(Math.ceil((x1 + pad - ox) * px), Math.ceil((y1 + pad - oy) * px)); x.imageSmoothingEnabled = true; x.setTransform(px, 0, 0, px, -ox * px, -oy * px); x.lineCap = "round"; x.lineJoin = "round"; return { c, ctx: x, x0: ox, y0: oy, w: c.width / px, h: c.height / px }; };
+  /** such a canvas drawn back (dx, dy) from where it was cut, scaled by sc and turned by rot about (cx, cy) (on the frame,
+   *  or on a layer) */
+  const drawSpr = (sp, dx, dy, a, sc = 1, rot = 0, cx = sp.x0 + sp.w / 2, cy = sp.y0 + sp.h / 2, x = g) => { if (a <= .003 || sc <= .001) return; x.globalAlpha = Math.min(1, a); if (sc === 1 && !rot) x.drawImage(sp.c, sp.x0 + dx, sp.y0 + dy, sp.w, sp.h); else { x.save(); x.translate(cx + dx, cy + dy); x.rotate(rot); x.scale(sc, sc); x.drawImage(sp.c, sp.x0 - cx, sp.y0 - cy, sp.w, sp.h); x.restore(); } x.globalAlpha = 1; };
+  /** strokes drawn whole, in chalk or in marker */
+  const strokesOn = (x, list) => { for (const st of list) { if (chalk) { chalkSegs(x, st, 0, st.n); chalkHalo(x, st, st.len); } else markerLine(x, st, st.len); } };
+  const bboxOf = list => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const st of list) for (const [a, b] of st.p) { x0 = Math.min(x0, a); y0 = Math.min(y0, b); x1 = Math.max(x1, a); y1 = Math.max(y1, b); } return [x0, y0, x1, y1]; };
+
   // the pool: the signature's first, then the others (each run of passes deals all of them once); and the rare ones,
   // about one pass in ten, never two within four passes of each other
   const POOL = chalk ? [null, solar, music, prism, water, dna] : [null, flow, venn, road, mind, rocket, dash], RAREP = chalk ? [ttt, cat] : [ttt, doodles], NS = POOL.length, NR = RAREP.length;
@@ -1113,7 +1163,7 @@ export default function board(K, id) {
       if (S.pending && S.vis < .03) { S.box = S.pending; S.pending = null; S.build(); }
       S.F = F; if (F < 0 && S.refit) { S.refit = false; S.fit(false); }
       const vis = S.vis, on = I > .01;
-      if (vis > .005 && S.box) { const pp = S.passOf(P); if (K.egg && K.egg(P)) S.egg(T, I, A, on, vis, pp); /* (b418: every twelfth pass, the egg) */ else if (chalk) S.lesson(T, I, A, on, vis, pp); else if (pp.P) S.planOn(T, I, A, on, vis, pp); else S.plan(T, I, A, on, vis); }
+      if (vis > .005 && S.box) { const pp = S.passOf(P), lg = K.long ? K.long(P) : 0; if (lg === 1 || lg === 2) S.hour(T, I, A, on, vis, pp, lg); /* (b430: once in an hour, an hour's egg) */ else { S.hr = null; /* (its layers let go once it is over) */ if (K.egg && K.egg(P)) S.egg(T, I, A, on, vis, pp); /* (b418: every twelfth pass, the egg) */ else if (chalk) S.lesson(T, I, A, on, vis, pp); else if (pp.P) S.planOn(T, I, A, on, vis, pp); else S.plan(T, I, A, on, vis); } }
       if (chalk) S.dustMotes(A);
       if (F >= 0 && S.box) { if (chalk) S.aplus(F, S.passOf(P)); else S.notesBurst(F, A); }
       g.globalAlpha = 1;
@@ -1483,6 +1533,546 @@ export default function board(K, id) {
         if (y - spr.h2 < S.H && x + spr.h2 > 0 && x - spr.h2 < S.W) { g.save(); g.globalAlpha = a * .7 * (1 - lift * .5); g.translate(x + 6 + lift * 26, y + 10 + lift * 34); g.rotate(rot); g.drawImage(sh, -sh.w2 / 2, -sh.h2 / 2, sh.w2, sh.h2); g.restore();
           g.save(); g.globalAlpha = a; g.translate(x, y); g.rotate(rot); g.scale(1 + lift * .12, 1 + lift * .12); g.drawImage(spr, -spr.w2 / 2, -spr.h2 / 2, spr.w2, spr.h2); g.restore(); }
       }
+    },
+    /* ---------------- 1.12 b430: the long day's hour eggs ----------------
+       Once in each hour of the list left alone (K.long: 1 in the odd hours, 2 in the even), for whoever has left it up
+       that long: the hand draws something, and then the drawing comes alive. Each starts from the picture the pass before
+       it left and ends on the one this pass would have drawn (pic(P)), so the pass after it rests on just what it always
+       would; each has dice of its own, and chalk (or ink) of its own. */
+    hour(T, I, A, on, vis, pp, lg) { S[chalk ? (lg === 1 ? "proof" : "rocket") : (lg === 1 ? "machine" : "maze")](T, I, A, on, vis, pp); },
+    /** the hour's egg for this room and this pass, worked out once */
+    hourOf(P, lg) {
+      const b = S.box; if (S.hr && S.hr.box === b && S.hr.P === P) return S.hr;
+      const keep = seedN, h = { box: b, P, lg }; seedN = 820000 + (P % 997) * 500;
+      S[chalk ? (lg === 1 ? "proofOf" : "rocketOf") : (lg === 1 ? "machineOf" : "mazeOf")](h, K.deal(P, chalk ? 97 : 98));
+      seedN = keep; return (S.hr = h);
+    },
+    /** this pass's own picture, drawn whole out of sight a few strokes a frame from t0 to t1 (a lesson is a great many
+     *  strokes): from then on it is the picture this pass leaves */
+    hidden(h, cur, T, t0, t1) { if (cur.whole) return cur.whole; const L = h.Y || (h.Y = S.layer()); S.grow(L, cur.all, T < t0 ? 0 : T >= t1 ? 99 : (T - t0) / (t1 - t0) * (cur.end + .1)); if (L.n >= cur.all.length) cur.whole = L; return cur.whole; },
+    /** a field over the room's layers (f: page x, y → 0 … 1), as stages to take a layer through: stage i is where f is
+     *  past i/n (`hi`), and short of it (`lo`), and ring i what lies between stage i and the next; worked out a third of
+     *  the size and stretched soft, as the wet is */
+    fieldOf(f, n = 8) {
+      const q = 1 / 3, w = Math.ceil(S.live.c.width / px * q), hh = Math.ceil(S.live.c.height / px * q), v = new Float32Array(w * hh), e = .45 / n;
+      for (let j = 0; j < hh; j++) for (let i = 0; i < w; i++) v[j * w + i] = f(S.lx + (i + .5) / q, S.ly + (j + .5) / q);
+      const al = (t, i) => i <= 0 ? 1 : i >= n ? 0 : clamp((t - i / n) / e + .5);
+      const img = fn => { const [c, x] = canvas(w, hh), im = x.createImageData(w, hh), o = im.data; for (let k = 0; k < w * hh; k++) { const a = fn(v[k]); if (a <= 0) continue; o[k * 4 + 3] = Math.round(255 * Math.min(1, a)); } x.putImageData(im, 0, 0); return c; };
+      return { n, hi: Array.from({ length: n + 1 }, (_, i) => img(t => al(t, i))), lo: Array.from({ length: n + 1 }, (_, i) => img(t => 1 - al(t, i))), ring: Array.from({ length: n }, (_, i) => img(t => al(t, i) - al(t, i + 1))), at: { x: S.lx, y: S.ly, w: w / q, h: hh / q } };
+    },
+    /** a layer taken through a field at τ (0 … 1): what lies past τ (hi), or short of it, soft at the edge, on a scratch
+     *  layer, then drawn */
+    through(src, fd, tau, hi, a, l = S.scr) {
+      if (a <= .003) return; const x = l.x, n = fd.n, f = clamp(tau) * n, i = Math.min(n - 1, Math.floor(f)), fr = f - i, at = fd.at;
+      x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, l.c.width, l.c.height); x.drawImage(src.c, 0, 0); x.setTransform(px, 0, 0, px, -S.lx * px, -S.ly * px); x.globalCompositeOperation = "destination-out";
+      if (hi) { if (i > 0) x.drawImage(fd.lo[i], at.x, at.y, at.w, at.h); if (fr > .003) { x.globalAlpha = fr; x.drawImage(fd.ring[i], at.x, at.y, at.w, at.h); } }
+      else { x.drawImage(fd.hi[i + 1], at.x, at.y, at.w, at.h); if (fr < .997) { x.globalAlpha = 1 - fr; x.drawImage(fd.ring[i], at.x, at.y, at.w, at.h); } }
+      x.globalAlpha = 1; x.globalCompositeOperation = "source-over"; S.blit(l, a);
+    },
+    /** how far into the room a point is, as a fade: none at its edge and beyond, whole a little way in (what drifts toward
+     *  the edge of the room goes out before it, and so never nearer the words than the room is) */
+    edge(x, y) { const b = S.box, d = Math.min(x - b.x, b.x + b.w - x, y - b.y, b.y + b.h - y) + 6; return clamp(d / (b.u * 1.4)); },
+    /** what is drawn by fn, kept to the room and a few pixels round it (the glows' soft edges, what has drifted) */
+    roomClip(fn) { const b = S.box; g.save(); g.beginPath(); g.rect(b.x - 8, b.y - 8, b.w + 16, b.h + 16); g.clip(); fn(); g.restore(); },
+    /** the dust of the hand's strokes: a puff where each begins, specks falling from the stick as it goes */
+    handDust(all, dust, T, a) {
+      for (const st of all) { const age = T - st.t0; if (age < 0 || age > .5) continue; const k = age / .5, R = S.box.u * (.35 + .5 * E.out(k)); g.globalAlpha = a * .22 * (1 - k); g.drawImage(S.puffs[st.col], st.p[0][0] - R, st.p[0][1] - R, R * 2, R * 2); }
+      for (const d of dust) { const age = T - d.t; if (age < 0 || age > d.life) continue; g.globalAlpha = a * .55 * (1 - age / d.life); g.fillStyle = rgba(INKS[d.c]); g.fillRect(d.x + d.vx * age, d.y + d.vy * age + 70 * age * age, d.s, d.s); }
+      g.globalAlpha = 1;
+    },
+    /* by night, the proof */
+    /** its figure for this room: a right triangle (three, four, five) on the square on its long side, the squares on its
+     *  legs, the larger of them cut in four through its middle along the long side and across it; and the five pieces,
+     *  each with where it goes in the big square, only ever slid (Perigal's dissection, 1873) */
+    proofOf(h, r) {
+      const H = HB.proof, b = h.box, u = b.u, tall = b.k === "tall", cb = .8, sb = .6, add = (p, q, k = 1) => [p[0] + q[0] * k, p[1] + q[1] * k];
+      const A = [0, 0], B2 = [1, 0], C = [cb * cb, -cb * sb], nb = [-sb * cb, -cb * cb], na = [cb * sb, -sb * sb], sqB = [A, C, add(C, nb), add(A, nb)], sqA = [C, B2, add(B2, na), add(C, na)];
+      const Ob = [(A[0] + sqB[2][0]) / 2, (A[1] + sqB[2][1]) / 2], Oa = [(C[0] + sqA[2][0]) / 2, (C[1] + sqA[2][1]) / 2];
+      // laid in the room as it is in a tall one, on its side in a wide one (the big square to the right, the sum beside it)
+      const R = tall ? (p => p) : (p => [p[1], -p[0]]), pts = [...sqB, ...sqA, [0, 1], [1, 1]].map(R), fx0 = Math.min(...pts.map(p => p[0])), fx1 = Math.max(...pts.map(p => p[0])), fy0 = Math.min(...pts.map(p => p[1])), fy1 = Math.max(...pts.map(p => p[1])), fw = fx1 - fx0, fh = fy1 - fy0;
+      const STR = "a² + b² = c²", se = clamp(u * 1.3, 12, 34), wq = width(STR, se);
+      const cp = tall ? Math.min((b.w - 2 * u) / fw, (b.h - 2.4 * u - se * 2.7) / fh) : Math.min((b.w - 3.6 * u - wq) / fw, (b.h - 2 * u) / fh);
+      const bw = tall ? fw * cp : fw * cp + 1.6 * u + wq, bh = tall ? fh * cp + se * 2.7 : fh * cp, ox = b.x + (b.w - bw) / 2 - fx0 * cp, oy = b.y + (b.h - bh) / 2 - fy0 * cp;
+      const Pg = p => { const q = R(p); return [ox + q[0] * cp, oy + q[1] * cp]; }, W = clamp(u * .2, 2.4, 6), white = [], fills = [], yel = [];
+      const put = (list, q, col, k = 1, kind = "l", ex) => { const st = mk(q, col, W * k, kind); if (ex) Object.assign(st, ex); list.push(st); return st; }, L = (p, q) => hline(Pg(p), Pg(q), r, .006);
+      // white: the triangle, the square on its long side, the squares on its legs, the right angle, the cuts, its sides named
+      put(white, [...L(A, C), ...L(C, B2).slice(1), ...L(B2, A).slice(1)], 0, 1.15);
+      put(white, poly([A, [0, 1], [1, 1], B2].map(Pg), r, .005), 0, 1.05);
+      put(white, poly([A, sqB[3], sqB[2], C].map(Pg), r, .005), 0, 1);
+      put(white, poly([C, sqA[3], sqA[2], B2].map(Pg), r, .005), 0, 1);
+      { const q = .07, ua = [(A[0] - C[0]) / cb, (A[1] - C[1]) / cb], ub = [(B2[0] - C[0]) / sb, (B2[1] - C[1]) / sb]; put(white, [Pg(add(C, ua, q)), Pg(add(add(C, ua, q), ub, q)), Pg(add(C, ub, q))], 0, .75); }
+      const G = [(A[0] + B2[0] + C[0]) / 3, (A[1] + B2[1] + C[1]) / 3], sl = clamp(cp * .085, 8, 22);
+      for (const [ch, p, q] of [["b", A, C], ["a", C, B2], ["c", B2, A]]) { const m = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], at = Pg(add(m, [G[0] - m[0], G[1] - m[1]], .5)), tw = width(ch, sl); write(ch, at[0] - tw / 2, at[1] + sl * .28, sl, 60 + ch.charCodeAt(0)).forEach(p2 => put(white, p2, 0, .8, "w")); }
+      // pink, then blue: the small squares shaded in with the side of the stick
+      const shade = (sq, col, ang) => { const q = sq.map(Pg), xs = q.map(p => p[0]), ys = q.map(p => p[1]); return put(fills, zigzag(inPoly(q, u * .2), [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)], u * .5, ang, r), col, 2.3, "l", { soft: .7 }); };
+      shade(sqA, 3, tall ? -.75 : .8); shade(sqB, 1, tall ? -1.1 : .45);
+      // white again: the larger square cut in four through its middle, along the long side and across it
+      const cuts = []; put(cuts, L([Ob[0] - .5, Ob[1]], [Ob[0] + .5, Ob[1]]), 0, .85); put(cuts, L([Ob[0], Ob[1] - .5], [Ob[0], Ob[1] + .5]), 0, .85);
+      // yellow, at the end: the sum, boxed
+      const eq = tall ? [ox + (fx0 + fw / 2) * cp - wq / 2, oy + fy1 * cp + se * 2.15] : [ox + fx1 * cp + 1.6 * u, oy + (fy0 + fh / 2) * cp + se * .4];
+      write(STR, eq[0], eq[1], se, 71).forEach(p => put(yel, p, 2, clamp(se / u * .9, .8, 1.25), "w"));
+      put(yel, hbox(eq[0] - .55 * u, eq[1] - se * 1.5, eq[0] + wq + .55 * u, eq[1] + se * .6, r, .1 * u), 2, .95);
+      h.phases = [{ col: 0, win: H.fig, strokes: white }, { col: 3, win: H.tintA, strokes: [fills[0]] }, { col: 1, win: H.tintB, strokes: [fills[1]] }, { col: 0, win: H.cut, strokes: cuts }, { col: 2, win: H.eq, strokes: yel }];
+      pace(h.phases, u); h.board = [...white, ...cuts, ...yel]; h.fills = fills; h.all = [...white, ...fills, ...cuts, ...yel]; h.c2 = [Pg([.5, .5]), cp]; h.dust = dustOf(h.all, rng(7200 + h.P % 9973));
+      // the pieces: the larger square's four (each to the corner its two cut edges fit), then the small square, to the middle
+      const edge = q => { const p2 = []; q.forEach((p0, i) => { const p1 = q[(i + 1) % q.length], n = Math.max(2, Math.ceil(Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) / 5)); for (let j = 0; j < n; j++) p2.push([lerp(p0[0], p1[0], j / n), lerp(p0[1], p1[1], j / n)]); }); p2.push(q[0]); return mk(p2, 0, W * .85); };
+      h.pieces = [[1, 1], [-1, 1], [-1, -1], [1, -1]].map(([sx, sy], i) => { const q = clipHalf(clipHalf(sqB, sx, 0, sx * Ob[0]), 0, sy, sy * Ob[1]), p0 = Pg(Ob), p1 = Pg([sx > 0 ? 0 : 1, sy > 0 ? 0 : 1]); return { poly: q.map(Pg), dx: p1[0] - p0[0], dy: p1[1] - p0[1], col: 1, t0: H.slide + i * .34, dur: 1, wig: (r() - .5) * .08 }; });
+      { const p0 = Pg(Oa), p1 = Pg([.5, .5]); h.pieces.push({ poly: sqA.map(Pg), dx: p1[0] - p0[0], dy: p1[1] - p0[1], col: 3, t0: H.slide + 3 * .34 + 1.08, dur: 1.05, wig: .05 }); }
+      h.pieces.forEach((pc, i) => { pc.edge = edge(pc.poly); pc.d = Math.hypot(pc.dx, pc.dy) || 1; pc.bow = pc.d * (.1 + r() * .06) * (i % 2 ? 1 : -1); pc.c = [pc.poly.reduce((m, p) => m + p[0], 0) / pc.poly.length, pc.poly.reduce((m, p) => m + p[1], 0) / pc.poly.length]; pc.r = Math.sqrt(Math.abs(pc.poly.reduce((m, p, j) => { const q = pc.poly[(j + 1) % pc.poly.length]; return m + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2); });
+      // the sweep the proof goes up in and the next lesson settles in: across the room, a little ragged
+      const n2 = noise2(31, 64); h.ff = (x, y) => clamp(.1 + .78 * (.62 * (x - b.x) / b.w + .38 * (y - b.y) / b.h) + .26 * (n2(x / 24, y / 24) - .5), .001, .999);
+    },
+    /** by night, the proof: the chalk draws a right triangle on the square on its long side and the squares on its legs,
+     *  shades the small squares in, and cuts the larger in four through its middle; then the pieces lift off the slate one
+     *  by one and slide, never turning, into the big square, the smallest last into the hole the others leave in its
+     *  middle, and the big square glows; it writes a² + b² = c² by them and boxes it; and the proof goes up in dust that drifts across the room and
+     *  settles, a patch at a time, into the next lesson */
+    proof(T, I, A, on, vis, pp) {
+      const H = HB.proof, X = S.wholeOf(pp.prev), a = vis * I;
+      if (!(on && T >= H.wipe[0])) { S.blit(X, vis); return; }
+      const h = S.hourOf(pp.P, 1), cur = pp.cur, w1 = S.wiperAt(T, H.wipe), s1 = w1 ? w1.s : T >= H.wipe[1] ? S.wipe.len : 0;
+      S.hidden(h, cur, T, H.fig[0], H.eq[0]);
+      if (T < H.dry[1]) S.eggWet(s1, seg(T, H.dry[0], H.dry[1], x => x), a);
+      if (T < H.wipe[1]) S.wiped(s1, vis, I, X);
+      else {
+        if (I < .99) S.blit(X, vis * (1 - I));
+        if (T < H.out[0]) { S.pieces(h, T, a, 0); const st = S.grow(S.live, h.board, T); S.blit(S.live, a); if (st) S.hand(st, T, a); S.pieces(h, T, a, 1); }
+        else S.proofOut(h, cur, T, A, a);
+        S.handDust(h.all, h.dust, T, a);
+      }
+      S.drawWiper(w1, a, A);
+      S.tool(S.toolAt(T, h.phases), a);
+    },
+    /** the small squares shaded in where they are (under the board's lines, so the cuts show across the shading); from
+     *  `slide` on (over the board), the pieces cut out of the shading lifting off one by one, coming unstuck with a little
+     *  wiggle, each with its shadow, sliding home and settling with a little give, a puff of dust as each goes and as each
+     *  lands; and when the last is home, the big square glows a moment */
+    pieces(h, T, a, over) {
+      const H = HB.proof, F = h.F || (h.F = S.layer());
+      if (T < H.slide) { if (!over) { const st = S.grow(F, h.fills, T); S.blit(F, a); if (st) S.hand(st, T, a, F); } return; }
+      S.cutPieces(h); const fly = [], u = h.box.u;
+      if (!over) { for (const pc of h.pieces) if (T <= pc.t0) drawSpr(pc.sf, 0, 0, a); return; }
+      const last = h.pieces[h.pieces.length - 1], gk = env(T, last.t0 + last.dur - .1, last.t0 + last.dur + .25, last.t0 + last.dur + .5, last.t0 + last.dur + 1.3, E.sine); if (gk > .01) { const [c2, s2] = h.c2, R2 = s2 * 1.05; g.globalAlpha = a * .38 * gk; g.drawImage(S.puffs[2], c2[0] - R2, c2[1] - R2, R2 * 2, R2 * 2); g.globalAlpha = 1; }
+      for (const pc of h.pieces) { const k = (T - pc.t0) / pc.dur; if (k >= 1) { const sc = 1 - .028 * Math.sin(Math.PI * clamp((k - 1) * pc.dur / .22)); drawSpr(pc.sf, pc.dx, pc.dy, a, sc, 0, pc.c[0] + pc.dx, pc.c[1] + pc.dy); drawSpr(pc.se, pc.dx, pc.dy, a, sc, 0, pc.c[0] + pc.dx, pc.c[1] + pc.dy); } else if (k > 0) fly.push([pc, k]); }
+      for (const [pc, k] of fly) { const lift = seg(k, 0, .16, E.out) * (1 - seg(k, .84, 1, E.in)), tr = seg(k, .08, .92, E.io), bow = Math.sin(Math.PI * tr) * pc.bow, dx = pc.dx * tr - pc.dy / pc.d * bow, dy = pc.dy * tr + pc.dx / pc.d * bow, sc = 1 + .07 * lift, rot = k < .2 ? pc.wig * Math.sin(k / .2 * TAU) * (1 - k / .2) : 0;
+        drawSpr(pc.ss, dx + lift * u * .3, dy + lift * u * .5, a * .55 * lift, sc, rot); drawSpr(pc.sf, dx, dy, a, sc, rot); drawSpr(pc.se, dx, dy, a * clamp(k / .12), sc, rot); }
+      for (const pc of h.pieces) for (const [t, dx, dy] of [[pc.t0, 0, 0], [pc.t0 + pc.dur, pc.dx, pc.dy]]) { const age = T - t; if (age < 0 || age > .6) continue; const k = age / .6, R2 = pc.r * (.75 + .6 * E.out(k)); g.globalAlpha = a * .2 * (1 - k); g.drawImage(S.puffs[pc.col], pc.c[0] + dx - R2, pc.c[1] + dy - R2, R2 * 2, R2 * 2); }
+      g.globalAlpha = 1;
+    },
+    /** each piece cut out of the shading, its edge in white, and the shadow it casts when it is lifted */
+    cutPieces(h) {
+      if (h.cut) return; h.cut = 1; const F = h.F || (h.F = S.layer()), u = h.box.u; S.grow(F, h.fills, 99);
+      for (const pc of h.pieces) { const xs = pc.poly.map(p => p[0]), ys = pc.poly.map(p => p[1]), bb = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)], path = x => { x.beginPath(); pc.poly.forEach(([p, q], i) => i ? x.lineTo(p, q) : x.moveTo(p, q)); x.closePath(); };
+        const sf = pc.sf = boxCanvas(...bb, u), x = sf.ctx; x.save(); path(x); x.clip(); x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(F.c, Math.round((sf.x0 - S.lx) * px), Math.round((sf.y0 - S.ly) * px), sf.c.width, sf.c.height, 0, 0, sf.c.width, sf.c.height); x.restore();
+        pc.se = boxCanvas(...bb, u); strokesOn(pc.se.ctx, [pc.edge]);
+        const ss = pc.ss = boxCanvas(...bb, u), y = ss.ctx; y.shadowColor = "rgba(0,0,0,.62)"; y.shadowBlur = u * .45 * px; y.shadowOffsetY = 1000 * px; y.fillStyle = "#000"; y.translate(0, -1000); path(y); y.fill(); }
+    },
+    /** the proof's lines as they stand at its end, on a layer of its own: the board's and the sum's, the pieces' edges home */
+    proofZ(h) { if (h.Z) return h.Z; S.grow(S.live, h.board, 99); S.cutPieces(h); const Z = h.Z = S.layer(); Z.x.save(); Z.x.setTransform(1, 0, 0, 1, 0, 0); Z.x.drawImage(S.live.c, 0, 0); Z.x.restore(); for (const pc of h.pieces) Z.x.drawImage(pc.se.c, pc.se.x0 + pc.dx, pc.se.y0 + pc.dy, pc.se.w, pc.se.h); return Z; },
+    /** the proof going up in dust, and the next lesson coming down out of it, the same sweep a moment behind */
+    proofOut(h, cur, T, A, a) { const [, o1] = HB.proof.out; if (T >= o1) S.blit(S.hidden(h, cur, T, 0, 0), a); else S.drift(h, cur, T, A, a); },
+    /** a soft round mark, to eat a layer away with or to let one through */
+    disc() { return S.dk || (S.dk = paint(33, 33, (x, y) => { const d = Math.hypot(x - 16, y - 16) / 16.5; return d >= 1 ? null : [0, 0, 0, Math.round(255 * clamp((1 - d) * 2.4))]; })); },
+    /** the dust: as the sweep takes each bit of the proof's lines it crumbles (each piece's shading fading as it goes), and its dust goes up off the slate and away on the
+     *  air toward the window, thinning out; a moment behind it, dust comes down out of the air onto the next lesson, and
+     *  where it settles, there the lesson is; brighter where the window's light falls */
+    drift(h, cur, T, A, a) {
+      const [o0, o1] = HB.proof.out, u = h.box.u; let pt = h.pt;
+      if (!pt || pt.cur !== cur) {
+        const r = K.deal(h.P, 99), step = Math.max(3.5, u * .33), f = h.ff, sr = [], tg = [];
+        for (const st of h.board) { const n = Math.max(1, Math.round(st.len / step)); for (let i = 0; i < n; i++) { const q = along(st, (i + r()) / n * st.len); sr.push([q[0], q[1], st.col, step * .9 + st.w * .55]); } }
+        for (const pc of h.pieces) { const e = pc.edge, n = Math.max(1, Math.round(e.len / step)); for (let i = 0; i < n; i++) { const q = along(e, (i + r()) / n * e.len); sr.push([q[0] + pc.dx, q[1] + pc.dy, 0, step * .9 + e.w * .55]); } }
+        const fl = []; for (const pc of h.pieces) { pc.tf = o0 + f(pc.c[0] + pc.dx, pc.c[1] + pc.dy) * 1.4; const ins = inPoly(pc.poly), xs = pc.poly.map(p => p[0]), ys = pc.poly.map(p => p[1]); for (let y = Math.min(...ys); y < Math.max(...ys); y += step * 1.25) for (let x = Math.min(...xs); x < Math.max(...xs); x += step * 1.25) if (ins(x, y)) fl.push([pc.tf + r() * .55, [x + pc.dx, y + pc.dy, pc.col, 0]]); }
+        for (const st of cur.all) { const n = Math.max(1, Math.round(st.len / step * (st.soft ? .5 : 1))); for (let i = 0; i < n; i++) { const q = along(st, (i + r()) / n * st.len); tg.push([q[0], q[1], st.col]); } }
+        // going up: each bit off on the air as the sweep takes it (in the order it goes, so the crumbling can be kept up)
+        const up = sr.map(q => [o0 + .05 + f(q[0], q[1]) * 1.4 + r() * .06, q]).concat(fl).sort((p, q) => p[0] - q[0]), M = up.length, Du = new Float32Array(M * 8);
+        up.forEach(([t0, q], k) => { const an = -1.05 + (r() - .5) * 1.1, sp = u * (1.2 + r() * 2.2); Du.set([q[0], q[1], Math.cos(an) * sp, Math.sin(an) * sp, t0, .7 + r() * .5, q[2], q[3]], k * 8); });
+        // coming down: onto the lesson, as many as it takes to find it (and no more than the slate can bear)
+        const N = Math.min(1500, tg.length, Math.round(h.box.w * h.box.h / (u * u * .8))), Dn = new Float32Array(N * 8), rt = Math.max(3, step * tg.length / N * .8 + 1.5);
+        const dn = Array.from({ length: N }, (_, i) => tg[Math.floor(i * tg.length / N)]).map(q => [o0 + .95 + f(q[0], q[1]) * (o1 - o0 - 1.2) + r() * .06, q]).sort((p, q) => p[0] - q[0]);
+        dn.forEach(([t1, q], k) => { Dn.set([q[0], q[1], u * (.4 + r() * 1.2), -u * (1.4 + r() * 1.8), t1, .65 + r() * .4, q[2], rt], k * 8); });
+        pt = h.pt = { cur, M, Du, N, Dn, sk: Math.max(1, Math.ceil(M / (h.box.w * h.box.h / (u * u * 1.1)))), big: Uint8Array.from({ length: Math.max(M, N) }, () => r() < .08 ? 1 : 0), bk: Array.from({ length: 42 }, () => []) };
+      }
+      const disc = S.disc(), { Du, Dn, M, N } = pt;
+      // the proof, crumbling where its dust goes up (what is left of it between the bits, gone at the last)
+      const zc = h.zc || (h.zc = S.layer()), zx = zc.x;
+      if (pt.zt === undefined || T < pt.zt) { zx.save(); zx.setTransform(1, 0, 0, 1, 0, 0); zx.clearRect(0, 0, zc.c.width, zc.c.height); zx.drawImage(S.proofZ(h).c, 0, 0); zx.restore(); pt.zi = 0; }
+      zx.globalCompositeOperation = "destination-out"; while (pt.zi < M && Du[pt.zi * 8 + 4] <= T) { const o = pt.zi * 8, R2 = Du[o + 7]; if (R2 > 0) zx.drawImage(disc, Du[o] - R2, Du[o + 1] - R2, R2 * 2, R2 * 2); pt.zi++; } zx.globalCompositeOperation = "source-over"; pt.zt = T;
+      for (const pc of h.pieces) { const k = seg(T, pc.tf, pc.tf + .6, E.in); if (k < 1) drawSpr(pc.sf, pc.dx, pc.dy, a * (1 - k)); }
+      S.blit(zc, a * (1 - seg(T, o0 + 1.15, o0 + 1.6, z => z)));
+      // the next lesson, there where its dust has settled (and the last of it filled in at the end)
+      const mk2 = h.mk || (h.mk = S.layer()), mx = mk2.x, Y = S.hidden(h, cur, T, 0, 0), y2 = h.Y2 || (h.Y2 = S.layer()), yx = y2.x, fin = seg(T, o1 - .45, o1, z => z);
+      if (pt.mt === undefined || T < pt.mt) { mx.save(); mx.setTransform(1, 0, 0, 1, 0, 0); mx.clearRect(0, 0, mk2.c.width, mk2.c.height); mx.restore(); pt.mi = 0; }
+      while (pt.mi < N && Dn[pt.mi * 8 + 4] <= T) { const o = pt.mi * 8, R2 = Dn[o + 7]; mx.drawImage(disc, Dn[o] - R2, Dn[o + 1] - R2, R2 * 2, R2 * 2); pt.mi++; } pt.mt = T;
+      if (pt.mi || fin > 0) { yx.save(); yx.setTransform(1, 0, 0, 1, 0, 0); yx.clearRect(0, 0, y2.c.width, y2.c.height); yx.drawImage(mk2.c, 0, 0); if (fin > 0) { yx.globalAlpha = fin; yx.fillStyle = "#000"; yx.fillRect(0, 0, y2.c.width, y2.c.height); yx.globalAlpha = 1; } yx.globalCompositeOperation = "source-in"; yx.drawImage(Y.c, 0, 0); yx.globalCompositeOperation = "source-over"; yx.restore(); S.blit(y2, a); }
+      // the specks, each a short streak the way it is going: up and away, slowing; down and in, settling
+      const bk = pt.bk; for (const q of bk) q.length = 0;
+      const put = (k, x0, y0, x, y, col, v) => { if (v < .05) return; const dx = x - x0, dy = y - y0, l = Math.hypot(dx, dy), c = l > 3 ? 3 / l : 1; bk[(col * 3 + Math.min(2, Math.floor(v * 3))) * 2 + pt.big[k]].push(x - dx * c, y - dy * c, x, y); };
+      for (let k = 0; k < M; k++) { const o = k * 8, t0 = Du[o + 4], d = Du[o + 5]; if (T <= t0) break; if (T >= t0 + d || k % pt.sk) continue; const q = (T - t0) / d, q0 = Math.max(0, q - 1 / 30 / d), e = 1 - (1 - q) * (1 - q), e0 = 1 - (1 - q0) * (1 - q0), w = Math.sin(A * 3 + k) * u * .15 * q;
+        const x = Du[o] + Du[o + 2] * e + w, y = Du[o + 1] + Du[o + 3] * e; put(k, Du[o] + Du[o + 2] * e0 + w, Du[o + 1] + Du[o + 3] * e0, x, y, Du[o + 6], (1 - q) * (.55 + .45 * S.lit(x, y)) * S.edge(x, y)); }
+      for (let k = 0; k < N; k++) { const o = k * 8, t1 = Dn[o + 4], d = Dn[o + 5]; if (T >= t1) continue; if (t1 - 1.06 > T) break; if (T <= t1 - d) continue; const q = 1 - (t1 - T) / d, q0 = Math.max(0, q - 1 / 30 / d), e = (1 - q) * (1 - q), e0 = (1 - q0) * (1 - q0), w = Math.sin(A * 2.6 + k) * u * .12 * (1 - q);
+        const x = Dn[o] + Dn[o + 2] * e + w, y = Dn[o + 1] + Dn[o + 3] * e; put(k, Dn[o] + Dn[o + 2] * e0 + w, Dn[o + 1] + Dn[o + 3] * e0, x, y, Dn[o + 6], clamp(q / .35) * (.55 + .45 * S.lit(x, y)) * S.edge(x, y)); }
+      S.roomClip(() => { g.lineCap = "round"; bk.forEach((q, i) => { if (!q.length) return; g.strokeStyle = rgba(INKS[Math.floor(i / 6)]); g.globalAlpha = a * [.3, .55, .85][Math.floor(i / 2) % 3]; g.lineWidth = i % 2 ? 2.3 : 1.2; g.beginPath(); for (let j = 0; j < q.length; j += 4) { g.moveTo(q[j], q[j + 1]); g.lineTo(q[j + 2], q[j + 3]); } g.stroke(); }); });
+      g.globalAlpha = 1;
+    },
+    /* by night, the rocket */
+    /** its drawing for this room: the rocket on its pad by its tower, the ground, the moon it is for, the count; its flight
+     *  (up off the pad and over toward the moon, smaller and smaller, away into the slate); its flame in four shapes; the
+     *  smoke it goes up in; and the stardust the moon goes up in at the end */
+    rocketOf(h, r) {
+      const H = HB.rocket, b = h.box, u = b.u, tall = b.k === "tall", sd = S.side === "l" ? -1 : 1, X = f => b.x + b.w * (sd > 0 ? f : 1 - f), W = clamp(u * .2, 2.4, 6);
+      const s = Math.min(b.h * (tall ? .5 : .56) / 11.2, b.w * (tall ? .28 : .22) / 5.2), gy = b.y + b.h * (tall ? .87 : .9), bx = X(tall ? .38 : .3), by = gy - 1.2 * s;
+      const Rk = q => [bx + q[0] * s, by + q[1] * s], wR = [], wB = [], pk = [], bl = [], ye = [], fl = [], put = (list, q, col, k = 1, kind = "l", ex) => { const st = mk(q, col, W * k, kind); if (ex) Object.assign(st, ex); list.push(st); return st; };
+      // white: the rocket (its hull, the band under its nose, its fins, its porthole, its nozzle); the pad, the ground, the tower and its arm
+      put(wR, curve([[-1.2, -.2], [-1.2, -5.8], [-1.05, -7.4], [-.55, -8.8], [0, -9.9], [.55, -8.8], [1.05, -7.4], [1.2, -5.8], [1.2, -.2]], 6).map(Rk).concat([Rk([-1.2, -.2])]), 0, 1.1);
+      put(wR, hline(Rk([-1.12, -7.3]), Rk([1.12, -7.3]), r, .01), 0, .8);
+      for (const d of [-1, 1]) put(wR, [Rk([d * 1.2, -3.2]), Rk([d * 2.5, -.2]), Rk([d * 2.4, .4]), Rk([d * 1.2, -.3])], 0, .95);
+      put(wR, hring(Rk([0, -5]), .62 * s, .62 * s, r, -2, .05), 0, 1);
+      put(wR, [Rk([-.7, -.2]), Rk([-.95, .7]), Rk([.95, .7]), Rk([.7, -.2])], 0, .9);
+      put(wB, hbox(bx - 2.7 * s, gy - .5 * s, bx + 2.7 * s, gy, r, .05 * s), 0, .9);
+      put(wB, hline([b.x + b.w * .05, gy + .02 * s], [b.x + b.w * .95, gy], r, .003), 0, 1);
+      const tx = bx - sd * 4.4 * s, tw = s, ty = gy - 10.4 * s;
+      for (const o of [-.5, .5]) put(wB, hline([tx + o * tw, gy], [tx + o * tw, ty], r, .004), 0, .85);
+      { const zz = []; for (let y = gy - .1 * s, k = 0; y > ty + .6 * s; y -= 1.05 * s, k++) zz.push([tx + (k % 2 ? .5 : -.5) * tw, y]); put(wB, zz, 0, .6); }
+      const arm = []; put(arm, hline([tx + sd * .5 * tw, by - 7.6 * s], [bx - sd * 1.1 * s, by - 7.6 * s], r, .01), 0, .8); h.armP = [tx + sd * .5 * tw, by - 7.6 * s]; h.sd = sd; /* (it swings away as the rocket is lit) */
+      // pink: the nose and the fins shaded; blue: the porthole
+      const loc = (x, y) => [(x - bx) / s, (y - by) / s];
+      put(pk, zigzag((x, y) => { const q = loc(x, y); return q[1] < -7.5 && Math.abs(q[0]) < (q[1] + 9.75) / 2.35; }, [bx - 1.2 * s, by - 10 * s, bx + 1.2 * s, by - 7.3 * s], .26 * s, -.9, r), 3, 1.7, "l", { soft: .72 });
+      for (const d of [-1, 1]) put(pk, zigzag((x, y) => { const q = loc(x, y); return q[0] * d > 1.3 && q[1] < .15 && q[1] > -3 + (q[0] * d - 1.2) * 2.3; }, [bx + (d < 0 ? -2.6 : 1.2) * s, by - 3.3 * s, bx + (d < 0 ? -1.2 : 2.6) * s, by + .5 * s], .24 * s, -.6, r), 3, 1.5, "l", { soft: .72 });
+      put(bl, spiral(Rk([0, -5]), .46 * s, .46 * s, 2.3, 0, r() * TAU), 1, 1.3);
+      // yellow: the moon it is for, then the count, a beat between each
+      const M = [X(tall ? .8 : .86), b.y + b.h * (tall ? .13 : .2)], Rm = Math.min(1.7 * s, b.w * .09);
+      put(ye, [...harc(M, Rm, Rm, -Math.PI / 2, -Math.PI, r), ...harc([M[0] + .5 * Rm, M[1]], 1.118 * Rm, 1.118 * Rm, 2.034, 2.214, r).slice(1)].map(([x, y]) => [sd > 0 ? x : 2 * M[0] - x, y]), 2, 1.05);
+      const cs = clamp(s * 2.1, 14, 46), CX = tall ? [X(.8), X(.8), X(.8)] : [X(.6), X(.72), X(.84)], CY = (tall ? [.42, .58, .74] : [.66, .66, .66]).map(f => b.y + b.h * f);
+      ["3", "2", "1"].forEach((n, i) => { const tw2 = width(n, cs); write(n, CX[i] - tw2 / 2, CY[i] + cs * .5, cs, 120 + i).forEach((p, j) => put(ye, p, 2, clamp(cs / u * .7, .9, 1.3), "w", j ? undefined : { wait: i ? .4 : .1 })); });
+      // orange: the flame it is lit with
+      const FL = j => [[-.8, .75], [-.52, 1.75 + j[0]], [-.26, 1.2 + j[1]], [0, 2.85 + j[2]], [.26, 1.2 + j[3]], [.52, 1.75 + j[4]], [.8, .75]];
+      put(fl, curve(FL([0, 0, 0, 0, 0]).map(Rk), 6), 5, 1.2);
+      h.phases = [{ col: 0, win: H.white, strokes: [...wR, ...wB, ...arm] }, { col: 3, win: H.pink, strokes: pk }, { col: 1, win: H.blue, strokes: bl }, { col: 2, win: H.count, strokes: ye }, { col: 5, win: H.flame, strokes: fl }];
+      pace(h.phases, u); h.board = [...wB, ...ye]; h.rk = [...wR, ...pk, ...bl]; h.fl = fl; h.arm = arm; h.all = [...wR, ...wB, ...arm, ...pk, ...bl, ...ye, ...fl]; h.dust = dustOf(h.all, rng(7300 + h.P % 9973));
+      // the flame alive, four shapes of it in turn, the white-hot heart of it yellow
+      h.fv = [0, 1, 2, 3].map(() => { const j = Array.from({ length: 5 }, () => (r() - .5) * .7), k = Array.from({ length: 3 }, () => (r() - .5) * .4); return [mk(curve(FL(j).map(Rk), 6), 5, W * 1.25), mk(curve([[-.42, .8], [-.22, 1.45 + k[0]], [0, 2.05 + k[1]], [.22, 1.45 + k[2]], [.42, .8]].map(Rk), 6), 2, W * 1.05)]; });
+      // the flight: up off the pad, leaning over toward the moon and away into the slate, smaller and smaller
+      const V = [M[0] - sd * Rm * 2.3, M[1] + Rm * 1.1], q1 = [bx, lerp(by, V[1], .6)]; h.base = [bx, by]; h.s = s; h.nz = Rk([0, .7]); h.gy = gy;
+      h.fly = t => { const k = clamp((t - H.lift[0]) / (H.lift[1] - H.lift[0])), e = Math.pow(k, 1.65), i1 = 1 - e, tx2 = 2 * i1 * (q1[0] - bx) + 2 * e * (V[0] - q1[0]), ty2 = 2 * i1 * (q1[1] - by) + 2 * e * (V[1] - q1[1]);
+        return { x: i1 * i1 * bx + 2 * i1 * e * q1[0] + e * e * V[0], y: i1 * i1 * by + 2 * i1 * e * q1[1] + e * e * V[1], rot: k > 0 ? Math.atan2(tx2, -ty2) * Math.min(1, k * 4) : 0, sc: 1 / (1 + 12 * Math.pow(k, 2.3)) }; };
+      // the smoke: billows rolling out from under it along the ground both ways as it lifts, and thinning away
+      h.smoke = Array.from({ length: 16 }, (_, i) => { const d = i % 2 ? 1 : -1, far = (i >> 1) / 7; return { x0: bx + d * s * (.3 + r() * .6), y0: gy - .4 * s, x1: bx + d * (s * 1.2 + far * b.w * .5) + (r() - .5) * s, y1: gy - s * (.4 + r() * 1.6) - far * s * 1.2, tb: H.lit + .15 + far * .9 + r() * .2, tm: .45 + r() * .35, r0: .6 * s, r1: s * (1.3 + far * 1.1 + r() * .5), al: .38 + r() * .14, v: Math.floor(r() * 3), out: H.lift[1] - .4 + far * .3 + r() * .4 }; }).sort((p, q) => p.y1 - q.y1);
+      // the stardust: the moon breaks up into it, and it spreads out from there over the whole room, the launch going under
+      // it and the next lesson there behind it (where, and when, the field says: the way out from the moon, a little ragged)
+      const n2 = noise2(41, 32), x0 = S.lx, y0 = S.ly, w = S.live.c.width / px, hh = S.live.c.height / px, Dm = Math.max(...[[x0, y0], [x0 + w, y0], [x0, y0 + hh], [x0 + w, y0 + hh]].map(([x, y]) => Math.hypot(x - M[0], y - M[1])));
+      h.M = M; h.ff = (x, y) => clamp(.03 + .9 * Math.hypot(x - M[0], y - M[1]) / Dm + .16 * (n2(x / 26, y / 26) - .5), .001, .999);
+      const ns = Math.round(clamp(w * hh / (u * u * 1.6), 300, 1100)), [w0, w1] = H.sweep; h.stars = new Float32Array(ns * 7);
+      for (let k = 0; k < ns; k++) { const x = x0 + r() * w, y = y0 + r() * hh, d = Math.hypot(x - M[0], y - M[1]) || 1; h.stars.set([x, y, (x - M[0]) / d * u * (.6 + r() * 1.4), (y - M[1]) / d * u * (.6 + r() * 1.4), w0 + h.ff(x, y) * (w1 - w0) - .12 + r() * .1, .7 + r() * .6, r() < .5 ? 2 : r() < .8 ? 0 : 1], k * 7); }
+    },
+    /** by night, the rocket: the chalk draws a rocket on its pad by its tower, shades its nose and fins and its porthole,
+     *  draws the moon in the corner, counts down from three a beat at a time and draws the flame; the flame comes alive,
+     *  the tower's arm swings away,
+     *  smoke rolls out from under it and it goes, on its own, up and over toward the moon and away into the slate, smaller
+     *  and smaller, until it is a star that winks out by the moon; then the moon breaks up into stardust that spreads out
+     *  over the whole room, twinkling, and where it has been the launch is gone and the next lesson is there */
+    rocket(T, I, A, on, vis, pp) {
+      const H = HB.rocket, X = S.wholeOf(pp.prev), a = vis * I;
+      if (!(on && T >= H.wipe[0])) { S.blit(X, vis); return; }
+      const h = S.hourOf(pp.P, 2), cur = pp.cur, w1 = S.wiperAt(T, H.wipe), s1 = w1 ? w1.s : T >= H.wipe[1] ? S.wipe.len : 0;
+      S.hidden(h, cur, T, H.white[0], H.lift[1]);
+      if (T < H.dry[1]) S.eggWet(s1, seg(T, H.dry[0], H.dry[1], x => x), a);
+      if (T < H.wipe[1]) S.wiped(s1, vis, I, X);
+      else {
+        if (I < .99) S.blit(X, vis * (1 - I));
+        const [w0, w1] = H.sweep, tau = (T - w0) / (w1 - w0), fd = h.fd || (h.fd = S.fieldOf(h.ff));
+        if (tau <= 0) { const st = S.grow(S.live, h.board, T); S.blit(S.live, a); if (st) S.hand(st, T, a); }
+        else { if (tau < 1) { S.grow(S.live, h.board, 99); S.through(S.live, fd, tau, true, a); } const Y = S.hidden(h, cur, T, 0, 0); if (tau >= 1) S.blit(Y, a); else S.through(Y, fd, tau, false, a, h.Y2 || (h.Y2 = S.layer())); }
+        if (T < w1) S.roomClip(() => { S.launch(h, T, A, a); S.handDust(h.all, h.dust, T, a); });
+        S.rocketArm(h, T, a, tau);
+        S.roomClip(() => S.stardust(h, T, A, a));
+      }
+      S.drawWiper(w1, a, A);
+      S.tool(S.toolAt(T, h.phases), a);
+    },
+    /** a billow of chalk dust: round, lit from the window up on the right and shadowed under, grainy with the chalk's own
+     *  tooth (three of them) */
+    dustSpr() { if (S.dsp) return S.dsp; const n = 96; return (S.dsp = [0, 1, 2].map(v => paint(n, n, (x, y) => { const dx = (x - n / 2 + .5) / (n / 2), dy = (y - n / 2 + .5) / (n / 2), d = Math.hypot(dx, dy); if (d >= 1) return null; const nz = Math.sqrt(1 - d * d), l = clamp(.5 + .5 * (dx * .5 - dy * .7) * (1 - nz * .4) + nz * .2), t = TOOTH.a[((y + v * 37) % TOOTH.n) * TOOTH.n + (x + v * 53) % TOOTH.n], k = .86 + .14 * t;
+        return [Math.round(lerp(118, 246, l) * k), Math.round(lerp(134, 248, l) * k), Math.round(lerp(128, 242, l) * k), Math.round(255 * Math.pow(clamp((1 - d) / .5), 1.4) * (.78 + .22 * t))]; }))); },
+    /** the tower's arm: drawn with the tower; swinging up and away from the rocket as it is lit; gone under the stardust */
+    rocketArm(h, T, a, tau) {
+      const H = HB.rocket, L = h.AL || (h.AL = S.layer()); if (T < H.lit - .1) { const st = S.grow(L, h.arm, T); S.blit(L, a); if (st) S.hand(st, T, a, L); return; }
+      if (!h.as) { S.grow(L, h.arm, 99); const sp = h.as = boxCanvas(...bboxOf(h.arm), h.box.u); sp.ctx.setTransform(1, 0, 0, 1, 0, 0); sp.ctx.drawImage(L.c, Math.round((sp.x0 - S.lx) * px), Math.round((sp.y0 - S.ly) * px), sp.c.width, sp.c.height, 0, 0, sp.c.width, sp.c.height); }
+      const k = clamp((T - H.lit + .1) / .55), fade = tau > 0 ? 1 - clamp((tau - h.ff(...h.armP)) / .1) : 1; drawSpr(h.as, 0, 0, a * fade, 1, -h.sd * 1.05 * E.back(k), h.armP[0], h.armP[1]);
+    },
+    /** the rocket cut out whole, and its flame's four shapes */
+    rocketSpr(h) { if (h.rs) return; const R = h.R || (h.R = S.layer()); S.grow(R, h.rk, 99); const sp = h.rs = boxCanvas(...bboxOf(h.rk), h.box.u); sp.ctx.setTransform(1, 0, 0, 1, 0, 0); sp.ctx.drawImage(R.c, Math.round((sp.x0 - S.lx) * px), Math.round((sp.y0 - S.ly) * px), sp.c.width, sp.c.height, 0, 0, sp.c.width, sp.c.height);
+      h.flames = h.fv.map(list => { const f = boxCanvas(...bboxOf(list), h.box.u * .6); strokesOn(f.ctx, list); return f; }); },
+    /** the rocket as it is drawn, lit, standing on its flame, and gone; the smoke (swept away with the rest by the
+     *  stardust) and the fire's glow in it; its trail; the star it ends as */
+    launch(h, T, A, a) {
+      const H = HB.rocket, [l0, l1] = H.lift, s = h.s, sp = S.dustSpr();
+      for (const c of h.smoke) { const age = T - c.tb; if (age <= 0) continue; const k = 1 - Math.exp(-age / c.tm), out = clamp((T - c.out) / 1.1), x = lerp(c.x0, c.x1, k), y = lerp(c.y0, c.y1, k) - out * s * .8, R2 = lerp(c.r0, c.r1, k) * (1 + .3 * out), al = a * c.al * clamp(age / .2) * (1 - E.in(out)) * (1 - clamp((T - H.sweep[0] - h.ff(x, y) * (H.sweep[1] - H.sweep[0])) / .35)) * S.edge(x, y + R2 * .3); if (al <= .003) continue; g.globalAlpha = al; g.drawImage(sp[c.v], x - R2, y - R2, R2 * 2, R2 * 2); }
+      { const gl = a * seg(T, H.lit, l0, E.io) * (1 - seg(T, l0 + .3, l0 + 1.6, E.io)), f = T < l0 ? { x: h.base[0], y: h.base[1] } : h.fly(T); if (gl > .01) { const R2 = s * 5, x = h.nz[0], y = h.nz[1] + s * .4; g.globalCompositeOperation = "lighter"; g.globalAlpha = gl * .55; g.drawImage(S.puffs[5], x - R2 * 1.6, y - R2 * .62, R2 * 3.2, R2 * 1.24); g.globalAlpha = gl * .35; g.drawImage(S.puffs[2], f.x - R2 * .6, f.y + s * 1.5 - R2 * .6, R2 * 1.2, R2 * 1.2); g.globalCompositeOperation = "source-over"; } }
+      for (let te = l0 + .02; te < Math.min(T, l1 - .12); te += .05) { const age = T - te; if (age > 1.5) continue; const f = h.fly(te), R2 = s * f.sc * (.8 + 2.2 * E.out(Math.min(1, age / 1.2))), x = f.x - Math.sin(f.rot) * 1.6 * s * f.sc, y = Math.min(f.y + Math.cos(f.rot) * 1.6 * s * f.sc + age * s * .5 * f.sc, h.gy - R2 * .45); /* (never under the ground) */ g.globalAlpha = a * .38 * (1 - E.in(age / 1.5)) * (.4 + .6 * f.sc); g.drawImage(sp[Math.floor(te * 97) % 3], x - R2, y - R2, R2 * 2, R2 * 2); }
+      g.globalAlpha = 1;
+      if (T < H.lit) { const R = h.R || (h.R = S.layer()), st = S.grow(R, h.rk, T); S.blit(R, a); if (st) S.hand(st, T, a, R); const F2 = h.FL || (h.FL = S.layer()), sf = S.grow(F2, h.fl, T); S.blit(F2, a); if (sf) S.hand(sf, T, a, F2); return; }
+      if (T < l1) {
+        S.rocketSpr(h); const f = T < l0 ? { x: h.base[0], y: h.base[1], rot: 0, sc: 1 } : h.fly(T), sh = T < l0 ? seg(T, H.lit, l0, z => z) : clamp(1 - (T - l0) / .5), jx = Math.sin(A * 71) * .5 * sh, jy = Math.cos(A * 57) * .35 * sh, fa = a * (1 - seg(T, l1 - .2, l1, z => z));
+        // the flame, alive: breathing as it catches, then roaring; four shapes of it in turn, longer as it thrusts
+        const thr = .6 * seg(T, H.lit, l0, E.io) + .5 * clamp((T - l0) / .35), fs = h.flames[Math.floor(A * 13) % 4], nx = f.x + jx - Math.sin(f.rot) * (h.nz[1] - h.base[1]) * f.sc, ny = f.y + jy + Math.cos(f.rot) * (h.nz[1] - h.base[1]) * f.sc;
+        g.save(); g.globalAlpha = fa; g.translate(nx, ny); g.rotate(f.rot); g.scale(f.sc, f.sc * (1 + thr * (.85 + .15 * Math.sin(A * 31)))); g.drawImage(fs.c, fs.x0 - h.nz[0], fs.y0 - h.nz[1], fs.w, fs.h); g.restore(); g.globalAlpha = 1;
+        drawSpr(h.rs, f.x - h.base[0] + jx, f.y - h.base[1] + jy, fa, f.sc, f.rot, h.base[0], h.base[1]);
+      }
+      const tk = (T - l1 + .12) / .65; if (tk > 0 && tk < 1) { const f = h.fly(l1), R2 = s * 2.3 * Math.sin(Math.PI * tk), al = a * Math.sin(Math.PI * tk); g.globalAlpha = al * .45; g.drawImage(S.puffs[2], f.x - R2 * 1.5, f.y - R2 * 1.5, R2 * 3, R2 * 3); g.save(); g.translate(f.x, f.y); g.rotate(tk * .9); g.globalAlpha = al; g.fillStyle = rgba(INKS[2]); g.beginPath(); for (let i = 0; i < 8; i++) { const rr = i % 2 ? R2 * .16 : R2, an = i / 8 * TAU; g.lineTo(Math.cos(an) * rr, Math.sin(an) * rr); } g.closePath(); g.fill(); g.restore(); g.globalAlpha = 1; }
+    },
+    /** the stardust: each speck a little four-pointed star that catches as the sweep comes to it, drifts on out from the
+     *  moon and down, twinkling, and goes out; brightest at the sweep's front */
+    stardust(h, T, A, a) {
+      const [w0, w1] = HB.rocket.sweep; if (T < w0 - .2 || T > w1 + 1.4) return; const D = h.stars, n = D.length / 7, bk = h.sbk || (h.sbk = Array.from({ length: 9 }, () => [])), u = h.box.u; for (const q of bk) q.length = 0;
+      for (let k = 0; k < n; k++) { const o = k * 7, age = T - D[o + 4], life = D[o + 5]; if (age <= 0 || age >= life) continue; const q = age / life, x = D[o] + D[o + 2] * E.out(q), y = D[o + 1] + D[o + 3] * E.out(q) + u * .9 * q * q, tw = .55 + .45 * Math.sin(A * (9 + k % 7) + k), v = clamp(age / .12) * (1 - E.in(q)) * tw * S.edge(x, y); if (v < .08) continue;
+        bk[D[o + 6] * 3 + Math.min(2, Math.floor(v * 3))].push(x, y, (.8 + 1.6 * v) * (k % 9 ? 1 : 1.8)); }
+      g.lineCap = "round"; g.lineWidth = 1.1; bk.forEach((q, i) => { if (!q.length) return; g.strokeStyle = rgba(INKS[[0, 1, 2][Math.floor(i / 3)]]); g.globalAlpha = a * [.35, .65, .95][i % 3]; g.beginPath(); for (let j = 0; j < q.length; j += 3) { const x = q[j], y = q[j + 1], r2 = q[j + 2]; g.moveTo(x - r2, y); g.lineTo(x + r2, y); g.moveTo(x, y - r2); g.lineTo(x, y + r2); } g.stroke(); });
+      // the moon going up in it: a glow where it was, swelling and going
+      const gk = seg(T, w0 - .25, w0 + .15, E.out) * (1 - seg(T, w0 + .2, w0 + 1, E.in)); if (gk > .01) { const R2 = u * 3.2 * (.7 + .5 * gk); g.globalAlpha = a * .4 * gk; g.drawImage(S.puffs[2], h.M[0] - R2, h.M[1] - R2, R2 * 2, R2 * 2); }
+      g.globalAlpha = 1;
+    },
+    /* by day, the opening an hour's egg shares with a pass's: the old plan's notes peeling off, the eraser taking it off */
+    /** the board under it: the old plan at rest until the loop has the board, then going under the eraser (a ghost of it
+     *  fading); true once the board is clear (with the old plan showing through as far as the loop has given it back) */
+    dayRest(T, I, on, vis, rest) {
+      const a = vis * I, WP = S.wipeAll, WB = BW.wipe;
+      if (!(on && T >= WB[0])) { S.blit(rest, vis); return false; }
+      const k = (T - WB[0]) / (WB[1] - WB[0]), s = k <= 0 ? 0 : k >= 1 ? WP.len : WP.at(k) * WP.len, gh = a * env(T, WB[0], WB[0] + .3, BW.ghost[0], BW.ghost[1], E.sine);
+      if (gh > .003) { S.blit(rest, gh * .03); g.save(); g.translate(7, 1); S.blit(rest, gh * .02); g.restore(); }
+      if (T < WB[1]) { S.wiped(s, vis, I, rest, WP, S.band2); return false; }
+      if (I < .99) S.blit(rest, vis * (1 - I));
+      return true;
+    },
+    /** and over it: the old plan's notes peeling off and fluttering away, the eraser going over */
+    dayTop(T, I, A, on, vis, pp) {
+      const a = vis * I, WP = S.wipeAll, WB = BW.wipe, curl = n => .12 + .025 * Math.sin(A * .9 + n.ph);
+      pp.prev.notes.forEach((n, i) => { const tp0 = BW.peel + i * BW.gap, tp1 = tp0 + .55; S.sprOf(n); if (!on || T < tp0) { S.note(n, n.x, n.y, n.rot, 1, curl(n), vis, 0); return; } if (I < .99) S.note(n, n.x, n.y, n.rot, 1, curl(n), vis * (1 - I), 0); S.peel(n, T, tp0, tp1, A, a, curl(n)); });
+      if (on) { const k = (T - WB[0]) / (WB[1] - WB[0]); if (k > 0 && k < 1) { const f = WP.at(k), q = along(WP.ride, f * WP.ride.len); S.drawWiper({ x: q[0], y: q[1], dir: q[2] }, a, A, S.sponge2, S.spongeSh2); } }
+    },
+    /** this pass's notes, slapped on one after another from `t` */
+    daySlap(cur, T, A, a, t, gap = .26) { const curl = n => .12 + .025 * Math.sin(A * .9 + n.ph); cur.notes.forEach((n, i) => { const ts = t + i * gap; if (T < ts) return; S.sprOf(n); if (T >= ts + .6) S.note(n, n.x, n.y, n.rot, 1, curl(n), a, 0); else { const sl = S.slap(T - ts); S.note(n, n.x, n.y - sl.lift * n.s * .08, n.rot + sl.lift * .12, sl.sc, curl(n) + sl.flap, a * sl.a, sl.lift); } }); },
+
+    /* by day, the machine */
+    /** the machine for this room, laid out tall or wide: what the marker draws that stays put (the shelf, the ramps and
+     *  their stops, the floor, the seesaw's block, the switch, the wire, the bulb) and what will move (the dominoes, the
+     *  seesaw's plank, the switch's lever, the ball); the ball's run worked out by a little simulation of it (rolling,
+     *  dropping, turned back by the stops, bouncing on the floor) until it knocks the first domino; and from that, when
+     *  everything after it goes */
+    machineOf(h, r) {
+      const H = HB.machine, b = h.box, u = b.u, tall = b.k === "tall", FW = tall ? 20 : 26, FH = tall ? 25 : 16, m = Math.min(b.w / FW, b.h / FH), ox = b.x + (b.w - FW * m) / 2, oy = b.y + (b.h - FH * m) / 2, P = (x, y) => [ox + x * m, oy + y * m];
+      const G = tall ? { shelf: [1, 3, 4], ball: [2, .75], ramps: [[4.1, 3.5, 12, 6.1], [14.2, 7.6, 4.2, 10.6], [2, 13.9, 7.4, 15.6]], stops: [[14.2, 7.6, 14.2, 4.5], [2, 13.9, 2, 9.4]], floor: [.8, 22.6, 19.4], dom: [12, .95, 4, 2.4, .42], saw: [17.1, 2.2], sw: [19, 17.6, 1.5, 1.4], bulb: [16.3, 3.5, 1.9] }
+        : { shelf: [.8, 2.2, 3.2], ball: [1.6, .65], ramps: [[3.3, 2.6, 8.6, 4.1], [10.4, 5.4, 3.6, 7.3], [1.8, 8.6, 8.8, 10.8]], stops: [[10.4, 5.4, 10.4, 2.5], [1.8, 8.6, 1.8, 5.7]], floor: [1, 14, 25], dom: [11, 1.1, 5, 2.3, .45], saw: [18.4, 2.5], sw: [20.65, 8.7, 1.6, 1.3], bulb: [23.3, 2.9, 1.75] };
+      const W = clamp(u * .2, 2.4, 6.2), seq = [], st = [], mv = [], put = (list, pts, k = 1, col = 0) => { const s2 = mk(pts, col, W * k); s2.streaks = streaks(s2, r); list.push(s2); seq.push(s2); return s2; }, L = (x0, y0, x1, y1, bw = .008) => hline(P(x0, y0), P(x1, y1), r, bw);
+      const fy = G.floor[1], [ax, Lp] = G.saw, ay = fy - 1.1, a0 = Math.asin(1.1 / Lp), [bxc, byc, br] = G.bulb, [swx, swy, sww, swh] = G.sw;
+      // black, the run from the top down: the shelf (on its bracket), the ramps (each on a leg) and their stops, the floor
+      put(st, L(G.shelf[0], G.shelf[1], G.shelf[2], G.shelf[1]), 1.05); put(st, [P(G.shelf[0] + .4, G.shelf[1]), P(G.shelf[0] + .4, G.shelf[1] + 1), P(G.shelf[0] + 1.3, G.shelf[1])], .7);
+      G.ramps.forEach(([x0, y0, x1, y1]) => { put(st, L(x0, y0, x1, y1, .004), 1.05); const lx = x1 + (x0 - x1) * .12, ly = y1 + (y0 - y1) * .12; put(st, L(lx, ly, lx, ly + 1.1), .7); });
+      for (const [x0, y0, x1, y1] of G.stops) put(st, L(x0, y0, x1, y1), .95);
+      put(st, L(G.floor[0], fy, G.floor[2], fy, .002), 1.1);
+      // the dominoes standing in a row; the seesaw's block and its plank, lying left end up; the switch on the wall, its
+      // lever hanging down to just over the plank's other end (and a knob on it)
+      const [dx0, dsp, dn, dh, dw] = G.dom, doms = Array.from({ length: dn }, (_, i) => { const x = dx0 + i * dsp; return { s: put(mv, hbox(...P(x - dw / 2, fy - dh), ...P(x + dw / 2, fy), r, .03 * m), .75), piv: P(x + dw / 2, fy), box0: P(x - dw / 2, fy - dh), box1: P(x + dw / 2, fy) }; });
+      put(st, poly([P(ax - .6, fy), P(ax, ay), P(ax + .6, fy), P(ax - .62, fy - .02)], r, .01), .9);
+      const plank = put(mv, poly([P(ax - Lp * Math.cos(a0), ay - Lp * Math.sin(a0)), P(ax + Lp * Math.cos(a0), ay + Lp * Math.sin(a0))], r, .003), 1.6);
+      put(st, hbox(...P(swx - sww / 2, swy), ...P(swx + sww / 2, swy + swh), r, .03 * m), .9); put(st, hring(P(swx, swy + swh * .45), .22 * m, .22 * m, r, 0, .05), .6);
+      const tipY = ay - Lp * Math.sin(a0), lever = put(mv, [P(swx, swy + swh), P(swx, tipY)], 1.25), knob = put(mv, spiral(P(swx, tipY), .2 * m, .2 * m, 1.6), 1.1);
+      // the wire from the switch up to the bulb, a turn or two in it; the bulb: its glass, its base, its filament
+      const wire = put(st, curve((tall ? [[swx, swy], [swx + .5, swy - 2.2], [swx - .6, swy - 4.4], [swx + .4, swy - 6.4], [bxc + .9, byc + br + 3.6], [bxc, byc + br + 1.6]] : [[swx + sww / 2, swy + swh * .4], [swx + 1.6, swy - .1], [swx + 1.1, swy - 1.5], [bxc - .2, byc + br + 2.4], [bxc, byc + br + 1.35]]).map(q => P(...q)), 10), .8);
+      { const gl = []; for (let a = 2.08; a <= TAU + 1.06; a += .1) gl.push(P(bxc + Math.cos(a) * br, byc + Math.sin(a) * br)); put(st, gl, 1.05); }
+      put(st, L(bxc - .47 * br, byc + .88 * br, bxc - .42 * br, byc + 1.42 * br), .9); put(st, L(bxc + .47 * br, byc + .88 * br, bxc + .42 * br, byc + 1.42 * br), .9);
+      put(st, poly([P(bxc - .5 * br, byc + 1.47 * br), P(bxc + .5 * br, byc + 1.47 * br), P(bxc - .45 * br, byc + 1.68 * br), P(bxc + .45 * br, byc + 1.68 * br)], r), .8);
+      { const fil = [P(bxc - .28 * br, byc + .9 * br), P(bxc - .24 * br, byc + .2 * br)]; for (let k = 0; k <= 16; k++) { const t = k / 16, a = t * TAU * 3; fil.push(P(bxc - .24 * br + t * .48 * br + Math.sin(a) * .07 * br, byc + .2 * br - (1 - Math.cos(a)) * .09 * br)); } fil.push(P(bxc + .24 * br, byc + .2 * br), P(bxc + .28 * br, byc + .9 * br)); put(st, fil, .6); }
+      const black = seq.filter(q => q !== wire), red = doms.map(d => { const [x0, y0] = d.box0, [x1, y1] = d.box1; return (d.fill = put(mv, zigzag((x, y) => x > x0 + m * .1 && x < x1 - m * .1 && y > y0 + m * .1 && y < y1 - m * .1, [x0, y0, x1, y1], m * .3, -1.2, r), 2.4, 3)); }); for (const d of red) d.a = .34;
+      // blue: the ball on the shelf, coloured in; then the tap that sets it going (the marker's, which leaves no mark)
+      const [bx0, rb] = G.ball, by0 = G.shelf[1] - rb, bc = P(bx0, by0), ball = [put([], hring(bc, rb * m, rb * m, r, -2.2, .04), 1, 1), put([], spiral(bc, rb * m * .8, rb * m * .8, 2.4, 0, r() * TAU), 1.35, 1)];
+      const tap = mk([P(bx0 - rb * 2.1, by0 + .1), P(bx0 - rb * 1.02, by0)], 1, W);
+      h.phases = [{ col: 0, win: H.black, strokes: black }, { col: 3, win: H.red, strokes: [...red, wire] }, { col: 1, win: H.blue, strokes: [...ball, tap] }]; wire.col = 3;
+      pace(h.phases, u); h.st = st.sort((p, q) => p.t0 - q.t0); h.mv = [...mv, ...ball].sort((p, q) => p.t0 - q.t0); h.ball = ball; h.t0 = tap.t1;
+      // the ball's run: from the tap, under gravity, along the shelf and down the ramps, turned by the stops, dropping to
+      // the floor and bouncing, until it comes to the first domino and is stopped by it (sampled, to be looked up; its
+      // time scaled to about two seconds, as if gravity were a little stronger or weaker in a smaller or larger room)
+      const segs = [[G.shelf[0], G.shelf[1], G.shelf[2], G.shelf[1], .1], ...G.ramps.map(q => [...q, .15]), ...G.stops.map(q => [...q, .3]), [G.floor[0], fy, G.floor[2], fy, .38]], face = dx0 - dw / 2, run = [];
+      { let x = bx0, y = by0, vx = 3.2, vy = 0, ang = 0, hit = 0; const dt = 1 / 240, g2 = 60;
+        for (let k = 0; k < 240 * 7; k++) { vy += g2 * dt; x += vx * dt; y += vy * dt; let on = false;
+          for (const [x0, y0, x1, y1, e] of segs) { const dx = x1 - x0, dy = y1 - y0, t = clamp(((x - x0) * dx + (y - y0) * dy) / (dx * dx + dy * dy)), cx = x0 + dx * t, cy = y0 + dy * t, nx0 = x - cx, ny0 = y - cy, d = Math.hypot(nx0, ny0); if (d >= rb || d < 1e-6) continue; const nx = nx0 / d, ny = ny0 / d, vn = vx * nx + vy * ny; x = cx + nx * rb; y = cy + ny * rb; if (vn < 0) { vx -= (1 + e) * vn * nx; vy -= (1 + e) * vn * ny; } on = true; }
+          if (!hit && x + rb >= face && y > fy - dh) { hit = k * dt; vx = -Math.abs(vx) * .22; }
+          if (hit && x + rb > face) { x = face - rb; vx = Math.min(0, vx); }
+          if (on) { vx *= 1 - .4 * dt; ang += vx / rb * dt; } run.push(x, y, ang); if (hit && k * dt > hit + 4) break; }
+        h.hit = hit || 2; }
+      h.run = run; h.ks = clamp(h.hit / 2.05, .4, 3); h.bc = bc; h.P = P; h.m = m;
+      // the dominoes, each falling into the next, the last onto the seesaw's raised end; the plank thrown, the lever
+      // flicked, a spark up the wire, the bulb lit
+      const th = h.t0 + h.hit / h.ks; h.Df = .27; h.doms = doms.map((d, i) => ({ ...d, t: th + i * .12, end: i < dn - 1 ? Math.acos(clamp(dw / dsp)) * .97 : (tall ? .98 : 1.12) }));
+      const tp = h.doms[dn - 1].t + h.Df * .4; h.saw = { s: plank, piv: P(ax, ay), a0, t: tp }; h.lev = { s: [lever, knob], piv: P(swx, swy + swh), t: tp + .12 };
+      h.wire = wire; h.spark = [tp + .18, tp + .62]; h.lit = tp + .62; h.bulb = { c: P(bxc, byc), r: br * m };
+      h.rays = Array.from({ length: 7 }, (_, i) => { const a = -Math.PI / 2 + (i - 3) * .5, s2 = mk(hline(P(bxc + Math.cos(a) * br * 1.3, byc + Math.sin(a) * br * 1.3), P(bxc + Math.cos(a) * br * (i % 2 ? 1.75 : 2.05), byc + Math.sin(a) * br * (i % 2 ? 1.75 : 2.05)), r, .01), 5, W * .95); s2.streaks = streaks(s2, r); return s2; });
+    },
+    /** by day, the machine: the old plan comes off as ever; the marker draws a contraption, a ball on a shelf at the top, a
+     *  run of ramps zigzagging down, a row of dominoes, a seesaw, a switch on the wall wired to a light bulb; it colours the
+     *  dominoes in and the wire, red, and the ball, blue, and taps it, and the machine runs on its own: the ball rolls down the ramps, turned at each stop, drops to
+     *  the floor and bounces, and knocks the first domino; they go over one into the next, the last onto the seesaw, which
+     *  throws its other end up into the switch's lever; a spark runs up the wire, and the bulb lights; then the eraser goes
+     *  over it all, and behind the eraser is the plan, its notes slapped on as it goes */
+    machine(T, I, A, on, vis, pp) {
+      const H = HB.machine, a = vis * I, rest = S.wholeOf(pp.prev), cur = pp.cur, h = S.hourOf(pp.P, 1), [e0, e1] = H.wipe;
+      S.hidden(h, cur, T, H.black[0], e0);
+      if (S.dayRest(T, I, on, vis, rest)) { if (T < e0) S.machineBoard(h, T, A, a); else S.machineOut(h, cur, T, a); }
+      S.dayTop(T, I, A, on, vis, pp);
+      if (!on) return;
+      S.daySlap(cur, T, A, a, e0 + .95);
+      if (T > e0 && T < e1) { const WP = S.wipeAll, q = along(WP.ride, WP.at((T - e0) / (e1 - e0)) * WP.ride.len); S.drawWiper({ x: q[0], y: q[1], dir: q[2] }, a, A, S.sponge2, S.spongeSh2); }
+      S.tool(S.toolAt(T, h.phases), a);
+    },
+    /** the machine as it is drawn, and from the tap on, running */
+    machineBoard(h, T, A, a) {
+      if (T < h.t0) { const s1 = S.grow(S.live, h.st, T); S.blit(S.live, a); if (s1) S.hand(s1, T, a); const M = h.M || (h.M = S.layer()), s2 = S.grow(M, h.mv, T); S.blit(M, a); if (s2) S.hand(s2, T, a, M); return; }
+      S.grow(S.live, h.st, 99); S.blit(S.live, a); S.roomClip(() => S.machineParts(h, T, A, a));
+    },
+    /** what moves, at time T, on a context of its own or the frame's: the dominoes going over, the plank thrown, the lever
+     *  flicked, the ball where its run has it (turning as it rolls); the spark on its way up the wire; the bulb lit */
+    machineParts(h, T, A, a, x = g) {
+      if (!h.sp) { const one = list => { const sp = boxCanvas(...bboxOf(list), h.box.u * .6); strokesOn(sp.ctx, list); return sp; }; h.sp = { doms: h.doms.map(d => one([d.s, d.fill])), saw: one([h.saw.s]), lev: one(h.lev.s), ball: one(h.ball) }; }
+      const sp = h.sp;
+      h.doms.forEach((d, i) => { const q = (T - d.t) / h.Df, th = q <= 0 ? 0 : q < 1 ? d.end * q * q : d.end * (1 - .05 * Math.sin(Math.PI * clamp((q - 1) * 4))); drawSpr(sp.doms[i], 0, 0, a, 1, th, d.piv[0], d.piv[1], x); });
+      { const q = (T - h.saw.t) / .16, ph = q <= 0 ? 0 : q < 1 ? -2 * h.saw.a0 * q * q : -2 * h.saw.a0 * (1 + .07 * Math.sin(Math.PI * clamp((q - 1) * 3.5)) * Math.exp(-(q - 1) * 2)); drawSpr(sp.saw, 0, 0, a, 1, ph, h.saw.piv[0], h.saw.piv[1], x); }
+      { const q = (T - h.lev.t) / .14; drawSpr(sp.lev, 0, 0, a, 1, q <= 0 ? 0 : 2.5 * E.back(Math.min(1, q)), h.lev.piv[0], h.lev.piv[1], x); }
+      { const n = h.run.length / 3, i = clamp(Math.floor((T - h.t0) * h.ks * 240), 0, n - 1), p = h.P(h.run[i * 3], h.run[i * 3 + 1]); drawSpr(sp.ball, p[0] - h.bc[0], p[1] - h.bc[1], a, 1, h.run[i * 3 + 2], h.bc[0], h.bc[1], x); }
+      const [s0, s1] = h.spark; if (x === g && T > s0 && T < s1 + .2) { const w = h.wire, e = q => along(w, E.io(clamp((q - s0) / (s1 - s0))) * w.len), p = e(T), fade = 1 - clamp((T - s1) / .2);
+        g.lineCap = "round"; g.strokeStyle = "rgb(255,196,60)"; for (let j = 1; j <= 6; j++) { const p0 = e(T - j * .02), p1 = e(T - (j - 1) * .02); g.globalAlpha = a * fade * (1 - j / 7) * .8; g.lineWidth = 4 - j * .45; g.beginPath(); g.moveTo(p0[0], p0[1]); g.lineTo(p1[0], p1[1]); g.stroke(); }
+        const R2 = h.box.u * 1.5; g.globalAlpha = a * fade * .8; g.drawImage(S.puffs[5], p[0] - R2, p[1] - R2, R2 * 2, R2 * 2); g.fillStyle = "#FFF6D8"; g.beginPath(); g.arc(p[0], p[1], 2.4, 0, TAU); g.fill(); g.globalAlpha = 1; }
+      const lk = seg(T, h.lit, h.lit + .3, E.out); if (lk > 0) S.bulbLit(h, T, A, a, lk, x);
+    },
+    /** the bulb, lit: a yellow glow round it, the glass filled with the light (the marker's ink over it, so its lines show
+     *  through), the rays drawn out from it one by one, and the glow breathing a little */
+    bulbLit(h, T, A, a, lk, x) {
+      const { c, r: R } = h.bulb, gs = S.glowY || (S.glowY = K.glowSpr(40, [255, 214, 72], 1)), br2 = .9 + .1 * Math.sin(A * 2.6);
+      x.globalAlpha = a * lk * .55 * br2; x.drawImage(gs, c[0] - R * 2.3, c[1] - R * 2.3, R * 4.6, R * 4.6);
+      x.globalCompositeOperation = "multiply"; x.globalAlpha = a * lk * .75; x.fillStyle = "rgb(255,226,96)"; x.beginPath(); x.arc(c[0], c[1], R * .9, 0, TAU); x.fill(); x.globalCompositeOperation = "source-over";
+      h.rays.forEach((s2, i) => { const k = seg(T, h.lit + .05 + i * .045, h.lit + .3 + i * .045, E.out); if (k <= 0) return; x.globalAlpha = a; markerLine(x, s2, s2.len * k); });
+      x.globalAlpha = 1;
+    },
+    /** the machine as it stands at the end, on a layer of its own */
+    machineZ(h) { if (h.Z) return h.Z; const Z = h.Z = S.layer(); S.grow(S.live, h.st, 99); Z.x.save(); Z.x.setTransform(1, 0, 0, 1, 0, 0); Z.x.drawImage(S.live.c, 0, 0); Z.x.restore(); S.machineParts(h, 99, 0, 1, Z.x); return Z; },
+    /** the eraser going over the machine, and behind it, where it has been, the plan */
+    machineOut(h, cur, T, a) {
+      const [e0, e1] = HB.machine.wipe, WP = S.wipeAll, k = (T - e0) / (e1 - e0), s = k <= 0 ? 0 : k >= 1 ? WP.len : WP.at(k) * WP.len, Y = S.hidden(h, cur, T, 0, 0);
+      if (k >= 1) { S.blit(Y, a); return; }
+      if (s > 0) { const l = h.Y2 || (h.Y2 = S.layer()), x = l.x; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, l.c.width, l.c.height); x.drawImage(Y.c, 0, 0); x.setTransform(px, 0, 0, px, -S.lx * px, -S.ly * px); x.globalCompositeOperation = "destination-in"; x.strokeStyle = "#000"; x.lineWidth = S.band2; x.lineCap = "butt"; x.lineJoin = "miter"; trace(x, WP, 0, s); x.stroke(); x.globalCompositeOperation = "source-over"; x.lineCap = "round"; x.lineJoin = "round"; S.blit(l, a); }
+      S.wiped(s, a, 1, S.machineZ(h), WP, S.band2);
+    },
+    /* by day, the maze */
+    /** the maze for this room: its box, its walls (a perfect maze, dug out by a walk that doubles back, dealt), and how they
+     *  grow in from the box's sides (each run of wall a stroke, starting from the wall it grows out of when the growth
+     *  reaches it); the way through, and the line's search for it: along the way, now and then a wrong turn into a dead
+     *  end close by, and back */
+    mazeOf(h, r) {
+      const H = HB.maze, b = h.box, u = b.u, tall = b.k === "tall", nc = tall ? 6 : 8, nr = tall ? 8 : 5, c = Math.min(b.w / (nc + 2.5), b.h / (nr + .7)), x0 = b.x + (b.w - nc * c) / 2, y0 = b.y + (b.h - nr * c) / 2;
+      const W = clamp(u * .2, 2.4, 6.2), Cn = (i, j) => [x0 + i * c, y0 + j * c], Cc = k => [x0 + (k % nc + .5) * c, y0 + (Math.floor(k / nc) + .5) * c], put = (pts, k = 1, col = 0) => { const s2 = mk(pts, col, W * k); s2.streaks = streaks(s2, r); return s2; };
+      // dug out: a walk from a dealt cell, on to a neighbour not yet dug (dealt), back when there is none
+      const open = new Set(), seen = new Uint8Array(nc * nr), stack = [Math.floor(r() * nc * nr)], key = (p, q) => p < q ? p + "," + q : q + "," + p; seen[stack[0]] = 1;
+      while (stack.length) { const k = stack[stack.length - 1], i = k % nc, j = Math.floor(k / nc), nb = [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]].filter(([p, q]) => p >= 0 && q >= 0 && p < nc && q < nr && !seen[q * nc + p]).map(([p, q]) => q * nc + p);
+        if (!nb.length) { stack.pop(); continue; } const n = nb[Math.floor(r() * nb.length)]; open.add(key(k, n)); seen[n] = 1; stack.push(n); }
+      // the walls: every inside edge not dug through, a graph on the grid's corners, grown out from the box's sides
+      const V = (i, j) => j * (nc + 1) + i, adj = new Map(), link = (p, q) => { (adj.get(p) || adj.set(p, []).get(p)).push(q); (adj.get(q) || adj.set(q, []).get(q)).push(p); };
+      for (let j = 0; j < nr; j++) for (let i = 0; i < nc; i++) { const k = j * nc + i; if (i < nc - 1 && !open.has(key(k, k + 1))) link(V(i + 1, j), V(i + 1, j + 1)); if (j < nr - 1 && !open.has(key(k, k + nc))) link(V(i, j + 1), V(i + 1, j + 1)); }
+      const depth = new Map(), q0 = []; for (const v of adj.keys()) { const i = v % (nc + 1), j = Math.floor(v / (nc + 1)); if (i === 0 || j === 0 || i === nc || j === nr) { depth.set(v, 0); q0.push(v); } }
+      const kids = new Map(); for (let qi = 0; qi < q0.length; qi++) { const v = q0[qi]; for (const w of adj.get(v) || []) if (!depth.has(w)) { depth.set(w, depth.get(v) + 1); (kids.get(v) || kids.set(v, []).get(v)).push(w); q0.push(w); } }
+      // each run of wall a stroke: on from where it leaves the box as straight as it can go, each other turning a run of its own
+      const VP = v => Cn(v % (nc + 1), Math.floor(v / (nc + 1))), chains = [], todo = []; for (const v of q0) if (depth.get(v) === 0) for (const w of kids.get(v) || []) todo.push([v, w]);
+      while (todo.length) { const [p, v] = todo.shift(), ch = [p, v]; let prev = p, cur = v; for (;;) { const ks = kids.get(cur) || []; if (!ks.length) break; const nx = ks.find(w => w - cur === cur - prev) ?? ks[0]; for (const w of ks) if (w !== nx) todo.push([cur, w]); ch.push(nx); prev = cur; cur = nx; } chains.push(ch); }
+      const md = Math.max(1, ...depth.values()), [g0, g1] = H.grow, dt = (g1 - g0) / md;
+      h.walls = chains.map(ch => { const pts = [VP(ch[0])]; for (let n = 1; n < ch.length; n++) pts.push(...hline(VP(ch[n - 1]), VP(ch[n]), r, .01).slice(1)); const s2 = put(pts, .95); s2.t0 = g0 + depth.get(ch[0]) * dt; s2.t1 = s2.t0 + (ch.length - 1) * dt; return s2; });
+      // black: the box, open at the top of its left side and the foot of its right; orange: the star past the way out;
+      // blue: the dot the line sets off from
+      const box = [put(poly([Cn(0, 1), Cn(0, nr), Cn(nc, nr)], r, .004), 1.15), put(poly([Cn(0, 0), Cn(nc, 0), Cn(nc, nr - 1)], r, .004), 1.15)];
+      const star = Cn(nc + .8, nr - .5), go = [x0 - c * .55, y0 + c * .5], st2 = put(hstar(star, c * .42, (r() - .5) * .3), 1.15, 5), dot = put(spiral(go, c * .13, c * .13, 1.8), 1.6, 1);
+      h.phases = [{ col: 0, win: H.box, strokes: box }, { col: 5, win: H.star, strokes: [st2] }, { col: 1, win: H.dot, strokes: [dot] }];
+      pace(h.phases, u); h.board = [...box, st2, dot]; h.star = star; h.go = go; h.c = c;
+      // the way through, from the first cell to the last; and the search: along it, at a turning with a dead end close by
+      // off it (one in each of the way's first two stretches, where there is one, dealt), into the dead end and back
+      const nbr = k => { const i = k % nc, j = Math.floor(k / nc); return [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]].filter(([p, q]) => p >= 0 && q >= 0 && p < nc && q < nr && open.has(key(k, q * nc + p))).map(([p, q]) => q * nc + p); };
+      const end = nc * nr - 1, par = new Int32Array(nc * nr).fill(-1); { const qq = [0]; par[0] = 0; for (let qi = 0; qi < qq.length; qi++) for (const w of nbr(qq[qi])) if (par[w] < 0) { par[w] = qq[qi]; qq.push(w); } }
+      const way = [end]; while (way[way.length - 1] !== 0) way.push(par[way[way.length - 1]]); way.reverse(); const onWay = new Set(way);
+      const deadEnd = (from, k, lim) => { const p = [k]; let prev = from, cur = k; for (let n = 0; n < lim; n++) { const nx = nbr(cur).filter(w => w !== prev); if (!nx.length) return p; if (nx.length > 1) return null; prev = cur; cur = nx[0]; p.push(cur); } return nbr(cur).filter(w => w !== prev).length ? null : p; };
+      const cand = []; way.forEach((k, n) => { if (n && n < way.length - 1) for (const w of nbr(k)) if (!onWay.has(w)) { const de = deadEnd(k, w, 5); if (de) cand.push({ n, de }); } });
+      const pick = new Map(); for (const third of [0, 1]) { const cs = cand.filter(q => Math.floor(q.n / way.length * 2.4) === third && !pick.has(q.n)); if (cs.length) { const q = cs[Math.floor(r() * cs.length)]; pick.set(q.n, q.de); } }
+      const moves = [0]; way.forEach((k, n) => { if (n) moves.push(k); const de = pick.get(n); if (de) moves.push(...de, ...de.slice(0, -1).reverse(), k); });
+      // paced: a cell a step, quicker back out of a dead end, a pause at each turning and at the end of each dead end
+      const steps = [], stk = [0]; let t = 0; for (let n = 1; n < moves.length; n++) { const back = stk.length > 1 && moves[n] === stk[stk.length - 2], tn = nbr(moves[n - 1]).length > 2 ? .16 : 0, de = n > 1 && nbr(moves[n - 1]).length === 1 ? .26 : 0; if (back) stk.pop(); else stk.push(moves[n]); t += tn + de; steps.push([moves[n], t, back]); t += back ? .55 : 1; }
+      const [sv0, sv1] = H.solve, k2 = (sv1 - sv0 - .25) / t; h.steps = steps.map(([k, t2, back]) => [k, sv0 + .25 + t2 * k2, back]); h.dur = k2; h.way = way; h.Cc = Cc;
+      h.found = h.steps[h.steps.length - 1][1] + k2; h.out = [x0 + nc * c + c * .42, Cc(end)[1]]; h.green = put([go, ...way.map(Cc), h.out], 1.9, 2); /* the way, gone over bold in green */
+      h.full = [go, ...way.map(Cc), h.out]; h.fullL = h.full.reduce((m, p, i) => i ? m + Math.hypot(p[0] - h.full[i - 1][0], p[1] - h.full[i - 1][1]) : 0, 0);
+    },
+    /** where the line has got to at time t: the cells it is through (the dead ends it has backed out of left behind as
+     *  tries), and how far into its next step its head is */
+    mazeLine(h, t) {
+      const path = [0], tries = []; let head = null; for (const [k, t0, back] of h.steps) { const d = h.dur * (back ? .55 : 1); if (t < t0) break; if (t < t0 + d) { head = [k, E.io((t - t0) / d), back]; break; } if (back) tries.push([path.pop(), path[path.length - 1]]); else path.push(k); }
+      return { path, tries, head };
+    },
+    /** the line, the marker's blue, drawn through points as far as `len` along them, with its round head */
+    mazeStroke(h, pts, len, a, head = 1, from = 0) {
+      if (len <= from || a <= .003) return; const c = h.c; g.lineCap = "round"; g.lineJoin = "round"; g.globalCompositeOperation = "multiply"; g.globalAlpha = a; g.strokeStyle = rgba(INKS[1], .9); g.fillStyle = rgba(INKS[1], .9); g.lineWidth = Math.max(2.6, c * .13);
+      g.beginPath(); let s = 0, e = pts[0], started = false; for (let i = 1; i < pts.length && s < len; i++) { const p = pts[i - 1], q = pts[i], l = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1e-6, a0 = clamp((from - s) / l), a1 = clamp((len - s) / l); if (a1 > a0) { const p0 = [lerp(p[0], q[0], a0), lerp(p[1], q[1], a0)]; e = [lerp(p[0], q[0], a1), lerp(p[1], q[1], a1)]; if (!started) { g.moveTo(p0[0], p0[1]); started = true; } g.lineTo(e[0], e[1]); } s += l; } g.stroke();
+      g.beginPath(); g.arc(e[0], e[1], Math.max(2.4, c * .12) * head, 0, TAU); g.fill(); g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
+    },
+    /** by day, the maze: the old plan comes off as ever; the marker draws a box, open at two corners, puts a star past one
+     *  opening and a dot at the other; and the box grows its own walls, in from its sides all at once, into a maze; then
+     *  the dot sets off on its own, a line feeling its way through, stopping at each turning, now and then trying a dead
+     *  end and drawing back out of it, until it finds its way out to the star; the star lights, the way is gone over in
+     *  green; then the maze winds itself back up into nothing, the way it came, and the plan draws itself, every line of
+     *  it at once, its notes slapped on */
+    maze(T, I, A, on, vis, pp) {
+      const H = HB.maze, a = vis * I, rest = S.wholeOf(pp.prev), cur = pp.cur, h = S.hourOf(pp.P, 2), [r0, r1] = H.rewind, [b0, b1] = H.bloom;
+      S.hidden(h, cur, T, H.box[0], b0);
+      if (S.dayRest(T, I, on, vis, rest)) {
+        if (T < r0) { const st = S.grow(S.live, h.board, T); S.blit(S.live, a); if (st) S.hand(st, T, a); S.mazeWalls(h, T, a); S.mazeRun(h, T, A, a); }
+        else if (T < r1) S.mazeUnwind(h, T, A, a);
+        if (T >= b0) S.bloom(h, cur, T, a);
+      }
+      S.dayTop(T, I, A, on, vis, pp);
+      if (!on) return;
+      S.daySlap(cur, T, A, a, b0 + (b1 - b0) * .55, .2);
+      S.tool(S.toolAt(T, h.phases), a);
+    },
+    /** the walls: growing out from the box, each run at the pace the growth reaches along it; whole, on a layer of their own */
+    mazeWalls(h, T, a) {
+      if (T >= HB.maze.grow[1]) { if (!h.WL) { h.WL = S.layer(); for (const s2 of h.walls) markerLine(h.WL.x, s2, s2.len); } S.blit(h.WL, a); return; }
+      g.globalAlpha = a; for (const s2 of h.walls) { const f = clamp((T - s2.t0) / (s2.t1 - s2.t0)); if (f > 0) markerLine(g, s2, s2.len * f); } g.globalAlpha = 1;
+    },
+    /** the line: its tries, dotted; the line itself, its head going on a cell at a time and drawing back out of dead ends;
+     *  out through the way out to the star, which lights; the way gone over in green */
+    mazeRun(h, T, A, a) {
+      if (T < HB.maze.solve[0]) return; const { path, tries, head } = S.mazeLine(h, T), Cc = h.Cc, c = h.c;
+      if (tries.length) { g.lineCap = "round"; g.strokeStyle = rgba(INKS[1], .5); g.lineWidth = Math.max(1.8, c * .08); g.setLineDash([.1, c * .17]); g.globalAlpha = a; g.beginPath(); for (const [k, k0] of tries) { const p = Cc(k0), q = Cc(k); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); } g.stroke(); g.setLineDash([]); g.globalAlpha = 1; }
+      const pts = [h.go, ...path.map(Cc)]; if (head) { const p = Cc(path[path.length - 1]); if (head[2]) { pts.pop(); const p0 = Cc(path[path.length - 2] ?? 0); pts.push([lerp(p[0], p0[0], head[1]), lerp(p[1], p0[1], head[1])]); } else { const q = Cc(head[0]); pts.push([lerp(p[0], q[0], head[1]), lerp(p[1], q[1], head[1])]); } }
+      const fk = clamp((T - h.found) / .4); if (fk > 0) { const e = Cc(h.way[h.way.length - 1]); pts.push([lerp(e[0], h.out[0], E.out(fk)), e[1]]); }
+      const gk = clamp((T - h.found - .55) / .6), gl = h.fullL * E.io(gk); S.mazeStroke(h, pts, 1e9, a, 1 + .2 * Math.max(0, Math.sin(A * 7)) * (head ? 0 : 1), gk > 0 ? gl : 0); /* (the green going over it takes its place) */
+      // found: the star lights and turns over; the way gone over in green, start to finish
+      const sk = clamp((T - h.found - .35) / .5); if (sk > 0) S.roomClip(() => S.mazeStar(h, a, sk));
+      if (gk > 0) { g.globalAlpha = a; markerLine(g, h.green, h.green.len * E.io(gk)); g.globalAlpha = 1; }
+    },
+    /** the star, lit: a glow round it, filled in yellow (under its lines), a little larger for a moment, turned a little */
+    mazeStar(h, a, sk) {
+      const c = h.c, R2 = c * .62 * (1 + .25 * Math.sin(Math.PI * Math.min(1, sk))), gs = S.glowY || (S.glowY = K.glowSpr(40, [255, 214, 72], 1)); g.globalAlpha = a * .7 * Math.min(1, sk * 2); g.drawImage(gs, h.star[0] - R2 * 1.6, h.star[1] - R2 * 1.6, R2 * 3.2, R2 * 3.2);
+      g.globalCompositeOperation = "multiply"; g.globalAlpha = a * Math.min(1, sk * 2); g.fillStyle = "rgb(255,214,72)"; g.beginPath(); hstar(h.star, R2 * .66, Math.min(1, sk) * .6).forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
+    },
+    /** the maze winding itself back up the way it came: the green back along the way, the line back to its dot, the
+     *  walls back into the box's sides, the box, the star and the dot back into nothing */
+    mazeUnwind(h, T, A, a) {
+      const [r0, r1] = HB.maze.rewind, k = (T - r0) / (r1 - r0), f = z => 1 - clamp(z);
+      if (k < .4) S.roomClip(() => S.mazeStar(h, a * (1 - k / .4), 1));
+      const gl = h.green.len * f(k * 2.4); g.globalAlpha = a; markerLine(g, h.green, gl); g.globalAlpha = 1;
+      S.mazeStroke(h, h.full, h.fullL * f(k * 1.9 - .1), a, 1, h.fullL * gl / h.green.len);
+      g.globalAlpha = a; for (const s2 of h.walls) markerLine(g, s2, s2.len * f(k * 1.7 - .2)); for (const s2 of h.board.slice(0, 2)) markerLine(g, s2, s2.len * f(k * 1.5 - .45)); markerLine(g, h.board[2], h.board[2].len * f(k * 2 - .6)); markerLine(g, h.board[3], h.board[3].len * f(k * 2 - .9)); g.globalAlpha = 1;
+    },
+    /** the plan drawing itself, every line at once (each a little after the one before it, in the order the hand would
+     *  have drawn them); the lines done, on a layer of their own */
+    bloom(h, cur, T, a) {
+      const [b0, b1] = HB.maze.bloom, all = cur.all, n = all.length; if (T >= b1) { S.blit(S.hidden(h, cur, T, 0, 0), a); return; }
+      const win = i => { const s0 = b0 + (b1 - b0 - .55) * i / Math.max(1, n - 1); return [s0, s0 + .55]; }, L = h.BL || (h.BL = S.layer()); if (h.blT === undefined || T < h.blT) { L.x.save(); L.x.setTransform(1, 0, 0, 1, 0, 0); L.x.clearRect(0, 0, L.c.width, L.c.height); L.x.restore(); h.blN = 0; } h.blT = T;
+      while (h.blN < n && win(h.blN)[1] <= T) { markerLine(L.x, all[h.blN], all[h.blN].len); h.blN++; }
+      S.blit(L, a); g.globalAlpha = a; for (let i = h.blN; i < n; i++) { const [s0, s1] = win(i); if (T <= s0) break; markerLine(g, all[i], all[i].len * jerk((T - s0) / (s1 - s0))); } g.globalAlpha = 1;
     },
   };
   return S;

@@ -44,6 +44,19 @@
 // each move, crosses win, the line is struck through them and the next game begun in the corner), or, by night, doodles a
 // cat with a ball of wool, or, by day, fills the board with the doodles of a long meeting. The finale's A+ goes where the
 // lesson on the board leaves room for it.
+//
+// 1.12 b418: the egg. Every twelfth pass (scenes.js, `K.egg`: three minutes of the list left alone) the board plays one
+// of its own. By night, lines: the sponge takes the lesson off as ever, and the hand writes its lines like a pupil kept
+// in after school, "I will finish my list" four times down the room, and goes for the yellow to tick the last one; the
+// sponge comes back for them, and as the slate dries the next lesson comes up through it, patch by patch, a ghost of it
+// first, as if it had been there under the wet all along. By day, the invader: the old plan's notes peel off and the
+// eraser takes it off as ever; then, on the clean board, the hand slaps sticky notes on in rows, quick as cards dealt,
+// from a neon pad (pink, orange or green, dealt), and they make a space invader, the crab; it waves its arms, the notes
+// hopping to their places in its other frame as a wall of them is animated; the eraser is thrown at it from the side
+// and goes back out that way, and the invader bursts into its notes, which tumble off the board each by the clearest way
+// off that crosses no words; then the hand gets on with the plan, briskly, a colour at a time. Either way the pass ends
+// on the picture it would have drawn, worked out as ever from its number, so the pass after it rests on just what it
+// always would; the egg has dice of its own, and nothing else on the board draws any differently.
 export default function board(K, id) {
   const chalk = id !== "whiteboard";
   const { clamp, lerp, E, seg, env, rng, canvas, paint } = K;
@@ -63,6 +76,13 @@ export default function board(K, id) {
     : { wipe: [.6, 2.4], ghost: [2.4, 4.2], peel: [1.0, 2.1], slap: 8.9, black: [2.8, 6.8], blue: [7.3, 10.0], green: [10.5, 11.4], red: [11.9, 13.8] };
   // by day, a pass after the signature's: its notes peel off from `peel`, `gap` apart; the eraser; the ghost it leaves
   const BW = { peel: .3, gap: .42, wipe: [1.35, 3.35], ghost: [3.35, 4.6] };
+  // 1.12 b418, the egg's beats. By night: the sponge as ever, the lines, the tick, the sponge again, and the slate drying
+  // with the next lesson in it. By day: the old plan off as ever; on the clean board, the invader slapped on, its arms up
+  // and down, the eraser thrown, the notes blown off; then the pass's own plan, its clock starting at `plan` (at the
+  // moment the marker sets off for the board) and running `k` times as fast as a pass's own.
+  const EG = chalk ? { wipe: [.5, 2.2], dry: [2.2, 5.6], lines: [2.4, 10.1], tick: [10.4, 10.75], wipe2: [11.15, 12.65], dry2: [12.65, 14.85] }
+    : { slap: [3.45, 4.85], toggle: [5.05, 5.85], throw: [5.8, 6.35], burst: [6.35, 8.1], plan: 7.5, k: 1.65 };
+  const INV = [[255, 92, 164], [255, 140, 44], [64, 200, 116]]; /* the invader's notes: a neon pad, pink, orange or green */
   const INKS = chalk ? [[246, 243, 234], [140, 196, 255], [250, 226, 118], [255, 152, 190], [152, 226, 146], [255, 182, 104], [202, 166, 255]] /* white, blue, yellow chalk; and for the forever cycle's lessons, pink, green, orange, violet */
     : [[34, 40, 49], [36, 87, 197], [38, 150, 84], [204, 44, 36], [124, 60, 178], [234, 122, 22]]; /* black, blue, green, red marker; purple, orange */
   const PHASES = chalk ? ["white", "blue", "yellow"] : ["black", "blue", "green", "red"];
@@ -119,6 +139,8 @@ export default function board(K, id) {
     "9": ".52:.46,.36 .38,.5 .22,.52 .08,.42 .06,.2 .18,.04 .34,0 .46,.1 .48,.3 .46,.62 .38,.9 .22,1 .08,.94",
     ".": ".2:.08,.95 .09,.97",
     "°": ".3:.15,.02 .06,.08 .06,.2 .15,.26 .24,.2 .24,.08 .15,.02",
+    // the egg's lines want one more (no other line on the board has it, so nothing else written moves)
+    I: ".4:.05,.01 .37,0|.21,0 .2,1|.04,1 .36,.99",
   };
   /** a curve through the points (Catmull-Rom), `n` steps to each span */
   const smooth = (q, n = 5) => { const out = [q[0]]; for (let i = 0; i < q.length - 1; i++) { const p0 = q[Math.max(0, i - 1)], p1 = q[i], p2 = q[i + 1], p3 = q[Math.min(q.length - 1, i + 2)]; for (let k = 1; k <= n; k++) { const t = k / n, t2 = t * t, t3 = t2 * t; out.push([0, 1].map(j => .5 * (2 * p1[j] + (p2[j] - p0[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (3 * p1[j] - p0[j] - 3 * p2[j] + p3[j]) * t3))); } } return out; };
@@ -1091,7 +1113,7 @@ export default function board(K, id) {
       if (S.pending && S.vis < .03) { S.box = S.pending; S.pending = null; S.build(); }
       S.F = F; if (F < 0 && S.refit) { S.refit = false; S.fit(false); }
       const vis = S.vis, on = I > .01;
-      if (vis > .005 && S.box) { const pp = S.passOf(P); if (chalk) S.lesson(T, I, A, on, vis, pp); else if (pp.P) S.planOn(T, I, A, on, vis, pp); else S.plan(T, I, A, on, vis); }
+      if (vis > .005 && S.box) { const pp = S.passOf(P); if (K.egg && K.egg(P)) S.egg(T, I, A, on, vis, pp); /* (b418: every twelfth pass, the egg) */ else if (chalk) S.lesson(T, I, A, on, vis, pp); else if (pp.P) S.planOn(T, I, A, on, vis, pp); else S.plan(T, I, A, on, vis); }
       if (chalk) S.dustMotes(A);
       if (F >= 0 && S.box) { if (chalk) S.aplus(F, S.passOf(P)); else S.notesBurst(F, A); }
       g.globalAlpha = 1;
@@ -1289,6 +1311,177 @@ export default function board(K, id) {
         const q = (F - b.off) * 3.4, x = b.x + dir * (600 * q + 900 * q * q) * b.sp + Math.sin(q * 6 + b.ph) * n.s * .3, y = b.y - 70 * q + 320 * q * q;
         if (x - n.s > W || x + n.s < 0 || y - n.s > H) continue;
         S.note(n, x, y, b.rot + q * (2.2 + b.sp) * dir, 1.04, .1 + .25 * clamp(q * 4), 1, clamp(q * 5), Math.cos(q * 7 + b.ph));
+      }
+    },
+
+    /* ---------------- 1.12 b418: the egg ----------------
+       Every twelfth pass (K.egg), for whoever has left the list alone that long. It starts from the picture the pass
+       before it left, as any pass does, and ends on the one this pass would have drawn, worked out as ever (pic(P)), so
+       the pass after it rests on just what it always would have. */
+    egg(T, I, A, on, vis, pp) { if (chalk) S.eggNight(T, I, A, on, vis, pp); else S.eggDay(T, I, A, on, vis, pp); },
+    /** the egg's own, for this room and this pass, worked out once: by night the lines and the tick, paced */
+    eggOf(P) {
+      const b = S.box; if (S.eg && S.eg.box === b && S.eg.P === P) return S.eg;
+      const u = b.u, r = K.deal(P, 95), keep = seedN, e = { box: b, P }; seedN = 700000 + (P % 997) * 400; /* its own dice, and its own chalk */
+      if (chalk) {
+        // four lines of it down the room, as large as the room allows, and room at the end of the last for the tick
+        const str = "I will finish my list", n = 4, Wl = width(str, 1) + 1.9, s = Math.min(b.w * .92 / Wl, b.h * .86 / ((n - 1) * 1.8 + 1.3), u * 2.3);
+        const pitch = clamp((b.h * .78 / s - 1.3) / (n - 1), 1.8, 2.3), span = (n - 1) * pitch + 1.3, x0 = b.x + (b.w - Wl * s) / 2, top = b.y + (b.h - span * s) / 2 + s; /* ruled a little wider where the room is tall */
+        const w = clamp(u * .2, 2.4, 6) * clamp(s / u * .9, .8, 1.25), lines = []; let xe = 0, ye = 0;
+        const firm = st => { const p0 = st.pr; st.pr = q => Math.max(.5, p0(q)); return st; }; /* the stick bears on more evenly: it skips, but never so that an l reads as an i */
+        for (let i = 0; i < n; i++) { const x = x0 + (r() - .5) * .16 * s, y = top + i * pitch * s + (r() - .5) * .08 * s; for (const p of write(str, x, y, s, 300 + Math.floor(r() * 9999), .12 + r() * .04)) lines.push(firm(mk(p, 0, w, "w"))); xe = x + width(str, s); ye = y; }
+        const rr = rng(96), t0 = [xe + .3 * s, ye - .55 * s], t1 = [xe + .72 * s, ye - .02 * s], t2 = [xe + 1.75 * s, ye - 1.3 * s];
+        const tick = mk([...hline(t0, t1, rr, .02), ...hline(t1, t2, rr, .02).slice(1)], 2, w * 1.35);
+        e.phases = [{ col: 0, win: EG.lines, strokes: lines }, { col: 2, win: EG.tick, strokes: [tick] }];
+        pace(e.phases, u); e.all = [...lines, tick]; e.dust = dustOf(e.all, rng(7100 + P % 9973));
+      } else {
+        // the crab, in its two frames, arms down and arms up: a note to each square, as large as the room allows
+        const FR = [["..X.....X..", "...X...X...", "..XXXXXXX..", ".XX.XXX.XX.", "XXXXXXXXXXX", "X.XXXXXXX.X", "X.X.....X.X", "...XX.XX..."],
+          ["..X.....X..", "X..X...X..X", "X.XXXXXXX.X", "XXX.XXX.XXX", "XXXXXXXXXXX", ".XXXXXXXXX.", "..X.....X..", ".X.......X."]].map(f => f.flatMap((row, j) => [...row].map((ch, i) => ch === "X" ? i + j * 11 : -1)).filter(k => k >= 0));
+        const c = Math.min(b.w * .9 / 11, b.h * .86 / 8, u * 3), cx = b.x + b.w / 2, cy = b.y + b.h / 2, home = k => [cx + (k % 11 - 5) * c, cy + (Math.floor(k / 11) - 3.5) * c];
+        const col = INV[Math.floor(r() * 3)], A1 = FR[0], A2 = FR[1], only1 = A1.filter(k => !A2.includes(k)), only2 = A2.filter(k => !A1.includes(k));
+        // the squares a note leaves for the other frame, paired with the ones it goes to (the shortest hops, on its own side); the one left over is a note more
+        const pairs = [], extra = []; for (const side of [-1, 1]) { const from = only1.filter(k => Math.sign(k % 11 - 5) === side), to = only2.filter(k => Math.sign(k % 11 - 5) === side); let best = null;
+          const perm = (rest, acc) => { if (acc.length === from.length) { const d = acc.reduce((m, k, i) => m + Math.hypot(k % 11 - from[i] % 11, Math.floor(k / 11) - Math.floor(from[i] / 11)), 0); if (!best || d < best.d) best = { d, acc: acc.slice() }; return; } for (const k of rest) perm(rest.filter(q => q !== k), [...acc, k]); };
+          perm(to, []); from.forEach((k, i) => pairs.push([k, best.acc[i]])); extra.push(...to.filter(k => !best.acc.includes(k))); }
+        const jit = () => [(r() - .5) * .05 * c, (r() - .5) * .05 * c, (r() - .5) * .07];
+        const post = (k, k2) => { const [jx, jy, jr] = jit(); return { k, k2, x: home(k)[0] + jx, y: home(k)[1] + jy, x2: k2 === undefined ? 0 : home(k2)[0] + jx * .5, y2: k2 === undefined ? 0 : home(k2)[1] + jy * .5, rot: jr, s: c * .86, curl: r() < .3 }; };
+        const posts = A1.map(k => { const pr = pairs.find(q => q[0] === k); return post(k, pr ? pr[1] : undefined); }), extras = extra.map(k => post(k));
+        // slapped on in rows, to and fro (the eraser's way), quick as cards dealt
+        const order = posts.slice().sort((p, q) => { const jp = Math.floor(p.k / 11), jq = Math.floor(q.k / 11); return jp - jq || (jp % 2 ? q.k - p.k : p.k - q.k); }), [s0, s1] = EG.slap;
+        order.forEach((q, i) => { q.ts = s0 + (s1 - s0 - .3) * i / (order.length - 1) + (r() - .5) * .02; });
+        // the burst: from where the eraser hits, each note blown out by the clearest way off the board from where it is (a
+        // way that crosses no words: off the side, on a phone whose room sits between the bar and the list), scattering
+        const hit = [cx + .3 * c, cy + .9 * c], rects = (S.raw || [S.pr ? [16, S.H * .12, S.W - 16, S.H * .56, 1] : [S.W * .05, S.H * .14, S.W * .6, S.H * .8, 1]]).filter(q => q[4] !== 2).concat([[0, 0, S.W, 70, 0], [0, S.H - 56, S.W, S.H, 0]]); /* and the bar along the top, the foot */
+        const way = (x0, y0, t) => { const ux = Math.cos(t), uy = Math.sin(t), m = c * .7; let hits = 0, d = c * .5; for (; d < 4000; d += c * .5) { const x = x0 + ux * d, y = y0 + uy * d; if (x < -c || x > S.W + c || y < -c || y > S.H + c) break; for (const [a2, b2, c2, d2] of rects) if (x > a2 - m && x < c2 + m && y > b2 - m && y < d2 + m) { hits++; break; } } return { t, ux, uy, hits, d }; };
+        const outOf = (x0, y0, pref) => { const ws = Array.from({ length: 24 }, (_, i) => way(x0, y0, i / 24 * TAU)), lo = Math.min(...ws.map(w => w.hits)); return ws.filter(w => w.hits === lo).reduce((m, w) => { const sc = Math.cos(w.t - pref) - w.d / 3000; return !m || sc > m.sc ? { ...w, sc } : m; }, null); };
+        for (const q of [...posts, ...extras]) { const px0 = q.k2 !== undefined ? q.x2 : q.x, py0 = q.k2 !== undefined ? q.y2 : q.y, dx = px0 - hit[0], dy = py0 - hit[1], d = Math.hypot(dx, dy) || 1, o = outOf(px0, py0, Math.atan2(dy, dx)), tOut = .8 + r() * .8, bs = (o.d + c) * .9 / (1 - Math.exp(-.9 * tOut)), sp = (60 + r() * 90) * (1.2 - .5 * clamp(d / (6 * c))), j = (r() - .5) * .24; /* fast enough to be off the board in tOut, however far that is */
+          q.v = [(o.ux * Math.cos(j) - o.uy * Math.sin(j)) * bs + dx / d * sp, (o.uy * Math.cos(j) + o.ux * Math.sin(j)) * bs + dy / d * sp - 160 * r()];
+          for (let k = 1; k <= 10; k++) { const t = k / 10 * tOut, ex = (1 - Math.exp(-.9 * t)) / .9, x = px0 + q.v[0] * ex, y = py0 + q.v[1] * ex + 70 * (t - ex), m = c * .5; /* the way it actually goes, scatter and all: if that would cross words, straight out instead */
+            if (rects.some(([a2, b2, c2, d2]) => x > a2 - m && x < c2 + m && y > b2 - m && y < d2 + m)) { q.v = [o.ux * bs, o.uy * bs - 70 * tOut * .5]; break; } }
+          q.w = (r() - .5) * 7; q.f = 3.2 + r() * 4; q.ph = r() * TAU; q.tum = .25 + r() * .75; } /* how far it turns over as it tumbles: some all the way, some only rock */
+        // the eraser comes in from the side whose way is clear (the hand's, if both are) and goes back out that way
+        const sideOk = sd => way(hit[0], hit[1], sd > 0 ? 0 : Math.PI).hits === 0, hand = S.side === "l" ? -1 : 1; e.throwSide = sideOk(hand) || !sideOk(-hand) ? hand : -hand;
+        const spr = S.noteSpr(col, "", 0), ns = S.ns, hh = ns / 2, cc = ns * .2; /* and one with its corner lifted, as a note's own is */
+        const sprC = make(ns, ns, x => { x.translate(hh, hh); x.beginPath(); x.moveTo(-hh, -hh); x.lineTo(hh, -hh); x.lineTo(hh, hh - cc); x.quadraticCurveTo(hh - cc * .5, hh - cc * .5, hh - cc, hh); x.lineTo(-hh, hh); x.closePath(); x.save(); x.clip(); x.drawImage(spr, -hh, -hh, ns, ns); x.restore();
+          const tip = [hh - cc * .42, hh - cc * .42], gr = x.createLinearGradient(hh - cc * .5, hh - cc * .5, tip[0], tip[1]); gr.addColorStop(0, rgba(mix(col, K3, .22))); gr.addColorStop(.7, rgba(mix(col, W3, .25))); gr.addColorStop(1, rgba(mix(col, W3, .55)));
+          x.fillStyle = "rgba(40,48,60,.16)"; x.beginPath(); x.moveTo(hh, hh - cc); x.quadraticCurveTo(hh + cc * .15, hh + cc * .15, hh - cc, hh); x.closePath(); x.fill();
+          x.fillStyle = gr; x.beginPath(); x.moveTo(hh, hh - cc); x.quadraticCurveTo(hh - cc * .5, hh - cc * .5, hh - cc, hh); x.quadraticCurveTo(tip[0] - cc * .05, tip[1] + cc * .12, tip[0], tip[1]); x.quadraticCurveTo(tip[0] + cc * .12, tip[1] - cc * .05, hh, hh - cc); x.fill(); });
+        Object.assign(e, { c, col, posts, extras, hit, spr, sprC, back: S.noteSpr(col, "", 0, true), tg: [EG.toggle[0], (EG.toggle[0] + EG.toggle[1]) / 2, EG.toggle[1]], rot0: (r() - .5) * .6 });
+      }
+      seedN = keep;
+      return (S.eg = e);
+    },
+    /** the sponge (or the eraser) along its path in a window of its own */
+    wiperAt(t, win) { const k = (t - win[0]) / (win[1] - win[0]); if (k <= 0 || k >= 1) return null; const f = S.wipe.at(k), q = along(S.wipe.ride, f * S.wipe.ride.len); return { s: f * S.wipe.len, x: q[0], y: q[1], dir: q[2] }; },
+    /** the wet behind the sponge as it goes (s along its path), then drying back from its edges in (dk), as in a pass */
+    eggWet(s, dk, a) {
+      if (a <= .003) return; const st = S.wetS, f = dk * 5, i0 = Math.min(4, Math.floor(f)), fr = f - i0, W0 = S.wetAt;
+      const put = (c, al) => { if (al > .003) { g.globalAlpha = al; g.drawImage(c, W0.x, W0.y, W0.w, W0.h); } };
+      if (s < S.wipe.len) { const l = S.scr, x = l.x; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, l.c.width, l.c.height); x.setTransform(px, 0, 0, px, -S.lx * px, -S.ly * px); x.drawImage(st[0], W0.x, W0.y, W0.w, W0.h); x.globalCompositeOperation = "destination-in"; x.strokeStyle = "#000"; x.lineWidth = S.band * 1.3; x.lineCap = "butt"; x.lineJoin = "miter"; trace(x, S.wipe, 0, Math.max(.1, s)); x.stroke(); x.globalCompositeOperation = "source-over"; x.lineCap = "round"; x.lineJoin = "round"; S.blit(l, a); }
+      else { if (i0 < 4) put(st[i0 + 1], a); put(S.wetR[i0], a * (1 - fr)); }
+      g.strokeStyle = "rgb(214,222,216)"; g.lineCap = "butt";
+      S.wpass.forEach((ps, i) => { if (s <= ps.s0) return; const xe = lerp(ps.xa, ps.xb, clamp((s - ps.s0) / (ps.s1 - ps.s0))); for (const [o, al, lw, dash] of S.slurry) { const k = a * al * (1 - dk); if (k <= .003) continue; g.globalAlpha = k; g.lineWidth = lw; g.setLineDash(dash); g.lineDashOffset = i * 37 + o; g.beginPath(); g.moveTo(ps.xa, ps.y + o); g.lineTo(xe, ps.y + o); g.stroke(); } });
+      g.setLineDash([]); g.lineDashOffset = 0; g.lineCap = "round"; g.globalAlpha = 1;
+    },
+    /** the egg's picture (a layer of its own) over the one the pass rests on, as far as the loop has the board (I) */
+    eggMix(e, rest, vis, I) { if (I >= .99) { S.blit(e, vis); return; } const l = S.scr, x = l.x; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, l.c.width, l.c.height); x.globalAlpha = 1 - I; x.drawImage(rest.c, 0, 0); x.globalCompositeOperation = "lighter"; x.globalAlpha = I; x.drawImage(e.c, 0, 0); x.globalCompositeOperation = "source-over"; x.globalAlpha = 1; x.setTransform(px, 0, 0, px, -S.lx * px, -S.ly * px); S.blit(l, vis); },
+    /** by night, lines: the sponge takes the lesson off as ever, and the hand writes its lines like a pupil kept in after
+     *  school, "I will finish my list" four times down the room, and goes for the yellow to tick the last one; the sponge
+     *  comes back for them, and as the slate dries the next lesson comes up through it, patch by patch, as if it had been
+     *  there under the wet all along */
+    eggNight(T, I, A, on, vis, pp) {
+      const X = S.wholeOf(pp.prev), a = vis * I;
+      if (!(on && T >= EG.wipe[0])) { S.blit(X, vis); return; }
+      const e = S.eggOf(pp.P), w1 = S.wiperAt(T, EG.wipe), w2 = S.wiperAt(T, EG.wipe2), cur = pp.cur;
+      // the next lesson, drawn whole out of sight a few strokes a frame while the lines go up (not all at once: a lesson is
+      // a great many strokes), and from then on it is the lesson this pass leaves
+      if (!cur.whole) { const L = e.Y || (e.Y = S.layer()); S.grow(L, cur.all, T < EG.lines[0] ? 0 : T >= EG.lines[1] ? 99 : (T - EG.lines[0]) / (EG.lines[1] - EG.lines[0]) * (cur.end + .1)); if (L.n >= cur.all.length) cur.whole = L; }
+      const Y = cur.whole;
+      const s1 = w1 ? w1.s : T >= EG.wipe[1] ? S.wipe.len : 0, s2 = w2 ? w2.s : T >= EG.wipe2[1] ? S.wipe.len : 0;
+      // the wet: the first sponge's, drying while the lines go up; the second's, drying with the lesson in it
+      if (T < EG.wipe2[0]) { if (T < EG.dry[1]) S.eggWet(s1, seg(T, EG.dry[0], EG.dry[1], x => x), a); }
+      else if (T < EG.dry2[1]) S.eggWet(s2, seg(T, EG.dry2[0], EG.dry2[1], x => x), a);
+      // the board: the lesson under the sponge; the lines going up; the lines under the sponge; the next lesson coming up
+      if (T < EG.wipe[1]) S.wiped(s1, vis, I, X);
+      else if (T < EG.wipe2[0]) { const st = S.grow(S.live, e.all, T); S.redrawn(vis, I, X); if (st) S.hand(st, T, a); }
+      else {
+        const L = e.L || (e.L = S.layer()), x = L.x; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, L.c.width, L.c.height);
+        if (T < EG.wipe2[1]) { S.grow(S.live, e.all, T); x.drawImage(S.live.c, 0, 0); x.setTransform(px, 0, 0, px, -S.lx * px, -S.ly * px); if (s2 > 0) { x.globalCompositeOperation = "destination-out"; x.strokeStyle = "#000"; x.lineWidth = S.band; x.lineCap = "butt"; x.lineJoin = "miter"; trace(x, S.wipe, 0, s2); x.stroke(); x.globalCompositeOperation = "source-over"; x.lineCap = "round"; x.lineJoin = "round"; } }
+        else { // the lesson: a ghost of it under the wet at first, then whole wherever the slate has dried
+          // (the wet's own stages hide it: each is about half as dark as the wet is, so taken out three times they leave a
+          // ghost of it, about a seventh, under what is still wet)
+          const dk = seg(T, EG.dry2[0], EG.dry2[1], x => x); x.globalAlpha = clamp((T - EG.dry2[0]) / .4); if (Y) x.drawImage(Y.c, 0, 0); x.globalAlpha = 1; x.setTransform(px, 0, 0, px, -S.lx * px, -S.ly * px);
+          if (dk < 1) { const W0 = S.wetAt, f = dk * 5, i0 = Math.min(4, Math.floor(f)), fr = f - i0; x.globalCompositeOperation = "destination-out"; for (let n = 0; n < 3; n++) { x.globalAlpha = 1; if (i0 < 4) x.drawImage(S.wetS[i0 + 1], W0.x, W0.y, W0.w, W0.h); x.globalAlpha = 1 - fr; x.drawImage(S.wetR[i0], W0.x, W0.y, W0.w, W0.h); } x.globalAlpha = 1; x.globalCompositeOperation = "source-over"; } }
+        S.eggMix(L, X, vis, I);
+      }
+      // the dust: a puff where each stroke begins, specks falling from the stick as it goes
+      if (T < EG.wipe2[1]) { for (const st of e.all) { const age = T - st.t0; if (age < 0 || age > .5) continue; const k = age / .5, R = S.box.u * (.35 + .5 * E.out(k)); g.globalAlpha = a * .22 * (1 - k); g.drawImage(S.puffs[st.col], st.p[0][0] - R, st.p[0][1] - R, R * 2, R * 2); }
+        for (const d of e.dust) { const age = T - d.t; if (age < 0 || age > d.life) continue; g.globalAlpha = a * .55 * (1 - age / d.life); g.fillStyle = rgba(INKS[d.c]); g.fillRect(d.x + d.vx * age, d.y + d.vy * age + 70 * age * age, d.s, d.s); }
+        g.globalAlpha = 1; }
+      S.drawWiper(w1 || w2, a, A);
+      S.tool(S.toolAt(T, e.phases), a);
+    },
+    /** a sticky note, plain: its shadow (further off when it's off the board) and its face, or its back when it has
+     *  turned over */
+    post(n, sp, x, y, rot, sc, a, lift = 0, flip = 1) {
+      if (a <= .003) return; const s = n.s * sc, ks = n.s / S.ns, fy = Math.abs(flip) < .04 ? .04 : flip, sh = S.noteSh;
+      g.save(); g.globalAlpha = a * (.85 - lift * .4); g.translate(x + 1.5 + lift * s * .14, y + 2.5 + lift * s * .22); g.rotate(rot); g.scale(sc * ks * (1 + lift * .1), sc * ks * fy * (1 + lift * .1)); g.drawImage(sh, -sh.w2 / 2, -sh.h2 / 2, sh.w2, sh.h2); g.restore();
+      g.save(); g.globalAlpha = a; g.translate(x, y); g.rotate(rot); g.scale(1, fy); g.drawImage(fy < 0 ? sp[1] : sp[0], -s / 2, -s / 2, s, s); g.restore();
+    },
+    /** by day, the invader: the old plan's notes peel off and the eraser takes it off, as in any pass; then, on the clean
+     *  board, the hand slaps sticky notes on in rows, quick as cards dealt, and they make a space invader, the crab, in a
+     *  neon pad; it waves its arms (the notes hop to their places in the other frame, as a wall of them is animated); the
+     *  eraser is thrown at it, and it bursts into its notes, which tumble off the board; and the hand gets on with the
+     *  plan, briskly, a colour at a time, its notes slapped on, as the pass would have drawn it */
+    eggDay(T, I, A, on, vis, pp) {
+      const a = vis * I, rest = S.wholeOf(pp.prev), cur = pp.cur, WP = S.wipeAll, WB = BW.wipe, Ty = T < EG.plan ? 0 : 3 + (T - EG.plan) * EG.k;
+      if (!(on && T >= WB[0])) S.blit(rest, vis);
+      else {
+        const k = (T - WB[0]) / (WB[1] - WB[0]), s = k <= 0 ? 0 : k >= 1 ? WP.len : WP.at(k) * WP.len, gh = a * env(T, WB[0], WB[0] + .3, BW.ghost[0], BW.ghost[1], E.sine);
+        if (gh > .003) { S.blit(rest, gh * .03); g.save(); g.translate(7, 1); S.blit(rest, gh * .02); g.restore(); }
+        if (T < WB[1]) S.wiped(s, vis, I, rest, WP, S.band2);
+        else { const st = S.grow(S.live, cur.all, Ty); S.redrawn(vis, I, rest); if (st) S.hand(st, Ty, a); }
+      }
+      const curl = n => .12 + .025 * Math.sin(A * .9 + n.ph);
+      pp.prev.notes.forEach((n, i) => { const tp0 = BW.peel + i * BW.gap, tp1 = tp0 + .55; S.sprOf(n);
+        if (!on || T < tp0) { S.note(n, n.x, n.y, n.rot, 1, curl(n), vis, 0); return; }
+        if (I < .99) S.note(n, n.x, n.y, n.rot, 1, curl(n), vis * (1 - I), 0);
+        S.peel(n, T, tp0, tp1, A, a, curl(n)); });
+      if (on) for (const n of cur.notes) { if (Ty < n.slap) continue; S.sprOf(n); if (Ty >= n.slap + .6) S.note(n, n.x, n.y, n.rot, 1, curl(n), a, 0); else { const sl = S.slap(Ty - n.slap); S.note(n, n.x, n.y - sl.lift * n.s * .08, n.rot + sl.lift * .12, sl.sc, curl(n) + sl.flap, a * sl.a, sl.lift); } }
+      if (on) { const k = (T - WB[0]) / (WB[1] - WB[0]); if (k > 0 && k < 1) { const f = WP.at(k), q = along(WP.ride, f * WP.ride.len); S.drawWiper({ x: q[0], y: q[1], dir: q[2] }, a, A, S.sponge2, S.spongeSh2); } }
+      if (on && Ty > 0 && Ty < cur.end + .4) S.tool(S.toolAt(Ty, cur.phases), a);
+      if (!on || T < EG.slap[0] || T > EG.burst[1] + .2) return;
+      const e = S.eggOf(pp.P), c = e.c, tb = EG.burst[0], SP = [e.spr, e.back], SC = [e.sprC, e.back];
+      // where the invader is in its frames: the toggles so far, and a hop in progress
+      const tg = e.tg, HOP = .2, nT = tg.filter(t => T >= t).length, hopK = nT ? clamp((T - tg[nT - 1]) / HOP) : 1;
+      const burst = (q, x0, y0, rot0) => { const t = T - tb, kk = .9, ex = (1 - Math.exp(-kk * t)) / kk, x = x0 + q.v[0] * ex + Math.sin(t * 3.1 + q.ph) * c * .25 * clamp(t * 3), y = y0 + q.v[1] * ex + 70 * (t - ex), m = q.s; /* paper: it slows in the air and drifts down */
+        if (x < -m || x > S.W + m || y > S.H + m || y < -m * 3) return; S.post(q, q.curl ? SC : SP, x, y, rot0 + q.w * ex + Math.sin(t * 4 + q.ph) * .3, 1.04, a * (1 - seg(T, EG.burst[1] - .35, EG.burst[1])), clamp(t * 6), 1 - q.tum * (1 - Math.cos(t * q.f))); };
+      for (const q of e.posts) {
+        if (T < q.ts) continue;
+        let x = q.x, y = q.y; const moving = q.k2 !== undefined;
+        if (moving && nT) { const toB = nT % 2 === 1, k = E.io(hopK), [fx, fy, tx, ty] = toB ? [q.x, q.y, q.x2, q.y2] : [q.x2, q.y2, q.x, q.y];
+          x = lerp(fx, tx, k); y = lerp(fy, ty, k) - Math.sin(Math.PI * k) * c * .45; if (T >= tb) { burst(q, x, y, q.rot); continue; } if (k < 1) { S.post(q, q.curl ? SC : SP, x, y, q.rot + Math.sin(Math.PI * k) * .25, 1 + .1 * Math.sin(Math.PI * k), a, Math.sin(Math.PI * k)); continue; } }
+        if (T >= tb) { burst(q, x, y, q.rot); continue; }
+        const k = T - q.ts; if (k < .3) { const sl = S.slap(k * 2); S.post(q, q.curl ? SC : SP, x, y - sl.lift * c * .3, q.rot + sl.lift * .2, sl.sc, a * sl.a, sl.lift); } else S.post(q, q.curl ? SC : SP, x, y, q.rot, 1, a, 0);
+      }
+      // the note more that the arms want when they're up: slapped on, taken off again, slapped on
+      for (const q of e.extras) for (const [t0, t1] of [[tg[0], tg[1]], [tg[2], 99]]) {
+        if (T < t0) continue;
+        if (T >= tb && t1 > tb) { burst(q, q.x, q.y, q.rot); continue; }
+        if (T >= t1) { const k = (T - t1) / .3; if (k < 1) S.post(q, q.curl ? SC : SP, q.x + e.throwSide * E.in(k) * S.W * .7, q.y - Math.sin(k * 2) * c, q.rot + k * 2, 1 + .12 * Math.sin(Math.PI * Math.min(1, k * 2)), a, Math.min(1, k * 3)); continue; }
+        const k = T - t0; if (k < .3) { const sl = S.slap(k * 2.2); S.post(q, q.curl ? SC : SP, q.x, q.y - sl.lift * c * .3, q.rot + sl.lift * .2, sl.sc, a * sl.a, sl.lift); } else S.post(q, q.curl ? SC : SP, q.x, q.y, q.rot, 1, a, 0);
+      }
+      // the eraser, thrown: in from the side (the hand's, if its way is clear), turning over and over, at the invader; it
+      // knocks it to bits and goes back out the way it came
+      const [th0, th1] = EG.throw;
+      if (T >= th0 && T < th1 + 1.2) {
+        const spr = S.sponge2, sh = S.spongeSh2, dir = e.throwSide, q = e.hit, st0 = [dir < 0 ? -spr.h2 : S.W + spr.h2, q[1] + c * 1.4];
+        let x, y, rot, lift;
+        if (T < th1) { const k = (T - th0) / (th1 - th0); x = lerp(st0[0], q[0], k); y = lerp(st0[1], q[1], k) - Math.sin(Math.PI * k) * c * 1.6; rot = e.rot0 - dir * k * TAU * 1.6; lift = 1 - k; }
+        else { const t = T - th1; x = q[0] + dir * 820 * t; y = q[1] - 300 * t + 700 * t * t; rot = e.rot0 - dir * (TAU * 1.6 - t * 8); lift = clamp(t * 4); } /* back the way it came, off the board */
+        if (y - spr.h2 < S.H && x + spr.h2 > 0 && x - spr.h2 < S.W) { g.save(); g.globalAlpha = a * .7 * (1 - lift * .5); g.translate(x + 6 + lift * 26, y + 10 + lift * 34); g.rotate(rot); g.drawImage(sh, -sh.w2 / 2, -sh.h2 / 2, sh.w2, sh.h2); g.restore();
+          g.save(); g.globalAlpha = a; g.translate(x, y); g.rotate(rot); g.scale(1 + lift * .12, 1 + lift * .12); g.drawImage(spr, -spr.w2 / 2, -spr.h2 / 2, spr.w2, spr.h2); g.restore(); }
       }
     },
   };

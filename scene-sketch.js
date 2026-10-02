@@ -34,6 +34,18 @@
 // and nothing in the passes either side of it changes; and at the very end the figure leans back in from the edge it ran
 // off, blinks at the new drawing, waggles its fingers, and is gone. It stands where the words leave room beside the
 // drawing, on the side with a clear run to the page's edge.
+//
+// 1.12 b427: the long day's hour eggs. For a list left up for hours: once in each hour of the list left alone (K.long), in
+// place of the pass it would have dealt, one of two little films, by turns. The first is Escher's Drawing Hands (1948):
+// the eraser takes the drawing the pass before left, and the pencil draws a hand holding a pencil, its shirt cuff drawn
+// flat, and jumps back as the hand comes to life, colour flooding into it; the hand draws a second cuff, a second hand
+// grows out of it holding a pencil of its own, and the two draw each other, each going over the other's cuff; then each
+// twirls its pencil round and rubs out the other's cuff, and each, its cuff gone, comes undone from the cuff out, their
+// erasers the last of them. The second is a coffee ring: a mug's shadow comes down over the drawing and lifts away, leaving
+// a ring that dries paler with its rim darker; the eraser takes the drawing but not the ring, scrubs at it and gives up;
+// the pencil looks it over and makes it the big wheel of a penny-farthing, the brush paints its frame red, its bell rings
+// twice and it rolls off the page. Either way the pencil comes back, a little unsure, and draws this pass's subject as any
+// pass does, only quicker and without its moment, so the pass ends on the very picture the next one starts from.
 export default function sketch(K) {
   const { clamp, lerp, E, seg, env, rng, canvas, boil } = K;
   const TAU = Math.PI * 2;
@@ -598,6 +610,140 @@ export default function sketch(K) {
     const list = [[q.head], [q.hair[0]], [q.body], q.hatch, [q.arms[1], q.hands[1]], [q.arms[0], q.hands[0]], [q.legs[1], q.feet[1]], [q.legs[0], q.feet[0]], [q.mouth], [eyes[0]], [eyes[1]], q.blush, [[[-.5, .012], [.52, .012]]]].flat().map(pts => [pts, 0, 0]);
     pace(list, EB.draw[0], EB.draw[1], .025); return list.map(e => [...e, lens(e[0]), eyes.includes(e[0]) ? [e[0][0][0] - .029, e[0][0][1]] : null]); })(); // (an eye is filled in once it's drawn round)
 
+  /* ---------------- 1.12 b427: the long day's hour eggs ---------------- */
+  /** a path's points in the box the hands are drawn in (the 200-box's own numbers, not the drawing's units) */
+  const svd = (d, step = 1.5) => sv(d, step).map(([u, v]) => [u * 100 + 100, v * 100 + 100]);
+  /** The hand, drawn once in its own box: a right hand seen from the thumb side, pointing right, holding a pencil that
+   *  points down to the right; its shirt cuff drawn flat, the way Escher drew his (1948). Each line knows what it is
+   *  (`ph`: the cuff, the hand's contours, its details) and runs from the wrist outward, so a hand can grow out of its cuff. */
+  const HD = (() => {
+    const L = [], ln = (ph, d, w, a) => L.push({ ph, pts: svd(d), w, a }), WC = [41, 64.5], c30 = Math.cos(Math.PI / 6), s30 = Math.sin(Math.PI / 6);
+    const turn = (x, y, k = 1) => [WC[0] + (x - WC[0]) * c30 - (y - WC[1]) * s30 * k, WC[1] + (x - WC[0]) * s30 * k + (y - WC[1]) * c30]; // the cuff, its forearm coming in from above, a sixth of a turn
+    const cf = d => d.replace(/(-?[\d.]+)[ ,]+(-?[\d.]+)/g, (m, a, b) => turn(+a, +b).map(v => v.toFixed(2)).join(" "));
+    ln("cuff", cf("M 38 85.5 C 44.5 79, 43.5 49, 38 42.5"), 1.3, .9); ln("cuff", cf("M 38 42.5 L 6 44"), 1.3, .9); ln("cuff", cf("M 31.5 43 C 36 51, 36 77.5, 31.5 85.8"), .8, .6); ln("cuff", cf("M 38 85.5 L 6 87"), 1.3, .9);
+    ln("cuff", cf("M 21 64.5 C 21 62.9, 23.6 62.9, 23.6 64.5 C 23.6 66.1, 21 66.1, 21 64.5"), .9, .8); ln("cuff", cf("M 6 44 L -4 43.3"), .9, .45); ln("cuff", cf("M 6 87 L -4 88"), .9, .45);
+    ln("hand", "M 48.5 47 C 56 46.2, 66 45.5, 76 45 C 79 44.8, 81.5 44.7, 83.3 44.7", 1.4, .92); ln("hand", "M 89.2 44.8 C 89.8 44.8, 90.4 44.9, 91 45", 1.4, .92);
+    ln("hand", "M 91 45 C 97 43.5, 103 43.5, 107.5 45 C 111 46, 113.5 49, 115.5 53.5 C 117.5 58, 119.5 61.5, 121 65.5 C 122.5 69.5, 122.8 73.5, 121 75.8 C 119.6 77.5, 117 77.3, 115.6 75.6", 1.4, .92); // the index, over the pencil
+    ln("hand", "M 106.5 58 C 107 61, 108 63.5, 109.5 66 C 111.5 69, 113.5 72.5, 115.6 75.6", 1.1, .85);
+    ln("hand", "M 47 85 C 51 84.4, 55 83.8, 59 83.2 C 66 82, 72 80.3, 79 78.5 C 85 77, 91 76.8, 97.5 77.3 C 101.5 77.7, 105 77.6, 107 76.3 C 109 74.8, 109 72, 107.5 70 C 105.5 67.5, 102.5 65.5, 99 63.5 C 95 61, 90 58.5, 84 57", 1.4, .92); // the thumb, pressing the pencil from this side
+    ln("hand", "M 106.5 79 C 110.5 82, 114.5 83.6, 118 83.8 C 120.2 83.9, 121.2 82.6, 120.6 80.6", 1.25, .88); // the middle finger, under the pencil
+    ln("hand", "M 29.5 81 C 36 84.5, 46 86, 56 86 C 64 86.2, 71 87.5, 78 89.5 C 84 91.5, 89 94.5, 94.5 95.2 C 99 97.8, 106 97, 109.5 93.8 C 115.5 93.5, 120.5 90, 121.5 85", 1.35, .9); // the ring and little fingers, curled under
+    ln("det", "M 60 51.5 C 68 50.5, 76 50, 85 49.5", .5, .3); ln("det", "M 84.5 45 C 86.5 46.5, 87 48, 86 49.5", .6, .45);
+    ln("det", "M 120.5 68 C 121.6 70.5, 121.5 73.2, 120 75", .8, .7); ln("det", "M 113 48.5 C 113.8 51, 113 53, 111.2 54", .6, .45); ln("det", "M 118.5 60.5 C 119.6 62, 119.2 63.6, 117.8 64.2", .55, .4);
+    ln("det", "M 99.5 64 C 103 65.4, 106 67.6, 107.3 70.6", .8, .7); ln("det", "M 95.5 61.5 C 97 63.8, 96.8 66.2, 95.2 68", .55, .4); ln("det", "M 79 78.5 C 76 75.8, 75.5 72, 77.5 68.5", .6, .45);
+    ln("det", "M 103 92.8 C 105 92, 107.5 92.3, 109.5 93.8", .6, .4); ln("det", "M 89.2 92.4 C 91.5 92.2, 93.5 93.2, 94.5 95.2", .6, .4);
+    const SIL = "M 48.5 47 C 56 46.2, 66 45.5, 76 45 C 82 44.6, 87 44.6, 91 45 C 97 43.5, 103 43.5, 107.5 45 C 111 46, 113.5 49, 115.5 53.5 C 117.5 58, 119.5 61.5, 121 65.5 C 122.5 69.5, 122.8 73.5, 121 75.8 C 120.3 78, 120.8 79.5, 120.6 80.6 C 121.5 82.5, 121.8 83.8, 121.5 85 C 120.5 90, 115.5 93.5, 109.5 93.8 C 106 97, 99 97.8, 94.5 95.2 C 89 94.5, 84 91.5, 78 89.5 C 71 87.5, 64 86.2, 56 86 C 46 86, 36 84.5, 29.5 81 C 36 76, 44 62, 48.5 47 Z";
+    const shade = (x, y) => (y - 64) > .2 * (x - 40) + 12 || (x > 117 && y < 80 && y > 58) || (x > 104 && y > 77); // the palm's side and the fingers' undersides
+    for (const h of hatchIn(sv(SIL, 2), 1.15, .028, (u, v) => shade(u * 100 + 100, v * 100 + 100))) L.push({ ph: "hat", pts: h.map(([u, v]) => [u * 100 + 100, v * 100 + 100]), w: .6, a: .32 });
+    const CUFF = cf("M 6 44 L 38 42.5 C 43.5 49, 44.5 79, 38 85.5 L 6 87 Z"), cuffHat = hatchIn(sv(CUFF, 2), Math.PI * 2 / 3, .028, (u, v) => { const [x, y] = turn(u * 100 + 100, v * 100 + 100, -1); return x > 27 && y > 57; }).map(h => h.map(([u, v]) => [u * 100 + 100, v * 100 + 100])); // the shading the other hand adds, along its rim
+    const G = [svd("M 1 43 C 30 60, 98 58, 137.5 121", 4), Array.from({ length: 41 }, (_, i) => { const a = -2.7 + i / 40 * 6.6; return [87 + Math.cos(a) * 35, 70 + Math.sin(a) * 27]; })]; // the gesture first: the arm's line, the hand's mass
+    return { L, G, SIL: svd(SIL, 2), cuffHat, X: [111.5, 76], ang: Math.PI / 3, hw: 3.1, W: [41, 64.5], tip: [137.5, 121.03], Q: [35.5, 77] };
+  })();
+  /** the hand's pencil in its box, its lines and its paint ([polygon, colour, strength]): as the pencil draws it, in the
+   *  pieces the fingers leave showing (0); whole (2), to be slid through the fingers behind a mask of them; and whole and
+   *  turned end for end about its middle (3), the eraser where the point was */
+  const PEN = flip => {
+    const { X, ang, hw } = HD, u = [Math.cos(ang), Math.sin(ang)], n = [-u[1], u[0]], at = (s, o = 0) => [X[0] + u[0] * s + n[0] * o, X[1] + u[1] * s + n[1] * o];
+    const L = [], W = [], line = (...ps) => L.push({ ph: "pen", pts: ps.flatMap((p, i) => i ? Array.from({ length: 6 }, (_, k) => [lerp(ps[i - 1][0], p[0], (k + 1) / 6), lerp(ps[i - 1][1], p[1], (k + 1) / 6)]) : [p]), w: 1.05, a: .9 });
+    const thin = (w, a, ...ps) => { line(...ps); Object.assign(L[L.length - 1], { w, a }); }, quad = (s0, s1, col, a, o0 = hw, o1 = hw) => W.push([[at(s0, -o0), at(s1, -o1), at(s1, o1), at(s0, o0)], col, a]);
+    const PAINT = [244, 190, 40], WOOD = [222, 180, 130], LEAD = [60, 60, 70], TIN = [170, 172, 182], RUB = [238, 140, 146];
+    if (flip === 2) { // whole, as it twirls out of the fingers and round
+      line(at(-54.5, -hw), at(39.5, -hw), at(48.5, -.8), at(52, 0)); line(at(-54.5, hw), at(39.5, hw), at(48.5, .8), at(52, 0)); line(at(-54.5, -hw), at(-66, -hw), at(-66, hw), at(-54.5, hw)); thin(.7, .7, at(-58.5, -hw), at(-58.5, hw)); thin(.7, .7, at(-54.5, -hw), at(-54.5, hw));
+      quad(-54.5, 39.5, PAINT, .72); quad(39.5, 48.5, WOOD, .6, hw, .8); quad(48.5, 52, LEAD, .8, .8, .01); quad(-61.5, -54.5, TIN, .6); quad(-66, -61.5, RUB, .7);
+    } else if (!flip) { // the eraser up at the back, the point down at the paper
+      line(at(-20.5, -hw), at(-66, -hw)); line(at(-15.5, hw), at(-66, hw)); line(at(-66, -hw), at(-66, hw)); thin(.7, .7, at(-58.5, -hw), at(-58.5, hw)); thin(.7, .7, at(-55, -hw), at(-55, hw)); thin(.55, .5, at(-61.5, -hw), at(-61.5, hw)); thin(.55, .45, at(-30, 0), at(-54, 0));
+      line(at(2.5, hw), at(39.5, hw)); line(at(1.5, -hw), at(39.5, -hw)); thin(.55, .45, at(4, 0), at(39.5, 0)); line(at(39.5, -hw), at(48.5, -.8), at(52, 0)); line(at(39.5, hw), at(48.5, .8), at(52, 0));
+      thin(.75, .7, at(39.5, -hw), at(41.1, -1.5), at(39.5, 0), at(41.1, 1.5), at(39.5, hw)); thin(.6, .6, at(48.5, -.8), at(48.5, .8));
+      quad(-54.5, -18, PAINT, .72); quad(2, 39.5, PAINT, .72); quad(39.5, 48.5, WOOD, .6, hw, .8); quad(48.5, 52, LEAD, .8, .8, .01); quad(-61.5, -54.5, TIN, .6); quad(-66, -61.5, RUB, .7);
+    } else if (flip === 3) { // whole and turned end for end about its middle: the point up at the back, the eraser down at the paper
+      line(at(40.5, -hw), at(-53.5, -hw), at(-62.5, -.8), at(-66, 0)); line(at(40.5, hw), at(-53.5, hw), at(-62.5, .8), at(-66, 0)); thin(.75, .7, at(-53.5, -hw), at(-55.1, -1.5), at(-53.5, 0), at(-55.1, 1.5), at(-53.5, hw)); thin(.6, .6, at(-62.5, -.8), at(-62.5, .8));
+      line(at(40.5, -hw), at(52, -hw), at(52.9, 0), at(52, hw), at(40.5, hw)); thin(.7, .7, at(44.5, -hw), at(44.5, hw)); thin(.7, .7, at(40.5, -hw), at(40.5, hw)); thin(.55, .5, at(47.5, -hw), at(47.5, hw)); thin(.55, .45, at(-30, 0), at(-53.5, 0));
+      quad(-53.5, 40.5, PAINT, .72); quad(-62.5, -53.5, WOOD, .6, .8, hw); quad(-66, -62.5, LEAD, .8, .01, .8); quad(40.5, 47.5, TIN, .6); quad(47.5, 52.5, RUB, .7);
+    }
+    return { L, W };
+  };
+  /** Hour egg 1, its beats in the pass's seconds: the eraser takes the drawing the pass before left (`erase`); the pencil
+   *  draws hand A — a gesture (`guide`), its cuff, its contours, its details, its pencil, its shading — and lifts away
+   *  (`penOut`); the hand comes alive, its colour flooding in (`liveA`); it draws hand B's cuff (`cuffB`), and B grows out
+   *  of it (`growB`) and comes alive (`liveB`); each draws the other (`loop`); each twirls its pencil (`twirl`) and rubs
+   *  out the other's cuff, and each, its cuff gone, comes undone (`scrub`); the pencil comes back (`back`) and from `sub`
+   *  draws this pass's subject as any pass does, a little quicker, so the pass ends on the picture the next one starts from */
+  const HK = .0085; // the hands' box to the drawing's units
+  const HB = { erase: [.3, 1.4], guide: [1.48, 1.66], cuff: [1.68, 2.08], hand: [2.1, 2.98], det: [2.98, 3.22], pen: [3.24, 3.5], hat: [3.5, 3.72], penOut: [3.62, 3.98], liveA: [3.72, 4.22], cuffB: [4.24, 5.04], growB: [5.04, 5.66], liveB: [5.56, 6.04], loop: [6.06, 7.86], twirl: [7.86, 8.16], scrub: [8.18, 8.98], back: [8.86, 9.2], sub: 9.2 };
+  /** the pair, set down in the drawing's units: hand A as drawn, hand B turned half round about the drawing's centre, so
+   *  each one's pencil point rests on the other's cuff; their lines timed for the pencil (A), for A's pencil (B's cuff, and
+   *  the shading A adds to it), for growing (B's hand), and for B's pencil going over A's cuff; their washes as polygons */
+  const PAIR = (() => {
+    const M = [(HD.tip[0] + HD.Q[0]) / 2, (HD.tip[1] + HD.Q[1]) / 2], k = HK, to = ([x, y]) => [(x - M[0]) * k, (y - M[1]) * k];
+    const P0 = PEN(0), P2 = PEN(2), P3 = PEN(3), occ = (() => { const { X, ang, hw } = HD, at = (sl, o) => [X[0] + Math.cos(ang) * sl - Math.sin(ang) * o, X[1] + Math.sin(ang) * sl + Math.cos(ang) * o]; return [at(-20.5, -hw - 1.4), at(-15.5, hw + 1.4), at(2.5, hw + 1.4), at(1.5, -hw - 1.4)]; })(); // where the fingers hide the pencil
+    const hands = [1, -1].map(sg => { const m = p => { const q = to(p); return [q[0] * sg, q[1] * sg]; }, mk = l => [l.pts.map(m), 0, 0, l.w, l.a, l.ph];
+      const pen = P0.L.map(mk), penF = P3.L.map(mk), penW = P2.L.map(mk);
+      return { sg, m, W: m(HD.W), ax: [sg, 0], pu: [Math.cos(HD.ang) * sg, Math.sin(HD.ang) * sg], tip: m(HD.tip), mid: m([HD.X[0] + Math.cos(HD.ang) * -7, HD.X[1] + Math.sin(HD.ang) * -7]),
+        cuff: HD.L.filter(l => l.ph === "cuff").map(mk), body: HD.L.filter(l => l.ph !== "cuff").map(mk), pen, penF, penW, skin: HD.SIL.map(m), gest: HD.G.map(p => [p.map(m), 0, 0, .7, .2, "guide"]),
+        paint: P0.W.map(([p, c, a]) => [p.map(m), c, a]), paintF: P3.W.map(([p, c, a]) => [p.map(m), c, a]), paintW: P2.W.map(([p, c, a]) => [p.map(m), c, a]), occ: occ.map(m), cuffHat: HD.cuffHat.slice(0, 7).map(h => [h.map(m), 0, 0, .7, .45, "hat"]) }; });
+    const [A, B] = hands, bySpan = (list, t0, t1, gap) => { pace(list, t0, t1, gap); return list; };
+    // the pencil draws hand A: a gesture, then the cuff, the contours, the details, the pencil, the shading
+    const gest = A.gest; bySpan(gest, HB.guide[0], HB.guide[1], .02); bySpan(A.cuff, HB.cuff[0], HB.cuff[1], .02); bySpan(A.body.filter(s => s[5] === "hand"), HB.hand[0], HB.hand[1], .03);
+    bySpan(A.body.filter(s => s[5] === "det"), HB.det[0], HB.det[1], .01); bySpan(A.pen, HB.pen[0], HB.pen[1], .008); bySpan(A.body.filter(s => s[5] === "hat"), HB.hat[0], HB.hat[1], .003);
+    A.drawn = [...gest, ...A.cuff, ...A.body, ...A.pen].sort((a, b) => a[1] - b[1]).map(e => [...e, lens(e[0])]); // the pencil's own path over A
+    // A's pencil draws B's cuff — its rim and its seam, the rest drawing itself out from them — and B grows out of it, from
+    // its wrist outward; then each goes over the other's cuff, B A's rim and seam, and each shades the other's near its rim
+    const [bRim, bTop, bSeam, bBot, bBtn, bT1, bT2] = B.cuff, c0 = HB.cuffB[0];
+    [[bRim, 0, .3], [bBot, .04, .36], [bTop, .3, .6], [bSeam, .4, .64], [bT2, .36, .48], [bT1, .6, .7], [bBtn, .64, .76]].forEach(([s, a, b]) => { s[1] = c0 + a; s[2] = c0 + b; });
+    const reach = s => Math.hypot(s[0][0][0] - B.W[0], s[0][0][1] - B.W[1]), far = Math.max(...[...B.body, ...B.pen].map(reach));
+    for (const s of [...B.body.filter(s => s[5] !== "hat"), ...B.pen]) { const f = reach(s) / far, [a, k, d] = s[5] === "hand" ? [0, .22, .26] : s[5] === "det" ? [.22, .1, .12] : [.26, .12, .16]; s[1] = HB.growB[0] + a + f * k; s[2] = s[1] + d; } // its contours first, then its details and its pencil
+    B.body.filter(s => s[5] === "hat").forEach((s, i, a) => { s[1] = HB.growB[0] + .44 + i / a.length * .14; s[2] = s[1] + .05; });
+    const l0 = HB.loop[0] + .1, l1 = HB.loop[1] - .1;
+    A.retrace = [A.cuff[0], A.cuff[2]].map(s => [s[0], 0, 0, s[3] * 1.15, Math.min(1, s[4] * 1.1), "re"]); bySpan(A.retrace, l0, l0 + .7, .08); bySpan(A.cuffHat, l0 + .85, l1, .06);
+    bySpan(B.cuffHat, l0 + .05, l1 - .1, .07);
+    const withL = list => list.map(e => [...e, lens(e[0])]);
+    A.job = withL([bRim, bSeam, ...B.cuffHat]); B.job = withL([...A.retrace, ...A.cuffHat]); // where each one's pencil goes
+    A.marks = [...A.retrace, ...A.cuffHat]; B.marks = B.cuffHat; // what the other hand adds to each one's cuff
+    // the scrub: back and forth across the other's cuff by its rim, the eraser end leading
+    for (const [me, other] of [[A, B], [B, A]]) { const c = other.m([37.5, 70]), o = other.m([44, 59]), ax = [(c[0] - o[0]), (c[1] - o[1])], w = other.m([44, 74]), along2 = [(w[0] - c[0]), (w[1] - c[1])];
+      me.rub = Array.from({ length: 41 }, (_, i) => { const f = i / 40, z = Math.sin(f * Math.PI * 9) * .95; return [c[0] + ax[0] * z + along2[0] * (f - .5) * 1.4, c[1] + ax[1] * z + along2[1] * (f - .5) * 1.4]; }); me.rubL = lens(me.rub); }
+    return { A, B, hands };
+  })();
+  /** where a pencil is along a job (a list of timed lines) at T, and how far it's lifted: on the line it's drawing, in the
+   *  air between two, gliding in from `rest` just before the first, and staying where the last one left it */
+  const penAt = (job, T, rest, lead = .22) => {
+    for (const [pts, t0, t1, , , , L] of job) if (T >= t0 && T <= t1) { const [u, v] = along(pts, L, (T - t0) / ((t1 - t0) || 1)); return [u, v, 0]; }
+    let pv = null, nx = null; for (const s of job) { if (s[2] <= T && (!pv || s[2] > pv[2])) pv = s; if (s[1] >= T && (!nx || s[1] < nx[1])) nx = s; }
+    const a = pv ? pv[0][pv[0].length - 1] : rest, b = nx ? nx[0][0] : a, t0 = pv ? pv[2] : nx ? nx[1] - lead : T, t1 = nx ? nx[1] : t0 + 1, q = clamp((T - t0) / ((t1 - t0) || 1));
+    return [lerp(a[0], b[0], E.io(q)), lerp(a[1], b[1], E.io(q)), nx ? Math.sin(q * Math.PI) : 0];
+  };
+  /** a hand's pose that puts its pencil's point (or, flipped, its eraser) on `at`: the hand turned at its wrist (θ), and
+   *  the pencil slid a little through its fingers along its own length (σ); the cuff stays where it was drawn */
+  const reachTo = (h, at, tipNow) => { const v0 = [tipNow[0] - h.W[0], tipNow[1] - h.W[1]], d = Math.hypot(at[0] - h.W[0], at[1] - h.W[1]), b = v0[0] * h.pu[0] + v0[1] * h.pu[1], c = v0[0] * v0[0] + v0[1] * v0[1] - d * d, sl = clamp(-b + Math.sqrt(Math.max(0, b * b - c)), -.18, .18), v = [v0[0] + h.pu[0] * sl, v0[1] + h.pu[1] * sl];
+    return { th: Math.atan2(at[1] - h.W[1], at[0] - h.W[0]) - Math.atan2(v[1], v[0]), sl }; };
+  /** Hour egg 2, its beats in the pass's seconds: a mug's shadow comes down over the drawing the pass before left
+   *  (`down`), sits (`sit`) and lifts away (`lift`), leaving a coffee ring that dries (`dry`), darkest at its rim (the
+   *  coffee-ring effect); the eraser takes the drawing (`erase`) but not the ring, scrubs at the ring (`rub`) and gives up
+   *  (`sulk`); the pencil looks it over (`circle`) and makes it the big wheel of a penny-farthing (`bike`), the brush
+   *  paints its frame (`paint`), its bell rings (`ding`) and it rolls off the page (`roll`); the pencil turns back
+   *  (`back`) and from `sub` draws this pass's subject */
+  const RB = { down: [.3, 1.5], sit: [1.5, 1.95], lift: [1.95, 2.55], dry: [2.5, 3.4], erase: [2.6, 3.7], rub: [3.74, 4.3], sulk: [4.3, 4.64], circle: [4.64, 5.06], bike: [5.08, 6.7], paint: [6.84, 7.22], ding: [7.24, 7.66], roll: [7.7, 8.85], back: [8.7, 9.0], sub: 9.0 };
+  /** the penny-farthing, in the drawing's units about its big wheel's hub (the ring is that wheel, radius RH), facing +x:
+   *  its lines in the order the pencil draws them, each knowing what it turns with (`big`, `small`, `crank`) or not (`frame`) */
+  const RH = .34, RS = RH / 3.2;
+  const BIKE = (() => {
+    const L = [], ln = (part, pts, w = 1.1, a = .9) => L.push([pts, 0, 0, w, a, part]);
+    const arc = (cx, cy, r, a0, a1, n = 24) => Array.from({ length: n + 1 }, (_, i) => { const a = lerp(a0, a1, i / n); return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; });
+    const bz = (p0, p1, p2, p3, n = 20) => Array.from({ length: n + 1 }, (_, i) => bez(p0, p1, p2, p3, i / n));
+    const H = [-.05, -RH - .1], SM = [-RH * 1.55, RH - RS], BACK = bz(H, [-.32, -RH - .2], [-.5, -.12], SM);
+    ln("big", arc(0, 0, .028, 0, TAU, 12)); // the hub
+    for (let k = 0; k < 14; k++) { const a = k / 14 * TAU + .1; ln("big", [[Math.cos(a) * .03, Math.sin(a) * .03], [Math.cos(a) * (RH - .025), Math.sin(a) * (RH - .025)]], .7, .6); } // spokes, out to the ring
+    ln("frame", [[0, 0], [H[0] / 2, H[1] / 2], H], 1.25, .92); ln("frame", BACK, 1.3, .92); // the fork; the backbone, over and down to the little wheel
+    ln("frame", bz([H[0] - .01, H[1] + .005], [.04, H[1] - .06], [.12, H[1] - .04], [.15, H[1] + .03], 12), 1.1, .9); ln("frame", arc(.155, H[1] + .045, .016, -1.6, 1.6, 6), .9, .8); // the handlebar and its grip
+    const SAD = [[-.13, -RH - .155], [-.2, -RH - .172], [-.27, -RH - .158], [-.245, -RH - .126], [-.16, -RH - .12], [-.13, -RH - .155]]; ln("frame", SAD, 1.05, .9); ln("frame", [[-.2, -RH - .124], [-.205, -RH - .085]], .9, .85); // the saddle on its post
+    ln("small", arc(0, 0, RS, 0, TAU, 20), 1.15, .9); ln("small", arc(0, 0, .014, 0, TAU, 8), .9, .85); for (let k = 0; k < 6; k++) { const a = k / 6 * TAU; ln("small", [[Math.cos(a) * .016, Math.sin(a) * .016], [Math.cos(a) * (RS - .012), Math.sin(a) * (RS - .012)]], .6, .6); } // the little wheel
+    ln("crank", [[0, 0], [.07, .045]], 1, .9); ln("crank", [[.045, .045], [.095, .045]], 1.15, .9); ln("crank", [[0, 0], [-.07, -.045]], 1, .9); ln("crank", [[-.095, -.045], [-.045, -.045]], 1.15, .9); // its cranks and pedals
+    ln("frame", arc(.035, H[1] - .045, .018, 0, TAU, 10), .9, .85); // and a bell
+    pace(L, RB.bike[0], RB.bike[1], .022);
+    const tubeU = (pts, w) => { const n = pts.length, Lf = [], Rt = []; for (let i = 0; i < n; i++) { const a = pts[Math.max(0, i - 1)], b2 = pts[Math.min(n - 1, i + 1)], dx = b2[0] - a[0], dy = b2[1] - a[1], l = Math.hypot(dx, dy) || 1; Lf.push([pts[i][0] - dy / l * w, pts[i][1] + dx / l * w]); Rt.push([pts[i][0] + dy / l * w, pts[i][1] - dx / l * w]); } return [...Lf, ...Rt.reverse()]; };
+    return { L, H, SM, SAD, BACK, pen: L.map(e => [e[5] === "small" ? e[0].map(([u, v]) => [u + SM[0], v + SM[1]]) : e[0], e[1], e[2], e[3], e[4], e[5], lens(e[0])]), paint: [[tubeU(BACK, .02), [210, 50, 44], .74, H], [tubeU([[0, 0], H], .02), [210, 50, 44], .74, H], [SAD, [126, 72, 40], .72, [-.2, -RH - .145]]] };
+  })();
+
   const S = {
     res: "dpr",
     wash: 1.6, veil: 1, // a light kit (scenes.js)
@@ -920,6 +1066,201 @@ export default function sketch(K) {
       // the finale: stars sketched in round it
       if (F >= 0) for (const s of S.stars) { const p = seg(F, s.t, s.t + .16, x => x); if (p <= 0) continue; const pts = Array.from({ length: 11 }, (_, k) => { const a = -Math.PI / 2 + k * TAU * 2 / 5, rr = s.s; return [s.x + Math.cos(a) * rr, s.y + Math.sin(a) * rr]; }); g.save(); g.translate(cx, cy); g.scale(R, R); g.lineWidth = 1.4 / R; g.strokeStyle = rgba([157, 119, 0], .9 * (1 - seg(F, .82, 1)) * S.vis); K.partial(g, pts.map(([u, v]) => jit(u, v)), p); g.restore(); }
     },
+    /** 1.12 b427: an hour egg's pass (K.long: one pass in each hour of the list left alone, 1 and 2 by turns) — the
+     *  drawing the pass before left, rubbed out; the egg; then this pass's subject drawn and painted as any pass's is, only
+     *  quicker and without its moment, so the pass ends on the very picture the next one starts from; worked out from the
+     *  pass and the time alone */
+    hourPass(T, I, A, F, P, which) {
+      const { W, H } = S, on = I > .01;
+      g.clearRect(0, 0, W, H);
+      const jump = S.lastA === undefined || A < S.lastA || A - S.lastA > .15, dt = jump ? 0 : A - S.lastA; S.lastA = A;
+      const gl = jump ? 1 : 1 - Math.exp(-dt * 2.2); S.cx += (S.tx - S.cx) * gl; S.cy += (S.ty - S.cy) * gl; S.R += (S.tR - S.R) * gl; S.vis += ((S.room === 0 ? 0 : 1) - S.vis) * (jump ? 1 : 1 - Math.exp(-dt * 4)); if (S.vis < .01) return;
+      if (!S.RR || (Math.abs(S.R / S.RR - 1) > .08 && Math.abs(S.tR - S.R) < 2)) S.build();
+      if (S.plP !== P) { const cur = planOf(P), prev = planOf(P - 1); S.pl = { cur, prev }; S.plP = P; for (const k of [...S.subs.keys()]) if (k !== cur.key + "@" + S.RR && k !== prev.key + "@" + S.RR) S.subs.delete(k); }
+      const { cx, cy, R } = S, { cur, prev } = S.pl, iN = S.inst(cur), iO = S.inst(prev), fin = F >= 0 ? env(F, .05, .15, .55, .85, E.sine) : 0;
+      const fr = Math.floor(A * 8), jit = boil(fr, .35 / S.RR), stO = S.stOf(iO, false, T, I, A, F, fin, jit, fr), mir = deal(P, 83)() < .5;
+      const EB2 = which === 1 ? HB : RB, [e0, e1] = EB2.erase, erasing = on && T > e0 && T < e1, gone = on && T >= e1;
+      const sd = which === 2 ? S.ringSide() : 1, rc = [cx + sd * .18 * R, cy + .13 * R], dist = (sd > 0 ? W + 8 - cx : cx + 8) / R - .18 + .63 + .5; // egg 2: which way the bike rolls off, where its wheel lies, how far it has to go
+      // this pass's subject from `sub` on, on a clock of its own (Ts) that runs from its first line to its last wash dried by the pass's end
+      const Ts = 1.95 + Math.max(0, T - EB2.sub) * (9.85 - 1.95) / (14.82 - EB2.sub), sub = gone && T >= EB2.sub, pr2 = (t0, t1) => seg(Ts, t0, t1, x => x);
+      const inkKey = fr + ":" + (Ts < 6.5 ? Math.round(Ts * 30) : "all") + ":" + S.RR, finD = F >= 0 ? S.fin.map(d => ({ ...d, k: seg(F, d.t, d.t + .12, x => x), a: 1 - seg(F, .8, 1) })) : [], dropsOf = list => [...list.map(d => ({ ...d, k: seg(Ts, d.t + .1, d.t + .25, x => x), a: 1 })), ...finD];
+      const stN = !sub ? null : iN.balloon ? { A, jit, prog: pr2, inkKey, w: WASH.map(([, , , t0, t1]) => pr2(t0, t1)), wet: WASH.map(([, , , t0, t1]) => env(Ts, t0, t0 + .1, t1 + .2, t1 + .9) * I), cp: CSTROKES.map(([, t0, t1]) => pr2(t0, t1)), ghost: [1, 1], ghostB: 1, cloud: [Math.sin(A * .12) * .03, Math.sin(A * .1 + 2) * .025], birds: seg(Ts, 6.16, 6.4, x => x), fly: 0, lift: -fin * .12 + Math.sin(A * .9) * .01, sway: Math.sin(A * .7) * .025 * .35, flame: (.15 + .1 * Math.sin(A * 5) * Math.sin(A * 3.3) + fin) * pr2(4.65, 4.75), drops: dropsOf(S.drops) }
+        : { A, T: Ts, I, jit, fin, live: false, redraw: true, alive: 0, prog: pr2, inkKey, w: iN.sub.parts.map(pt => pt.washes.map(w => pr2(w[3], w[4]))), wet: iN.sub.parts.map(pt => pt.washes.map(w => env(Ts, w[3], w[3] + .1, w[4] + .2, w[4] + .9) * I)), birds: seg(Ts, 6.16, 6.4, x => x), fly: 0, drops: dropsOf(iN.drops) };
+      const rot = ([u, v]) => { const c = Math.cos(cur.ang), s = Math.sin(cur.ang); return [u * c - v * s, u * s + v * c]; };
+      if (!gone && !erasing) { const jolt = which === 2 && on ? Math.sin((T - RB.sit[0]) * 70) * .005 * env(T, RB.sit[0], RB.sit[0] + .02, RB.sit[0] + .06, RB.sit[0] + .2) * I : 0; // (egg 2: the table jolts as the mug comes down)
+        g.save(); g.globalAlpha = S.vis; g.translate(cx, cy + jolt * R); g.scale(R, R); S.pieceOf(iO, g, stO, prev.mirror); g.restore(); }
+      else if (erasing) { // the drawing the pass before left, drawn aside and rubbed out there, row after row
+        const size = Math.ceil(2.3 * R * px); if (!S.comp || S.comp.width !== size) [S.comp] = canvas(size, size);
+        const x = S.comp.getContext("2d"); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.clearRect(0, 0, size, size); x.setTransform(px * R, 0, 0, px * R, 1.15 * R * px, 1.15 * R * px); x.imageSmoothingEnabled = true; x.lineCap = "round"; x.lineJoin = "round";
+        S.pieceOf(iO, x, stO, prev.mirror);
+        const e = seg(T, e0, e1, x2 => x2), s = EL2[EL2.length - 1] * e; x.globalCompositeOperation = "destination-out"; x.strokeStyle = `rgba(0,0,0,${I.toFixed(3)})`; x.lineWidth = .46; x.beginPath(); let p0 = rot(EP2[0]); x.moveTo(p0[0], p0[1]); for (let i = 1; i < EP2.length && EL2[i - 1] < s; i++) { const f = clamp((s - EL2[i - 1]) / (EL2[i] - EL2[i - 1])), q = rot([lerp(EP2[i - 1][0], EP2[i][0], f), lerp(EP2[i - 1][1], EP2[i][1], f)]); x.lineTo(q[0], q[1]); } x.stroke(); x.globalCompositeOperation = "source-over";
+        g.globalAlpha = S.vis; g.drawImage(S.comp, cx - 1.15 * R, cy - 1.15 * R, 2.3 * R, 2.3 * R); g.globalAlpha = 1;
+      } else { // rubbed out: a ghost of it a moment, then the egg, then this pass's subject; a touch brings the old one back as it eases
+        g.save(); g.translate(cx, cy); g.scale(R, R);
+        if (I < .99) { g.globalAlpha = S.vis * (1 - I); S.pieceOf(iO, g, stO, prev.mirror); }
+        const gh = .07 * I * (1 - seg(T, e1 + 1, e1 + 2.2)); if (gh > .002) { g.globalAlpha = S.vis * gh; S.pieceOf(iO, g, stO, prev.mirror, true); }
+        if (which === 1) { g.globalAlpha = S.vis * I; S.handsAt(g, T, A, jit, mir); }
+        if (sub) { g.globalAlpha = S.vis * I; S.pieceOf(iN, g, stN, cur.mirror); }
+        g.restore(); g.globalAlpha = 1;
+      }
+      if (which === 2 && on) { g.save(); g.translate(cx, cy); g.scale(R, R); g.globalAlpha = S.vis * I; S.ringAt(g, T, A, jit, sd, dist); g.restore(); g.globalAlpha = 1; } // egg 2: the shadow, the ring, the bike
+      const tool = (spr, sh, [sx, sy], lift, ang, a) => { if (a <= .005) return; g.globalAlpha = a * S.vis; g.save(); g.translate(sx + 6 + lift * 10, sy + 9 + lift * 14); g.rotate(ang); g.drawImage(sh, -sh.w2 * .06, -sh.h2 / 2, sh.w2, sh.h2); g.restore(); g.save(); g.translate(sx, sy - lift * 6); g.rotate(ang); g.drawImage(spr, 0, -spr.h2 / 2, spr.w2, spr.h2); g.restore(); g.globalAlpha = 1; };
+      const rubber = ([sx, sy], rt, a) => { if (a <= .005) return; const spr = S.eraserS, sh = S.eraserSh; g.globalAlpha = a * S.vis; g.save(); g.translate(sx + 5, sy + 7); g.rotate(rt); g.drawImage(sh, -sh.w2 / 2, -sh.h2 / 2, sh.w2, sh.h2); g.restore(); g.save(); g.translate(sx, sy); g.rotate(rt); g.drawImage(spr, -spr.w2 / 2, -spr.h2 / 2, spr.w2, spr.h2); g.restore(); g.globalAlpha = 1; };
+      const ta = S.toolAng || -.62, td = [Math.cos(ta), Math.sin(ta)], scr = ([u, v]) => [cx + (mir ? -u : u) * R, cy + v * R], bk = ([u, v]) => [rc[0] + sd * u * R, rc[1] + v * R]; // (bk: a point of the bike, before it rolls)
+      // the eraser at work, its crumbs flying
+      if (erasing || (on && T >= e1 && T < e1 + .9)) {
+        const e = seg(T, e0, e1, x => x);
+        for (const c of S.crumbs) { if (c.e > e) continue; const te = e0 + c.e * (e1 - e0), dtc = T - te; if (dtc > .9) continue; const [u, v] = rot(along(EP2, EL2, c.e)), x = cx + (u + c.vx * dtc) * R, y = cy + (v + c.vy * dtc + .9 * dtc * dtc) * R; g.strokeStyle = rgba(c.c, (1 - dtc / .9) * .8 * I * S.vis); g.lineWidth = 1.2; g.beginPath(); g.arc(x, y, 2.2, c.rot, c.rot + 2.4); g.stroke(); }
+        if (erasing) { const [u0, v0, a0] = along(EP2, EL2, e), sc = Math.sin(A * 34) * .09, [u, v] = rot([u0 - Math.sin(a0) * sc, v0 + Math.cos(a0) * sc]), rt = a0 + cur.ang + Math.sin(A * 24) * .12, spr = S.eraserS, sh = S.eraserSh, sx = cx + u * R, sy = cy + v * R;
+          g.globalAlpha = I * S.vis; g.save(); g.translate(sx + 5, sy + 7); g.rotate(rt); g.drawImage(sh, -sh.w2 / 2, -sh.h2 / 2, sh.w2, sh.h2); g.restore(); g.save(); g.translate(sx, sy); g.rotate(rt); g.drawImage(spr, -spr.w2 / 2, -spr.h2 / 2, spr.w2, spr.h2); g.restore(); g.globalAlpha = 1; }
+      }
+      if (on && which === 2) { // egg 2's tools: the eraser at the ring, and giving up; the pencil looking it over, drawing the bike and watching it go; the brush
+        const ePt = (() => { const [u, v] = rot(along(EP2, EL2, 1)); return [cx + u * R, cy + v * R]; })(), rk = seg(T, RB.rub[0] - .12, RB.rub[0] + .06, E.io), rubbing = env(T, RB.rub[0] + .02, RB.rub[0] + .08, RB.rub[1] - .06, RB.rub[1]);
+        if (T > RB.rub[0] - .12 && T < RB.sulk[1]) {
+          const z = [Math.sin((T - RB.rub[0]) * 29) * RH * .8 * R, Math.sin((T - RB.rub[0]) * 6.5 + .4) * RH * .55 * R], at = [lerp(ePt[0], rc[0] + z[0] * rubbing, rk), lerp(ePt[1], rc[1] + z[1] * rubbing, rk)], droop = E.out(seg(T, RB.sulk[0], RB.sulk[0] + .14)), away = seg(T, RB.sulk[0] + .14, RB.sulk[1], E.in);
+          rubber([at[0] + sd * away * R * .9, at[1] + droop * R * .04 + away * R * .5], cur.ang + Math.sin(A * 28) * .16 * rubbing + sd * .5 * droop, I * (1 - away));
+          if (rubbing > .05) for (let k = 0; k < 10; k++) { const r = rng(9500 + k), t = (T * 3.2 + r()) % 1, x0 = rc[0] + (r() - .5) * RH * 1.4 * R, y0 = rc[1] + (r() - .5) * RH * R; g.strokeStyle = rgba(r() < .6 ? [205, 150, 150] : [150, 150, 158], (1 - t) * .8 * I * S.vis * rubbing); g.lineWidth = 1.2; g.beginPath(); g.arc(x0 + (r() - .5) * t * R * .3, y0 + t * R * .08 + t * t * R * .3, 2.2, k, k + 2.4); g.stroke(); } // crumbs, and the ring still there
+        }
+        const hover = bk(ta > 0 ? [-.34, RH + .3] : [-.12, -RH - .5]) /* where it watches from: out of the bike's way, whichever side it's held from */, first = (() => { const f = iN.pen[0], u0 = f[0][0][0], v0 = f[0][0][1]; return [cx + (cur.mirror ? -u0 : u0) * R, cy + v0 * R]; })();
+        if (T > RB.circle[0] - .3 && T < RB.sub + .1) { let at, lift = 0, ang = ta;
+          if (T < RB.circle[0]) { const k = seg(T, RB.circle[0] - .3, RB.circle[0], E.out), a0 = -1.9, st = bk([Math.cos(a0) * RH * 1.18, Math.sin(a0) * RH * 1.18]); at = [lerp(st[0] + td[0] * R * 1.3, st[0], k), lerp(st[1] + td[1] * R * 1.3 - R * .4, st[1], k)]; lift = .9; } // in from off the page,
+          else if (T < RB.bike[0]) { const q = seg(T, RB.circle[0], RB.circle[1] - .1, E.io), a = -1.9 + q * TAU * sd, rr = RH * 1.18 * (1 - seg(T, RB.circle[1] - .14, RB.bike[0], E.in)); at = bk([Math.cos(a) * rr, Math.sin(a) * rr]); lift = .8 * (1 - seg(T, RB.circle[1] - .1, RB.bike[0])); } // round the ring once, looking it over, and down at its middle
+          else if (T < RB.bike[1] + .02) { const [u, v, l] = penAt(BIKE.pen, T, [0, 0]); at = bk([u, v]); lift = l; } // drawing it into a bike
+          else if (T < RB.back[0]) { const k = seg(T, RB.bike[1], RB.bike[1] + .2, E.io), end = BIKE.pen[BIKE.pen.length - 1][0], e = bk(end[end.length - 1]); at = [lerp(e[0], hover[0], k), lerp(e[1], hover[1], k)]; lift = .5 * k; ang = ta + sd * .22 * seg(T, RB.roll[0], RB.roll[0] + .5, E.io); } // stepping back to watch it go
+          else { const k = seg(T, RB.back[0], RB.back[1], E.io); at = [lerp(hover[0], first[0], k), lerp(hover[1], first[1], k)]; lift = .5 * (1 - k) + .25 * Math.sin(k * Math.PI); ang = ta + sd * .22 * (1 - k); } // and back to today's drawing
+          tool(S.pencil, S.pencilSh, at, lift, ang, I * env(T, RB.circle[0] - .3, RB.circle[0] - .18, RB.sub - .03, RB.sub + .05));
+        }
+        if (T > RB.paint[0] - .14 && T < RB.paint[1] + .14) { const k = seg(T, RB.paint[0], RB.paint[0] + .3, E.io), b = along(BIKE.BACK, lens(BIKE.BACK), k), sad = [-.2, -RH - .145], at = T < RB.paint[0] + .3 ? bk(b) : bk([lerp(BIKE.SM[0], sad[0], seg(T, RB.paint[0] + .3, RB.paint[0] + .36)), lerp(BIKE.SM[1], sad[1], seg(T, RB.paint[0] + .3, RB.paint[0] + .36))]); // the brush, down the frame and onto the saddle
+          tool(S.brush, S.brushSh, at, .15, ta * 1.12, I * env(T, RB.paint[0] - .14, RB.paint[0], RB.paint[1], RB.paint[1] + .14)); }
+      }
+      if (on && which === 1) { // the pencil: drawing hand A, lifting away (startled as A comes alive), and back again, a little unsure, for today's drawing
+        const HA = PAIR.A;
+        if (T > HB.guide[0] - .3 && T < HB.penOut[1]) {
+          const [u, v, l] = penAt(HA.drawn, Math.min(T, HB.hat[1]), HA.drawn[0][0][0], .3), out = seg(T, HB.penOut[0], HB.penOut[1], E.in), jolt = env(T, HB.liveA[0] + .02, HB.liveA[0] + .09, HB.liveA[0] + .12, HB.liveA[0] + .3, E.out), p = scr([u, v]), go = out * R * 1.4 + jolt * R * .14;
+          tool(S.pencil, S.pencilSh, [p[0] + td[0] * go, p[1] + td[1] * go - out * R * .45], Math.max(l, out * .9), ta + jolt * .32, I * env(T, HB.guide[0] - .3, HB.guide[0] - .18, HB.penOut[0] + .12, HB.penOut[1]));
+        }
+        if (T > HB.back[0] && T < EB2.sub + .1) {
+          const f = iN.pen[0], u0 = f[0][0][0], v0 = f[0][0][1], p = [cx + (cur.mirror ? -u0 : u0) * R, cy + v0 * R], k = seg(T, HB.back[0], HB.back[1], E.out), from = [p[0] + td[0] * R * 1.4, p[1] + td[1] * R * 1.4 - R * .45];
+          const wag = Math.sin((T - HB.back[0]) * TAU * 3.2) * .17 * env(T, HB.back[0] + .12, HB.back[0] + .17, HB.back[1] - .03, HB.back[1]);
+          tool(S.pencil, S.pencilSh, [lerp(from[0], p[0], k), lerp(from[1], p[1], k)], (1 - k) * .8 + .3 * (1 - seg(T, HB.back[1] - .05, EB2.sub)), ta + wag, I * (1 - seg(T, EB2.sub - .02, EB2.sub + .06)));
+        }
+      }
+      // then this pass's subject: the pencil while it draws, the brush while it paints, on its own clock
+      if (sub && Ts > 1.95 && Ts < 9.1) { const tl = S.toolsAt(iN, Ts);
+        if (tl.pen) tool(S.pencil, S.pencilSh, S.toScr(iN, stN, cur.mirror, tl.pen.k, tl.pen.at[0], tl.pen.at[1]), tl.pen.lift, ta + tl.pen.lift * .06, I * env(Ts, 1.95, 2.05, 6.35, 6.5));
+        if (tl.brush) { const fl = (iN.balloon ? FLICKS : iN.sub.flicks).reduce((m, t) => Math.max(m, env(Ts, t - .06, t, t + .02, t + .14)), 0); tool(S.brush, S.brushSh, S.toScr(iN, stN, cur.mirror, tl.brush.k, tl.brush.at[0], tl.brush.at[1]), tl.brush.lift * .4, ta * 1.12 - Math.sign(ta) * fl * .5, I * env(Ts, 6.4, 6.5, 9.0, 9.1)); } }
+      // the finale: stars sketched in round it
+      if (F >= 0) for (const s of S.stars) { const p = seg(F, s.t, s.t + .16, x => x); if (p <= 0) continue; const pts = Array.from({ length: 11 }, (_, k) => { const a = -Math.PI / 2 + k * TAU * 2 / 5, rr = s.s; return [s.x + Math.cos(a) * rr, s.y + Math.sin(a) * rr]; }); g.save(); g.translate(cx, cy); g.scale(R, R); g.lineWidth = 1.4 / R; g.strokeStyle = rgba([157, 119, 0], .9 * (1 - seg(F, .82, 1)) * S.vis); K.partial(g, pts.map(([u, v]) => jit(u, v)), p); g.restore(); }
+    },
+    /** egg 2: which way the penny-farthing rolls off: to the nearer edge of the page, if nothing is in the way at its height */
+    ringSide() {
+      const { cx, cy, R, W } = S, key = [cx, cy, R].map(Math.round).join(",") + ":" + (S.raw ? S.raw.length : 0);
+      if (S.rsd && S.rsd.key === key && S.rsd.raw === S.raw) return S.rsd.sd;
+      const y0 = cy - .45 * R, y1 = cy + .55 * R, clear = sd => (S.raw || []).every(([a, b, c, d]) => d < y0 || b > y1 || (sd > 0 ? c < cx + .2 * R : a > cx - .2 * R));
+      const order = W - cx <= cx ? [1, -1] : [-1, 1], sd = order.find(clear) || order[0];
+      S.rsd = { key, raw: S.raw, sd }; return sd;
+    },
+    /** egg 2: the coffee ring, drawn once for a size, wet and dry — a faint film inside it, its band darkest at the outer
+     *  edge, where the coffee carried itself as it dried, granulated, and a run off one side — and the bike's paint */
+    ringW() {
+      if (S.rw && S.rw.RR === S.RR) return S.rw;
+      const RR = S.RR, half = RH + .08, mkR = wet => { const [c, x] = canvas(Math.ceil(2 * half * RR * px), Math.ceil(2 * half * RR * px)); x.imageSmoothingEnabled = true; x.setTransform(px * RR, 0, 0, px * RR, half * RR * px, half * RR * px);
+        const r = rng(4400), nz = K.noise1(4401, 24), rim = a => RH * (1 + .022 * (nz(a / TAU * 24) - .5)), band = a => .028 + .022 * nz(a / TAU * 24 + 7), C = wet ? [100, 58, 28] : [146, 100, 60];
+        const loop = (f, rev) => { for (let i = 0; i <= 96; i++) { const a = (rev ? 96 - i : i) / 96 * TAU, rr = f(a); i ? x.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : x.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); } };
+        x.beginPath(); loop(a => rim(a) - band(a) * .7); x.closePath(); x.fillStyle = rgba(C, wet ? .16 : .055); x.fill(); // the film inside it, faint once it's dry
+        x.beginPath(); loop(rim); loop(a => rim(a) - band(a), true); x.closePath(); x.fillStyle = rgba(C, wet ? .48 : .26); x.fill(); // its band
+        x.beginPath(); for (let i = 0; i <= 40; i++) { const a = .6 + i / 40 * 2.6, rr = rim(a) * 1.035 + .006 * Math.sin(i * .9); i ? x.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : x.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); } x.strokeStyle = rgba(C, wet ? .22 : .3, .8); x.lineWidth = 1.1 / RR; x.stroke(); // and a fainter second ring, where the cup sat a hair over first
+        x.beginPath(); loop(rim); x.closePath(); x.strokeStyle = rgba(C, wet ? .5 : .7, .78); x.lineWidth = (wet ? 1.5 : 2.1) / RR; x.stroke(); // darkest at its outer edge
+        x.beginPath(); loop(a => rim(a) - band(a)); x.closePath(); x.strokeStyle = rgba(C, .22, .85); x.lineWidth = .9 / RR; x.stroke();
+        for (let k = 0; k < 340; k++) { const a = r() * TAU, rr = rim(a) - r() * band(a) * 1.15; x.fillStyle = rgba(C, .1 + r() * .2, .7); const s2 = (.6 + r() * .9) / RR; x.fillRect(Math.cos(a) * rr, Math.sin(a) * rr, s2, s2); } // its grain
+        const da = 2.25, nx = Math.cos(da), ny = Math.sin(da); x.fillStyle = rgba(C, wet ? .44 : .3); x.beginPath(); x.moveTo(nx * (RH - .01) - ny * .022, ny * (RH - .01) + nx * .022); x.quadraticCurveTo(nx * (RH + .075), ny * (RH + .075), nx * (RH - .01) + ny * .022, ny * (RH - .01) - nx * .022); x.closePath(); x.fill(); // a run, off one side
+        c.half = half; return c; };
+      S.rw = { RR: S.RR, wet: mkR(true), dry: mkR(false), paint: BIKE.paint.map(([p, col, a, at], i) => { const c = S.washOf(p, col, a, 4500 + i); let far = 0; for (const [u, v] of p) far = Math.max(far, Math.hypot(u - at[0], v - at[1])); c.reach = far * 1.12 + .02; c.nz = K.noise1(4510 + i, 16); return c; }) };
+      return S.rw;
+    },
+    /** hour egg 2 at T, drawn into x in the drawing's frame: the mug's shadow; the ring it leaves; the penny-farthing the
+     *  pencil makes of it, painted, ringing its bell, and rolling off the page (`dist`: how far that is, in the drawing's units) */
+    ringAt(x, T, A, jit, sd, dist) {
+      if (T < RB.down[0] || T > RB.roll[1] + .05) return;
+      const c = [sd * .18, .13], ga = x.globalAlpha, pr = (t0, t1) => seg(T, t0, t1, z => z), rw = S.ringW();
+      if (T < RB.lift[1]) { // the mug's shadow, coming down from up high, sitting, lifting away: softer and fainter the higher it is
+        const h = T < RB.sit[0] ? 1 - seg(T, RB.down[0], RB.sit[0], E.out) : T < RB.lift[0] ? 0 : seg(T, RB.lift[0], RB.lift[1], E.in), dir = T < RB.sit[0] ? [.95 * sd, -1.15] : [1.25 * sd, -.95];
+        const p = [c[0] + dir[0] * h * h * 1.2 + .045 + .3 * h, c[1] + dir[1] * h * h * 1.2 + .065 + .4 * h], rr = RH * (1.07 + .6 * h), soft = .12 + .72 * h, a = (.3 - .17 * h) * env(T, RB.down[0], RB.down[0] + .35, RB.lift[1] - .3, RB.lift[1]);
+        { const gr = x.createRadialGradient(p[0], p[1], rr * (1 - soft), p[0], p[1], rr); gr.addColorStop(0, `rgba(70,52,38,${a.toFixed(3)})`); gr.addColorStop(1, "rgba(70,52,38,0)"); x.fillStyle = gr; x.beginPath(); x.arc(p[0], p[1], rr, 0, TAU); x.fill(); } // the mug's shadow,
+        for (const [wk, ak] of [[1, .9], [1.9, .45], [3, .22]]) { x.strokeStyle = `rgba(70,52,38,${(a * ak * (1 - .5 * soft)).toFixed(3)})`; x.lineWidth = rr * .1 * wk * (1 + soft); x.beginPath(); x.arc(p[0] + rr * 1.06 * sd, p[1] - rr * .04, rr * .3, sd > 0 ? -1.35 : Math.PI - 1.35, sd > 0 ? 1.35 : Math.PI + 1.35); x.stroke(); } // and its handle's, a loop
+      }
+      if (T < RB.sit[0]) { x.globalAlpha = ga; return; }
+      // how far it has rolled: back a little as it winds up, then away, faster and faster; that turns each wheel
+      const q = seg(T, RB.roll[0], RB.roll[1], z => z), d = dist * q * q * (.3 + .7 * q) - .04 * env(T, RB.ding[0] + .05, RB.ding[1], RB.ding[1] + .02, RB.roll[0] + .15, E.sine), ang = d / RH, bob = -Math.abs(Math.sin(ang * 2)) * .007 * Math.min(1, q * 8);
+      x.save(); x.translate(c[0] + sd * d, c[1] + bob); x.scale(sd, 1);
+      const wet = 1 - seg(T, RB.dry[0], RB.dry[1]), ring = rw.wet.half; // the ring: wet as it's left, drying paler with its rim darker; the bike's big wheel, turning
+      x.save(); x.rotate(ang); if (wet > .01) { x.globalAlpha = ga * wet; x.drawImage(rw.wet, -ring, -ring, 2 * ring, 2 * ring); } if (wet < .99) { x.globalAlpha = ga * (1 - wet); x.drawImage(rw.dry, -ring, -ring, 2 * ring, 2 * ring); } x.globalAlpha = ga; x.restore();
+      if (wet > .01) { x.strokeStyle = `rgba(255,255,255,${(.6 * wet).toFixed(3)})`; x.lineWidth = 1.6 / S.RR; x.beginPath(); x.arc(0, 0, RH - .016, Math.PI * 1.08, Math.PI * 1.42); x.stroke(); } // its wet gloss
+      BIKE.paint.forEach((w, i) => { const p = seg(T, RB.paint[0] + i * .1, RB.paint[0] + .16 + i * .1); if (p > .001) S.washAt(x, rw.paint[i], w[3], p, A); }); // the brush's red, and the saddle's brown
+      const lines = part => BIKE.L.filter(l => l[5] === part);
+      x.save(); x.rotate(ang); S.inkInto(x, pr, jit, 1, lines("big")); S.inkInto(x, pr, jit, 1, lines("crank")); x.restore();
+      S.inkInto(x, pr, jit, 1, lines("frame"));
+      x.save(); x.translate(BIKE.SM[0], BIKE.SM[1]); x.rotate(d / RS); S.inkInto(x, pr, jit, 1, lines("small")); x.restore();
+      const dg = Math.max(env(T, RB.ding[0], RB.ding[0] + .05, RB.ding[0] + .11, RB.ding[0] + .18), env(T, RB.ding[0] + .22, RB.ding[0] + .27, RB.ding[0] + .33, RB.ding[0] + .4)); // its bell, twice
+      if (dg > .02) { x.strokeStyle = rgba(INK, .85 * dg); x.lineWidth = 1 / S.RR; const b = [.035, BIKE.H[1] - .045]; for (const a of [-2.3, -1.57, -.84, -.15]) { x.beginPath(); x.moveTo(b[0] + Math.cos(a) * .036, b[1] + Math.sin(a) * .036); x.lineTo(b[0] + Math.cos(a) * (.056 + .018 * dg), b[1] + Math.sin(a) * (.056 + .018 * dg)); x.stroke(); } }
+      const v = q > 0 && q < 1 ? Math.min(1, q * 2.4) : 0; // speed lines behind it
+      if (v > .05) { x.strokeStyle = rgba(INK, .5 * v); x.lineWidth = .9 / S.RR; for (const [y, l] of [[-.22, .8], [.03, 1.15], [.25, .7]]) { const x0 = BIKE.SM[0] - RS - .05; x.beginPath(); x.moveTo(x0 - .05 - l * .3 * v, y); x.lineTo(x0, y); x.stroke(); } }
+      x.restore();
+      const pf = env(T, RB.roll[0] + .02, RB.roll[0] + .12, RB.roll[0] + .3, RB.roll[0] + .65); // a puff of dust where it set off
+      if (pf > .01) { const gr = seg(T, RB.roll[0], RB.roll[0] + .6, E.out); x.strokeStyle = rgba(INK, .55 * pf); x.lineWidth = .9 / S.RR; for (const [u, v2, r0, ph] of [[-.1, -.05, .06, 0], [.02, -.08, .075, 1], [-.02, -.01, .05, 2]]) { x.beginPath(); for (let i = 0; i <= 24; i++) { const a = i / 24 * TAU + ph, rr = r0 * (.7 + .5 * gr) * (1 + .15 * Math.pow(Math.abs(Math.sin(i / 24 * Math.PI * 4 + ph)), .5)), px2 = c[0] + sd * (BIKE.SM[0] - RS * .6 + u * (1 + gr)) + Math.cos(a) * rr, py2 = c[1] + RH - .06 + v2 - gr * .05 + Math.sin(a) * rr * .8; i ? x.lineTo(px2, py2) : x.moveTo(px2, py2); } x.stroke(); } }
+      x.globalAlpha = ga;
+    },
+    /** the hands' washes, made for the drawing's size: each one's skin, and its pencil's paint as it's held, flipped, and whole */
+    handW() {
+      if (S.hw && S.hw.RR === S.RR) return S.hw.list;
+      const mk = (poly, col, a, seed, at) => { const c = S.washOf(poly, col, a, seed); let far = 0; for (const [u, v] of poly) far = Math.max(far, Math.hypot(u - at[0], v - at[1])); c.reach = far * 1.12 + .02; c.nz = K.noise1(seed, 16); c.at = at; return c; };
+      const list = PAIR.hands.map((h, i) => ({ skin: mk(h.skin, [238, 180, 144], .55, 701 + i, h.W), ...Object.fromEntries(["paint", "paintF", "paintW"].map((key, j) => [key, h[key].map(([p, c, a], q) => mk(p, c, a, 711 + i * 40 + j * 10 + q, h.mid))])) }));
+      S.hw = { RR: S.RR, list }; return list;
+    },
+    /** hour egg 1 at T, drawn into x in the drawing's frame: the pair (PAIR), each cuff where it was drawn and each hand
+     *  turned at its wrist and slid in its cuff so its pencil (or, turned round, its eraser) is where its job has it; the
+     *  lines as far as they're drawn, the colour as far as it has flooded in; in the scrub, each undone from its cuff out */
+    handsAt(x, T, A, jit, mir) {
+      if (T < HB.guide[0] || T > HB.scrub[1] + .02) return;
+      const { A: HA, B: HBk } = PAIR, ga = x.globalAlpha, pr = (t0, t1) => seg(T, t0, t1, z => z), all = () => 1, ws = S.handW();
+      const tw = seg(T, HB.twirl[0], HB.twirl[1], E.io), undo = seg(T, HB.scrub[0] + .04, HB.scrub[1], z => z);
+      const pose = h => { // where its pencil is meant to be, and the turn and slide that put it there
+        const isA = h === HA, lv = isA ? HB.liveA : HB.liveB, stretch = -.07 * env(T, lv[0], lv[0] + .16, lv[0] + .2, lv[1], E.sine), breath = Math.sin(A * 2.1 + (isA ? 0 : 2.3)) * .01 * seg(T, lv[0], lv[1]);
+        let at = null, lift = 0;
+        const end = penAt(h.job, HB.loop[1], h.tip);
+        if (T >= HB.twirl[0]) { const q = seg(T, HB.twirl[0], HB.scrub[0], E.io), r = along(h.rub, h.rubL, seg(T, HB.scrub[0], HB.scrub[1] - .12, z => z)); at = T < HB.scrub[0] ? [lerp(end[0], h.rub[0][0], q), lerp(end[1], h.rub[0][1], q)] : [r[0], r[1]]; lift = T < HB.scrub[0] ? Math.sin(q * Math.PI) * .6 : 0; }
+        else if (T >= (isA ? HB.cuffB[0] : HB.loop[0]) - .3) { const p = penAt(h.job, T, h.tip); at = [p[0], p[1]]; lift = p[2]; }
+        if (!at) return { th: stretch + breath, sl: 0, lift: 0 };
+        const r = reachTo(h, at, h.tip); return { th: r.th + breath * .3, sl: r.sl, lift };
+      };
+      const one = (c, h, i, cut) => { // a hand into c: its cuff, then the hand itself, posed
+        const lv = h === HA ? HB.liveA : HB.liveB, live = pr(lv[0], lv[1]), wh = ws[i], ps = pose(h);
+        S.inkInto(c, pr, jit, 1, h.cuff); S.inkInto(c, pr, jit, 1, h.marks);
+        c.save(); c.translate(h.W[0], h.W[1] - ps.lift * .014); c.rotate(ps.th); c.translate(-h.W[0], -h.W[1]);
+        if (live > .001) S.washAt(c, wh.skin, h.W, live, A);
+        const pen = (lines, paint, prog, hide) => { c.save(); if (hide) { c.beginPath(); c.rect(-3, -3, 6, 6); h.occ.forEach(([u, v], j) => j ? c.lineTo(u, v) : c.moveTo(u, v)); c.closePath(); c.clip("evenodd"); } // behind the fingers, wherever it slides
+          c.translate(h.pu[0] * ps.sl, h.pu[1] * ps.sl); if (live > .001) paint.forEach(w => S.washAt(c, w, w.at, live, A)); S.inkInto(c, prog, jit, 1, lines); c.restore(); };
+        S.inkInto(c, pr, jit, 1, h.body);
+        if (T < (h === HA ? HB.liveA[0] : HB.growB[1])) pen(h.pen, wh.paint, pr, false); // as it's being drawn
+        else if (tw <= 0) pen(h.penW, wh.paintW, all, true); else if (tw >= 1) pen(h.penF, wh.paintF, all, true);
+        else { c.save(); c.translate(h.mid[0], h.mid[1]); c.rotate(Math.PI * tw * (h === HA ? 1 : -1)); c.translate(-h.mid[0], -h.mid[1]); pen(h.penW, wh.paintW, all, false); c.restore(); } // twirled out of the fingers and round
+        c.restore();
+        if (cut > 0) { // undone from its cuff out: everything behind the front rubbed away, its edge ragged
+          const f = (lerp(-6, 142, cut) - (HD.tip[0] + HD.Q[0]) / 2) * HK * h.sg, sg = h.sg; c.save(); c.globalCompositeOperation = "destination-out"; c.fillStyle = "#000";
+          for (const [lead, a] of [[.05, .35], [.025, .6], [0, 1]]) { c.globalAlpha = a; c.beginPath(); c.moveTo(-2 * sg, -1.4); for (let k = 0; k <= 56; k++) { const y = -1.4 + k * .05; c.lineTo(f + sg * (lead + .03 * Math.sin(y * 41 + i * 2) * Math.sin(y * 17 + 1) + .012 * Math.sin(y * 97)), y); } c.lineTo(-2 * sg, 1.4); c.closePath(); c.fill(); } // ragged, and softer ahead of it, as a rubber leaves it
+          c.restore(); }
+      };
+      if (undo <= 0) { x.save(); if (mir) x.scale(-1, 1); x.lineCap = "round"; x.lineJoin = "round"; PAIR.hands.forEach((h, i) => one(x, h, i, 0)); x.restore(); }
+      else PAIR.hands.forEach((h, i) => { // each into a layer of its own, undone there, crumbs falling off its front
+        const R = S.R, size = Math.ceil(2.3 * R * px), key = "hl" + i; if (!S[key] || S[key].width !== size) [S[key]] = canvas(size, size);
+        const c = S[key].getContext("2d"); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1; c.clearRect(0, 0, size, size); c.setTransform(px * R * (mir ? -1 : 1), 0, 0, px * R, 1.15 * R * px, 1.15 * R * px); c.imageSmoothingEnabled = true; c.lineCap = "round"; c.lineJoin = "round";
+        one(c, h, i, undo); x.drawImage(S[key], -1.15, -1.15, 2.3, 2.3);
+        const f = (lerp(-6, 142, undo) - (HD.tip[0] + HD.Q[0]) / 2) * HK * h.sg;
+        for (let k = 0; k < 14; k++) { const r = rng(9100 + i * 50 + k), y0 = h.W[1] + (r() - .45) * .55 * -h.sg, t = (T * 2.6 + r()) % 1, fx = (f + (r() - .5) * .04) * (mir ? -1 : 1), fy = y0 + t * .1 + t * t * .22; x.strokeStyle = rgba(r() < .6 ? [205, 150, 150] : [150, 150, 158], .75 * (1 - t) * env(undo, 0, .08, .9, 1)); x.lineWidth = 1.2 / S.RR; x.beginPath(); x.arc(fx, fy, 2.2 / S.RR, k, k + 2.4); x.stroke(); } // crumbs off the front
+        const rb = along(h.rub, h.rubL, seg(T, HB.scrub[0], HB.scrub[1] - .12, z => z)); for (let k = 0; k < 6; k++) { const r = rng(9300 + i * 20 + k), t = (T * 3.4 + r()) % 1, fx = (rb[0] + (r() - .5) * .05 + (r() - .5) * t * .12) * (mir ? -1 : 1), fy = rb[1] + t * .05 + t * t * .25; x.strokeStyle = rgba(r() < .7 ? [205, 150, 150] : [150, 150, 158], .8 * (1 - t) * env(undo, 0, .05, .7, .85)); x.lineWidth = 1.2 / S.RR; x.beginPath(); x.arc(fx, fy, 2.2 / S.RR, k * 2, k * 2 + 2.4); x.stroke(); } // and where its eraser rubs
+      });
+      x.globalAlpha = ga;
+    },
     /** the pencil lines, drawn into the cache for this boil frame and this much of the drawing */
     inkInto(x, prog, jit, ghost, list = STROKES) {
       const RR = S.RR, stroke = (pts, p, w, a) => {
@@ -969,7 +1310,7 @@ export default function sketch(K) {
       g.restore();
     },
     paint(T, I, A, F, P = 0) {
-      if (P > 0) { if (K.egg(P)) S.eggPass(T, I, A, F, P); else S.drawPass(T, I, A, F, P); return; } // b416: every twelfth pass, the egg
+      if (P > 0) { const L = K.long(P); if (K.egg(P)) S.eggPass(T, I, A, F, P); else if (L === 1 || L === 2) S.hourPass(T, I, A, F, P, L); else S.drawPass(T, I, A, F, P); return; } // b416: every twelfth pass, the egg; b427: once an hour, an hour egg
       const { W, H } = S, on = I > .01;
       g.clearRect(0, 0, W, H);
       // glide to the room the words leave, and draw the caches again if the size has changed much

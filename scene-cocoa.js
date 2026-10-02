@@ -29,6 +29,17 @@
 // cat says it's fond of you), a small mew, an ear flicked; then it lets go and slides back down into the cup, the foam
 // closes over it in rings, and the art comes back together as it was. It peeks out on the side away from the words. The
 // pass's dusting falls after it, so the pass ends on the very picture the next one starts from.
+//
+// 1.12 b427: the long day's hour eggs. Once in each hour of the list left alone (K.long), one of two, by turns, plays while
+// the spoon stirs and the new art is poured as on any pass, in place of what drops in and what crosses the window's
+// light. The first, a dragon of steam: the spoon winds the cup's steam up into a column and the dragon comes up out of
+// the cocoa in it — antlers, a mane, long whiskers, an eye like an ember — hooks over the top, flies once round the cup
+// while the pour opens, and coils beside it on the side away from the words; it lifts its head to look at you, blinks
+// slowly, blows two smoke rings, and goes away up in a spiral, coming apart into steam from its tail, and the cup's own
+// steam comes back. The second, a blue tit, after the ones that learned to open the milk on the doorstep for its cream:
+// it flies in over the table from the side away from the words and lands on the saucer's rim, watches the pour, hops up
+// onto the cup, takes the foam in two sips, comes up with some on its beak and shakes it off into the cup, cocks its head
+// at you and is gone the way it came. The pass's dusting falls after either, so it ends where the next pass starts.
 export default function cocoa(K) {
   const { clamp, lerp, E, seg, env, rng, canvas } = K;
   const TAU = Math.PI * 2;
@@ -145,6 +156,42 @@ export default function cocoa(K) {
     const r = deal(P, 37), art = swanP(P) ? SWAN_ID : bag(P, NART, 9);
     return { P, art, ang: (r() - .5) * .9, stir: r() < .5 ? 1 : -1, drop: bag(P, 4, 17), dust: bag(P, 4, 19), light: bag(P, 4, 13), seed: Math.floor(r() * 1e6) }; // the extras from bags too: none the same two passes running
   };
+
+  /* ---------------- 1.12 b427: the long day's hour eggs ---------------- */
+  /** Hour egg 1, the dragon: its flight, in the cup's radii about its middle (y down), worked out for where the cup is —
+   *  up out of the cocoa in its steam (no higher than the words above leave room for), a hook over the top toward the open
+   *  side, down and once round the cup a little outside the saucer and out to rest beyond it on the side away from the
+   *  words (`side` 1 the right, -1 the left), then up and away — as points along a smooth curve through these, with the
+   *  length to each, and where on it the head comes to rest */
+  const drgPath = (th, room) => {
+    const sd = Math.cos(th) >= 0 ? 1 : -1, v = clamp((room - .45) / .88, .4, 1), deg = Math.PI / 180;
+    const key = [[0, .14], [.01 * sd, -.2 * v], [-.03 * sd, -.46 * v], [.02 * sd, -.66 * v], [.14 * sd, -.86 * v], [.36 * sd, -.9 * v], [.53 * sd, -.72 * v], [.64 * sd, -.47 * v]];
+    const a0 = Math.atan2(-.47 * v, .64 * sd), aE = (() => { let e = th; while ((e - a0) * sd < 2 * Math.PI) e += 2 * Math.PI * sd; while ((e - a0) * sd >= 4 * Math.PI) e -= 2 * Math.PI * sd; return e; })(); // round once, and on to the open side
+    const off = .1 + .12 * (1 - clamp((room - .9) / .6)), co = [Math.cos(th) * off, Math.sin(th) * off], n = Math.ceil(Math.abs(aE - a0) / (12 * deg)); // round a circle set a little toward the open side, so it keeps off the words (the more so the less room they leave)
+    for (let i = 1; i <= n; i++) { const a = a0 + (aE - a0) * i / n, out = clamp(1 - (aE - a) * sd / (100 * deg)), r = .97 + .15 * out * out * (3 - 2 * out), w = clamp(i / 3); key.push([co[0] * w + Math.cos(a) * r, co[1] * w + Math.sin(a) * r]); }
+    const restK = key.length - 1, rp = key[restK], tg = [-Math.sin(aE) * sd, Math.cos(aE) * sd]; // then on a little the way it was going, and up and away into the air
+    key.push([rp[0] + tg[0] * .22, rp[1] + tg[1] * .22]); for (const [f, g2] of [[.1, .3], [.36, .62], [.4, .98], [.18, 1.28], [-.04, 1.62]]) key.push([rp[0] + tg[0] * .22 + sd * f, rp[1] + tg[1] * .22 - g2]);
+    const pts = [];
+    for (let i = 0; i < key.length - 1; i++) { const p0 = key[Math.max(0, i - 1)], p1 = key[i], p2 = key[i + 1], p3 = key[Math.min(key.length - 1, i + 2)];
+      for (let k = 0; k < 8; k++) { const t = k / 8, t2 = t * t, t3 = t2 * t, cr = j => .5 * (2 * p1[j] + (p2[j] - p0[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (3 * p1[j] - p0[j] - 3 * p2[j] + p3[j]) * t3); pts.push([cr(0), cr(1)]); } }
+    pts.push(key[key.length - 1]);
+    const L = [0]; for (let i = 1; i < pts.length; i++) L.push(L[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    return { pts, L, rest: L[restK * 8], end: L[L.length - 1], sd };
+  };
+  /** where on a flight a length along it is: [x, y, the way it heads] */
+  const drgAt = (D, s) => { const { pts, L } = D; s = clamp(s, 0, L[L.length - 1]); let lo = 0, hi = L.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (L[m] < s) lo = m; else hi = m; } const f = (s - L[lo]) / ((L[hi] - L[lo]) || 1), a = pts[lo], b = pts[hi]; return [lerp(a[0], b[0], f), lerp(a[1], b[1], f), Math.atan2(b[1] - a[1], b[0] - a[0])]; };
+  /** its beats, in the pass's seconds: the steam thickens as the spoon goes round (`gather`), and the dragon comes up out
+   *  of it and flies (`fly`), once round the cup as the new pour opens, to coil round it (`rest`); it lifts its head to look
+   *  at you (`look`), blinks slowly, blows a smoke ring (`ring`); it goes away up in a spiral (`away`), coming apart into
+   *  steam (`fade`), the cup's own steam coming back (`back`); the pass's dusting falls after it, `dust` seconds late */
+  const DB = { gather: [.3, 1.4], fly: [1.15, 6.3], rest: [6.3, 9.6], look: [6.7, 7.1], blink: 7.6, ring: [8.1, 9.4], away: [9.6, 12.0], fade: [10.6, 12.1], back: [11.2, 12.7], dust: 3.15, LB: 3.4 };
+  /** Hour egg 2, the blue tit, after the ones that learned to open the milk on doorsteps for its cream: its beats, in the
+   *  pass's seconds — in over the light from the side away from the words (`in`), down on the saucer's rim; it watches the
+   *  pour (`watch`), hops up onto the cup (`hop`), takes the foam in two sips (`sips`), comes up with some on its beak
+   *  (`foam`), shakes it off (`shake`), cocks its head at you (`cock`) and is off the way it came (`off`) */
+  const TS = 1.9; // the tit's size: its own units to the cup's radii
+  const TB = { in: [.7, 2.15], fold: [2.1, 2.45], watch: [2.45, 6.0], hops: [3.3, 4.6], hop: [6.05, 6.45], sips: [6.6, 7.55], foam: [8.0, 9.3], shake: [8.45, 8.85], cock: [9.15, 9.75], off: [9.9, 11.1], dust: 3.15 };
+
   const S = {
     res: "dpr",
     wash: 1, veil: .6, hug: .7, hugFinale: true, list: .4, // a dark kit; the table is behind the words, and the lines and the finale's words sit on pads
@@ -254,6 +301,7 @@ export default function cocoa(K) {
     passPlan(P) {
       if (S.plP === P && S.pl) return S.pl;
       if (K.egg(P)) { S.pl = S.eggPlanOf(P); S.plP = P; return S.pl; } // b416: every twelfth pass, the egg
+      { const L = K.long(P); if (L === 1 || L === 2) { S.pl = S.hourPlanOf(P, L); S.plP = P; return S.pl; } } // b427: once an hour, an hour egg
       const cur = planOf(P), prev = planOf(P - 1), pr = PROGS[cur.art], end = pr ? pr.end : 5.8, r = rng(cur.seed + 7), t0 = Math.max(6.25, end + .4);
       const n = [3, 5, 9, 0][cur.drop], small = cur.drop === 2, o = r() * TAU;
       const mallows = Array.from({ length: n }, (_, i) => { const a = o + i / Math.max(1, n) * TAU + (r() - .5) * .6, d = small ? .2 + r() * .34 : .22 + r() * .22; return { u: Math.cos(a) * d, v: Math.sin(a) * d, rot: r() * TAU, t: t0 + i * (small ? .08 : .4) + r() * .08, ph: r() * TAU, s: small ? .06 + r() * .025 : .14 + r() * .025, pink: r() < .45 }; });
@@ -274,6 +322,176 @@ export default function cocoa(K) {
       let near = null, nd = 1e9; for (const [x0, y0, x1, y1] of S.raw || []) { const qx = clamp(cx, x0, x1), qy = clamp(cy, y0, y1), d = Math.hypot(qx - cx, qy - cy); if (d < nd) { nd = d; near = [qx, qy]; } }
       const ax = near && nd > 1 ? (cx - near[0]) / nd : 0, ay = near && nd > 1 ? (cy - near[1]) / nd : 1, a = clamp(Math.atan2(ay + .9, ax), .45, Math.PI - .45);
       S.eggD = { key, raw: S.raw, a }; return a;
+    },
+    /** 1.12 b427: an hour egg's pass (K.long: one pass in each hour of the list left alone, 1 and 2 by turns). It stirs and
+     *  pours as any pass does, and the egg plays over it in place of what drops in and what crosses the window's light; its
+     *  dusting falls after the egg, `dust` seconds late, so the pass ends on the very picture the next one starts from */
+    hourPlanOf(P, which) {
+      const cur = planOf(P), prev = planOf(P - 1), pr = PROGS[cur.art];
+      return { P, cur, prev, end: pr ? pr.end : 5.8, mallows: [], lt: -1, c0: 0, deep: 0, paw: false, hour: { which, dust: which === 1 ? DB.dust : TB.dust } };
+    },
+    /** a puff of steam, soft, in a colour, drawn once */
+    puffS(c = [255, 248, 236]) { const key = "pf" + c.join(","); if (!S[key] || S[key].k !== px) { S[key] = make(64, 64, x => { const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, `rgba(${c},1)`); gr.addColorStop(.35, `rgba(${c},.62)`); gr.addColorStop(.7, `rgba(${c},.18)`); gr.addColorStop(1, `rgba(${c},0)`); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); }); S[key].k = px; } return S[key]; },
+    /** hour egg 1: how much of the cup's own steam shows — thicker as the spoon winds it up, gone into the dragon, back after */
+    dragonSteam(T, I) { return lerp(1, (1 + .8 * env(T, DB.gather[0], DB.gather[0] + .5, DB.gather[1] - .3, DB.gather[1])) * (1 - seg(T, DB.gather[1] - .4, DB.gather[1] + .5) * (1 - seg(T, DB.back[0], DB.back[1]))), I); },
+    /** hour egg 1: the dragon's flight for where the cup sits now (made again when it moves): the words above it say how
+     *  high it may hook over, the side away from them where it comes to rest */
+    drgFlight() {
+      const { cx, cy, R } = S, key = [cx, cy, R].map(Math.round).join(",") + ":" + (S.raw ? S.raw.length : 0);
+      if (S.dp && S.dp.key === key && S.dp.raw === S.raw) return S.dp;
+      let top = null; for (const [x0, , x1, y1] of S.raw || []) if (x1 > cx - R && x0 < cx + R && y1 < cy) top = top === null ? y1 : Math.max(top, y1);
+      return (S.dp = Object.assign(drgPath(S.eggDir(), top === null ? 3 : (cy - top) / R), { key, raw: S.raw }));
+    },
+    /** hour egg 1: how far along its flight the dragon's head is at T */
+    drgHead(D, T) { return T < DB.rest[0] ? D.rest * E.io(seg(T, DB.fly[0], DB.rest[0], z => z)) : T < DB.away[0] ? D.rest : lerp(D.rest, D.end, E.in(seg(T, DB.away[0], DB.away[1], z => z))); },
+    /** Hour egg 1 at T: the dragon of steam. The spoon winds the cup's steam up into a column and the dragon comes up out
+     *  of the cocoa in it, hooks over the top and flies once round the cup while the new pour opens, and coils beside it on
+     *  the side away from the words; it lifts its head to look at you, blinks slowly, blows a smoke ring, and goes away up,
+     *  coming apart into steam from its tail. Drawn in the cup's radii: its body soft puffs of steam along its flight, grey
+     *  along its belly as a cloud is, edged, with a ripple running down it; fins, legs and a tufted tail; its head a solid
+     *  shape of steam in profile, kept the right way up (it turns over as it heads up or down), antlers, a mane, whiskers,
+     *  an eye like an ember; its shadow under it; wisps peeling off it and drifting up */
+    dragonAt(pl, T, I, A, cx, cy, R) {
+      const kk = I * S.vis, k = kk * env(T, DB.fly[0] - .1, DB.fly[0] + .45, DB.fade[0], DB.fade[1]), vx = kk * env(T, DB.gather[0] + .2, DB.gather[1] - .25, DB.fly[0] + .25, DB.fly[0] + .85);
+      if (k <= .004 && vx <= .004) return;
+      const D = S.drgFlight(), sh = S.drgHead(D, T), LB = DB.LB, pf = S.puffS(), pg = S.puffS([168, 150, 140]), N = 72, fq = seg(T, DB.fade[0] - .5, DB.fade[1], z => z), rest = env(T, DB.rest[0] - .4, DB.rest[0] + .2, DB.away[0], DB.away[0] + .4);
+      const OUT = [92, 70, 58], WH = [255, 251, 245], col = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${clamp(a).toFixed(3)})`;
+      const flip = a => clamp(Math.cos(a) * 2.6, -1, 1), wd = s => (s < .14 ? lerp(.062, .07, s / .14) : s < .75 ? lerp(.07, .098, E.sine((s - .14) / .61)) : .084 * Math.pow(1 - (s - .75) / (LB - .75), .9) + .014) * (1 + .16 * Math.sin(s * 13 + 1.3) * Math.min(1, s / .3) + .08 * Math.sin(s * 29)); // full in the body, lumpy as a cloud, thin to its tail
+      const puff = (x, y, r, a, sp = pf) => { if (a <= .002) return; g.globalAlpha = a; g.drawImage(sp, x - r, y - r, r * 2, r * 2); };
+      const q2 = (p0, p1, p2, n = 10) => Array.from({ length: n + 1 }, (_, i) => { const t = i / n, u = 1 - t; return [u * u * p0[0] + 2 * u * t * p1[0] + t * t * p2[0], u * u * p0[1] + 2 * u * t * p1[1] + t * t * p2[1]]; });
+      const path = pts => { g.beginPath(); pts.forEach(([u, v], i) => i ? g.lineTo(u, v) : g.moveTo(u, v)); };
+      const line = (c, a, w, pts) => { if (a <= .002) return; g.globalAlpha = 1; g.strokeStyle = col(c, a); g.lineWidth = w; path(pts); g.stroke(); };
+      const tube = (p0, p1, p2, w0, w1 = 0, n = 10) => { const c = q2(p0, p1, p2, n), Lf = [], Rt = []; c.forEach((q, i) => { const a = c[Math.max(0, i - 1)], b2 = c[Math.min(n, i + 1)], dx = b2[0] - a[0], dy = b2[1] - a[1], l = Math.hypot(dx, dy) || 1, w = lerp(w0, w1, i / n); Lf.push([q[0] - dy / l * w, q[1] + dx / l * w]); Rt.push([q[0] + dy / l * w, q[1] - dx / l * w]); }); return [...Lf, ...Rt.reverse()]; };
+      const shape = (pts, fill, a, lw) => { if (a <= .002) return; g.globalAlpha = 1; path(pts); g.closePath(); g.fillStyle = col(fill, .9 * a); g.fill(); g.strokeStyle = col(OUT, .6 * a); g.lineWidth = lw; g.stroke(); };
+      g.save(); g.translate(cx, cy); g.scale(R, R); g.lineCap = "round"; g.lineJoin = "round"; const px1 = 1 / R; // a CSS pixel, in the cup's radii
+      for (let j = 0; j < 12 && vx > .004; j++) { const a = A * 4.6 + j * .95, h = .1 + j * .07, r = .07 + .05 * Math.sin(j * .8 + A); puff(Math.cos(a) * r * (1 + j * .06), -h + Math.sin(a) * r * .3, .1 + j * .006, vx * .16 * (1 - j / 14)); } // the steam wound up into a column as the spoon goes round
+      if (k > .004) {
+        const body = []; for (let i = 0; i <= N; i++) { const s = i / N * LB, sig = sh - s; if (sig < 0) break; const [x, y, a] = drgAt(D, sig), n = [-Math.sin(a), Math.cos(a)], und = (.024 * (1 - rest) + .009 * rest) * Math.sin(s * 5.5 - A * 4.6) * Math.min(1, s / .2), e = clamp(sig / .35), lo = .55 * (1 - s / LB);
+          body.push({ s, x: x + n[0] * und, y: y + n[1] * und, a, n, w: wd(s), fl: flip(a), al: e * e * (3 - 2 * e) * (1 - seg(fq, lo, lo + .45)) }); }
+        const dor = b => [-b.n[0] * b.fl, -b.n[1] * b.fl], at = (b, f) => { const d = dor(b); return [b.x + d[0] * b.w * f, b.y + d[1] * b.w * f]; }, av = body.length ? body.reduce((m, b) => m + b.al, 0) / body.length : 0;
+        for (const b of body) puff(b.x + .05, b.y + .08, b.w * 1.6, k * b.al * .1, S.soft); // its shadow, on the saucer and the table
+        for (const b of body) puff(b.x, b.y, b.w * 2.3, k * b.al * .07); // a glow round it,
+        for (const b of body) { const [u, v] = at(b, -.48); puff(u, v, b.w * .95, k * b.al * .15, pg); } // grey along its belly,
+        for (const b of body) { const [u, v] = at(b, .12); puff(u, v, b.w * 1.25, k * b.al * .28); } // and white over it
+        if (body.length > 2) { line(OUT, k * .42 * av, 1.4 * px1, body.map(b => at(b, -.92))); line(WH, k * .6 * av, 1.3 * px1, body.map(b => at(b, .88))); } // edged: its belly darker, its back catching the light
+        body.forEach((b, i) => { if (i < 4 || i % 5 || b.s > LB * .86 || b.al < .5) return; const dx = Math.cos(b.a), dy = Math.sin(b.a), b0 = at(b, .78), tp = at(b, 1.75); // fins along its back, like flames
+          shape([[b0[0] - dx * .028, b0[1] - dy * .028], [tp[0] - dx * .06, tp[1] - dy * .06], [b0[0] + dx * .022, b0[1] + dy * .022]], WH, k * b.al * .8, 1.1 * px1); });
+        for (const ls of [.62, 1.72]) { const b = body[Math.round(ls / LB * N)]; if (!b) continue; const dx = Math.cos(b.a), dy = Math.sin(b.a), d = dor(b), hip = at(b, -.65), knee = [hip[0] - d[0] * .07 - dx * .02, hip[1] - d[1] * .07 - dy * .02], ft = [knee[0] - d[0] * .025 - dx * .06, knee[1] - d[1] * .025 - dy * .06], a2 = k * b.al; // its legs, tucked back as it flies
+          if (b.al < .3) continue; shape(tube(hip, [lerp(hip[0], knee[0], .6) - dx * .015, lerp(hip[1], knee[1], .6) - dy * .015], knee, .03, .016, 8), WH, a2 * .9, 1.2 * px1); shape(tube(knee, [lerp(knee[0], ft[0], .5), lerp(knee[1], ft[1], .5)], ft, .016, .011, 6), WH, a2 * .9, 1.1 * px1); // its legs, tucked back as it flies: a haunch, a shin,
+          for (const c of [-.7, 0, .7]) { const cl = [ft[0] - dx * .04 + d[0] * c * .03, ft[1] - dy * .04 + d[1] * c * .03], mid = [lerp(ft[0], cl[0], .5) - d[0] * .01, lerp(ft[1], cl[1], .5) - d[1] * .01]; line(OUT, a2 * .7, 2.6 * px1, q2(ft, mid, cl, 4)); line(WH, a2 * .9, 1.4 * px1, q2(ft, mid, cl, 4)); } } // and three claws
+        const tb = body[body.length - 1]; if (tb && tb.s > LB * .95) { const dx = Math.cos(tb.a), dy = Math.sin(tb.a); for (let m = -1; m <= 1; m++) shape(tube([tb.x, tb.y], [tb.x - dx * .06 + tb.n[0] * m * .03, tb.y - dy * .06 + tb.n[1] * m * .03], [tb.x - dx * .13 + tb.n[0] * m * .07 + Math.sin(A * 3 + m) * .012, tb.y - dy * .13 + tb.n[1] * m * .07], .022, 0, 8), WH, k * tb.al * .75, 1 * px1); } // the tuft at its tail
+        for (let j = 0; j < 30; j++) { const t0 = DB.fly[0] + .3 + j * .36, age = T - t0; if (age < 0 || age > 1.3) continue; const s = (j * .61) % (LB * .9), sig = S.drgHead(D, t0) - s; if (sig < .2) continue; const [x, y] = drgAt(D, sig), up = age * .3, cu = Math.sin(age * 4.5 + j) * .04 * age, a = k * (1 - age / 1.3) * .5 * (1 - seg(fq, .6, 1));
+          puff(x + cu, y - up, .045 + age * .05, a * .22); line(WH, a * .5, 1 * px1, q2([x + cu * .5, y - up * .6], [x + cu * 2 + .03, y - up * .85], [x + cu, y - up - .05], 6)); } // wisps peeling off it, drifting up
+        if (body.length && sh > .08) { const h = body[0], fl = h.fl < 0 ? Math.min(-.3, h.fl) : Math.max(.3, h.fl), look = -.34 * env(T, DB.look[0], DB.look[1], DB.ring[1], DB.ring[1] + .45, E.sine), hk = k * clamp((sh - .08) / .4), hs = lerp(.55, 1, seg(T, DB.fly[0] + .3, DB.fly[0] + 2.3, E.io)), lw = px1 / hs;
+          g.save(); g.translate(h.x, h.y); g.rotate(h.a); g.scale(1, fl); g.rotate(look); g.scale(hs, hs);
+          puff(.22, .06, .3, hk * .16, S.soft); // its shadow
+          const open = .2 * env(T, DB.ring[0] - .25, DB.ring[0], DB.ring[0] + .3, DB.ring[0] + .55);
+          const mane = (y0, len, ph, a) => shape(tube([-.04, y0], [-.04 - len * .5, y0 - .05 + Math.sin(A * 3.3 + ph) * .025], [-.04 - len, y0 + .02 + Math.sin(A * 3.3 + ph + 1) * .04], .032, 0, 10), WH, hk * a, 1.1 * lw);
+          mane(.07, .2, 0, .7); mane(.03, .26, 1.2, .75); mane(-.02, .28, 2.1, .8); mane(-.065, .22, 3, .8); // its mane, streaming back
+          shape(tube([.02, -.1], [-.08, -.17], [-.31, -.2], .022, .003), [224, 214, 204], hk * .8, 1.2 * lw); // its antlers, the far one first
+          shape(tube([.07, -.11], [-.02, -.21], [-.26, -.29], .026, .003), WH, hk * .95, 1.3 * lw); shape(tube([-.07, -.205], [-.1, -.25], [-.13, -.31], .013, .002, 6), WH, hk * .95, 1.1 * lw);
+          const C = (x0, y0) => { const c = Math.cos(open), sn = Math.sin(open); return [.15 + (x0 - .15) * c - (y0 - .02) * sn, .02 + (x0 - .15) * sn + (y0 - .02) * c]; }; // its lower jaw, hinged at the corner of its mouth
+          shape([[.14, .018], [.25, .02], [.34, .022], [.378, .036], [.358, .062], [.27, .076], [.18, .076], [.11, .062]].map(([u, v]) => C(u, v)), [236, 226, 216], hk, 1.5 * lw);
+          if (open > .02) shape([[.16, .02], [.37, .02], ...[[.37, .03], [.16, .03]].map(([u, v]) => C(u, v))], [96, 46, 36], hk * open * 4, .8 * lw); // the dark of its mouth as it opens
+          const top = [[-.08, -.05], [-.02, -.1], [.05, -.132], [.13, -.118], [.2, -.088], [.27, -.084], [.33, -.106], [.385, -.092], [.42, -.052], [.408, -.012], [.33, -.002], [.24, .006], [.16, .016], [.1, .044], [.02, .072], [-.07, .07]]; // a short, deep head: a big brow, a bulb of a nose
+          const sm = []; for (let i = 0; i < top.length; i++) { const p0 = top[(i - 1 + top.length) % top.length], p1 = top[i], p2 = top[(i + 1) % top.length], p3 = top[(i + 2) % top.length]; for (let j = 0; j < 4; j++) { const t = j / 4, t2 = t * t, t3 = t2 * t, cr = q => .5 * (2 * p1[q] + (p2[q] - p0[q]) * t + (2 * p0[q] - 5 * p1[q] + 4 * p2[q] - p3[q]) * t2 + (3 * p1[q] - p0[q] - 3 * p2[q] + p3[q]) * t3); sm.push([cr(0), cr(1)]); } }
+          const hg = g.createLinearGradient(0, -.12, 0, .08); hg.addColorStop(0, "rgba(255,252,246,.95)"); hg.addColorStop(1, "rgba(212,198,186,.92)"); path(sm); g.closePath(); g.globalAlpha = hk; g.fillStyle = hg; g.fill(); g.strokeStyle = col(OUT, .62); g.lineWidth = 1.6 * lw; g.stroke(); // its head
+          line(OUT, hk * .5, 1.2 * lw, q2([.15, .016], [.1, -.012], [.05, -.04])); line(OUT, hk * .6, 1.3 * lw, q2([.355, -.086], [.375, -.07], [.36, -.058])); // its cheek, its nostril
+          shape(tube([.085, -.105], [.15, -.15], [.22, -.112], .016, .004, 8), WH, hk * .95, 1.1 * lw); // a bushy brow
+          for (const [x0, l] of [[.33, .024], [.27, .018]]) shape([[x0 - .008, .004], [x0, .004 + l], [x0 + .009, .004]], WH, hk, .8 * lw); // its fangs
+          const bl = 1 - .9 * env(T, DB.blink, DB.blink + .14, DB.blink + .2, DB.blink + .44), ex = .15, ey = -.072, eg = g.createRadialGradient(ex, ey, 0, ex, ey, .085); eg.addColorStop(0, "rgba(255,190,90,.6)"); eg.addColorStop(1, "rgba(255,170,70,0)"); // its eye, an ember
+          g.globalAlpha = hk; g.fillStyle = eg; g.beginPath(); g.arc(ex, ey, .085, 0, TAU); g.fill();
+          g.save(); g.translate(ex, ey); g.rotate(-.14); g.scale(1, bl); const ig = g.createRadialGradient(0, 0, 0, 0, 0, .034); ig.addColorStop(0, "rgb(255,216,124)"); ig.addColorStop(1, "rgb(228,126,30)"); g.fillStyle = ig; g.beginPath(); g.ellipse(0, 0, .034, .021, 0, 0, TAU); g.fill(); g.strokeStyle = col(OUT, .85); g.lineWidth = 1.3 * lw; g.stroke();
+          g.fillStyle = "rgba(40,18,8,.92)"; g.beginPath(); g.ellipse(.003, 0, .006, .017, 0, 0, TAU); g.fill(); g.fillStyle = "rgba(255,255,255,.92)"; g.beginPath(); g.arc(.012, -.008, .005, 0, TAU); g.fill(); g.restore();
+          for (const [y0, ph, l] of [[-.03, 0, .7], [-.01, 1.7, .56]]) { const pts = []; for (let i = 0; i <= 26; i++) { const t = i / 26; pts.push([.39 - t * l, y0 + t * .15 + Math.sin(t * 5.5 - A * 3.1 + ph) * .05 * t]); } line(OUT, hk * .32, 3 * lw, pts); line(WH, hk * .92, 1.7 * lw, pts); } // its whiskers, from its nose, waving
+          for (let m = 0; m < 3; m++) shape(tube([.2 + m * .05, .072], [.17 + m * .05, .11], [.12 + m * .05, .14 + m * .01], .014, 0, 6), WH, hk * .8, 1 * lw); // a beard
+          g.restore();
+          const nose = (() => { const sx = .42 * hs, lx = sx * Math.cos(look), ly = sx * Math.sin(look) * fl; return [h.x + lx * Math.cos(h.a) - ly * Math.sin(h.a), h.y + lx * Math.sin(h.a) + ly * Math.cos(h.a)]; })(), fw = Math.cos(h.a) < 0 ? -1 : 1;
+          for (const [r0, big] of [[DB.ring[0], 1], [DB.ring[0] + .42, .7]]) { const rq = seg(T, r0, r0 + (DB.ring[1] - DB.ring[0]), z => z); if (rq <= 0 || rq >= 1) continue; const c = [nose[0] + fw * .16 * rq, nose[1] - .5 * E.out(rq) * big], rx = (.05 + .17 * E.out(rq)) * big, a = k * Math.pow(1 - rq, 1.1); // smoke rings, floating up and opening, the second smaller
+            for (const [w, al, cc] of [[11, .1, WH], [6, .22, WH], [2.6, .4, OUT], [2, .8, WH]]) { g.globalAlpha = 1; g.strokeStyle = col(cc, a * al); g.lineWidth = w * px1; g.beginPath(); g.ellipse(c[0], c[1], rx, rx * .42, 0, 0, TAU); g.stroke(); } }
+          for (let j = 0; j < 3; j++) { const t0 = DB.rest[0] + .5 + j * 1.25, age = T - t0; if (age < 0 || age > 1 || (t0 > DB.ring[0] - .3 && t0 < DB.ring[1])) continue; puff(nose[0] + fw * .02 * age, nose[1] - age * .16, .035 + age * .045, k * (1 - age) * .22); } } // and its breath, between
+      }
+      g.restore(); g.globalAlpha = S.vis;
+    },
+    /** hour egg 2: the blue tit, painted once at the cup's size, `TS` times the size of its own little units, facing +x —
+     *  its back, its folded wings and its tail (`body`); its head (`head`, about its own middle): a cobalt cap ringed white,
+     *  a dark stripe through each eye, white cheeks, a dark collar, a short dark beak; its right wing spread (`wing`, from
+     *  the shoulder, the left one drawn mirrored) — each filled in soft gradients and feathered with short strokes */
+    titSprites(R) {
+      const kq = Math.round(R * px / 3); if (S.tit && S.tit.k === kq) return S.tit; // (made again only when the cup's size has changed by a few pixels)
+      const U = R * TS, sp = (w, h, fn) => { const c = make(w * U, h * U, x => { x.translate(w * U / 2, h * U / 2); x.scale(U, U); x.lineCap = "round"; x.lineJoin = "round"; fn(x); }); c.uw = w; c.uh = h; return c; };
+      const r = rng(6161), smooth = (pts, closed = true) => { const out = [], n = pts.length; for (let i = 0; i < (closed ? n : n - 1); i++) { const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n]; for (let j = 0; j < 5; j++) { const t = j / 5, t2 = t * t, t3 = t2 * t, cr = q => .5 * (2 * p1[q] + (p2[q] - p0[q]) * t + (2 * p0[q] - 5 * p1[q] + 4 * p2[q] - p3[q]) * t2 + (3 * p1[q] - p0[q] - 3 * p2[q] + p3[q]) * t3); out.push([cr(0), cr(1)]); } } return out; };
+      const fillP = (x, pts, fill) => { x.beginPath(); pts.forEach(([u, v], i) => i ? x.lineTo(u, v) : x.moveTo(u, v)); x.closePath(); x.fillStyle = fill; x.fill(); };
+      const feather = (x, pts, n, cols, len, dir = Math.PI, spread = .5, w0 = .0025) => { x.save(); x.beginPath(); pts.forEach(([u, v], i) => i ? x.lineTo(u, v) : x.moveTo(u, v)); x.closePath(); x.clip(); let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const [u, v] of pts) { x0 = Math.min(x0, u); x1 = Math.max(x1, u); y0 = Math.min(y0, v); y1 = Math.max(y1, v); }
+        for (let i = 0; i < n; i++) { const u = x0 + r() * (x1 - x0), v = y0 + r() * (y1 - y0), a = dir + (r() - .5) * spread, l = len * (.6 + r() * .7); x.strokeStyle = cols[Math.floor(r() * cols.length)]; x.lineWidth = w0 * (.7 + r() * .8); x.beginPath(); x.moveTo(u, v); x.quadraticCurveTo(u + Math.cos(a) * l * .5 - Math.sin(a) * l * .12, v + Math.sin(a) * l * .5 + Math.cos(a) * l * .12, u + Math.cos(a) * l, v + Math.sin(a) * l); x.stroke(); } x.restore(); };
+      const edge = (x, pts, col, w) => { x.beginPath(); pts.forEach(([u, v], i) => i ? x.lineTo(u, v) : x.moveTo(u, v)); x.closePath(); x.strokeStyle = col; x.lineWidth = w; x.stroke(); };
+      const mir = pts => pts.map(([u, v]) => [u, -v]), both = half => [...half, ...mir(half).reverse()];
+      const body = sp(.44, .24, x => {
+        const TAIL = smooth([[-.075, .017], [-.135, .023], [-.168, .03], [-.176, .012], [-.172, -.012], [-.168, -.03], [-.135, -.023], [-.075, -.017]]), tg = x.createLinearGradient(-.175, 0, -.075, 0); tg.addColorStop(0, "#284A80"); tg.addColorStop(1, "#4A79BE");
+        fillP(x, TAIL, tg); feather(x, TAIL, 40, ["rgba(150,186,236,.5)", "rgba(20,36,70,.45)"], .03, Math.PI, .15); edge(x, TAIL, "rgba(18,32,64,.5)", .003); // its tail
+        const half = [[.066, .03], [.042, .063], [.0, .077], [-.04, .072], [-.072, .051], [-.09, .024]], BODY = smooth([...half, [-.097, 0], ...mir(half).reverse()]), bg = x.createRadialGradient(-.005, -.016, .006, -.008, 0, .1); bg.addColorStop(0, "#C6D266"); bg.addColorStop(.55, "#9EB246"); bg.addColorStop(1, "#6F842C");
+        fillP(x, BODY, bg); for (const sg of [-1, 1]) { const fl = smooth([[.03, .054 * sg], [-.01, .075 * sg], [-.05, .068 * sg], [-.03, .058 * sg], [.0, .058 * sg]]); fillP(x, fl, "#F0CF3E"); } // its back, green, and a glimpse of its yellow sides
+        feather(x, BODY, 140, ["rgba(222,232,140,.55)", "rgba(92,112,36,.5)", "rgba(180,196,84,.5)"], .018, Math.PI, .5);
+        for (const sg of [-1, 1]) { const W = smooth([[.046, .031], [.034, .068], [-.02, .079], [-.068, .064], [-.108, .033], [-.098, .012], [-.055, .02], [-.008, .026], [.03, .022]].map(([u, v]) => [u, v * sg])), wg = x.createLinearGradient(.05, 0, -.12, 0); wg.addColorStop(0, "#6FA2E8"); wg.addColorStop(.38, "#4A80CC"); wg.addColorStop(.42, "#2F5EA8"); wg.addColorStop(1, "#26467C");
+          fillP(x, W, wg); feather(x, W, 50, ["rgba(170,206,250,.5)", "rgba(20,40,84,.45)"], .02, Math.PI, .2); // its wing, folded: bright coverts, darker flight feathers
+          x.strokeStyle = "rgba(182,210,248,.75)"; x.lineWidth = .0028; for (let i = 0; i < 4; i++) { const v0 = (.028 + i * .0105) * sg; x.beginPath(); x.moveTo(-.012, v0); x.quadraticCurveTo(-.06, v0 + .003 * sg, -.1 + i * .006, v0 * .62); x.stroke(); } // the pale edges of its flight feathers
+          x.strokeStyle = "rgba(246,247,242,.92)"; x.lineWidth = .007; x.beginPath(); x.moveTo(.002, .027 * sg); x.quadraticCurveTo(-.004, .052 * sg, -.012, .074 * sg); x.stroke(); // its white wing bar
+          edge(x, W, "rgba(18,34,70,.55)", .0032); }
+        x.strokeStyle = "rgba(26,38,66,.85)"; x.lineWidth = .012; x.beginPath(); x.arc(.075, 0, .042, Math.PI * .6, Math.PI * 1.4); x.stroke(); }); // the dark collar its head sits in
+      const head = sp(.15, .15, x => {
+        const HD2 = smooth([[.06, 0], [.045, .04], [.0, .054], [-.042, .038], [-.054, 0], [-.042, -.038], [.0, -.054], [.045, -.04]]), fg = x.createRadialGradient(-.012, -.012, .008, 0, 0, .06); fg.addColorStop(0, "#FFFFFF"); fg.addColorStop(.7, "#EEF1F2"); fg.addColorStop(1, "#C9D0D6");
+        fillP(x, HD2, fg); feather(x, HD2, 40, ["rgba(255,255,255,.6)", "rgba(170,180,190,.4)"], .012, Math.PI, 1.2, .002); // its white cheeks
+        x.strokeStyle = "#1C2744"; x.lineWidth = .011; for (const sg of [-1, 1]) { x.beginPath(); x.moveTo(.05, .01 * sg); x.quadraticCurveTo(.022, .044 * sg, -.03, .042 * sg); x.quadraticCurveTo(-.048, .03 * sg, -.054, 0); x.stroke(); } // a dark stripe through each eye, round to its nape
+        const CAP = smooth([[.04, 0], [.026, .026], [-.006, .033], [-.038, .022], [-.046, 0], [-.038, -.022], [-.006, -.033], [.026, -.026]]), cg = x.createRadialGradient(-.006, -.01, .004, -.004, 0, .042); cg.addColorStop(0, "#69A8F6"); cg.addColorStop(1, "#2B5FC0");
+        edge(x, CAP, "rgba(255,255,255,.95)", .009); fillP(x, CAP, cg); feather(x, CAP, 26, ["rgba(150,200,255,.55)", "rgba(24,60,140,.45)"], .01, Math.PI, .3, .0018); // its cobalt cap, ringed white
+        for (const sg of [-1, 1]) { x.fillStyle = "#0B0E12"; x.beginPath(); x.ellipse(.022, .039 * sg, .0062, .005, .3 * sg, 0, TAU); x.fill(); x.fillStyle = "rgba(255,255,255,.9)"; x.beginPath(); x.arc(.024, .037 * sg, .0018, 0, TAU); x.fill(); } // its eyes, in the stripes
+        const BK = [[.052, -.009], [.08, 0], [.052, .009]]; fillP(x, BK, "#33333A"); x.strokeStyle = "rgba(210,210,220,.55)"; x.lineWidth = .002; x.beginPath(); x.moveTo(.055, -.002); x.lineTo(.077, 0); x.stroke(); }); // its beak
+      const wing = sp(.36, .56, x => {
+        const WG = smooth([[.012, 0], [.02, .05], [.014, .1], [-.006, .155], [-.034, .21], [-.056, .245], [-.072, .252], [-.082, .238], [-.094, .224], [-.104, .2], [-.11, .156], [-.116, .108], [-.108, .06], [-.094, .02]]), wg = x.createLinearGradient(0, 0, -.1, .12); wg.addColorStop(0, "#73A6EA"); wg.addColorStop(.42, "#4C80CA"); wg.addColorStop(.46, "#2E5CA3"); wg.addColorStop(1, "#203E70");
+        fillP(x, WG, wg); feather(x, WG, 70, ["rgba(170,206,250,.45)", "rgba(16,32,70,.45)"], .03, Math.PI * .62, .25);
+        x.strokeStyle = "rgba(14,26,54,.55)"; x.lineWidth = .0028; for (let i = 0; i < 8; i++) { const t = i / 7, u0 = lerp(-.04, -.012, t), v0 = lerp(.05, .2, t); x.beginPath(); x.moveTo(u0, v0); x.lineTo(u0 - .07 + t * .01, v0 + .01 + t * .04); x.stroke(); } // its flight feathers, fingered at the tip
+        x.strokeStyle = "rgba(246,247,242,.8)"; x.lineWidth = .006; x.beginPath(); x.moveTo(-.008, .02); x.quadraticCurveTo(-.014, .08, -.03, .13); x.stroke(); // the white bar
+        edge(x, WG, "rgba(16,30,62,.6)", .0035); });
+      S.tit = { k: kq, body, head, wing }; return S.tit;
+    },
+    /** hour egg 2: where the tit is at T, in the cup's radii about its middle — its place, the way it faces, how high (0 on
+     *  the saucer), its head's turn, reach and dip, its wings (0 folded … 1 spread, and their beat), the foam on its beak */
+    titAt(pl, T, I, A, cx, cy, R) {
+      const k = I * S.vis * env(T, TB.in[0], TB.in[0] + .05, TB.off[1] - .05, TB.off[1]); if (k <= .004) return;
+      const th = S.eggDir(), d = [Math.cos(th), Math.sin(th)], p = [-d[1], d[0]], L0 = [d[0] * .93, d[1] * .93], L1 = [d[0] * .8, d[1] * .8];
+      const bzq = (a, c, b, t) => [(1 - t) * (1 - t) * a[0] + 2 * (1 - t) * t * c[0] + t * t * b[0], (1 - t) * (1 - t) * a[1] + 2 * (1 - t) * t * c[1] + t * t * b[1]];
+      let pos, head = 0, hgt = 0, wing = 0, beat = 0, reach = 0, dip = 0, face = th + Math.PI, sc = 1;
+      if (T < TB.in[1]) { const q = seg(T, TB.in[0], TB.in[1], E.out), S0 = [d[0] * 2.8 + p[0] * .8, d[1] * 2.8 + p[1] * .8], C = [d[0] * 1.6 - p[0] * .45, d[1] * 1.6 - p[1] * .45], a = bzq(S0, C, L0, q), b = bzq(S0, C, L0, Math.min(1, q + .02)); // in over the table, down onto the saucer's rim
+        pos = a; face = Math.atan2(b[1] - a[1], b[0] - a[0]); hgt = 1 - q; wing = 1; beat = q < .82 ? Math.sin(T * 41) : 1; }
+      else if (T < TB.hop[0]) { const h1 = env(T, TB.hops[0], TB.hops[0] + .1, TB.hops[0] + .12, TB.hops[0] + .24), h2 = env(T, TB.hops[1] - .24, TB.hops[1] - .12, TB.hops[1] - .1, TB.hops[1]), da = .16 * seg(T, TB.hops[0], TB.hops[0] + .24) - .1 * seg(T, TB.hops[1] - .24, TB.hops[1]), a = th + da; // on the rim, two little hops along it
+        pos = [Math.cos(a) * .93, Math.sin(a) * .93]; face = a + Math.PI; hgt = .06 * (h1 + h2); wing = 1 - seg(T, TB.in[1], TB.fold[1], E.io); beat = 1; // its wings folding away
+        const tgt = (() => { const pr = PROGS[pl.cur.art], [sx, sy, kind] = pr ? progAt(pr, T) : pourIs(T) >= 0 ? [...pourAt(T), 1] : [0, 0, 0], c = Math.cos(pl.cur.ang), s = Math.sin(pl.cur.ang); return kind ? [(sx * c - sy * s) * .52, (sx * s + sy * c) * .52] : [0, 0]; })(); // watching the pour
+        const want = Math.atan2(tgt[1] - pos[1], tgt[0] - pos[0]) - face, wr = Math.atan2(Math.sin(want), Math.cos(want)); head = clamp(wr, -1.1, 1.1) * seg(T, TB.watch[0], TB.watch[0] + .3) + .25 * Math.sin(T * 1.7) * env(T, TB.watch[0], TB.watch[0] + .4, TB.watch[1] - .3, TB.watch[1]); }
+      else if (T < TB.off[0]) { const q = seg(T, TB.hop[0], TB.hop[1], E.io); pos = [lerp(L0[0], L1[0], q), lerp(L0[1], L1[1], q)]; hgt = .3 * Math.sin(q * Math.PI) + .08 * q; // up onto the cup's rim
+        const s1 = env(T, TB.sips[0], TB.sips[0] + .12, TB.sips[0] + .25, TB.sips[0] + .38), s2 = env(T, TB.sips[1] - .4, TB.sips[1] - .28, TB.sips[1] - .14, TB.sips[1]); dip = Math.max(s1, s2); reach = .012 * env(T, TB.sips[0] - .15, TB.sips[0], TB.sips[1], TB.sips[1] + .2) + .018 * dip; // two sips, its head tipped back to swallow between
+        const back = Math.max(env(T, TB.sips[0] + .38, TB.sips[0] + .48, TB.sips[0] + .58, TB.sips[0] + .7), env(T, TB.sips[1], TB.sips[1] + .1, TB.sips[1] + .2, TB.sips[1] + .34)); sc = 1 + .05 * back - .06 * dip;
+        head = .5 * Math.sin((T - TB.shake[0]) * TAU * 7.5) * env(T, TB.shake[0], TB.shake[0] + .05, TB.shake[1] - .05, TB.shake[1]) + 1.05 * env(T, TB.cock[0], TB.cock[0] + .15, TB.cock[1] - .2, TB.cock[1], E.sine) * (Math.sin(th) > 0 ? -1 : 1); }
+      else { const q = seg(T, TB.off[0] + .15, TB.off[1], E.in), a = L1, C = [d[0] * 1.4 + p[0] * .5, d[1] * 1.4 + p[1] * .5], b = [d[0] * 3 - p[0] * .3, d[1] * 3 - p[1] * .3], c0 = bzq(a, C, b, q), c1 = bzq(a, C, b, Math.min(1, q + .02)); // and off, the way it came
+        pos = c0; const turn = seg(T, TB.off[0], TB.off[0] + .14, E.io); face = q > .005 ? Math.atan2(c1[1] - c0[1], c1[0] - c0[0]) : th + Math.PI - turn * Math.PI * (Math.sin(th) > 0 ? 1 : -1); hgt = .08 + q * 1.3; /* round, and up and away */ sc = 1 - .06 * env(T, TB.off[0], TB.off[0] + .08, TB.off[0] + .12, TB.off[0] + .18); wing = seg(T, TB.off[0] + .1, TB.off[0] + .2); beat = Math.sin(T * 43); }
+      const spr = S.titSprites(R), sz = (1 + .55 * hgt) * sc * TS;
+      g.save(); g.translate(cx, cy); g.scale(R, R);
+      g.globalAlpha = k * .42 * (1 - .55 * Math.min(1, hgt)); const so = [.04 + .3 * hgt, .06 + .42 * hgt], sl = .13 * sz * (1 + .4 * hgt); g.drawImage(S.soft, pos[0] + so[0] - sl, pos[1] + so[1] - sl * .7, sl * 2, sl * 1.4); // its shadow
+      g.translate(pos[0], pos[1]); g.rotate(face); g.scale(sz, sz); g.globalAlpha = k;
+      if (wing > .01) for (const sg of [-1, 1]) { const spn = wing * (.35 + .65 * Math.abs(beat)), w = spr.wing; g.save(); g.translate(.01, sg * .03); g.scale(1, sg * spn); g.drawImage(w, -w.uw / 2, -w.uh / 2, w.uw, w.uh); g.restore(); } // its wings, beating
+      g.drawImage(spr.body, -spr.body.uw / 2, -spr.body.uh / 2, spr.body.uw, spr.body.uh);
+      g.save(); g.translate(.085 + reach, 0); g.rotate(head); const hs = 1 - .08 * dip; g.scale(hs, hs); g.drawImage(spr.head, -spr.head.uw / 2, -spr.head.uh / 2, spr.head.uw, spr.head.uh); // its head
+      const fm = env(T, TB.sips[1] + .05, TB.sips[1] + .15, TB.shake[0] + .12, TB.shake[0] + .16); if (fm > .01) { g.fillStyle = `rgba(250,240,222,${fm.toFixed(3)})`; g.beginPath(); g.ellipse(.07, 0, .016, .013, 0, 0, TAU); g.fill(); g.fillStyle = `rgba(255,255,255,${(fm * .8).toFixed(3)})`; g.beginPath(); g.arc(.066, -.004, .005, 0, TAU); g.fill(); } // foam on its beak
+      g.restore();
+      g.restore();
+      const fl = seg(T, TB.shake[0] + .14, TB.shake[0] + .5, z => z); if (fl > 0 && fl < 1) { const b0 = [L1[0] - d[0] * .33, L1[1] - d[1] * .33], b1 = [L1[0] - d[0] * .58 + p[0] * .08, L1[1] - d[1] * .58 + p[1] * .08], x = cx + lerp(b0[0], b1[0], fl) * R, y = cy + (lerp(b0[1], b1[1], fl) - Math.sin(fl * Math.PI) * .12) * R; g.globalAlpha = I * S.vis; g.fillStyle = "rgba(250,240,222,.95)"; g.beginPath(); g.arc(x, y, R * .011, 0, TAU); g.fill(); } // the foam it shook off, flying back into the cup
+      g.globalAlpha = S.vis;
+    },
+    /** hour egg 2: rings where the tit sips (in the surface's units, inside the cocoa), and where the foam it shook off lands */
+    titRipples(pl, T, I, A) {
+      const th = S.eggDir(), d = [Math.cos(th), Math.sin(th)], p = [-d[1], d[0]], at = [d[0] * .43 / .52, d[1] * .43 / .52], land = [(d[0] * .22 + p[0] * .08) / .52, (d[1] * .22 + p[1] * .08) / .52];
+      g.lineWidth = .012;
+      for (const [t0, c, big] of [[TB.sips[0] + .14, at, 1], [TB.sips[1] - .26, at, 1], [TB.shake[0] + .5, land, .6]]) for (const dl of [0, .14]) { const q = seg(T, t0 + dl, t0 + dl + 1.1, z => z); if (q <= 0 || q >= 1) continue; g.strokeStyle = `rgba(250,240,222,${(.5 * (1 - q) * I * S.vis).toFixed(3)})`; g.beginPath(); g.arc(c[0], c[1], (.03 + E.out(q) * .3) * big, 0, TAU); g.stroke(); }
+      g.globalAlpha = S.vis;
     },
     /** The cat, at T: a little cat of foam, the way a barista builds one up out of a cup, but alive. A dome of foam swells
      *  out of the cup's middle and rises into a round head, ears pricking up, eyes shut, wobbling as it comes up; it climbs
@@ -385,7 +603,7 @@ export default function cocoa(K) {
     },
     /** the dusts: the pass before's, there until the spoon stirs it in; this pass's, sifted on at its moment */
     dusts(pl, T, I, on, stir) {
-      const kp = lerp(1, T < 2.3 ? 1 - stir : 0, I), late = pl.egg ? pl.egg.dust : 0; S.dustOf(pl.prev.dust, () => kp); if (on) S.dustOf(pl.cur.dust, d => T >= d.t + late ? I : 0); // (b416: in the egg's pass, after the cat)
+      const kp = lerp(1, T < 2.3 ? 1 - stir : 0, I), late = pl.egg ? pl.egg.dust : pl.hour ? pl.hour.dust : 0; S.dustOf(pl.prev.dust, () => kp); if (on) S.dustOf(pl.cur.dust, d => T >= d.t + late ? I : 0); // (b416: in the egg's pass, after the cat)
       g.globalAlpha = S.vis;
     },
     /** one dust: cinnamon (the signature's), cocoa sifted from one side, chocolate shavings, or none */
@@ -511,15 +729,19 @@ export default function cocoa(K) {
       // the finale: small foam hearts bloom round the big one
       if (F >= 0) for (const m of S.minis) { const k = seg(F, m.t, m.t + .25, E.back), s = .1 * k * (1 - seg(F, .85, 1)); if (s <= 0) continue; g.globalAlpha = S.vis; g.fillStyle = FOAM; g.beginPath(); shape(s, 0, 1, 0, 0, 32).forEach(([u, v], j) => j ? g.lineTo(m.u + u, m.v + v) : g.moveTo(m.u + u, m.v + v)); g.closePath(); g.fill(); }
       const cat = pl && pl.egg && on ? S.catAt(pl, T, A, I) : null; if (cat) S.drawCat(cat, LR, true); // b416: the egg's cat, where it comes up through the foam
+      const hr = pl && pl.hour && on ? pl.hour.which : 0; if (hr === 2) S.titRipples(pl, T, I, A); // b427: rings where the tit sips
       g.restore();
       if (cat) { g.save(); g.translate(cx, cy); g.scale(LR, LR); g.lineCap = "round"; g.lineJoin = "round"; S.drawCat(cat, LR, false); g.restore(); } // and the cat itself, over the rim
       if (pl && pl.paw && on) S.pawAt(pl, T, I, cx, cy, R); // the rare one: a cat's paw reaching in from the edge (b375)
+      if (hr === 2) S.titAt(pl, T, I, A, cx, cy, R); // b427: hour egg 2, the blue tit
+      const sk = hr === 1 ? S.dragonSteam(T, I) : 1; // b427: hour egg 1 gathers the cup's steam into the dragon, and gives it back
       // the steam, curling up off it; stronger at first and in the finale, a heart in the finale
       const hot = .55 + (on ? env(T, 11.5, 12.5, 14, 15) * .45 * I : 0) + (F >= 0 ? .5 : 0);
       g.lineCap = "round"; for (let w = 0; w < 3; w++) { const ph = w * 1.7, y0 = cy - LR * .3, rise = R * 1.05, pts = Array.from({ length: 26 }, (_, i) => { const t = i / 25, sway = Math.sin(t * 5.5 - A * 1.4 + ph) * R * .09 * t + Math.sin(t * 2.2 + A * .5 + ph) * R * .05 * t; return [cx + (w - 1) * R * .17 + sway, y0 - t * rise]; });
         const fin = F >= 0 ? env(F, .1, .35, .7, 1) : 0; if (fin > 0 && w === 1) { const hs = R * .22; pts.forEach((p, i) => { const t = i / 25 * TAU, hx = 16 * Math.pow(Math.sin(t), 3) / 16, hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16; p[0] = lerp(p[0], cx + hx * hs, fin); p[1] = lerp(p[1], cy - R * .75 + hy * hs, fin); }); }
         const sg = g.createLinearGradient(0, y0, 0, y0 - rise); sg.addColorStop(0, "rgba(255,246,232,0)"); sg.addColorStop(.15, "rgba(255,246,232,1)"); sg.addColorStop(1, "rgba(255,246,232,0)"); g.strokeStyle = sg;
-        for (const [lw, a] of [[.2, .05], [.11, .08], [.045, .12]]) { g.globalAlpha = S.vis * a * (.7 + .6 * hot) * (1 + fin); g.lineWidth = R * lw; g.beginPath(); pts.forEach(([u, v], i) => i ? g.lineTo(u, v) : g.moveTo(u, v)); g.stroke(); } }
+        for (const [lw, a] of [[.2, .05], [.11, .08], [.045, .12]]) { g.globalAlpha = S.vis * a * (.7 + .6 * hot) * (1 + fin) * sk; g.lineWidth = R * lw; g.beginPath(); pts.forEach(([u, v], i) => i ? g.lineTo(u, v) : g.moveTo(u, v)); g.stroke(); } }
+      if (hr === 1) S.dragonAt(pl, T, I, A, cx, cy, R); // b427: hour egg 1, the dragon
       // motes in the light, drifting, catching it
       g.globalCompositeOperation = "lighter"; g.fillStyle = "#FFE2B8";
       for (const m of S.motes) { const u = m.u + Math.sin(A * m.dr * 3 + m.ph) * .25, v = m.v - ((A * m.dr + m.ph) % 3.2), vv = v < -1.6 ? v + 3.2 : v, x = cx + u * R, y = cy + vv * R, d = Math.hypot(u, vv) / 1.9; if (d >= 1 || (S.raw || []).some(q => x > q[0] - 8 && x < q[2] + 8 && y > q[1] - 8 && y < q[3] + 8)) continue; /* never behind the words */ const a = (1 - d) * (.25 + .5 * Math.pow(.5 + .5 * Math.sin(A * m.f * 2 + m.ph), 3)) * sun; g.globalAlpha = S.vis * a; g.beginPath(); g.arc(x, y, m.s, 0, TAU); g.fill(); }

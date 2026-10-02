@@ -3687,3 +3687,46 @@ Web only; the version holds at 1.12, and nothing in `apple/` changed but the sta
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on the change: every scene test (Scenes off and on, nearly still in use, every kit's module, the hidden kits', the keep-clear, the water's new test, Sunset's pads, Everything's sections, the forever cycle, the panel's hold, Arcade's score, the stamp), the kitchen display, the ⋯ menu, a page open across a deploy and the worker's test, both viewports: 31 passed, and the water's test on a phone failed on the test's own stale pointer over a row (a row's hover is a tint); parked, both viewports: 2 passed |
 | Looked at | Light and Dark on a phone and a laptop through pass 0, three dealt passes, the rare one, the egg (pass 11) and the finale; a tap's ring; the long-time fixture on a laptop; a Chrome with WebGL switched off (the canvas hidden, the kit's own ink, nothing thrown) |
+
+# Today's Five 1.12 b413–b419 — An easter egg in every scene
+
+*Shipped as build 420. b413–b419 are its commits.*
+
+Every scene has an easter egg now, as Arcade has its bosses: every twelfth pass the loop plays (the stage's `K.egg`,
+three minutes of the list left alone), a fifteen-second piece of its own in place of the pass it would have dealt.
+Not in the changelog — they are easter eggs. The decisions are in DECISIONS.md under "1.12 b413–b419 decisions". Web
+only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## What shipped
+
+1. **Forest's Bigfoot, Ember's marshmallow, Harbor's Nessie** (b413). `scene-forest.js`, `scene-ember.js`,
+   `scene-harbor.js`.
+2. **Teletype's Horse in Motion, Terminal's boing ball, Pink's Cupid** (b414). `scene-flap.js`, `scene-demo.js`,
+   `scene-heart.js`.
+3. **Paper's and Midnight's turned page, Sunset's green flash, Dusk's lantern dragon** (b415). `scene-papercut.js`,
+   `scene-bay.js`.
+4. **Sketch's runaway doodle, Cocoa's latte-art cat, Blush's impossible bubble** (b416). `scene-sketch.js`,
+   `scene-cocoa.js`, `scene-bubbles.js`.
+5. **Birthday's balloon dog, Superpink's mirror-ball dancer, Bark's and Char's puzzle** (b417). `scene-party.js`,
+   `scene-wood.js`.
+6. **Chalkboard's lines, Whiteboard's invader** (b418). `scene-board.js`.
+7. **A browser test and the record** (b419). Every kit with a scene, the hidden ones too, plays its egg's pass and
+   throws nothing; DECISIONS.md and this entry.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| every other pass unchanged | ALL IDENTICAL for eighteen of the twenty kits on the first run and Chalkboard on the second (its phone finale varied from run to run, the untouched build's too); Sketch DIFFERENT on 14 desktop moments with Chrome's GPU drawing its watercolour and ALL IDENTICAL with GPU canvas drawing off — the untouched build against itself differed in two runs of three the same way. Light and Dark (WebGL) and Arcade unchanged in this build | `samecv2.mjs` (the stage's canvases hashed at 11 moments of passes 0, 1, 2, 3, 10, 12 and 13 and two of the finale, both viewports), an untouched copy of build 412 served beside the change |
+| the seams either side | every 10→11 and 11→12 seam 0.00–0.04 %, or the same as the untouched build's at that moment (Terminal's plasma 1.1–1.4 %, Pink's arrow buzz 0.55 %, Ember's fire 0.4 %) | `tools/scene-seams.mjs <kit> phone,desktop 3 10` |
+| CPU, an egg's pass against the pass before (share of one core; every Chrome process) | Sunset 4.30, 4.07 against 4.27, 4.14 %; Dusk 4.37, 4.43 against 4.28, 4.78; Paper 4.54, 4.84 against 4.36, 3.96; Superpink 6.88, 6.30 against 5.13, 5.40; Bark 4.10, 3.99 against 3.61, 3.34; Blush 7.71, 7.37 (21.5, 20.9 %) against 3.83 (16.5 %), traced at 96 px it read 9.19, 9.00 | `tools/idle.mjs 15`, `SCENES=1 PASS=11` against `PASS=10`, interleaved (`UNLOCK=1` for the hidden kits) |
+| contrast, the egg's pass against the same pass on the untouched build | no reading under 4.5 that the untouched build doesn't share (Forest's struck line in its finale on a phone, 3.53; Harbor's finale line, 3.73; Sketch's struck line, 4.23, and its Bring them all back, 4.08, on a wide screen); the lowest an egg moves anything to is 4.61 (Superpink's finale line on a phone, 4.96 untouched) | `tools/contrast.mjs`, `PASS=11`, every kit with an egg on both viewports, both builds, `CLOCK=2026-09-28T15:00:00` |
+| bytes, gzipped (lazy, Scenes on under the kit only) | the fourteen modules 344.7 → **443.3 KB** together (Forest 18.0 → 24.7, Ember 17.6 → 20.2, Harbor 12.8 → 16.3, Teletype 10.0 → 17.2, Terminal 11.2 → 13.4, Pink 11.5 → 17.8, Paper/Midnight 37.2 → 53.5, Sunset/Dusk 29.1 → 36.6, Sketch 36.4 → 45.0, Cocoa 16.9 → 21.8, Blush 15.5 → 21.1, the party 37.9 → 51.4, the wood 40.8 → 48.0, the boards 49.8 → 56.6); nothing on the first-paint path. The worker still precaches every scene module on every device, so the open question of precaching them only where Scenes are on grows by the same amount | `gzip -9 -n` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on the change: every scene test (Scenes off and on, nearly still in use, every kit's module, the hidden kits', the keep-clear, the water's, Sunset's pads, Everything's sections, the forever cycle, the panel's hold, Arcade's score, the stamp), the new test (every kit's egg pass plays and throws nothing), and the worker's two tests, both viewports: 30 passed |
+| Looked at | every egg in the real app on a phone (frame-stepped reels at 8 a second) and in the helpers' sheets on both viewports, the hidden kits by the device's own latch |

@@ -3220,3 +3220,102 @@ of the plain page on the bar's chips (.14 on the keyboard line, in the fade).
 **Cost.** About twenty passes a step on the graphics card. The first cut had thirty-one; folding the curl into the
 forces and taking the pressure two iterations a pass took 2.7 points off Chrome's processes on a laptop. In the loop
 it costs less than Arcade and Forest on the page's own thread and across all of Chrome's processes (PLAN.md).
+
+# 1.12 b413–b419 decisions — An easter egg in every scene
+
+**What Price asked.** After Arcade's bosses (b398): "I'd like to expand upon that idea on arcade where we added the
+tracking high score and the 'easter egg' bosses at higher levels. I'd like to do something like that for every scene.
+You know, just add a little easter egg type animation in there for the people who've had the list open for awhile and
+are paying attention when it happens." And again, with the request for Light and Dark's water: "do easter eggs in all
+of them (like the arcade one has now)."
+
+**When.** Every twelfth pass: `K.egg(P)`, new in the stage's kit in b411 (true on 11, 23, 35 …), three minutes of the
+list left alone, so a screen left on a desk or a wall sees one now and then and a list in use never does. Arcade keeps
+its own clock (its bosses come with its levels, 50 and 100 and on); Light and Dark's egg shipped with their water. An
+egg takes its pass's place, opens and closes on the scene's resting picture, and is gated by the idle level like any
+beat: a touch eases it out, and the next stretch alone deals a new pass. None of it is in the changelog.
+
+**How they were made.** Six helpers against one brief (`eggs-brief.md`): every pass that is not an egg draws exactly
+what it drew (the stage's canvases hashed at 79 moments of passes 0, 1, 2, 3, 10, 12 and 13 on both viewports, against
+an untouched copy of the build served beside it), the seams either side of the egg ~0 %, no `Math.random`, no
+flashing, the words readable. Each egg draws its own dice from salts no other pass reads, or none at all.
+
+**A conflict in the brief, found by three helpers at once.** For a scene that carries its picture (Sketch, Cocoa, the
+boards, the wood), the brief suggested the egg put back the picture it found, with the egg pass counted as leaving the
+picture of the pass before it. Pass 12 would then rest on pass 10's picture, where it has always rested on pass 11's —
+and pass 12 had to stay identical. So each carrying egg starts on what pass 10 left and ends on what a dealt pass 11
+would have: the next pass's picture, worked out from its number as ever, comes about inside the egg (Sketch draws it
+after the chase; Cocoa's art comes back together as the cat sinks; the chalkboard's lesson develops as the slate dries;
+the whiteboard's plan goes up after the invader; the medallion's tiles flip over to it).
+
+**The eggs.**
+- **Forest — Bigfoot.** A moonlit fog bank rolls into the clearing and a shaft of moonlight comes down through it; out
+  of the pines he walks in the famous film's stride, rim-lit on the moon side, stops in the shaft in the pose, turns to
+  look straight out (two glints), and walks on into the trees across the way, the boughs shaking after him. The first
+  cut, dark brown on dark pines, vanished at a glance; the fog bank is what he is seen against.
+- **Ember — the marshmallow.** A green stick comes in from the side away from the words and holds a marshmallow at the
+  flames; it toasts golden, then brown, the fire flares, it catches, the stick whips it up like a torch, two waves put
+  it out in a puff of smoke, and it is held up burnt black on the fire side before going back the way it came.
+- **Harbor — Nessie.** A V of ripples crosses the bay with nothing making it; three humps break the surface and glide;
+  bubbles; the neck rises in the "surgeon's photograph" pose, looks away, looks at you, cocks its head and blinks, and
+  sinks without a splash.
+- **Teletype — the Horse in Motion.** Muybridge's galloping horse (1878, the first motion picture) on the wall of flaps:
+  a band clatters over to a printed sheet ruled like his backdrop, and the horse and rider gallop in at ten frames a
+  second, each frame a flip of only the flaps the silhouette moves through, slowing to hold the frame with all four
+  hooves off the ground. A flap can't show legs at one tone each, so the band's flaps are printed, as real boards print
+  logos; the gallop is worked out (a transverse gallop, each leg fitted to its hoof's path), not traced.
+- **Terminal — the boing ball.** The Amiga's checked ball (1984), in characters: a raster bar brings in a ruled room
+  and a floor in perspective, and the ball bounces through, spinning, its shadow on the wall. No greetings scroller: the
+  scene's own rule is that nothing on its screen is ever a word.
+- **Pink — Cupid, in neon.** The sign's arrow goes out, leaving its empty glass; a neon Cupid flies in, draws his bow a
+  notch at a time, and looses an arrow that streaks into the glass and lights the sign's arrow tail first. The heart
+  beats, he blows a kiss and flies off: his arrow is the sign's, so the pass ends on the resting sign.
+- **Paper and Midnight — the book turns a page.** It was a pop-up book all along: the sun (by night the moon) and the
+  clouds are drawn up on their threads, the corner of the page lifts and the leaf curls across the screen, each house,
+  tree and the windmill folding flat just before it reaches them, and behind it the same town springs up in snow —
+  laden pines, smoking chimneys, a frozen river, icicles under the viaduct, paper snowflakes falling, and a snowman on
+  the near bank who tips his top hat. Then the page turns back and the summer town stands up again. While the winter
+  page is up the backdrop holds it, and the summer one is put back pixel for pixel; a soft pad of the night's ground
+  lies under any word over the snow (the footer's hint would otherwise have sat on white at 2.5:1).
+- **Sunset — the green flash.** The sun goes all the way down, slowing for its last sliver, which reddens, then turns
+  green from the top; as it slips under, a lens of green stands on the horizon with a thin ray above it and green in the
+  water. Night comes on with stars and a falling star, then a rose dawn brings the sun back up to where it rests.
+- **Dusk — the lantern dragon.** A festival dragon of paper lanterns, red and gold by turns, with a lantern head and two
+  pairs of paddling legs, rises from behind the headland, skims the far water with its light under it, comes back along
+  the near water, climbs, flies a whole circle round the moon like the pearl a dragon chases, and leaves tail last.
+- **Sketch — the doodle.** The pencil doodles a little figure in the margin; it comes alive, waves, and when the eraser
+  rubs the drawing out it watches with its hands to its face (a doodle's Scream); then the eraser squares up and
+  charges, and the figure zips off the page with the eraser after it. The pass's drawing is made as on any pass, and
+  the figure leans back in at the end to admire it.
+- **Cocoa — the latte-art cat.** After the stir and the pour, the art's foam draws up into a little cat that climbs to
+  the rim, hooks its paws over it, opens its eyes, looks round, blinks slowly, and sinks back; the art comes together as
+  it was.
+- **Blush — the impossible bubble.** A bubble rises as a cube, turning, its film coloured by the scene's own thin-film
+  table, thinner and brighter along its edges, the window's panes flat on each face; it shivers, rounds into a sphere,
+  thins at the top and pops. The film is ray-traced against a cube whose edges round off until it is a ball (a 96-px
+  trace, fifteen times a second).
+- **Birthday — the balloon dog.** A balloon dog bounds in, skids, sniffs at a balloon's knot, boops it, hops back,
+  cocks its head, wags, play-bows, leaps and snaps the balloon away by its knot, and bounds off with it trailing; a new
+  balloon rises to fill the gap. Each egg gives it the next of four colours.
+- **Superpink — the mirror ball dances.** The ball's 406 tiles peel off and tumble onto a lit floor, building a dancer
+  feet first; on the beat he strikes the *Saturday Night Fever* pose, points down and up at 104 beats a minute, spins
+  and throws the room's spots round, and the tiles fly home head first. The floor changes colour every two beats.
+- **Bark and Char — the puzzle.** The medallion was a sliding puzzle all along: cuts run along new glue lines (by night
+  they burn through the char), a tile lifts out, twelve slides jumble the picture, every tile turns over in a wave onto
+  the next picture, they slide home, and the last drops in with a puff of sawdust (by night, ash and a spark).
+- **Chalkboard — lines.** "I will finish my list," four times down the board in the scene's own script, like a pupil
+  kept in, the last one ticked in yellow; the sponge wipes them, and the next lesson develops as the slate dries.
+- **Whiteboard — the invader.** The board already plays noughts and crosses as a rare pass, so its egg is a Space
+  Invader made of sticky notes, slapped on in rows: it waves its arms (the changed notes hop, stop-motion), the eraser
+  is thrown in, and it bursts into notes that tumble off the board by the clearest way past the words.
+
+**Cost.** An egg pass costs about what the pass before it does (pass 10 against 11, interleaved, 15 s windows):
+Sunset, Dusk the same; Paper, Bark half a point more; Superpink's dancer a point and a half more. Blush's cube is the
+dear one: its film ray-traced at 96 px cost the pass 9 % of a core against the others' 4; traced at 80 it reads 7.4–7.7
+%, the rest being its glass and its window drawn each frame. Fifteen seconds of it come once in three minutes left
+alone, about 0.3 % of a core averaged over that time; recorded rather than cut further.
+
+**Contrast.** The egg passes measured against the same passes on the untouched build (the seed lines, both viewports):
+no egg reads lower than the pass it replaces; the readings under 4.5 that there are (Forest's struck line in its finale
+on a phone, 3.53; Harbor's finale line, 3.73; Sketch's struck line and its Bring them all back on a wide screen) read
+the same on the untouched build, and are left for a fix of their own.

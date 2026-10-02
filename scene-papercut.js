@@ -31,6 +31,16 @@
 // trees and the river under it (the stage's pad leaves a fifth of the picture showing). By day the picture is put in
 // the paper's own ground under each line that reaches down over the town, softly, over whatever passes there; above
 // it, and everywhere else, it keeps its colour.
+// 1.12 b415: the egg. Every twelfth pass (K.egg), for whoever has left the list alone three minutes, the town turns out
+// to be a page of a pop-up book. The sun (by night the moon) and the clouds are drawn up out of sight on their threads;
+// the page turns — its corner lifts, the leaf curls over the screen and lies back, its underside up — and each house,
+// tree and the windmill folds flat just before the leaf reaches it; behind the leaf, on the next page, the same town
+// springs up in snow, piece by piece: snow on the roofs and the pines, the chimneys smoking, the river frozen and icicles
+// under the viaduct, a pale winter sun (by night a great full moon) let down on its thread among snow clouds, paper snow
+// falling, and a snowman on the bank who lifts his hat. Then the leaf turns back, the snow folds away ahead of it, and
+// the town stands up again behind it as it was. Each page's landscape is printed on it; what stands on it is cut out and
+// folds. While the winter's page is up the backdrop holds it (laid in once; the summer's is kept and put back pixel for
+// pixel), so a frame draws only what moves.
 export default function papercut(K, id) {
   const night = id === "midnight";
   const { clamp, lerp, E, seg, env, rng, canvas, grain, noise1, fbm } = K;
@@ -208,8 +218,8 @@ export default function papercut(K, id) {
         bg.strokeStyle = P.rim; bg.lineWidth = night ? .9 : .7; bg.beginPath(); for (let x = 0; x <= W + 4; x += 4) (x ? bg.lineTo(x, yf(x) + .4) : bg.moveTo(x, yf(x) + .4)); bg.stroke(); };
       band(backY, P.back, 9);
       // little pines along the back hills, too far off to sway
-      bg.fillStyle = night ? "#141D35" : "#D2C5A6";
-      for (let x = r() * 3 * u; x < W; x += (1.6 + r() * 3.4) * u) { const h = (1.8 + r() * 1.6) * u, y = backY(x) + .6 * u; bg.beginPath(); bg.moveTo(x, y - h); bg.lineTo(x + h * .32, y); bg.lineTo(x - h * .32, y); bg.closePath(); bg.fill(); }
+      bg.fillStyle = night ? "#141D35" : "#D2C5A6"; S.pines = []; /* (b415) each one noted as it is drawn, for the egg's page */
+      for (let x = r() * 3 * u; x < W; x += (1.6 + r() * 3.4) * u) { const h = (1.8 + r() * 1.6) * u, y = backY(x) + .6 * u; S.pines.push([x, h]); bg.beginPath(); bg.moveTo(x, y - h); bg.lineTo(x + h * .32, y); bg.lineTo(x - h * .32, y); bg.closePath(); bg.fill(); }
       band(townY, P.mid, 9);
       // the houses
       for (const h of S.houses) {
@@ -228,7 +238,7 @@ export default function papercut(K, id) {
         bg.fillStyle = P.millLo; bg.fillRect(m.x - m.h * .045, m.base - m.h * .28, m.h * .09, m.h * .28); }
       // the river, its bridge, and the bank
       shade(bg, 6, -1, 2); bg.fillStyle = P.river; bg.beginPath(); bg.moveTo(0, riverY); for (let x = 0; x <= W + 4; x += 6) bg.lineTo(x, riverY + Math.sin(x / (9 * u)) * .4 * u); bg.lineTo(W, riverY + riverH); bg.lineTo(0, riverY + riverH); bg.closePath(); bg.fill(); unshade(bg);
-      bg.fillStyle = P.riverHi; for (let k = 0; k < (pr ? 6 : 10); k++) { const x = r() * W, y = riverY + riverH * (.25 + r() * .55); bg.globalAlpha = .55; bg.fillRect(x, y, (3 + r() * 6) * u, .35 * u); } bg.globalAlpha = 1;
+      bg.fillStyle = P.riverHi; S.hls = []; for (let k = 0; k < (pr ? 6 : 10); k++) { const x = r() * W, y = riverY + riverH * (.25 + r() * .55), w = (3 + r() * 6) * u; S.hls.push([x, y, w]); bg.globalAlpha = .55; bg.fillRect(x, y, w, .35 * u); } bg.globalAlpha = 1;
       { const top = S.deckY, n = Math.ceil(W / (W * (pr ? .19 : .085))), span = (W + 4 * u) / n, b0 = -2 * u, b1 = W + 2 * u; /* a viaduct right across the river: both trains run on it */
         shade(bg, 6, -1.4, 2.6); bg.fillStyle = P.bridge; bg.beginPath(); bg.moveTo(b0 - 2 * u, top); bg.lineTo(b1 + 2 * u, top);
         bg.lineTo(b1 + 2 * u, riverY + riverH * .9);
@@ -241,8 +251,8 @@ export default function papercut(K, id) {
       { shade(bg, 7, -1.4, 3); bg.fillStyle = P.near; bg.beginPath(); bg.moveTo(0, H); const tooth = 1.2 * u;
         for (let x = 0, k = 0; x <= W + tooth; x += tooth, k++) bg.lineTo(x, nearY(x) - (k % 2 ? 0 : .7 * u)); bg.lineTo(W, H); bg.closePath(); bg.fill(); unshade(bg); }
       // grain, the paper's own
-      const tile = grain(140, 140, night ? 29 : 11, P.grainK); bg.fillStyle = bg.createPattern(tile, "repeat"); bg.fillRect(0, 0, W, H);
-      gen++; extras(W, H, u, pr, frontY); /* b384: what the passes after the first bring, made from dice of their own */
+      const tile = grain(140, 140, night ? 29 : 11, P.grainK); bg.fillStyle = bg.createPattern(tile, "repeat"); bg.fillRect(0, 0, W, H); S.grainTile = tile;
+      gen++; extras(W, H, u, pr, frontY); /* b384: what the passes after the first bring, made from dice of their own */ S.bgx = bg; EG = null; EGbuf = null; EGbg = "A"; /* (b415) the egg's pages are made again for this size, over this backdrop */
       if (!night) { S.pad = make(160, 80, x => { for (let q = 0; q < 12; q++) { x.fillStyle = "rgba(247,242,232,.15)"; x.beginPath(); x.roundRect(q * 2.4, q * 1.8, 160 - q * 4.8, 80 - q * 3.6, 34 - q * 2); x.fill(); } }); /* the paper's ground, soft at its edges */
         let top = 1e9; for (let x = 0; x <= W; x += 8) top = Math.min(top, backY(x)); S.townTop = top; } /* where the town begins: the back hills' highest point */
       if (S.raw) S.words(S.raw);
@@ -267,8 +277,9 @@ export default function papercut(K, id) {
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; pass: which time round
      *  (b384: pass 0 is the loop, the passes after it are dealt) */
     draw(T, I, A, F, pass = 0) {
-      const { W, H, u, orb } = S;
-      if (!plan || plan.pass !== pass || plan.gen !== gen) plan = night ? dealNight(pass) : dealDay(pass);
+      const { W, H, u, orb } = S, egg = K.egg(pass);
+      if (!plan || plan.pass !== pass || plan.gen !== gen) plan = egg ? eggPlan(pass) : night ? dealNight(pass) : dealDay(pass);
+      if (egg) { if (eggDraw(T, I, A, F)) return; } else if (EG) eggOff(); /* (b415) the egg draws its own frames; any other pass lets it go */
       const pl = plan;
       g.clearRect(0, 0, W, H);
       const dt = S.lastA === null ? 0 : clamp(A - S.lastA, 0, .1); S.lastA = A;
@@ -925,6 +936,416 @@ export default function papercut(K, id) {
     else if (ck === "fireflies") { const flies = []; for (let i = 0; i < (pr ? 16 : 24); i++) flies.push({ x: pr ? W * r() : W * (.42 + r() * .58), y: H * (pr ? .66 + r() * .28 : .7 + r() * .26), ax: (1.5 + r() * 4) * u, ay: (1 + r() * 2.5) * u, f1: .3 + r() * .5, f2: .4 + r() * .6, p1: r() * TAU, p2: r() * TAU, fb: .9 + r() * .9, pb: r() * TAU }); pl.close = { k: ck, t0: 8.8 + r() * .8, t1: 14.6, flies }; }
     else { const flakes = [], base = sk === "fireworks" || sk === "comet" ? 9.6 : 8.6; for (let i = 0; i < (pr ? 12 : 18); i++) { const t0 = base + r() * (base > 9 ? 1.6 : 2); flakes.push({ x: W * r(), t0, d: Math.min(4.2 + r() * 1.6, 14.6 - t0), y1: H * (pr ? .66 + r() * .28 : .68 + r() * .28), a: (1 + r() * 2) * u, sw: .8 + r() * .8, ph: r() * TAU, rot: (r() - .5) * 1.4, s: Math.floor(r() * 3), sc: .7 + r() * .5, drift: (r() - .5) * 4 * u }); } pl.close = { k: ck, flakes }; }
     return pl;
+  }
+  /* ---------------- 1.12 b415: the egg ---------------- */
+  /** when each thing happens: the summer's sky drawn up, the page turned over; the winter's sky let down, its snow, the
+   *  snowman's bow, its sky drawn up; the page turned back, the summer's sky let down, all as it was by `end`. Each piece of
+   *  the town goes flat just before the turning leaf reaches it and springs up just after it has gone (eggTimes) */
+  const EGG = { up0: .55, turn0: [1.75, 3.9], down1: 3.95, snow: [4.0, 9.9], tip: 6.7, up1: 9.75, turn1: [10.55, 12.7], down0: 12.75, end: 14.5 };
+  const MIDT = (EGG.turn0[1] + EGG.turn1[0]) / 2, PHI = .21, TILT = .16;
+  let EG = null, EGbuf = null, EGw = 1, EGbg = "A"; // EGbg: which page the backdrop holds while the egg plays
+  /** how tall a piece looks leaning back by `th` (0 upright … π/2 lying on the page), seen from a little above the page:
+   *  it grows a hair as it starts to go, and lying flat shows a fifth of itself */
+  const lean = th => Math.cos(th - PHI) / Math.cos(PHI);
+  /** a piece folding back flat, falling faster as it goes; and springing up again, swinging a little past upright */
+  const foldS = (T, t0, d = .55) => T <= t0 ? 1 : lean(Math.PI / 2 * (T >= t0 + d ? 1 : E.in((T - t0) / d)));
+  const popS = (T, t0, d = .62) => T >= t0 + d ? 1 : lean(Math.PI / 2 * (1 - (T <= t0 ? 0 : K.spring((T - t0) / d, 2.5, 5))));
+  /** a piece on the summer's page ([fold, pop]: up, flat through the turns, up again), or on the winter's ([pop, fold]) */
+  const stA = (T, t) => T < MIDT ? foldS(T, t[0]) : popS(T, t[1]);
+  const stB = (T, t) => T < MIDT ? popS(T, t[0]) : foldS(T, t[1]);
+  /** how far a hung thing is drawn up (0 where it hangs, 1 out of sight): the summer's go up and come down again with a bob
+   *  on their threads, the winter's come down and go up */
+  const bob = t => K.spring(t, 2.5, 6.5);
+  const upA = (T, i) => T < MIDT ? seg(T, EGG.up0 + i * .12, EGG.up0 + i * .12 + .8, E.in) : 1 - seg(T, EGG.down0 + i * .12, EGG.down0 + i * .12 + 1, bob);
+  const upB = (T, i) => T < MIDT ? 1 - seg(T, EGG.down1 + i * .12, EGG.down1 + i * .12 + 1, bob) : seg(T, EGG.up1 + i * .1, EGG.up1 + i * .1 + .7, E.in);
+  /** the hills, the river and its viaduct in the order the backdrop lays them: printed on the page, as a pop-up book's
+   *  landscape is; what stands on them (the houses, the trees, the windmill) is cut out and folds */
+  const BANDS = ["back", "town", "river", "front", "near"];
+  /** the leaf at its fraction v of a turn: its fold (along the fold's normal from the middle of the screen) and its roll */
+  function leafGeo(v) {
+    const { W, H } = S, nl = Math.hypot(1, TILT), D = (W / 2 + TILT * H / 2) / nl, RC = .06 * (W + H) / 2;
+    return { f: lerp(D + 2, -D - RC * 1.6 - 6, E.io(v)), rc: RC * Math.min(1, v / .1) };
+  }
+  /** the fractions of the turn at which the leaf passes a point: `a`, page A there is covered (by the leaf lying back over
+   *  it, or lifted with it); `b`, page B there is uncovered (the roll has gone past) */
+  function leafAt(x0, y0) {
+    const { W, H } = S, nl = Math.hypot(1, TILT), nx = 1 / nl, ny = TILT / nl, P = (x0 - W / 2) * nx + (y0 - H / 2) * ny, far = P + Math.max(0, Math.min((W - x0) / nx, (H - y0) / ny));
+    let a = 1, b = 1;
+    for (let i = 0; i <= 240 && (a === 1 || b === 1); i++) { const v = i / 240, { f, rc } = leafGeo(v); if (a === 1 && 2 * f + Math.PI * rc - far <= P) a = v; if (b === 1 && f + rc < P - 2) b = v; }
+    return [a, b];
+  }
+  /** when a piece goes on each page — A [fold, pop]: flat just before the leaf covers it (timed by its corner the leaf
+   *  reaches first), up as soon as the leaf has uncovered it coming back; B [pop, fold]: up just after the leaf has gone
+   *  over it (timed by its middle), flat before it comes back */
+  function eggTimes(xa, ya, xb, yb, late = 0) {
+    const a = leafAt(xa, ya)[0], b = leafAt(xb, yb)[1], d0 = EGG.turn0[1] - EGG.turn0[0], d1 = EGG.turn1[1] - EGG.turn1[0], fw = v => EGG.turn0[0] + v * d0, bk = v => EGG.turn1[0] + (1 - v) * d1;
+    return { A: [fw(a) - .72, bk(a) + .08 + late], B: [fw(b) + .08 + late, bk(b) - .72] };
+  }
+  const WINTER = night ? {
+    skyTop: "#050B1C", skyLow: "#15213F", back: "#2E3E68", mid: "#405487", front: "#5468A0", near: "#667BB4", rim: "rgba(214,228,255,.8)", pine: "#1F2C54", pineTip: "#B8C7EA",
+    wall: "#3B4B79", wallLo: "#2F3D66", roof: ["#1F2B4E", "#26335A", "#1C2746"], snow: "#CCD8F3", snowLo: "#8E9FCB", win: "#FFD98A", door: "#1A2340", chim: "#1B2645",
+    ice: "#2D3C69", iceHi: "#8197CC", bridge: "#3A4A78", deck: "#CCD8F3", tree: ["#16213F", "#1B2848", "#131C36"], trunk: "#10162A", mill: "#33416B", millLo: "#29365C", sail: "#3B4A78",
+    cloud: "#2F3C61", cloudLo: "#242F51", cloudHi: "#93A7DA", shadow: "rgba(0,0,0,.45)", leaf: "#1D2848", body: "#DCE5F7", bodyLo: "#93A4CF", coal: "#121828", scarf: "#E0563F", scarf2: "#B23A28", hat: "#141A2C", band: "#E0563F", carrot: "#E8873E", stick: "#4A3A34", flake: "#EEF2FF", puff: "#8796BF", spark: "#E8F0FF"
+  } : {
+    skyTop: "#B9D0E3", skyLow: "#EBF2F7", back: "#B4C7D9", mid: "#D3DFEA", front: "#E6EEF4", near: "#F6F9FB", rim: "rgba(255,255,255,1)", pine: "#8FA5BC", pineTip: "#FFFFFF",
+    wall: "#FFFBF3", wallLo: "#EFE5D0", roof: ["#C8321F", "#B8573E", "#D07C55", "#A84935"], snow: "#FFFFFF", snowLo: "#D3DCE7", win: "#F2BF5E", door: "#9A5838", chim: "#A84935",
+    ice: "#C4D8E2", iceHi: "#F4F9FB", bridge: "#F3EAD6", deck: "#FFFFFF", tree: ["#5C826B", "#4F7460", "#698E76"], trunk: "#8A7258", mill: "#F7EFDF", millLo: "#E3D6BE", sail: "#EFE5D0",
+    cloud: "#F9FAFC", cloudLo: "#DEE5EC", shadow: "rgba(52,72,104,.24)", leaf: "#ECE2D0", body: "#FFFFFF", bodyLo: "#D2DCE8", coal: "#2C2622", scarf: "#C8321F", scarf2: "#9E2717", hat: "#2C2622", band: "#C8321F", carrot: "#E07B39", stick: "#7A5A40", flake: "#FFFFFF", puff: "#FFFFFF", spark: "#FFFFFF"
+  };
+
+  /** the egg's pass: none of the dealt beats, only the town's quiet life — the egg is the pass. Its snow is dealt from dice
+   *  of its own */
+  function eggPlan(pass) {
+    const { W, H, u, pr } = S, no = 99, r = K.deal(pass, 7600), flakes = [];
+    for (let i = 0, n = pr ? 18 : 30; i < n; i++) { const t0 = EGG.snow[0] + (i + r() * .8) / n * (EGG.snow[1] - EGG.snow[0]); flakes.push({ x: W * (.02 + r() * .96), t0, d: 3.4 + r() * 1.8, y1: H * (pr ? .64 + r() * .3 : .6 + r() * .36), a: (1 + r() * 2) * u, sw: .7 + r() * .8, ph: r() * TAU, rot: (r() - .5) * 1.6, s: Math.floor(r() * 3), sc: .6 + r() * .55, drift: (r() - .3) * 5 * u }); }
+    const base = { pass, gen, egg: true, flakes, b: [no, no + 1, no + 2, no + 3], bk: 0, gust: null };
+    return night ? { ...base, won: S.windows.map(() => no), woff: S.windows.map(() => 0), low: { k: "train", t0: no, t1: no + 1, dir: 1, cars: [S.engine] }, moon: null, show: { k: "none" }, close: { k: "none" } }
+      : { ...base, n: [no, no + 1, 0], cross: { k: "plane", planes: [] }, deck: { k: "train", t0: no, t1: no + 1, dir: -1, parts: [S.dengine], xs: W, xe: 0 }, head: { k: "kite", t: null }, close: { k: "birds", t0: no, t1: no + 1, dir: -1, y: 0, flock: [], end: 0 } };
+  }
+
+  /* the pages: each piece of the town a card of its own, the summer's drawn as the backdrop draws it, the winter's in snow */
+  /** a card: what `fn` draws (in the page's own coordinates) between x0…x1, y0…y1, at the screen's density and lined up
+   *  with its pixels, with the paper's grain laid over it as the backdrop lays it; it folds about `base` */
+  function cardOf(x0, y0, x1, y1, base, fn) {
+    x0 = Math.floor(x0 * px) / px; y0 = Math.floor(y0 * px) / px; const cw = Math.max(1, Math.ceil((x1 - x0) * px)), ch = Math.max(1, Math.ceil((y1 - y0) * px));
+    const [c, x] = canvas(cw, ch); x.imageSmoothingEnabled = true; x.setTransform(px, 0, 0, px, -x0 * px, -y0 * px); fn(x);
+    x.globalCompositeOperation = "source-atop"; x.fillStyle = x.createPattern(S.grainTile, "repeat"); x.fillRect(x0, y0, cw / px, ch / px); x.globalCompositeOperation = "source-over";
+    return { c, x0, y0, w: cw / px, h: ch / px, base };
+  }
+  /** a band of hills, as the backdrop's `band` lays it (`win`: in snow, lighter along its ridge) */
+  function bandOn(x, yf, col, blur, win) {
+    const { W, H, u } = S;
+    if (win) { let top = 1e9; for (let xx = 0; xx <= W + 4; xx += 8) top = Math.min(top, yf(xx)); const gr = x.createLinearGradient(0, top, 0, top + 9 * u); gr.addColorStop(0, "#FFFFFF"); gr.addColorStop(.35, col); gr.addColorStop(1, col); x.fillStyle = gr; shade(x, blur, -1.6, 3, WINTER.shadow); }
+    else { shade(x, blur, -1.6, 3); x.fillStyle = col; }
+    x.beginPath(); x.moveTo(0, H); for (let xx = 0; xx <= W + 4; xx += 4) x.lineTo(xx, yf(xx)); x.lineTo(W, H); x.closePath(); x.fill(); unshade(x);
+    x.strokeStyle = win ? WINTER.rim : P.rim; x.lineWidth = win ? 1.2 : night ? .9 : .7; x.beginPath(); for (let xx = 0; xx <= W + 4; xx += 4) (xx ? x.lineTo(xx, yf(xx) + .4) : x.moveTo(xx, yf(xx) + .4)); x.stroke();
+  }
+  /** one of the town's pieces drawn into `x`: as the backdrop draws it, or (`win`) the same in snow */
+  function pieceOn(x, which, win) {
+    const { W, H, u, pr, backY, townY, frontY, nearY, riverY, riverH } = S, Q = WINTER;
+    if (which === "back") {
+      bandOn(x, backY, win ? Q.back : P.back, 9, win);
+      x.fillStyle = win ? Q.pine : night ? "#141D35" : "#D2C5A6"; for (const [x0, h] of S.pines) { const y = backY(x0) + .6 * u; x.beginPath(); x.moveTo(x0, y - h); x.lineTo(x0 + h * .32, y); x.lineTo(x0 - h * .32, y); x.closePath(); x.fill(); }
+      if (win) { x.fillStyle = Q.pineTip; for (const [x0, h] of S.pines) { const y = backY(x0) + .6 * u; x.beginPath(); x.moveTo(x0, y - h); x.lineTo(x0 + h * .16, y - h * .5); x.lineTo(x0 + h * .05, y - h * .44); x.lineTo(x0 - h * .06, y - h * .52); x.lineTo(x0 - h * .16, y - h * .5); x.closePath(); x.fill(); } }
+    } else if (which === "town") bandOn(x, townY, win ? Q.mid : P.mid, 9, win);
+    else if (which === "river") {
+      shade(x, 6, -1, 2, win ? Q.shadow : P.shadow); x.fillStyle = win ? Q.ice : P.river; x.beginPath(); x.moveTo(0, riverY); for (let xx = 0; xx <= W + 4; xx += 6) x.lineTo(xx, riverY + Math.sin(xx / (9 * u)) * .4 * u); x.lineTo(W, riverY + riverH); x.lineTo(0, riverY + riverH); x.closePath(); x.fill(); unshade(x);
+      if (!win) { x.fillStyle = P.riverHi; for (const [x0, y0, w] of S.hls) { x.globalAlpha = .55; x.fillRect(x0, y0, w, .35 * u); } x.globalAlpha = 1; }
+      else { x.strokeStyle = Q.iceHi; x.lineCap = "round"; for (const [x0, y0, w] of S.hls) { x.globalAlpha = .8; x.lineWidth = .3 * u; x.beginPath(); x.moveTo(x0, y0); x.lineTo(x0 + w * 1.6, y0 - .25 * u); x.stroke(); x.globalAlpha = .5; x.lineWidth = .18 * u; x.beginPath(); x.moveTo(x0 + w * .4, y0 + .55 * u); x.lineTo(x0 + w * 1.2, y0 + .4 * u); x.stroke(); } x.globalAlpha = 1; x.lineCap = "butt"; } // the ice, scored
+      const top = S.deckY, n = Math.ceil(W / (W * (pr ? .19 : .085))), span = (W + 4 * u) / n, b0 = -2 * u, b1 = W + 2 * u;
+      shade(x, 6, -1.4, 2.6, win ? Q.shadow : P.shadow); x.fillStyle = win ? Q.bridge : P.bridge; x.beginPath(); x.moveTo(b0 - 2 * u, top); x.lineTo(b1 + 2 * u, top);
+      x.lineTo(b1 + 2 * u, riverY + riverH * .9);
+      for (let k = n - 1; k >= 0; k--) { const a0 = b0 + k * span; x.lineTo(a0 + span * .92, riverY + riverH * .9); x.quadraticCurveTo(a0 + span * .5, top + 1.2 * u - (riverH * .3), a0 + span * .08, riverY + riverH * .9); }
+      x.lineTo(b0 - 2 * u, riverY + riverH * .9); x.closePath(); x.fill(); unshade(x);
+      if (!win) { x.fillStyle = night ? "#34426A" : "#F8F0E0"; x.fillRect(b0 - 2 * u, top, b1 - b0 + 4 * u, .5 * u);
+        x.fillStyle = night ? "rgba(10,16,34,.55)" : "rgba(110,86,60,.35)"; x.fillRect(b0 - 2 * u, top - .28 * u, b1 - b0 + 4 * u, .28 * u); }
+      else { // snow along its parapet, and icicles hanging in each arch
+        shade(x, 3, -.8, 1.4, Q.shadow); x.fillStyle = Q.deck; x.beginPath(); x.roundRect(b0 - 2 * u, top - .55 * u, b1 - b0 + 4 * u, .9 * u, .45 * u); x.fill(); unshade(x);
+        x.fillStyle = Q.snow; x.globalAlpha = .9; for (let k = 0; k < n; k++) { const cx = b0 + k * span + span * .5, cy = top + 1.2 * u - riverH * .3 + (riverY + riverH * .9 - (top + 1.2 * u - riverH * .3)) * .5 - .1 * u; for (const [dx, l] of [[-.9, .7], [-.3, 1.1], [.35, .85], [.95, .55]]) { const ix = cx + dx * u * (pr ? .8 : 1); x.beginPath(); x.moveTo(ix - .16 * u, cy); x.lineTo(ix + .16 * u, cy); x.lineTo(ix, cy + l * u); x.closePath(); x.fill(); } } x.globalAlpha = 1; }
+    } else if (which === "front") bandOn(x, frontY, win ? Q.front : P.front, 8, win);
+    else if (which === "near") {
+      if (win) { const gr = x.createLinearGradient(0, S.nearTop, 0, S.nearTop + 6 * u); gr.addColorStop(0, "#FFFFFF"); gr.addColorStop(.4, Q.near); gr.addColorStop(1, Q.near); x.fillStyle = gr; shade(x, 7, -1.4, 3, Q.shadow); }
+      else { shade(x, 7, -1.4, 3); x.fillStyle = P.near; }
+      x.beginPath(); x.moveTo(0, H); const tooth = 1.2 * u;
+      for (let xx = 0, k = 0; xx <= W + tooth; xx += tooth, k++) x.lineTo(xx, nearY(xx) - (k % 2 ? 0 : .7 * u)); x.lineTo(W, H); x.closePath(); x.fill(); unshade(x);
+    }
+  }
+  /** a house, as the backdrop draws it; in winter its roof under snow, a chimney, its windows lit */
+  function houseOn(x, h, win) {
+    const { u } = S, Q = WINTER, roofPath = () => { x.beginPath(); if (h.roof === 3) x.rect(h.x - .3 * u, h.base - h.h * .74, h.w + .6 * u, h.h * .14); else { x.moveTo(h.x - .5 * u, h.base - h.h * .6); x.lineTo(h.x + h.w / 2, h.base - h.h); x.lineTo(h.x + h.w + .5 * u, h.base - h.h * .6); x.closePath(); } };
+    if (win && h.chim) { const c = h.chim; shade(x, 3, -.8, 1.6, Q.shadow); x.fillStyle = Q.chim; x.fillRect(c.x - c.w / 2, c.top, c.w, c.bot - c.top); unshade(x); x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(c.x - c.w / 2, c.top, c.w * .3, c.bot - c.top); }
+    shade(x, 5, -1.3, 2.4, win ? Q.shadow : P.shadow); x.fillStyle = win ? Q.wall : P.wall; x.fillRect(h.x, h.base - h.h * .62, h.w, h.h * .62);
+    x.fillStyle = (win ? Q.roof : P.roof)[h.roof % (win ? Q.roof : P.roof).length]; roofPath(); x.fill(); unshade(x);
+    x.fillStyle = win ? Q.wallLo : P.wallLo; x.fillRect(h.x, h.base - h.h * .62, h.w * .14, h.h * .62);
+    x.fillStyle = win ? Q.win : P.window; for (const w of h.wins) x.fillRect(w.x, w.y, w.w, w.h);
+    if (win) { x.fillStyle = night ? "rgba(255,246,214,.55)" : "rgba(255,248,226,.6)"; for (const w of h.wins) { x.fillRect(w.x + w.w * .45, w.y, w.w * .1, w.h); x.fillRect(w.x, w.y + w.h * .45, w.w, w.h * .1); } } // their glazing bars
+    if (h.door >= 0) { x.fillStyle = win ? Q.door : P.door; x.fillRect(h.door, h.base - h.h * .3, h.w * .16, h.h * .3); }
+    if (!win) return;
+    // the snow: along the roof's ridge and down its slopes, hanging over the eaves in drifts, and on the chimney
+    shade(x, 3, -.7, 1.4, Q.shadow); x.fillStyle = Q.snow; x.strokeStyle = Q.snow; x.lineJoin = "round"; x.lineCap = "round";
+    if (h.roof === 3) { x.beginPath(); x.roundRect(h.x - .5 * u, h.base - h.h * .74 - .42 * u, h.w + 1 * u, .62 * u, .3 * u); x.fill(); }
+    else { const L = [h.x - .55 * u, h.base - h.h * .6], M = [h.x + h.w / 2, h.base - h.h - .12 * u], R = [h.x + h.w + .55 * u, h.base - h.h * .6];
+      x.lineWidth = .62 * u; x.beginPath(); x.moveTo(L[0], L[1]); x.lineTo(M[0], M[1]); x.lineTo(R[0], R[1]); x.stroke();
+      for (const [a, b] of [[L, M], [M, R]]) for (const f of [.2, .45, .7, .9]) { const px2 = lerp(a[0], b[0], f), py2 = lerp(a[1], b[1], f) + .28 * u; x.beginPath(); x.arc(px2, py2, (.2 + .1 * ((f * 10) % 2)) * u, 0, TAU); x.fill(); } } // drifts lumped along it
+    if (h.chim) { const c = h.chim; x.beginPath(); x.roundRect(c.x - c.w / 2 - .14 * u, c.top - .3 * u, c.w + .28 * u, .42 * u, .2 * u); x.fill(); }
+    unshade(x); x.fillStyle = Q.snowLo; x.globalAlpha = .55; if (h.roof !== 3) { x.beginPath(); x.moveTo(h.x - .2 * u, h.base - h.h * .6 + .3 * u); x.lineTo(h.x + h.w / 2, h.base - h.h + .28 * u); x.lineTo(h.x + h.w / 2, h.base - h.h + .5 * u); x.lineTo(h.x + .1 * u, h.base - h.h * .6 + .45 * u); x.closePath(); x.fill(); } x.globalAlpha = 1; // the snow's shaded side
+    x.lineCap = "butt"; x.lineJoin = "miter";
+  }
+  /** the windmill's tower, as the backdrop draws it; in winter with snow on its cap */
+  function millOn(x, win) {
+    const m = S.mill, Q = WINTER, { u } = S;
+    shade(x, 5, -1.3, 2.4, win ? Q.shadow : P.shadow); x.fillStyle = win ? Q.mill : P.mill; x.beginPath(); x.moveTo(m.x - m.h * .2, m.base); x.lineTo(m.x - m.h * .11, m.y + m.h * .12); x.lineTo(m.x + m.h * .11, m.y + m.h * .12); x.lineTo(m.x + m.h * .2, m.base); x.closePath(); x.fill();
+    x.fillStyle = (win ? Q.roof : P.roof)[0]; x.beginPath(); x.moveTo(m.x - m.h * .15, m.y + m.h * .14); x.lineTo(m.x, m.y - m.h * .02); x.lineTo(m.x + m.h * .15, m.y + m.h * .14); x.closePath(); x.fill(); unshade(x);
+    x.fillStyle = win ? Q.millLo : P.millLo; x.fillRect(m.x - m.h * .045, m.base - m.h * .28, m.h * .09, m.h * .28);
+    if (!win) return;
+    shade(x, 3, -.7, 1.4, Q.shadow); x.strokeStyle = Q.snow; x.lineWidth = .55 * u; x.lineJoin = "round"; x.lineCap = "round"; x.beginPath(); x.moveTo(m.x - m.h * .15, m.y + m.h * .135); x.lineTo(m.x, m.y - m.h * .02 - .1 * u); x.lineTo(m.x + m.h * .15, m.y + m.h * .135); x.stroke();
+    x.fillStyle = Q.snow; x.beginPath(); x.ellipse(m.x, m.base - .1 * u, m.h * .26, .45 * u, 0, Math.PI, TAU); x.fill(); unshade(x); x.lineCap = "butt"; x.lineJoin = "miter"; // a drift at its foot
+    x.fillStyle = Q.win; x.fillRect(m.x - m.h * .035, m.y + m.h * .36, m.h * .07, m.h * .09); // a lit window up the tower
+  }
+  /** a snowy pine, its trunk's foot where a summer tree's is in its sprite */
+  function pineSpr(s, col) {
+    const { u } = S, Q = WINTER, w = 5.4 * u * s, h = 9 * u * s, pad = 2 * u;
+    return make(w + 4 * u, h + 3 * u, x => { const cx = pad + w / 2, top = pad, crown = h * .84;
+      shade(x, 5, -1.2, 2.2, Q.shadow); x.fillStyle = Q.trunk; x.fillRect(cx - .32 * u, top + crown * .9, .64 * u, h - crown * .9);
+      const tiers = [[0, .46, .5], [.24, .74, .78], [.46, 1, 1]];
+      for (let k = tiers.length - 1; k >= 0; k--) { const [a, b, wf] = tiers[k], y0 = top + crown * a, y1 = top + crown * b, hw = w / 2 * wf; x.fillStyle = col; x.beginPath(); x.moveTo(cx, y0); x.lineTo(cx + hw, y1); x.quadraticCurveTo(cx, y1 + .5 * u * s, cx - hw, y1); x.closePath(); x.fill(); }
+      unshade(x);
+      for (let k = tiers.length - 1; k >= 0; k--) { const [a, b, wf] = tiers[k], y0 = top + crown * a, y1 = top + crown * b, hw = w / 2 * wf, sy = lerp(y0, y1, .52), sw = hw * .52;
+        x.fillStyle = "rgba(0,0,0,.12)"; x.beginPath(); x.moveTo(cx, y0); x.lineTo(cx - hw, y1); x.quadraticCurveTo(cx - hw * .4, y1 + .3 * u * s, cx - hw * .05, y1 + .1 * u * s); x.closePath(); x.fill(); // its shaded side
+        x.fillStyle = Q.snow; x.beginPath(); x.moveTo(cx, y0 - .15 * u); x.lineTo(cx + sw, sy); for (let j = 4; j >= 0; j--) { const f = j / 4, xx = cx - sw + 2 * sw * f; x.quadraticCurveTo(xx + sw * .25, sy + .55 * u * s * (j % 2 ? 1 : .5), xx, sy - .05 * u); } x.closePath(); x.fill(); // snow on the tier, its edge in drifts
+        x.fillStyle = Q.snowLo; x.globalAlpha = .45; x.beginPath(); x.moveTo(cx, y0); x.lineTo(cx - sw, sy); x.lineTo(cx - sw * .35, sy + .1 * u); x.closePath(); x.fill(); x.globalAlpha = 1; }
+    });
+  }
+  /** the snowman, his scarf and his face (his right arm and his hat are drawn apart: he tips it) */
+  function snowmanSpr(q) {
+    const Q = WINTER, w = 9 * q, h = 12.5 * q, ox = 4.5 * q, oy = 11.8 * q; // his foot at (ox, oy)
+    const s = make(w, h, x => { x.translate(ox, oy);
+      const ball = (cy, r) => { shade(x, 4, -1, 2, Q.shadow); x.fillStyle = Q.bodyLo; x.beginPath(); x.arc(0, cy, r, 0, TAU); x.fill(); unshade(x); x.save(); x.beginPath(); x.arc(0, cy, r, 0, TAU); x.clip(); x.fillStyle = Q.body; x.beginPath(); x.arc(r * .16, cy - r * .14, r * .98, 0, TAU); x.fill(); x.restore(); };
+      x.strokeStyle = Q.stick; x.lineCap = "round"; x.lineWidth = .3 * q; x.beginPath(); x.moveTo(-1.3 * q, -5.3 * q); x.lineTo(-3.3 * q, -6.9 * q); x.moveTo(-2.6 * q, -6.35 * q); x.lineTo(-2.75 * q, -7.2 * q); x.moveTo(-2.9 * q, -6.6 * q); x.lineTo(-3.55 * q, -6.55 * q); x.stroke(); // his left arm
+      ball(-2.05 * q, 2.15 * q); ball(-5.0 * q, 1.6 * q); ball(-7.45 * q, 1.18 * q);
+      x.fillStyle = Q.coal; for (const [bx, by, br] of [[.05, -5.55, .17], [.08, -4.75, .17], [.1, -2.9, .19], [-.4, -7.68, .15], [.42, -7.7, .15]]) { x.beginPath(); x.arc(bx * q, by * q, br * q, 0, TAU); x.fill(); } // buttons, eyes
+      for (let k = 0; k < 5; k++) { const a = Math.PI * (.2 + k * .15); x.beginPath(); x.arc(Math.cos(a) * .62 * q + .05 * q, -7.2 * q + Math.sin(a) * .42 * q, .07 * q, 0, TAU); x.fill(); } // his smile, in coal
+      x.fillStyle = night ? "rgba(255,140,150,.28)" : "rgba(240,120,110,.32)"; for (const sd of [-1, 1]) { x.beginPath(); x.ellipse(sd * .72 * q, -7.28 * q, .26 * q, .17 * q, 0, 0, TAU); x.fill(); } // his cheeks
+      x.fillStyle = Q.carrot; x.beginPath(); x.moveTo(.1 * q, -7.42 * q); x.lineTo(1.75 * q, -7.12 * q); x.lineTo(.1 * q, -7.02 * q); x.closePath(); x.fill(); x.fillStyle = "rgba(120,50,10,.35)"; x.beginPath(); x.moveTo(.1 * q, -7.22 * q); x.lineTo(1.75 * q, -7.12 * q); x.lineTo(.1 * q, -7.02 * q); x.closePath(); x.fill(); // his carrot
+      shade(x, 3, -.8, 1.5, Q.shadow); x.fillStyle = Q.scarf; x.beginPath(); x.roundRect(-1.3 * q, -6.55 * q, 2.6 * q, .62 * q, .3 * q); x.fill(); // his scarf
+      x.beginPath(); x.moveTo(.35 * q, -6.2 * q); x.lineTo(1.0 * q, -6.25 * q); x.lineTo(1.25 * q, -4.75 * q); x.lineTo(.68 * q, -4.62 * q); x.closePath(); x.fill(); unshade(x);
+      x.fillStyle = Q.scarf2; for (let k = 0; k < 3; k++) x.fillRect((-1.05 + k * .8) * q, -6.55 * q, .32 * q, .62 * q); x.fillRect(.8 * q, -5.6 * q, .45 * q, .22 * q); // its stripes
+      x.strokeStyle = Q.scarf; x.lineWidth = .1 * q; x.beginPath(); for (let k = 0; k < 4; k++) { x.moveTo((.72 + k * .15) * q, -4.65 * q); x.lineTo((.7 + k * .15) * q, -4.35 * q); } x.stroke(); // its fringe
+    });
+    s.ox = ox; s.oy = oy;
+    s.arm = make(4 * q, 2.2 * q, x => { x.strokeStyle = Q.stick; x.lineCap = "round"; x.lineWidth = .3 * q; x.beginPath(); x.moveTo(.2 * q, 1.1 * q); x.lineTo(3.4 * q, 1.1 * q); x.moveTo(2.5 * q, 1.1 * q); x.lineTo(3.1 * q, .35 * q); x.moveTo(2.8 * q, 1.1 * q); x.lineTo(3.7 * q, 1.5 * q); x.stroke(); }); // his right arm, from the shoulder along x
+    s.hat = make(3.6 * q, 3.2 * q, x => { x.translate(1.8 * q, 2.7 * q); shade(x, 3, -.8, 1.6, Q.shadow); x.fillStyle = Q.hat; x.beginPath(); x.roundRect(-1.55 * q, -.3 * q, 3.1 * q, .42 * q, .2 * q); x.fill(); x.beginPath(); x.roundRect(-1.0 * q, -2.35 * q, 2.0 * q, 2.15 * q, .16 * q); x.fill(); unshade(x);
+      x.fillStyle = Q.band; x.fillRect(-1.0 * q, -.75 * q, 2.0 * q, .4 * q); x.fillStyle = "rgba(255,255,255,.12)"; x.fillRect(.45 * q, -2.3 * q, .35 * q, 2.0 * q); }); // its brim at (0, 0) of its own
+    return s;
+  }
+  /** the egg's pieces and its winter, made once per layout: some each frame through the quiet start of the pass, the rest
+   *  at once if they are wanted sooner (a moment held out of turn) */
+  function eggJobs() {
+    const { W, u, pr, frontY, orb } = S, Q = WINTER, jobs = [];
+    { let m = 1e9; for (let x = 0; x <= W + 4; x += 4) m = Math.min(m, S.nearY(x)); S.nearTop = m - .7 * u; }
+    // the winter's chimneys: on the far slope of each gabled roof
+    for (const h of S.houses) h.chim = h.roof === 3 ? null : (() => { const cx = h.x + h.w * .74, cw = Math.max(.55 * u, h.w * .13), sl = lerp(h.base - h.h, h.base - h.h * .6, (cx - (h.x + h.w / 2)) / (h.w / 2 + .5 * u)); return { x: cx, w: cw, top: h.base - h.h * .98, bot: sl + .5 * u }; })();
+    const tm = { houses: [], trees: [], mill: null, man: null };
+    S.houses.forEach((h, i) => { tm.houses[i] = eggTimes(h.x + h.w, h.base, h.x + h.w / 2, h.base - h.h * .5); });
+    S.trees.forEach((t, i) => { tm.trees[i] = eggTimes(t.x + 2 * u, t.y, t.x, t.y - 4 * u, .05); });
+    { const m = S.mill; tm.mill = eggTimes(m.x + m.h * .2, m.base, m.x, m.base - m.h * .5, .1); }
+    const smx = W * .8, smy = frontY(smx) + .45 * u; tm.man = eggTimes(smx + 3.5 * u, smy, smx, smy - 6 * u, .25);
+    EG = { gen, A: { houses: [] }, B: { houses: [] }, jobs, tm, smAt: [smx, smy] };
+    /* the summer's town lies baked in the backdrop: while any of it is folded, a strip of the land as it lies behind it
+       (the paper, the hills, no houses) is laid over that stretch, and the houses and the mill drawn on it as cards */
+    { const m = S.mill; let x0 = m.x - m.h * .2, x1 = m.x + m.h * .2, y0 = m.y - m.h * .02, y1 = m.base; for (const h of S.houses) { x0 = Math.min(x0, h.x); x1 = Math.max(x1, h.x + h.w); y0 = Math.min(y0, h.base - h.h); y1 = Math.max(y1, h.base); }
+      jobs.push(["A", 3, () => { EG.A.strip = cardOf(x0 - 2 * u, y0 - 1.5 * u, x1 + 2 * u, y1 + 1.2 * u, 0, x => { printOn(x, false); for (const k of BANDS) pieceOn(x, k, false); }); }]); }
+    for (const [pg, win] of [["A", false], ["B", true]]) {
+      const c = EG[pg];
+      S.houses.forEach((h, i) => jobs.push([pg, 1, () => { c.houses[i] = cardOf(h.x - 1.5 * u, h.base - h.h - 1.2 * u, h.x + h.w + 1.5 * u, h.base + .8 * u, h.base, x => houseOn(x, h, win)); }]));
+      jobs.push([pg, 1, () => { const m = S.mill; c.mill = cardOf(m.x - m.h * .2 - 1.2 * u, m.y - m.h * .02 - 1.2 * u, m.x + m.h * .2 + 1.2 * u, m.base + .8 * u, m.base, x => millOn(x, win)); }]);
+    }
+    jobs.push(["B", 2, () => { const B = EG.B;
+      B.trees = S.trees.map((t, i) => pineSpr(t.s, Q.tree[i % 3]));
+      B.sail = make(S.mill.r * 1.1, S.mill.r * .34, x => { const r0 = S.mill.r; shade(x, 4, -1, 2, Q.shadow); x.fillStyle = Q.sail; x.fillRect(r0 * .1, r0 * .04, r0 * .95, r0 * .24); unshade(x); x.strokeStyle = Q.millLo; x.lineWidth = .8; for (let k = 1; k < 5; k++) { const xx = r0 * (.1 + k * .19); x.beginPath(); x.moveTo(xx, r0 * .04); x.lineTo(xx, r0 * .28); x.stroke(); } x.fillStyle = Q.snow; x.beginPath(); x.roundRect(r0 * .08, r0 * .01, r0 * .99, r0 * .07, r0 * .035); x.fill(); });
+      const cloud = s => { const w = 17 * u * s, h = 7.2 * u * s, pad = 2.6 * u; return make(w + pad * 2, h + pad * 2, x => { shade(x, 7, -1.5, 3, Q.shadow); x.fillStyle = Q.cloud; x.beginPath();
+        for (const [bx, by, br] of [[.2, .66, .3], [.4, .42, .42], [.63, .5, .36], [.82, .68, .26]]) { x.moveTo(pad + w * bx + h * br, pad + h * by); x.arc(pad + w * bx, pad + h * by, h * br, 0, TAU); }
+        x.rect(pad + w * .16, pad + h * .62, w * .7, h * .36); x.fill(); unshade(x); x.fillStyle = Q.cloudLo; x.fillRect(pad + w * .16, pad + h * .88, w * .7, h * .1);
+        if (night) { x.globalAlpha = .55; x.lineWidth = 1.2; x.strokeStyle = Q.cloudHi; x.beginPath(); x.arc(pad + w * .4, pad + h * .42, h * .42, -2.4, -.5); x.stroke(); x.globalAlpha = 1; } }); };
+      B.clouds = (pr ? [.95, .78, .7] : [1, .78, .9, .72]).map(s => cloud(s * 1.08));
+      if (!night) { const R = orb.r * .92; B.rays = make(R * 3.4, R * 3.4, x => { const c0 = R * 1.7; shade(x, 5, -1, 2, Q.shadow); x.fillStyle = "#F4E6C8"; x.beginPath(); for (let k = 0; k < 12; k++) { const a = k / 12 * TAU, a0 = a - .11, a1 = a + .11; x.moveTo(c0 + Math.cos(a0) * R * 1.08, c0 + Math.sin(a0) * R * 1.08); x.lineTo(c0 + Math.cos(a) * R * 1.45, c0 + Math.sin(a) * R * 1.45); x.lineTo(c0 + Math.cos(a1) * R * 1.08, c0 + Math.sin(a1) * R * 1.08); x.closePath(); } x.fill(); });
+        B.disc = make(R * 2.6, R * 2.6, x => { const c0 = R * 1.3; shade(x, 6, -1.2, 2.4, Q.shadow); x.fillStyle = "#EAC98E"; x.beginPath(); x.arc(c0 + R * .06, c0 + R * .07, R, 0, TAU); x.fill(); unshade(x); x.fillStyle = "#F4DCA8"; x.beginPath(); x.arc(c0 - R * .03, c0 - R * .04, R * .95, 0, TAU); x.fill(); x.fillStyle = "rgba(255,252,240,.35)"; x.beginPath(); x.arc(c0 - R * .3, c0 - R * .32, R * .3, 0, TAU); x.fill(); }); B.R = R; }
+      else { const R = orb.r * 1.5; B.R = R; B.glow = K.glowSpr(Math.round(R * 3.4), K.rgb("#A9C8FF"), .4);
+        B.disc = make(R * 2.4, R * 2.4, x => { const c0 = R * 1.2; x.fillStyle = "#F7F0DC"; x.beginPath(); x.arc(c0, c0, R, 0, TAU); x.fill();
+          x.fillStyle = "#E6DCC0"; for (const [cx, cy, cr] of [[-.3, -.2, .22], [.25, .15, .16], [-.05, .38, .12], [.38, -.34, .08], [-.5, .2, .07]]) { x.beginPath(); x.arc(c0 + cx * R, c0 + cy * R, cr * R, 0, TAU); x.fill(); }
+          x.fillStyle = "rgba(255,255,255,.25)"; x.beginPath(); x.arc(c0 + R * .25, c0 - R * .28, R * .5, 0, TAU); x.fill(); }); }
+      const sm = (S.pr ? 1.3 : 1.2) * u; B.sm = snowmanSpr(sm); B.smq = sm;
+      B.flakes = [0, 1, 2].map(v => make(3.2 * u, 3.2 * u, x => { const c0 = 1.6 * u, L = 1.35 * u, w = .16 * u; shade(x, 2, -.4, .9, Q.shadow); x.fillStyle = Q.flake; x.beginPath();
+        for (let k = 0; k < 6; k++) { x.save(); x.translate(c0, c0); x.rotate(k / 6 * TAU); x.rect(0, -w / 2, L, w); for (const [f, l] of v === 0 ? [[.5, .38], [.78, .25]] : v === 1 ? [[.4, .3], [.62, .42], [.84, .22]] : [[.66, .5]]) { x.save(); x.translate(L * f, 0); x.rotate(.9); x.rect(0, -w * .4, L * l, w * .8); x.rotate(-1.8); x.rect(0, -w * .4, L * l, w * .8); x.restore(); } x.restore(); }
+        x.fill(); x.beginPath(); for (let k = 0; k < 6; k++) { const a = k / 6 * TAU; x.lineTo(c0 + Math.cos(a) * w * 1.6, c0 + Math.sin(a) * w * 1.6); } x.closePath(); x.fill(); }));
+      B.puff = make(4.4 * u, 3.4 * u, x => { shade(x, 3, -.6, 1.2, Q.shadow); x.fillStyle = Q.puff; x.beginPath(); for (const [bx, by, br] of [[1.5, 2.0, 1.0], [2.3, 1.45, 1.2], [3.1, 2.05, .9]]) { x.moveTo((bx + br) * u, by * u); x.arc(bx * u, by * u, br * u, 0, TAU); } x.fill(); unshade(x); });
+      B.spark = K.glowSpr(Math.max(2, Math.round(1.1 * u)), K.rgb(Q.spark), .9);
+      { const t = S.grainTile, [vc, vx] = canvas(t.width, t.height); vx.fillStyle = Q.leaf; vx.fillRect(0, 0, t.width, t.height); vx.drawImage(t, 0, 0); B.verso = vc; } // the leaf's paper, its grain in it
+      if (night) { B.nPad = make(160, 80, x => { for (let q = 0; q < 12; q++) { x.fillStyle = "rgba(14,20,36,.16)"; x.beginPath(); x.roundRect(q * 2.4, q * 1.8, 160 - q * 4.8, 80 - q * 3.6, 34 - q * 2); x.fill(); } }); /* the night's ground, soft at its edges */
+        let top = 1e9; for (let xx = 0; xx <= S.W + 4; xx += 8) top = Math.min(top, S.backY(xx)); B.landTop = top; }
+      B.sparks = Array.from({ length: S.pr ? 10 : 16 }, (_, i) => { const r = rng(91 + i), x = S.W * r(), k = r() < .5; return { x, y: (k ? frontY : S.townY)(x) + (k ? 1.2 : .9) * u + r() * 1.5 * u, f: .8 + r() * 1.2, ph: r() * TAU }; });
+    }]);
+    const ldPage = c => c.mill && c.houses.length === S.houses.length && c.houses.every(Boolean);
+    EG.ready = pg => pg === "B" ? ldPage(EG.B) && !!EG.B.trees : ldPage(EG.A) && !!EG.A.strip;
+  }
+  /** run the jobs: a few a frame while the pass is quiet, or all of a page's at once when it is wanted */
+  function eggMake(need) {
+    if (!EG || EG.gen !== gen) eggJobs();
+    const J = EG.jobs; let budget = 10;
+    while (J.length && (budget > 0 || (need && need.some(p => !EG.ready(p))))) { const [, w, fn] = J.shift(); fn(); budget -= w; }
+  }
+
+  /* drawing the pages */
+  /** what folds a piece about its foot `y0` (in the frame's transform): s 1 standing, a fifth lying flat (lean) */
+  const fold = (y0, s) => { if (s === 1) return; g.translate(0, y0); g.scale(1, s); g.translate(0, -y0); };
+  const cardDraw = (cd, s) => { if (s <= .001) return; g.save(); fold(cd.base, s); g.drawImage(cd.c, cd.x0, cd.y0, cd.w, cd.h); g.restore(); };
+  /** a page's paper onto `x`: its sky and, by night, its pinholes, as the backdrop lays them (its grain is laid after) */
+  function printOn(x, win) {
+    const { W, H } = S, Q = WINTER, gr = x.createLinearGradient(0, 0, 0, H * .7); gr.addColorStop(0, win ? Q.skyTop : P.skyTop); gr.addColorStop(1, win ? Q.skyLow : P.skyLow);
+    x.fillStyle = gr; x.fillRect(0, 0, W, H);
+    if (night) for (const s of S.stars) { x.fillStyle = P.star; x.globalAlpha = s.tw ? .3 : .55 + s.s * .3; x.beginPath(); x.arc(s.x, s.y, s.s * .75, 0, TAU); x.fill(); if (s.s > 1.3) { x.globalAlpha = .12; x.beginPath(); x.arc(s.x, s.y, s.s * 2.4, 0, TAU); x.fill(); } x.globalAlpha = 1; } /* star by star, as the backdrop sets them (an alpha past 1 is ignored there, and the last star's 1 stands) */
+  }
+  /** the backdrop given over to the winter's page while it is up (its paper and its land laid once, so that each frame
+   *  draws only what moves), and given back: the summer's, kept as it was laid, is put back pixel for pixel */
+  function bgSwap(want) {
+    if (want === EGbg || !S.bgx) return; const x = S.bgx, c = x.canvas;
+    if (want === "B") { if (!EG.saved || EG.saved.width !== c.width || EG.saved.height !== c.height) { const [sc, sx] = canvas(c.width, c.height); sx.drawImage(c, 0, 0); EG.saved = sc; }
+      x.save(); x.setTransform(px, 0, 0, px, 0, 0); printOn(x, true); for (const k of BANDS) pieceOn(x, k, true); x.globalCompositeOperation = "source-over"; x.fillStyle = x.createPattern(S.grainTile, "repeat"); x.fillRect(0, 0, S.W, S.H); x.restore(); }
+    else { x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = "copy"; x.drawImage(EG.saved, 0, 0); x.restore(); }
+    EGbg = want;
+  }
+  /** the egg let go: the backdrop as it was, and what it made */
+  function eggOff() { if (EGbg === "B" && EG && EG.saved) bgSwap("A"); EG = null; EGbuf = null; }
+  /** the fold of each of a page's pieces at loop time T */
+  function eggState(T, win, ie = 1) {
+    const tm = EG.tm, pg = win ? "B" : "A", st = win ? stB : (T2, t) => 1 - (1 - stA(T2, t)) * ie; /* (ie: as far as the egg has come in) */
+    return { houses: tm.houses.map(t => st(T, t[pg])), trees: tm.trees.map(t => st(T, t[pg])), mill: st(T, tm.mill[pg]), man: win ? st(T, tm.man.B) : 0 };
+  }
+  /** the summer's page: the town as the scene draws it at rest, each piece folded as far as it has gone, its sun (or moon)
+   *  and its clouds drawn up as far as they have gone */
+  function pageA(T, I, A, F, dt, ie = 1) {
+    const { W, u, orb } = S, c = EG.A, st = eggState(T, false, ie);
+    if (st.mill < .9999 || st.houses.some(s => s < .9999)) { const sp = c.strip; g.drawImage(sp.c, sp.x0, sp.y0, sp.w, sp.h); S.houses.forEach((h, i) => cardDraw(c.houses[i], st.houses[i])); cardDraw(c.mill, st.mill); } // (the backdrop has the town; this stands in for it while it folds)
+    // what the scene draws over the backdrop, in its order: the sun or the moon on its thread, (by night) the stars that
+    // twinkle, the clouds, the sails, the trees, (by night) the lit windows, the glints or the moon on the river, the kite
+    const swing = Math.sin(A * .55) * .035, ox = orb.x + Math.sin(swing) * orb.y, oy0 = Math.cos(swing) * orb.y, oy = oy0 - upA(T, 0) * ie * (oy0 + orb.r * (night ? 3.4 : 1.8) + 6);
+    if (oy - orb.r > 0) { g.strokeStyle = P.thread; g.lineWidth = .8; g.beginPath(); g.moveTo(orb.x, 0); g.lineTo(ox, oy - orb.r); g.stroke(); }
+    if (!night) { put(S.sunRays, ox, oy, .5, .5, A * .04); put(S.sunDisk, ox, oy); }
+    else { g.globalAlpha = .75 + (F >= 0 ? env(F, 0, .2, .7, 1) * .25 : 0); g.drawImage(S.moonGlow, ox - S.moonGlow.width / 2, oy - S.moonGlow.height / 2); g.globalAlpha = 1;
+      g.fillStyle = P.moon; g.beginPath(); g.arc(ox, oy, orb.r, 0, TAU); g.fill(); g.fillStyle = P.moonLo; for (const [cx, cy, cr] of [[-.3, -.2, .22], [.25, .15, .16], [-.05, .38, .12]]) { g.beginPath(); g.arc(ox + cx * orb.r, oy + cy * orb.r, cr * orb.r, 0, TAU); g.fill(); }
+      for (const s of S.stars) { if (!s.tw) continue; const a = .35 + .65 * Math.pow(Math.max(0, Math.sin(A * s.f + s.ph)), 3); g.globalAlpha = a; g.fillStyle = P.star; g.beginPath(); g.arc(s.x, s.y, s.s * .7, 0, TAU); g.fill(); } g.globalAlpha = 1; }
+    S.clouds.forEach((cl, i) => { const a = Math.sin(A * .5 + cl.ph) * .03, x = cl.x + Math.sin(a) * cl.y, y = Math.cos(a) * cl.y - upA(T, i + 1) * ie * (cl.y + cl.spr.h2 + 6);
+      if (y - cl.spr.h2 * .3 > 0) { g.strokeStyle = P.thread; g.lineWidth = .8; g.beginPath(); g.moveTo(cl.x, 0); g.lineTo(x, y - cl.spr.h2 * .3); g.stroke(); }
+      put(cl.spr, x, y, .5, .2, a * .6); });
+    { const m = S.mill; g.save(); fold(m.base, st.mill); for (let k = 0; k < 4; k++) put(S.millSail, m.x, m.y + m.h * .12, .1, .5, S.millAngle + k * TAU / 4); g.fillStyle = P.millLo; g.beginPath(); g.arc(m.x, m.y + m.h * .12, .7 * u, 0, TAU); g.fill(); g.restore(); }
+    S.trees.forEach((t, i) => { if (t.front) return; g.save(); fold(t.y, st.trees[i]); put(t.spr, t.x, t.y, .5, 1 - 1.4 * u / t.spr.h2, Math.sin(A * 1.1 + t.ph) * .018); g.restore(); });
+    if (night) { let i = 0; S.houses.forEach((h, hi) => { g.save(); fold(h.base, st.houses[hi]); for (let k = 0; k < h.wins.length; k++, i++) { const w = S.windows[i], base = w.base ? .82 + .18 * Math.sin(A * w.f + w.ph) : (Math.sin(A * w.f + w.ph) > .985 ? .8 : 0); if (base <= .02) continue;
+      g.globalAlpha = clamp(base) * .55; g.drawImage(S.glow, w.x + w.w / 2 - S.glow.width / 2, w.y + w.h / 2 - S.glow.height / 2); g.globalAlpha = clamp(base); g.fillStyle = P.lit; g.fillRect(w.x, w.y, w.w, w.h); g.globalAlpha = 1; } g.restore(); }); }
+    if (!night) { g.fillStyle = "rgba(255,255,255,.7)"; for (const s of S.glints) { const a = Math.pow(Math.max(0, Math.sin(A * s.v * 1.6 + s.ph)), 6); if (a < .05) continue; g.globalAlpha = a; g.fillRect((s.x + A * s.v * 4) % W, s.y, s.w, .3 * u); } g.globalAlpha = 1; }
+    else { g.fillStyle = P.moon; for (const s of S.moonStrips) { const k = .5 + .5 * Math.sin(A * s.v + s.ph), w = s.w * (.55 + .45 * k); g.globalAlpha = (.06 + .22 * k) * (1 - Math.abs(s.dx) / (4.5 * u)); g.fillRect(orb.x - w / 2 + s.dx + Math.sin(A * .7 + s.ph) * .5 * u, s.y, w, .24 * u); } g.globalAlpha = 1; }
+    if (!night) dKite(T, I, A, dt, null);
+    S.trees.forEach((t, i) => { if (!t.front) return; g.save(); fold(t.y, st.trees[i]); put(t.spr, t.x, t.y, .5, 1 - 1.4 * u / t.spr.h2, Math.sin(A * 1.1 + t.ph) * .018); g.restore(); });
+  }
+  /** the winter's page: the same town in snow, its pieces springing up, a pale sun (by night a great moon) and snow clouds
+   *  let down on their threads, smoke from the chimneys, the snowman, the snow */
+  function pageB(T, I, A) {
+    const { u, orb } = S, c = EG.B, Q = WINTER, st = eggState(T, true), on = k => (T < MIDT ? clamp((T - EGG.turn0[1] + .3) / .8) : clamp((EGG.turn1[0] + .2 - T) / .5)) * k;
+    // the sky's pieces first, behind the hills: the sun or the moon, and the clouds
+    const swing = Math.sin(A * .55) * .035, ox = orb.x + Math.sin(swing) * orb.y, oy0 = Math.cos(swing) * orb.y + (night ? orb.r * .15 : 0), R = c.R, oy = oy0 - upB(T, 0) * (oy0 + R * 3.6 + 6);
+    if (oy - R > 0) { g.strokeStyle = night ? P.thread : "rgba(80,96,120,.3)"; g.lineWidth = .8; g.beginPath(); g.moveTo(orb.x, 0); g.lineTo(ox, oy - R); g.stroke(); }
+    if (!night) { put(c.rays, ox, oy, .5, .5, A * .04); put(c.disc, ox, oy); }
+    else { g.globalAlpha = .9; g.drawImage(c.glow, ox - c.glow.width / 2, oy - c.glow.height / 2); g.globalAlpha = 1; put(c.disc, ox, oy);
+      for (const s of S.stars) { if (!s.tw) continue; const a = .35 + .65 * Math.pow(Math.max(0, Math.sin(A * s.f * 1.2 + s.ph)), 3); g.globalAlpha = a; g.fillStyle = P.star; g.beginPath(); g.arc(s.x, s.y, s.s * .75, 0, TAU); g.fill(); } g.globalAlpha = 1; }
+    S.clouds.forEach((cl, i) => { const spr = c.clouds[i], a = Math.sin(A * .5 + cl.ph) * .03, x = cl.x + Math.sin(a) * cl.y, y = Math.cos(a) * cl.y - upB(T, i + 1) * (cl.y + spr.h2 + 6);
+      if (y - spr.h2 * .3 > 0) { g.strokeStyle = night ? P.thread : "rgba(80,96,120,.3)"; g.lineWidth = .8; g.beginPath(); g.moveTo(cl.x, 0); g.lineTo(x, y - spr.h2 * .3); g.stroke(); }
+      put(spr, x, y, .5, .2, a * .6); });
+    S.houses.forEach((h, i) => cardDraw(c.houses[i], st.houses[i]));
+    { const m = S.mill; g.save(); cardDraw(c.mill, st.mill); fold(m.base, st.mill); for (let k = 0; k < 4; k++) put(c.sail, m.x, m.y + m.h * .12, .1, .5, S.millAngle * .6 + k * TAU / 4); g.fillStyle = Q.millLo; g.beginPath(); g.arc(m.x, m.y + m.h * .12, .7 * u, 0, TAU); g.fill(); g.restore(); }
+    S.trees.forEach((t, i) => { if (t.front) return; const spr = c.trees[i]; g.save(); fold(t.y, st.trees[i]); put(spr, t.x, t.y, .5, 1 - 1.4 * u / spr.h2, Math.sin(A * 1.1 + t.ph) * .014); g.restore(); });
+    // the chimneys' smoke, and by night the lit windows' glow
+    S.houses.forEach((h, i) => { const s = st.houses[i], k = on(clamp((s - .9) / .1)); if (k <= .01) return;
+      if (night) { g.save(); fold(h.base, s); for (const w of h.wins) { g.globalAlpha = .5 * k * (.85 + .15 * Math.sin(A * 2.3 + w.ph)); g.drawImage(S.glow, w.x + w.w / 2 - S.glow.width / 2, w.y + w.h / 2 - S.glow.height / 2); } g.restore(); g.globalAlpha = 1; }
+      if (!h.chim) return; const ch = h.chim;
+      for (let j = 0; j < 3; j++) { const age = ((A * .42 + j / 3 + i * .37) % 1), x = ch.x + age * 4.2 * u + Math.sin(age * 5 + i) * .4 * u, y = ch.top - .3 * u - age * 6.5 * u, sc = .35 + age * .75, a = k * (age < .12 ? age / .12 : 1) * (1 - age) * .55 * S.shade(x, y, 3 * u);
+        if (a > .01) put(c.puff, x, y, .5, .7, Math.sin(age * 3 + j) * .3, sc, sc, a); } });
+    // the snowman on the near bank of the river, and the front's pines
+    if (st.man > .001) { const sm = c.sm, q = c.smq, [mx, my] = EG.smAt, t = T - EGG.tip, lift = env(t, .4, .75, 1.1, 1.45, E.io), reach = env(t, 0, .38, 1.45, 1.85, E.io);
+      // his hat, raised off his head and tipped; his hand goes up to its brim, holds it through the bow, and comes down
+      const hy = -8.55 * q - lift * .55 * q, rot = -.32 * lift, grip = [Math.cos(rot) * .95 * q, hy + Math.sin(rot) * .95 * q], sh = [1.15 * q, -5.7 * q];
+      const rest = [sh[0] + Math.cos(-.62) * 3.2 * q, sh[1] + Math.sin(-.62) * 3.2 * q], hx = lerp(rest[0], grip[0], reach), hy2 = lerp(rest[1], grip[1], reach) - Math.sin(reach * Math.PI) * .6 * q * (1 - lift);
+      g.save(); fold(my, st.man); g.translate(mx, my);
+      g.save(); g.translate(sh[0], sh[1]); g.rotate(Math.atan2(hy2 - sh[1], hx - sh[0])); g.scale(Math.hypot(hx - sh[0], hy2 - sh[1]) / (3.2 * q), 1); g.drawImage(sm.arm, -.2 * q, -1.1 * q, sm.arm.w2, sm.arm.h2); g.restore();
+      g.drawImage(sm, -sm.ox, -sm.oy, sm.w2, sm.h2);
+      g.save(); g.translate(0, hy); g.rotate(rot); g.drawImage(sm.hat, -1.8 * q, -2.7 * q, sm.hat.w2, sm.hat.h2); g.restore();
+      g.restore(); }
+    S.trees.forEach((t, i) => { if (!t.front) return; const spr = c.trees[i]; g.save(); fold(t.y, st.trees[i]); put(spr, t.x, t.y, .5, 1 - 1.4 * u / spr.h2, Math.sin(A * 1.1 + t.ph) * .014); g.restore(); });
+    // the snow on the banks catching the light
+    for (const s of c.sparks) { const k = Math.pow(Math.max(0, Math.sin(A * s.f * 2 + s.ph)), 12) * on(1); if (k < .05) continue; g.globalAlpha = k; g.drawImage(c.spark, s.x - c.spark.width / 2, s.y - c.spark.height / 2); } g.globalAlpha = 1;
+    // the snow: paper flakes from past the top, turning and swaying, gone where they land
+    for (const f of plan.flakes) { const k = (T - f.t0) / f.d; if (k <= 0 || k >= 1) continue; const y = lerp(-3 * u, f.y1, k), x = f.x + Math.sin(A * f.sw + f.ph) * f.a + k * f.drift;
+      put(c.flakes[f.s], x, y, .5, .5, A * f.rot + f.ph, f.sc, f.sc, (1 - seg(k, .84, 1)) * S.shade(x, y, 2 * u)); }
+    // by night the snow is brighter than the town it covers: the words that lie over it (a long list's last lines, the
+    // footer's) are put on the night's own ground, softly
+    if (night && S.rects) { g.globalAlpha = 1; for (const [x0, y0, x1, y1, kd] of S.rects) if (kd !== 2 && y1 > c.landTop) { const mx = 18 + (y1 - y0) * .5, my = 6 + (y1 - y0) * .3; g.drawImage(c.nPad, x0 - mx, y0 - my, x1 - x0 + mx * 2, y1 - y0 + my * 2); } }
+  }
+  /** the page turning over: its fold `f` along the fold's normal from the middle of the screen, the roll's radius `rc`.
+   *  Page A lies where the leaf has not lifted, page B shows where it has, and between them the leaf: curled over in a
+   *  roll at the fold, and beyond it lying back, flat, over page A, its underside up */
+  function leaf(f, rc, drawA, drawB) {
+    const { W, H } = S, k = TILT, nl = Math.hypot(1, k), nx = 1 / nl, ny = k / nl, ex = -k / nl, ey = 1 / nl, ox = W / 2 + nx * f, oy = H / 2 + ny * f, big = (W + H) * 2;
+    const fr = (x, y) => [(x - ox) * nx + (y - oy) * ny, (x - ox) * ex + (y - oy) * ey], page = [[0, 0], [W, 0], [W, H], [0, H]].map(([x, y]) => fr(x, y));
+    const frame = () => g.transform(nx, ny, ex, ey, ox, oy), half = (a, b) => { g.beginPath(); g.rect(a, -big, b - a, big * 2); };
+    const clipX = (poly, x0) => { const out = []; for (let i = 0; i < poly.length; i++) { const a = poly[i], b = poly[(i + 1) % poly.length], ia = a[0] >= x0, ib = b[0] >= x0; if (ia) out.push(a); if (ia !== ib) { const t = (x0 - a[0]) / (b[0] - a[0]); out.push([x0, a[1] + (b[1] - a[1]) * t]); } } return out; };
+    const pr = Math.PI * rc, flap = clipX(page, pr).map(([x, y]) => [pr - x, y]);
+    const lead = night ? [8, 12, 26] : [92, 70, 40], verso = g.createPattern(EG.B.verso, "repeat");
+    // page A where it still lies, page B where the leaf has lifted from it
+    g.save(); frame(); half(-big, 0); g.restore(); g.save(); g.clip(); drawA(); g.restore();
+    g.save(); frame(); half(0, big); g.restore(); g.save(); g.clip(); drawB();
+    g.restore();
+    g.save(); frame();
+    // the leaf's shadow on page B, close under the roll
+    { const gr = g.createLinearGradient(rc, 0, rc * 2.6 + 6, 0); gr.addColorStop(0, `rgba(${lead},${night ? .55 : .26})`); gr.addColorStop(1, `rgba(${lead},0)`); g.fillStyle = gr; g.fillRect(rc, -big, rc * 1.6 + 6, big * 2); }
+    // the leaf lying back over page A: the paper's underside, its shadow on page A along its edge
+    if (flap.length > 2) {
+      { const [p1, p2] = [[pr - page[1][0], page[1][1]], [pr - page[2][0], page[2][1]]], dx = p2[0] - p1[0], dy = p2[1] - p1[1], l = Math.hypot(dx, dy) || 1, ox2 = dy / l, oy2 = -dx / l, sw = rc * 1.3 + 6, sgn = ox2 > 0 ? -1 : 1; /* its free edge, the screen's right edge turned over; its shadow falls off it on page A */
+        const gx = p1[0] + ox2 * sgn * sw, gy = p1[1] + oy2 * sgn * sw, gr = g.createLinearGradient(p1[0], p1[1], gx, gy); gr.addColorStop(0, `rgba(${lead},${night ? .5 : .24})`); gr.addColorStop(1, `rgba(${lead},0)`);
+        g.fillStyle = gr; g.beginPath(); g.moveTo(p1[0] - dx / l * big, p1[1] - dy / l * big); g.lineTo(p2[0] + dx / l * big, p2[1] + dy / l * big); g.lineTo(p2[0] + dx / l * big + ox2 * sgn * sw, p2[1] + dy / l * big + oy2 * sgn * sw); g.lineTo(p1[0] - dx / l * big + ox2 * sgn * sw, p1[1] - dy / l * big + oy2 * sgn * sw); g.closePath(); g.fill(); }
+      g.beginPath(); flap.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath();
+      g.fillStyle = verso; g.fill();
+      g.strokeStyle = night ? "rgba(150,175,235,.35)" : "rgba(255,255,255,.75)"; g.lineWidth = .9; g.beginPath(); let on = false; for (let i = 0; i <= flap.length; i++) { const [x, y] = flap[i % flap.length]; if (Math.abs(x) < .5 && Math.abs(flap[(i + flap.length - 1) % flap.length][0]) < .5) { on = false; continue; } if (!on) { g.moveTo(x, y); on = true; } else g.lineTo(x, y); } g.stroke(); // its cut edge catching the light
+    }
+    // the roll at the fold: the underside again, lit along its crown and in shade where it turns away
+    if (rc > .5) { g.beginPath(); g.rect(0, -big, rc, big * 2); g.save(); g.clip(); g.fillStyle = verso; g.fillRect(0, -big, rc, big * 2);
+      const sheen = night ? "150,178,240" : "255,255,255", gr = g.createLinearGradient(0, 0, rc, 0); /* lit most a third of the way over, where it faces the light, and darker as it turns away */
+      gr.addColorStop(0, `rgba(${sheen},0)`); gr.addColorStop(.34, `rgba(${sheen},${night ? .22 : .6})`); gr.addColorStop(.6, `rgba(${sheen},0)`); gr.addColorStop(.82, `rgba(${lead},${night ? .28 : .13})`); gr.addColorStop(1, `rgba(${lead},${night ? .62 : .34})`); g.fillStyle = gr; g.fillRect(0, -big, rc, big * 2); g.restore();
+      g.strokeStyle = `rgba(${lead},${night ? .7 : .32})`; g.lineWidth = .9; g.beginPath(); g.moveTo(rc, -big); g.lineTo(rc, big); g.stroke(); }
+    g.restore();
+  }
+  /** where the turn is at loop time T: null while the page lies still */
+  function turnAt(T) {
+    const a = EGG.turn0, b = EGG.turn1;
+    return T > a[0] && T < a[1] ? leafGeo((T - a[0]) / (a[1] - a[0])) : T > b[0] && T < b[1] ? leafGeo(1 - (T - b[0]) / (b[1] - b[0])) : null;
+  }
+  /** the egg's frame on `g`: summer, the turn, or winter, each over the page the backdrop holds (the winter's is laid in it
+   *  from the turn over to the turn back; through the turns the summer's comes from the kept copy). `whole`: draw the
+   *  backdrop in too (for the sheet laid over the quiet town while I is short of 1) */
+  function eggPic(T, I, A, F, dt, ie, whole) {
+    const { W, H } = S, tn = turnAt(T), bd = S.bgx.canvas, srcA = EGbg === "A" ? bd : EG.saved;
+    const A1 = () => { if (whole || EGbg !== "A") g.drawImage(srcA, 0, 0, W, H); pageA(T, I, A, F, dt, ie); }, B1 = () => { if (whole) g.drawImage(bd, 0, 0, W, H); pageB(T, I, A); };
+    g.save();
+    if (tn) leaf(tn.f, tn.rc, A1, B1); else if (EGbg === "B") B1(); else A1();
+    g.restore();
+  }
+  /** the day is done: the finale over the egg as over any pass */
+  function eggFinale(F, A) {
+    if (F < 0) return; const { H, u, orb } = S;
+    if (!night) { for (const c of S.cranes) { const k = clamp((F - c.d) / (1 - c.d)); if (k <= 0 || k >= 1) continue; const e = E.io(k), x = c.x0 + c.dx * e + Math.sin(k * 6 + c.ph) * 2 * u, y = lerp(c.y0, -H * .08, e); put(S.crane[c.c * 2 + Math.floor(A * 8 + c.ph) % 2], x, y, .5, .5, -.25 + Math.sin(k * 5 + c.ph) * .1, c.s, c.s, k < .12 ? k / .12 : k > .86 ? (1 - k) / .14 : 1); } return; }
+    const swing = Math.sin(A * .55) * .035, ox = orb.x + Math.sin(swing) * orb.y, oy = Math.cos(swing) * orb.y;
+    for (const s of S.fan) { const k = clamp((F - s.lag) / (1 - s.lag)); if (k <= 0 || k >= 1) continue; const e = E.back(Math.min(1, k * 1.6)), x = ox + Math.cos(s.a) * s.d * e, y = oy + Math.sin(s.a) * s.d * e * .75 + (S.pr ? S.orb.r : 0); put(S.fanStars[s.c], x, y, .5, .5, k * 4 + s.a, s.s, s.s, k > .8 ? (1 - k) / .2 : 1); }
+  }
+  /** (by day) the paper's ground under each line that reaches down over the town, as the scene lays it (b385) */
+  function eggPads() { if (night || !S.lines || !S.lines.length) return; g.globalAlpha = 1; for (const [x0, y0, x1, y1] of S.lines) if (y1 > S.townTop) { const mx = 18 + (y1 - y0) * .5, my = 6 + (y1 - y0) * .3; g.drawImage(S.pad, x0 - mx, y0 - my, x1 - x0 + mx * 2, y1 - y0 + my * 2); } }
+  /** the egg pass at loop time T: false while the town rests (the scene draws it, and the egg's pieces are made a few a
+   *  frame), true when the egg has drawn the frame */
+  function eggDraw(T, I, A, F) {
+    if (T < EGG.up0 || T > EGG.end || I <= .01) { if (EG) bgSwap("A"); if (T < EGG.up0) eggMake(null); return false; }
+    eggMake(T < MIDT ? ["A", "B"] : ["B", "A"]);
+    bgSwap(T > EGG.turn0[0] && T < EGG.turn1[1] ? "B" : "A");
+    const dt = S.lastA === null ? 0 : clamp(A - S.lastA, 0, .1); S.lastA = A; S.millAngle += dt * (night ? .22 : .42);
+    const { W, H } = S, k = clamp(I / .85), ie = k * k * (3 - 2 * k); /* the egg's own strength: whole once I is most of the way up (the stretch's first two seconds), down smoothly from there if the list is touched */
+    g.clearRect(0, 0, W, H); g.globalAlpha = 1;
+    /* while it is short of whole: before the leaf lifts, what has moved goes only as far as it lets it, so it settles back
+       if the list is touched; from the turn on, the egg is laid over the quiet town at its strength, coming in by degrees
+       about the turn so nothing jumps */
+    EGw = ie < .999 ? lerp(1, ie, seg(T, EGG.turn0[0] - .5, EGG.turn0[0] + .1, E.sine)) : 1;
+    if (EGw > .999) eggPic(T, I, A, F, dt, ie, false);
+    else { const w = Math.round(W * px), h = Math.round(H * px); if (!EGbuf || EGbuf[0].width !== w || EGbuf[0].height !== h) { EGbuf = canvas(w, h); EGbuf[1].imageSmoothingEnabled = true; }
+      const [bc, bx] = EGbuf, g0 = g; bx.setTransform(px, 0, 0, px, 0, 0); bx.clearRect(0, 0, W, H);
+      g.drawImage(EGbg === "A" ? S.bgx.canvas : EG.saved, 0, 0, W, H); pageA(T, I, A, F, dt, 0); // the quiet town, whole
+      g = bx; try { eggPic(T, I, A, F, 0, ie, true); } finally { g = g0; }
+      g.save(); g.globalAlpha = clamp(EGw); g.drawImage(bc, 0, 0, W, H); g.restore(); }
+    eggFinale(F, A); eggPads();
+    return true;
   }
   return S;
 }

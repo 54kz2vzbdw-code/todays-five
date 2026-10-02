@@ -29,6 +29,21 @@
 // photograph" (1934), the water running off it. It looks round one way and the other, turns to look straight at you, cocks
 // its head, blinks, and sinks straight down without a splash, the rings spreading after it. Nothing else is on the water
 // that morning, and it keeps back from the words as the boats do.
+//
+// 1.12 b424: the long day's hour eggs. For a list left up through a long day, once in each hour of the loops left alone
+// (K.long) the bay has a visitor that has no business in a quiet morning harbour, the two taking turns. The first is a
+// pirate: round the headland comes a galleon under black sails, ragged and shot through. She rounds to broadside on, runs
+// the skull and crossbones up her main, opens her ports (red inside), and fires her four guns one after another — a
+// flash, a burst of smoke, the ball arcing out toward you and a plume of water thrown up short, its rings spreading — and
+// her smoke rolls up her side as she gets under way again and stands off for the horizon, smaller and smaller, until the
+// morning haze takes her; the swell from the shots rocks the boat at the pier, and the lighthouse flashes after her, twice.
+// The second is the giant rubber duck that tugs have towed into harbours the world over (Florentijn Hofman's, since 2007):
+// a little tug comes in round the headland with it on a long line, swings round toward you and heads back out, and the
+// duck comes round after it, turning until it looks you in the eye — a gull drops onto its head, the swell lifts it, the
+// tug toots twice — then on round and out the way they came, the gull riding. The duck and the tug are ray-cast at their
+// size the first time they are wanted, every few degrees of their turn, and kept; the ship is painted by rule at every
+// size she is seen at. Each has the bay to itself and keeps back from the words as the boats do; the crown's pass, and
+// every pass either side, deal as they always have.
 export default function harbor(K) {
   const { clamp, lerp, E, seg, env, rng, rgb, mixc, css, canvas, paint, noise1, fbm, glowSpr, sprite, deal, bag } = K;
   let g = null;
@@ -44,6 +59,31 @@ export default function harbor(K) {
     nes: rgb("#456F6B"), nesD: rgb("#3A605C"), nesHi: rgb("#7FA8A3"), nesEye: rgb("#FFFFFF"), // b413: the egg's visitor, in the whale's greys
   };
   const flip = c => { const [o, x] = canvas(c.width, c.height); x.setTransform(-1, 0, 0, 1, c.width, 0); x.drawImage(c, 0, 0); return o; };
+  // 1.12 b424: the second hour egg's toys, ray-cast at their size the first time they are wanted (S.toy): a rubber duck —
+  // its body, breast, tail, head and two-part bill, its eyes painted on the head, glossy — and the tug that tows it, a dark
+  // hull with a red boot-top cut flat at its deck, a cream deckhouse with portholes, a wheelhouse with its windows, a black
+  // funnel with a red band, a stub of a mast
+  const TOY = (() => {
+    const T5 = (...h) => h.map(rgb), headC = [.3, .8, 0], eye = sd => { const v = [.62, .36, sd * .62], l = Math.hypot(...v); return v.map(a => a / l); };
+    const dm = {
+      y: { tones: T5("#BD7A00", "#E89B00", "#FFC000", "#FFD83A", "#FFEC8A", "#FFFFFF"), shiny: true, paint: (h, q) => { if (!q.head) return null; const v = [h[0] - headC[0], h[1] - headC[1], h[2] - headC[2]], l = Math.hypot(...v);
+        for (const sd of [-1, 1]) { const e = eye(sd); if ((v[0] * e[0] + v[1] * e[1] + v[2] * e[2]) / l > Math.cos(.27)) { const gq = [e[0] - .04, e[1] + .2, e[2]], gl = Math.hypot(...gq); return (v[0] * gq[0] + v[1] * gq[1] + v[2] * gq[2]) / (l * gl) > Math.cos(.09) ? "w" : "k"; } } return null; } },
+      b: { tones: T5("#B5480E", "#DB6418", "#FF8A2A", "#FFA851", "#FFC98A", "#FFFFFF"), shiny: true },
+      k: { tones: T5("#1B1712", "#1B1712", "#241E17", "#2E2720", "#3A3128", "#3A3128") }, w: { tones: T5("#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF") } };
+    const duck = [{ c: [0, .25, 0], r: [.54, .3, .4], m: "y" }, { c: [.2, .33, 0], r: [.34, .3, .36], m: "y" }, { c: [-.42, .42, 0], r: [.2, .12, .2], tilt: .6, m: "y" },
+      { c: headC, r: [.26, .26, .26], m: "y", head: true }, { c: [.57, .74, 0], r: [.18, .075, .19], tilt: -.12, m: "b" }, { c: [.53, .685, 0], r: [.14, .05, .15], tilt: -.05, m: "b" }];
+    const tm = {
+      h: { tones: T5("#1E2928", "#26332F", "#2F3F3C", "#3B4D4A", "#4B605C", "#4B605C"), paint: (p, q, n) => n[1] > .9 ? "d" : p[1] < .075 ? "r" : p[1] > .175 ? "l" : null },
+      l: { tones: T5("#8E9D99", "#A6B4B0", "#BCC8C4", "#D0D9D6", "#E2E9E6", "#E2E9E6") },
+      r: { tones: T5("#7A2E28", "#94392F", "#AE4639", "#C25647", "#D46A5A", "#D46A5A") }, d: { tones: T5("#3E4A47", "#46524F", "#4E5B58", "#586663", "#62706D", "#62706D") },
+      c: { tones: T5("#AEB9B4", "#C3CCC7", "#D8DFDA", "#E8EDE9", "#F6F8F6", "#FFFFFF"), paint: (p, q, n) => n[1] > .5 ? null : q.wh ? (p[1] > .53 && p[1] < .62 ? "g" : null) : Math.abs(n[2]) > .5 && p[1] > .29 && p[1] < .36 && ((p[0] * 10 + 20) % 2.2) < .9 ? "g" : null },
+      g: { tones: T5("#1F3331", "#26403D", "#2C4946", "#355653", "#6E918C", "#9DBDB8") },
+      f: { tones: T5("#151B1A", "#1B2322", "#222C2A", "#2C3836", "#3A4845", "#3A4845"), paint: p => p[1] > .66 && p[1] < .77 ? "r" : null } };
+    const tug = [{ c: [0, .04, 0], r: [1, .3, .36], top: .22, m: "h" }, { c: [.97, .14, 0], r: [.07, .08, .13], m: "f" },
+      { box: [-.48, .21, -.24, .25, .44, .24], m: "c" }, { box: [-.04, .44, -.19, .28, .66, .19], m: "c", wh: true }, { box: [-.07, .66, -.22, .31, .7, .22], m: "c" },
+      { cyl: [-.3, 0, .115, .44, .9], m: "f" }, { cyl: [.16, 0, .022, .7, 1.02], m: "f" }];
+    return { duck, dm, dInk: rgb("#7A4C06"), tug, tm, tInk: rgb("#1A2322") };
+  })();
   const S = {
     wash: 1.6, // a light kit: the top band and the footer's pool come nearly to the ink under its small words (scenes.js)
     veil: 1,   // and on Everything, a page of them, the plain ground
@@ -263,10 +303,228 @@ export default function harbor(K) {
       const hw = Math.round(11 * k) | 1, hh = Math.round(4 * k), hump = paint(hw, hh, (x, y) => { const u = (x - (hw - 1) / 2) / (hw / 2), top = hh * (1 - Math.pow(Math.abs(u), 1.8)); if (hh - y > top + .4) return null; return hh - y > top - .8 ? P.nesHi : u * (sunLeft ? 1 : -1) > .55 ? P.nesD : P.nes; });
       return (S.ns = { k, W: S.W, L: neck("L"), R: neck("R"), F: neck("F"), B: neck("B"), T: neck("T"), hump });
     },
+    /** 1.12 b424: the long day's hour eggs (K.long: one pass in each hour of the list left alone, the two taking turns). The
+     *  bay to itself but for what the egg brings — no boats, no gulls, no sweep of light — and the lighthouse and the wave set
+     *  as the egg asks. Its own dice (the passes either side deal as they always have) */
+    hourPlan(n, h) {
+      const off = [20, 21, 22, 23], pl = { dealt: true, hour: h, flashes: [], sweep: { t: off, lag: 1.4 }, set: { t: off, t0: 20, dur: 3 } };
+      if (h === 2) { pl.duck = S.duckPlan(); pl.set = { t: [6.8, 7.6, 8.8, 10.0], t0: 6.8, dur: 3.2 }; } // a swell rolls in under the duck as it turns to you
+      else { pl.pirate = S.piratePlan(deal(n, 41)); pl.set = { t: [7.1, 7.9, 9.1, 10.3], t0: 7.1, dur: 3.2 }; pl.flashes = [[10.2, 10.42, 10.5, 11.1], [11.5, 11.72, 11.8, 12.4]]; } // the swell from the shots; the lighthouse flashes after her
+      return pl;
+    },
+    /** the duck's course (the second hour egg): a little tug comes in round the headland towing, on a long line, a rubber duck
+     *  as tall as the lighthouse (Florentijn Hofman's, which tugs have towed into harbours the world over since 2007); the tug
+     *  swings round toward you and heads back out, and the duck comes round after it, turning till it faces you square on —
+     *  the moment a gull drops onto its head, the swell lifts it and the tug toots twice — then on round, and out the way they
+     *  came, nearer, the gull riding. The way is in along the bay, a half turn toward you, and out again; the tug's place on it
+     *  eases in, slows through the turn and goes out at a clip, the duck a towline behind */
+    duckPlan() {
+      const { W, hz, portrait: pr } = S, k = pr ? 27 : 41, tk = pr ? 11.5 : 16.5, y1 = hz + (pr ? 11 : 12), xc = Math.round(W * (pr ? .54 : .7)), rx = pr ? 17 : 23, ry = pr ? 10 : 9, X0 = W + 60;
+      const n = 48, arc = [0]; for (let i = 1; i <= n; i++) { const a0 = Math.PI / 2 + Math.PI * (i - 1) / n, a1 = Math.PI / 2 + Math.PI * i / n; arc.push(arc[i - 1] + Math.hypot(rx * (Math.cos(a1) - Math.cos(a0)), ry * (Math.sin(a1) - Math.sin(a0)))); }
+      const L1 = X0 - xc, LA = arc[n];
+      const at = s => { if (s < L1) return [X0 - s, y1, -1, 0]; if (s > L1 + LA) return [xc + s - L1 - LA, y1 + 2 * ry, 1, 0]; let i = 1; while (i < n && arc[i] < s - L1) i++; const f = (s - L1 - arc[i - 1]) / (arc[i] - arc[i - 1]), a = Math.PI / 2 + Math.PI * (i - 1 + f) / n; return [xc + rx * Math.cos(a), y1 + ry - ry * Math.sin(a), -rx * Math.sin(a), -ry * Math.cos(a)]; }; // [x, y, and which way]
+      const lag = Math.round(tk + (pr ? 6 : 9) + k * .6), s0 = X0 - W - tk - 3, s1 = L1 + LA / 2 + lag, s2 = L1 + LA + W + Math.ceil(k * .8) + 3 - xc + lag; // the tug just out of sight; the duck at the turn's far side; the duck just out of sight
+      const T0 = .3, T1 = 8.0, T2 = 14.8, a1 = (s1 - s0) / (T1 - T0), a2 = (s2 - s1) / (T2 - T1), v0 = a1 * 1.22, v1 = Math.min(a1, a2) * .36, v2 = a2 * 1.22;
+      const herm = (t, ta, tb, sa, sb, va, vb) => { const h = tb - ta, u = (t - ta) / h, u2 = u * u, u3 = u2 * u; return (2 * u3 - 3 * u2 + 1) * sa + (u3 - 2 * u2 + u) * h * va + (-2 * u3 + 3 * u2) * sb + (u3 - u2) * h * vb; };
+      const sAt = t => t < T0 ? s0 + v0 * (t - T0) : t < T1 ? herm(t, T0, T1, s0, s1, v0, v1) : t < T2 ? herm(t, T1, T2, s1, s2, v1, v2) : s2 + v2 * (t - T2);
+      return { k, tk, at, sAt, lag, gull: [5.2, 7.7], toots: [8.15, 8.62] };
+    },
+    /** a toy, ray-cast once at its size and kept (the duck and the tug): ellipsoids (cut flat at `top` if asked), boxes and
+     *  upright cylinders, each with a material; seen square on from a little above the water, turned to `phi` (−90 facing
+     *  left, 0 facing you, 90 facing right), lit from the right and the front; the water cuts it at its line. Three by three
+     *  samples a pixel, five tones a material and a glint, a pixel of ink round it. `ox`, `oy`: where its middle meets the water */
+    toy(parts, mats, phi, s, ink) {
+      const p = 13 * Math.PI / 180, th = (phi - 90) * Math.PI / 180, ct = Math.cos(th), st = Math.sin(th), D = [0, -Math.sin(p), -Math.cos(p)], U = [0, Math.cos(p), -Math.sin(p)];
+      const nv = v => { const l = Math.hypot(...v) || 1; return v.map(a => a / l); }, L = nv([.5, .78, .62]), Hh = nv(L.map((v, i) => v - D[i]));
+      const ext = q => q.box ? { c: [(q.box[0] + q.box[3]) / 2, (q.box[1] + q.box[4]) / 2, (q.box[2] + q.box[5]) / 2], R: Math.hypot(q.box[3] - q.box[0], q.box[4] - q.box[1], q.box[5] - q.box[2]) / 2, top: q.box[4] } : q.cyl ? { c: [q.cyl[0], (q.cyl[3] + q.cyl[4]) / 2, q.cyl[1]], R: Math.max(q.cyl[2], (q.cyl[4] - q.cyl[3]) / 2), top: q.cyl[4] } : { c: q.c, R: Math.max(...q.r), top: q.c[1] + Math.max(...q.r) };
+      let x0 = 1e9, x1 = -1e9, y1 = -1e9, zr = 0; for (const q of parts) { const e = ext(q), cx = e.c[0] * ct + e.c[2] * st; x0 = Math.min(x0, cx - e.R); x1 = Math.max(x1, cx + e.R); y1 = Math.max(y1, e.top); zr = Math.max(zr, Math.abs(-e.c[0] * st + e.c[2] * ct) + e.R); }
+      const ox = Math.ceil(-x0 * s) + 2, w = Math.ceil((x1 - x0) * s) + 4, h = Math.ceil(y1 * Math.cos(p) * s + zr * s * Math.sin(p)) + 3, oy = Math.ceil(y1 * Math.cos(p) * s) + 1;
+      const hit = (q, Pm, Dm) => {
+        if (q.box) { const b = q.box; let t0 = -1e9, t1 = 1e9, ax = -1; for (let i = 0; i < 3; i++) { if (Math.abs(Dm[i]) < 1e-9) { if (Pm[i] < b[i] || Pm[i] > b[i + 3]) return null; continue; } let a = (b[i] - Pm[i]) / Dm[i], c = (b[i + 3] - Pm[i]) / Dm[i]; if (a > c) [a, c] = [c, a]; if (a > t0) { t0 = a; ax = i; } t1 = Math.min(t1, c); } if (t0 > t1) return null; const n = [0, 0, 0]; n[ax] = Dm[ax] > 0 ? -1 : 1; return [t0, n]; }
+        if (q.cyl) { const [cx, cz, r, ya, yb] = q.cyl, ox2 = Pm[0] - cx, oz = Pm[2] - cz, a = Dm[0] * Dm[0] + Dm[2] * Dm[2], b = 2 * (ox2 * Dm[0] + oz * Dm[2]), c = ox2 * ox2 + oz * oz - r * r, disc = b * b - 4 * a * c; if (disc < 0) return null; const t = (-b - Math.sqrt(disc)) / (2 * a), y = Pm[1] + Dm[1] * t;
+          if (y >= ya && y <= yb) return [t, [(ox2 + Dm[0] * t) / r, 0, (oz + Dm[2] * t) / r]]; if (y > yb && Dm[1] < 0) { const t2 = (yb - Pm[1]) / Dm[1], xx = ox2 + Dm[0] * t2, zz = oz + Dm[2] * t2; if (xx * xx + zz * zz <= r * r) return [t2, [0, 1, 0]]; } return null; }
+        const c = Math.cos(-(q.tilt || 0)), sn = Math.sin(-(q.tilt || 0)), ox2 = Pm[0] - q.c[0], oy2 = Pm[1] - q.c[1], oz = Pm[2] - q.c[2];
+        const o = [(ox2 * c - oy2 * sn) / q.r[0], (ox2 * sn + oy2 * c) / q.r[1], oz / q.r[2]], d = [(Dm[0] * c - Dm[1] * sn) / q.r[0], (Dm[0] * sn + Dm[1] * c) / q.r[1], Dm[2] / q.r[2]];
+        const a = d[0] * d[0] + d[1] * d[1] + d[2] * d[2], b = 2 * (o[0] * d[0] + o[1] * d[1] + o[2] * d[2]), cc = o[0] * o[0] + o[1] * o[1] + o[2] * o[2] - 1, disc = b * b - 4 * a * cc; if (disc < 0) return null;
+        const t = (-b - Math.sqrt(disc)) / (2 * a);
+        if (q.top !== undefined && Pm[1] + Dm[1] * t > q.top) { if (Dm[1] >= 0) return null; const t2 = (q.top - Pm[1]) / Dm[1], t3 = (-b + Math.sqrt(disc)) / (2 * a); return t2 > t3 ? null : [t2, [0, 1, 0]]; } // cut flat: a deck
+        const n = [o[0] + d[0] * t, o[1] + d[1] * t, o[2] + d[2] * t].map((v, i) => v / q.r[i]), c2 = Math.cos(q.tilt || 0), s2 = Math.sin(q.tilt || 0); return [t, [n[0] * c2 - n[1] * s2, n[0] * s2 + n[1] * c2, n[2]]]; };
+      const Dm = [D[0] * ct - D[2] * st, D[1], D[0] * st + D[2] * ct];
+      const sample = (u, v) => {
+        const P0 = [u - D[0] * 10, v * U[1] - D[1] * 10, v * U[2] - D[2] * 10], Pm = [P0[0] * ct - P0[2] * st, P0[1], P0[0] * st + P0[2] * ct];
+        let best = null, bt = -P0[1] / D[1]; // nothing under the water
+        for (const q of parts) { const r = hit(q, Pm, Dm); if (r && r[0] < bt) { bt = r[0]; best = [q, r[1]]; } }
+        if (!best) return null;
+        const [q, nm] = best, nw = nv([nm[0] * ct + nm[2] * st, nm[1], -nm[0] * st + nm[2] * ct]), dif = nw[0] * L[0] + nw[1] * L[1] + nw[2] * L[2], spec = Math.pow(Math.max(0, nw[0] * Hh[0] + nw[1] * Hh[1] + nw[2] * Hh[2]), 36);
+        let m = q.m; if (mats[m].paint) m = mats[m].paint([Pm[0] + Dm[0] * bt, Pm[1] + Dm[1] * bt, Pm[2] + Dm[2] * bt], q, nm) || m;
+        const kk = .3 + .7 * Math.max(0, dif); return mats[m].tones[spec > .5 && mats[m].shiny ? 5 : kk < .42 ? 0 : kk < .6 ? 1 : kk < .8 ? 2 : kk < .94 ? 3 : 4];
+      };
+      const [c, x] = canvas(w, h), im = x.createImageData(w, h), d = im.data, tally = new Map();
+      for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) { tally.clear(); let nn = 0, bk = null, bn = 0;
+        for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) { const col = sample((xx + (i + .5) / 3 - ox) / s, (oy - (y + (j + .5) / 3)) / s); if (!col) continue; nn++; const v = (tally.get(col) || 0) + 1; tally.set(col, v); if (v > bn) { bn = v; bk = col; } }
+        if (nn < 5) continue; const k2 = (y * w + xx) * 4; d[k2] = bk[0]; d[k2 + 1] = bk[1]; d[k2 + 2] = bk[2]; d[k2 + 3] = 255; }
+      const on = (xx, y) => xx >= 0 && y >= 0 && xx < w && y < h && d[(y * w + xx) * 4 + 3] > 0, edge = [];
+      for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) if (!on(xx, y) && (on(xx - 1, y) || on(xx + 1, y) || on(xx, y - 1) || (on(xx, y + 1) && y < oy - 1))) edge.push((y * w + xx) * 4);
+      for (const k2 of edge) { d[k2] = ink[0]; d[k2 + 1] = ink[1]; d[k2 + 2] = ink[2]; d[k2 + 3] = 255; }
+      x.putImageData(im, 0, 0);
+      let a0 = w, a1 = -1; for (let xx = 0; xx < w; xx++) if (on(xx, Math.min(h - 1, oy))) { a0 = Math.min(a0, xx); a1 = xx; } // where it meets the water, for its foam
+      return { c, ox, oy, wl: [a0 - ox, a1 - ox] };
+    },
+    /** a model point of a toy turned to `phi`, where it falls on the screen from the toy's middle at the water (pixels) */
+    proj(m, phi, s) { const p = 13 * Math.PI / 180, th = (phi - 90) * Math.PI / 180, wx = m[0] * Math.cos(th) + m[2] * Math.sin(th), wz = -m[0] * Math.sin(th) + m[2] * Math.cos(th); return [wx * s, -(m[1] * Math.cos(p) - wz * Math.sin(p)) * s]; },
+    /** the duck and the tug, each frame of their turn ray-cast the first time it is wanted (a few thousandths of a second
+     *  each, once a visit at most) and kept: every 7.5 degrees from facing left to facing right */
+    toyFrame(kind, s, i) {
+      const key = kind + s + ":" + S.W; let set = S.toys && S.toys[key]; if (!set) { S.toys = S.toys && Object.keys(S.toys).length < 6 ? S.toys : {}; set = S.toys[key] = []; }
+      if (!set[i]) set[i] = kind === "duck" ? S.toy(TOY.duck, TOY.dm, -90 + i * 7.5, s, TOY.dInk) : S.toy(TOY.tug, TOY.tm, -90 + i * 7.5, s, TOY.tInk);
+      return set[i];
+    },
+    /** an hour egg, drawn in two layers: what is out beyond the headland (`front` false), behind its cliff; what is in the bay */
+    hourAt(T, I, A, pl, setE, front) { if (pl.duck && front) S.duckAt(T, I, A, pl.duck, setE); if (pl.pirate) S.pirateAt(T, I, A, pl.pirate, front); },
+    /** the black ship's course (the first hour egg). She comes in from past the headland under all her black sail, slowing,
+     *  and rounds to broadside on; she shows her colours, the skull and crossbones run up her main; her ports open; she fires
+     *  her four guns one after another — a flash, a burst of smoke, the
+     *  ball arcing out and a column of water thrown up short of you — and the smoke rolls up her side; then she gets under way
+     *  again and stands off, away from you, smaller and smaller toward the horizon, until the morning haze takes her. The swell
+     *  from the shots rocks the boat at the pier; the lighthouse flashes after her, twice. `r`: her dice, for the smoke */
+    piratePlan(r) {
+      const { W, hz, portrait: pr } = S, k = pr ? .66 : 1, sw = Math.ceil(72 * k), sh = Math.ceil(67 * k), yw = hz + (pr ? 19 : 18), xs = Math.round(W * (pr ? .2 : .585));
+      const fire = [5.5, 5.95, 6.4, 6.85], ports = [26.5, 31.5, 36.5, 41.5].map(x => Math.round(x * k)), py = Math.round(yw - 4.4 * k);
+      const splash = fire.map((t, i) => ({ t: t + .55, x: xs + ports[i] + Math.round((i * 2.6 - 4.2) * k + (r() - .5) * 4 * k), y: yw + Math.round((pr ? 22 : 30) + (i % 2 ? 4 : 0) * k + r() * 3), h: Math.round((pr ? 9 : 14) + r() * 3) }));
+      const smoke = []; // a burst out of each port, then the bank rolling up her side and over her waist, thinning off downwind
+      fire.forEach((t, i) => { smoke.push({ t, x: xs + ports[i] + 1, y: py + 2, vx: 1.2 + r(), vy: -1.4 - r(), r1: (6 + r() * 2) * k, out: 9.8 + r() * 1.4 }); smoke.push({ t: t + .05, x: xs + ports[i] - 2 * k, y: py + 5 * k, vx: -.6 - r(), vy: -.4, r1: (4 + r() * 2) * k, out: 9 + r(), grey: true }); });
+      for (let j = 0; j < 13; j++) { const u = (j % 5 + .5) / 5, v = Math.floor(j / 5); smoke.push({ t: 5.75 + j * .12 + r() * .1, x: xs + sw * (.16 + .62 * u) + (r() - .5) * 4 * k, y: yw - (3 + v * 9 + r() * 3) * k, vx: 1.4 + r() * 1.4, vy: -1.2 - r() * 1.6, r1: (7 + r() * 3) * k, out: 10 + r() * 2, grey: j % 3 === 1 }); }
+      return { k, sw, sh, yw, xs, fire, ports, py, splash, smoke, sail: [.5, 4.6], away: [7.8, 13.9] };
+    },
+    /** the black ship, side on, bow to the left, painted by rule at scale k (1: a desktop's): her hull and castles, a wale
+     *  along her, her gun ports (shut, or open with the red of their lids up and the guns' mouths dark), the stern gallery's
+     *  lit windows and its gilt rail; her masts, yards and rigging, her black sails bellied out and ragged along their feet, a
+     *  shot-hole or two, a jib to the bowsprit and a lateen on the mizzen. Her flags are laid on live. Kept by size */
+    shipSide(k, open) {
+      k = Math.round(k * 40) / 40; const key = k * 40 + (open ? "o" : "s"); S.ships = S.ships && S.ships.W === S.W ? S.ships : { W: S.W }; if (S.ships[key]) return S.ships[key]; // (sizes in fortieths, so a moment draws the same however it was reached)
+      const C = { hull: rgb("#3A302B"), hullLo: rgb("#2A2320"), rail: rgb("#6E5D50"), wale: rgb("#56473D"), port: rgb("#121817"), lid: rgb("#8E3B33"), lidHi: rgb("#B4544A"), gun: rgb("#3C4544"),
+        win: rgb("#FFE3A0"), winLo: rgb("#C9A35E"), gold: rgb("#B89A5A"), mast: rgb("#2A2F2E"), rig: rgb("#56625F"), sail: rgb("#232A29"), sailHi: rgb("#36403E"), sailLo: rgb("#171C1C"), sailEdge: rgb("#11171A") };
+      const Wd = Math.ceil(72 * k), Hd = Math.ceil(67 * k), wl = Hd - 1, X = v => v * k, Y = v => wl - (58 - v) * k; // design units (58: the waterline) → pixels
+      const hullPts = [[17, 58], [13.5, 54], [11, 50.5], [8.5, 47.2], [14, 47.2], [15, 45.6], [22, 45.6], [23, 48.6], [46, 48.6], [47, 46.6], [55, 46.6], [56, 43.6], [66, 42.8], [68.2, 43.8], [67, 50], [65.4, 55], [63.6, 58]].map(([x, y]) => [X(x), Y(y)]);
+      const inPoly = (pts, x, y) => { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
+      const sails = [[21, 13, 18, 4], [21, 20, 28.5, 6.2], [21, 31, 42, 8.4], [37, 6, 12.5, 5.6], [37, 15, 25.5, 8.4], [37, 28, 41, 10.4]]; // [mast, top, foot, half width]: the fore (the farther), then the main
+      const masts = [[21, 8, 45.6], [37, -2, 48.6], [55, 15, 43.6]], jib = [[20, 17], [5, 37.2], [14.5, 41.4]].map(([x, y]) => [X(x), Y(y)]), lateen = [[50.5, 39.5], [61.5, 17.5], [62.6, 40.5]].map(([x, y]) => [X(x), Y(y)]);
+      const lines = [[[21, 8], [2, 37.4]], [[37, 1], [21.5, 44]], [[55, 15], [67.4, 42.8]], [[37, 27], [31, 48.6]], [[37, 27], [43, 48.6]], [[21, 30], [16, 45.6]], [[21, 30], [26.5, 45.6]], [[55, 29], [51, 43.6]], [[55, 29], [59.5, 43.6]], [[13.5, 46.6], [1, 37], 1]].map(([a, b, w]) => [[X(a[0]), Y(a[1])], [X(b[0]), Y(b[1])], w]);
+      const px = new Array(Wd * Hd).fill(null), set = (x, y, c) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && y >= 0 && x < Wd && y < Hd) px[y * Wd + x] = c; };
+      const ln = ([x0, y0], [x1, y1], c, w) => { const n = Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))) || 1; for (let i = 0; i <= n; i++) { const x = x0 + (x1 - x0) * i / n, y = y0 + (y1 - y0) * i / n; set(x, y, c); if (w && k > .8) set(x, y + 1, c); } };
+      for (const [a, b, w] of lines) ln(a, b, w ? C.mast : C.rig, w); // the rigging (behind the sails), the bowsprit
+      for (const [mx, top, bot] of masts) for (let y = Math.round(Y(top)); y <= Math.round(Y(bot)); y++) set(X(mx), y, C.mast);
+      for (const [mx, top, bot, hw] of sails) { const cx = X(mx), t = Y(top), b = Y(bot), h2 = X(hw);
+        for (let y = Math.floor(t); y <= Math.ceil(b); y++) { const v = clamp((y - t) / (b - t)), bulge = Math.sin(Math.PI * v) * 1.3 * k;
+          for (let x = Math.floor(cx - h2 - 2); x <= Math.ceil(cx + h2 + 2); x++) { const u = (x + .5 - cx) / (h2 + bulge), foot = b - 1.6 * k * (1 - u * u); if (Math.abs(u) > 1 || y + .5 < t || y + .5 > foot + .5) continue;
+            if (y + .5 > foot - .6 && ((Math.floor(x / Math.max(1, k * 2.2)) * 7 + mx) % 5 === 0)) continue; // ragged along the foot
+            const sh2 = u * .55 + (v - .35); set(x, y, u < -.88 ? C.sailEdge : Math.abs(u) > .88 || y + 1.5 > foot || sh2 > .62 ? C.sailLo : sh2 < -.18 ? C.sailHi : C.sail); } }
+        if (k > .8 && hw > 7) for (const [hx, hy] of [[mx - hw * .3, top + (bot - top) * .55], [mx + hw * .45, top + (bot - top) * .3]]) set(X(hx), Y(hy), null); // a shot-hole or two
+        ln([cx - h2 - 1.2, t], [cx + h2 + 1.2, t], C.mast); } // its yard
+      for (const pts of [jib, lateen]) { let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const [x, y] of pts) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+        for (let y = Math.floor(y0); y <= Math.ceil(y1); y++) for (let x = Math.floor(x0); x <= Math.ceil(x1); x++) if (inPoly(pts, x + .5, y + .5)) set(x, y, inPoly(pts, x + 1.5, y + .5) && inPoly(pts, x - .5, y + .5) && inPoly(pts, x + .5, y + 1.5) ? C.sail : C.sailLo); }
+      ln(lateen[0], lateen[1], C.mast);
+      for (let y = 0; y < Hd; y++) for (let x = 0; x < Wd; x++) { if (!inPoly(hullPts, x + .5, y + .5)) continue; set(x, y, !inPoly(hullPts, x + .5, y - .5) ? C.rail : wl - y < 1 ? C.hullLo : Math.abs(y - Y(51.8)) < .55 * Math.max(1, k) && x > X(15) && x < X(62) ? C.wale : C.hull); }
+      for (const [x, y] of [[57.5, 45.6], [60, 45.4], [62.5, 45.2], [64.6, 45]]) { set(X(x), Y(y), C.win); if (k > .8) set(X(x), Y(y) + 1, C.winLo); } // the stern gallery's windows
+      for (let x = X(56.4); x < X(66); x++) set(x, Y(44.4), C.gold); set(X(9.4), Y(47.8), C.gold); // its gilt rail; the figurehead
+      if (k > .45) for (const x of [26.5, 31.5, 36.5, 41.5, 50.5]) { const y = Y(x > 45 ? 51.6 : 53.6), s2 = k < .8 ? 1 : 2; for (let j = 0; j < s2; j++) for (let i = 0; i < s2; i++) set(X(x) + i, y + j, open ? C.port : C.hullLo);
+        if (open) { for (let i = 0; i < s2; i++) set(X(x) + i, y - 1, i ? C.lid : C.lidHi); set(X(x) + s2 - 1, y + s2 - 1, C.gun); } } // the ports: open, the lid up and the gun's mouth in the dark
+      return (S.ships[key] = { c: paint(Wd, Hd, (x, y) => px[y * Wd + x]), wl, flag: [X(37), Y(-2)], pennant: [X(21), Y(8)] });
+    },
+    /** the black ship's morning */
+    pirateAt(T, I, A, e, front) {
+      if (!front) return;
+      const { W, hz, portrait: pr } = S, foam = S.cFoam, k0 = e.k, [a0, a1] = e.away, [s0, s1] = e.sail;
+      const gsm = S.gunsmoke || (S.gunsmoke = S.puffs(rgb("#FFFFFF"), rgb("#ECF3F1"), rgb("#C6D8D4"), 12)), gsg = S.gunsmokeG || (S.gunsmokeG = S.puffs(rgb("#F2F6F5"), rgb("#D5E1DE"), rgb("#AEC2BE"), 12));
+      // where she is: in under sail, slowing to rest broadside on; then away, smaller toward the horizon, into the haze
+      const inU = seg(T, s0, s1, E.out), awU = seg(T, a0, a1, x => x * x * (3 - 2 * x)), kk = k0 * lerp(1, .3, awU), fade = 1 - seg(T, a1 - 2.2, a1, E.sine);
+      const sp = S.shipSide(kk, T > 4.95 && T < a0 + 2), kick = e.fire.reduce((m, t) => Math.max(m, env(T, t, t + .03, t + .08, t + .26)), 0);
+      const xL = T < a0 ? lerp(W + 2, e.xs, inU) - (T > s1 ? (T - s1) * .5 : 0) : e.xs - (a0 - s1) * .5 - awU * e.sw * .2 + (e.sw - sp.c.width) * .5; // (drifting a little while hove to; then away, mostly toward the horizon)
+      const yw = Math.round(lerp(e.yw, hz + 2, E.out(awU))), bob = Math.round(Math.sin(A * 1.1) * .7 * (1 - awU)), X0 = Math.round(xL), Y0 = yw - sp.wl + bob + Math.round(kick), al = I * fade;
+      if (T > s0 && fade > 0 && X0 < W) {
+        const moving = T < s1 - .3 || T > a0 + .2, roll = Math.sin(A * .9) * .8 * (1 - awU); // her masts rock a little as she rolls
+        g.globalAlpha = al * .2; for (let rr = 1; rr < Math.min(12, sp.wl); rr += 2) g.drawImage(sp.c, 0, sp.wl - rr, sp.c.width, 1, X0 + Math.round(Math.sin(A * 3 + rr) * .8), Y0 + sp.wl + rr, sp.c.width, 1); // her reflection, broken
+        g.globalAlpha = al; const bands = 4, bh = Math.ceil(sp.c.height / bands); for (let b2 = 0; b2 < bands; b2++) { const o = Math.round(roll * (1 - (b2 + .5) / bands) * 1.6); g.drawImage(sp.c, 0, b2 * bh, sp.c.width, bh, X0 + o, Y0 + b2 * bh, sp.c.width, bh); }
+        // the skull and crossbones at her main (once she shows it), and a red pennant at the fore, streaming out and rippling
+        const fl = S.jolly || (S.jolly = sprite(["###########", "####WWW####", "###WWWWW###", "###W#W#W###", "####WWW####", "##W##W##W##", "###WW#WW###", "##W#####W##", "###########"], { "#": rgb("#141918"), W: rgb("#F2F5F4") }));
+        const hoist = seg(T, 4.55, 5.2, E.out), fk = Math.max(.34, kk * (pr ? 1.1 : 1)), fw = Math.max(3, Math.round(fl.width * fk * (.3 + .7 * hoist))), fh = Math.max(2, Math.round(fl.height * fk)), fx = X0 + Math.round(sp.flag[0] + roll * 1.4), fy = Y0 + Math.round(lerp(sp.wl - 14 * kk - fh, sp.flag[1], hoist));
+        if (hoist > 0) for (let c = 0; c < fw; c++) { const dy = Math.round(Math.sin(A * 7 - c * .7) * Math.min(1, c / 4) * fk * 1.2 * hoist); g.drawImage(fl, Math.floor(c * fl.width / fw), 0, 1, fl.height, fx + 1 + c, fy + dy, 1, fh); } // she shows her colours as she rounds to: up her main from the deck, bunched, and out at the top
+        g.fillStyle = S.cPen || (S.cPen = css(rgb("#A8443A"))); const pl2 = Math.round(10 * kk), pxx = X0 + Math.round(sp.pennant[0] + roll * 1.2), pyy = Y0 + Math.round(sp.pennant[1]); for (let c = 0; c < pl2; c++) { if (c > pl2 * .7 && c % 2) continue; g.fillRect(pxx + 1 + c, pyy + Math.round(Math.sin(A * 8 - c * .8) * Math.min(1, c / 3)), 1, 1); }
+        g.globalAlpha = al; g.fillStyle = foam; // the water at her bow and her wake, under way
+        if (moving) { const sp2 = T < s1 ? 1 - inU : awU < 1 ? .6 : 0; g.globalAlpha = al * clamp(sp2 * 2); g.fillRect(X0 + Math.round(14 * kk), Y0 + sp.wl, Math.round(4 * kk) + 1, 1); g.fillRect(X0 + Math.round(12 * kk), Y0 + sp.wl - 1, 2, 1); S.wake(X0 + Math.round(64 * kk), Y0 + sp.wl + 1, -1, Math.round(8 * kk) + 2, al * clamp(sp2 * 2)); }
+        g.globalAlpha = al * .7; g.fillRect(X0 + Math.round(16 * kk), Y0 + sp.wl + 1, Math.round(48 * kk), 1);
+      }
+      // her guns: a flash at the port, the ball out toward you, a column of water thrown up short, rings spreading
+      e.fire.forEach((t, i) => { const q = T - t, px2 = e.xs + e.ports[i], sp3 = e.splash[i];
+        if (q > 0 && q < .1) { const big = q < .05 ? 1 : 0; g.globalAlpha = I; g.fillStyle = S.cFlash || (S.cFlash = css(rgb("#FF9F43"))); g.fillRect(px2 - 1 - big, e.py, 4 + big * 2, 2); g.fillRect(px2, e.py - 1 - big, 2, 4 + big * 2); g.fillStyle = S.cFlashHi || (S.cFlashHi = css(rgb("#FFF4C8"))); g.fillRect(px2, e.py, 2, 2); }
+        const u = q / .55; if (u > 0 && u < 1) { const bx = lerp(px2 + 1, sp3.x, u), by = lerp(e.py + 1, sp3.y, u * u) - Math.sin(Math.PI * u) * 7 * k0; g.globalAlpha = I; g.fillStyle = S.cBall || (S.cBall = css(rgb("#1E2422"))); const bs = u > .5 && k0 > .8 ? 2 : 1; g.fillRect(Math.round(bx), Math.round(by), bs, bs); }
+        S.splashAt(T - sp3.t, sp3, I); });
+      // the smoke: out of each port in a burst, then rolling up her side, swelling, drawing apart as it thins off downwind —
+      // laid on one layer first, so the bank thins as one cloud and not as a heap of discs
+      const sl = S.smokeL && S.smokeL[0].width === W ? S.smokeL : (S.smokeL = canvas(W, S.H)), sx = sl[1], keep = g; let any = false;
+      sx.clearRect(0, 0, W, S.H); g = sx;
+      for (const m of e.smoke) { const q = T - m.t; if (q <= 0) continue; const thin = seg(T, m.out - 2.2, m.out, E.sine); if (thin >= 1) continue; any = true;
+        const rr = Math.max(1, Math.min(12, Math.round(m.r1 * (.3 + .7 * E.out(clamp(q / .45))) * (1 - .55 * thin)))), spr = (m.grey ? gsg : gsm)[rr - 1];
+        g.globalAlpha = Math.min(1, q * 10) * (1 - thin * thin); g.drawImage(spr, Math.round(m.x + m.vx * q * (1 + q * .15) - rr), Math.round(m.y + m.vy * q - rr)); }
+      g = keep; if (any) { g.globalAlpha = I * .97; g.drawImage(sl[0], 0, 0); }
+      g.globalAlpha = 1;
+    },
+    /** a cannonball's splash, `q` seconds after it lands: a plume of water up out of the bay — a foot of foam, a narrow
+     *  stem, a crown that widens and spills — spray flung out of the crown and falling back in drops, the plume falling in on
+     *  itself, and a ring spreading after */
+    splashAt(q, s, I) {
+      if (q <= 0 || q > 1.8) return; const foam = S.cFoam, hi = S.cSpout, lo = S.cSpoutLo, x = s.x, y = s.y, h = s.h, k = S.portrait ? .7 : 1;
+      const up = q < .2 ? E.out(q / .2) : 1, down = E.in(clamp((q - .45) / .6)), top = Math.round(h * up * (1 - down * .9)), spread = E.out(clamp((q - .06) / .45));
+      g.globalAlpha = I;
+      for (let r = 0; r < top; r++) { const f = r / Math.max(1, top - 1), hw = (f < .16 ? 2.6 - f * 8 : f < .62 ? 1.1 + f * .6 : 1.5 + (f - .62) * (4 + 5 * spread)) * (k < 1 ? .8 : 1), jig = (((r * 7 + x * 3) % 5) - 2) * .22;
+        const x0 = Math.round(x - hw + jig), x1 = Math.round(x + hw + jig); g.fillStyle = hi; g.fillRect(x0, y - r, Math.max(1, x1 - x0), 1); g.fillStyle = lo; g.fillRect(x1 - 1, y - r, 1, 1); }
+      if (top > 2) { const cw = Math.round((1.5 + .38 * (4 + 5 * spread)) * (k < 1 ? .8 : 1)); g.fillStyle = hi; g.fillRect(x - cw + 1, y - top, cw * 2 - 1, 1); } // its rounded top
+      for (let j = 0; j < 12; j++) { const t = q - .14 - (j % 4) * .05; if (t <= 0) continue; const side = j & 1 ? 1 : -1, vx = side * (4 + (j * 7 % 9)) * k, x2 = x + vx * t, y2 = y - h * (.75 + (j % 3) * .1) - h * 1.6 * t + 46 * k * t * t; if (y2 > y + 1) continue; // spray
+        g.globalAlpha = I * (j % 3 ? .95 : .7); g.fillStyle = j % 4 ? hi : lo; g.fillRect(Math.round(x2), Math.round(y2), 1, 1); }
+      const mound = q < 1.15 ? 1 - seg(q, .75, 1.15, x2 => x2) : 0; if (mound > 0) { g.globalAlpha = I * mound; g.fillStyle = foam; g.fillRect(x - 4, y + 1, 9, 1); g.fillRect(x - 2, y, 5, 1); }
+      const rq = clamp((q - .25) / 1.55), rr = Math.round(3 + rq * 10 * k); if (rq > 0) { g.globalAlpha = I * (1 - rq) * .9; g.fillStyle = foam; g.fillRect(x - rr, y + 1, rr * 2 + 1, 1); g.fillRect(x - rr + 1, y, 2, 1); g.fillRect(x + rr - 2, y, 2, 1); }
+      g.globalAlpha = 1;
+    },
+    /** puffs for the hour eggs, drawn once: a little cloud lit along its top, shaded under (steam, smoke, gunsmoke), radius 1 to n */
+    puffs(lit, mid, shade, n = 9) { const out = []; for (let r = 1; r <= n; r++) out.push(paint(r * 2 + 1, r * 2 + 1, (x, y) => { const dx = x - r, dy = y - r, d = Math.hypot(dx, dy); if (d > r + .25) return null; return Math.hypot(dx + r * .28, dy + r * .42) < r * .82 ? lit : dy > r * .22 && Math.hypot(dx - r * .2, dy - r * .55) < r * .78 ? shade : mid; })); return out; },
+    /** the duck's morning: the tug, the line, the duck, their reflections and wakes, the gull, the toots */
+    duckAt(T, I, A, e, setE) {
+      const sinp = Math.sin(13 * Math.PI / 180), face = (dx, dy) => Math.atan2(dx, dy / sinp) * 180 / Math.PI, fi = q => clamp(Math.round((q + 90) / 7.5), 0, 24), foam = S.cFoam, W = S.W;
+      const st = e.sAt(T), sd = st - e.lag, [tx, ty, tdx, tdy] = e.at(st), [dx, dy, ddx, ddy] = e.at(sd), tf = fi(face(tdx, tdy)), df = fi(face(ddx, ddy)), tphi = -90 + tf * 7.5, dphi = -90 + df * 7.5;
+      const steam = S.steam || (S.steam = S.puffs(rgb("#FFFFFF"), rgb("#F1F7F6"), rgb("#C9DCD8"))), smoke = S.smokeP || (S.smokeP = S.puffs(rgb("#C9D6D3"), rgb("#AFC0BC"), rgb("#97ABA7")));
+      const end = clamp((14.85 - T) / .8); // whatever trails after them is gone with the pass
+      // the tug's smoke, chugged out as it goes (drawn first: it drifts up behind)
+      for (let t0 = .1; t0 < Math.min(T, 13.8); t0 += .5) { const age = T - t0; if (age > 2.4) continue; const s2 = e.sAt(t0), [px, py, pdx, pdy] = e.at(s2), [fx, fy] = S.proj([-.3, .9, 0], -90 + fi(face(pdx, pdy)) * 7.5, e.tk), sp = smoke[Math.min(3, 1 + Math.floor(age * 1.4))];
+        g.globalAlpha = I * .55 * (1 - age / 2.4) * Math.min(1, age * 6); g.drawImage(sp, Math.round(px + fx + age * 2.6) - (sp.width >> 1), Math.round(py + fy - 1 - age * 3.6) - (sp.height >> 1)); }
+      if (tx - e.tk * 1.3 > W && dx - e.k * .9 > W) { g.globalAlpha = 1; return; } // both out past the headland
+      const tb = Math.round(Math.sin(A * 2.2 + 1) * .6), db = Math.round(Math.sin(A * 1.3) * .7 + setE * Math.sin(T * 4.4) * 1.6); // the tug's chop; the duck's slow bob, and the swell under it
+      const TG = S.toyFrame("tug", e.tk, tf), DK = S.toyFrame("duck", e.k, df), TX = Math.round(tx), TY = Math.round(ty) + tb, DX = Math.round(dx), DY = Math.round(dy) + db;
+      const wake = (s0, n, a, gap) => { g.fillStyle = foam; for (let j = 0; j < n; j++) { const [x, y] = e.at(s0 - j * gap); g.globalAlpha = I * a * end * (1 - j / n); g.fillRect(Math.round(x) - 1 + (j & 1), Math.round(y) + 1 + (j % 3 === 2 ? 1 : 0), 2, 1); } };
+      const boat = (B, X, Y, wa) => { // its broken reflection, then it, then the water breaking round it
+        g.globalAlpha = I * .22; for (let r = 1; r < Math.min(B.oy, 16); r += 2) g.drawImage(B.c, 0, B.oy - r, B.c.width, 1, X - B.ox + Math.round(Math.sin(A * 3 + r * .9) * .8), Y + r, B.c.width, 1);
+        g.globalAlpha = I; g.drawImage(B.c, X - B.ox, Y - B.oy);
+        g.fillStyle = foam; g.globalAlpha = I * wa; g.fillRect(X + B.wl[0] - 1, Y + 1, B.wl[1] - B.wl[0] + 3, 1); g.globalAlpha = I * wa * .6; g.fillRect(X + B.wl[0] - 2, Y + 2, 2, 1); g.fillRect(X + B.wl[1] + 1, Y + 2, 2, 1); };
+      const line = () => { const [ax, ay] = S.proj([-1.02, .14, 0], tphi, e.tk), [bx, by] = S.proj([.5, .16, 0], dphi, e.k), x0 = TX + ax, y0 = TY + ay, x1 = DX + bx, y1 = DY + by, n = Math.max(2, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
+        g.globalAlpha = I * .9; g.fillStyle = S.cLine || (S.cLine = css(P.nesD)); for (let j = 0; j <= n; j++) { const u = j / n; g.fillRect(Math.round(lerp(x0, x1, u)), Math.round(lerp(y0, y1, u) + Math.sin(u * Math.PI) * 2.2), 1, 1); } };
+      wake(st - e.tk * 1.1, 9, .85, 2.6); wake(sd - e.k * .55, 12, .9, 3);
+      // as it comes round, the water rings out from under it
+      for (const t0 of [6.9, 7.8, 8.7]) { const q = (T - t0) / 1.9; if (q <= 0 || q >= 1) continue; const rx = e.k * (.42 + q * .5), ry = rx * .24; g.fillStyle = foam; for (let j = 0; j < 40; j++) { const th = j / 40 * 6.283, sy = Math.sin(th); g.globalAlpha = I * (1 - q) * (sy > 0 ? .85 : .45); g.fillRect(Math.round(dx + Math.cos(th) * rx), Math.round(dy + 1 + sy * ry), 1, 1); } }
+      if (ty <= dy) { boat(TG, TX, TY, .7); line(); boat(DK, DX, DY, .9); } else { boat(DK, DX, DY, .9); line(); boat(TG, TX, TY, .7); } // the nearer one in front
+      // two toots of steam from the tug's whistle
+      for (const t0 of e.toots) { const age = T - t0; if (age <= 0 || age > 1.3) continue; const [fx, fy] = S.proj([-.14, .96, 0], tphi, e.tk), sp = steam[Math.min(S.portrait ? 3 : 4, 1 + Math.floor(age * 5))], X = TX + fx, Y = TY + fy;
+        g.globalAlpha = I * (1 - age / 1.3) * Math.min(1, age * 10); g.drawImage(sp, Math.round(X + age * 2) - (sp.width >> 1), Math.round(Y - 2 - age * 8) - (sp.height >> 1));
+        if (age < .32) { g.globalAlpha = I * (1 - age / .32); g.fillStyle = S.cLine || (S.cLine = css(P.nesD)); const o = Math.round(age * 6); g.fillRect(X - 3 - o, Y - 4 - o, 1, 2); g.fillRect(X + 3 + o, Y - 4 - o, 1, 2); g.fillRect(X - 1, Y - 6 - o, 2, 1); } } // and its toot, in three strokes
+      // the gull: in from the sky, a swoop round, down onto its head as it faces you; then it rides
+      const [g0, g1] = e.gull, [hx, hy] = S.proj([.3, 1.07, 0], dphi, e.k), HX = DX + hx, HY = DY + hy;
+      if (T > g0) { if (T < g1) { const u = E.sine(seg(T, g0, g1, x => x)), P0 = [W + 10, S.hz - 58], P1 = [W * .88, S.hz - 74], P2 = [HX + 26, HY - 34], P3 = [HX, HY - 4], b = i2 => (1 - u) ** 3 * P0[i2] + 3 * (1 - u) ** 2 * u * P1[i2] + 3 * (1 - u) * u * u * P2[i2] + u ** 3 * P3[i2];
+          const fr = u > .86 ? 1 : [0, 1, 2, 1][Math.floor(T * 7) % 4]; g.globalAlpha = I; g.drawImage(S.gull[fr], Math.round(b(0)) - 3, Math.round(b(1)) - 2); }
+        else { const sit = S.sitGull || (S.sitGull = sprite([".##.....", "####....", ".#####..", "..######", "...##..."], { "#": P.nesD })); g.globalAlpha = I; g.drawImage(sit, HX - 3, HY - 5); } }
+      g.globalAlpha = 1;
+    },
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; N: the pass (0, the signature) */
     draw(T, I, A, F, N = 0) {
       const { W, H, hz, pier: pr, light: L } = S, TAU = 6.283;
-      if (N !== S.planP) { S.pl = N > 0 ? (K.egg(N) ? S.eggPlan(N) : S.dealPass(N)) : S.sig(); S.planP = N; }
+      if (N !== S.planP) { const h = N > 0 ? K.long(N) : 0; S.pl = N > 0 ? (K.egg(N) ? S.eggPlan(N) : h === 1 || h === 2 ? S.hourPlan(N, h) : S.dealPass(N)) : S.sig(); S.planP = N; } // (b424: an hour egg; the crown's pass, 3, deals as it did)
       const pl = S.pl;
       g.drawImage(S.bgSky, 0, 0);
       for (const cl of S.clouds) g.drawImage(cl.spr, Math.round(((cl.x + A * cl.v * .6) % (W + cl.spr.width)) - cl.spr.width), cl.y);
@@ -286,6 +544,7 @@ export default function harbor(K) {
       g.globalAlpha = 1;
       if (pl.whale && I > .01) S.masked(() => S.whaleAt(T, I, A, pl.whale));
       if (pl.egg && I > .01) S.masked(() => S.nessieAt(T, I, A, pl.egg)); // the egg, out on the bay
+      if (pl.hour && I > .01) S.masked(() => S.hourAt(T, I, A, pl, setE, false)); // b424: an hour egg, what of it is out beyond the headland
       g.drawImage(S.bgFront, 0, 0);
       // the lamp: a slow glow always, its flashes in the loop
       let fsum = 0; for (const f of pl.flashes) fsum += env(T, f[0], f[1], f[2], f[3], E.sine);
@@ -293,6 +552,7 @@ export default function harbor(K) {
       g.fillStyle = css(P.lamp, clamp((.25 + .12 * Math.sin(A * 1.6) + flash * .75) * .6)); g.fillRect(L.x - 2, ly, 5, 1);
       if (flash > .08) { g.fillStyle = css(P.lampHi, clamp(flash)); g.fillRect(L.x - 1, ly, 3, 1); g.fillStyle = css(P.lamp, flash * .45); const k = Math.round(10 * flash); g.fillRect(L.x - k, ly, k * 2 + 1, 1); g.fillRect(L.x, ly - Math.round(k * .5), 1, k + 1); }
       g.drawImage(S.moored, pr.x1 - S.moored.width - 2, pr.y + 3 + Math.round(Math.sin(A * 1.6) * .8 + setE * Math.sin(T * 6) * 1.2));
+      if (pl.hour && I > .01) S.masked(() => S.hourAt(T, I, A, pl, setE, true)); // and what of it is in the bay
       if (I > .01 && (pl.sb || pl.trawler || pl.dolphins || pl.seal || pl.plane || !S.portrait && (pl.steamer || pl.ship))) S.masked(() => {
         if (!S.portrait) { if (pl.steamer) S.steamerAt(T, I, A, pl.steamer); if (pl.ship) S.shipAt(T, I, A, pl.ship); } // across the open bay
         if (pl.sb) S.sailboatAt(T, I, A, pl.sb); if (pl.trawler) S.trawlerAt(T, I, A, pl.trawler); if (pl.dolphins) S.dolphinsAt(T, I, pl.dolphins); if (pl.seal) S.sealAt(T, I, pl.seal); if (pl.plane) S.planeAt(T, I, A, pl.plane); });

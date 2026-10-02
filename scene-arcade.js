@@ -36,6 +36,23 @@
 // twinkling ones too, go out behind the date, the count, the pills and the hint (the small words `words` is told of),
 // fading as they drift toward them, in every pass; so do the shooting stars, the lightning, the rain and the snow as
 // they pass.
+//
+// 1.12 b424: the long day's hour eggs. For a screen left on through a long day, once in each hour of the levels left
+// alone (K.long) a level of its own, the two taking turns. The first is coin heaven: a block gives up not a coin but a
+// bean, which bursts up out of the street into a beanstalk taller than the screen; the hero climbs it and the screen climbs
+// with it — the street, the city and the sign sinking away below, the stars staying where stars stay — up to a sea of
+// cloud lit pink along its tops, where coins lie and coins rain down. The hero steps off onto the clouds and runs, leaping
+// through arcs of coins and the shower to a big coin at the top of the last leap, then jumps off the end of the clouds;
+// the screen drops with it, the city coming up to meet it, and it lands in the street with a thump: BONUS, and the tally.
+// The second is player two: where GO! would be, INSERT COIN blinks, a coin drops out of the sky into it — PLAYER 2! — and
+// a second hero, the first's colours turned about, drops in beside it and waves. They play the level together: a
+// leapfrog each way, somersaulting over each other's heads; a ride on the first's head and a spring off it to a block too
+// high for either alone, and a star that both catch; the saucer, whose shots they jump together and whose three hits they
+// share, the last with their beams joined into one; a high five in the air, TEAM BONUS!, and the second waves BYE! and
+// runs on ahead. Each scores what the level it stands in for would have — what it takes as it plays, the rest in the
+// tally — so the bank, and every level after it, stand as they always would; and an hour egg that falls on a fiftieth
+// level wins over its boss (which comes round again in fifty levels; the egg not for an hour), its thousands going into
+// the tally. The crown's level, and every level either side, deal as they always have.
 export default function arcade(K) {
   const { clamp, lerp, E, seg, env, rng, canvas, sprite } = K;
   const TAU = Math.PI * 2;
@@ -441,7 +458,258 @@ export default function arcade(K) {
         L.clouds = [0, 1, 2, 0].map((i, j) => { const x0 = bw + 4 + j * (pr ? 18 : 44) + r() * 10, w = S.clouds[i].width; return { i, x0, v: (x0 + w + 10 + r() * 30) / 14.5, y: Math.round(gy * (.04 + r() * .2)) }; });
         L.bolts = [2.6 + r() * 2.6, 8.32].map(t => { const x0 = Math.round(bw * (pr ? .2 + r() * .6 : .5 + r() * .42)), y1 = gy - S.farH * .45, pts2 = [[x0, 0]]; let x = x0; for (let i = 1; i <= 9; i++) { x += Math.round((r() - .5) * (pr ? 6 : 10)); pts2.push([x, Math.round(y1 * i / 9)]); } return { t, pts: pts2 }; });
       }
+      const hr = P >= 240 ? K.long(P) : 0; if (hr === 1 || hr === 2) S.hourLevel(L, hr); // b424: the long day's hour eggs
       return L;
+    },
+    /** 1.12 b424: the long day's hour eggs (K.long: one level in each hour of the screen left alone, the two taking turns).
+     *  The level the pass deals is worked out first, as ever (so every deck deals on as it did), and then the egg makes it its
+     *  own: its own run and its own scroll (still covering D, so the city comes to rest where it began), and its own points,
+     *  which come to exactly what the dealt level would have scored — what the egg scores as it plays, and the rest in a tally
+     *  counted up at its end — so the bank, and every level after, stand as they always would. An hour egg that falls on a
+     *  fiftieth level wins over its boss (the boss comes round again in fifty levels; the egg not for an hour), and its tally
+     *  banks the boss's thousands */
+    hourLevel(L, hr) {
+      const tot = L.pts.reduce((a, q) => a + q[1], 0); L.hour = hr; L.beats = []; L.lands = []; L.bonus = null;
+      const own = hr === 1 ? S.heavenLevel(L) : S.duoLevel(L), left = Math.max(0, tot - own.reduce((a, q) => a + q[1], 0)), n = 20, step = Math.floor(left / n / 10) * 10;
+      for (let i = 0; i < n; i++) own.push([L.tally + i * .06, i < n - 1 ? step : left - step * (n - 1)]); // the tally, counted up in twenty
+      L.pts = own; L.tallyPts = left;
+    },
+    /** the first hour egg: coin heaven. GO!, a short run, and a block that gives up not a coin but a bean, which drops in front
+     *  of the hero and bursts up into a beanstalk that shoots off the top of the screen. The hero climbs it, and the screen
+     *  climbs with it — the street, the city and the sign sink away below, the stars stay where stars stay — up through the
+     *  sky to a sea of cloud, lit pink along its tops, where coins lie and coins rain down: the hero steps off onto the clouds
+     *  and runs, leaping through arcs of coins and the shower, the score spinning, to a big coin at the top of the last leap;
+     *  then the clouds run out and it jumps — the screen drops with it, the city coming up to meet it — and it lands in the
+     *  street with a thump. BONUS, and the tally. Its scroll: the street's run, still while it climbs, the run in the clouds
+     *  (the city moving on below, out of sight), still again for the fall */
+    heavenLevel(L) {
+      const { bw, gy, D, jk } = S, hx = L.hx, N = 15 * 240, CAM = gy + 52; // high enough that the clouds are out of sight above until the climb
+      const cum = v => { const c = new Float32Array(N + 1); for (let k = 1; k <= N; k++) c[k] = c[k - 1] + v(k / 240) / 240; return c; }, at = (c, t) => { const f = clamp(t / 15) * N, i = Math.min(N - 1, Math.floor(f)); return lerp(c[i], c[i + 1], f - i) / c[N]; };
+      const c1 = cum(t => t < 1.2 ? 0 : t < 1.7 ? E.out((t - 1.2) / .5) : t < 2.7 ? 1 : t < 3.15 ? 1 - E.io((t - 2.7) / .45) : 0), c2 = cum(t => t < 6.6 ? 0 : t < 7.0 ? E.out((t - 6.6) / .4) : t < 10.85 ? 1 : t < 11.35 ? 1 - E.io((t - 10.85) / .5) : 0);
+      const F1 = t => at(c1, t), F2 = t => at(c2, t), tb = 3.0, R = (bw - hx + 14) / F1(tb), R2 = D - R; // the block comes on from past the edge wherever the hero stands
+      L.X = t => R * F1(t) + R2 * F2(t); L.cam = t => CAM * (E.io(seg(t, 4.4, 6.4)) - E.io(seg(t, 11.0, 12.4))); L.glitch = t => t > 1.2 && t < 1.32; L.boss = -1; L.tally = 12.8;
+      const J = [[7.35, .6, 18], [8.35, .62, 22], [9.35, .6, 18], [10.2, .56, 26]], arcH = (t, s0, d, h) => { const k = (t - s0) / d; return k > 0 && k < 1 ? 4 * k * (1 - k) * h : 0; };
+      const hS = t => { // the hero's height over the line the street was on (game pixels)
+        if (t >= 2.72 && t < 3.28) return arcH(t, 2.72, .56, 16 * jk);
+        if (t >= 4.0 && t < 4.25) return 8 * jk * E.out((t - 4.0) / .25) + arcH(t, 4.0, .25, 5);
+        if (t >= 4.25 && t < 6.45) return Math.min((8 + 22 * seg(t, 4.25, 5.1, E.sine)) * jk, CAM + 11 - L.cam(t)); // up the stalk, and holding on at its top till the clouds come
+        if (t >= 6.45 && t < 6.62) return 11 * (1 - E.in((t - 6.45) / .17)); // and off it, down onto the clouds
+        for (const [s0, d, h] of J) if (t >= s0 && t < s0 + d) return arcH(t, s0, d, h * jk);
+        if (t >= 10.85 && t < 11.05) return 14 * jk * E.out((t - 10.85) / .2);
+        if (t >= 11.05 && t < 12.45) { const u = (t - 11.05) / 1.4; return (14 * (1 - u * u) + 22 * Math.sin(Math.PI * u) * (1 - u)) * jk; }
+        if (t >= 13.05 && t < 13.45) return arcH(t, 13.05, .4, 9 * jk);
+        return 0; };
+      const coins = [], rain = new Set([1, 3, 4, 6, 8]); // what it takes in the clouds: coins strung along its leaps, coins lying on the clouds (some rained down just before)
+      J.forEach(([s0, d], j) => { for (let i = 0; i < (j === 3 ? 3 : 5); i++) { const t = s0 + d * (.12 + .19 * i); coins.push({ t, y: hS(t) }); } });
+      [6.95, 7.09, 7.98, 8.12, 9.02, 9.16, 9.98, 10.12, 10.6].forEach((t, i) => coins.push({ t, y: 0, rain: rain.has(i) ? t - .5 - (i % 3) * .14 : 0 }));
+      L.hv = { R, R2, F1, F2, tb, CAM, J, hS, coins, big: 10.2 + .28, end: 10.93 };
+      const own = coins.map(c => [c.t, 10]); own.push([L.hv.big, 1000]); return own;
+    },
+    /** coin heaven's pieces, drawn once: the sea of cloud and a bank behind it (tiles that repeat), little clouds, a leaf,
+     *  the bean, the hero climbing (two frames), and the glow over the clouds */
+    heavenArt() {
+      const { bw, pr } = S, q = rng(410), H2 = 44;
+      const sea = (w, h, rmin, rmax, cols) => { const bumps = []; for (let x = 0; x < w;) { const r = rmin + q() * (rmax - rmin); bumps.push([x + r * .8, r]); x += r * 1.25 + q() * 3; }
+        const top = x => { let t = 99; for (const [cx, r] of bumps) for (const o of [-w, 0, w]) { const dx = x + .5 - cx - o; if (Math.abs(dx) < r) t = Math.min(t, 1 + rmax - Math.sqrt(r * r - dx * dx)); } return t; };
+        const bot = x => { let t = h - 1; for (const [cx, r] of bumps) for (const o of [-w, 0, w]) { const dx = x + .5 - (cx + r * .6) - o; if (Math.abs(dx) < r * .8) t = Math.min(t, h - 1 - Math.round(Math.sqrt(r * r * .64 - dx * dx) * .7)); } return t; }; // its underside, in puffs too
+        return K.paint(w, h, (x, y) => { const t = top(x), d = y - t, u = bot(x) - y; if (d < 0 || u < 0) return null; if (u < 1) return hex(cols[5]).map(n => Math.round(n * .7)); const c = d < 1 ? 0 : d < 2 ? 1 : d < 4 ? 2 : d < 8.5 + K.dith(x, y) * 2 ? 3 : d < 15 + K.dith(x, y) * 3 ? 4 : 5; return hex(cols[c]); }); };
+      const floor = sea(pr ? 64 : 96, H2, pr ? 4 : 5, pr ? 8 : 11, ["#FFC4F2", "#F07ADF", "#A64ED0", "#5E2CA0", "#3B1C76", "#25104F"]);
+      const bank = sea(pr ? 48 : 72, 26, pr ? 3 : 4, pr ? 6 : 8, ["#C564E0", "#8A3CBE", "#5A2896", "#3E1C78", "#2B145C", "#21104A"]);
+      const puff = (w, h) => { const n = Math.max(3, Math.round(w / 7)), bl = Array.from({ length: n }, (_, i) => { const mid = 1 - Math.abs(i - (n - 1) / 2) / (n / 2); return [w * (.12 + .76 * i / (n - 1)) + (q() - .5) * 2, h * (.42 + .5 * mid) + q() * 1.5]; }); // a heap, highest in the middle, lit pink along its top
+        const top = x => { let t = 99; for (const [cx, r] of bl) { const dx = x + .5 - cx; if (Math.abs(dx) < r) t = Math.min(t, h - Math.sqrt(r * r - dx * dx)); } return t; };
+        return K.paint(w, h, (x, y) => { const d = y + .5 - top(x); if (d < 0 || (y >= h - 1 && (x < 2 || x > w - 3))) return null; return hex(d < 1 ? "#FFC4F2" : d < 2 ? "#E070D8" : d < 4 ? "#9A48C8" : y >= h - 2 ? "#2A1458" : "#4A2490"); }); };
+      const clouds = pr ? [puff(22, 8), puff(30, 10), puff(16, 6)] : [puff(34, 11), puff(46, 14), puff(24, 8)];
+      const cols = ["#FFC4F2", "#F07ADF", "#A64ED0", "#5E2CA0", "#3B1C76", "#25104F"], cap = K.paint(10, H2, (x, y) => { const e2 = 4.5 + Math.sqrt(Math.max(0, 30 - Math.pow((y - 9) * .55, 2))) - (y > 30 ? (y - 30) * .5 : 0), d = Math.min(y - 5 + Math.round(Math.sqrt(Math.max(0, 16 - (x - 3) ** 2))) * 0, e2 - x); if (x + .5 > e2 || y < 5 - Math.round(Math.sqrt(Math.max(0, 25 - (x - 2) ** 2)) * .8)) return null; const dt = y - (5 - Math.round(Math.sqrt(Math.max(0, 25 - (x - 2) ** 2)) * .8)), de = e2 - x - .5; const c = Math.min(dt, de * 1.4); return hex(cols[c < 1 ? 0 : c < 2 ? 1 : c < 4 ? 2 : c < 8.5 ? 3 : c < 15 ? 4 : 5]); }); // the sea's ragged end, rounded
+      const stalk = n => { const [c, x2] = canvas(11, n + 2), lf = (x, y, sd) => { x2.fillStyle = "#7CFF6B"; x2.fillRect(x + (sd > 0 ? 1 : 0), y, 2, 1); x2.fillRect(x, y + 1, 3, 1); x2.fillStyle = "#2FB84A"; x2.fillRect(x + (sd > 0 ? 0 : 2), y + 2, 1, 1); }; // the beanstalk, n tall: lit on its left, a leaf every few pixels, out on alternate sides
+        for (let h2 = 0; h2 < n; h2++) { const y = n + 1 - h2, w2 = Math.round(Math.sin(h2 * .21 + 1) * 1.1); x2.fillStyle = "#7CFF6B"; x2.fillRect(4 + w2, y, 1, 1); x2.fillStyle = "#2FB84A"; x2.fillRect(5 + w2, y, 1, 1); x2.fillStyle = "#16662A"; x2.fillRect(6 + w2, y, 1, 1); if (h2 % 9 === 4 && h2 > 3) { const sd = (h2 / 9 | 0) % 2 ? 1 : -1; lf(sd > 0 ? 7 + w2 : w2 + 1, y - 1, sd); } }
+        return c; };
+      const leaf = [K.sprite([".LL", "LLl", ".l."], pal({ L: "#7CFF6B", l: "#2FB84A" })), K.sprite(["LL.", "lLL", ".l."], pal({ L: "#7CFF6B", l: "#2FB84A" }))];
+      const bean = K.sprite([".BB.", "BWBB", "BBBB", "BBBb", ".bb."], pal({ B: "#7CFF6B", W: "#FFFFFF", b: "#2FB84A" }));
+      const climb = [hero([...HEAD.slice(0, 3), ".HHHVVVVVvhJ", ".HHHVVVVVVhJ", ".hHHHHHHHhhJ", "..hhhhhhhhJ."], [".SSJJJJJJJ..", "SS.JJJJJJ...", "S..jJJJJJj..", "...JJJJJJ..."], LEGS.r2),
+        hero([...HEAD.slice(0, 5), ".hHHHHHHHhhJ", "..hhhhhhhhJJ"], [".SSJJJJJJJ..", "s..JJJJJJ...", "...jJJJJJj..", "...JJJJJJ..."], LEGS.r4)];
+      const [gl, gx] = canvas(bw, 30), gg = gx.createLinearGradient(0, 0, 0, 30); gg.addColorStop(0, "rgba(255,43,214,0)"); gg.addColorStop(1, "rgba(255,90,220,.22)"); gx.fillStyle = gg; gx.fillRect(0, 0, bw, 30);
+      return { floor, bank, clouds, leaf, bean, climb, glow: gl, H2, cap, stalk };
+    },
+    /** the sky the street leaves as it sinks (coin heaven): the backdrop has ground below the street's line, so the rows the
+     *  street has left are filled with the sky's last band, dithered as the backdrop's is */
+    lowSky(cg) {
+      const { bw, bh, gy } = S; if (!S.lowSkyC || S.lowSkyC.width !== bw) { const a = hex("#551671"), c = hex("#671880"), r0 = Math.min(bw, bh) * .35, r1 = Math.max(bw, bh) * .78; // the sky's last band, its pink haze, the frame's vignette
+        S.lowSkyC = K.paint(bw, bh - gy + 1, (x, y) => { const v = clamp((Math.hypot(x + .5 - bw / 2, y + gy + .5 - bh / 2) - r0) / (r1 - r0)) * .5; return (K.dith(x, y) < .62 ? c : a).map(n => Math.round(n * (1 - v))); }); }
+      b.drawImage(S.lowSkyC, 0, 0, bw, Math.min(cg, bh - gy), 0, gy, bw, Math.min(cg, bh - gy));
+    },
+    /** coin heaven, drawn: `H` the frame's moment and the drawing helpers */
+    heavenDraw(H) {
+      const { T, I, A, F, L, hx, top0, wX, cam, on, put, dot, txt, panel, shadeB } = H, { bw, bh, gy, jk } = S, e = L.hv, o = { shake: 0, warn: 0, flashL: 0 }, art = S.hvArt && S.hvArt.bw === bw ? S.hvArt : (S.hvArt = Object.assign(S.heavenArt(), { bw }));
+      const cg = Math.round(cam), up = cam / e.CAM, yF = gy - e.CAM + cg - 5, hW = tc => hx + 2 + e.R2 * (e.F2(tc) - e.F2(T)); // the clouds' tops on the screen; where a thing met up there at tc is now
+      const ring = (x, y, p, n, rad, col, a, sq = 1) => { if (p <= 0 || p >= 1) return; for (let i = 0; i < n; i++) { const an = i / n * TAU; dot(x + Math.cos(an) * p * rad, y + Math.sin(an) * p * rad * sq, col, a * (1 - p)); } };
+      // the heights: little clouds drifting, a glow over the sea of cloud, a bank behind it, the sea itself (it ends where the hero jumps)
+      if (on && yF + art.H2 > 0 && yF - 80 < bh) {
+        art.clouds.forEach((c, i) => { const px = ((60 + i * 97 - e.R2 * e.F2(T) * .22 - A * (1.5 + i)) % (bw + 40) + bw + 40) % (bw + 40) - 30, py = yF - [46, 70, 30][i] * jk; put(c, px, py, I * .9 * shadeB(px + c.width / 2, py + 3, 12)); });
+        b.globalAlpha = I; b.drawImage(art.glow, 0, yF - 30); b.globalAlpha = 1;
+        const ob = -((e.R2 * e.F2(T) * .5) % art.bank.width); for (let x = ob; x < bw; x += art.bank.width) put(art.bank, x, yF - 7, I);
+        const xe = hW(e.end) - 2, tw2 = art.floor.width, of = -((e.R2 * e.F2(T)) % tw2); b.globalAlpha = I;
+        for (let x = of - tw2; x < Math.min(bw, xe); x += tw2) { const w = Math.min(tw2, Math.ceil(xe - x)); if (w > 0) b.drawImage(art.floor, 0, 0, w, art.floor.height, Math.round(x), yF, w, art.floor.height); }
+        b.globalAlpha = 1; if (xe > -10 && xe < bw + 2) put(art.cap, Math.round(xe) - 1, yF, I); // its end, rounded off
+        for (let i = 0; i < 9; i++) { const sx = ((i * 53 + 17 - e.R2 * e.F2(T) * .9) % bw + bw) % bw, sy = yF - 3 - (i * 29 % 40) * jk, k = Math.pow(Math.max(0, Math.sin(A * 2.2 + i * 1.7)), 6); if (k > .05 && sx < xe) dot(sx, sy, i % 2 ? "#FFFFFF" : "#FF9AF0", I * k * shadeB(sx, sy, 4)); } // sparkles in the air up there
+      }
+      // the block with the bean in it; the bean, popped out and fallen; the beanstalk, bursting up out of the street
+      const byk = top0 - 3 - Math.round(16 * jk) - 12 + cg, bxs = hx + wX(e.tb), xs = hx + 13 - Math.round(e.R2 * e.F2(T));
+      if (on && bxs > -14 && bxs < bw + 2) put(T < e.tb ? S.block : S.used, bxs, byk - env(T, e.tb, e.tb + .05, e.tb + .06, e.tb + .16) * 3, I * shadeB(bxs + 6, byk + 6, 8));
+      if (on && T > e.tb && T < 3.62) { const u = (T - e.tb) / .5, bx = lerp(bxs + 4, hx + 12, clamp(u)), by = u < 1 ? byk - 4 - Math.sin(Math.PI * u) * 12 + u * u * (gy - 5 + cg - byk) : gy - 5 + cg; put(art.bean, bx, by, I); if (T > 3.42) ring(hx + 14, gy - 2 + cg, (T - 3.42) / .3, 8, 6, "#7CFF6B", I, .5); }
+      const grow = on ? E.out(seg(T, 3.5, 3.95)) : 0;
+      if (grow > 0 && xs > -8) { const base = gy + cg, len = Math.round((e.CAM + 26) * grow), tip = base - len, st = art.st && art.st.height === e.CAM + 28 ? art.st : (art.st = art.stalk(e.CAM + 26)); // (it stands well up out of the clouds) // the stalk, drawn once, shown as far up as it has grown
+        b.globalAlpha = I; b.drawImage(st, 0, st.height - len - 2, st.width, len + 2, xs - 5, tip - 1, st.width, len + 2); b.globalAlpha = 1;
+        if (tip > -3 && grow < 1) for (let i = 0; i < 6; i++) { const an = A * 9 + i * TAU / 6; dot(xs + Math.cos(an) * 3, tip + Math.sin(an) * 3, i % 2 ? "#FFFFFF" : "#7CFF6B", I); } } // its tip, sparkling up
+      if (on && T > 3.5 && T < 3.62) o.shake = .9;
+      // the coins up there: strung along the leaps and lying on the clouds, some rained down just before; taken as the hero passes
+      const ho = cg - e.CAM; // (up there: where the clouds' line is, against the street's)
+      if (on && up > .01) for (const [i, c] of e.coins.entries()) { const x = hW(c.t), y0 = top0 + 3 - Math.round(c.y) + ho, land = c.rain;
+        if (T < c.t) { if (x > bw + 8 || x < -9) continue; let y = y0 + Math.round(Math.sin(A * 5 + i) * .6), a = I; if (land) { if (T < land - .8) continue; if (T < land) y = y0 - Math.round(((land - T) / .8) ** 2 * (y0 + 12)); else y = y0 - Math.round(Math.abs(Math.sin((T - land) * 9)) * 5 * Math.max(0, 1 - (T - land) * 2.2)); } // falling, bouncing once
+          put(S.coin[Math.floor(A * (land && T < land ? 16 : 10) + i) % 4], x, y, a * shadeB(x + 4, y + 4)); }
+        else if (T < c.t + .45) { const p = (T - c.t) / .45; ring(x + 4, y0 + 4, p, 6, 7, "#FFE14D", I); txt("+10", x - 3, y0 - 6 - p * 8, "#FFFFFF", I * (1 - p) * .9); } }
+      if (on && up > .01) { const x = hW(e.big), y = top0 + 3 - Math.round(26 * jk * .9) - 6 + ho; if (T < e.big) { if (x < bw + 16) { put(S.coin[Math.floor(A * 8) % 4], x - 4, y - 4, I * shadeB(x + 4, y + 4, 10), 2, 2); for (let i = 0; i < 4; i++) { const an = A * 3 + i * TAU / 4; dot(x + 4 + Math.cos(an) * 12, y + 4 + Math.sin(an) * 12, "#FFE14D", I * .8); } } }
+        else if (T < e.big + .9) { const p = (T - e.big) / .9; ring(x + 4, y + 4, p, 16, 16, "#FFE14D", I); ring(x + 4, y + 4, clamp(p * 1.4), 10, 10, "#FFFFFF", I); txt("+1000", x - 10, y - 8 - p * 10, "#FFFFFF", I * (1 - seg(p, .6, 1)), 1, true); } }
+      // the hero: running, leaping, climbing the stalk, falling, landing; the trophy at the finale
+      const hS = e.hS(T) * I, dx = Math.round((T >= 4.0 && T < 4.25 ? 2 * E.out((T - 4) / .25) : T >= 4.25 && T < 6.45 ? 2 : T >= 6.45 && T < 6.62 ? 2 * (1 - E.io((T - 6.45) / .17)) : 0) * I), climbing = on && T >= 4.25 && T < 6.45;
+      const spd = e.R * (e.F1(T + .05) - e.F1(T)) + e.R2 * (e.F2(T + .05) - e.F2(T)), set = S.norm; let spr = set.idle[Math.floor(A * 1.6) % 2], y = Math.round(top0 - hS), sx = 1, sy = 1;
+      if (!on && (A % 4.2) < .14) spr = S.hBlink;
+      if (on && spd > .2 && hS < .5) spr = set.run[Math.floor(A * (7 + spd * 3)) % 4];
+      if (on && hS >= .5) spr = set.jump;
+      if (climbing) { const moving = e.hS(T + .05) + L.cam(T + .05) > e.hS(T) + L.cam(T) + .05; spr = art.climb[moving ? Math.floor(T * 7) % 2 : 0]; } // hand over hand while it goes up
+      if (on && T > .95 && T < 1.2) { sx = 1.16; sy = .82; }
+      for (const t of [3.28, 6.62, 12.45, 13.45]) if (on && T > t && T < t + .1) { sx = 1.2; sy = .82; }
+      if (F >= 0) { const fj = seg(F, 0, .5, x => x); if (fj > 0 && fj < 1) { spr = set.jump; y = top0 - Math.round(4 * fj * (1 - fj) * 26 * jk); } }
+      const ha = shadeB(hx + 6, y + 7, 10); put(spr, hx + dx, y, ha, sx, sy);
+      if (spr !== art.climb[0] && spr !== art.climb[1]) { dot(hx + dx + 6, y - 2, "#9FB6DC", ha); dot(hx + dx + 6, y - 3, "#9FB6DC", ha); dot(hx + dx + 6, y - 4, "#FF2BD6", ha * (.5 + .5 * Math.sin(A * 4))); }
+      if (F >= 0 && F < .92) put(S.cup, hx + 3, y - 12, 1);
+      if (on) for (const t of [1.2, 3.28, 6.62, 13.45]) { const p = seg(T, t, t + .3, x => x); if (p > 0 && p < 1) for (const q of [-1, 1]) dot(hx + 6 + q * (3 + p * 6), gy - 2 - p * 3, "#B388FF", I * (1 - p)); }
+      if (on) { ring(hx + 6, gy - 1, seg(T, 12.45, 12.85, x => x), 14, 16, "#B388FF", I, .35); if (T > 12.45 && T < 12.57) o.shake = 1.6; } // the thump
+      // the banners
+      if (on && F < 0) {
+        const lv = env(T, .3, .4, 1.0, 1.15) * I; if (lv > .02) panel("LEVEL " + (L.P + 1), lv, 1, "#FFFFFF", !!L.mile);
+        const go = env(T, 1.2, 1.26, 1.7, 1.9) * I; if (go > .02) panel("GO!", go, 2, "#7CFF6B");
+        const hv = env(T, 6.5, 6.65, 7.9, 8.2) * I; if (hv > .02) panel("COIN HEAVEN!", hv, 1, "#FFFFFF", true);
+        const bn = env(T, 12.65, 12.8, 14.0, 14.3) * I; if (bn > .02) panel("BONUS +" + L.tallyPts, bn, 1, "#FFE14D", false);
+      }
+      return o;
+    },
+    /** the second hour egg: player two. Where GO! would be, INSERT COIN blinks; a coin drops out of the sky into it — PLAYER 2!
+     *  — and a second hero, the first's colours turned about (magenta where it is cyan, cyan where it is magenta), drops in
+     *  beside it with a thump and waves; the first hops for joy. GO!, and they play the level together: a leapfrog each way,
+     *  somersaulting over each other's heads, the second taking a string of coins as it goes; then the second hops up onto the
+     *  first's head, rides it, and springs off it to a block too high for either alone — a star pops out that both catch, and
+     *  both run in its colours; WARNING, and the saucer, whose shots they jump together and whose three hits they share, one
+     *  each and the last together, their beams joined into one; a high five in the air, TEAM BONUS!, the tally; and the second
+     *  waves BYE! and runs on ahead, off the way the level goes. Its scroll: still until GO!, the run, faster with the star,
+     *  easing to a stop for the saucer */
+    duoLevel(L) {
+      const { bw, D, jk } = S, hx = L.hx, N = 15 * 240;
+      const v = t => t < 3.1 ? 0 : t < 3.6 ? E.out((t - 3.1) / .5) : t < 6.85 ? 1 : t < 7.15 ? lerp(1, 1.7, (t - 6.85) / .3) : t < 7.8 ? 1.7 : t < 8.5 ? 1.7 * (1 - E.io((t - 7.8) / .7)) : 0;
+      const c = new Float32Array(N + 1); for (let k = 1; k <= N; k++) c[k] = c[k - 1] + v(k / 240) / 240;
+      L.X = t => { const f = clamp(t / 15) * N, i = Math.min(N - 1, Math.floor(f)); return D * lerp(c[i], c[i + 1], f - i) / c[N]; };
+      L.cam = () => 0; L.glitch = t => t > 3.1 && t < 3.22; L.boss = 0; L.tally = 13.0;
+      const a = (t, s0, d) => clamp((t - s0) / d), arc = (t, s0, d, h) => { const k = (t - s0) / d; return k > 0 && k < 1 ? 4 * k * (1 - k) * h : 0; }, JB = [9.4, 10.0, 10.6];
+      const x1 = t => t < 3.75 ? 0 : t < 4.35 ? 32 * E.sine(a(t, 3.75, .6)) : t < 4.9 ? 32 - 16 * E.io(a(t, 4.35, .55)) : t < 5.55 ? 16 : t < 6.0 ? 16 - 16 * E.io(a(t, 5.55, .45)) : t >= 11.7 && t < 12.3 ? 3 * Math.sin(Math.PI * a(t, 11.7, .6)) : 0;
+      const y1 = t => arc(t, 2.75, .35, 7 * jk) + arc(t, 3.75, .6, 20 * jk) + JB.reduce((m, s0) => m + arc(t, s0, .46, 12 * jk), 0) + arc(t, 11.7, .6, 15 * jk);
+      const x2 = t => t < 4.35 ? 16 : t < 4.9 ? 16 - 16 * E.io(a(t, 4.35, .55)) : t < 4.95 ? 0 : t < 5.55 ? 32 * E.sine(a(t, 4.95, .6)) : t < 6.0 ? 32 - 16 * E.io(a(t, 5.55, .45)) : t < 6.25 ? 16 - 16 * E.io(a(t, 6.0, .25)) : t < 6.5 ? 0 : t < 6.95 ? 16 * E.io(a(t, 6.5, .45))
+        : t >= 11.7 && t < 12.3 ? 16 - 3 * Math.sin(Math.PI * a(t, 11.7, .6)) : t >= 13.45 ? 16 + (bw - hx + 2) * (a(t, 13.45, .85) < .3 ? a(t, 13.45, .85) ** 2 / .6 : a(t, 13.45, .85) - .15) / .85 : 16; // (off at a run)
+      const top = 15 + 24 * jk, y2 = t => t < 2.0 ? 999 : t < 2.55 ? (1 - E.in(a(t, 2.0, .55))) * (S.gy + 6) : t >= 4.95 && t < 5.55 ? arc(t, 4.95, .6, 22 * jk) : t >= 6.0 && t < 6.25 ? 15 * E.io(a(t, 6.0, .25)) + arc(t, 6.0, .25, 9) : t >= 6.25 && t < 6.5 ? 15 + 24 * jk * E.out(a(t, 6.25, .25)) : t >= 6.5 && t < 6.95 ? top * (1 - E.in(a(t, 6.5, .45)))
+        : JB.reduce((m, s0) => m + arc(t, s0, .46, 12 * jk), 0) + arc(t, 11.7, .6, 15 * jk) + arc(t, 13.4, .3, 6 * jk);
+      const coins = [5.07, 5.2, 5.33, 5.46].map(t => ({ t, x: x2(t), y: y2(t) })); // over the first's head, in the second's somersault
+      L.duo = { x1, y1, x2, y2, coins, JB, top, blockT: 6.5, starT: 6.85 };
+      return [...coins.map(q => [q.t, 10]), [11.3, 5000]];
+    },
+    /** player two's colours and frames, drawn once: idle, running, jumping, somersaulting, and a wave (an arm up), each also
+     *  turned to face the other way */
+    duoArt() {
+      const P2 = pal({ H: "#F3ECFF", h: "#B9A6DC", V: "#4A0F3A", v: "#FFB0F0", J: "#FF2BD6", j: "#B1168F", S: "#2BE8FF", s: "#1A8FB0", P: "#3D3AB8", B: "#2BE8FF" });
+      const WAVE = [[...HEAD.slice(0, 3), ".HHHVVVVVvhJ", ".HHHVVVVVVhJ", ".hHHHHHHHhhJ", "..hhhhhhhhJ."], [...HEAD.slice(0, 2), ".HHHHHHHHHhJ", ".HHHVVVVVvhJ", ".HHHVVVVVVh.", ".hHHHHHHHhJ.", "..hhhhhhhJ.."]];
+      const WB = [".SSJJJJJJJ..", "SS.JJJJJJj..", "S..jJJJJJj..", "...JJJJJJ..."], wave = p => WAVE.map(h => hero(h, WB, LEGS.idle, p)), five = p => hero(WAVE[0], BODY.jump.map(r => r.replace(/j\.\.$/, "...")), LEGS.jump, p);
+      const jump = hero(HEAD, BODY.jump, LEGS.jump, P2), o = { idle: [hero(HEAD, BODY.idle, LEGS.idle, P2), hero(HEAD, BODY.flut, LEGS.idle, P2)], run: [hero(HEAD, BODY.a, LEGS.r1, P2), hero(HEAD, BODY.b, LEGS.r2, P2), hero(HEAD, BODY.c, LEGS.r3, P2), hero(HEAD, BODY.b, LEGS.r4, P2)], jump, spin: [1, 2, 3].map(k => turn(jump, k)), wave: wave(P2), five: five(P2) };
+      o.L = { idle: o.idle.map(flipH), wave: o.wave.map(flipH), five: flipH(o.five), jump: flipH(jump) };
+      return { p2: o, p1: { wave: wave(HP), five: five(HP) } };
+    },
+    /** player two, drawn: `H` the frame's moment and the drawing helpers */
+    duoDraw(H) {
+      const { T, I, A, F, L, hx, top0, wX, on, put, dot, txt, tw, panel, shadeB } = H, { bw, bh, gy, pr, jk } = S, d = L.duo, o = { shake: 0, warn: 0, flashL: 0 }, art = S.duoA || (S.duoA = S.duoArt()), q2 = art.p2, n1 = S.norm;
+      const ring = (x, y, p, n, rad, col, a, sq = 1) => { if (p <= 0 || p >= 1) return; for (let i = 0; i < n; i++) { const an = i / n * TAU; dot(x + Math.cos(an) * p * rad, y + Math.sin(an) * p * rad * sq, col, a * (1 - p)); } };
+      const spd = L.X(T + .05) - L.X(T), pow = on ? env(T, d.starT, d.starT + .15, 8.9, 9.3) * I : 0, tp = T;
+      // the coin that goes in, and the high block with the star in it
+      if (on && T > 1.45 && T < 1.85) { const u = (T - 1.45) / .4, cx = Math.round(S.bx) - 4, cy = Math.round(lerp(-10, S.by - 6, u * u)); put(S.coin[Math.floor(A * 18) % 4], cx, cy, I); }
+      if (on) ring(Math.round(S.bx), Math.round(S.by) - 2, seg(T, 1.85, 2.3, x => x), 12, 14, "#FFE14D", I);
+      const tb = d.blockT, bxs = hx + wX(tb), byk = top0 - Math.round(d.top) - 13;
+      if (on && bxs > -14 && bxs < bw + 2) put(T < tb ? S.block : S.used, bxs, byk - env(T, tb, tb + .05, tb + .06, tb + .16) * 3, I * shadeB(bxs + 6, byk + 6, 8));
+      if (on && T > tb && T < d.starT + .05) { const u = (T - tb) / (d.starT - tb), sx = lerp(bxs + 1, hx + 3, u), sy = byk - 4 - Math.sin(Math.PI * Math.min(1, u * 1.6)) * 10 + (u > .62 ? (u - .62) / .38 * (top0 - 4 - (byk - 4)) : 0); put(S.star[Math.floor(A * 12) % 6], sx, sy, I); }
+      if (on) { const p = seg(T, d.starT, d.starT + .5, x => x); ring(hx + 6, top0 + 2, p, 12, 16, "#FFE14D", I); ring(hx + 22, top0 + 2, p, 12, 16, "#FF2BD6", I); }
+      // the coins over the first one's head
+      if (on) for (const [i, c] of d.coins.entries()) { const x = hx + 2 + c.x + wX(c.t), y = Math.round(top0 + 3 - c.y); if (T < c.t) { if (x < bw + 8 && x > -9) put(S.coin[Math.floor(A * 10 + i) % 4], x, y + Math.round(Math.sin(A * 5 + i) * .6), I * shadeB(x + 4, y + 4)); } else if (T < c.t + .45) { const p = (T - c.t) / .45; ring(x + 4, y + 4, p, 6, 7, "#FFE14D", I); txt("+10", x - 3, y - 6 - p * 8, "#FFFFFF", I * (1 - p) * .9); } }
+      // WARNING, and the saucer: down with a wobble, its eye on the two of them; its shots; three hits; the burst
+      o.warn = on ? env(T, 7.9, 8.0, 8.8, 9.0) * I : 0;
+      if (o.warn > .02) { const blink = Math.floor(A * 6) % 2; b.globalAlpha = o.warn * (blink ? .8 : .3); b.fillStyle = "#FF2B4E"; b.fillRect(0, gy - 1, bw, 1); b.fillRect(0, 0, 1, gy); b.fillRect(bw - 1, 0, 1, gy); b.globalAlpha = 1; }
+      const bossX = Math.round(Math.min(hx + (pr ? 36 : 44), bw - 31)), hover = gy - 31, drop = seg(T, 8.3, 9.0, E.back), dead = T >= 11.3, dying = seg(T, 11.1, 11.3, x => x), HT = [9.86, 10.46, 11.06], SH = [9.2, 9.8, 10.4];
+      const hitNow = HT.some(t => T > t && T < t + .12), knock = HT.reduce((m, t) => Math.max(m, env(T, t, t + .03, t + .06, t + .2) * 2), 0), jit = dying > 0 ? Math.round((rng(Math.floor(A * 30) + 3)() - .5) * 3) : 0, flick = hitNow || (dying > 0 && Math.floor(A * 30) % 2);
+      if (on && T > 8.3 && !dead) { const by2 = Math.round(lerp(-20, hover, drop) + Math.sin(A * 3) * 1.2), bx2 = bossX + Math.round(knock) + jit, a = I * shadeB(bx2 + 15, by2 + 8, 16);
+        put(flick ? S.bossWhite : S.boss, bx2, by2, a); const look = Math.floor(A * .9) % 2 ? -1 : 1, ex = bx2 + 15 + look, ey = by2 + 4; // its eye goes from one of them to the other
+        for (let q = -2; q <= 2; q++) for (let w = -2; w <= 2; w++) if (q * q + w * w <= 5) dot(bx2 + 15 + q, ey + w, "#FFFFFF", a); dot(ex - 1, ey - 1, "#FF2B5E", a, 2); dot(ex - 1, ey, "#FF2B5E", a, 2); dot(ex - (look < 0 ? 1 : 0), ey, "#0B0820", a);
+        for (let k = 0; k < 7; k++) dot(bx2 + 3 + k * 4, by2 + 10, NEON[(k + Math.floor(A * 8)) % 3], a);
+        for (const fx2 of [5, 11, 17, 23]) { const f = Math.floor(A * 20 + fx2) % 3; dot(bx2 + fx2, by2 + 16, f ? "#FFE14D" : "#FF7A3C", a, 2); if (f) dot(bx2 + fx2, by2 + 18, "#FF7A3C", a * .6, 2); }
+        if (T > 9.0) { const hp = 3 - HT.filter(t => T > t).length; b.globalAlpha = a; b.fillStyle = "#0B0820"; b.fillRect(bx2 - 1, by2 - 6, 32, 4); for (let k = 0; k < 3; k++) { b.fillStyle = k < hp ? "#FF2B5E" : "#3A1024"; b.fillRect(bx2 + k * 10, by2 - 5, 9, 2); } b.globalAlpha = 1; }
+        if (T > 9.0 && T < 9.12) o.shake = 1.5; if (hitNow) o.shake = 1.2; }
+      if (on) for (const t of SH) { const k = (T - t) / .7; if (k <= 0) continue; const x = lerp(bossX + 2, hx - 26, k), y = gy - 7; if (x < -4) continue; dot(x - 1, y - 1, "#FF5A8A", I, 3); dot(x, y, "#FFFFFF", I); for (let q = 1; q < 4; q++) dot(x + q * 3, y, "#FF5A8A", I * (1 - q / 4)); }
+      if (on) HT.forEach((t, i) => { const k = seg(T, t - .08, t + .12, x => x), hy = gy - 9; if (k <= 0 || k >= 1) return; // their beams: the first's, the second's, and both together, joined
+        const one = (x0, col) => { b.globalAlpha = I * (1 - k); b.fillStyle = col; b.fillRect(x0, hy, bossX + 2 - x0, 2); b.fillStyle = "#FFFFFF"; b.fillRect(x0, hy, bossX + 2 - x0, 1); b.globalAlpha = 1; };
+        if (i !== 1) one(hx + 12, "#2BE8FF"); if (i !== 0) one(hx + 28, "#FF2BD6");
+        if (i === 2) { b.globalAlpha = I * (1 - k); for (let x = hx + 28; x < bossX + 2; x++) { b.fillStyle = NEON[(x + Math.floor(A * 30)) % 6]; b.fillRect(x, hy - 2, 1, 6); } b.fillStyle = "#FFFFFF"; b.fillRect(hx + 28, hy, bossX - hx - 26, 2); b.globalAlpha = 1; } });
+      if (on) for (const t of HT) { const sp = seg(T, t, t + .3, x => x); if (sp > 0 && sp < 1) for (let q = 0; q < 8; q++) { const an = q / 8 * TAU + t; dot(bossX + 2 + Math.cos(an) * sp * 7, gy - 12 + Math.sin(an) * sp * 7, q % 2 ? "#FFFFFF" : "#2BE8FF", I * (1 - sp)); } }
+      const boom = on ? seg(T, 11.25, 12.1, x => x) : 0;
+      if (boom > 0 && boom < 1) { const cx = bossX + 15, cy = hover + 8, rr = E.out(boom) * 34, bu = BURST[0];
+        for (let q = 0; q < 48; q++) { const an = q / 48 * TAU; dot(cx + Math.cos(an) * rr, cy + Math.sin(an) * rr * .7, bu.ring[q % 2], I * (1 - boom)); }
+        for (const p of S.bits) { const d2 = E.out(boom) * 30 * p.v; dot(cx + Math.cos(p.a) * d2, cy + Math.sin(p.a) * d2 * .8 + boom * boom * 20, bu.bits[p.c], I * (1 - boom), p.s); }
+        if (boom < .2) o.shake = 2.5 * (1 - boom / .2); txt("+5000", cx - 14, cy - 18 - boom * 10, "#FFE14D", I * (1 - seg(boom, .7, 1)), 1, true); }
+      // the speed lines, while the star lasts
+      if (pow > .02) { const r2 = rng(Math.floor(A * 30)); for (let k = 0; k < 14; k++) { const y = 6 + r2() * (gy - 14), x = r2() * bw, l = 8 + r2() * 20; if (shadeB(x + l / 2, y, l / 2 + 4) < .95) continue; b.globalAlpha = pow * .55; b.fillStyle = NEON[k % 6]; b.fillRect(Math.round(x), Math.round(y), Math.round(l), 1); } b.globalAlpha = 1; }
+      // the two of them
+      const run = on && spd > .2, fin = F >= 0 ? seg(F, 0, .5, x => x) : 0, finY = fin > 0 && fin < 1 ? Math.round(4 * fin * (1 - fin) * 26 * jk) : 0;
+      const at = (x, y) => [hx + Math.round(x * I), Math.round(top0 - y * I)];
+      const pose = (set, y, ducking, spinning, k, facingL) => { if (finY) return set.jump; if (spinning) return set.spin[Math.min(2, Math.floor(k * 3))]; if (y > .5) return facingL && set.L ? set.L.jump : set.jump; if (run) return set.run[Math.floor(A * (7 + spd * 3) + (set === q2 ? 2 : 0)) % 4]; return facingL && set.L ? set.L.idle[Math.floor(A * 1.6) % 2] : set.idle[Math.floor(A * 1.6) % 2]; };
+      // the first: hops for joy, leapfrogs, ducks for the second, rides out the boost, jumps the shots, high-fives
+      const v1 = T >= 3.75 && T < 4.35 ? (T - 3.75) / .6 : -1, Y1 = on ? d.y1(T) : 0, [X1, Yp1] = at(on ? d.x1(T) : 0, Y1);
+      let s1 = pose(n1, Y1, false, on && v1 > .2 && v1 < .8, (v1 - .2) / .6, false), sx1 = 1, sy1 = 1, y1 = Yp1 - finY;
+      if (on && ((T > 4.95 && T < 5.55 && Math.abs(d.x2(T) - d.x1(T)) < 9) || (T > 6.25 && T < 6.32))) { sx1 = 1.16; sy1 = .82; } // ducking under the second, or taking its weight
+      if (on && T > 6.0 && T < 6.5 && d.y2(T) >= 14.5) { sx1 = 1.08; sy1 = .92; }
+      if (on && T > 11.85 && T < 12.15) s1 = art.p1.five;
+      if (on && ((T > 2.9 && T < 3.1) || [2.55, ...d.JB.map(t => t + .46), 4.35, 12.3].some(t => T > t && T < t + .08))) { sx1 = 1.16; sy1 = .84; }
+      if (!on && (A % 4.2) < .14) s1 = S.hBlink;
+      const ghosts = (spr, set, x, y) => { if (pow <= .02 || !spr) return; const gi = spr === set.jump ? 4 : set.run.indexOf(spr); if (gi < 0) return; for (let q = 3; q >= 1; q--) put(S.hGhost[(q + Math.floor(A * 10)) % 6][gi], x - q * 4, y, pow * .35 * (1 - q / 4)); if (Math.floor(A * 16) % 2) put(S.hGhost[Math.floor(A * 12 + (set === q2 ? 3 : 0)) % 6][gi], x, y, pow * .55); };
+      // the second: drops in, waves, leapfrogs, rides the first, springs to the block, high-fives, waves BYE! and runs off
+      const show2 = on && T >= 2.0 && T < 14.4, Y2 = show2 ? d.y2(T) : 0, [X2, Yp2] = at(show2 ? d.x2(T) : 16, Y2), v2 = T >= 4.95 && T < 5.55 ? (T - 4.95) / .6 : -1, falling = T < 2.55, waving = (T > 2.62 && T < 3.05) || (T > 12.9 && T < 13.4), faceL = (T > 2.55 && T < 3.05) || (T > 11.6 && T < 13.4);
+      let s2 = falling ? q2.spin[Math.floor(T * 14) % 3] : pose(q2, Y2, false, v2 > .2 && v2 < .8, (v2 - .2) / .6, faceL), sx2 = 1, sy2 = 1;
+      if (on && T > 13.45 && Y2 < .5 && !finY) s2 = q2.run[Math.floor(A * 13) % 4]; // running off
+      if (waving && Y2 < .5) s2 = q2.L.wave[Math.floor(T * 7) % 2];
+      if (T > 11.85 && T < 12.15) s2 = q2.L.five;
+      if ((T > 3.75 && T < 4.35 && Math.abs(d.x1(T) - d.x2(T)) < 9) || [2.55, 6.95, ...d.JB.map(t => t + .46), 12.3].some(t => T > t && T < t + .08) || (T > 2.9 && T < 3.1)) { sx2 = 1.16; sy2 = .82; }
+      const a1 = shadeB(X1 + 6, y1 + 7, 10), a2 = I * shadeB(X2 + 6, Yp2 + 7, 10) * (show2 ? 1 : 0);
+      ghosts(s1, n1, X1, y1); put(s1, X1, y1, a1, sx1, sy1); if (s1 !== art.p1.five && !(on && v1 > .2 && v1 < .8)) { dot(X1 + 6, y1 - 2, "#9FB6DC", a1); dot(X1 + 6, y1 - 3, "#9FB6DC", a1); dot(X1 + 6, y1 - 4, "#FF2BD6", a1 * (.5 + .5 * Math.sin(A * 4))); }
+      if (a2 > .01) { ghosts(s2, q2, X2, Yp2 - finY); put(s2, X2, Yp2 - finY, a2, sx2, sy2); if (!falling && !(v2 > .2 && v2 < .8)) { dot(X2 + 5, Yp2 - finY - 2, "#B9A6DC", a2); dot(X2 + 5, Yp2 - finY - 3, "#B9A6DC", a2); dot(X2 + 5, Yp2 - finY - 4, "#2BE8FF", a2 * (.5 + .5 * Math.sin(A * 4 + 2))); } }
+      if (F >= 0 && F < .92) put(S.cup, X1 + 3, y1 - 12, 1);
+      // the high five: a burst of stars where their hands meet
+      if (on) { const p = seg(T, 12.0, 12.6, x => x); if (p > 0 && p < 1) { const cx = hx + 10, cy = top0 - Math.round(15 * jk) - 1; for (let q = 0; q < 8; q++) { const an = q / 8 * TAU; dot(cx + Math.cos(an) * p * 12, cy + Math.sin(an) * p * 9, q % 2 ? "#FFFFFF" : "#FFE14D", I * (1 - p), q % 2 ? 1 : 2); } if (p < .3) { dot(cx - 1, cy - 1, "#FFFFFF", I, 3); } } }
+      // their dust, the thump of the second landing, its tags
+      if (on) for (const [t, x] of [[2.55, 22], [3.1, 6], [3.1, 22], [4.35, 38], [5.55, 38], [6.95, 22], [12.3, 6], [12.3, 22]]) { const p = seg(T, t, t + .3, x2 => x2); if (p > 0 && p < 1) for (const q of [-1, 1]) dot(hx + x + q * (3 + p * 6), gy - 2 - p * 3, "#B388FF", I * (1 - p)); }
+      if (on && T > 2.55 && T < 2.65) o.shake = .9;
+      if (on && F < 0) { const t1 = env(T, 2.6, 2.7, 3.5, 3.7) * I; if (t1 > .02) { txt("1P", X1 + 1, y1 - 10, "#2BE8FF", t1); txt("2P", X2 + 1, Yp2 - 10, "#FF2BD6", t1); } const by = env(T, 12.95, 13.0, 13.5, 13.7) * I; if (by > .02) txt("BYE!", X2 - 5, Yp2 - 11 - (T - 12.95) * 6, "#FF2BD6", by); }
+      // the banners
+      if (on && F < 0) {
+        const lv = env(T, .3, .4, 1.0, 1.15) * I; if (lv > .02) panel("LEVEL " + (L.P + 1), lv, 1, "#FFFFFF", !!L.mile);
+        const ic = env(T, 1.2, 1.3, 1.8, 1.9) * I; if (ic > .02 && Math.floor(A * 5) % 3) panel("INSERT COIN", ic, 1, "#FFE14D");
+        const p2 = env(T, 1.9, 2.0, 2.75, 2.95) * I; if (p2 > .02) panel("PLAYER 2!", p2, 1, "#FFFFFF", true);
+        const go = env(T, 3.1, 3.16, 3.6, 3.8) * I; if (go > .02) panel("GO!", go, 2, "#7CFF6B");
+        if (o.warn > .02 && Math.floor(A * 6) % 2) panel("WARNING", o.warn, 1, "#FF2B4E");
+        const tb2 = env(T, 12.15, 12.3, 12.85, 13.0) * I; if (tb2 > .02) panel("TEAM BONUS!", tb2, 1, "#FFFFFF", true);
+        const tl = env(T, 13.0, 13.1, 14.1, 14.35) * I; if (tl > .02) panel("+" + L.tallyPts, tl, 1, "#FFE14D");
+      }
+      if (on) o.flashL = Math.max(env(T, d.starT, d.starT + .03, d.starT + .05, d.starT + .18) * .08, env(T, 11.25, 11.27, 11.3, 11.5) * .14) * I;
+      return o;
     },
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; P: the pass */
     draw(T, I, A, F, P = 0) {
@@ -452,6 +720,7 @@ export default function arcade(K) {
       const dt = S.lastA === undefined ? 0 : clamp(A - S.lastA, 0, .1); S.lastA = A; const glide = 1 - Math.exp(-dt * 3);
       S.heroX += (S.heroTx - S.heroX) * glide; S.bx += (S.btx - S.bx) * glide; S.by += (S.bty - S.by) * glide;
       const hx = Math.round(S.heroX), L = S.plan(P, hx), sig = L.sig, XF = L.X; S.lastX = XF;
+      const hour = L.hour || 0, cam = hour === 1 && on ? L.cam(T) * I : 0, cg = Math.round(cam); // b424: an hour egg's level; coin heaven's climb, the world sinking away below
       if (P !== S.bankP) S.bankTo(P, hx); S.bankL = L; S.bankT = T; // b397: the score carries on
       S.moonAway = 0; // b398: how far the backdrop's moon gives way to the one that wakes
       const X = (S.base || 0) + XF(T), wX = t => XF(t) - XF(T); // where a thing placed at loop time t is now, relative to then
@@ -464,7 +733,7 @@ export default function arcade(K) {
       const tw = (s, sc = 1) => s.length * 6 * sc - sc;
       const shadeB = (x, y, r = 6) => S.shade(x * PS, y * PS, r * PS);
       // b381: the level's sky — how far it has come in, its tint under everything, and how much it dims the stars
-      const sk = sig ? 0 : L.sky, skyK = sk && on ? env(T, .15, 1.3, 13.1, 14.6) * I : 0, starA = 1 - (sk === 1 ? .7 : sk === 2 ? .75 : sk === 4 ? .35 : 0) * skyK;
+      const sk = sig || hour ? 0 : L.sky, skyK = sk && on ? env(T, .15, 1.3, 13.1, 14.6) * I : 0, starA = 1 - (sk === 1 ? .7 : sk === 2 ? .75 : sk === 4 ? .35 : 0) * skyK;
       if (skyK > .01) { b.globalAlpha = skyK; b.fillStyle = S.skyG[sk]; b.fillRect(0, 0, bw, gy); b.globalAlpha = 1; }
       // the stars, twinkling
       if (starA < 1) b.globalAlpha = starA;
@@ -479,7 +748,7 @@ export default function arcade(K) {
       for (const s of S.twinkle) { const x = ((s.x - X * s.p) % bw + bw) % bw, k = .45 + .55 * Math.pow(Math.max(0, Math.sin(A * s.f + s.ph)), 3); dot(x, s.y, ["#FFFFFF", "#9AE7FF", "#FF9AF0"][s.c], k * starA * (hz && s.hz ? S.hzFade(Math.round(x), Math.round(s.y)) : 1)); }
       // b381: behind the city — the sun going down, the storm's lightning and its clouds
       if (sk === 1 && skyK > .01) { const rise = S.sunHigh ? E.out(seg(T, 1.5, 3.0)) * (1 - E.io(seg(T, 10.9, 11.9))) : E.out(seg(T, .15, 1.9)) * (1 - E.io(seg(T, 12.8, 14.6))), R = S.sunR, [scx, scy] = S.sunC; b.globalAlpha = I * (S.sunHigh ? rise : 1); b.drawImage(S.sun, scx - R, Math.round(S.sunHigh ? scy - R + (1 - rise) * 8 : lerp(gy + 1, scy - R, rise))); b.globalAlpha = 1; }
-      if (!sig && sk === 0 && on) for (const m of L.meteors) { const age = T - m.t; if (age <= 0 || age >= m.life) continue; // a shooting star: it lights, streaks and burns out
+      if (!sig && !hour && sk === 0 && on) for (const m of L.meteors) { const age = T - m.t; if (age <= 0 || age >= m.life) continue; // a shooting star: it lights, streaks and burns out
         const k = env(age, 0, .08, m.life - .22, m.life) * I, hx2 = m.x + m.dx * age, hy2 = m.y + m.dy * age, v = Math.hypot(m.dx, m.dy), ux = m.dx / v, uy = m.dy / v, n = Math.round(m.len * clamp(age / .15));
         for (let j = n; j >= 0; j--) { const x = hx2 - ux * j, y = hy2 - uy * j, a = k * (1 - j / (m.len + 1)) * shadeB(x, y, 5) * S.hzFade(Math.round(x), Math.round(y)); if (a < .03) continue; b.globalAlpha = a; b.fillStyle = j < 2 ? "#FFFFFF" : j < m.len * .45 ? "#9AE7FF" : "#FF9AF0"; b.fillRect(Math.round(x), Math.round(y), 1, 1); } b.globalAlpha = 1; }
       if (sk === 4 && on) { const k = env(T, .3, 2.4, 12.4, 14.5) * I; // the aurora: two curtains drifting apart, breathing
@@ -491,27 +760,28 @@ export default function arcade(K) {
       }
       // the city: the far layer, the near one with its flickering windows, antenna lights and the sign (b381: snow on the roofs)
       const capA = sk === 3 && on ? env(T, 2.5, 7.0, 12.4, 14.2) * I : 0;
-      for (let x = -(((X * .2) % PF) + PF) % PF; x < bw; x += PF) { b.drawImage(S.far, Math.round(x), gy - S.farH); if (capA > .01) { b.globalAlpha = capA * .8; b.drawImage(S.farCap, Math.round(x), gy - S.farH); b.globalAlpha = 1; } }
+      if (cg > 0) S.lowSky(cg); // (b424: the sky the street leaves as it sinks)
+      for (let x = -(((X * .2) % PF) + PF) % PF; x < bw; x += PF) { b.drawImage(S.far, Math.round(x), gy - S.farH + cg); if (capA > .01) { b.globalAlpha = capA * .8; b.drawImage(S.farCap, Math.round(x), gy - S.farH); b.globalAlpha = 1; } }
       const nOff = -(((X * .5) % PN) + PN) % PN;
       for (let x = nOff; x < bw; x += PN) {
-        b.drawImage(S.near, Math.round(x), gy - S.nearH);
+        b.drawImage(S.near, Math.round(x), gy - S.nearH + cg);
         if (capA > .01) { b.globalAlpha = capA; b.drawImage(S.nearCap, Math.round(x), gy - S.nearH); b.globalAlpha = 1; }
-        for (const w of S.wins) { const on2 = Math.sin(A * .7 + w.ph) > .82; if (on2) dot(x + w.x, gy - S.nearH + w.y, "#0E0927", 1, 1), dot(x + w.x, gy - S.nearH + w.y + 1, "#0E0927", 1, 1); }
-        for (const a2 of S.antennas) dot(x + a2.x, gy - S.nearH + a2.y, "#FF3B5C", .4 + .6 * (Math.sin(A * 3 + a2.ph) > .3 ? 1 : 0));
-        if (S.sign) { const flick = Math.sin(A * 23) > -.85 || Math.sin(A * 3.1) > .5 ? 1 : .25, sx2 = x + S.sign.x, sy2 = gy - S.nearH + S.sign.y; [..."ARCADE"].forEach((ch, i) => S.F3[ch].forEach((row, j) => { for (let k = 0; k < 3; k++) if (row[k] === "#") dot(sx2 + k, sy2 + i * 6 + j, i % 2 ? "#2BE8FF" : "#FF2BD6", flick); })); }
+        for (const w of S.wins) { const on2 = Math.sin(A * .7 + w.ph) > .82; if (on2) dot(x + w.x, gy - S.nearH + cg + w.y, "#0E0927", 1, 1), dot(x + w.x, gy - S.nearH + cg + w.y + 1, "#0E0927", 1, 1); }
+        for (const a2 of S.antennas) dot(x + a2.x, gy - S.nearH + cg + a2.y, "#FF3B5C", .4 + .6 * (Math.sin(A * 3 + a2.ph) > .3 ? 1 : 0));
+        if (S.sign) { const flick = Math.sin(A * 23) > -.85 || Math.sin(A * 3.1) > .5 ? 1 : .25, sx2 = x + S.sign.x, sy2 = gy - S.nearH + cg + S.sign.y; [..."ARCADE"].forEach((ch, i) => S.F3[ch].forEach((row, j) => { for (let k = 0; k < 3; k++) if (row[k] === "#") dot(sx2 + k, sy2 + i * 6 + j, i % 2 ? "#2BE8FF" : "#FF2BD6", flick); })); }
       }
       // speed lines while the star lasts (b381: and while the jetpack flies)
-      const pow = on && (sig || L.power === 0) ? env(T, 6.55, 6.7, 8.9, 9.3) * I : 0, lines = Math.max(pow, !sig && on && L.power === 3 ? env(T, 6.6, 6.8, 7.7, 8.05) * I : 0);
+      const pow = on && !hour && (sig || L.power === 0) ? env(T, 6.55, 6.7, 8.9, 9.3) * I : 0, lines = Math.max(pow, !sig && !hour && on && L.power === 3 ? env(T, 6.6, 6.8, 7.7, 8.05) * I : 0);
       if (lines > .02) { const r2 = rng(Math.floor(A * 30)); for (let k = 0; k < 14; k++) { const y = 6 + r2() * (gy - 14), x = r2() * bw, l = 8 + r2() * 20; if (shadeB(x + l / 2, y, l / 2 + 4) < .95) continue; b.globalAlpha = lines * .55; b.fillStyle = NEON[k % 6]; b.fillRect(Math.round(x), Math.round(y), Math.round(l), 1); } b.globalAlpha = 1; }
       // the ground, scrolling
-      for (let x = -((X % 16) + 16) % 16; x < bw; x += 16) b.drawImage(S.ground, Math.round(x), gy);
+      for (let x = -((X % 16) + 16) % 16; x < bw; x += 16) b.drawImage(S.ground, Math.round(x), gy + cg);
       // b381: the level's pits in it, and snow along its edge
       if (!sig) {
         if (capA > .01) { b.globalAlpha = capA; b.fillStyle = "#EEF4FF"; b.fillRect(0, gy - 1, bw, 1); for (let x = -((X % 16) + 16) % 16; x < bw; x += 16) { b.fillRect(Math.round(x) + 3, gy - 2, 3, 1); b.fillRect(Math.round(x) + 11, gy - 2, 2, 1); } b.globalAlpha = 1; }
         if (on) for (const bt of L.beats) if (bt.k === "pit") { const w = pr ? 16 : 24, x0 = Math.round(hx + 6 + wX(bt.c) - w / 2); if (x0 < bw && x0 + w > 0) { b.globalAlpha = I; b.fillStyle = "#04020C"; b.fillRect(x0, gy, w, bh - gy); b.fillStyle = "#2A1461"; b.fillRect(x0, gy + 3, 1, bh - gy - 3); b.fillRect(x0 + w - 1, gy + 3, 1, bh - gy - 3); b.fillStyle = "#FF8AE8"; b.fillRect(x0 - 1, gy, 1, 3); b.fillRect(x0 + w, gy, 1, 3); b.globalAlpha = 1; } }
       }
       // the neon edge dims under words that sit right on it (a long list's last lines), so they keep their contrast
-      for (const [x0, y0, x1, y1] of S.wr || []) if (y1 > gy * PS - 70 && y1 < gy * PS + 12) { b.globalAlpha = .82; b.fillStyle = "#1C0D44"; b.fillRect(Math.floor(x0 / PS) - 2, gy, Math.ceil((x1 - x0) / PS) + 4, 3); b.globalAlpha = 1; }
+      for (const [x0, y0, x1, y1] of S.wr || []) if (y1 > gy * PS - 70 && y1 < gy * PS + 12) { b.globalAlpha = .82; b.fillStyle = "#1C0D44"; b.fillRect(Math.floor(x0 / PS) - 2, gy + cg, Math.ceil((x1 - x0) / PS) + 4, 3); b.globalAlpha = 1; }
       const top0 = gy - 15, tp = 6.55;
       let warn = 0, shake = 0, sc = "000000", flashL = 0;
       // the banners, in their panel: READY?, GO!, WARNING, HIGH SCORE!, and the finale's LEVEL CLEAR
@@ -600,6 +870,9 @@ export default function arcade(K) {
           if (warn > .02 && Math.floor(A * 6) % 2) panel("WARNING", warn, 1, "#FF2B4E");
           const hs = env(T, 12.0, 12.2, 13.8, 14.3) * I; if (hs > .02) panel("HIGH SCORE!", hs, 1, "#FFFFFF", true);
         }
+      } else if (hour) {
+        // ---- b424: an hour egg's level ----
+        const o = (hour === 1 ? S.heavenDraw : S.duoDraw)({ T, I, A, F, L, hx, top0, X, XF, wX, cam, on, put, dot, txt, tw, panel, shadeB }); shake = o.shake; warn = o.warn; flashL = o.flashL;
       } else {
         // ---- a dealt level (b381) ----
         const U = D / 800, jumps = L.jumps, SH = [9.2, 9.8, 10.4], HT = [9.86, 10.46, 11.06];
@@ -865,7 +1138,7 @@ export default function arcade(K) {
         for (const c of S.confetti) { const k = seg(F, .25 + c.d, 1, x => x); if (k <= 0 || k >= 1) continue; const x = c.x * bw + Math.sin(k * 12 + c.x * 30) * 2, yy = k * c.v * gy; dot(x, yy, NEON[c.c], (1 - k) * shadeB(x, yy, 3), c.w ? 2 : 1); }
       }
       // the score, on the bricks: the bank and what this level has scored so far (b397: it carries from level to level)
-      const score = S.bank + (T > 0 ? S.earned(L, T) : 0); sc = String(score).padStart(6, "0"); S.lastInfo = { level: P + 1, score, bank: S.bank, boss: sig ? -1 : L.boss };
+      const score = S.bank + (T > 0 ? S.earned(L, T) : 0); sc = String(score).padStart(6, "0"); S.lastInfo = { level: P + 1, score, bank: S.bank, boss: sig ? -1 : L.boss }; if (hour) S.lastInfo.hour = hour;
       txt(pr ? sc : "SCORE " + sc, bw - tw(pr ? sc : "SCORE " + sc) - 4, gy + (pr ? 3 : 5), "#FFE14D", 1);
       // under the words the moving picture is cut back, so the backdrop's dark sky is what's behind them (and the bloom with it)
       b.globalCompositeOperation = "destination-out"; for (const [x0, y0, x1, y1, k] of S.wr || []) { b.globalAlpha = k === 1 ? .7 : .4; b.fillRect(Math.floor(x0 / PS), Math.floor(y0 / PS), Math.ceil((x1 - x0) / PS) + 1, Math.ceil((y1 - y0) / PS) + 1); } b.globalCompositeOperation = "source-over"; b.globalAlpha = 1;
@@ -880,9 +1153,9 @@ export default function arcade(K) {
       g.imageSmoothingEnabled = true; g.globalCompositeOperation = "lighter";
       for (const [t, a] of [[S.tiny1, .42], [S.tiny2, .5]]) { const x = t.getContext("2d"); x.clearRect(0, 0, t.width, t.height); x.drawImage(pb, 0, 0, t.width, t.height); g.globalAlpha = a; g.drawImage(t, ox, oy, bw * PS, bh * PS); }
       g.globalAlpha = 1; g.globalCompositeOperation = "source-over";
-      const flash = Math.max(on ? env(T, tp, tp + .03, tp + .05, tp + .18) * .08 * I : 0, on ? env(T, 11.25, 11.27, 11.3, 11.5) * .14 * I : 0, F >= 0 ? env(F, 0, .02, .04, .16) * .12 : 0, flashL); // brief, and light: the words stay put
+      const flash = Math.max(on && !hour ? env(T, tp, tp + .03, tp + .05, tp + .18) * .08 * I : 0, on && !hour ? env(T, 11.25, 11.27, 11.3, 11.5) * .14 * I : 0, F >= 0 ? env(F, 0, .02, .04, .16) * .12 : 0, flashL); // brief, and light: the words stay put
       if (flash > .01) { g.globalCompositeOperation = "lighter"; g.globalAlpha = flash; g.fillStyle = "#FFFFFF"; g.fillRect(0, 0, W, H); g.globalCompositeOperation = "source-over"; g.globalAlpha = 1; }
-      const glitch = (on && (sig || I > .5) && ((T > 1.2 && T < 1.32) || (T > 11.25 && T < 11.4))) || (F >= 0 && F < .05);
+      const glitch = (on && (sig || I > .5) && (hour ? L.glitch(T) : (T > 1.2 && T < 1.32) || (T > 11.25 && T < 11.4))) || (F >= 0 && F < .05);
       if (glitch) { const r2 = rng(Math.floor(A * 40)); g.save(); g.setTransform(1, 0, 0, 1, 0, 0); for (let k = 0; k < 5; k++) { const h = Math.round((2 + r2() * 6) * PS * px), y2 = Math.round(r2() * (g.canvas.height - h)), d = Math.round((r2() - .5) * 12 * PS * px); g.drawImage(g.canvas, 0, y2, g.canvas.width, h, d, y2, g.canvas.width, h); } g.restore(); }
       if (!S.scanPat) S.scanPat = g.createPattern(S.scan, "repeat"); g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = S.scanPat; g.fillRect(0, 0, g.canvas.width, g.canvas.height); g.restore();
     },

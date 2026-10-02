@@ -15,7 +15,10 @@
 // as it goes, and a line crossed off with a tap puts a small drop by its end. The finale: every stone at once, in every
 // colour, and the two biggest wound up together. Thin paint clears away as it fades, so the page never silts up; the
 // picture carries on from one pass into the next as water does, and a moment asked for out of turn (the lab, the
-// instruments) is worked out again from the start of the visit.
+// instruments) is worked out again from the start of the visit (one hours in, from the start of the pass before it).
+// 1.12 b422: the long day's hour eggs. Left alone an hour, the water plays one of two pieces of its own, by turns: a
+// stone crosses a pool and leaves von Kármán's vortex street behind it, or a galaxy winds itself up out of a line of
+// drops. Each lays the water's motion down itself, as the egg's stir does, so it comes out crisp on any screen.
 export default function fluid(K, id) {
   const night = id === "dark";
   const { clamp, lerp, E, env, deal, bag } = K, LOOP = K.LOOP, TAU = Math.PI * 2;
@@ -155,7 +158,7 @@ void main() { vec4 c = at(vUv); float s = c.x + c.y + c.z + c.w, cov = smoothste
   let vel = null, prs = null, dye = null, dv = null, sdf = null, flg = null, ta = null, tb = null, mp = null;
   let rects = [], rectKey = "", obsDirty = true, spotKey = "", spotList = [];
   let started = false, lastA = null, mode = "live", gT = 0, gKey = "", steps = 0, clock = 0, amp = 1, beats = "";
-  let kV = .7, kD = 0, kS = 0, eps = 0, iters = 16, setV = false, chkOn = false, eggP = -1, eggCut = -1, wipeMap = false, stampNow = false;
+  let kV = .7, kD = 0, kS = 0, hold = false, eps = 0, iters = 16, setV = false, chkOn = false, eggP = -1, eggCut = -1, wipeMap = false, stampNow = false;
   const geo = { A: [0, 0], B: [0, 0], C: [0, 0], w: 1, L: 1, rev: 0 }; // the egg's check: where its strokes run, how thick, how far drawn
   const hand = { x: 0, y: 0, vx: 0, vy: 0, t: -1e9, down: -1e9, dx: 0, dy: 0 }, puffs = [];
 
@@ -416,6 +419,58 @@ void main() { vec4 c = at(vUv); float s = c.x + c.y + c.z + c.w, cov = smoothste
     if (tau >= 0) { const w = 4.2 * env(tau, 0, .8, 3, 3.8, E.sine) * (t < 7 ? 1 : -1); spin(ax, ay, ar * .9, w); for (const k of [1, -1]) spin(ax + k * ar * .42, ay - k * ar * .1, ar * .34, -1.6 * w); }
     return 0;
   }
+  /* 1.12 b422: the long day's hour eggs (K.long: one an hour, from the first hour of loops left alone on, at a moment
+     dealt for the visit), the first and second taking turns. */
+  /** the wake: a pool of clear water opens, a stone drops in at one side of it and crosses it, and behind it the eddies
+   *  it sheds by turns from either shoulder are left in a line, each winding up the ink that runs off that shoulder (by
+   *  day burnt orange on one side and steel blue on the other; by night gold and silver) — von Kármán's vortex street,
+   *  the picture fluid dynamics is known by, as a rod drawn through a soap film leaves it. At the far side the stone
+   *  stops and sinks, and the eddies wind on, tighter the older they are, and come to rest. The motion is the scene's
+   *  own, laid down step by step as the egg's stir is (the stone carries the water it covers; each eddy turns as a
+   *  vortex does, fastest in its middle), so the street comes out crisp on any grid. */
+  function hourWake(t, P) {
+    const [ax, ay, ar] = spot(0), r = deal(P, 81), hd = (r() - .5) * .5 + (r() < .5 ? 0 : Math.PI), ux = Math.cos(hd), uy = Math.sin(hd), nx = -uy, ny = ux;
+    const L = ar * 1.45, rho = clamp(ar * .05, 6, 15), sp = rho * 4.2, T0 = 1.3, T1 = 9.6, ra = .8, U = L / (T1 - T0 - ra);
+    const s = t <= T0 ? 0 : t >= T1 ? L : t < T0 + ra ? U * (t - T0) ** 2 / (2 * ra) : t > T1 - ra ? L - U * (T1 - t) ** 2 / (2 * ra) : U * (t - T0 - ra / 2);
+    const vs = t <= T0 || t >= T1 ? 0 : U * Math.min(1, (t - T0) / ra, (T1 - t) / ra), x = ax + ux * (s - L / 2), y = ay + uy * (s - L / 2);
+    const c = night ? [2, 0, 3] : [1, 0, 2]; beats = "wake"; hold = true;
+    drop(t, .15, ax, ay, ar * .82, CLEAR, .75); // the pool
+    drop(t, .85, ax - ux * L / 2, ay - uy * L / 2, rho, ink(c[0]), .35); // the stone lands
+    if (t < 1.2 || t >= 14.2 || amp <= .5) return 0; // a touch, and the water is its own again: the eddies coast and the stone is gone
+    setV = true;
+    // the eddies, one each `sp` of the run, by turns from either shoulder, each spun up as the stone leaves it behind
+    const n = Math.floor((L - 3.5 * rho) / sp), fall = 1 - E.sine(clamp((t - 12.4) / 1.8));
+    for (let k = 0; k < n; k++) { const sk = 2.2 * rho + k * sp, g = clamp((s - sk - 1.3 * rho) / (2.5 * rho)); if (g <= 0) continue;
+      const sd = k % 2 ? -1 : 1; spin(ax + ux * (sk - L / 2) + sd * nx * rho * 1.05, ay + uy * (sk - L / 2) + sd * ny * rho * 1.05, rho * 2.2, sd * 2.6 * E.sine(g) * fall); }
+    // the stone: the water it covers goes with it (asked for at twice its speed, as the water made to go round it takes
+    // half back), and at the far side it sinks, smaller and smaller
+    const sink = clamp((t - 9.9) / .6);
+    if (sink < 1) { drag(x, y, rho, 2 * ux * vs, 2 * uy * vs, 90); disc(x, y, rho, CLEAR, 60); disc(x, y, rho * .8 * (1 - E.sine(sink)), ink(c[0]), 60); } // its ink kept to itself: none of it gets into the eddies
+    if (vs > U * .05) for (const sd of [1, -1]) wisp(x - ux * rho * .7 + sd * nx * rho * 1.05, y - uy * rho * .7 + sd * ny * rho * 1.05, rho * .38, ink(c[sd > 0 ? 1 : 2]), 2 * vs / (1.77 * rho * .38));
+    return 0;
+  }
+  /** the galaxy: a pool of clear water opens and turns to night (by day a wash of slate, a window in the paper; by
+   *  night the dark itself); a drop for its heart, and a line of drops through it out to either side (by day of clear
+   *  water, so the galaxy is the light in the slate, as a photograph's is; by night of metal); then the water turns,
+   *  nearly as fast out at the edge as near the middle, the way a galaxy turns (Vera Rubin's flat curves), so the line
+   *  winds into two trailing arms round a bright core, with knots along them. Then it turns all of a piece, slowly, and
+   *  its stars come out. */
+  function hourGalaxy(t, P) {
+    const [ax, ay, ar] = spot(0), r = deal(P, 83), th = r() * Math.PI, sg = r() < .5 ? 1 : -1, R = ar * .74;
+    const sky = night ? null : [0, 1, .6, 0], core = night ? ink(0) : [.32, 0, 0, 0], heart = night ? [1.3, 0, 0, .4] : [.12, 0, 0, 0], arm = night ? ink(3) : CLEAR, knot = night ? ink(1) : [.42, 0, 0, 0], star = night ? ink(3) : CLEAR;
+    beats = "galaxy"; hold = true;
+    drop(t, .15, ax, ay, ar * .82, CLEAR, .75); // the pool
+    if (sky && t > .9 && t < 2.15) { const S = u => { u = clamp((u - .9) / 1.2); return u * u * (3 - 2 * u); }, s0 = S(t - 1 / 30), f = (S(t) - s0) / Math.max(1e-3, 1 - s0); disc(ax, ay, ar * .8, sky, f * 30); } // night falls in it, eased in and out over a second
+    drop(t, 2.1, ax, ay, R * .2, core, .55); drop(t, 2.45, ax, ay, R * .09, heart, .4); // the heart
+    for (let k = 0; k < 9; k++) for (const sd of [1, -1]) { const q = R * (.24 + k * .0875), t0 = 2.3 + k * .13 + (sd < 0 ? .06 : 0); drop(t, t0, ax + sd * Math.cos(th) * q, ay + sd * Math.sin(th) * q, R * (.11 - k * .0065), k % 3 === 2 ? knot : arm, .35); }
+    const st = deal(P, 85); for (let i = 0; i < 36; i++) { const a = st() * TAU, q = R * (.28 + .8 * Math.sqrt(st())), t0 = 9 + i * .08 + st() * .08, b = st(); if (q < ar * .77) drop(t, t0, ax + Math.cos(a) * q, ay + Math.sin(a) * q, Math.max(1.6, R * .006) * (1 + b * b * 1.6), star, .25); } // a few bright, most faint
+    if (t < 3.7 || t >= 14.2 || amp <= .5) return 0;
+    setV = true;
+    const k = .15 * sg * env(t, 3.7, 4.6, 8.1, 9.1, E.sine); // the winding (its speed over its size, a second)
+    if (k) { spin(ax, ay, R * .18, 1.46 * k); spin(ax, ay, R * .65, 4.36 * k); }
+    const w = .13 * sg * env(t, 8.3, 9.5, 12.6, 14.2, E.sine); if (w) spin(ax, ay, R * 1.6, w); // and the whole of it turning
+    return 0;
+  }
   /** the day is done: a flower in each of the biggest open spaces, made as a marbler makes one — a stone of rings, then a
    *  stylus drawn in from beyond it toward its middle at each petal, all at once — and the biggest turned a little */
   function finale(f) {
@@ -429,11 +484,12 @@ void main() { vec4 c = at(vUv); float s = c.x + c.y + c.z + c.w, cov = smoothste
   }
   /** what is done to the water at loop time t of pass P, idle `I`; the finale at its own time `f` (or -1) */
   function forcing(t, I, f, P) {
-    fv.n = fd.n = fsrc.n = 0; fsrc.area = 0; eps = 0; iters = 16; setV = false;
+    fv.n = fd.n = fsrc.n = 0; fsrc.area = 0; eps = 0; iters = 16; setV = false; hold = false;
     let kb = 0; amp = I;
-    if (I > .002) { iters = 22; kb = P === 0 ? (signature(t), 0) : K.egg(P) ? eggPass(t, P) : dealt(t, P); }
+    if (I > .002) { iters = 22; const lg = K.long ? K.long(P) : 0; kb = P === 0 ? (signature(t), 0) : lg === 1 ? hourWake(t, P) : lg === 2 ? hourGalaxy(t, P) : K.egg(P) ? eggPass(t, P) : dealt(t, P); }
     if (chkOn && (eggP !== P || I < .5 || !setV)) { stampNow = true; setV = false; eggCut = eggP; } // the egg over, or cut short: its check, as far as it got, stays in the paint
     kV = lerp(.7, kb || 1.1, I); kD = lerp(Math.LN2 / 300, Math.LN2 / 30, I); kS = lerp(.004, .02, I); // what fades, and what thin paint loses outright
+    if (hold) { kD *= .2; kS *= .2; } // an hour egg's picture, fifteen seconds in the making, is still whole at its end
     amp = 1;
     if (!setV) { drift(); hands(); }
     if (f >= 0) finale(f);
@@ -493,11 +549,13 @@ void main() { vec4 c = at(vUv); float s = c.x + c.y + c.z + c.w, cov = smoothste
   }
   const eggInk = [1.15, 0, 0, 0]; // gold; the burnt orange
   const chkU = () => ({ uMap: mp.r, uCA: geo.A, uCB: geo.B, uCC: geo.C, uCW: geo.w, uRev: geo.rev, uView: [W, H] });
-  /** a moment asked for out of turn (the lab, the instruments): worked out again from the start of the visit, one
-   *  thirtieth of a second at a time, as if left alone throughout — or on from where the last one got to */
+  /** a moment asked for out of turn (the lab, the instruments): worked out again from the start of the visit (a pass
+   *  hours in, from the start of the pass before it), one thirtieth of a second at a time, as if left alone throughout
+   *  — or on from where the last one got to, if that was less than three passes before (so one pass runs on into the
+   *  next, as it does on the page) */
   function seekTo(T, F, P) {
     const fin = F >= 0, at = P * LOOP + T, G = at + (fin ? F * 3.4 : 0), key = fin ? "f" + at : "n";
-    if (mode !== "seek" || key !== gKey || G < gT - 1e-6) { reset(); mode = "seek"; gKey = key; gT = 0; }
+    if (mode !== "seek" || key !== gKey || G < gT - 1e-6 || G - gT > 3 * LOOP) { reset(); mode = "seek"; gKey = key; gT = P > 4 ? (P - 1) * LOOP : 0; } // a late pass (the long day's, hours in) from the start of the pass before it; a moment soon after the last, on from it
     while (gT < G - 1e-6) { const h = Math.min(1 / 30, G - gT), gm = Math.min(gT + h / 2, at), p = Math.floor(gm / LOOP); forcing(gm - p * LOOP, 1, fin && gT + h / 2 > at ? gT + h / 2 - at : -1, p); step(h); gT += h; } // each step forced at its middle
   }
   function render() {

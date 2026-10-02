@@ -27,6 +27,13 @@
 // rare ones, each about once in eight passes: the northern lights over the far hills, in the palette, their light
 // running along them and again in the lake; a meteor shower; a moose wading out of the far shore to drink, lifting his
 // head with the water running off. Every pass opens and closes on the same resting picture.
+//
+// 1.12 b413: the egg. Every twelfth pass (K.egg: three minutes of the list left alone), someone just out of the picture, on
+// the log by the fire, toasts a marshmallow. A green stick comes in from the edge away from the words with a marshmallow on
+// its tip and holds it at the flames' edge; it goes golden, then brown on the side toward the fire; the fire flares, the
+// flames lick it, and it catches, a little fire of its own in the fire's own colours; the stick whips it up out of the heat,
+// the flame streaming, waves it, and it goes out in a puff of smoke; and the stick goes back the way it came, the
+// marshmallow burnt black on one side, an ember winking out in the char. Drawn at the picture's own pixels, like the rest.
 export default function ember(K) {
   const { clamp, lerp, E, seg, env, rng, canvas, noise1, fbm, dith, deal, bag } = K;
   let g = null;
@@ -232,10 +239,52 @@ export default function ember(K) {
       if (r() < .5) { const f0 = pick(1.6, 3.4); pl.flies = { t: [f0, f0 + 2.2, 11.6, 13.6], ph: Math.floor(pick(0, 8)) }; }
       return pl;
     },
+    /** 1.12 b413: the egg's night (every twelfth pass, K.egg): the fire to itself, and someone just out of the picture on the
+     *  log beside it. A green stick comes in from the edge away from the words with a marshmallow on it and holds it at the
+     *  flames' edge; it goes golden, then brown; the fire flares, the flames lick it, and it catches, a little fire of its own;
+     *  the stick whips it up out of the heat and it goes out in a puff of smoke, and the stick goes back the way it came, the
+     *  marshmallow black on the side that faced the fire, a last ember winking out in the char. Its own dice; nothing else */
+    eggPlan(n) {
+      const { bw, fx, fy, pr } = S, tip = [fx + (pr ? 6 : 7), fy - (pr ? 14 : 17)], hand = [bw + (pr ? 3 : 5), fy + (pr ? 19 : 15)];
+      const L = Math.hypot(tip[0] - hand[0], tip[1] - hand[1]), th = Math.atan2(tip[1] - hand[1], tip[0] - hand[0]);
+      return { dealt: true, flare: [6.05, 6.4, 6.9, 8.0], heat: .05, egg: { hand, L, th, in: [1.1, 3.3], toast: [3.4, 6.3], fire: 6.45, whip: [7.15, 7.5], wave: [7.5, 8.3], back: [10.4, 12.9] } };
+    },
+    /** where the stick is at T: its hand end and its tip, and how fast the tip is going */
+    stickAt(T, e) {
+      const o = S.sk || (S.sk = [0, 0, 0, 0, 0]), ext = E.out(seg(T, e.in[0], e.in[1], x => x)) * (1 - E.io(seg(T, e.back[0], e.back[1], x => x))), whip = E.back(seg(T, e.whip[0], e.whip[1], x => x)) * (1 - seg(T, e.back[0] + .4, e.back[1], E.sine) * .5);
+      const wave = Math.sin(seg(T, e.wave[0], e.wave[1], x => x) * Math.PI * 4) * .075 * (1 - seg(T, e.wave[0], e.wave[1], x => x) * .5); // waved, to put it out
+      const shake = Math.sin(T * 2.3) * .012 + Math.sin(T * 5.1 + 1) * .006, a = e.th + whip * .3 + wave + shake, slide = (e.L + 6) * (1 - ext); // held in a hand: a little tremble; whipped up out of the heat, and lowered a little as it goes
+      o[0] = e.hand[0] - Math.cos(e.th) * slide; o[1] = e.hand[1] - Math.sin(e.th) * slide; o[2] = o[0] + Math.cos(a) * e.L; o[3] = o[1] + Math.sin(a) * e.L; o[4] = a; return o;
+    },
+    mallowAt(T, I, A, e) {
+      if (T < e.in[0] || T > e.back[1]) return;
+      const M = S.mal || (S.mal = { stick: [pack(hex("#22180E")), pack(hex("#3A2E18")), pack(hex("#4C4A22")), pack(hex("#A8642C"))], raw: [hex("#FFE7C4"), hex("#F2EAE0"), hex("#C9BFB6")], gold: hex("#E2A452"), brown: hex("#8E4E22"), char: hex("#1E120C"), charL: hex("#33200F"), crust: hex("#5C3A22"), smoke: pack(hex("#B2AECC")), edge: hex("#FFF3DA") });
+      const [x0, y0, tx, ty, a] = S.stickAt(T, e), { fx, fy } = S, put = (x, y, c, k = 1) => S.tint(x, y, c, k * I);
+      // the stick: green wood, its bark darker toward the hand, the firelight along it near the flames
+      const n = Math.ceil(Math.hypot(tx - x0, ty - y0));
+      for (let i = 0; i <= n; i++) { const u = i / n, x = lerp(x0, tx, u), y = lerp(y0, ty, u), near = clamp(1 - Math.hypot(x - fx, y - fy + 12) / 40); put(x, y, near > .45 ? M.stick[3] : u > .55 ? M.stick[2] : (i & 3) ? M.stick[1] : M.stick[0]); if (u < .55) put(x, y + 1, M.stick[0], .85); } // (thicker toward the hand)
+      // the marshmallow, on the tip: white, lit from the fire's side; golden, brown, then black where it faced the flames
+      const k = seg(T, e.toast[0], e.toast[1], E.sine), burn = env(T, e.fire, e.fire + .45, e.wave[1] - .45, e.wave[1] - .05, E.sine), ch = seg(T, e.fire, e.wave[1], E.out);
+      const cx = Math.round(tx - Math.cos(a) * 2.5), cy = Math.round(ty - Math.sin(a) * 2.5), fs = fx < cx ? -1 : 1, MS = [".#####.", "#######", "#######", "#######", "#######", ".#####."]; // fs: the side that faces the fire
+      for (let j = 0; j < 6; j++) for (let i = 0; i < 7; i++) { if (MS[j][i] === ".") continue; const side = (i - 3) * fs, fire = side >= .5 ? 1 : side >= -.5 ? .45 : 0; // 1 the face toward the fire, 0 the far one
+        let c = side >= 1 ? M.raw[0] : side >= 0 ? M.raw[1] : M.raw[2]; if (j === 0 && side < 1) c = mix(c, M.edge, .4);
+        c = mix(c, M.gold, k * (.35 + .65 * fire)); c = mix(c, M.brown, clamp(k * 1.6 - .6) * fire); c = mix(c, j === 0 || MS[j - 1][i] === "." ? M.crust : (i + j) & 1 ? M.char : M.charL, ch * (fire > .9 ? 1 : fire > .3 ? .55 : .12)); /* the crust: black, flecked, its top edge catching the light */
+        put(cx - 3 + i, cy - 3 + j, pack(c)); }
+      if (T > e.wave[1] - .1) { const em = env(T, e.wave[1] - .1, e.wave[1] + .1, e.wave[1] + 1.2, e.wave[1] + 2.8); for (const [i, j] of [[0, 1], [1, 3], [0, 2]]) { const fl = .5 + .5 * Math.sin(A * 9 + i * 2 + j); if (em * fl > .05) put(cx + (fs < 0 ? -3 + i : 3 - i), cy - 3 + j, FIRE[Math.round(18 + 12 * em * fl)], em * fl); } } // an ember left in the char, winking out
+      // its own little fire: up from the face toward the flames, leaning away from where the tip is going
+      if (burn > .02) { const [, , px, py] = S.stickAt(T - 1 / 30, e), vx = (tx - px) * 30, H = Math.round(4 + 15 * burn), base = cy - 4;
+        for (let r = 0; r < H; r++) { const q = r / H, hw = Math.pow(1 - q, .55) * 3.9 * Math.min(1, burn * 1.5) + .4, mid = cx + fs * 1.3 - clamp(vx * .012, -1, 1) * r + Math.sin(T * 14 + r * .9) * .55 * q; // (streaming back as it is whipped through the air)
+          for (let x = Math.floor(mid - hw); x <= Math.ceil(mid + hw); x++) { const d = Math.abs(x - mid) / hw; if (d > 1) continue; const nz = Math.sin(x * 12.9898 + r * 78.233 + Math.floor(T * 15) * 37.719) * 43758.5453, h = Math.round(36 * burn * Math.pow(1 - q, .7) * Math.pow(1 - d, .45) * (.66 + .14 * Math.sin(T * 23 + x * 3.1 + r * 1.7) + .26 * (nz - Math.floor(nz)))); /* ragged, as the fire's own flames are */ if (h > 7) put(x, base - r, FIRE[Math.min(36, h)]); } } }
+      // the puff of smoke as it goes out, rising and spreading and thinning, and a wisp after it
+      const t0 = e.wave[1] - .15, [, , sx, sy] = S.stickAt(t0, e);
+      for (let i = 0; i < 20; i++) { const ag = T - t0 - i * .02; if (ag <= 0 || ag > 2.8) continue; const q = ag / 2.8, ang = -1.57 + (i - 9.5) * .15, sp = 3 + (i % 3) * 1.5, x = sx + Math.cos(ang) * sp * Math.sqrt(ag) * 2 + ag * 2.4, y = sy - 4 - ag * (5 + (i % 4)) + Math.sin(ang) * sp * .5 * Math.sqrt(ag), k2 = Math.pow(1 - q, 1.5) * .8;
+        put(x, y, M.smoke, k2); put(x + 1, y, M.smoke, k2 * .8); if (q > .12) { put(x, y - 1, M.smoke, k2 * .7); put(x + 1, y - 1, M.smoke, k2 * .55); } if (q > .3) { put(x - 1, y, M.smoke, k2 * .45); put(x + 2, y - 1, M.smoke, k2 * .35); } } // (each a little cloud that grows as it rises)
+      for (let i = 0; i < 6; i++) { const ag = ((T - t0 - .4) * .9 + i * .32) % 2; if (T < t0 + .4 || T > e.back[0] + 1 || ag < 0) continue; const k3 = (1 - ag / 2) * .35 * (1 - seg(T, e.back[0], e.back[0] + 1, x => x)); put(cx + fs * .5 + Math.sin(ag * 3 + i) * ag * .9 + ag * 1.2, cy - 4 - ag * 6, M.smoke, k3); } // the wisp
+    },
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; N: the pass (0, the signature) */
     draw(T, I, A, F, N = 0) {
       const { W, H, bw, bh, PS, out, idx, pal, fx, fy } = S;
-      if (N !== S.planP) { S.pl = N > 0 ? S.dealPass(N) : S.sig(); S.planP = N; }
+      if (N !== S.planP) { S.pl = N > 0 ? (K.egg(N) ? S.eggPlan(N) : S.dealPass(N)) : S.sig(); S.planP = N; }
       const pl = S.pl;
       g.clearRect(0, 0, W, H);
       const dt = S.lastA === undefined ? 0 : clamp(A - S.lastA, 0, .1); S.lastA = A;
@@ -276,6 +325,7 @@ export default function ember(K) {
       for (let k = 0; k < n; k++) { const s = S.sparks[k], q = ((A + s.o) / s.p) % 1, y = fy - S.FH * .55 - q * (S.pr ? 50 : 70), x = fx + Math.sin(q * s.sw + s.ph) * 2 + s.dr * q; if (q < .85 || ((A * 20 + k) & 1)) put(x, y, FIRE[Math.round(34 - q * 20)]); }
       if (on && pl.log && T > pl.log && T < pl.log + 2) { const q = T - pl.log; for (const s of S.burst) { if (q > s.l) continue; const k = q / s.l; put(fx + Math.cos(s.a) * s.v * q, fy - 6 + Math.sin(s.a) * s.v * q + 18 * q * q, FIRE[Math.round(35 - k * 22)]); } }
       if (on && pl.pop) S.popAt(T, pl.pop, I);
+      if (on && pl.egg) S.mallowAt(T, I, A, pl.egg); // the egg
       // a star falls
       const st = pl.star;
       if (on && st && T > st.t[0] && T < st.t[1]) { const k = (T - st.t[0]) / (st.t[1] - st.t[0]), [x0, y0, x1, y1] = st.path;

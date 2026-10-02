@@ -22,6 +22,13 @@
 // scene still. Under each line the morning lies in a haze of its own, a touch paler than the ground (the stage's washes
 // can only bring it to the ground), fuller over the sea than over the sky, which is pale already; elsewhere the picture
 // keeps its colour. It is one layer at the picture's own pixels, laid over everything and redrawn only when the words move.
+//
+// 1.12 b413: the egg. Every twelfth pass (K.egg: three minutes of the list left alone), the bay has its monster. Something
+// moves under the water, a V of ripples running before it; three humps break the surface and glide, rising and falling as it
+// swims, and go under; bubbles; then a head on a long neck comes straight up out of the water in the pose of the "surgeon's
+// photograph" (1934), the water running off it. It looks round one way and the other, turns to look straight at you, cocks
+// its head, blinks, and sinks straight down without a splash, the rings spreading after it. Nothing else is on the water
+// that morning, and it keeps back from the words as the boats do.
 export default function harbor(K) {
   const { clamp, lerp, E, seg, env, rng, rgb, mixc, css, canvas, paint, noise1, fbm, glowSpr, sprite, deal, bag } = K;
   let g = null;
@@ -34,6 +41,7 @@ export default function harbor(K) {
     hull: rgb("#8FB8B4"), hullHi: rgb("#B2D1CD"), sail: rgb("#F9FCFB"), sailLo: rgb("#D7E8E5"), mast: rgb("#8FB2AE"), pier: rgb("#9DC0BB"), pierHi: rgb("#C0DAD6"),
     gull: rgb("#5F8C88"), fish: rgb("#7FAAA5"), haze: rgb("#FAFDFC"),
     hullD: rgb("#7FA8A4"), whale: rgb("#57827E"), whaleHi: rgb("#86AEA9"), spout: rgb("#FFFFFF"), spoutLo: rgb("#BFD9D5"), shade: rgb("#D3E6E2"), window: rgb("#8FB8B4"), funnel: rgb("#6F9A96"), smoke: rgb("#EDF4F2"), dol: rgb("#5F8C88"), dolHi: rgb("#9CC0BC"),
+    nes: rgb("#456F6B"), nesD: rgb("#3A605C"), nesHi: rgb("#7FA8A3"), nesEye: rgb("#FFFFFF"), // b413: the egg's visitor, in the whale's greys
   };
   const flip = c => { const [o, x] = canvas(c.width, c.height); x.setTransform(-1, 0, 0, 1, c.width, 0); x.drawImage(c, 0, 0); return o; };
   const S = {
@@ -183,10 +191,82 @@ export default function harbor(K) {
       }
       return pl;
     },
+    /** 1.12 b413: the egg's morning (every twelfth pass, K.egg): the bay to itself and the one who lives in it. Something
+     *  moves under the water, a V of ripples running before it; three humps break the surface and glide, rising and falling
+     *  one after another as it swims, and go under; bubbles; then a head on a long neck comes straight up out of the water as
+     *  in that famous photograph, the water running off it, looks round one way and the other, turns to look straight at you,
+     *  blinks, and sinks straight down without a splash, the rings spreading after it. Its own dice; nothing else on the water */
+    eggPlan(n) {
+      const { W, hz, portrait: pr } = S, k = pr ? 1.2 : 1.3, dir = -1;
+      const nx = Math.round(W * (pr ? .58 : .71)), ny = hz + (pr ? 34 : 34), hy = hz + (pr ? 27 : 27), v = pr ? 6.5 : 9.5, sp = Math.round(10 * k);
+      const ht = [2.6, 6.5], hx0 = nx - dir * (v * (ht[1] - ht[0]) * .5 + sp * 1.2); // the humps come up behind where the neck will, and swim toward it
+      return { dealt: true, flashes: [], sweep: { t: [20, 21, 22, 23], lag: 1.4 }, set: { t: [20, 21, 22, 23], t0: 20, dur: 3 },
+        egg: { k, dir, nx, ny, hy, v, sp, ht, hx0, vw: [.6, ht[0] + .6], bub: [6.7, 7.5], rise: [7.4, 8.9], turn: [8.9, 9.3, 9.6, 10.0], at: [10.0, 10.3, 11.3, 11.6], tilt: [10.45, 10.8], blink: 11.05, sink: [11.8, 13.0] } };
+    },
+    /** where the humps are at T (the front one's x), and whether the swimmer is under the V of ripples before them */
+    humpX(T, e) { return e.hx0 + e.dir * e.v * (T - e.ht[0]); },
+    nessieAt(T, I, A, e) {
+      const ns = S.nessie(e.k), dir = e.dir, foam = S.cFoam; S.cTrough = S.cTrough || css(P.hullD);
+      // under the water: a V of ripples running ahead of the humps, nothing to be seen of what makes it
+      const vk = env(T, e.vw[0], e.vw[0] + .6, e.vw[1] - .5, e.vw[1], E.sine) * I;
+      if (vk > .01) { const x = S.humpX(T, e) + dir * 4 * e.k, y = e.hy; g.fillStyle = foam;
+        for (let j = 0; j < 13; j++) { const a = vk * (1 - j / 13) * (j < 1 ? 1 : .9); if (a <= .02) continue; const bx = Math.round(x - dir * (j * 2.2 + 1)), dy = Math.round(j * .55); g.fillStyle = S.cTrough; g.globalAlpha = a * .5; g.fillRect(bx, y - dy + 1, 2, 1); g.fillRect(bx, y + dy + (j ? 1 : 2), 2, 1); g.fillStyle = foam; g.globalAlpha = a; g.fillRect(bx, y - dy, 2, 1); g.fillRect(bx, y + dy + (j ? 0 : 1), 2, 1); } // each ripple a crest of foam over its trough
+        g.globalAlpha = vk * .8; g.fillRect(Math.round(x) - 1, y - 1, 3, 1); g.globalAlpha = 1; } // (the bulge of water over it)
+      // the three humps: up one after another, gliding, rising and falling as it swims, and under again, front first
+      const [h0, h1] = e.ht;
+      if (T > h0 && T < h1 + 1.5) for (let i = 0; i < 3; i++) {
+        const up = env(T, h0 + i * .45, h0 + i * .45 + .8, h1 - .9 + i * .4, h1 + i * .4, E.sine), sw = .8 + .2 * Math.sin(T * 3.4 - i * 1.4), hh = up * sw * I; if (hh <= .03) continue; // (the swell running back along it as it swims)
+        const sp = ns.hump, x = Math.round(S.humpX(T, e) - dir * i * e.sp), h = Math.max(1, Math.round(sp.height * up * sw)), y = e.hy;
+        g.globalAlpha = I; g.drawImage(sp, 0, 0, sp.width, h, x - (sp.width >> 1), y - h + 1, sp.width, h);
+        S.wake(x - dir * (sp.width >> 1), y + 1, dir, 5, I * up * .9); g.fillStyle = foam; g.globalAlpha = I * up * .85; g.fillRect(x + dir * ((sp.width >> 1) + 1) - (dir > 0 ? 1 : 0), y, 2, 1); // its wake, and the water breaking at its front
+      }
+      // bubbles where it went down, then the neck straight up out of the water
+      for (let j = 0; j < 4; j++) { const t = e.bub[0] + j * .21, q = (T - t) / .5; if (q <= 0 || q >= 1) continue; g.fillStyle = foam; g.globalAlpha = I * (1 - q) * .95; g.fillRect(e.nx + [-2, 1, -1, 2][j] * e.k | 0, e.ny - Math.round(q * 2), 1, 1); }
+      const [r0, r1] = e.rise, [s0, s1] = e.sink, up = T < r0 || T > s1 ? 0 : T < r1 ? E.out(seg(T, r0, r1, x => x)) : T < s0 ? 1 : 1 - E.in(seg(T, s0, s1, x => x)) * 1;
+      if (up > 0) {
+        const tl = env(T, ...e.turn, E.sine), at = env(T, ...e.at, E.sine), pose = at > .5 ? (Math.abs(T - e.blink) < .09 ? ns.B : T > e.tilt[0] && T < e.tilt[1] ? ns.T : ns.F) : tl > .5 ? ns.R : ns.L, sp = pose.c; // round one way, the other, at you; its head on one side; a blink
+        const bob = Math.round(Math.sin(A * 1.6) * .6 * up), H = sp.height, h = Math.round(H * up), X = e.nx - pose.ox, Y = e.ny + bob;
+        if (h > 0) {
+          g.globalAlpha = I * .2; for (let r = 1; r < Math.min(h, 12); r += 2) g.drawImage(sp, 0, H - 1 - r, sp.width, 1, X + Math.round(Math.sin(A * 3 + r) * .8), Y + r + 1, sp.width, 1); // its reflection, broken by the ripples
+          g.globalAlpha = I; g.drawImage(sp, 0, 0, sp.width, h, X, Y - h + 1, sp.width, h);
+          if (T < r1 + 1) { g.fillStyle = foam; for (let j = 0; j < 3; j++) { const q = ((T - r0) * 1.3 + j * .33) % 1, yy = Y - h + 2 + Math.round(q * (h - 2)); g.globalAlpha = I * (1 - q) * .8 * clamp((r1 + 1 - T) * 2); g.fillRect(X + pose.ox + (j - 1) - 1, yy, 1, 1); } } // the water running off it
+          g.globalAlpha = I * .85 * Math.min(1, up * 3); g.fillStyle = foam; g.fillRect(e.nx - 3 * e.k | 0, e.ny + 1, Math.round(6 * e.k) + 1, 1); // the water round it
+        }
+      }
+      // rings: as it comes up, and spreading after it as it goes down
+      for (const [t, w] of [[r0, 1], [s0 + .3, 1], [s0 + .8, .8], [s1, .7]]) { const q = (T - t) / 1.7; if (q <= 0 || q >= 1) continue; const rx = (2 + q * 14) * e.k, ry = rx * .26; g.fillStyle = foam;
+        for (let j = 0; j < 30; j++) { const th = j / 30 * 6.283, px = Math.round(e.nx + Math.cos(th) * rx), py = Math.round(e.ny + 1 + Math.sin(th) * ry); g.globalAlpha = I * w * (1 - q) * (Math.sin(th) > 0 ? .9 : .55); g.fillRect(px, py, 1, 1); } }
+      g.globalAlpha = 1;
+    },
+    /** the visitor, drawn once the first time an egg plays (and again at a new size): its neck and head in four poses —
+     *  looking one way, the other, at you, and blinking — set down in whole pixels, lit along its top; and one of its humps */
+    nessie(k) {
+      if (S.ns && S.ns.k === k && S.ns.W === S.W) return S.ns;
+      const C = { 1: P.nesD, 2: P.nes, 3: P.nesHi, 4: P.nesEye }, sunLeft = S.sun.x < S.W * .72 && !S.portrait;
+      const neck = pose => {
+        const w = Math.ceil(18 * k), h = Math.ceil(24 * k), SS = 4, cov = new Uint8Array(w * h * SS * SS), ox = Math.round(w * .55), gy = h - 1;
+        const cap = (ax, ay, ar, bx, by, br) => { const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1e-6; for (let Y = 0; Y < h * SS; Y++) for (let X = 0; X < w * SS; X++) { const px = (X + .5) / SS - ox, py = gy - (Y + .5) / SS, t = clamp(((px - ax) * dx + (py - ay) * dy) / L2), rr = lerp(ar, br, t), qx = ax + dx * t - px, qy = ay + dy * t - py; if (qx * qx + qy * qy <= rr * rr) cov[Y * w * SS + X] = 1; } };
+        const ell = (cx, cy, rx, ry, rot = 0) => { const c = Math.cos(rot), s = Math.sin(rot); for (let Y = 0; Y < h * SS; Y++) for (let X = 0; X < w * SS; X++) { const px = (X + .5) / SS - ox - cx, py = gy - (Y + .5) / SS - cy, u = px * c + py * s, q = -px * s + py * c; if ((u / rx) ** 2 + (q / ry) ** 2 <= 1) cov[Y * w * SS + X] = 1; } };
+        const tip = pose === "L" ? [[-2.3, 17.4], [-3.8, 19.1]] : pose === "R" ? [[.6, 17.5], [2.0, 19.2]] : pose === "T" ? [[-.5, 17.5], [.3, 19.3]] : [[-1.5, 17.5], [-2.0, 19.4]]; // its head turned one way or the other on the top of its neck, or up and looking out (T: its head on one side)
+        const C0 = [[0, -1, 2.6], [-.2, 4, 2.3], [-.1, 9, 1.9], [-.8, 14, 1.6], [...tip[0], 1.4], [...tip[1], 1.35]].map(([x, y, r]) => [x * k, y * k, r * k]); // the neck, up out of the water and over at the top
+        for (let i = 1; i < C0.length; i++) cap(...C0[i - 1], ...C0[i]);
+        ell(3.4 * k, -.7 * k, 4.8 * k, 2.5 * k); // the back behind it, just breaking the water
+        const top = C0[C0.length - 1];
+        if (pose === "L") ell(top[0] - 1.5 * k, top[1] + .5 * k, 2.5 * k, 1.5 * k, .18); else if (pose === "R") ell(top[0] + 1.5 * k, top[1] + .5 * k, 2.5 * k, 1.5 * k, -.18); else ell(top[0], top[1] + 1.1 * k, 2.1 * k, 1.8 * k, pose === "T" ? -.35 : 0); // the head: its snout one way or the other, or round, looking out
+        const m = new Uint8Array(w * h); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let n = 0; for (let j = 0; j < SS; j++) for (let i = 0; i < SS; i++) n += cov[(y * SS + j) * w * SS + x * SS + i]; if (n >= SS * SS * .5) m[y * w + x] = 2; }
+        const at = (x, y) => x >= 0 && y >= 0 && x < w && y < h && m[y * w + x] > 0;
+        const px = m.slice(); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { if (!at(x, y)) continue; const i = y * w + x; if (!at(x, y - 1)) px[i] = 3; else if (sunLeft ? !at(x + 1, y) : !at(x - 1, y)) px[i] = 1; } // lit along its top, shaded on the side away from the sun
+        const hx = Math.round(ox + top[0] + (pose === "L" ? -1.5 : pose === "R" ? 1.5 : 0) * k), hy2 = Math.round(gy - top[1] - (pose === "L" || pose === "R" ? .8 : 1.3) * k);
+        if (pose === "L") px[hy2 * w + hx - 1] = 4; else if (pose === "R") px[hy2 * w + hx + 1] = 4; else if (pose === "B") { px[hy2 * w + hx - 1] = 2; px[hy2 * w + hx + 1] = 2; } else { px[hy2 * w + hx - 1] = 4; px[(hy2 + (pose === "T" ? 1 : 0)) * w + hx + 1] = 4; } // an eye, two eyes on you, or shut
+        return { c: paint(w, h, (x, y) => C[px[y * w + x]]), ox };
+      };
+      const hw = Math.round(11 * k) | 1, hh = Math.round(4 * k), hump = paint(hw, hh, (x, y) => { const u = (x - (hw - 1) / 2) / (hw / 2), top = hh * (1 - Math.pow(Math.abs(u), 1.8)); if (hh - y > top + .4) return null; return hh - y > top - .8 ? P.nesHi : u * (sunLeft ? 1 : -1) > .55 ? P.nesD : P.nes; });
+      return (S.ns = { k, W: S.W, L: neck("L"), R: neck("R"), F: neck("F"), B: neck("B"), T: neck("T"), hump });
+    },
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; N: the pass (0, the signature) */
     draw(T, I, A, F, N = 0) {
       const { W, H, hz, pier: pr, light: L } = S, TAU = 6.283;
-      if (N !== S.planP) { S.pl = N > 0 ? S.dealPass(N) : S.sig(); S.planP = N; }
+      if (N !== S.planP) { S.pl = N > 0 ? (K.egg(N) ? S.eggPlan(N) : S.dealPass(N)) : S.sig(); S.planP = N; }
       const pl = S.pl;
       g.drawImage(S.bgSky, 0, 0);
       for (const cl of S.clouds) g.drawImage(cl.spr, Math.round(((cl.x + A * cl.v * .6) % (W + cl.spr.width)) - cl.spr.width), cl.y);
@@ -205,6 +285,7 @@ export default function harbor(K) {
       for (const s of S.path) { const sweep = env(T - (sw.up ? 1 - (s.y - hz) / (H - hz) : (s.y - hz) / (H - hz)) * sw.lag, sw.t[0], sw.t[1], sw.t[2], sw.t[3], E.sine) * I, b = Math.pow(Math.max(0, Math.sin(A * 2.3 + s.ph)), 8) * .75 * gl + sweep * .9; if (b < .06) continue; g.globalAlpha = clamp(b); g.fillRect(Math.round(s.x), s.y, 1, 1); if (b > .7) { g.globalAlpha = clamp(b * .4); g.fillRect(Math.round(s.x) - 1, s.y, 3, 1); } }
       g.globalAlpha = 1;
       if (pl.whale && I > .01) S.masked(() => S.whaleAt(T, I, A, pl.whale));
+      if (pl.egg && I > .01) S.masked(() => S.nessieAt(T, I, A, pl.egg)); // the egg, out on the bay
       g.drawImage(S.bgFront, 0, 0);
       // the lamp: a slow glow always, its flashes in the loop
       let fsum = 0; for (const f of pl.flashes) fsum += env(T, f[0], f[1], f[2], f[3], E.sine);

@@ -20,6 +20,15 @@
 // steps out, lifts his head and bellows, his breath smoking in the cold; a meteor shower the fireflies answer; the
 // northern lights rippling over the ridge (on a phone high in the sky, above the list), dimmed behind the lines by
 // `words`. Every pass opens and closes on the same resting picture.
+//
+// 1.12 b413: the egg. Every twelfth pass (K.egg: three minutes of the list left alone), the clearing has a visitor. A bank
+// of fog rolls in, moonlit, and a shaft of moonlight comes down through it; the boughs of the near pine shake; and out of the
+// pines steps a big, hairy shape that crosses the clearing in the stride of the Patterson–Gimlin film (1967) — the long swing
+// of the arms, the knees never straight — a silhouette against the fog with the moon along its head and back. In the shaft
+// of light it stops mid-stride, turns its head and shoulders to look straight out, the moon in its eyes, holds it, and walks
+// on into the pines across the way, their boughs shaking after it; the fireflies scatter round it and flare, startled. The
+// fog thins and the night is as it was. The walker is a rig of round limbs on a stride worked out from the ground it covers
+// (so its feet never slide), set down in whole pixels with a head drawn by hand, the first time an egg plays.
 export default function forest(K) {
   const { LOOP, clamp, lerp, E, seg, env, rng, dith, rgb, mixc, css, canvas, paint, noise1, fbm, glowSpr, pine, sprite, layer, deal, bag } = K;
   let g = null;
@@ -36,8 +45,11 @@ export default function forest(K) {
     deer: rgb("#060E0A"), deerHi: rgb("#43705A"), tail: rgb("#C9DCC0"),
     eye: rgb("#EEF4B0"), puff: rgb("#C2D6CA"), cloud: rgb("#1A2C23"), cloudD: rgb("#15251E"), cloudL: rgb("#24392E"), cloudHi: rgb("#B8D6C3"),
     coatD: rgb("#101D17"), coat: rgb("#243A2F"), coatL: rgb("#4D7763"), coatH: rgb("#8FBAA3"), white: rgb("#DDE9D5"), antler: rgb("#B9CDB3"),
+    bfFar: rgb("#0A0806"), bfFur: rgb("#140F0B"), bfEdge: rgb("#211812"), bfRim: rgb("#33402F"), bfRimL: rgb("#6E9A84"), bfRimH: rgb("#C4E3CF"), // b413: the egg's walker, brown under the moon's silver
+    bfL1: rgb("#241A12"), bfL2: rgb("#3F2F22"), bfL3: rgb("#5E4733"), bfL4: rgb("#8D7A64"), bfL5: rgb("#C9D6C6"), // and in a shaft of its light
   };
   const midsLayer = layer(), nearsLayer = layer(), grassLayer = layer();
+  const SL = .5; // b413: the egg's shaft of moonlight, how far it leans (across for each pixel down)
   const flip = c => { const [o, x] = canvas(c.width, c.height); x.setTransform(-1, 0, 0, 1, c.width, 0); x.drawImage(c, 0, 0); return o; };
   const mirror = o => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, Array.isArray(v) ? v.map(flip) : flip(v)]));
   const pt = [0, 0];
@@ -264,10 +276,126 @@ export default function forest(K) {
       pl.more = r() < .4;
       return pl;
     },
+    /** 1.12 b413: the egg's night (every twelfth pass, K.egg): the clearing to itself and the one who crosses it. A breath of
+     *  wind; a bank of fog rolling into the clearing, moonlit, so that what crosses it is a shape against the light; a shaft
+     *  of moonlight let down through it where it will stop to look; the fireflies. Its stride is worked out from the ground it
+     *  covers, so its feet never slide, and set so that it stops in the famous stride, its feet apart and its arms swung */
+    eggPlan(n) {
+      const { W, hz, portrait: pr, nears } = S, k = pr ? 1.15 : 1.4, v = pr ? 22 : 33, fr = S.walker(k), w = fr.w;
+      const near = (f, b) => nears.reduce((a, t, i) => f(t.x) && (a < 0 || b(t.x, nears[a].x)) ? i : a, -1), inL = near(x => x < W / 2, (x, y) => x > y), inR = near(x => x > W / 2, (x, y) => x < y);
+      const t0 = pr ? 3.8 : 1.2, x0 = -w + fr.ox - 2, x1 = W + fr.ox + 2, at = pr ? W * .5 : W * .68, cx = fr.w * .5 - fr.ox, d = new Float32Array(15 * 60 + 2);
+      const walk = look => { for (let i = 1; i < d.length; i++) { const t = (i - 1) / 60; d[i] = d[i - 1] + (t < t0 ? 0 : v * (1 - .93 * env(t, look[0] - .4, look[0] + .2, look[2], look[3] + .3, E.sine)) * (1 + .22 * seg(t, look[3], look[3] + 1.2, E.sine)) / 60); } }; // how far it has come, a sixtieth of a second at a time: it slows to a stop to look, and walks on, a little quicker for having been seen
+      let tl = t0 + (at - cx - x0) / v - 1.2, look;
+      for (let it = 0; it < 5; it++) { look = [tl, tl + .35, tl + 1.75, tl + 2.1]; walk(look); tl += (at - (x0 + d[Math.round((tl + 1.05) * 60) + 1] + cx)) / v; } // the look comes in the middle of the light: worked out by walking it there
+      look = [tl, tl + .35, tl + 1.75, tl + 2.1]; walk(look);
+      const y = hz + (pr ? 24 : 22), e = { k, x0, x1, d, look, y, v };
+      e.po = ((.06 - d[Math.round((tl + 1.05) * 60) + 1] / (fr.S * 2)) % 1 + 1) % 1; // its stride set so that it stands in the stride of that film while it looks
+      let tin = t0; while (tin < 15 && S.walkAt(tin, e)[0] - fr.ox + fr.w * .5 < (inR < 0 ? W : nears[inR].x - 20 * k)) tin += 1 / 30; // when it reaches the pines across the way
+      let tex = tin; while (tex < 15 && S.walkAt(tex, e)[0] < x1) tex += 1 / 30; // and when it is gone
+      e.rus = [[inL, Math.max(.3, t0 - 1.3), t0 + .9], [inR, tin - .2, Math.min(14.6, tin + 1.6)]]; // (still at either end of the pass)
+      // the moonlight: a shaft down through the fog from the moon's side, on the clearing where it looks, there before it and after
+      const bw = fr.bw, yc = Math.round(y - fr.h * .55), Y0 = fr.bY, bh = y + 4 - Y0;
+      e.beam = { t: [tl - 3.2, tl - .9, tl + 2.9, tl + 5.2], bw, bh, X0: Math.round(at + (yc - Y0 - bh) * SL - bw / 2), Y0, gx: Math.round(at + (yc - y) * SL) };
+      return { dealt: true, gust: { t: [.5, 1.4, 1.9, 3.3], dir: 1, amp: .5 }, fph: 2.1, fog: [tl - 3.4, tl - 1, tl + 3, tl + 5.6], wake: [1.2, 3.7], settle: [12.3, 14.6],
+        bank: [Math.max(.3, t0 - 3), Math.max(1.5, t0 - 1), Math.min(12.2, tex), Math.min(14.6, tex + 2.4)], egg: e };
+    },
+    /** where the walker is at T: its hip's x, and how far through its stride */
+    walkAt(T, e) { const i = clamp(T * 60, 0, e.d.length - 2), j = Math.floor(i), d = lerp(e.d[j], e.d[j + 1], i - j); return [Math.min(e.x1, e.x0 + d), d]; },
+    /** the boughs it pushes through: before it steps out of the pines, and as it goes into the ones across the clearing */
+    rustle(T, I, e) {
+      const out = S.nears.map(() => 0); let on = 0;
+      for (const [i, a, b] of e.rus) { if (i < 0) continue; const k = env(T, a, a + .25, b - .6, b, E.sine) * I; if (k > .02) { out[i] = Math.round(k * 7); on = 1; } }
+      out.push(on ? Math.floor(T * 15) : 0); return out;
+    },
+    /** the fireflies near it scatter, and flare startled; a moment after it, as if from its wake */
+    scatter(T, x, y, e) {
+      const o = S.sc || (S.sc = [0, 0, 0]); o[0] = o[1] = o[2] = 0;
+      const fr = S.walker(e.k), [hx] = S.walkAt(Math.max(0, T - .2), e); if (hx <= e.x0 || hx >= e.x1) return o;
+      const cx = hx - fr.ox + fr.w * .45, cy = e.y - fr.h * .5, R = fr.h * .75, dx = x - cx, dy = (y - cy) * 1.3, dd = Math.hypot(dx, dy) / R;
+      if (dd >= 1 || dd < 1e-3) return o;
+      const k = E.out(1 - dd); o[0] = dx / (dd * R) * k * R * .45; o[1] = (dy / (dd * R) - .6) * k * R * .3; o[2] = k * .95; return o;
+    },
+    /** the shaft of moonlight, in front of the walker as the fog is (it lights the air round it too) */
+    beamAt(T, I, e, x, front) { const b = e.beam, k = env(T, ...b.t, E.sine) * I * (front ? .35 : 1); if (k < .01) return; const fr = S.walker(e.k); x.globalAlpha = k; x.drawImage(fr.beam, b.X0, b.Y0); x.globalAlpha = 1; }, // (most of it behind the walker, a veil of it in front)
+    /** the walker: out of the pines on one side, across the clearing in that famous film's stride — the long swing of the
+     *  arms, the knees never straight — into the moonlight, where it turns its head and shoulders mid-stride to look straight
+     *  out, the moon in its eyes, and on out of the light into the pines across the way */
+    walkerAt(T, I, e) {
+      const fr = S.walker(e.k), b = e.beam, bk = env(T, ...b.t, E.sine) * I;
+      if (bk > .01) { S.beamAt(T, I, e, g, 0); g.globalAlpha = bk * .55; g.drawImage(fr.pool, b.gx - (fr.pool.width >> 1), e.y - (fr.pool.height >> 1) + 1); } // the shaft behind it, and where its light falls on the grass
+      const [hx, d] = S.walkAt(T, e); if (hx <= e.x0 || hx >= e.x1) { g.globalAlpha = 1; return; }
+      const tu = env(T, ...e.look, E.sine), ph = (d / (fr.S * 2) + e.po) % 1, f = fr.frame(tu < .3 ? 0 : tu < .75 ? 1 : 2, Math.floor(ph * 12) % 12), X = Math.round(hx) - fr.ox, Y = e.y - fr.h + 1;
+      g.globalAlpha = I; g.drawImage(f.c, X, Y);
+      if (bk > .01) { const s = fr.sx; s.globalCompositeOperation = "source-over"; s.globalAlpha = 1; s.clearRect(0, 0, fr.w, fr.h); s.drawImage(f.lit, 0, 0); s.globalCompositeOperation = "destination-in"; s.drawImage(fr.mask, b.X0 - X, b.Y0 - Y); s.globalCompositeOperation = "source-over"; g.globalAlpha = bk * .4; g.drawImage(fr.sc, X, Y); } // its coat glimpsed where the shaft falls on it
+      if (tu > .75 && f.eyes.length) { const [ex, ey] = f.eyes.reduce((a, p) => [a[0] + p[0] / f.eyes.length, a[1] + p[1] / f.eyes.length], [0, 0]); g.globalAlpha = I * .8 * (tu - .75) / .25; g.drawImage(S.eyeGlow, Math.round(X + ex) - 3, Math.round(Y + ey) - 3); }
+      g.globalAlpha = 1;
+    },
+    /** the walker's frames, drawn once the first time an egg plays (and again at a new size): twelve steps of the stride, each
+     *  in profile, turning, and looking out, in the dark and in the moonlight — a rig of round limbs set down in whole pixels,
+     *  a head drawn by hand on top; and the shaft of light, its mask, its pool on the grass */
+    walker(k) {
+      if (S.wk && S.wk.k === k && S.wk.W === S.W && S.wk.H === S.H) return S.wk;
+      const w = Math.ceil(28 * k), h = Math.ceil(35 * k), [sc, sx] = canvas(w, h), sets = [[], [], []]; // (each of the 36 frames drawn the first time it is wanted, so no one frame pays for them all)
+      const wk = { k, W: S.W, H: S.H, w, h, ox: Math.round(w * .4), S: 12 * k, sc, sx, frame: (t, i) => sets[t][i] || (sets[t][i] = S.rig(i / 12, [0, .5, 1][t], k)) };
+      const r0 = wk;
+      const pr = S.portrait, M = S.moon, y = S.hz + (pr ? 24 : 22), bw = wk.bw = Math.round(r0.w * 1.05), Y0 = wk.bY = M.y + M.r + 3, bh = y + 4 - Y0, c = P.shaft;
+      const shape = (fn) => paint(bw + Math.ceil(bh * SL) + 1, bh, (x, yy) => { const u = x - (bh - yy) * SL; if (u < 0 || u > bw) return null; return fn(Math.sin(Math.PI * u / bw), yy / bh); });
+      wk.beam = shape((s, t) => [c[0], c[1], c[2], Math.round(255 * Math.pow(s, 1.4) * Math.min(1, t / .3) * (.45 + .55 * t) * (pr ? .3 : .27))]); // brighter low down, where the fog lies
+      wk.mask = shape(s => [255, 255, 255, Math.round(255 * Math.min(1, s * 1.5))]);
+      const prx = Math.round(bw * .95), pry = pr ? 3 : 4; wk.pool = paint(prx * 2 + 1, pry * 2 + 1, (x, yy) => { const q = Math.hypot((x - prx) / (prx + .5), (yy - pry) / (pry + .5)); return q >= 1 ? null : [c[0], c[1], c[2], Math.round(255 * .32 * Math.pow(1 - q, 1.5))]; });
+      return (S.wk = wk);
+    },
+    rig(ph, tu, K0) {
+      const SS = 4, w = Math.ceil(28 * K0), h = Math.ceil(35 * K0), W2 = w * SS, H2 = h * SS, cov = new Uint8Array(W2 * H2), ox = Math.round(w * .4), gy = h - 1;
+      // which part is nearest at each subpixel: 1 the far arm, 2 the far leg, 3 the near leg, 4 the body, 5 the head, 6 the near arm
+      const cap = (p, ax, ay, ar, bx, by, br) => { const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1e-6, x0 = Math.max(0, Math.floor((Math.min(ax - ar, bx - br) + ox) * SS) - 1), x1 = Math.min(W2, Math.ceil((Math.max(ax + ar, bx + br) + ox) * SS) + 1), y0 = Math.max(0, Math.floor((gy - Math.max(ay + ar, by + br)) * SS) - 1), y1 = Math.min(H2, Math.ceil((gy - Math.min(ay - ar, by - br)) * SS) + 1);
+        for (let Y = y0; Y < y1; Y++) for (let X = x0; X < x1; X++) { const px = (X + .5) / SS - ox, py = gy - (Y + .5) / SS, t = clamp(((px - ax) * dx + (py - ay) * dy) / L2), rr = lerp(ar, br, t), qx = ax + dx * t - px, qy = ay + dy * t - py; if (qx * qx + qy * qy <= rr * rr) cov[Y * W2 + X] = p; } };
+      const ell = (p, cx, cy, rx, ry, rot = 0) => { const c = Math.cos(rot), s = Math.sin(rot), R = Math.max(rx, ry);
+        for (let Y = Math.max(0, Math.floor((gy - cy - R) * SS) - 1); Y < Math.min(H2, Math.ceil((gy - cy + R) * SS) + 1); Y++) for (let X = Math.max(0, Math.floor((cx - R + ox) * SS) - 1); X < Math.min(W2, Math.ceil((cx + R + ox) * SS) + 1); X++) { const px = (X + .5) / SS - ox - cx, py = gy - (Y + .5) / SS - cy, u = px * c + py * s, q = -px * s + py * c; if ((u / rx) ** 2 + (q / ry) ** 2 <= 1) cov[Y * W2 + X] = p; } };
+      const k = K0, St = 12 * k, lift = 3.2 * k, th = 7.6 * k, c4 = Math.cos(4 * Math.PI * ph), hipH = (13.2 + .35 * c4) * k;
+      const foot = s => { s = ((s % 1) + 1) % 1; if (s < .5) return [St / 2 - St * s / .5, 0, 0]; const u = (s - .5) / .5, e = u * u * (3 - 2 * u); return [-St / 2 + St * e, Math.sin(Math.PI * Math.pow(u, .75)) * lift, Math.sin(Math.PI * clamp(u * 1.5))]; }; // planted and sliding back under it, then lifted and swung through
+      const knee = (fx, fy) => { const dy = fy - hipH, dd = Math.min(th * 2 - .05, Math.hypot(fx, dy)), a = Math.atan2(dy, fx), b = Math.acos(clamp(dd / (2 * th), -1, 1)); return [Math.cos(a + b) * th, hipH + Math.sin(a + b) * th]; };
+      const leg = (p, s) => { const [fx, fl, toe] = foot(s), ay = 1.2 * k + fl, [kx, ky] = knee(fx, ay), ta = -toe * 1.1;
+        cap(p, 0, hipH, 3.2 * k, kx, ky, 2.2 * k); cap(p, kx, ky, 2.1 * k, fx, ay, 1.4 * k); const mx = lerp(kx, fx, .4) - 1.4 * k, my = lerp(ky, ay, .4); cap(p, mx, my, .7 * k, mx - 1.3 * k, my - 1.2 * k, .3 * k); // the calf, and the hair off the back of it
+        cap(p, fx - .8 * k, ay - .4 * k, k, fx + Math.cos(ta) * 2.4 * k, ay + Math.sin(ta) * 2.4 * k - .5 * k, .75 * k); }; // the foot: flat in the stance, its sole turned up as it lifts
+      const sx0 = 3 * k, sy0 = hipH + 9 * k + .25 * k * c4;
+      const arm = (p, a, near) => { const sx = sx0 + (near ? .2 : -1.2) * k, sy = sy0 - .3 * k, bend = .14 + Math.max(0, a) * .38, ex = sx + Math.sin(a) * 6.4 * k, ey = sy - Math.cos(a) * 6.4 * k, wx = ex + Math.sin(a + bend) * 6.2 * k, wy = ey - Math.cos(a + bend) * 6.2 * k, mx = lerp(ex, wx, .5), my = lerp(ey, wy, .5), cb = Math.cos(a + bend), sb = Math.sin(a + bend);
+        cap(p, sx, sy, 2.6 * k, ex, ey, 1.95 * k); cap(p, ex, ey, 1.85 * k, wx, wy, 1.5 * k); ell(p, wx + sb * .9 * k, wy - cb * .9 * k, 1.6 * k, 1.7 * k); // the arm, the forearm, the hand
+        cap(p, ex - Math.cos(a) * .6 * k, ey - Math.sin(a) * .6 * k, .9 * k, ex - Math.cos(a) * 1.9 * k + Math.sin(a) * .4 * k, ey - Math.sin(a) * 1.9 * k - .9 * k, .4 * k); cap(p, mx - cb * .8 * k, my - sb * .8 * k, .65 * k, mx - cb * 1.8 * k - .3 * k, my - sb * 1.8 * k - .9 * k, .25 * k); }; // hair at the elbow, under the forearm
+      const sw = Math.cos(2 * Math.PI * ph), A = .78; // the near foot strikes at 0, the near arm back then
+      arm(1, A * sw, false); leg(2, ph + .5); leg(3, ph);
+      ell(4, -1 * k, hipH + .9 * k, 4.2 * k, 3.7 * k); cap(4, -.2 * k, hipH + 1.6 * k, 4.4 * k, sx0 - .6 * k, sy0 - 2.2 * k, 5.1 * k); ell(4, sx0 - 1.7 * k - .5 * k * tu, sy0 + .4 * k, (5.0 + .8 * tu) * k, 3.6 * k, -.42); // the rump, the belly and chest, the great hump of the shoulders
+      const tuft = (x, y, dx, dy, L) => cap(4, x, y, .75 * k, x + dx * L * k, y + dy * L * k, .3 * k); tuft(sx0 - 5 * k, sy0 - .2 * k, -.75, -.65, 1.9); tuft(sx0 - 4.3 * k, sy0 - 3.4 * k, -.9, -.45, 1.6); tuft(-4.2 * k, hipH + 1.6 * k, -.75, -.65, 1.6);
+      const hx = sx0 + (1.7 - 1.1 * tu) * k, hy = sy0 + 2.7 * k;
+      arm(6, -A * sw, true);
+      const part = new Uint8Array(w * h), px = new Uint8Array(w * h), lt = new Uint8Array(w * h), n = [0, 0, 0, 0, 0, 0, 0];
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { n.fill(0); let tot = 0; for (let j = 0; j < SS; j++) for (let i = 0; i < SS; i++) { const v = cov[(y * SS + j) * W2 + x * SS + i]; if (v) { n[v]++; tot++; } } if (tot < SS * SS * .5) continue; let best = 0; for (let v = 1; v < 7; v++) if (!best && n[v] || n[v] > n[best]) best = v; part[y * w + x] = best; }
+      // the head, by hand: in profile the skull slopes back to the crest and the brow juts over the face; turning, an eye
+      // comes round; looking out, a round head with the crest over its middle
+      const HD = tu < .3 ? ["..##....", ".####...", ".#####..", "#######.", "########", "#####f#.", "########", "#######."] : tu < .75 ? ["..##....", ".####...", ".#####..", "#######.", "###fefe.", "####fff.", "#######.", ".#####.."] : ["...##...", "..####..", ".######.", "########", "#feffef#", "#ffffff#", ".#ffff#.", "..####.."];
+      const eyes = [], face = [], hX = Math.round(hx + ox - 3.5 + (tu < .3 ? .5 : 0)), hY = Math.round(gy - hy - 4.2); // (f: the face in the shadow of the brow, darker than the coat; e: an eye)
+      HD.forEach((row, j) => { for (let i = 0; i < row.length; i++) { if (row[i] === ".") continue; const X = hX + i, Y = hY + j; if (X < 0 || Y < 0 || X >= w || Y >= h || part[Y * w + X] === 6) continue; part[Y * w + X] = 5; if (row[i] === "e") eyes.push([X, Y]); if (row[i] === "f" || row[i] === "e") face.push(Y * w + X); } });
+      const at = (x, y) => x < 0 || y < 0 || x >= w || y >= h ? 0 : part[y * w + x];
+      for (let i = 0; i < w * h; i++) if (part[i]) px[i] = part[i] <= 2 ? 1 : 2;
+      // in the dark: the moon behind it rims the outline, brightest along the tops of the head and shoulders, broken where the
+      // hair catches it
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const p = at(x, y); if (!p) continue; const up = !at(x, y - 1), rt = !at(x + 1, y), ur = !at(x + 1, y - 1), hair = (x * 7 + y * 13) % 5 === 0, i = y * w + x;
+        if (p <= 2) { if (up && rt) px[i] = 3; continue; }
+        if (up) px[i] = y < h * .55 ? 5 : 4; else if (rt) px[i] = hair ? 7 : y < h * .5 ? 4 : 3; else if (ur) px[i] = 3; }
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { if (at(x, y) !== 6) continue; const r2 = at(x + 1, y), u2 = at(x, y - 1), i = y * w + x; if (px[i] === 2 && ((r2 && r2 !== 6) || (u2 && u2 !== 6 && u2 !== 5))) px[i] = 7; } // the near arm's front, dimly, so its swing reads across the dark of the body
+      // in the light, from up and to the right: each part a round thing lit along its upper side (how far in from its lit edge,
+      // counting what stands in front of it as itself), its coat in strands
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const p = at(x, y); if (!p) continue; let s = 1; while (s < 7) { const q = at(x + s, y - s); if (!q || q < p) break; s++; }
+        let v = s === 1 ? (at(x, y - 1) ? 4 : 5) : s <= 3 ? 3 : s <= 5 ? 2 : 1; if (p <= 2) v = Math.max(1, v - 1); if (v >= 2 && v <= 4 && ((x * 5 + (y >> 1) * 3) & 3) === 0) v--; lt[y * w + x] = v; }
+      for (const i of face) { px[i] = 1; lt[i] = 1; }
+      if (tu > .75) for (const [X, Y] of eyes) px[Y * w + X] = lt[Y * w + X] = 6;
+      const C = [null, P.bfFar, P.bfFur, P.bfRim, P.bfRimL, P.bfRimH, P.eye, P.bfEdge], L = [null, P.bfL1, P.bfL2, P.bfL3, P.bfL4, P.bfL5, P.eye];
+      return { c: paint(w, h, (x, y) => C[px[y * w + x]]), lit: paint(w, h, (x, y) => L[lt[y * w + x]]), w, h, ox, S: St, eyes: tu > .75 ? eyes : [] };
+    },
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; N: the pass (0, the signature) */
     draw(T, I, A, F, N = 0) {
       const { W, H, hz, moon: M } = S;
-      if (N !== S.planP) { S.pl = N > 0 ? S.dealPass(N) : S.sig(); S.planP = N; }
+      if (N !== S.planP) { S.pl = N > 0 ? (K.egg(N) ? S.eggPlan(N) : S.dealPass(N)) : S.sig(); S.planP = N; }
       const pl = S.pl;
       g.drawImage(S.bg, 0, 0);
       // a colour string is parsed each time it is set, so two fixed ones and the twinkle in globalAlpha
@@ -295,12 +423,16 @@ export default function forest(K) {
       if (dm) { S.fog(S.fogBands[1], hz - 1, o1, .25); if (fogE > 0) S.masked(x => S.fog(S.fogBands[1], hz - 1, o1, fogE * .5, x)); } else S.fog(S.fogBands[1], hz - 1, o1, .25 + fogE * .5);
       const bank = pl.bank ? env(T, ...pl.bank, E.sine) * I : 0;
       if (bank > 0) S.masked(x => S.fog(S.bankBands[0], hz - 4, A * 2.2 + T * 5 * I, bank, x));
-      if (I > .01 && (pl.fox || pl.rabbits || pl.stag)) S.masked(() => { if (pl.fox) S.foxAt(T, I, pl.fox); if (pl.rabbits) S.rabbitsAt(T, I, pl.rabbits); if (pl.stag) S.stagAt(T, I, pl.stag); }); // the clearing's new animals keep back from the words
-      if (bank > 0) S.masked(x => { S.fog(S.bankBands[1], hz + 9, -A * 1.7 - T * 4 * I, bank * .9, x); S.fog(S.fogBands[1], hz + 24, A * 1.2 + T * 3 * I, bank * .5, x); });
+      if (bank > 0 && pl.egg) S.masked(x => S.fog(S.bankBands[1], hz - (S.portrait ? 15 : 19), -A * 1.3 - T * 3 * I, bank * .85, x)); // the egg: the fog banked high behind the one who crosses it
+      if (I > .01 && (pl.fox || pl.rabbits || pl.stag || pl.egg)) S.masked(() => { if (pl.fox) S.foxAt(T, I, pl.fox); if (pl.rabbits) S.rabbitsAt(T, I, pl.rabbits); if (pl.stag) S.stagAt(T, I, pl.stag); if (pl.egg) S.walkerAt(T, I, pl.egg); }); // the clearing's new animals keep back from the words
+      const fb = pl.egg ? .35 : 1; // (thinner in front of it)
+      if (bank > 0) S.masked(x => { S.fog(S.bankBands[1], hz + 9, -A * 1.7 - T * 4 * I, bank * .9 * fb, x); S.fog(S.fogBands[1], hz + 24, A * 1.2 + T * 3 * I, bank * .5 * fb, x); });
       if (shaftE > 0) { const sw = S.shaft.width, lay = x => { for (let k = 0; k < 3; k++) { x.globalAlpha = pl.shaftK ? clamp(shaftE * [1, .7, .5][k] * pl.shaftK) : shaftE * [1, .7, .5][k]; x.drawImage(N > 0 ? S.shaftSoft : S.shaft, Math.round(M.x - sw * .62 - k * W * (S.portrait ? .17 : .1) + Math.sin(T * .7 + k) * 1.5), Math.round(M.y)); } x.globalAlpha = 1; }; if (N > 0) S.masked(lay); else lay(g); }
+      if (pl.egg && I > .01) S.masked(x => S.beamAt(T, I, pl.egg, x, 1)); // the egg's shaft of moonlight, the air in front of the walker
       const nSway = S.nears.map(t => gust(t.x) * 2.2);
       if (pl.owl && I > .01) S.owlAt(T, I, pl.owl, 0, nSway);
-      g.drawImage(nearsLayer(W, H, nSway.map(q).join(), x => S.nears.forEach((t, i) => S.tree(x, t, nSway[i]))), 0, 0);
+      const rus = pl.egg && I > .01 ? S.rustle(T, I, pl.egg) : null; // the egg: the boughs it pushes through
+      g.drawImage(nearsLayer(W, H, nSway.map(q).join() + (rus ? "|" + rus.join() : ""), x => S.nears.forEach((t, i) => S.tree(x, t, nSway[i], rus && rus[i] ? [rus[i] / 4, Math.floor(T * 15)] : null))), 0, 0);
       if (pl.owl && I > .01) S.owlAt(T, I, pl.owl, 1, nSway);
       const leans = []; for (let x = 0; x < W + 8; x += 6) leans.push(Math.round(clamp(gust(x) * 1.7 - .35, -1, 1)));
       g.drawImage(grassLayer(W, 11, leans.join(), x => leans.forEach((l, i) => x.drawImage(S.grass[l + 1], i * 6, 0, 6, 11, i * 6, 0, 6, 11))), 0, H - 11);
@@ -318,7 +450,7 @@ export default function forest(K) {
     },
     fog(band, y, off, a, x = g) { if (a <= 0) return; const w = band.width, o = ((Math.round(off) % w) + w) % w; x.globalAlpha = clamp(a); x.drawImage(band, -o, y); x.drawImage(band, w - o, y); x.globalAlpha = 1; },
     /** a pine in slices of three rows, each leaning a little more toward the top */
-    tree(x2, t, sway) { const s = t.spr, h = s.height, w = s.width, x0 = t.x - (w >> 1), y0 = t.base - h; for (let y = 0; y < h; y += 3) { const dx = Math.round(sway * Math.pow(1 - y / h, 1.6)), hh = Math.min(3, h - y); x2.drawImage(s, 0, y, w, hh, x0 + dx, y0 + y, w, hh); } },
+    tree(x2, t, sway, sh) { const s = t.spr, h = s.height, w = s.width, x0 = t.x - (w >> 1), y0 = t.base - h; for (let y = 0; y < h; y += 3) { const dx = Math.round(sway * Math.pow(1 - y / h, 1.6) + (sh ? sh[0] * clamp((y / h - .4) / .25) * Math.sin(sh[1] * 2.3 + y * 1.9) : 0)), hh = Math.min(3, h - y); x2.drawImage(s, 0, y, w, hh, x0 + dx, y0 + y, w, hh); } }, // (sh, the egg's: the lower boughs shaken, as by something pushing through them)
     /** the doe walks out of the pines, stops, looks, and trots off with her tail up; some nights her fawn is at her heels */
     deer(T, I, d) {
       const { W, pathY: y } = S, x0 = W * d.fx[0], xs = W * d.fx[1], x1 = W * d.fx[2], D = d.m ? S.doeL : S.doe, [a, b, c, e] = d.t;
@@ -455,6 +587,7 @@ export default function forest(K) {
         }
         let wave = 0;
         if (wv) { for (const [t0, dd] of wv) wave = Math.max(wave, env(T - (dd > 0 ? x / W : 1 - x / W) * 1.8, t0, t0 + .2, t0 + .45, t0 + 1.2, E.sine)); b = Math.max(b * .45, wave * up); }
+        if (pl.egg) { const s = S.scatter(T, x, y, pl.egg); x += s[0]; y += s[1]; b = Math.max(b, s[2] * up); } // the egg: they scatter from it, startled bright
         if (f.amb) glow(f.hx + Math.sin(A * .4 + f.ph) * 4, f.hy - 2 + Math.sin(A * .3 + f.ph) * 2, Math.pow(Math.max(0, Math.sin(A * (.8 + f.m * .06) + f.ph)), 10) * .75 * (1 - I * up));
         const dm = pl.dealt && S.wmOn, mf = dm ? S.m(x, y) : 1, mh = dm ? S.mb(x - 5, y - 5, 11, 11) : 1; // a dealt pass's fireflies keep back from the words
         if (b * I > 0) glow(x, y, dm ? b * I * mf : b * I);

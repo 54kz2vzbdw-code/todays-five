@@ -35,6 +35,20 @@
 // is worked out, not traced: a gallop on the right lead, each leg fitted to the path its hoof takes, the body pitching
 // and the rider sitting it, in the wall's own greens. The flaps under the words stay plain, as always; with no run of
 // flaps clear of them, the wall rests plain all pass.
+//
+// 1.12 b423: the long day's hour eggs. Once an hour of the list left alone (K.long), the wall shows a film, printed
+// across the flaps clear of the words the way the horse is, each frame a flip, and only the flaps a frame changes turn,
+// none more than three times a second. The first hour's, and every odd one's: A Trip to the Moon, 1902. The man in the
+// moon comes up out of the open part of the wall, small and far off, and nearer, frame by frame, asleep; he wakes, and
+// looks round; Méliès's shell comes across the wall from its edge on a curving flight, its smoke dotted behind it, and
+// lands in his eye; he screws up his face, the cream running down his cheek, holds it — then opens the other eye, winks,
+// and the film irises out, the wall plain from the edges in to his face. The second hour's, and every even one's: the
+// station clock. The open part of the wall clatters round, like a hand going round its dial, into Hilfiker's railway
+// clock — batons, no numbers — both hands at twelve; they step round together to the time it really is, an hour and
+// five minutes at a step; the second hand comes on and ticks up to the twelve, waits there as his did, and the minute
+// hand jumps on to the minute it now is; then the face clatters round to plain again. The clock reads the time once,
+// when its pass comes up (the one thing on the wall that isn't dealt from the pass alone). With no room clear of the
+// words for the moon or the clock, the wall rests plain all pass, as it does for the horse.
 export default function flap(K) {
   const { clamp, rng, canvas } = K;
   const TAU = Math.PI * 2;
@@ -195,6 +209,106 @@ export default function flap(K) {
   // the stride, so the first is the second
   const INK = "#3B9462"; /* the horse's ink: the wall's deepest green, taken a step deeper, as his silhouettes were */
   const GALLOP = [...Array(40).fill(.1), .13, .17, .21, .26, .31, .36, 1.0, .3, .22, .16, .12, .1, ...Array(21).fill(.1)], HOLD = 46, FE = .05; /* FE: a flap's fall in the egg, a touch quicker than the wall's */
+
+  /* ---------------- 1.12 b423: the long day's hour eggs ---------------- */
+  const HFE = .06; /* a flap's fall in an hour egg */
+  /** the inks the films are printed in, laid over the flaps' cream as the horse is (multiplied), so each keeps its flap's
+   *  light and shade: the moon's face, his shell and its smoke, the stars; the clock's face, its case and its hands */
+  const MN = { disc: "#B0D7BA", rim: "#6CAE86", shade: "#96C8A3", deep: "#82BC93", crater: "#94C6A1", craterHi: "#DDEFE0", light: "#D6ECDA", ink: "#1D6141", mid: "#4A996D", eye: "#FBFDF9", goo: "#FFFFFF", shell: "#2A7149", shellHi: "#A6D3B4", smoke: "#E6F2E7", star: "#3A8A5E" };
+  const CK = { face: "#ECF3E9", case: "#2E7A52", caseHi: "#5FA97F", baton: "#2A6E4A", hand: "#24603F", sec: "#4FA474", hub: "#24603F" };
+  /** the man in the moon, Méliès's, at (cx, cy), radius r: `ex` his face — `lid` [near, far] eyes 0 shut … 1 open, 1.3
+   *  wide; `look` where his eyes turn; `mouth` 0 at peace, 1 an O, 2 a grimace, 3 a crooked smile; `brow` how far they
+   *  rise; `hit` the shell in his near eye (its angle `ang`, the `splash` round it, the `goo` run down his cheek), the
+   *  other eye screwed up (`squint`) or winking (`wink`); `mir`: the near eye on his left (the shell came from the right).
+   *  Drawn in his own unit, y down, the near eye on the viewer's left: a plaster face, lit from the upper left, as his was */
+  function moonFace(g, cx, cy, r, ex) {
+    const m = ex.mir ? -1 : 1, L = ex.lid || [1, 1], lk = ex.look || [0, 0], br = ex.brow || [0, 0];
+    g.save(); g.translate(cx, cy); g.scale(r * m, r); g.lineCap = "round"; g.lineJoin = "round";
+    const P = (pts, w, col) => { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); };
+    const Q = (x0, y0, qx, qy, x1, y1, w, col) => { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(qx, qy, x1, y1); g.stroke(); };
+    const O = (x, y, rx, ry, col, rot = 0) => { g.fillStyle = col; g.beginPath(); g.ellipse(x, y, rx, ry, rot, 0, TAU); g.fill(); };
+    // the disc, a crescent of shade on its lower right, its rim
+    O(0, 0, 1, 1, MN.disc);
+    g.save(); g.beginPath(); g.arc(0, 0, 1, 0, TAU); g.clip(); g.fillStyle = MN.shade; g.beginPath(); g.rect(-1.2, -1.2, 2.4, 2.4); g.arc(-.16, -.15, 1.02, 0, TAU, true); g.fill("evenodd");
+    // craters round the edge, clear of his face, each lit on its far rim
+    for (const [x, y, s] of [[-.58, -.66, .13], [-.86, -.16, .09], [.62, -.64, .11], [.86, .1, .08], [-.76, .46, .11], [.48, .8, .09], [-.22, -.88, .07], [.22, -.9, .055], [-.4, .86, .065], [.88, -.32, .055], [.74, .52, .06]]) {
+      O(x, y, s, s * .82, MN.crater, .4); g.strokeStyle = MN.craterHi; g.lineWidth = .028; g.beginPath(); g.ellipse(x + s * .14, y + s * .12, s * .9, s * .72, .4, Math.PI * .1, Math.PI * .95); g.stroke(); }
+    g.restore();
+    g.strokeStyle = MN.rim; g.lineWidth = .06; g.beginPath(); g.arc(0, 0, .97, 0, TAU); g.stroke();
+    // the planes of his face: the brow, the cheeks, the chin lit; the eyes deep in their sockets; the shadow under the cheekbones
+    O(0, -.58, .42, .15, MN.light); O(-.46, .15, .22, .17, MN.light, -.3); O(.46, .15, .22, .17, MN.light, .3); O(0, .76, .17, .07, MN.light);
+    O(-.36, -.16, .25, .17, MN.shade); O(.36, -.16, .25, .17, MN.shade);
+    O(-.5, .38, .14, .08, MN.shade, -.5); O(.5, .38, .14, .08, MN.shade, .5);
+    Q(-.17, .21, -.34, .3, -.37, .52, .045, MN.mid); Q(.17, .21, .34, .3, .37, .52, .045, MN.mid); // the folds from his nose to his mouth
+    Q(-.17, .72, 0, .8, .17, .72, .04, MN.mid); // his chin
+    // his nose: its shaded side, the ridge, the round of its tip, the nostrils
+    g.fillStyle = MN.deep; g.beginPath(); g.moveTo(-.02, -.24); g.quadraticCurveTo(-.13, -.02, -.17, .15); g.quadraticCurveTo(-.12, .23, -.02, .2); g.quadraticCurveTo(-.04, 0, -.02, -.24); g.fill();
+    Q(.03, -.25, .12, -.02, .13, .13, .045, MN.mid); Q(-.17, .14, -.21, .21, -.13, .24, .045, MN.ink); Q(.15, .13, .2, .21, .12, .24, .045, MN.ink); O(-.06, .22, .045, .025, MN.ink, .3); O(.07, .22, .045, .025, MN.ink, -.3); // the wings of his nose, the nostrils
+    const eye = (sx, open, look, wink, squint) => { // one eye: the lid, the white and the pupil, or shut
+      const x = sx * .36, y = -.17;
+      if (squint) { Q(x - .19, y + .03, x, y - .1, x + .19, y + .04, .065, MN.ink); for (let k = 0; k < 3; k++) P([[x + sx * (.22 + k * .01), y - .05 + k * .065], [x + sx * (.34 + k * .02), y - .1 + k * .09]], .035, MN.ink); return; } // screwed up tight, its crow's feet
+      if (wink) { Q(x - .18, y - .02, x, y + .11, x + .18, y - .02, .065, MN.ink); return; } // shut, smiling
+      if (open <= .05) { Q(x - .19, y, x, y + .08, x + .19, y, .06, MN.ink); Q(x - .16, y + .06, x, y + .13, x + .15, y + .06, .025, MN.mid); return; } // asleep
+      const h = .11 * open; O(x, y, .18, h, MN.eye);
+      g.save(); g.beginPath(); g.ellipse(x, y, .18, h, 0, 0, TAU); g.clip(); O(x + look[0] * .075, y + look[1] * .045, .085, .085, MN.ink); O(x + look[0] * .075 + .03, y + look[1] * .045 - .03, .026, .026, MN.eye); g.restore();
+      g.strokeStyle = MN.ink; g.lineWidth = .06; g.beginPath(); g.ellipse(x, y, .18, h, 0, Math.PI * 1.02, Math.PI * 1.98); g.stroke(); // the upper lid
+      g.lineWidth = .025; g.beginPath(); g.ellipse(x, y, .18, h, 0, Math.PI * .12, Math.PI * .88); g.stroke(); // the lower
+    };
+    const hit = ex.hit;
+    if (!hit) eye(-1, L[0], lk, false, false);
+    eye(1, L[1], lk, ex.wink, ex.squint);
+    // the brows: up with surprise; the far one knotted with the pain
+    { const b0 = br[0], b1 = br[1], k = ex.squint ? 1 : 0;
+      Q(-.58, -.37 - b0 * .07, -.38, -.52 - b0 * .1, -.16, -.41 - b0 * .07, .075, MN.ink);
+      Q(.16, -.41 - b1 * .07 + k * .09, .38, -.52 - b1 * .1 + k * .02, .58, -.37 - b1 * .07 - k * .09, .075, MN.ink); }
+    // the mouth: at peace, an O, clenched in a grimace, or a crooked smile
+    const mo = ex.mouth || 0;
+    if (mo === 1) { O(0, .5, .11, .14, MN.ink); O(0, .55, .065, .065, MN.mid); }
+    else if (mo === 2) { g.fillStyle = MN.ink; g.beginPath(); g.moveTo(-.38, .56); g.quadraticCurveTo(-.2, .4, 0, .46); g.quadraticCurveTo(.19, .4, .35, .5); g.quadraticCurveTo(.17, .6, 0, .58); g.quadraticCurveTo(-.2, .62, -.38, .56); g.fill();
+      g.fillStyle = MN.eye; g.beginPath(); g.moveTo(-.25, .51); g.quadraticCurveTo(0, .45, .22, .49); g.lineTo(.2, .525); g.quadraticCurveTo(0, .495, -.23, .545); g.closePath(); g.fill(); } // clenched, his teeth set
+    else if (mo === 3) { Q(-.31, .43, -.02, .6, .33, .38, .065, MN.ink); P([[.3, .35], [.38, .42]], .045, MN.ink); O(-.04, .62, .14, .035, MN.shade); }
+    else { Q(-.32, .44, 0, .57, .32, .44, .065, MN.ink); O(0, .62, .15, .035, MN.shade); }
+    if (hit) { // the shell in his near eye: the flesh puffed round where it went in, his cream run down his cheek, a splash
+      const x = -.36, y = -.17, a = hit.ang;
+      for (let k = 0; k < 3; k++) { g.strokeStyle = MN.mid; g.lineWidth = .03; g.beginPath(); g.arc(x, y, .19 + k * .075, a + 1.0, a + TAU - 1.0); g.stroke(); }
+      if (hit.goo > 0) { const gl = hit.goo; g.fillStyle = MN.goo; g.strokeStyle = MN.mid; g.lineWidth = .025; g.beginPath(); g.moveTo(x - .16, y + .05);
+        g.quadraticCurveTo(x - .22, y + .2 + .1 * gl, x - .13, y + .3 + .22 * gl); g.quadraticCurveTo(x - .08, y + .4 + .24 * gl, x - .04, y + .29 + .2 * gl); g.quadraticCurveTo(x - .02, y + .21, x + .04, y + .22 + .18 * gl); g.quadraticCurveTo(x + .08, y + .33 + .18 * gl, x + .12, y + .17 + .11 * gl); g.quadraticCurveTo(x + .15, y + .1, x + .13, y + .05); g.closePath(); g.fill(); g.stroke(); }
+      O(x, y, .14, .12, MN.ink);
+      shell(g, x + Math.cos(a) * .06, y + Math.sin(a) * .06, a, .62, true);
+      g.fillStyle = MN.disc; g.strokeStyle = MN.mid; g.lineWidth = .03; g.beginPath(); g.ellipse(x + Math.cos(a) * .04, y + Math.sin(a) * .04, .07, .16, a, -Math.PI / 2, Math.PI / 2, true); g.fill(); g.stroke(); // his flesh round its nose
+      if (hit.splash) for (let k = 0; k < 7; k++) { const an = a + Math.PI + (k - 3) * .45, d = .34 + (k % 3) * .08, rr = .045 - (k % 2) * .012; O(x + Math.cos(an) * d, y + Math.sin(an) * d, rr, rr, MN.goo); g.strokeStyle = MN.mid; g.lineWidth = .016; g.beginPath(); g.arc(x + Math.cos(an) * d, y + Math.sin(an) * d, rr, 0, TAU); g.stroke(); }
+    }
+    g.restore();
+  }
+  /** Méliès's shell: its nose at (x, y) when `inEye` (else its middle there), pointing at angle `a`, `len` long — a
+   *  bullet, its band of rivets and two portholes, lit along its top. In the moon's unit when `inEye`, else in pixels */
+  function shell(g, x, y, a, len, inEye) {
+    const w = len * .34, back = inEye ? len : len * .55, front = inEye ? 0 : len * .45, nose = len * .36;
+    g.save(); g.translate(x, y); g.rotate(a); g.lineJoin = "round";
+    // it points along +x: the nose, an ogive, then the body back to its flat end
+    g.fillStyle = MN.shell; g.beginPath(); g.moveTo(front, 0); g.bezierCurveTo(front - nose * .25, -w * .32, front - nose * .6, -w * .5, front - nose, -w * .5); g.lineTo(front - back, -w * .5); g.lineTo(front - back, w * .5); g.lineTo(front - nose, w * .5); g.bezierCurveTo(front - nose * .6, w * .5, front - nose * .25, w * .32, front, 0); g.fill();
+    g.fillStyle = MN.shellHi; g.beginPath(); g.moveTo(front - nose * .3, -w * .2); g.bezierCurveTo(front - nose * .5, -w * .32, front - nose * .75, -w * .36, front - nose, -w * .36); g.lineTo(front - back + len * .04, -w * .36); g.lineTo(front - back + len * .04, -w * .22); g.lineTo(front - nose, -w * .22); g.bezierCurveTo(front - nose * .75, -w * .22, front - nose * .55, -w * .16, front - nose * .3, -w * .2); g.fill(); // the light along its top
+    g.fillStyle = MN.ink; g.fillRect(front - nose - len * .02, -w * .5, len * .04, w); g.fillRect(front - back, -w * .5, len * .05, w); // the seam where the nose is screwed on, its flat end
+    g.fillStyle = MN.shellHi; for (let k = 0; k < 4; k++) { g.beginPath(); g.arc(front - back + len * .11, -w * .33 + k * w * .22, len * .016, 0, TAU); g.fill(); } // a ring of rivets
+    for (const f of [.5, .74]) { g.fillStyle = MN.eye; g.beginPath(); g.arc(front - len * f, w * .08, w * .21, 0, TAU); g.fill(); g.strokeStyle = MN.ink; g.lineWidth = len * .035; g.stroke(); } // the portholes
+    g.restore();
+  }
+  /** Hilfiker's station clock: the case, the face, sixty batons and twelve heavy ones, the hands at `h` hours and `mi`
+   *  minutes, and (if `s` isn't null) the second hand with its disc */
+  function clockFace(g, cx, cy, r, h, mi, s) {
+    g.save(); g.translate(cx, cy);
+    g.fillStyle = CK.face; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
+    g.strokeStyle = CK.case; g.lineWidth = r * .07; g.beginPath(); g.arc(0, 0, r * .965, 0, TAU); g.stroke();
+    g.strokeStyle = CK.caseHi; g.lineWidth = r * .012; g.beginPath(); g.arc(0, 0, r * .915, Math.PI * .95, Math.PI * 1.55); g.stroke(); // the light along the case's inner edge
+    g.fillStyle = CK.baton; for (let k = 0; k < 60; k++) { g.save(); g.rotate(k / 60 * TAU); if (k % 5) g.fillRect(-r * .012, -r * .86, r * .024, r * .085); else g.fillRect(-r * .036, -r * .86, r * .072, r * .25); g.restore(); }
+    const hand = (ang, l0, l1, w0, w1, col) => { g.save(); g.rotate(ang); g.fillStyle = col; g.beginPath(); g.moveTo(-w0 / 2, l0); g.lineTo(-w1 / 2, -l1); g.lineTo(w1 / 2, -l1); g.lineTo(w0 / 2, l0); g.closePath(); g.fill(); g.restore(); };
+    hand((h % 12) / 12 * TAU, r * .2, r * .62, r * .1, r * .08, CK.hand);
+    hand(mi / 60 * TAU, r * .2, r * .86, r * .085, r * .06, CK.hand);
+    if (s !== null) { const a = s / 60 * TAU; hand(a, r * .3, r * .6, r * .022, r * .018, CK.sec); g.save(); g.rotate(a); g.fillStyle = CK.sec; g.beginPath(); g.arc(0, -r * .62, r * .085, 0, TAU); g.fill(); g.restore(); }
+    g.fillStyle = CK.hub; g.beginPath(); g.arc(0, 0, r * .045, 0, TAU); g.fill();
+    if (s !== null) { g.fillStyle = CK.sec; g.beginPath(); g.arc(0, 0, r * .025, 0, TAU); g.fill(); }
+    g.restore();
+  }
   const S = {
     res: "dpr",
     wash: 1.6, veil: 1, // a light kit: the list's band keeps its wash, and Everything shows the plain ground
@@ -373,12 +487,147 @@ export default function flap(K) {
       if (p <= 0 || p >= 1) { p = 0; from = to; }
       return [from, to, p];
     },
+    /** 1.12 b423: the room an hour egg has — the flaps clear of the words, below the bar's wash and above the footer's
+     *  (no words known yet, in the lab: a list's usual place stands in, as for the horse); `room(x, y)` how far a point
+     *  is from the nearest flap it may not use, or from the edge of that room */
+    hourRoom() {
+      const { C, R, fw, fh, gap, ox, oy, W, H, pr } = S, pw = fw + gap, ph = fh + gap, top = 128, bot = H - (pr ? 56 : 60); /* below the bar's wash, above the footer's */
+      const lab = (c, rr) => { const y0 = oy + rr * ph, y1 = y0 + fh, x0 = ox + c * pw; return pr ? y1 > H * .3 && y0 < H * .66 : y1 > H * .24 && y0 < H * .71 && x0 < W * .82; }; // the seed list's place in the app
+      /* the words' own flaps, as words() finds them, but for a line's tools: they show only while a line is pointed at,
+         when the list is in use and the film has gone back to plain, so a film may play where they would be */
+      const m2 = new Uint8Array(C * R); if (S.raw) for (const [x0, y0, x1, y1, kd] of S.raw) { if (kd === 2) continue; const c0 = Math.max(0, Math.floor((x0 - 6 - ox) / pw)), c1 = Math.min(C - 1, Math.floor((x1 + 6 - ox) / pw)), r0 = Math.max(0, Math.floor((y0 - 6 - oy) / ph)), r1 = Math.min(R - 1, Math.floor((y1 + 6 - oy) / ph)); for (let rr = r0; rr <= r1; rr++) for (let c = c0; c <= c1; c++) m2[rr * C + c] = 1; }
+      const masked = (c, rr) => S.raw ? m2[rr * C + c] : lab(c, rr);
+      const bad = []; for (let rr = 0; rr < R; rr++) for (let c = 0; c < C; c++) if (masked(c, rr)) bad.push([ox + c * pw - gap / 2, oy + rr * ph - gap / 2, ox + c * pw + fw + gap / 2, oy + rr * ph + fh + gap / 2]);
+      const room = (x, y) => { let d = Math.min(x - 6, W - 6 - x, y - top, bot - y); for (const b of bad) { const dx = Math.max(b[0] - x, 0, x - b[2]), dy = Math.max(b[1] - y, 0, y - b[3]); if (dx < d && dy < d) d = Math.min(d, Math.hypot(dx, dy)); } return d; };
+      const open = (x, y) => { if (y < top || y > bot || x < 0 || x > W) return false; const c = Math.floor((x - ox + gap / 2) / pw), rr = Math.floor((y - oy + gap / 2) / ph); return c < 0 || rr < 0 || c >= C || rr >= R || !masked(c, rr); }; // the flap under a point (or the gap beside it) free
+      /** the biggest round picture that fits: its centre and radius (no bigger than `cap`), the side `lean` prefers */
+      /* how much of the stage's wash over the list's band lies on a point (scenes.js: an ellipse 120 % by 72 % at 42 %, 40 %):
+         a picture there shows that much fainter */
+      const wash = (x, y) => { const d = Math.hypot((x - W * .42) / (W * 1.2), (y - H * .4) / (H * .72)); return d < .52 ? .62 - .22 * d / .52 : d < .82 ? .4 * (1 - (d - .52) / .3) : 0; };
+      const disc = cap => { let best = null, bs = -1; for (let y = top + 20; y <= bot - 20; y += 12) for (let x = 20; x <= W - 20; x += 12) { const rr = Math.min(cap, room(x, y)); if (rr < 20) continue; const sc = rr * Math.pow(1 - wash(x, y), 1.5) + (pr ? 1 - Math.abs(x / W - .5) : x / W) * 6; if (sc > bs) { bs = sc; best = [x, y, rr]; } } return best; }; // as big and as clear of the wash as it can be; a phone's in the middle, a wide screen's to the right
+      return { masked, room, open, disc, wash, top, bot };
+    },
+    /** 1.12 b423: A Trip to the Moon — where the moon goes, the shell's flight to his eye, and every frame */
+    moonFilm(P, rm) {
+      const { W, H, pr, fw, gap } = S, d = rm.disc(pr ? W * .31 : H * .21);
+      if (!d || d[2] < (pr ? 70 : 80)) return null; // no room for him: the wall rests plain
+      const [mx, my] = d, mr = d[2] - 4, r = K.deal(P, 41);
+      // the flight: in from past an edge on a gentle curve to his near eye, through as much open wall as it can find
+      let fl = null, fs = -1;
+      for (const mir of [false, true]) { const qx = mx + (mir ? .36 : -.36) * mr, qy = my - .17 * mr;
+        const ents = []; for (let y = -40; y <= H + 40; y += 30) ents.push([mir ? W + 70 : -70, y]); for (let x = 0; x <= W; x += 40) { if (mir ? x > qx : x < qx) { ents.push([x, -70]); ents.push([x, H + 70]); } }
+        for (const [ex, ey] of ents) for (const bend of [-.22, 0, .22]) {
+          const dx = qx - ex, dy = qy - ey, dl = Math.hypot(dx, dy), cx = (ex + qx) / 2 - dy / dl * bend * dl, cy = (ey + qy) / 2 + dx / dl * bend * dl;
+          const at = t => [(1 - t) * (1 - t) * ex + 2 * (1 - t) * t * cx + t * t * qx, (1 - t) * (1 - t) * ey + 2 * (1 - t) * t * cy + t * t * qy];
+          let on = 0, ok = 0, len = 0, inside = 0, prev = null; for (let k = 0; k <= 60; k++) { const p = at(k / 60); if (p[0] >= 0 && p[0] <= W && p[1] >= 0 && p[1] <= H) { on++; if (rm.open(p[0], p[1])) ok++; if (prev) len += Math.hypot(p[0] - prev[0], p[1] - prev[1]); prev = p; } else prev = null; if (k < 52 && Math.hypot(p[0] - mx, p[1] - my) < mr) inside++; }
+          const [tx, ty] = [qx - cx, qy - cy], ang = Math.atan2(ty, tx), side = Math.abs(Math.cos(ang)); // its last approach: from the side reads best
+          if (on < 8) continue; const frac = ok / on, sc = Math.min(len, mr * 7) * Math.pow(frac, 8) * (.55 + .45 * side) * (inside > 4 ? .3 : 1);
+          if (sc > fs) { fs = sc; fl = { mir, ex, ey, cx, cy, qx, qy, len, at, frac }; } } }
+      if (!fl || fl.frac < .72 || fl.len < mr * 1.1) return null;
+      // the stars, a few, in the open wall round him and off his flight
+      const stars = []; for (let k = 0; k < 40 && stars.length < (pr ? 6 : 10); k++) { const x = r() * W, y = rm.top + r() * (rm.bot - rm.top); if (!rm.open(x, y) || Math.hypot(x - mx, y - my) < mr * 1.25 || Math.hypot(x - mx, y - my) > mr * (pr ? 3 : 4.2)) continue; let near = false; for (let t = 0; t <= 1; t += .05) { const p = fl.at(t); if (Math.hypot(p[0] - x, p[1] - y) < 34) near = true; } if (!near && !stars.some(s => Math.hypot(s[0] - x, s[1] - y) < 70)) stars.push([x, y, .7 + r() * .6]); }
+      // the frames: [time, what] — he comes nearer, asleep; wakes; looks; the shell's flight a frame at a time; the hit
+      const ev = [{ t: 0 }], F = (t, o) => ev.push(Object.assign({ t }, o)), calm = { lid: [0, 0], mouth: 0 };
+      F(.7, { s: .34, ex: calm, wave: "near" }); F(1.25, { s: .56, ex: calm }); F(1.8, { s: .78, ex: calm }); F(2.35, { s: 1, ex: calm, stars: 1 });
+      F(3.1, { s: 1, ex: { lid: [1, 1], mouth: 0 }, stars: 1 }); const lookTo = [fl.mir ? 1 : -1, fl.ey < my - mr ? -.6 : fl.ey > my + mr ? .6 : 0];
+      F(3.7, { s: 1, ex: { lid: [1, 1], mouth: 0, look: lookTo }, stars: 1 });
+      const sl = .78 * mr, step = Math.max(1.5 * (fw + gap), sl * .95), n = Math.max(4, Math.round(fl.len / step)), dur = Math.max(n * .23, clamp(fl.len / (pr ? 260 : 470), 1.3, 3.1)), t0 = 4.0; /* a frame a shell's length on: no flap sees it more than twice */ // the shell as long as half his face
+      const along = []; { let L = 0, prev = fl.at(0); along.push([0, 0]); for (let k = 1; k <= 200; k++) { const p = fl.at(k / 200); L += Math.hypot(p[0] - prev[0], p[1] - prev[1]); along.push([k / 200, L]); prev = p; } } // arc length → t
+      const tOf = s => { const L = along[200][1] * s; let k = 1; while (k < 200 && along[k][1] < L) k++; const a = along[k - 1], b = along[k]; return a[0] + (b[0] - a[0]) * ((L - a[1]) / ((b[1] - a[1]) || 1)); };
+      const tEnd = 1 - (sl * .5) / (along[200][1] || 1); // he stops where his nose is in the eye
+      for (let k = 1; k <= n; k++) { const q = tOf(Math.min(tEnd, k / n * tEnd + (1 - tEnd) * 0)), tt = t0 + dur * k / (n + 1); F(tt, { s: 1, ex: { lid: [k > n - 2 ? 1.3 : 1, k > n - 2 ? 1.3 : 1], mouth: k > n - 2 ? 1 : 0, look: lookTo, brow: k > n - 2 ? [1, 1] : [0, 0] }, stars: 1, fly: q, trail: q }); }
+      const tHit = t0 + dur + .12, ang = (() => { const p = fl.at(tEnd), p0 = fl.at(tEnd - .02); const a = Math.atan2(p[1] - p0[1], p[0] - p0[0]); return fl.mir ? Math.PI - a : a; })();
+      F(tHit, { s: 1, ex: { hit: { ang, splash: 1, goo: 0 }, squint: 1, mouth: 2, mir: fl.mir }, stars: 1, trail: tEnd });
+      F(tHit + .5, { s: 1, ex: { hit: { ang, splash: 0, goo: .5 }, squint: 1, mouth: 2, mir: fl.mir }, stars: 1, trail: tEnd });
+      F(tHit + 1.05, { s: 1, ex: { hit: { ang, splash: 0, goo: 1 }, squint: 1, mouth: 2, mir: fl.mir }, stars: 1, trail: tEnd * .55 });
+      F(tHit + 1.6, { s: 1, ex: { hit: { ang, splash: 0, goo: 1.3 }, squint: 1, mouth: 2, mir: fl.mir }, stars: 1, trail: 0 });
+      F(10.0, { s: 1, ex: { hit: { ang, splash: 0, goo: 1.3 }, lid: [1, 1], mouth: 3, look: [0, 0], mir: fl.mir }, stars: 1 });
+      F(10.65, { s: 1, ex: { hit: { ang, splash: 0, goo: 1.3 }, wink: 1, mouth: 3, mir: fl.mir }, stars: 1 });
+      F(11.3, { s: 1, ex: { hit: { ang, splash: 0, goo: 1.3 }, lid: [1, 1], mouth: 3, look: [0, 0], mir: fl.mir }, stars: 1 });
+      F(12.1, { wave: "iris" }); // the iris closes on him: the wall plain from the edges in, his face the last to go
+      const far = Math.max(...[[0, 0], [W, 0], [0, H], [W, H]].map(([x, y]) => Math.hypot(x - mx, y - my)));
+      let x0 = mx - mr, y0 = my - mr, x1 = mx + mr, y1 = my + mr; for (let t = 0; t <= 1; t += .02) { const p = fl.at(t); x0 = Math.min(x0, p[0] - sl); y0 = Math.min(y0, p[1] - sl); x1 = Math.max(x1, p[0] + sl); y1 = Math.max(y1, p[1] + sl); } for (const s of stars) { x0 = Math.min(x0, s[0] - 12); y0 = Math.min(y0, s[1] - 12); x1 = Math.max(x1, s[0] + 12); y1 = Math.max(y1, s[1] + 12); }
+      return { box: [x0, y0, x1, y1], ev, mx, my, mr, fl, sl, stars,
+        delay: (e, x, y, h) => e.wave === "near" ? Math.hypot(x - mx, y - my) / mr * .25 + h * .03 : e.wave === "iris" ? (1 - Math.hypot(x - mx, y - my) / far) * 1.1 + h * .04 : h * .03,
+        ink(g, e) { // frame e, in the page's pixels
+          if (e.stars) for (const [x, y, s] of stars) { g.fillStyle = MN.star; g.beginPath(); for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4, rr = (k % 2 ? 2.2 : 8) * s; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } g.closePath(); g.fill(); }
+          if (e.trail) { const gap2 = (pr ? 15 : 19) / (fl.len || 1), back2 = e.fly !== undefined ? sl * .62 / (fl.len || 1) : 0; g.fillStyle = MN.mid; for (let q = gap2; q < e.trail - back2; q += gap2) { const p = fl.at(q); if (Math.hypot(p[0] - mx, p[1] - my) < mr + 6) continue; g.beginPath(); g.arc(p[0], p[1], pr ? 2.6 : 3.2, 0, TAU); g.fill(); } } // its flight, dotted behind it (each dot where it was put)
+          if (e.s) moonFace(g, mx, my, mr * e.s, e.ex);
+          if (e.fly !== undefined) { const p = fl.at(e.fly), p0 = fl.at(Math.max(0, e.fly - .01)); shell(g, p[0], p[1], Math.atan2(p[1] - p0[1], p[0] - p0[0]), sl, false); }
+        } };
+    },
+    /** 1.12 b423: the station clock — where it goes, and every frame: the face clattering round, the hands stepping to
+     *  the time (read once, as the pass comes up), the second hand ticking up to twelve, its wait, the minute's jump */
+    clockFilm(P, rm, T) {
+      const { W, H, pr } = S, d = rm.disc(pr ? W * .4 : H * .26);
+      if (!d || d[2] < (pr ? 72 : 84)) return null;
+      const [cx, cy] = d, cr = d[2] - 4, now = Date.now() - T * 1000; // the moment the pass began
+      const at = new Date(now + 10.9 * 1000), hh = at.getHours() % 12, mm = at.getMinutes(), m0 = (mm + 59) % 60, h0 = m0 === 59 ? (hh + 11) % 12 : hh; // the time it shows: a minute short of the minute it is when the hand jumps
+      const ev = [{ t: 0 }], F = (t, o) => ev.push(Object.assign({ t }, o));
+      F(.75, { h: 0, m: 0, s: null, wave: "round" }); // the face, both hands at twelve
+      const hs = h0 + m0 / 60, ns = Math.max(Math.ceil(hs - .001), Math.ceil(m0 / 5)), st = .36; // a step: an hour on the hour hand, five minutes on the minute hand
+      for (let k = 1; k <= ns; k++) F(2.1 + k * st, { h: Math.min(hs, k), m: Math.min(m0, k * 5), s: null });
+      const top = 9.4, ticks = clamp(Math.floor(top - (2.1 + ns * st) - .5), 2, 5);
+      for (let k = ticks; k >= 1; k--) F(top - k, { h: hs, m: m0, s: 60 - k });
+      F(top, { h: hs, m: m0, s: 0 }); // at twelve, and it waits
+      F(top + 1.5, { h: hh + mm / 60, m: mm, s: 0 }); // the minute hand jumps
+      F(top + 2.3, { h: hh + mm / 60, m: mm, s: 1 });
+      F(12.15, { wave: "round" }); // and the face clatters round to plain again
+      return { box: [cx - cr, cy - cr, cx + cr, cy + cr], ev, cx, cy, cr,
+        delay: (e, x, y, h) => e.wave === "round" ? ((Math.atan2(x - cx, cy - y) / TAU + 1) % 1) * 1.15 + h * .03 : h * .03,
+        ink(g, e) { if (e.m !== undefined) clockFace(g, cx, cy, cr, e.h, e.m, e.s); } };
+    },
+    /** 1.12 b423: the hour egg's plan — its film, the flaps it plays on (those it reaches, clear of the words), and when
+     *  each of them turns to each frame; the frames printed as they're asked for */
+    hourPlan(P, kind, T) {
+      const o = S.hp; if (o && o.P === P && o.kind === kind && o.raw === S.raw && o.W === S.W && o.H === S.H) return o;
+      const { C, R, fw, fh, gap, ox, oy } = S, pw = fw + gap, ph = fh + gap, rm = S.hourRoom(), film = kind === 1 ? S.moonFilm(P, rm) : S.clockFilm(P, rm, T);
+      const E0 = { P, kind, raw: S.raw, W: S.W, H: S.H, film }; S.hp = E0; if (!film) return E0;
+      const [X0, Y0, X1, Y1] = film.box, c0 = clamp(Math.floor((X0 - ox) / pw), 0, C - 1), c1 = clamp(Math.floor((X1 - ox) / pw), 0, C - 1), r0 = clamp(Math.floor((Y0 - oy) / ph), 0, R - 1), r1 = clamp(Math.floor((Y1 - oy) / ph), 0, R - 1);
+      const bx = ox + c0 * pw - gap / 2, by = oy + r0 * ph - gap / 2, bw = (c1 - c0 + 1) * pw, bh = (r1 - r0 + 1) * ph, at = new Int16Array(C * R).fill(-1), fl = [];
+      for (let rr = r0; rr <= r1; rr++) for (let c = c0; c <= c1; c++) { if (rm.masked(c, rr)) continue; const i = rr * C + c; at[i] = fl.length; fl.push({ i, lx: ox + c * pw - bx, ly: oy + rr * ph - by, x: ox + c * pw + fw / 2, y: oy + rr * ph + fh / 2 }); }
+      const ev = film.ev, n = ev.length, tt = new Float32Array(fl.length * n); // when each flap turns to each frame: the frame's time, and the wave's delay where there is one
+      fl.forEach((f, b) => { let prev = -9; for (let k = 0; k < n; k++) { const t = Math.max(ev[k].t + (k ? film.delay(ev[k], f.x, f.y, S.hash[f.i]) : 0), prev + .03); tt[b * n + k] = t; prev = t; } });
+      const mk = (w, h2) => { const [c, x] = canvas(Math.ceil(w * px), Math.ceil(h2 * px)); x.imageSmoothingEnabled = true; return [c, x]; };
+      const [base, bx2] = mk(bw, bh), clip = new Path2D(); bx2.setTransform(px, 0, 0, px, 0, 0);
+      for (const f of fl) { bx2.drawImage(S.faces[0], f.lx + gap / 2, f.ly + gap / 2, fw, fh); clip.roundRect(f.lx + gap / 2, f.ly + gap / 2, fw, fh, fw * .1); }
+      const [print, pX] = mk(bw, bh), lo = document.createElement("canvas"); lo.width = Math.ceil(bw / 2); lo.height = Math.ceil(bh / 2);
+      const loX = lo.getContext("2d", { willReadFrequently: true }), lr = fl.map(f => [Math.floor((f.lx + gap / 2) / 2), Math.floor((f.ly + gap / 2) / 2), Math.ceil((f.lx + gap / 2 + fw) / 2), Math.ceil((f.ly + gap / 2 + fh) / 2)]);
+      return S.hp = Object.assign(E0, { bx, by, bw, bh, at, fl, n, tt, base, clip, print, pX, lo, loX, lr, sig: [], cache: new Map() });
+    },
+    /** 1.12 b423: which flaps frame e changes: each flap's piece of it, drawn at half size, summed up as a number */
+    hourSig(hp, e) {
+      if (hp.sig[e]) return hp.sig[e];
+      const { lo, loX } = hp; loX.setTransform(1, 0, 0, 1, 0, 0); loX.clearRect(0, 0, lo.width, lo.height); loX.setTransform(.5, 0, 0, .5, -hp.bx * .5, -hp.by * .5); if (e > 0) hp.film.ink(loX, hp.film.ev[e]);
+      const d = loX.getImageData(0, 0, lo.width, lo.height).data, out = new Uint32Array(hp.fl.length);
+      hp.lr.forEach(([x0, y0, x1, y1], b) => { let h = 2166136261; for (let y = y0; y < Math.min(y1, lo.height); y++) for (let x = x0; x < Math.min(x1, lo.width); x++) { const i = (y * lo.width + x) * 4; h = Math.imul(h ^ d[i] ^ d[i + 1] << 8 ^ d[i + 2] << 16 ^ d[i + 3] << 24, 16777619) >>> 0; } out[b] = h; });
+      return hp.sig[e] = out;
+    },
+    /** 1.12 b423: frame e as the box's flaps show it: their plain faces with the frame printed on them (the last few kept) */
+    hourFace(hp, e) {
+      let c = hp.cache.get(e); if (c) { hp.cache.delete(e); hp.cache.set(e, c); return c; }
+      if (hp.cache.size >= 4) { const [k0, c0] = hp.cache.entries().next().value; hp.cache.delete(k0); c = c0; } else [c] = canvas(hp.base.width, hp.base.height);
+      const x = c.getContext("2d"), { print, pX } = hp; x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = "copy"; x.drawImage(hp.base, 0, 0); x.globalCompositeOperation = "source-over";
+      pX.setTransform(1, 0, 0, 1, 0, 0); pX.fillStyle = "#fff"; pX.fillRect(0, 0, print.width, print.height); pX.setTransform(px, 0, 0, px, -hp.bx * px, -hp.by * px); hp.film.ink(pX, hp.film.ev[e]);
+      x.save(); x.setTransform(px, 0, 0, px, 0, 0); x.clip(hp.clip); x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = "multiply"; x.drawImage(print, 0, 0); x.restore();
+      hp.cache.set(e, c); return c;
+    },
+    /** 1.12 b423: a flap of the hour egg at time T: the frame it turns from, the one it turns to (0 plain), how far */
+    hourFlap(hp, b, i, T, I) {
+      const n = hp.n, tt = hp.tt, o = b * n; let e = 0; for (let k = 1; k < n; k++) { if (tt[o + k] > T) break; e = k; }
+      let from = e, to = e, p = 0;
+      if (e > 0 && T - tt[o + e] < HFE && S.hourSig(hp, e)[b] !== S.hourSig(hp, e - 1)[b]) { from = e - 1; p = (T - tt[o + e]) / HFE; }
+      if (I < S.back[i] && (p || S.hourSig(hp, e)[b] !== S.hourSig(hp, 0)[b])) { const q = clamp((S.back[i] - I) / Math.min(.12, S.back[i] - .012)); if (q > 0) { from = to; to = 0; p = q < 1 ? q : 0; } } // the list in use: back to plain, in a scatter, as the loop lets go
+      if (p <= 0 || p >= 1) { p = 0; from = to; }
+      return [from, to, p];
+    },
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; P: the pass */
     draw(T, I, A, F, P = 0) {
       const { W, H, C, R, fw, fh, gap, ox, oy, faces, wx } = S; let moved = S.full;
       const on = I > .01, fin = F >= 0, Tb = fin ? F * 3.4 : on ? T : 0, plan = fin ? [[0, "burst", "out"], [1.9, "plain", "out"]] : PLAN;
       const egg = K.egg(P), eg = egg && on && !fin ? S.eggPlan(P) : null; if (!egg) S.ep = null; // 1.12 b414: the egg's pass plays the egg (its pictures let go after)
-      const pl = fin || !(P > 0) || egg ? null : S.plan(P); // b381: a pass after the first plays its own changes (the finale is the same over any pass)
+      const hr = egg ? 0 : K.long(P), hour = hr === 1 || hr === 2, hp = hour && on && !fin ? S.hourPlan(P, hr, T) : null; if (!hour) S.hp = null; // 1.12 b423: an hour egg's pass plays its film (a crown's, 3, is dealt as any pass)
+      const pl = fin || !(P > 0) || egg || hour ? null : S.plan(P); // b381: a pass after the first plays its own changes (the finale is the same over any pass)
       for (let rr = 0; rr < R; rr++) for (let c = 0; c < C; c++) {
         const i = rr * C + c, x = (ox + c * (fw + gap) + fw / 2) / W, y = (oy + rr * (fh + gap) + fh / 2) / H;
         let a, b, p;
@@ -389,6 +638,23 @@ export default function flap(K) {
             if (!S.full && S.drawn[i] === key) continue; S.drawn[i] = key; moved = true;
             const fx = ox + c * (fw + gap), fy = oy + rr * (fh + gap), hh = fh / 2, fb = eg.fl[bi]; wx.clearRect(fx - gap / 2, fy - gap / 2, fw + gap, fh + gap);
             const face = f => f < 0 ? [faces[0], 0, 0, faces[0].width, faces[0].height / 2] : [S.eggFace(eg, f), (fb.lx + gap / 2) * px, (fb.ly + gap / 2) * px, fw * px, fh * px / 2]; // a face, and where its top half is
+            const B0 = face(f1); if (!pp) { wx.drawImage(B0[0], B0[1], B0[2], B0[3], B0[4] * 2, fx, fy, fw, fh); continue; }
+            const A0 = face(f0);
+            wx.drawImage(B0[0], B0[1], B0[2], B0[3], B0[4], fx, fy, fw, hh); wx.drawImage(A0[0], A0[1], A0[2] + A0[4], A0[3], A0[4], fx, fy + hh, fw, hh); /* behind the falling flap */
+            if (pp < .5) { const k = Math.cos(pp * Math.PI); wx.drawImage(A0[0], A0[1], A0[2], A0[3], A0[4], fx, fy + hh - hh * k, fw, hh * k); wx.fillStyle = `rgba(20,38,27,${(pp * .18).toFixed(3)})`; wx.fillRect(fx, fy + hh - hh * k, fw, hh * k); }
+            else { const k = -Math.cos(pp * Math.PI); wx.drawImage(B0[0], B0[1], B0[2] + B0[4], B0[3], B0[4], fx, fy + hh, fw, hh * k); wx.fillStyle = `rgba(20,38,27,${((1 - pp) * .18).toFixed(3)})`; wx.fillRect(fx, fy + hh, fw, hh * k); }
+            continue;
+          }
+          a = b = 0; p = 0;
+        }
+        else if (hp) { // 1.12 b423: a flap of the hour egg's film shows its piece of the frame it last turned to, or turns
+          const bi = hp.film ? hp.at[i] : -1;
+          if (bi >= 0) {
+            const [f0, f1, pp] = S.hourFlap(hp, bi, i, T, I), s0 = S.hourSig(hp, 0)[bi], bare = !pp && S.mask[i] && S.hourSig(hp, f1)[bi] === s0, key = bare ? "m" : pp ? "h" + f0 + "," + f1 + "," + Math.round(pp * 16) : "r" + S.hourSig(hp, f1)[bi]; // at rest, a flap the frame leaves as it was isn't drawn again
+            if (!S.full && S.drawn[i] === key) continue; S.drawn[i] = key; moved = true;
+            const fx = ox + c * (fw + gap), fy = oy + rr * (fh + gap), hh = fh / 2, fb = hp.fl[bi]; wx.clearRect(fx - gap / 2, fy - gap / 2, fw + gap, fh + gap);
+            if (bare) { wx.fillStyle = TONE[0]; wx.fillRect(fx - gap / 2, fy - gap / 2, fw + gap, fh + gap); continue; } // under a line's tools, nothing on it: page-plain, as always
+            const face = f => S.hourSig(hp, f)[bi] === s0 ? [faces[0], 0, 0, faces[0].width, faces[0].height / 2] : [S.hourFace(hp, f), (fb.lx + gap / 2) * px, (fb.ly + gap / 2) * px, fw * px, fh * px / 2]; // a face, and where its top half is
             const B0 = face(f1); if (!pp) { wx.drawImage(B0[0], B0[1], B0[2], B0[3], B0[4] * 2, fx, fy, fw, fh); continue; }
             const A0 = face(f0);
             wx.drawImage(B0[0], B0[1], B0[2], B0[3], B0[4], fx, fy, fw, hh); wx.drawImage(A0[0], A0[1], A0[2] + A0[4], A0[3], A0[4], fx, fy + hh, fw, hh); /* behind the falling flap */

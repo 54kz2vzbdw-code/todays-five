@@ -41,6 +41,26 @@
 // the town stands up again behind it as it was. Each page's landscape is printed on it; what stands on it is cut out and
 // folds. While the winter's page is up the backdrop holds it (laid in once; the summer's is kept and put back pixel for
 // pixel), so a frame draws only what moves.
+// 1.12 b423: the long day's hour eggs. Once an hour of the list left alone (K.long), the town has a pass of its own,
+// in place of the beats it would have dealt; the same idea by day and by night. The first hour's, and every odd one's:
+// the storm. A great cloud of grey paper, three layers deep, is let in on its threads from past the edge across the sun
+// (by night the moon), by day its shadow on the town; the wind gets up in the trees and the windmill; a lightning
+// bolt of yellow card is let down under it on a thread and swings there; paper raindrops pour slanting onto the
+// street, rings spread on the river; at their doors the townsfolk put up their umbrellas, one after another, the rain
+// stopping on them, and two more, a grown-up and a child in yellow boots, hurry along the near bank under theirs; by
+// night every window lights. Then the cloud is drawn up out of sight, the umbrellas fold away, the sun turns its notch,
+// and a rainbow stands up over the valley like a pop-up's card, band by band from the outside in, swinging a little
+// past upright, a fainter second bow outside it where there's room — by night a moonbow, pale and lit — and is laid
+// down again innermost first. The second hour's, and every even one's: the fair. A ferris wheel's frame stands up on
+// the near bank beside the windmill and the wheel opens round from twelve like a paper fan, its cars dropping onto
+// their pins, two riders in each; a roundabout stands up, its striped canopy turning and its horses rising and
+// falling; bunting strings itself from ridge to ridge along the street; they turn, and by night their bulbs and the
+// bunting's lights come on and every window with them. Then one of the horses leaps off the roundabout and gallops
+// away along the bank and out past the edge, its pole going round empty, and a red balloon slips its string and
+// floats away over the town; the rides slow and stop and fold away, the bunting is drawn in. Both are placed clear of
+// the words (the bow the biggest of a few arches that is), fade where they pass behind them, and lie under the
+// paper's ground where a long list's lines reach down over them (by night, the night's ground under the words over
+// what is lit); their pieces are made the first time one plays after a layout, from dice of their own.
 export default function papercut(K, id) {
   const night = id === "midnight";
   const { clamp, lerp, E, seg, env, rng, canvas, grain, noise1, fbm } = K;
@@ -278,7 +298,7 @@ export default function papercut(K, id) {
      *  (b384: pass 0 is the loop, the passes after it are dealt) */
     draw(T, I, A, F, pass = 0) {
       const { W, H, u, orb } = S, egg = K.egg(pass);
-      if (!plan || plan.pass !== pass || plan.gen !== gen) plan = egg ? eggPlan(pass) : night ? dealNight(pass) : dealDay(pass);
+      if (!plan || plan.pass !== pass || plan.gen !== gen) { const hr = egg ? 0 : K.long(pass); plan = egg ? eggPlan(pass) : hr === 1 || hr === 2 ? hourPlan(pass, hr) : night ? dealNight(pass) : dealDay(pass); } /* (b423) an hour egg's pass has a plan of its own; a crown's (3) is dealt as any pass */
       if (egg) { if (eggDraw(T, I, A, F)) return; } else if (EG) eggOff(); /* (b415) the egg draws its own frames; any other pass lets it go */
       const pl = plan;
       g.clearRect(0, 0, W, H);
@@ -313,6 +333,7 @@ export default function papercut(K, id) {
         put(c.spr, x, y, .5, .2, a * .6);
       }
       if (night && pl.moon && pl.moon.k !== "cloud") (pl.moon.k === "owl" ? nOwl : nGeese)(T, I, A, pl.moon); /* an owl or a skein of geese across the moon */
+      if (pl.hr) hourSky(T, I, A, pl); /* (b423) the hour egg's sky: the storm cloud on its threads */
       // the windmill's sails, turning at their own pace and faster in the breeze
       S.millAngle += dt * ((night ? .22 : .42) + breeze * 1.6);
       { const m = S.mill; for (let k = 0; k < 4; k++) put(S.millSail, m.x, m.y + m.h * .12, .1, .5, S.millAngle + k * TAU / 4); g.fillStyle = P.millLo; g.beginPath(); g.arc(m.x, m.y + m.h * .12, .7 * u, 0, TAU); g.fill(); }
@@ -328,11 +349,13 @@ export default function papercut(K, id) {
         // along the viaduct: a train, or a cyclist
         if (pl.deck.k === "cyclist") dCyclist(T, I, A, pl.deck); else dTrain(T, I, A, pl.deck);
         // in the open sky: a balloon or a rainbow from behind the near bank; the kite, which lies on the bank whatever the pass; a dragon kite
+        if (pl.hr) hourLand(T, I, A, pl); /* (b423) the hour egg's middle ground: the rain and the umbrellas, the rainbow; the fair */
         const h = pl.head, rbOk = h.k === "rainbow" && !(S.rects || []).some(([x0, y0, x1, y1, k]) => k === 1 && x1 > h.cx - h.rx - 10 && x0 < h.cx + h.rx + 10 && y1 > h.cy - h.ry - 10 && y0 < h.cy); /* the rainbow stands only where no line lies over it */
         if (h.k === "balloon") dBalloon(T, I, A, h); else if (rbOk) dRainbow(T, I, h);
         dKite(T, I, A, dt, h.k === "kite" ? h.t : (h.k === "dragon" && S.dragonTop === null) || (h.k === "rainbow" && !rbOk) ? h.kt : null); /* no room for the dragon or the rainbow: the kite flies instead */
         if (h.k === "dragon") dDragon(T, I, A, h);
         trees(true);
+        if (pl.hr) hourNear(T, I, A, pl); /* (b423) and its near ground */
         // to close: the paper birds, leaves in a gust, butterflies
         const cl = pl.close; if (cl.k === "birds") dBirds(T, I, A, cl); else if (cl.k === "leaves") dLeaves(T, I, cl); else dFlies(T, I, A, cl);
         // the finale: paper cranes up past the sun
@@ -352,8 +375,10 @@ export default function papercut(K, id) {
         g.fillStyle = P.moon; for (const s of S.moonStrips) { const k = .5 + .5 * Math.sin(A * s.v + s.ph), w = s.w * (.55 + .45 * k); g.globalAlpha = (.06 + .22 * k) * (1 - Math.abs(s.dx) / (4.5 * u)); g.fillRect(orb.x - w / 2 + s.dx + Math.sin(A * .7 + s.ph) * .5 * u, s.y, w, .24 * u); } g.globalAlpha = 1;
         // the train along the bank and over the bridge, either way, its reflection wobbling under it; or a cyclist with a lamp
         if (pl.low.k === "cyclist") dCyclist(T, I, A, pl.low); else nTrain(T, I, A, pl.low);
+        if (pl.hr) hourLand(T, I, A, pl); /* (b423) the hour egg's middle ground */
         if (pl.show.k === "balloon") dBalloon(T, I, A, pl.show);
         trees(true);
+        if (pl.hr) hourNear(T, I, A, pl); /* (b423) and its near ground */
         if (pl.close.k === "fireflies") nFireflies(T, I, A, pl.close);
         // cut-paper fireworks in the colours of glass, or a comet on its wire
         if (pl.show.k === "fireworks") nFireworks(T, I, pl.show.bursts); else if (pl.show.k === "comet") nComet(T, I, A, pl.show);
@@ -1347,5 +1372,345 @@ export default function papercut(K, id) {
     eggFinale(F, A); eggPads();
     return true;
   }
+  /* ---------------- 1.12 b423: the long day's hour eggs ---------------- */
+  /** the storm's beats: the cloud let in on its threads, its bolt let down and taken up again, the rain, the umbrellas
+   *  opening in the street; the cloud drawn up, the bow standing up band by band, the umbrellas folding, the bow laid down */
+  const STORM = { cloud: [.6, 3.0], bolt: [4.1, 4.8, 7.5, 8.2], rain: [2.5, 8.8], umb: [3.3, 5.5], lift: [9.0, 10.6], bow: [9.7, 11.5], umbOff: [10.2, 11.9], bowOff: [12.5, 14.2], wind: [1.0, 2.6, 8.6, 10.6] };
+  const HCOL = night ? { cloud: ["#2C3757", "#232D4A", "#1B233C"], under: "#151B30", rim: "rgba(150,170,225,.8)", bolt: "#F7E2A0", boltHi: "#FFF4CF", drop: "#B4C4E8", dropHi: "#EEF3FF", ring: "rgba(190,205,240,.7)",
+      umb: [["#9C3F33", "#7E3027"], ["#B0873A", "#8E6A28"], ["#3F6A8E", "#2F5372"], ["#5E7D52", "#48633F"], ["#8A5A86", "#6E4569"], ["#C9C2B0", "#A39C8B"]], coat: ["#3B4A78", "#4A3F66", "#2F5A5E", "#5A4A3E"], boot: "#C9A23A", skin: "#8D86A6", shaft: "#C9C2B0",
+      bow: ["#FFCFC0", "#FFE0B4", "#FFF1BC", "#CFF0C8", "#C4E0FA", "#CACBFA", "#E6CCF4"], bowA: .44 }
+    : { cloud: ["#97A3B4", "#7C899D", "#65728A"], under: "#57647C", rim: "rgba(255,255,255,.75)", bolt: "#F2BF45", boltHi: "#F9DC8C", drop: "#A9CBDD", dropHi: "#F2FAFF", ring: "rgba(120,160,185,.75)",
+      umb: [["#C8321F", "#A82A1A"], ["#E0A33C", "#C68A2A"], ["#5F8EA6", "#4C7890"], ["#8FAF6E", "#749456"], ["#E0603F", "#C04C30"], ["#FBF3E4", "#E4DBCA"]], coat: ["#5F8EA6", "#B8573E", "#8A7258", "#557F4F"], boot: "#E8B64A", skin: "#E9B99A", shaft: "#5A4636",
+      bow: ["#D9563F", "#E8904A", "#EBC35A", "#8DB872", "#6FA3C0", "#5D7FB5", "#9B86C0"], bowA: 1 };
+  let HG = null; // the hour eggs' pieces: made the first time one plays after a layout
+  /** the hour egg's pass: none of the dealt beats, only the town's quiet life and the hour egg's own — the storm (1) or
+   *  the fair (2) — dealt from dice of its own */
+  function hourPlan(pass, hr) {
+    const { W } = S, no = 99, r = K.deal(pass, 7700 + hr), storm = hr === 1;
+    const pl = { pass, gen, hr, gust: null, b: storm ? STORM.wind : [no, no + 1, no + 2, no + 3], bk: storm ? 1.6 : 0 }; // the storm brings its wind
+    if (night) { const at = storm ? [1.9, 2.3] : [3.0, 1.6], lit = S.windows.map(w => (at[0] - .2 + w.o * at[1] + r() * .3) / 1.7); /* the windows light across the town as the storm comes (or the fair's lights); out again at the end */
+      Object.assign(pl, { won: lit, woff: S.windows.map(w => (w.o * .9 + r() * .3) / 1.6), low: { k: "train", t0: no, t1: no + 1, dir: 1, cars: [S.engine] }, moon: null, show: { k: "none" }, close: { k: "none" } }); }
+    else Object.assign(pl, { n: storm ? [11.6, 13.3, r() < .5 ? 1 : -1] : [no, no + 1, 0], cross: { k: "plane", planes: [] }, deck: { k: "train", t0: no, t1: no + 1, dir: -1, parts: [S.dengine], xs: W, xe: 0 }, head: { k: "kite", t: null }, close: { k: "birds", t0: no, t1: no + 1, dir: -1, y: 0, flock: [], end: 0 } }); // (by day the sun turns its notch as it comes out again)
+    if (storm) stormPlan(pl, r); else fairPlan(pl, r);
+    return pl;
+  }
+  /** the storm's own: where the cloud hangs, its rain (every drop's moment, its way down and where it lands), the
+   *  umbrellas in the street, where the bow stands clear of the words */
+  function stormPlan(pl, r) {
+    const { W, H, u, pr, orb } = S, cw = pr ? W * .86 : Math.min(W * .36, 46 * u), ch = cw * (pr ? .27 : .3);
+    const st = pl.st = { cw, ch, cx: pr ? W * .55 : Math.min(W - cw * .5 - 2 * u, orb.x - W * .035), cy: orb.y + (pr ? .005 : .012) * H };
+    st.sx = W + cw * .62 + 6 * u; // where it comes on from, past the edge
+    const n = Math.round((pr ? 105 : 165) * (STORM.rain[1] - STORM.rain[0])), D = st.drops = [], slant = .16;
+    for (let i = 0; i < n; i++) { const t = STORM.rain[0] + (i + r() * .9) / n * (STORM.rain[1] - STORM.rain[0]), x0 = st.cx + (r() - .5) * cw * .82, y0 = st.cy + ch * .3, vy = H * (pr ? .5 + r() * .2 : .62 + r() * .22), lane = r();
+      let x1 = x0 + (H * .75 - y0) * slant, y1; for (let k = 0; k < 2; k++) { y1 = lane < .5 ? S.townY(x1) + (.4 + r() * 1.2) * u : lane < .74 ? S.riverY + S.riverH * (.2 + r() * .6) : S.frontY(x1) + (1 + r() * 2.5) * u; x1 = x0 + (y1 - y0) * slant; }
+      D.push({ t, x0, y0, vy, vx: vy * slant, y1, d: (y1 - y0) / vy, far: lane < .5, river: lane >= .5 && lane < .74, ph: r() * TAU }); }
+    // the umbrellas: at the doors along the street, opening one after another
+    const doors = S.houses.filter(h => h.door >= 0), want = Math.min(doors.length, pr ? 4 : 5), umbs = st.umbs = [];
+    for (let k = 0; k < want; k++) { const h = doors[Math.floor((k + .5) * doors.length / want)], t0 = STORM.umb[0] + k * (STORM.umb[1] - STORM.umb[0]) / want + r() * .2;
+      umbs.push({ x: h.door + h.w * .08, y: h.base + .25 * u, c: Math.floor(r() * 6), p: Math.floor(r() * 4), t0, t1: STORM.umbOff[0] + ((k * 2 + 1) % want) * (STORM.umbOff[1] - STORM.umbOff[0]) / want, ph: r() * TAU, s: (pr ? .62 : .56) * (.92 + r() * .16) }); } // up the street, the size of their houses' doors (the two on the near bank are nearer, and bigger)
+    st.bow = bowPlace();
+    // and along the near bank, a grown-up and a child hurrying through it under their umbrellas, from past one edge to past the other
+    const dir = r() < .5 ? 1 : -1, wsp = (pr ? 1.15 : 1) * 1.0; st.walk = { dir, t0: 3.5, t1: 12.2, xs: dir > 0 ? -6 * u : W + 6 * u, xe: dir > 0 ? W + 10 * u : -10 * u,
+      who: [{ s: 1.25 * wsp, c: Math.floor(r() * 6), p: Math.floor(r() * 4), coat: 0, boot: night ? "#5A4A3E" : "#4E3E30", back: 0 }, { s: .82 * wsp, c: 0, p: 2, coat: 1, boot: HCOL.boot, back: -4.4 * u * dir }], ph: r() * TAU };
+  }
+  /** where the bow stands: the biggest of a few arches over the valley that keeps clear of the words (in the lab, the first) */
+  function bowPlace() {
+    const { W, H, u, pr } = S, opts = pr ? [[.5, .46, .2], [.5, .4, .17], [.5, .34, .145], [.5, .28, .12]] : [[.775, .19, .38], [.8, .16, .32], [.82, .135, .27], [.85, .11, .22]];
+    const bw = (pr ? 1.25 : 1.15) * u, R = (S.rects || []).filter(q => q[4] !== 2);
+    const clear = (cx, cy, rx, ry, f0, f1) => { for (let a = 0; a <= 40; a++) for (let j = 0; j <= 3; j++) { const th = Math.PI + a / 40 * Math.PI, f = lerp(f0, f1, j / 3), x = cx + Math.cos(th) * rx * f, y = cy + Math.sin(th) * ry * f; if (R.some(([x0, y0, x1, y1]) => x > x0 - 14 && x < x1 + 14 && y > y0 - 14 && y < y1 + 14)) return false; } return true; }; // the arch's band, sampled
+    for (let i = 0; i < opts.length; i++) { const [fx, frx, fry] = opts[i], cx = W * fx, cy = S.frontY(cx) + .5 * u, rx = W * frx, ry = H * fry, m = Math.min(rx, ry);
+      const ok = clear(cx, cy, rx, ry, 1 - 7 * bw / m, 1), last = i === opts.length - 1; if (!ok && !last) continue;
+      return { cx, cy, rx, ry, bw, dbl: !night && ok && clear(cx, cy, rx, ry, 1 + 2.2 * bw / m, 1 + 7.6 * bw / m), fade: !ok, key: [cx, cy, rx, ry].map(v => v.toFixed(1)).join() }; } // the biggest bow clear of the words, and its second bow if that is clear too
+  }
+  /** the hour eggs' pieces, made once a layout (the bow when it moves): the storm's cloud and bolt, a raindrop, the
+   *  umbrellas with someone under each */
+  function hourGear() {
+    if (HG && HG.gen === gen) return HG;
+    const { u, pr, W } = S, Q = HCOL, cw = pr ? W * .86 : Math.min(W * .36, 46 * u), ch = cw * (pr ? .27 : .3), pad = 3 * u;
+    HG = { gen };
+    HG.cloud = make(cw + pad * 2, ch + pad * 2, x => { x.translate(pad, pad); // three layers of grey paper, lumped, the front lit along its top
+      const lump = (pts, base, col, rim) => { const path = new Path2D(); for (const [bx, by, br] of pts) { path.moveTo(cw * bx + ch * br, ch * by); path.arc(cw * bx, ch * by, ch * br, 0, TAU); } path.rect(cw * pts[0][0], ch * base[0], cw * (pts[pts.length - 1][0] - pts[0][0]), ch * (base[1] - base[0]));
+        shade(x, 8, -1.6, 3.2, night ? "rgba(0,0,0,.55)" : "rgba(40,50,70,.34)"); x.fillStyle = col; x.fill(path); unshade(x);
+        if (rim) { x.save(); x.clip(path); x.strokeStyle = Q.rim; x.lineWidth = Math.max(1.2, .2 * u); x.translate(.12 * u, .16 * u); x.stroke(path); x.restore(); } }; // lit along its top edge
+      lump([[.18, .5, .28], [.33, .33, .36], [.5, .25, .4], [.67, .32, .36], [.82, .48, .28]], [.5, .7], Q.cloud[0], true);
+      lump([[.09, .66, .24], [.25, .52, .32], [.44, .48, .36], [.62, .5, .34], [.79, .58, .28], [.92, .7, .2]], [.62, .82], Q.cloud[1], false);
+      lump([[.12, .8, .17], [.3, .74, .22], [.5, .72, .24], [.7, .74, .22], [.88, .8, .16]], [.78, .92], Q.cloud[2], false);
+      x.fillStyle = Q.under; x.beginPath(); x.moveTo(cw * .08, ch * .9); for (let k = 0; k < 10; k++) { const fx = .08 + k * .084; x.quadraticCurveTo(cw * (fx + .042), ch * 1.05, cw * (fx + .084), ch * .9); } x.lineTo(cw * .92, ch * .86); x.lineTo(cw * .08, ch * .86); x.closePath(); x.fill(); }); // its hem, scalloped, where the rain comes from
+    HG.cw = cw; HG.ch = ch;
+    const bl = ch * 1.1, bw2 = bl * .34; HG.bolt = make(bw2 + 2 * u, bl + 2 * u, x => { x.translate(u, u); shade(x, 3, -.8, 1.6, night ? "rgba(0,0,0,.45)" : "rgba(92,68,36,.28)");
+      const P2 = [[.55, 0], [.98, 0], [.62, .38], [.88, .38], [.18, 1], [.4, .54], [.12, .54]]; x.fillStyle = Q.bolt; x.beginPath(); P2.forEach(([a, b], i) => i ? x.lineTo(a * bw2, b * bl) : x.moveTo(a * bw2, b * bl)); x.closePath(); x.fill(); unshade(x);
+      x.fillStyle = Q.boltHi; x.beginPath(); x.moveTo(.6 * bw2, .03 * bl); x.lineTo(.9 * bw2, .03 * bl); x.lineTo(.6 * bw2, .35 * bl); x.closePath(); x.fill(); }); // a zigzag of yellow card, lit along one facet
+    HG.bl = bl; if (night) HG.boltGlow = K.glowSpr(Math.round(bl * .55), [255, 230, 160], .22);
+    { const dw = (pr ? .8 : .68) * u, dh = dw * 1.85; HG.drop = make(dw * 2.4, dh * 1.6, x => { x.translate(dw * 1.2, dh * .8); x.rotate(-.16); x.translate(0, -dh * .1); shade(x, 2, -.4, .9, night ? "rgba(0,0,0,.4)" : "rgba(60,80,100,.22)"); x.fillStyle = Q.drop; x.beginPath(); x.moveTo(0, -dh * .5); x.bezierCurveTo(dw * .1, -dh * .2, dw * .5, dh * .05, dw * .5, dh * .22); x.arc(0, dh * .22, dw * .5, 0, Math.PI); x.bezierCurveTo(-dw * .5, dh * .05, -dw * .1, -dh * .2, 0, -dh * .5); x.fill(); unshade(x);
+      x.fillStyle = Q.dropHi; x.globalAlpha = .85; x.beginPath(); x.ellipse(-dw * .2, dh * .2, dw * .1, dh * .13, .3, 0, TAU); x.fill(); x.globalAlpha = 1; }); HG.dw = dw; } // a raindrop of cut paper, leaning on the wind
+    // the umbrellas, in four ways of cutting the canopy, and someone under each: a coat, two legs and their boots
+    const ur = (pr ? 2.3 : 2.05) * u; HG.ur = ur; HG.umb = [];
+    for (let c = 0; c < 6; c++) for (let p2 = 0; p2 < 4; p2++) HG.umb.push(make(ur * 2.7, ur * 3.6, x => { const cx = ur * 1.35, top = ur * .4, rim = top + ur * .92, feet = ur * 3.35, [c0, c1] = Q.umb[c];
+      shade(x, 3, -.8, 1.6, night ? "rgba(0,0,0,.45)" : "rgba(92,68,36,.26)");
+      x.fillStyle = Q.coat[(c + p2) % 4]; x.beginPath(); x.moveTo(cx - ur * .34, rim - ur * .1); x.lineTo(cx + ur * .3, rim - ur * .1); x.lineTo(cx + ur * .42, feet - ur * .85); x.lineTo(cx - ur * .46, feet - ur * .85); x.closePath(); x.fill(); // the coat
+      x.strokeStyle = Q.coat[(c + p2 + 2) % 4]; x.lineCap = "round"; x.lineWidth = ur * .16; x.beginPath(); x.moveTo(cx - ur * .17, feet - ur * .9); x.lineTo(cx - ur * .2, feet - ur * .2); x.moveTo(cx + ur * .14, feet - ur * .9); x.lineTo(cx + ur * .17, feet - ur * .2); x.stroke(); // its legs
+      x.fillStyle = Q.boot; for (const sd of [-1, 1]) { x.beginPath(); x.roundRect(cx + sd * ur * .18 - ur * .14 + (sd > 0 ? ur * .04 : -ur * .04), feet - ur * .42, ur * .28, ur * .42, ur * .06); x.fill(); x.beginPath(); x.roundRect(cx + sd * ur * .18 - ur * .14 + (sd > 0 ? ur * .1 : -ur * .1), feet - ur * .14, ur * .32, ur * .14, ur * .06); x.fill(); } // the boots
+      x.strokeStyle = Q.shaft; x.lineWidth = Math.max(1, ur * .07); x.beginPath(); x.moveTo(cx, top - ur * .1); x.lineTo(cx, rim + ur * .55); x.arc(cx + ur * .13, rim + ur * .55, ur * .13, Math.PI, 0, true); x.stroke(); // the shaft and its crook
+      x.fillStyle = Q.skin; x.beginPath(); x.arc(cx - ur * .03, rim + ur * .42, ur * .1, 0, TAU); x.fill(); // the hand on it
+      shade(x, 4, -1, 2, night ? "rgba(0,0,0,.5)" : "rgba(92,68,36,.3)");
+      const dome = () => { x.beginPath(); x.moveTo(cx - ur, rim); x.bezierCurveTo(cx - ur, top + ur * .18, cx - ur * .55, top, cx, top); x.bezierCurveTo(cx + ur * .55, top, cx + ur, top + ur * .18, cx + ur, rim); for (let k = 4; k > 0; k--) { const a = cx - ur + ur * .5 * k, b = cx - ur + ur * .5 * (k - 1); x.quadraticCurveTo((a + b) / 2, rim - ur * (p2 === 1 ? .32 : .2), b, rim); } x.closePath(); }; // scalloped
+      x.fillStyle = c0; dome(); x.fill(); unshade(x);
+      x.save(); dome(); x.clip(); x.fillStyle = c1;
+      if (p2 === 0) for (let k = 0; k < 4; k += 2) { x.beginPath(); x.moveTo(cx, top); x.lineTo(cx - ur + ur * .5 * k, rim + 1); x.lineTo(cx - ur + ur * .5 * (k + 1), rim + 1); x.closePath(); x.fill(); } // panels of two colours
+      else if (p2 === 1) { x.fillRect(cx - ur, rim - ur * .34, ur * 2, ur * .14); } // a band round its hem
+      else if (p2 === 2) { for (const [dx, dy] of [[-.5, .5], [.1, .25], [.55, .55], [-.15, .72], [.35, .8], [-.62, .82]]) { x.beginPath(); x.arc(cx + dx * ur, top + dy * ur * .9, ur * .1, 0, TAU); x.fill(); } } // dots
+      else { x.beginPath(); x.moveTo(cx, top); x.lineTo(cx + ur, rim + 1); x.lineTo(cx + ur * .5, rim + 1); x.closePath(); x.fill(); x.beginPath(); x.moveTo(cx, top); x.lineTo(cx - ur * .5, rim + 1); x.lineTo(cx, rim + 1); x.closePath(); x.fill(); }
+      x.fillStyle = night ? "rgba(150,170,225,.22)" : "rgba(255,255,255,.3)"; x.beginPath(); x.ellipse(cx - ur * .42, top + ur * .38, ur * .3, ur * .14, -.5, 0, TAU); x.fill(); x.restore(); // the light on it
+      x.strokeStyle = "rgba(0,0,0,.18)"; x.lineWidth = Math.max(.6, ur * .04); x.beginPath(); for (const f of [-.5, 0, .5]) { x.moveTo(cx, top); x.quadraticCurveTo(cx + f * ur * .9, top + ur * .2, cx + f * ur, rim - ur * .08); } x.stroke(); // its ribs
+      x.fillStyle = Q.shaft; x.beginPath(); x.arc(cx, top - ur * .06, ur * .08, 0, TAU); x.fill(); })); // the finial
+    HG.ufoot = ur * 3.35;
+    if (night) HG.nPad = make(160, 80, x => { for (let q = 0; q < 12; q++) { x.fillStyle = "rgba(14,20,36,.16)"; x.beginPath(); x.roundRect(q * 2.4, q * 1.8, 160 - q * 4.8, 80 - q * 3.6, 34 - q * 2); x.fill(); } }); // the night's ground, soft at its edges, for the words that lie over what's lit
+    HG.shadow = make(200, 100, x => { const gr = x.createRadialGradient(100, 100, 0, 100, 100, 100); gr.addColorStop(0, "rgba(52,64,86,1)"); gr.addColorStop(.6, "rgba(52,64,86,.55)"); gr.addColorStop(1, "rgba(52,64,86,0)"); x.setTransform(px, 0, 0, px * .5, 0, 0); x.fillStyle = gr; x.fillRect(0, 0, 200, 200); }); // a soft round shadow, squashed onto the ground
+    return HG;
+  }
+  /** the bow's paper, for where it stands: each band its own arch of card, made once for the place it stands (and when
+   *  that moves) */
+  function bowSpr(b) {
+    if (HG.bowKey === b.key) return HG.bowS; const { cx, cy, rx, ry, bw } = b, Q = HCOL, n = 7, gap2 = bw * 2.2, x0 = cx - rx - gap2 - 7 * bw * .62 - 14, y0 = cy - ry - gap2 - 7 * bw * .62 - 14, leg = 6 * S.u;
+    const band = (x, oX, oY, iX, iY, col) => { x.fillStyle = col; x.beginPath(); x.ellipse(cx, cy, oX, oY, 0, Math.PI, TAU); x.lineTo(cx + oX, cy + leg); x.lineTo(cx + iX, cy + leg); x.lineTo(cx + iX, cy); x.ellipse(cx, cy, iX, iY, 0, TAU, Math.PI, true); x.lineTo(cx - iX, cy + leg); x.lineTo(cx - oX, cy + leg); x.closePath(); x.fill(); };
+    const one = (outer, w, cols) => make((cx - x0) * 2, cy + leg - y0 + 4, x => { x.translate(-x0, -y0); for (let k = 0; k < n; k++) { const oX = outer[0] - k * w, oY = outer[1] - k * w; shade(x, 6, -1.4, 2.6, night ? "rgba(0,0,0,.45)" : P.shadow); band(x, oX, oY, oX - w, oY - w, cols[k]); unshade(x);
+      x.strokeStyle = "rgba(255,255,255,.42)"; x.lineWidth = .8; x.beginPath(); x.ellipse(cx, cy, oX - .7, oY - .7, 0, Math.PI, TAU); x.stroke(); } });
+    const pri = one([rx, ry], bw, Q.bow), sec = b.dbl ? one([rx + gap2 + 7 * bw * .62, ry + gap2 + 7 * bw * .62], bw * .62, Q.bow.slice().reverse()) : null;
+    const paths = (outer, w) => Array.from({ length: n }, (_, k) => { const p = new Path2D(), oX = outer[0] - k * w + (k ? 0 : 8), oY = outer[1] - k * w + (k ? 0 : 8), iX = outer[0] - (k + 1) * w - (k === n - 1 ? 10 : 0), iY = outer[1] - (k + 1) * w - (k === n - 1 ? 10 : 0); p.ellipse(cx, cy, oX, oY, 0, Math.PI, TAU); p.lineTo(cx + oX, cy + leg); p.lineTo(cx + iX, cy + leg); p.lineTo(cx + iX, cy); p.ellipse(cx, cy, iX, iY, 0, TAU, Math.PI, true); p.lineTo(cx - iX, cy + leg); p.lineTo(cx - oX, cy + leg); p.closePath(); return p; });
+    const glow = night ? make((cx - x0) * 2, cy + leg - y0 + 4, x => { x.translate(-x0, -y0); x.shadowColor = "rgba(225,232,255,1)"; x.shadowBlur = 18 * px; band(x, rx + bw, ry + bw, rx - 8 * bw, ry - 8 * bw, "rgba(225,232,255,.45)"); }) : null; // by night, the light round the moonbow
+    HG.bowS = { pri, sec, glow, x0, y0, pp: paths([rx, ry], bw), sp: b.dbl ? paths([rx + gap2 + 7 * bw * .62, ry + gap2 + 7 * bw * .62], bw * .62) : null }; HG.bowKey = b.key; return HG.bowS;
+  }
+  /** the hour egg's sky: the storm cloud let in on its threads past the edge, its bolt let down under it and swinging,
+   *  and the cloud drawn up out of sight again */
+  function hourSky(T, I, A, pl) {
+    if (pl.hr !== 1 || I <= .01) return; const st = pl.st, k = seg(T, STORM.cloud[0], STORM.cloud[1], E.out), up = seg(T, STORM.lift[0], STORM.lift[1], E.in); if (k <= 0 || up >= 1) return;
+    const G = hourGear(), { u } = S, cw = G.cw, ch = G.ch, x = lerp(st.sx, st.cx, k) + Math.sin(A * .6) * .5 * u, y = st.cy + Math.sin(A * .8 + 1) * .4 * u - up * (st.cy + ch * 1.1 + 6 * u), sw = Math.sin(A * .7) * .012;
+    g.globalAlpha = I; g.strokeStyle = P.thread; g.lineWidth = .8; g.beginPath(); for (const f of [-.3, .28]) { g.moveTo(x + f * cw, 0); g.lineTo(x + f * cw, y - ch * .32); } g.stroke();
+    const bd = env(T, STORM.bolt[0], STORM.bolt[1], STORM.bolt[2], STORM.bolt[3], E.io); // the bolt, let down from behind it on its thread, swinging, taken up again
+    if (bd > .001) { const bx = x + st.cw * (S.pr ? .2 : .22), by = y + ch * .1 + bd * ch * (S.pr ? .45 : .8), ba = Math.sin(A * 2.3) * .09 * bd + Math.sin(A * 5.1) * .03 * bd, ba2 = I * vel(bx, by + G.bl * .5, G.bl * .5);
+      g.strokeStyle = P.thread; g.beginPath(); g.moveTo(bx, y); g.lineTo(bx + Math.sin(ba) * G.bl * .05, by); g.stroke();
+      if (night) { g.globalAlpha = ba2 * bd * .8; g.drawImage(G.boltGlow, bx - G.boltGlow.width / 2, by + G.bl * .45 - G.boltGlow.height / 2); g.globalAlpha = I; }
+      put(G.bolt, bx, by, .62, .02, ba, 1, 1, ba2); }
+    put(G.cloud, x, y + Math.sin(T * 31) * .25 * S.u * thunder(T), .5, .5, sw, 1, 1, I); g.globalAlpha = 1; // (it rumbles as the bolt drops)
+  }
+  /** the moment the bolt comes down: how hard the town shivers (0 … 1) */
+  const thunder = T => env(T, STORM.bolt[1] - .1, STORM.bolt[1], STORM.bolt[1] + .15, STORM.bolt[1] + .8, E.out);
+  /** an umbrella's way up and down: [how far it stands (0 flat … 1), how far it is open] */
+  function umbAt(T, m) {
+    if (T < m.t0 || T > m.t1 + .75) return null;
+    const up = K.spring(clamp((T - m.t0) / .5), 2.5, 5) * (1 - E.in(seg(T, m.t1 + .32, m.t1 + .7, x => x))), open = .16 + .84 * K.spring(clamp((T - m.t0 - .32) / .5), 2, 5) * (1 - E.io(seg(T, m.t1, m.t1 + .32, x => x)));
+    return up > .002 ? [up, open] : null;
+  }
+  /** the hour egg's middle ground: by the storm, its shadow on the town, the rain that falls on the street (and on
+   *  the umbrellas), the umbrellas, the bow behind the near bank */
+  function hourLand(T, I, A, pl) {
+    if (I <= .01) return; if (pl.hr === 2) { dFair(T, I, A, pl, false); return; } const st = pl.st, G = hourGear(), { u } = S;
+    const k = seg(T, STORM.cloud[0], STORM.cloud[1], E.out) * (1 - seg(T, STORM.lift[0], STORM.lift[1], E.io));
+    if (!night && k > .002) { const x = lerp(st.sx, st.cx, k), w = st.cw * 1.9, h = S.H * .32; g.globalAlpha = .3 * k * I; g.drawImage(G.shadow, x - w / 2 + st.cw * .1, S.townY(x) - h * .38, w, h); g.globalAlpha = 1; } // the cloud's shadow on the town
+    if (T > STORM.bow[0] && T < STORM.bowOff[1]) dBow(T, I, st.bow);
+    const um = st.umbs.map(m => umbAt(T, m));
+    dRain(T, I, st, true, um);
+    st.umbs.forEach((m, i) => { const s = um[i]; if (!s) return; const spr = G.umb[m.c * 4 + m.p], sc = m.s;
+      g.save(); g.globalAlpha = I * vel(m.x, m.y - G.ur * 2, G.ur * 2); g.translate(m.x, m.y); g.rotate((Math.sin(A * 1.7 + m.ph) * .035 + Math.sin(T * 26 + m.ph) * .16 * thunder(T)) * s[0]); g.scale(sc, sc * s[0]); // (a shiver when the bolt comes down)
+      const fy = G.ufoot, top = G.ur * 1.3; g.drawImage(spr, 0, 0, spr.width, (top / spr.h2) * spr.height, -spr.w2 / 2 * s[1] - .0, -fy, spr.w2 * s[1], top); g.drawImage(spr, 0, (top / spr.h2) * spr.height, spr.width, spr.height - (top / spr.h2) * spr.height, -spr.w2 / 2, -fy + top, spr.w2, spr.h2 - top); g.restore(); }); // the canopy opens across; the one under it stands as it is
+    g.globalAlpha = 1;
+  }
+  /** the hour egg's near ground: the rain on the river and the near bank, its rings and splashes */
+  function hourNear(T, I, A, pl) {
+    if (I <= .01) return; const st = pl.st;
+    if (pl.hr === 1) { dRain(T, I, st, false, null); dWalk(T, I, A, st); } else dFair(T, I, A, pl, true); /* the rides stand on the near bank, in front of its trees */
+    const pa = night && S.rects ? env(T, .5, 1.5, 13.3, 14.3, E.sine) * I : 0; /* the words that lie over what the egg lights (the moonbow, the fair), on the night's own ground while it is lit */
+    if (pa > .01) { const G = hourGear(), lit = litBoxes(pl); g.globalAlpha = pa; for (const [x0, y0, x1, y1, kd] of S.rects) if (kd !== 2 && lit.some(b => x1 > b[0] - 30 && x0 < b[2] + 30 && y1 > b[1] - 30 && y0 < b[3] + 30)) { const mx = 18 + (y1 - y0) * .5, my = 6 + (y1 - y0) * .3; g.drawImage(G.nPad, x0 - mx, y0 - my, x1 - x0 + mx * 2, y1 - y0 + my * 2); } g.globalAlpha = 1; }
+  }
+  /** where the hour egg lights the night: the moonbow's arch; the wheel, the roundabout and the bunting */
+  function litBoxes(pl) {
+    if (pl.lit) return pl.lit; const { u } = S;
+    if (pl.hr === 1) { const b = pl.st.bow; return pl.lit = [[b.cx - b.rx - 8 * b.bw, b.cy - b.ry - 8 * b.bw, b.cx + b.rx + 8 * b.bw, b.cy]]; }
+    const f = pl.fair, xs = f.str.pts.map(q => q[0]), ys = f.str.pts.map(q => q[1]);
+    return pl.lit = [[f.wx - f.R * 1.15, f.hub - f.R * 1.15, f.wx + f.R * 1.15, f.wy], [f.cx - f.Rc * 1.2, f.cy - f.Rc * 2.7, f.cx + f.Rc * 1.2, f.cy], [Math.min(...xs) - u, Math.min(...ys) - u, Math.max(...xs) + u, Math.max(...ys) + 3 * u]];
+  }
+  /** the rain: each drop from the cloud's underside, slanting down on the wind, faded where it passes behind the words;
+   *  where it lands, a ring on the river or a splash; on an open umbrella it stops at the canopy (`far`: the drops that
+   *  fall on the street, drawn before the umbrellas; else the river's and the near bank's) */
+  function dRain(T, I, st, far, um) {
+    const G = hourGear(), { u } = S, spr = G.drop, dw = spr.w2 * (far ? .78 : 1), dh = spr.h2 * (far ? .78 : 1), Q = HCOL; // (the drops that fall on the street are further off: smaller)
+    for (const d of st.drops) { if (d.far !== far) continue; const age = T - d.t; if (age <= 0 || age > d.d + .4) continue;
+      let y = d.y0 + d.vy * age, x = d.x0 + d.vx * age, land = d.y1, landed = age >= d.d;
+      if (far && um) st.umbs.forEach((m, i) => { const s = um[i]; if (!s || s[1] < .6) return; const r0 = G.ur * m.s * s[1], top = m.y - G.ufoot * m.s * s[0] + G.ur * .55 * m.s; if (Math.abs(x - m.x) < r0 * .9 && y > top && d.y0 < top) { const a2 = (y - top) / d.vy; if (a2 > .4) { landed = true; land = 1e9; } else { landed = true; land = top; x -= d.vx * a2; } } }); // on the canopy
+      if (!landed) { const a = I * S.shade(x, y, 2 * u); if (a > .02) { g.globalAlpha = a; g.drawImage(spr, x - dw / 2, y - dh / 2, dw, dh); } continue; }
+      if (land > 1e8) continue; const q = (age - d.d) / .4, sx = land === d.y1 ? d.x0 + d.vx * d.d : x; if ((q < 0 || q > 1) && land === d.y1) continue;
+      const qa = clamp(land === d.y1 ? q : (y - land) / d.vy / .4); if (qa >= 1) continue; const a = I * (1 - qa) * S.shade(sx, land, 2 * u); if (a < .02) continue;
+      if (d.river) { g.globalAlpha = a * .9; g.strokeStyle = Q.ring; g.lineWidth = Math.max(.8, .12 * u); g.beginPath(); g.ellipse(sx, land, (.3 + 1.5 * E.out(qa)) * u, (.1 + .45 * E.out(qa)) * u, 0, 0, TAU); g.stroke(); }
+      else { g.globalAlpha = a; g.fillStyle = Q.drop; for (const s2 of [-1, 1]) { const px2 = sx + s2 * qa * 1.1 * u, py2 = land - Math.sin(qa * Math.PI) * .9 * u; g.beginPath(); g.arc(px2, py2, .17 * u * (1 - qa * .5), 0, TAU); g.fill(); } } }
+    g.globalAlpha = 1;
+  }
+  /** the bow: its bands stand up from the near bank one after another, outermost first, each swinging a little past
+   *  upright as a pop-up's card does, its feet behind the bank; then a fainter bow outside it (by day); and later they
+   *  are laid down again, innermost first */
+  function dBow(T, I, b) {
+    const bs = bowSpr(b), { cy } = b, n = 7, a0 = (b.fade ? .55 : 1) * HCOL.bowA;
+    const st = (k, on, off) => { const t0 = STORM.bow[0] + on + k * .17, t1 = STORM.bowOff[0] + off + (n - 1 - k) * .14; return K.spring(clamp((T - t0) / .62), 2.5, 5) * (1 - E.in(seg(T, t1, t1 + .5, x => x))); };
+    g.save(); g.clip(S.frontClip);
+    const draw2 = (spr, paths, on, off, alpha) => { for (let k = n - 1; k >= 0; k--) { const s = st(k, on, off); if (s <= .002) continue; g.save(); g.translate(0, cy); g.scale(1, s); g.translate(0, -cy); g.clip(paths[k]); g.globalAlpha = I * alpha; if (night) g.globalCompositeOperation = "lighter"; g.drawImage(spr, bs.x0, bs.y0, spr.w2, spr.h2); g.restore(); } }; /* (by night the moonbow lights the dark it stands in) */
+    if (bs.glow) { let m = 0; for (let k = 0; k < n; k++) m += st(k, 0, 0) / n; if (m > .002) { g.save(); g.translate(0, cy); g.scale(1, m); g.translate(0, -cy); g.globalCompositeOperation = "lighter"; g.globalAlpha = I * .3 * Math.min(1, m) * (b.fade ? .55 : 1); g.drawImage(bs.glow, bs.x0, bs.y0, bs.glow.w2, bs.glow.h2); g.restore(); } } // its light, standing as it stands
+    if (bs.sec) draw2(bs.sec, bs.sp, n * .17 + .25, -.35, a0 * .5); /* the second bow stands after the first and goes before it */
+    draw2(bs.pri, bs.pp, 0, 0, a0);
+    g.restore(); g.globalAlpha = 1;
+  }
+
+  /* ---- the fair ---- */
+  /** the fair's beats: the wheel's frame stands, the wheel opens round like a paper fan and its cars drop onto their
+   *  pins; the roundabout stands up; the bunting strings itself between the houses; they turn (by night they light);
+   *  a red balloon slips away from the roundabout and is gone over the town; then they stop, and fold away */
+  const FAIR = { frame: [.6, 13.0], wheel: [1.3, 2.7, 12.0, 13.0], cars: [2.5, 11.2], turn: [3.4, 4.6, 10.3, 11.4], ride: [1.0, 1.4, 1.9, 11.5, 12.0, 12.6], spin: [3.0, 4.0, 10.5, 11.5], flags: [1.7, 3.5, 11.9, 13.2], lights: [3.3, 11.6], balloon: [7.4, 12.6] };
+  const FCOL = night ? { leg: "#2E3B63", legLo: "#232E4E", rim: "#3B4C80", rim2: "#56689E", spoke: "#42548A", hub: "#1B2442", car: [["#7A3A33", "#5E2C26"], ["#8E7234", "#6E5726"], ["#35587A", "#28445F"], ["#4E6A46", "#3B5235"]],
+      roof: ["#7A3A33", "#C9C2B0"], pole: "#B49A56", plat: "#2B375C", platHi: "#3E4E80", horse: "#C9C3D8", horseLo: "#A49EB8", mane: ["#7A3A33", "#35587A", "#8E7234"], saddle: "#7A3A33",
+      flag: ["#9C3F33", "#B0873A", "#3F6A8E", "#C9C2B0", "#5E7D52", "#8A5A86"], string: "rgba(200,215,255,.45)", bulb: "#FFE7A8", balloon: "#C8402E", balloonHi: "#E8826E" }
+    : { leg: "#F7EFDF", legLo: "#E3D6BE", rim: "#C8321F", rim2: "#E46D55", spoke: "#FBF3E4", hub: "#8A7258", car: [["#C8321F", "#A82A1A"], ["#E0A33C", "#C68A2A"], ["#5F8EA6", "#4C7890"], ["#8FAF6E", "#749456"]],
+      roof: ["#C8321F", "#FBF3E4"], pole: "#E0A33C", plat: "#EFE5D0", platHi: "#FBF3E4", horse: "#FFFDF8", horseLo: "#E4DBCA", mane: ["#C8321F", "#5F8EA6", "#E0A33C"], saddle: "#C8321F",
+      flag: ["#C8321F", "#E0A33C", "#5F8EA6", "#FBF3E4", "#8FAF6E", "#E0603F"], string: "rgba(96,74,50,.55)", bulb: "#FFE7A8", balloon: "#D93A26", balloonHi: "#F08A70" };
+  /** where the fair stands: the wheel on the near bank beside the windmill, the roundabout along from it, the bunting
+   *  from ridge to ridge along the street, the balloon's way up and off */
+  function fairPlan(pl, r) {
+    const { W, H, u, pr } = S, f = pl.fair = {};
+    [f.R, f.Rc] = fairSize(); f.wx = pr ? W * .76 : W * .855; f.wy = S.frontY(f.wx) + .7 * u; f.hub = f.wy - f.R * 1.16 - .6 * u; f.n = 12;
+    f.cx = pr ? W * .44 : W * .655; f.cy = S.frontY(f.cx) + .9 * u;
+    // the wheel's turn: up to speed, round, slowing to a stop; worked out as an angle for any moment
+    const [a0, a1, a2, a3] = FAIR.turn, w = .5; f.theta = T => { const acc = w / (a1 - a0), dec = w / (a3 - a2); if (T <= a0) return 0; if (T <= a1) return .5 * acc * (T - a0) ** 2; const t1 = .5 * w * (a1 - a0); if (T <= a2) return t1 + w * (T - a1); const t2 = t1 + w * (a2 - a1); if (T <= a3) return t2 + w * (T - a2) - .5 * dec * (T - a2) ** 2; return t2 + .5 * w * (a3 - a2); };
+    const [b0, b1, b2, b3] = FAIR.spin, wc = 1.25; f.phi = T => { const acc = wc / (b1 - b0), dec = wc / (b3 - b2); if (T <= b0) return 0; if (T <= b1) return .5 * acc * (T - b0) ** 2; const t1 = .5 * wc * (b1 - b0); if (T <= b2) return t1 + wc * (T - b1); const t2 = t1 + wc * (b2 - b1); if (T <= b3) return t2 + wc * (T - b2) - .5 * dec * (T - b2) ** 2; return t2 + .5 * wc * (b3 - b2); };
+    f.ride = T => clamp((f.phi(T + .01) - f.phi(T)) / .01 / wc); f.turnRate = T => clamp((f.theta(T + .01) - f.theta(T)) / .01 / w);
+    // the bunting: through the ridge of each house in turn, sagging between them; a pennant every so far along it
+    const tops = S.houses.map(h => [h.x + h.w / 2, h.roof === 3 ? h.base - h.h * .74 - .3 * u : h.base - h.h - .25 * u]), pts = [];
+    for (let i = 0; i < tops.length - 1; i++) { const [x0, y0] = tops[i], [x1, y1] = tops[i + 1], sag = .2 * (x1 - x0) + .6 * u; for (let k = i ? 1 : 0; k <= 10; k++) { const q = k / 10; pts.push([lerp(x0, x1, q), lerp(y0, y1, q) + 4 * sag * q * (1 - q)]); } }
+    const L = [0]; for (let i = 1; i < pts.length; i++) L.push(L[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    f.str = { pts, L, total: L[L.length - 1] }; f.flags = []; const sp = (pr ? 1.9 : 1.7) * u; for (let s2 = sp * .6, k = 0; s2 < f.str.total - sp * .3; s2 += sp, k++) f.flags.push({ s: s2, c: k % 6, ph: r() * TAU });
+    // the red balloon, let go from the roundabout's top, up and away on the wind past the top of the page
+    const bx0 = f.cx + f.Rc * .2, by0 = f.cy - f.Rc * 2.4; f.bal = { x0: bx0, y0: by0, x1: bx0 + (pr ? W * .34 : W * .25), y1: -8 * u, ph: r() * TAU };
+    f.gph = Array.from({ length: f.n }, () => r() * TAU); f.hph = Array.from({ length: 6 }, () => r() * TAU);
+    // and one of the roundabout's horses — whichever is at the front when the moment comes — leaps off it and gallops
+    // away along the near bank, away from the wheel, and out past the edge; its pole goes round empty after it
+    { const t0 = 6.6, a = f.phi(t0); let k = 0, best = -2; for (let j = 0; j < 6; j++) { const z = Math.cos(a + j / 6 * TAU); if (z > best) { best = z; k = j; } }
+      f.esc = { t0, k, dir: f.wx > f.cx ? -1 : 1, v: pr ? 165 : 330 }; }
+  }
+  /** the wheel's radius and the roundabout's */
+  const fairSize = () => [(S.pr ? 10.4 : 9.4) * S.u, (S.pr ? 7.2 : 6.2) * S.u];
+  /** a point and the way along the bunting's string, `s` along it */
+  const strAt = (st, s) => { const { pts, L } = st; let j = 0; while (j < L.length - 2 && L[j + 1] < s) j++; const q = clamp((s - L[j]) / ((L[j + 1] - L[j]) || 1)); return [lerp(pts[j][0], pts[j + 1][0], q), lerp(pts[j][1], pts[j + 1][1], q), Math.atan2(pts[j + 1][1] - pts[j][1], pts[j + 1][0] - pts[j][0])]; };
+  /** the fair's pieces, made with the rest of the hour eggs' (hourGear): the cars, a pennant in each colour, a horse, the
+   *  wheel's frame, the balloon, a bulb's glow */
+  function fairGear(G) {
+    if (G.fair) return G.fair; const { u } = S, Q = FCOL, [R, Rc] = fairSize(), F = G.fair = {}, sh = night ? "rgba(0,0,0,.45)" : P.shadow;
+    const cw = R * .3, chh = R * .3; F.car = Q.car.map(([c0, c1]) => make(cw + 2 * u, chh + 2.4 * u, x => { x.translate(u, u); shade(x, 3, -.8, 1.6, sh);
+      x.fillStyle = c0; x.beginPath(); x.moveTo(cw * .08, chh * .32); x.lineTo(cw * .92, chh * .32); x.lineTo(cw * .84, chh * 1.0); x.quadraticCurveTo(cw * .5, chh * 1.12, cw * .16, chh * 1.0); x.closePath(); x.fill(); // the car
+      x.beginPath(); x.moveTo(cw * .02, chh * .3); x.quadraticCurveTo(cw * .5, -chh * .12, cw * .98, chh * .3); x.closePath(); x.fill(); unshade(x); // its canopy
+      x.fillStyle = c1; x.fillRect(cw * .1, chh * .62, cw * .8, chh * .1); x.fillStyle = night ? "#FFD98A" : "#FBF3E4"; x.globalAlpha = night ? .85 : .9; x.fillRect(cw * .2, chh * .4, cw * .6, chh * .18); x.globalAlpha = 1; // its trim, the gap you sit in
+      x.fillStyle = night ? "#2A2440" : "#E9B99A"; for (const f of [.38, .62]) { x.beginPath(); x.arc(cw * f, chh * .5, chh * .1, 0, TAU); x.fill(); } x.fillStyle = night ? "#2A2440" : "#5A4636"; for (const f of [.38, .62]) { x.beginPath(); x.arc(cw * f, chh * .47, chh * .1, Math.PI, TAU); x.fill(); } // two riders, peeping over its side
+      x.strokeStyle = night ? "#8E9AC0" : "#5A4636"; x.lineWidth = Math.max(.7, .06 * u); x.beginPath(); x.moveTo(cw * .5, -u * .6); x.lineTo(cw * .5, chh * .02); x.stroke(); })); // the hanger
+    F.cw = cw; F.ch = chh;
+    F.flag = Q.flag.map(c => make(1.7 * u, 2.1 * u, x => { x.translate(.25 * u, .1 * u); shade(x, 2, -.5, 1, sh); x.fillStyle = c; x.beginPath(); x.moveTo(0, 0); x.lineTo(1.2 * u, 0); x.lineTo(.6 * u, 1.55 * u); x.closePath(); x.fill(); unshade(x); x.fillStyle = "rgba(0,0,0,.1)"; x.beginPath(); x.moveTo(.6 * u, 0); x.lineTo(1.2 * u, 0); x.lineTo(.6 * u, 1.55 * u); x.closePath(); x.fill(); }));
+    // a roundabout horse, prancing, facing right: its body, its legs bent and reaching, its mane and tail, its saddle
+    const hl = Rc * .62, hh = Rc * .5; F.horse = [0, 1, 2].map(pose => Q.mane.map(mc => make(hl + 2 * u, hh + 2 * u, x => { x.translate(u, u); const s = hl; shade(x, 2.5, -.6, 1.2, sh); x.lineCap = "round"; x.lineJoin = "round";
+      const leg = (a, b, c, d, w) => { x.strokeStyle = Q.horse; x.lineWidth = w; x.beginPath(); x.moveTo(a * s, b * s); x.quadraticCurveTo(c * s, d * s, (c + (c - a) * .4) * s, (d + .02) * s); x.stroke(); };
+      if (pose === 0) { leg(.3, .5, .22, .7, .07 * s); leg(.36, .5, .38, .72, .07 * s); leg(.66, .46, .84, .42, .07 * s); leg(.62, .48, .76, .56, .07 * s); } // hind legs down, fore legs raised and folded
+      else if (pose === 1) { leg(.3, .48, .12, .62, .07 * s); leg(.36, .5, .2, .7, .07 * s); leg(.66, .46, .88, .56, .07 * s); leg(.62, .48, .8, .66, .07 * s); } // the gallop, stretched out: hind legs flung back, fore legs reaching
+      else { leg(.3, .5, .4, .68, .07 * s); leg(.36, .5, .46, .66, .07 * s); leg(.66, .46, .56, .66, .07 * s); leg(.62, .48, .5, .64, .07 * s); } // and gathered under it
+      x.fillStyle = Q.horse; x.beginPath(); x.ellipse(.48 * s, .42 * s, .25 * s, .11 * s, -.08, 0, TAU); x.fill(); // the body
+      x.beginPath(); x.moveTo(.62 * s, .38 * s); x.quadraticCurveTo(.7 * s, .16 * s, .78 * s, .1 * s); x.lineTo(.92 * s, .17 * s); x.lineTo(.9 * s, .23 * s); x.lineTo(.8 * s, .22 * s); x.quadraticCurveTo(.76 * s, .32 * s, .72 * s, .44 * s); x.closePath(); x.fill(); unshade(x); // the neck and head
+      x.fillStyle = mc; x.beginPath(); x.moveTo(.6 * s, .36 * s); x.quadraticCurveTo(.66 * s, .14 * s, .78 * s, .08 * s); x.quadraticCurveTo(.7 * s, .2 * s, .66 * s, .4 * s); x.closePath(); x.fill(); // the mane
+      x.beginPath(); x.moveTo(.25 * s, .38 * s); x.quadraticCurveTo(.1 * s, .36 * s, .06 * s, .56 * s); x.quadraticCurveTo(.16 * s, .46 * s, .26 * s, .45 * s); x.closePath(); x.fill(); // the tail
+      x.fillStyle = Q.saddle; x.beginPath(); x.ellipse(.46 * s, .33 * s, .09 * s, .04 * s, 0, 0, TAU); x.fill(); x.fillStyle = Q.horseLo; x.beginPath(); x.ellipse(.46 * s, .47 * s, .2 * s, .04 * s, 0, 0, TAU); x.fill();
+      x.fillStyle = "#3A2A20"; x.beginPath(); x.arc(.84 * s, .15 * s, .012 * s, 0, TAU); x.fill(); }))); // its eye
+    F.hl = hl; F.hh = hh;
+    F.balloon = make(3.4 * u, 4.4 * u, x => { const c = 1.7 * u; shade(x, 4, -1, 2, sh); x.fillStyle = Q.balloon; x.beginPath(); x.ellipse(c, 1.75 * u, 1.45 * u, 1.65 * u, 0, 0, TAU); x.fill(); x.beginPath(); x.moveTo(c - .25 * u, 3.3 * u); x.lineTo(c + .25 * u, 3.3 * u); x.lineTo(c, 3.0 * u); x.closePath(); x.fill(); unshade(x);
+      x.fillStyle = Q.balloonHi; x.globalAlpha = .7; x.beginPath(); x.ellipse(c - .55 * u, 1.15 * u, .36 * u, .6 * u, .5, 0, TAU); x.fill(); x.globalAlpha = 1; });
+    F.glow = K.glowSpr(Math.max(3, Math.round(1.2 * u)), K.rgb(Q.bulb), .75); F.glow2 = K.glowSpr(Math.max(5, Math.round(3.4 * u)), [255, 200, 120], .3);
+    return F;
+  }
+  /** the fair: the bunting along the street, the roundabout, the wheel (and by night their lights), the balloon */
+  function dFair(T, I, A, pl, near) {
+    const f = pl.fair, G = hourGear(), F = fairGear(G), { u, pr } = S, Q = FCOL, sh = night ? "rgba(0,0,0,.4)" : "rgba(92,68,36,.22)";
+    const lit = night ? env(T, FAIR.lights[0], FAIR.lights[0] + 1.2, FAIR.lights[1] - 1, FAIR.lights[1], E.sine) : 0, bulb = (x, y, k, s2 = 1) => { if (lit <= .01) return; const a = I * lit * (.75 + .25 * Math.sin(A * 1.6 + k * .9)) * S.shade(x, y, 2 * u); if (a < .02) return; g.globalAlpha = a; g.drawImage(F.glow, x - F.glow.width / 2 * s2, y - F.glow.height / 2 * s2, F.glow.width * s2, F.glow.height * s2); };
+    // the bunting: the string drawn along from the first ridge to the last, each pennant swinging down as it passes
+    if (!near) { const st = f.str, head = st.total * E.io(seg(T, FAIR.flags[0], FAIR.flags[1], x => x)), tail = st.total * E.io(seg(T, FAIR.flags[2], FAIR.flags[3], x => x)), a = I;
+      if (head - tail > .5) { g.globalAlpha = a; g.strokeStyle = Q.string; g.lineWidth = Math.max(.8, .1 * u); g.beginPath(); let on = false; for (let i = 0; i < st.pts.length; i++) { const s2 = st.L[i]; if (s2 < tail || s2 > head) continue; const p = st.pts[i]; on ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); on = true; } const ph = strAt(st, head); if (on) g.lineTo(ph[0], ph[1]); g.stroke();
+        for (const fl of f.flags) { if (fl.s > head || fl.s < tail) continue; const t0 = FAIR.flags[0] + (FAIR.flags[1] - FAIR.flags[0]) * (fl.s / st.total), t1 = FAIR.flags[2] + (FAIR.flags[3] - FAIR.flags[2]) * (fl.s / st.total) - .3;
+          const drop = K.spring(clamp((T - t0) / .5), 2.2, 4.5) * (1 - E.in(seg(T, t1, t1 + .3, x => x))), [x, y, ang] = strAt(st, fl.s), sw = Math.sin(A * 3.2 + fl.ph) * .12 * drop;
+          put(F.flag[fl.c], x, y, .5 * .9, .05, ang + (1 - drop) * -Math.PI / 2 + sw, 1, Math.max(.05, drop), a * vel(x, y + u, 1.5 * u)); bulb(x + .85 * u, y + .1 * u, fl.c); } } }
+    if (!near) { g.globalAlpha = 1; return; }
+    // the roundabout: its platform unfolds, the pole and the canopy rise on it, the horses spring up; it turns, the
+    // horses rising and falling; its canopy's stripes and the scallops of its valance going round with it
+    { const { cx, cy, Rc } = f, [r0, r1, r2, r3, r4, r5] = FAIR.ride, plat = K.spring(clamp((T - r0) / .5), 2.5, 5) * (1 - E.in(seg(T, r5, r5 + .4, x => x))); if (plat > .002) {
+      const rise = K.spring(clamp((T - r1) / .6), 2.5, 5) * (1 - E.in(seg(T, r4, r4 + .45, x => x))), ph = f.phi(T), run = f.ride(T), py = cy - .26 * Rc, top = py - 1.45 * Rc * rise, a = I * vel(cx, py - Rc, Rc * 1.4);
+      g.save(); g.globalAlpha = a; g.translate(0, cy); g.scale(1, plat); g.translate(0, -cy);
+      // the platform: a round of card seen from the side, its rim striped and turning
+      g.fillStyle = sh; g.beginPath(); g.ellipse(cx - .1 * u, cy + .1 * u, Rc * 1.06, .26 * Rc, 0, 0, TAU); g.fill();
+      g.fillStyle = Q.plat; g.beginPath(); g.ellipse(cx, py + .12 * Rc, Rc, .22 * Rc, 0, 0, Math.PI); g.lineTo(cx - Rc, py); g.ellipse(cx, py, Rc, .22 * Rc, 0, Math.PI, 0, true); g.closePath(); g.fill();
+      g.save(); g.beginPath(); g.ellipse(cx, py + .12 * Rc, Rc, .22 * Rc, 0, 0, Math.PI); g.lineTo(cx - Rc, py); g.ellipse(cx, py, Rc, .22 * Rc, 0, Math.PI, 0, true); g.closePath(); g.clip(); g.fillStyle = Q.roof[0]; for (let k = 0; k < 16; k++) { const an = ph + k / 16 * TAU, an2 = an + TAU / 32; if (Math.cos(an) < 0 && Math.cos(an2) < 0) continue; const x0 = cx + Math.sin(an) * Rc, x1 = cx + Math.sin(an2) * Rc; g.fillRect(Math.min(x0, x1), py - .3 * Rc, Math.abs(x1 - x0), .5 * Rc); } g.restore();
+      g.fillStyle = Q.platHi; g.beginPath(); g.ellipse(cx, py, Rc, .22 * Rc, 0, 0, TAU); g.fill();
+      const horses = [0, 1, 2, 3, 4, 5].map(k => { const an = ph + k / 6 * TAU, pop = K.spring(clamp((T - r2 - k * .1) / .45), 2.5, 5) * (1 - E.in(seg(T, r3 + k * .05, r3 + k * .05 + .3, x => x))); return { k, an, z: Math.cos(an), x: cx + Math.sin(an) * Rc * .74, pop }; });
+      const drawHorse = h => { if (h.pop <= .002 || rise < .05) return; const dz = .78 + .22 * (h.z * .5 + .5), bob = Math.sin(2 * h.an + f.hph[h.k]) * .11 * Rc * run, fy = py - .02 * Rc - .2 * Rc + bob + (1 - dz) * .1 * Rc, dir = h.z > 0 ? 1 : -1;
+        g.strokeStyle = Q.pole; g.lineWidth = Math.max(1, .07 * u); g.beginPath(); g.moveTo(h.x, top + .2 * Rc); g.lineTo(h.x, py); g.stroke(); // its pole
+        if (h.k === f.esc.k && T > f.esc.t0) return; // (it has leapt off)
+        put(F.horse[0][h.k % 3], h.x, fy, .48, .78, 0, dir * dz * h.pop, dz * h.pop, h.z > 0 ? 1 : .82); };
+      horses.filter(h => h.z <= 0).sort((p, q) => p.z - q.z).forEach(drawHorse);
+      g.fillStyle = Q.pole; g.fillRect(cx - .07 * Rc, top + .1 * Rc, .14 * Rc, py - top - .1 * Rc); // the centre pole
+      horses.filter(h => h.z > 0).sort((p, q) => p.z - q.z).forEach(drawHorse);
+      // the canopy: a cone of striped card, its scalloped valance, a pennant at its peak
+      if (rise > .01) { const bw = Rc * 1.1, apex = top - .62 * Rc, cone = new Path2D(); cone.moveTo(cx, apex); cone.quadraticCurveTo(cx + bw * .6, apex + .32 * Rc, cx + bw, top); cone.lineTo(cx - bw, top); cone.quadraticCurveTo(cx - bw * .6, apex + .32 * Rc, cx, apex); cone.closePath();
+        g.fillStyle = sh; g.save(); g.translate(-.12 * u, .22 * u); g.fill(cone); g.restore(); g.fillStyle = Q.roof[1]; g.fill(cone);
+        g.save(); g.clip(cone); g.fillStyle = Q.roof[0]; for (let k = 0; k < 12; k++) { const an = ph + k / 12 * TAU, an2 = an + TAU / 24; if (Math.cos(an) < 0 && Math.cos(an2) < 0) continue; const x0 = cx + Math.sin(an) * bw, x1 = cx + Math.sin(an2) * bw; g.beginPath(); g.moveTo(cx, apex); g.lineTo(x0, top + 1); g.lineTo(x1, top + 1); g.closePath(); g.fill(); } g.restore();
+        for (let k = 0; k < 14; k++) { const an = ph + k / 14 * TAU, an2 = an + TAU / 14; if (Math.cos(an) < -.15 && Math.cos(an2) < -.15) continue; const x0 = cx + Math.sin(an) * bw, x1 = cx + Math.sin(an2) * bw; if (x1 <= x0) continue; g.fillStyle = k % 2 ? Q.roof[0] : Q.pole; g.beginPath(); g.moveTo(x0, top - .5); g.lineTo(x1, top - .5); g.quadraticCurveTo((x0 + x1) / 2, top + .3 * Rc, x0, top - .5); g.fill(); bulb((x0 + x1) / 2, top + .12 * Rc, k); } // the valance, its scallops going round
+        g.globalAlpha = a; g.strokeStyle = Q.pole; g.lineWidth = Math.max(1, .08 * u); g.beginPath(); g.moveTo(cx, apex); g.lineTo(cx, apex - .5 * Rc); g.stroke(); g.fillStyle = Q.roof[0]; g.beginPath(); g.moveTo(cx, apex - .5 * Rc); g.lineTo(cx + .42 * Rc, apex - .42 * Rc + Math.sin(A * 4) * .04 * Rc); g.lineTo(cx, apex - .32 * Rc); g.closePath(); g.fill(); // its pennant
+        bulb(cx, apex - .02 * Rc, 3, 1.4); }
+      g.restore();
+      // the horse that got away: a leap off the platform, over its edge to the grass, then a gallop along the bank and off
+      const e = f.esc, tl = T - e.t0; if (tl > 0 && rise > .5) { const an = f.phi(e.t0) + e.k / 6 * TAU, x0 = cx + Math.sin(an) * Rc * .74, y0 = py - .22 * Rc, lx = x0 + e.dir * Rc * .9, ly = S.frontY(lx) + 1.4 * u;
+        let x, y, pose, tilt = 0; if (tl < .55) { const q = tl / .55; x = lerp(x0, lx, q); y = lerp(y0, ly, q) - Math.sin(q * Math.PI) * .9 * Rc; pose = q < .5 ? 1 : 2; tilt = (q - .5) * .5; }
+        else { const d = (tl - .55) * e.v; x = lx + e.dir * d; y = S.frontY(x) + 1.4 * u - Math.abs(Math.sin(d / Rc * Math.PI)) * .16 * Rc; pose = Math.floor(d / Rc) % 2 ? 2 : 1; } // a stride a roundabout's width
+        const sc = 1 + .3 * seg(tl, .3, 1.2); /* bigger as it comes forward onto the grass */ if (x > -F.hl * sc && x < S.W + F.hl * sc) put(F.horse[pose][e.k % 3], x, y, .48, .78, tilt * e.dir, e.dir * sc, sc, I * vel(x, y - .3 * Rc, .4 * Rc)); } } }
+    // the wheel: its frame stands up, the wheel opens round from twelve like a paper fan, its cars drop onto their pins
+    // one after another; it turns, the cars hanging level and swinging; then stops, lets its cars go and folds away
+    { const { wx, wy, hub, R, n } = f, stand = K.spring(clamp((T - FAIR.frame[0]) / .6), 2.5, 5) * (1 - E.in(seg(T, FAIR.frame[1], FAIR.frame[1] + .5, x => x))); if (stand > .002) {
+      const [w0, w1, w2, w3] = FAIR.wheel, open = E.out(seg(T, w0, w1, x => x)) * (1 - E.in(seg(T, w2, w3, x => x))), th = f.theta(T), rate = f.turnRate(T), a = I * vel(wx, hub, R * 1.3);
+      g.save(); g.globalAlpha = a; g.translate(0, wy); g.scale(1, stand); g.translate(0, -wy); g.lineCap = "round";
+      const frame = (dx, col, lw) => { g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); g.moveTo(wx - R * .62 + dx, wy); g.lineTo(wx + dx, hub); g.lineTo(wx + R * .62 + dx, wy); g.moveTo(wx - R * .38 + dx, wy - (wy - hub) * .38); g.lineTo(wx + R * .38 + dx, wy - (wy - hub) * .38); g.stroke(); };
+      frame(R * .06, Q.legLo, Math.max(2, .32 * u)); // the far frame
+      if (open > .002) { const span = TAU * open, base = -Math.PI / 2 + th;
+        const wheel = (ox, oy, col1, col2, col3) => { g.strokeStyle = col1; g.lineWidth = Math.max(2, .55 * u); g.beginPath(); g.arc(wx + ox, hub + oy, R, base, base + span); g.stroke(); g.strokeStyle = col2; g.lineWidth = Math.max(1, .2 * u); g.beginPath(); g.arc(wx + ox, hub + oy, R * .72, base, base + span); g.stroke();
+          g.strokeStyle = col3; g.lineWidth = Math.max(1, .14 * u); g.beginPath(); for (let k = 0; k < n; k++) { const an = base + k / n * span; g.moveTo(wx + ox, hub + oy); g.lineTo(wx + ox + Math.cos(an) * R, hub + oy + Math.sin(an) * R); } g.stroke(); };
+        wheel(-.15 * u, .26 * u, sh, sh, sh); wheel(0, 0, Q.rim, Q.rim2, Q.spoke); // its shadow, then the wheel
+        if (lit > .01) for (let k = 0; k < n * 2; k++) { const an = base + k / (n * 2) * span; bulb(wx + Math.cos(an) * R, hub + Math.sin(an) * R, k); }
+        for (let k = 0; k < n; k++) { const an = base + k / n * span, t0 = FAIR.cars[0] + k * .07, t1 = FAIR.cars[1] + ((k * 5) % n) * .05, pop = K.spring(clamp((T - t0) / .45), 2.2, 4.5) * (1 - E.in(seg(T, t1, t1 + .3, x => x))); if (pop <= .002) continue;
+          const px2 = wx + Math.cos(an) * R, py2 = hub + Math.sin(an) * R, swing = Math.sin(A * 2.1 + f.gph[k]) * .1 * rate + (1 - pop) * .4;
+          put(F.car[k % 4], px2, py2, .5, (u * 1.6) / F.car[k % 4].h2 * .5, swing, pop, pop); } }
+      if (open > .002) { g.fillStyle = Q.rim; g.beginPath(); for (let k = 0; k < 16; k++) { const an = th + k / 16 * TAU, rr = (k % 2 ? .55 : 1.05) * u * open; g.lineTo(wx + Math.cos(an) * rr, hub + Math.sin(an) * rr); } g.closePath(); g.fill(); } // a rosette at its hub
+      g.fillStyle = Q.hub; g.beginPath(); g.arc(wx, hub, Math.max(2, .4 * u), 0, TAU); g.fill();
+      frame(0, Q.leg, Math.max(2, .38 * u)); // the near frame, in front of the wheel
+      if (lit > .01) { g.globalAlpha = I * lit * .5; g.drawImage(F.glow2, wx - F.glow2.width / 2, hub - F.glow2.height / 2); }
+      g.restore(); } }
+    // the red balloon: tied to the roundabout's top until it slips its string, then up and away over the town
+    { const b = f.bal, k = seg(T, FAIR.balloon[0], FAIR.balloon[1], x => x), pop = K.spring(clamp((T - FAIR.ride[1] - .3) / .5), 2.5, 5) * (1 - E.in(seg(T, FAIR.ride[4] - .2, FAIR.ride[4] + .2, x => x)));
+      if (k < 1 && (k > 0 || pop > .01)) { const q = E.in(k) * .45 + k * .55, x = lerp(b.x0, b.x1, Math.pow(k, .75)) + Math.sin(A * 1.3 + b.ph) * .8 * u * (1 - k * .5), y = lerp(b.y0 + (1 - pop) * f.Rc, b.y1, q) + Math.sin(A * 2 + b.ph) * .3 * u, a = I * S.shade(x, y, 2 * u) * (k > 0 ? 1 : pop);
+        if (a > .02) { g.globalAlpha = a; g.strokeStyle = night ? "rgba(200,215,255,.5)" : "rgba(96,74,50,.5)"; g.lineWidth = .8; g.beginPath(); g.moveTo(x, y + 1.5 * u); g.quadraticCurveTo(x + Math.sin(A * 2.6 + b.ph) * 1.2 * u, y + 3.2 * u, x - .5 * u, y + 4.6 * u); g.stroke(); put(F.balloon, x, y, .5, .4, Math.sin(A * 1.1 + b.ph) * .08, 1, 1, a); } } }
+    g.globalAlpha = 1;
+  }
+
+  /** the two along the near bank: each a coat on two striding legs and their boots, an umbrella held up over them,
+   *  bobbing with the steps and leaning into the rain */
+  function dWalk(T, I, A, st) {
+    const w = st.walk, k = (T - w.t0) / (w.t1 - w.t0); if (k <= 0 || k >= 1) return;
+    const G = hourGear(), { u } = S, Q = HCOL, ur = G.ur;
+    for (const p of w.who) { const x = lerp(w.xs, w.xe, k) + p.back, gy = S.frontY(x) + 1.5 * u, s = p.s, stp = Math.abs(x - w.xs) / (1.5 * u * s), sw = Math.sin(stp * Math.PI) * .42, bob = Math.abs(Math.cos(stp * Math.PI)) * .18 * u * s, a = I * vel(x, gy - 3 * u * s, 3 * u * s);
+      if (a < .02) continue; g.save(); g.globalAlpha = a; g.translate(x, gy); g.scale(w.dir * s, s); g.lineCap = "round"; g.lineJoin = "round";
+      const hip = -1.55 * u + bob / s, L = 1.5 * u;
+      for (const sd of [1, -1]) { const an = sw * sd, fx = Math.sin(an) * L, fy = hip + Math.cos(an) * L; g.strokeStyle = Q.coat[(p.coat + 2) % 4]; g.lineWidth = .32 * u; g.beginPath(); g.moveTo(0, hip); g.lineTo(fx, fy); g.stroke(); g.fillStyle = p.boot; g.beginPath(); g.roundRect(fx - .2 * u, fy - .42 * u, .42 * u, .5 * u, .1 * u); g.fill(); g.beginPath(); g.roundRect(fx - .2 * u, fy - .06 * u, .58 * u, .2 * u, .08 * u); g.fill(); } // legs, striding, in their boots
+      g.fillStyle = Q.coat[p.coat]; g.beginPath(); g.moveTo(-.55 * u, hip + .15 * u); g.lineTo(.62 * u, hip + .15 * u); g.lineTo(.42 * u, hip - 2.2 * u); g.lineTo(-.36 * u, hip - 2.2 * u); g.closePath(); g.fill(); // the coat
+      g.strokeStyle = Q.coat[p.coat]; g.lineWidth = .3 * u; g.beginPath(); g.moveTo(.25 * u, hip - 1.8 * u); g.lineTo(.62 * u, hip - 1.45 * u); g.lineTo(.5 * u, hip - 2.55 * u); g.stroke(); // the arm up to the handle
+      g.strokeStyle = Q.shaft; g.lineWidth = Math.max(1, .1 * u); g.beginPath(); g.moveTo(.5 * u, hip - 1.3 * u); g.lineTo(.42 * u, hip - 3.6 * u); g.stroke(); // the umbrella's shaft
+      const spr = G.umb[p.c * 4 + p.p], top = ur * 1.3, cw2 = spr.w2, lean = .16 + Math.sin(stp * Math.PI * 2) * .03; g.save(); g.translate(.42 * u, hip - 3.5 * u); g.rotate(lean); g.drawImage(spr, 0, 0, spr.width, (top / spr.h2) * spr.height, -cw2 / 2, -top * .92, cw2, top); g.restore(); // its canopy, held up, leaning into the weather
+      g.restore(); }
+    g.globalAlpha = 1;
+  }
+
   return S;
 }

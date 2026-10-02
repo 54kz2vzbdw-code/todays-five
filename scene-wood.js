@@ -37,6 +37,17 @@
 // which way it faces, and with that a second look: a later hour for the schooner, cherry in the lighthouse's bands, a
 // harvest moon behind the robin, other woods for the leaf, holly in the stag's sky. About one pass in ten, never two within four passes, is the rare one: a stag on the ridge before
 // the setting sun, the sky in rays behind him. The finale lifts, or flares, whichever picture is up.
+//
+// 1.12 b417: the egg. Every twelfth pass (K.egg: three minutes of the list left alone) the medallion turns out to have been
+// a sliding puzzle all along. Cuts run across the inlay along new glue lines (by night they burn through the char, white-hot
+// at the head and cooling behind it): a square of sixteen tiles in its middle and the four caps of inlay round it. The
+// bottom-right tile lifts out and goes off past the edge away from the words, and twelve slides jumble the picture; then
+// every piece turns over in a wave from the top left, and on their backs is the picture the pass would have laid, jumbled
+// the same way. It slides home, the missing tile comes back the other way up and drops into its gap with a click and a puff
+// of sawdust (by night, of ash and a spark or two), and the cuts close under a sheen (by night, fused by a run of heat).
+// By night the cuts smoulder while the tiles slide, and an ember glows down in the gap. It plays in place of the plane and
+// the rag (the glow and the pen) and leaves the picture that pass would have left, so the pass after it rests on what it
+// always would have; a touch eases back to the picture it began on, as any pass does.
 export default function wood(K, id) {
   const night = id === "char";
   const { clamp, lerp, E, seg, env, rng, canvas, noise1, fbm } = K;
@@ -342,7 +353,9 @@ export default function wood(K, id) {
       return [tx + dx * D * (1 - e) - dy * side, ty + dy * D * (1 - e) + dx * side, p.rot0 * (1 - E.out(q)), 1 - seg(q, .72, 1, E.in)];
     };
     const phase = !on || T < BD.plane[0] || T >= BD.rag[3] ? 0 : T < BD.ring[0] ? 1 : T < BD.done ? 2 : T < BD.rag[0] ? 3 : 4;
-    if (phase === 0) { if (!pp.P || !on || T < BD.plane[0]) put(prev.oiled); else { put(cur.oiled); put(prev.oiled, 1 - I); } }
+    const egg = K.egg(P) && pp.P > 0; // (1.12 b417: on an egg pass the puzzle plays instead of the plane, the pieces and the rag)
+    if (egg) eggDay(T, I, prev, cur);
+    else if (phase === 0) { if (!pp.P || !on || T < BD.plane[0]) put(prev.oiled); else { put(cur.oiled); put(prev.oiled, 1 - I); } }
     else if (phase === 1) { // the plane has taken these bands back to the plank
       g.save(); g.beginPath(); g.rect(cx - 1.1 * R, cy - 1.1 * R, 2.2 * R, 2.2 * R);
       BD.passes.forEach(([a, b], j) => { const s = E.sine(seg(T, a, b, lin)); if (s <= 0 || I <= .01) return; const xb = lerp(1.12, s >= 1 ? -1.12 : lerp(SPAN[j], S.pstop[j], s), I); /* cut up to the blade, under the plane */ g.rect(cx + xb * R, cy + BANDS[j][0] * R, (1.12 - xb) * R, (BANDS[j][1] - BANDS[j][0]) * R); });
@@ -382,17 +395,17 @@ export default function wood(K, id) {
     } else if (phase === 3) { put(cur.dry); put(prev.oiled, 1 - I); }
     else { put(cur.dry); g.save(); wiped(); put(cur.oiled); g.restore(); if (pp.P) put(prev.oiled, 1 - I); } // the oil: what the rag has wiped deepens
     // the wet shine the rag leaves, drying
-    if (on && T > BD.wipes[0][0] && T < BD.wipes[2][1] + 1.9) BD.wipes.forEach(([, b], j) => { const wet = (1 - seg(T, b + .2, b + 1.9, E.sine)) * I; if (T < BD.wipes[j][0] || wet <= .01) return;
+    if (!egg && on && T > BD.wipes[0][0] && T < BD.wipes[2][1] + 1.9) BD.wipes.forEach(([, b], j) => { const wet = (1 - seg(T, b + .2, b + 1.9, E.sine)) * I; if (T < BD.wipes[j][0] || wet <= .01) return;
       g.save(); wiped(j); g.globalCompositeOperation = "screen"; put(S.gloss, .55 * wet); g.restore(); });
     // the light over it: a sheen drifting while the list is in use, and one running across once the oil is on
     const sheen = (s, a, w = .5) => { if (a <= .004) return; const dx = .83, dy = .56, q = g.createLinearGradient(cx + dx * (s - w) * R, cy + dy * (s - w) * R, cx + dx * (s + w) * R, cy + dy * (s + w) * R);
       q.addColorStop(0, "rgba(255,246,226,0)"); q.addColorStop(.5, `rgba(255,246,226,${clamp(a).toFixed(3)})`); q.addColorStop(1, "rgba(255,246,226,0)");
       g.save(); g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.clip(); g.globalCompositeOperation = "soft-light"; g.fillStyle = q; g.fillRect(cx - R, cy - R, 2 * R, 2 * R); g.restore(); };
-    const present = lerp(1, 1 - env(T, BD.plane[0] - .2, BD.plane[0] + .3, BD.rag[1], BD.rag[3], E.sine), I);
+    const present = lerp(1, 1 - (egg ? env(T, EW.crack[0] - .3, EW.crack[0] + .2, EW.seal[0], EW.seal[1], E.sine) : env(T, BD.plane[0] - .2, BD.plane[0] + .3, BD.rag[1], BD.rag[3], E.sine)), I);
     sheen(Math.sin(A * .12) * 1.25, .5 * V * present);
-    if (on) { const q = seg(T, BD.sheen[0], BD.sheen[1], lin); if (q > 0 && q < 1) { sheen(lerp(-1.7, 1.7, E.io(q)), .95 * I * V, .42); sheen(lerp(-1.7, 1.7, E.io(q)), .35 * I * V, .12); } }
+    if (on) { const sq = egg ? EW.seal : BD.sheen, q = seg(T, sq[0], sq[1], lin); if (q > 0 && q < 1) { sheen(lerp(-1.7, 1.7, E.io(q)), .95 * I * V, .42); sheen(lerp(-1.7, 1.7, E.io(q)), .35 * I * V, .12); } }
     // the plane and its curls
-    if (on && T > BD.plane[0] && T < BD.plane[3] + BD.roll) {
+    if (!egg && on && T > BD.plane[0] && T < BD.plane[3] + BD.roll) {
       for (let j = 0; j < 3; j++) { const c = curlAt(j, T); if (c && !c.inPlane) S.curl(j, c, I * V, prev.shave); }
       const pl = planeAt(T);
       if (pl) { const bx = cx + pl.x * R, by = cy + pl.y * R, sc = 1 + .05 * pl.z, Lp = S.Lp * k, Wp = S.Wp * k, b = 7 * k, dim = I * V;
@@ -401,9 +414,10 @@ export default function wood(K, id) {
         for (let j = 0; j < 3; j++) { const c = curlAt(j, T); if (c && c.inPlane) S.curl(j, c, dim, prev.shave); } }
     }
     // the rag
-    if (on) { const rg = ragAt(T); if (rg) { const x = cx + rg.x * R + Math.sin(A * 23) * .012 * R * (rg.j !== undefined ? 1 : 0), y = cy + rg.y * R + Math.cos(A * 19) * .01 * R, rot = Math.sin(A * 3.1) * .08 + (rg.j !== undefined ? Math.sin(A * 17) * .05 : 0), sc = 1 + .06 * rg.z, rw = S.rw * k, rh = S.rh * k, b = 6 * k;
+    if (!egg && on) { const rg = ragAt(T); if (rg) { const x = cx + rg.x * R + Math.sin(A * 23) * .012 * R * (rg.j !== undefined ? 1 : 0), y = cy + rg.y * R + Math.cos(A * 19) * .01 * R, rot = Math.sin(A * 3.1) * .08 + (rg.j !== undefined ? Math.sin(A * 17) * .05 : 0), sc = 1 + .06 * rg.z, rw = S.rw * k, rh = S.rh * k, b = 6 * k;
       g.save(); g.globalAlpha = I * V * .9; g.translate(x + (4 + 16 * rg.z) * k, y + (6 + 20 * rg.z) * k); g.rotate(rot); g.scale(sc, sc); g.drawImage(S.ragSh, -rw / 2 - 2 * b, -rh / 2 - 2 * b, rw + 4 * b, rh + 4 * b); g.restore();
       g.save(); g.globalAlpha = I * V; g.translate(x, y); g.rotate(rot); g.scale(sc, sc); g.drawImage(S.rag, -rw / 2, -rh / 2, rw, rh); g.restore(); } }
+    if (egg && on) { eggCuts(T, I, false); eggClick(T, I, false); }
     /** a sheet of a new picture's (its ground, its sky) in the finale: each part lifting as the wave reaches it, its shadow
      *  cut to its shape, catching the light as it rises */
     const liftParts = (p, F) => { for (const q of p.parts) { const w0 = .06 + (q.c[0] + 1) * .27, z = env(F, w0, w0 + .08, w0 + .1, w0 + .24, E.sine); if (z <= .01) continue;
@@ -589,9 +603,11 @@ export default function wood(K, id) {
     // the moon's light in the picture, and the picture breathing a little, as embers do
     g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = .13 * V; g.drawImage(S.moonGlow, cx - .62 * R, cy - .62 * R, 1.24 * R, 1.24 * R); g.restore();
     const [c0, c1] = BN.crumble, [p0, p1, p2, p3] = BN.pen, burnt = p2 + BN.cool, cEnd = c1 - .35;
-    const phase = !on || T < BN.heat[0] || T >= burnt ? 0 : T < c1 ? 1 : T < p0 ? 2 : 3;
-    heat(0, 1.2, (.045 + .035 * Math.sin(A * .7)) * V * lerp(1, 1 - env(T, BN.heat[0] - .3, BN.heat[0], burnt - .2, burnt + 1.4, E.sine), I), false, pp.P && on && T >= burnt - .2 ? cur : prev); // the picture breathing a little, as embers do
-    if (phase === 0) { if (!pp.P || !on || T < BN.heat[0]) pic(prev.full, 1); else { pic(cur.full, 1); pic(prev.full, 1 - I); } } // (burned: the new picture, the old one back as the list is used)
+    const phase = !on || T < BN.heat[0] || T >= burnt ? 0 : T < c1 ? 1 : T < p0 ? 2 : 3, egg = K.egg(P) && pp.P > 0; // (1.12 b417: an egg pass plays the puzzle instead)
+    if (egg) heat(0, 1.2, (.045 + .035 * Math.sin(A * .7)) * V * lerp(1, 1 - env(T, EW.crack[0] - .3, EW.crack[0], EW.seal[1] - .3, EW.seal[1] + .5, E.sine), I), false, on && T >= EW.seal[0] ? cur : prev);
+    else heat(0, 1.2, (.045 + .035 * Math.sin(A * .7)) * V * lerp(1, 1 - env(T, BN.heat[0] - .3, BN.heat[0], burnt - .2, burnt + 1.4, E.sine), I), false, pp.P && on && T >= burnt - .2 ? cur : prev); // the picture breathing a little, as embers do
+    if (egg) eggNight(T, I, A, prev, cur);
+    else if (phase === 0) { if (!pp.P || !on || T < BN.heat[0]) pic(prev.full, 1); else { pic(cur.full, 1); pic(prev.full, 1 - I); } } // (burned: the new picture, the old one back as the list is used)
     else if (phase === 1) { // it glows red-hot once, from the moon outward, and crumbles to ash behind the glow
       const rc = lerp(-.05, 1.12, seg(T, c0, cEnd, lin)), rh = lerp(0, 1.35, seg(T, BN.heat[0], BN.heat[1], E.sine));
       pic(prev.full, 1 - I);
@@ -599,10 +615,10 @@ export default function wood(K, id) {
       heat(rc, rh, I * V * .95 * (1 - seg(T, c1 - .5, c1, lin)), true, prev);
     } else if (phase === 2) pic(prev.full, 1 - I);
     // the ash, drifting up off the lines as the crumble passes them, and going
-    if (on && T > c0 && T < cEnd + BN.drift) { g.save(); for (const p of prev.ASHES) { const tr = lerp(c0, cEnd, clamp((p.d + .05) / 1.17)), a = (T - tr) / BN.drift; if (a < 0 || a >= 1) continue;
+    if (!egg && on && T > c0 && T < cEnd + BN.drift) { g.save(); for (const p of prev.ASHES) { const tr = lerp(c0, cEnd, clamp((p.d + .05) / 1.17)), a = (T - tr) / BN.drift; if (a < 0 || a >= 1) continue;
       const x = cx + (p.x + Math.sin(a * 5 + p.s * 9) * .03 * a + (p.s - .5) * .08 * a) * R, y = cy + (p.y - a * (.1 + .16 * p.s) - a * a * .12) * R, hot = a < .2;
       g.globalAlpha = I * V * Math.pow(1 - a, 1.3) * (hot ? 1 : .8); g.fillStyle = hot ? "#FFB257" : rgba(ASH); const s = (1.7 - a * .9) * S.ws; g.fillRect(x - s / 2, y - s / 2, s, s); } g.restore(); }
-    if (phase === 3) { // the pen burns it in again: what has cooled is ash (kept on a canvas as it comes), what is new still glows
+    if (!egg && phase === 3) { // the pen burns it in again: what has cooled is ash (kept on a canvas as it comes), what is new still glows
       pic(prev.full, 1 - I);
       const cool = T - BN.cool, SG = cur.SEGS; if (S.coldL !== SG || cool < S.coldT - 1e-6) { S.coldL = SG; S.coldX.save(); S.coldX.setTransform(1, 0, 0, 1, 0, 0); S.coldX.clearRect(0, 0, S.cold.width, S.cold.height); S.coldX.restore(); S.ci = 0; }
       while (S.ci < SG.length && SG[S.ci].t1 <= cool) { const s = SG[S.ci++]; ink(S.coldX, s, ASH, s.al); } S.coldT = cool;
@@ -635,6 +651,7 @@ export default function wood(K, id) {
         g.save(); g.globalAlpha = I * V; g.translate(sx - lift * 4, sy - lift * 7); g.rotate(ang); g.drawImage(S.pen, 0, -S.pen.h2 / 2, S.pen.w2, S.pen.h2); g.restore();
         g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = I * V * heatUp; g.drawImage(S.halo, sx - lift * 4 - 7, sy - lift * 7 - 7, 14, 14); g.fillStyle = "#FFF4D6"; g.beginPath(); g.arc(sx - lift * 4, sy - lift * 7, 1.6, 0, TAU); g.fill(); g.restore(); }
     }
+    if (egg && on) { eggCuts(T, I, true); eggClick(T, I, true); }
     // the finale: the picture flares from the moon outward, sparks go up off it, and a wisp of smoke rises off the moon
     if (F >= 0) {
       heat(lerp(-.35, 1.15, seg(F, .16, .78, E.sine)), lerp(.05, 1.35, seg(F, .03, .5, E.out)), env(F, .02, .12, .6, .9) * V * .95, true, prev); // a pulse of heat out from the moon, the middle cooling first
@@ -963,6 +980,165 @@ export default function wood(K, id) {
     d.RR = R; return d;
   };
 
+  /* ---------------- 1.12 b417: the egg — the medallion was a sliding puzzle all along ----------------
+     A square of sixteen in the middle of the inlay (in the medallion's units) and the four caps of inlay round it; the
+     cuts that part them, in the order they run (round the square, down it, across it, out from its corners to the rim);
+     and the beats: the cuts, a tile lifted out and gone, nine slides, the wave of turning over, the slides home, the tile
+     back, the cuts closed. Its own dice (salt 451), so no pass that isn't an egg draws a thing differently. */
+  const PZH = .615, PZS = PZH / 2, PZC = Array.from({ length: 16 }, (_, c) => [-PZH + (c % 4 + .5) * PZS, -PZH + ((c >> 2) + .5) * PZS]);
+  const EW = { crack: [.7, 2.0], lift: [2.0, 2.95], mix: [3.0, 6.6], flip: [6.7, 8.15], solve: [8.25, 11.85], back: [11.85, 12.95], seal: [13.0, 14.05] };
+  const CAPS = [0, 1, 2, 3].map(k => { const a0 = -3 * Math.PI / 4 + k * Math.PI / 2, a1 = a0 + Math.PI / 2, m = (a0 + a1) / 2, d = PZH * Math.SQRT2;
+    const pts = [[Math.cos(a0) * d, Math.sin(a0) * d], ...arcPts(0, 0, RI, a0, a1, 24), [Math.cos(a1) * d, Math.sin(a1) * d]], xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
+    return { pts, x: Math.cos(m) * (PZH + RI) / 2, y: Math.sin(m) * (PZH + RI) / 2, bb: [Math.min(...xs) - .01, Math.min(...ys) - .01, Math.max(...xs) + .01, Math.max(...ys) + .01] }; });
+  const CUTS = (() => { const h = PZH, c0 = EW.crack[0], out = [{ pts: [[-h, -h], [h, -h], [h, h], [-h, h], [-h, -h]], t0: c0, t1: c0 + .62 }];
+    for (let i = 1; i < 4; i++) { const v = -h + i * PZS; out.push({ pts: [[v, -h], [v, h]], t0: c0 + .3 + i * .1, t1: c0 + .62 + i * .1 }, { pts: [[-h, v], [h, v]], t0: c0 + .45 + i * .1, t1: c0 + .77 + i * .1 }); }
+    for (let k = 0; k < 4; k++) { const a = -3 * Math.PI / 4 + k * Math.PI / 2, d = PZH * Math.SQRT2; out.push({ pts: [[Math.cos(a) * d, Math.sin(a) * d], [Math.cos(a) * RI, Math.sin(a) * RI]], t0: c0 + .92 + k * .05, t1: c0 + 1.13 + k * .05 }); }
+    return out.map(c => { let L = 0; const cum = [0]; for (let i = 1; i < c.pts.length; i++) { L += Math.hypot(c.pts[i][0] - c.pts[i - 1][0], c.pts[i][1] - c.pts[i - 1][1]); cum.push(L); } return { ...c, L, cum }; }); })();
+  /** a point a fraction p of the way along a cut */
+  const alongCut = (c, p) => { const d = clamp(p) * c.L; let i = 1; while (i < c.cum.length - 1 && c.cum[i] < d) i++; const f = (d - c.cum[i - 1]) / ((c.cum[i] - c.cum[i - 1]) || 1); return [lerp(c.pts[i - 1][0], c.pts[i][0], f), lerp(c.pts[i - 1][1], c.pts[i][1], f)]; };
+  /** the stretch of a cut between two fractions of it, as a path on the page */
+  const cutPath = (c, p0, p1) => { const { cx, cy, R } = S, a = alongCut(c, p0), b = alongCut(c, p1), d0 = p0 * c.L, d1 = p1 * c.L; g.moveTo(cx + a[0] * R, cy + a[1] * R);
+    for (let i = 1; i < c.pts.length - 1; i++) if (c.cum[i] > d0 && c.cum[i] < d1) g.lineTo(cx + c.pts[i][0] * R, cy + c.pts[i][1] * R); g.lineTo(cx + b[0] * R, cy + b[1] * R); };
+  /** the egg pass's moves, from the pass alone: the gap starts where the lifted tile was (bottom right) and wanders twelve
+   *  cells, never straight back and wherever it can somewhere it hasn't lately been, so the picture is well jumbled; and
+   *  which cell each tile is in after each move */
+  let eggW = null;
+  const eggPlanW = P => { if (eggW && eggW.P === P) return eggW; const r = K.deal(P, 451), moves = [], board = [...Array(15).keys(), -1], seen = [15]; let e = 15;
+    for (let i = 0; i < 12; i++) { const nb = []; if (e % 4) nb.push(e - 1); if (e % 4 < 3) nb.push(e + 1); if (e > 3) nb.push(e - 4); if (e < 12) nb.push(e + 4);
+      const fresh = nb.filter(c => !seen.slice(-5).includes(c)), opts = fresh.length ? fresh : nb.filter(c => c !== seen[seen.length - 2]), to = opts[Math.floor(r() * opts.length)], t = board[to];
+      board[e] = t; board[to] = -1; moves.push({ t, from: to, to: e }); e = to; seen.push(e); }
+    const after = [[...Array(15).keys()]]; for (const m of moves) { const c = after[after.length - 1].slice(); c[m.t] = m.to; after.push(c); }
+    return (eggW = { P, moves, after, spin: r() < .5 ? -1 : 1 }); };
+  /** where the tiles are at time T: the cell each is in, and the one sliding (scrambled, or back home) and how far */
+  const boardAt = (T, pl) => { const n = pl.moves.length, [m0, m1] = EW.mix, [s0, s1] = EW.solve, a = (m1 - m0) / n, b = (s1 - s0) / n;
+    if (T < m0 || T >= s1) return { cells: pl.after[0], mv: null, f: 0 };
+    if (T < m1) { const i = Math.min(n - 1, Math.floor((T - m0) / a)); return { cells: pl.after[i], mv: pl.moves[i], f: E.io(clamp((T - m0 - i * a) / (a * .78))), rev: false }; }
+    if (T < s0) return { cells: pl.after[n], mv: null, f: 0 };
+    const j = Math.min(n - 1, Math.floor((T - s0) / b)); return { cells: pl.after[n - j], mv: pl.moves[n - 1 - j], f: E.io(clamp((T - s0 - j * b) / (b * .78))), rev: true }; };
+  const tileXY = (bd, t) => { const m = bd.mv; if (m && m.t === t) { const p0 = PZC[bd.rev ? m.to : m.from], p1 = PZC[bd.rev ? m.from : m.to]; return [lerp(p0[0], p1[0], bd.f), lerp(p0[1], p1[1], bd.f)]; } return PZC[bd.cells[t]]; };
+  /** how far a piece at (x, y) has turned over in the wave (0 face up … π the other face up): top left first */
+  const turnAt = (T, x, y) => { const t0 = EW.flip[0] + clamp((x + y + 1) / 2) * (EW.flip[1] - EW.flip[0] - .62); return Math.PI * E.io(clamp((T - t0) / .62)); };
+  /** the lifted tile's way off the page, on the side away from the words (0 home … 1 gone) */
+  const offPath = (q, dir) => { const { cx, cy, R } = S, [dx, dy] = S.away, X = cx + PZC[15][0] * R, Y = cy + PZC[15][1] * R, D = out(X, Y, dx, dy) + PZS * R * 1.2 + 30, bow = Math.sin(Math.PI * q) * D * .12 * dir;
+    return [X + dx * D * q - dy * bow, Y + dy * D * q + dx * bow]; };
+  /** by night a picture's plate: the char under it (from the backdrop), the moon's light, its lines — what a tile carries */
+  const plateOf = d => { const { cx, cy, R } = S, key = [S.RR, Math.round(cx), Math.round(cy), Math.round(R), S.vis > .99 ? 1 : +S.vis.toFixed(2)].join(":"), sl = S.plates || (S.plates = []);
+    let e = sl.find(q => q.d === d); if (e && e.key === key && e.src === d.full) return e.c;
+    const n = d.full.width, [c, x] = canvas(n, n), b = S.bgc, sc = b.width / S.W, m = n / 2.1; x.imageSmoothingEnabled = true;
+    x.drawImage(b, (cx - 1.05 * R) * sc, (cy - 1.05 * R) * sc, 2.1 * R * sc, 2.1 * R * sc, 0, 0, n, n);
+    x.globalAlpha = .13 * S.vis; x.drawImage(S.moonGlow, n / 2 - .62 * m, n / 2 - .62 * m, 1.24 * m, 1.24 * m); x.globalAlpha = 1; x.drawImage(d.full, 0, 0, n, n);
+    if (!e) { e = { d }; sl.push(e); if (sl.length > 2) sl.shift(); } Object.assign(e, { key, src: d.full, c }); return c; };
+  /** the puzzle, by day or by night, over the medallion: a (the picture the pass began on) and b (the one it leaves), as
+   *  the canvases the tiles are cut from; in place of the plane, the pieces and the rag, or the glow and the pen */
+  function eggPuzzle(T, I, A, a, b, night, al) {
+    const { cx, cy, R } = S, V = S.vis * al, k = R / S.RR, pl = eggPlanW(S.pp.P), [l0, l1] = EW.lift, [b0, b1] = EW.back, at = (u, v) => [cx + u * R, cy + v * R];
+    const whole = c => { g.save(); g.beginPath(); g.arc(cx, cy, 1.03 * R, 0, TAU); g.clip(); g.globalAlpha = V; g.drawImage(c, cx - 1.05 * R, cy - 1.05 * R, 2.1 * R, 2.1 * R); g.restore(); };
+    if (!S.tsh || S.tshR !== S.RR) { const s = PZS * S.RR; S.tsh = shadowOf(make(s, s, x => { x.fillStyle = "#000"; x.fillRect(0, 0, s, s); }), 5, night ? "rgba(0,0,0,.85)" : "rgba(64,40,18,.62)"); S.tshR = S.RR; }
+    const bd = boardAt(T, pl), D0 = PZS * R, tsh = S.tsh, n = a.width / 2.1;
+    // the recess they sit in, under all of them: raw wood by day, by night the char gone deep, an ember in it
+    // the ring stays as it is (the picture's own, the same on both); inside it, the recess the pieces sit in, under all of
+    // them: raw wood by day, by night the char gone deep with an ember in it — laid only where it can show (the gap, where
+    // a tile slides, under a piece as it turns)
+    g.save(); g.beginPath(); g.arc(cx, cy, 1.03 * R, 0, TAU); g.arc(cx, cy, RI * R * .995, 0, TAU, true); g.clip("evenodd"); whole(a); g.restore();
+    const hole = (() => { const used = new Set(bd.cells); for (let c = 0; c < 16; c++) if (!used.has(c)) return c; return 15; })(), [hx, hy] = at(...PZC[hole]);
+    // what goes into it: the caps and the tiles, each turned over as the wave reaches it, lifted while it turns
+    const pieces = [];
+    CAPS.forEach((c, i) => pieces.push({ cap: i, x: c.x, y: c.y, th: turnAt(T, c.x, c.y) }));
+    for (let t = 0; t < 15; t++) { const [x, y] = tileXY(bd, t); pieces.push({ t, x, y, th: turnAt(T, x, y) }); }
+    if (T >= b1) pieces.push({ t: 15, x: PZC[15][0], y: PZC[15][1], th: Math.PI, zz: .16 * Math.sin(Math.PI * clamp((T - b1) / .24)) * (T - b1 < .24 ? 1 : 0) }); // (home, and a little bounce)
+    for (const p of pieces) p.z = p.zz !== undefined ? p.zz : Math.sin(p.th) * .9;
+    const cellRect = (u, v, e = 0) => { const h = PZS / 2 + e; g.rect(cx + (u - h) * R, cy + (v - h) * R, 2 * h * R, 2 * h * R); };
+    g.save(); g.beginPath(); cellRect(...PZC[hole], .02); if (bd.mv) { cellRect(...PZC[bd.mv.from], .02); cellRect(...PZC[bd.mv.to], .02); }
+    for (const p of pieces) { if (p.z <= .01 && Math.abs(Math.cos(p.th)) > .995) continue; if (p.cap !== undefined) { g.moveTo(cx + CAPS[p.cap].pts[0][0] * R, cy + CAPS[p.cap].pts[0][1] * R); CAPS[p.cap].pts.forEach(([u, v]) => g.lineTo(cx + u * R, cy + v * R)); g.closePath(); } else cellRect(p.x, p.y, .02); }
+    g.clip(); g.beginPath(); g.arc(cx, cy, RI * R, 0, TAU); g.clip(); g.globalAlpha = V;
+    let q = g.createRadialGradient(cx - R * .3, cy - R * .3, 0, cx, cy, RI * R); q.addColorStop(0, night ? "#100B08" : "#8C6A45"); q.addColorStop(1, night ? "#060403" : "#6A4A2C"); g.fillStyle = q; g.fillRect(cx - R, cy - R, 2 * R, 2 * R);
+    if (night) { g.globalCompositeOperation = "lighter"; g.globalAlpha = V * (.32 + .14 * Math.sin(A * 1.3)); g.drawImage(S.halo, hx - D0 * .6, hy - D0 * .6, D0 * 1.2, D0 * 1.2); g.globalCompositeOperation = "source-over"; }
+    // the pieces' shadows on it (only seen in the gap, and under a piece as it turns)
+    for (const p of pieces) { if (p.cap !== undefined) continue; const near = Math.abs(p.x - PZC[hole][0]) < PZS * 1.5 && Math.abs(p.y - PZC[hole][1]) < PZS * 1.5; if (p.z <= .01 && !near) continue;
+      const sx = Math.max(.02, Math.abs(Math.cos(p.th))), D = D0 * (1 + .06 * p.z), [X, Y] = at(p.x, p.y);
+      g.save(); g.globalAlpha = V * (.75 - .25 * p.z); g.translate(X + (1.5 + 12 * p.z) * k, Y + (2.5 + 16 * p.z) * k); g.scale(sx, 1); g.drawImage(tsh, -D / 2 - 10 * k, -D / 2 - 10 * k, D + 20 * k, D + 20 * k); g.restore(); }
+    g.restore();
+    const edge = night ? ["rgba(6,4,3,.92)", "rgba(156,128,106,.22)", "rgba(0,0,0,.38)"] : ["rgba(36,20,10,.74)", "rgba(255,248,230,.36)", "rgba(46,26,10,.3)"];
+    /** how a turning face is lit: its normal swung about the upright, against a light up on the left (1 face up) */
+    const lit = th => { const c = Math.cos(th), s2 = Math.sin(th); return c >= 0 ? (c * .77 - s2 * .5) / .77 : (-c * .77 + s2 * .5) / .77; };
+    const shadeFace = (th, x0, y0, w, h) => { const l = lit(th); if (Math.abs(l - 1) < .01) return; const al = g.globalAlpha;
+      if (l < 1) { g.globalAlpha = al * Math.min(1, (1 - l) * .62); g.fillStyle = night ? "#000" : "#2E1B0B"; } else { g.globalAlpha = al * Math.min(1, (l - 1) * 1.5); g.fillStyle = night ? "rgb(150,120,96)" : "#FFF6E2"; }
+      g.fillRect(x0, y0, w, h); g.globalAlpha = al; };
+    const emb = night ? seg(T, l0, l0 + .6, E.io) * (1 - seg(T, EW.seal[0] - .45, EW.seal[0], E.io)) : 0; // (by night the cuts smoulder)
+    const ember = (path, ph, e = emb) => { if (e <= .004) return; const k = e * (.72 + .28 * Math.sin(A * 1.6 + ph)), al = g.globalAlpha; g.globalCompositeOperation = "lighter";
+      const lw = clamp(R / 130, .9, 1.5); g.globalAlpha = al * k * .3; g.strokeStyle = "rgb(255,104,28)"; g.lineWidth = 3.2 * lw; path(); g.stroke(); g.globalAlpha = al * k * .42; g.strokeStyle = "#FFB868"; g.lineWidth = .9 * lw; path(); g.stroke(); g.globalCompositeOperation = "source-over"; g.globalAlpha = al; };
+    const drawPiece = p => {
+      const sx = Math.max(.02, Math.abs(Math.cos(p.th))), src = p.th < Math.PI / 2 ? a : b, lift = 1 + .06 * p.z;
+      g.save(); g.globalAlpha = V;
+      if (p.cap !== undefined) { const C = CAPS[p.cap]; g.translate(cx + C.x * R, cy + C.y * R - p.z * 7 * k); g.scale(sx * lift * R, lift * R); g.translate(-C.x, -C.y);
+        g.save(); trace(g, C.pts); g.clip(); { const [u0, v0, u1, v1] = C.bb, m = src.width / 2.1; g.drawImage(src, (u0 + 1.05) * m, (v0 + 1.05) * m, (u1 - u0) * m, (v1 - v0) * m, u0, v0, u1 - u0, v1 - v0); shadeFace(p.th, u0, v0, u1 - u0, v1 - v0); } g.restore();
+        g.globalAlpha = V; g.lineWidth = 1.5 / R; g.strokeStyle = edge[0]; trace(g, C.pts); g.stroke(); g.restore();
+        if (emb > .004) { g.save(); g.globalAlpha = V; g.translate(cx + C.x * R, cy + C.y * R - p.z * 7 * k); g.scale(sx * lift, lift); g.translate(-C.x * R, -C.y * R); ember(() => { g.beginPath(); const P0 = C.pts[0], P1 = C.pts[C.pts.length - 1], Q0 = C.pts[1], Q1 = C.pts[C.pts.length - 2]; g.moveTo(Q0[0] * R, Q0[1] * R); g.lineTo(P0[0] * R, P0[1] * R); g.lineTo(P1[0] * R, P1[1] * R); g.lineTo(Q1[0] * R, Q1[1] * R); }, p.cap * 1.7); g.restore(); }
+        return; }
+      const [hx0, hy0] = PZC[p.t], D = D0 * lift, [X, Y] = at(p.x, p.y);
+      g.translate(X, Y - p.z * 7 * k); g.scale(sx, 1); g.drawImage(src, (hx0 - PZS / 2 + 1.05) * n, (hy0 - PZS / 2 + 1.05) * n, PZS * n, PZS * n, -D / 2, -D / 2, D, D);
+      shadeFace(p.th, -D / 2, -D / 2, D, D);
+      const e = D / 2 - .5; g.lineWidth = night ? 1.4 : 1.6; g.strokeStyle = edge[0]; g.strokeRect(-D / 2, -D / 2, D, D);
+      g.lineWidth = 1; g.strokeStyle = edge[1]; g.beginPath(); g.moveTo(-e + 1, e - 1); g.lineTo(-e + 1, -e + 1); g.lineTo(e - 1, -e + 1); g.stroke(); g.strokeStyle = edge[2]; g.beginPath(); g.moveTo(e - 1, -e + 1); g.lineTo(e - 1, e - 1); g.lineTo(-e + 1, e - 1); g.stroke();
+      ember(() => { g.beginPath(); g.rect(-D / 2, -D / 2, D, D); }, p.t * 2.3);
+      g.restore(); };
+    pieces.filter(p => p.z <= .01).forEach(drawPiece); pieces.filter(p => p.z > .01).sort((p, q2) => p.z - q2.z).forEach(drawPiece);
+    // the tile lifted out: up, and off the page on the side away from the words; then back, the other way up, and down
+    // into the gap with a click
+    let mx = null;
+    if (T >= l0 && T < l1) { const u = seg(T, l0, l1, lin), go = E.in(clamp((u - .22) / .78)); mx = { src: a, at: offPath(go, pl.spin), z: E.out(clamp(u / .3)), rot: pl.spin * go * 2.4 }; }
+    else if (T >= b0 && T < b1) { const u = seg(T, b0, b1, lin), go = 1 - E.out(clamp(u / .74)); mx = { src: b, at: offPath(go, pl.spin), z: u < .74 ? 1 : 1 - E.in(clamp((u - .74) / .26)), rot: pl.spin * go * 2.4 }; }
+    if (mx) { const [X, Y] = mx.at, D = D0 * (1 + .08 * mx.z), [hx0, hy0] = PZC[15];
+      const fa = night ? V : V * I;
+      if (mx.z > .01) { g.save(); g.globalAlpha = fa * mx.z * .7; g.translate(X + (3 + 14 * mx.z) * k, Y + (5 + 20 * mx.z) * k); g.rotate(mx.rot); g.drawImage(tsh, -D / 2 - 10 * k, -D / 2 - 10 * k, D + 20 * k, D + 20 * k); g.restore(); }
+      g.save(); g.globalAlpha = fa; g.translate(X, Y - mx.z * 7 * k); g.rotate(mx.rot); g.drawImage(mx.src, (hx0 - PZS / 2 + 1.05) * n, (hy0 - PZS / 2 + 1.05) * n, PZS * n, PZS * n, -D / 2, -D / 2, D, D);
+      g.lineWidth = 1.4; g.strokeStyle = edge[0]; g.strokeRect(-D / 2, -D / 2, D, D); if (night) ember(() => { g.beginPath(); g.rect(-D / 2, -D / 2, D, D); }, 0, .85); g.restore(); }
+    g.globalAlpha = 1;
+  }
+  /** the cuts as they run, or as they close: by day a glue line scored across with a glint at its head; by night burned
+   *  through, white-hot at the head and cooling behind it; closed again under a sheen, or fused by a run of heat */
+  function eggCuts(T, I, night) {
+    if (T < EW.crack[0] || (T >= EW.crack[1] && T < EW.seal[0]) || T >= EW.seal[1]) return;
+    const { R } = S, V = S.vis * I, k = R / S.RR, [, c1] = EW.crack, [s0, s1] = EW.seal; if (!night && !S.glint) S.glint = K.glowSpr(10, [255, 252, 240], 1);
+    const run = T < c1, close = run ? 0 : seg(T, s0, s1, lin), dark = run ? 1 : 1 - E.io(clamp(close / .75)); if (dark <= .003 && !night) return;
+    g.save(); g.lineCap = "round"; g.lineJoin = "miter";
+    for (const c of CUTS) { const p = run ? seg(T, c.t0, c.t1, lin) : 1; if (p <= 0) continue;
+      g.beginPath(); cutPath(c, 0, p); g.globalAlpha = V * dark; g.strokeStyle = night ? "rgba(6,4,3,.95)" : "rgba(36,20,10,.8)"; g.lineWidth = (night ? 1.6 : 1.9) * Math.max(1, k * .9); g.stroke();
+      if (!night) { g.beginPath(); cutPath(c, 0, p); g.save(); g.translate(.9, .9); g.globalAlpha = V * dark * .9; g.strokeStyle = "rgba(255,248,230,.4)"; g.lineWidth = 1; g.stroke(); g.restore(); }
+      if (run) { const hot0 = seg(T - .42, c.t0, c.t1, lin), hot1 = seg(T - .14, c.t0, c.t1, lin);
+        g.globalCompositeOperation = "lighter";
+        if (night && p > hot0) { g.beginPath(); cutPath(c, hot0, p); g.globalAlpha = V * .55; g.strokeStyle = "rgb(255,120,36)"; g.lineWidth = 4.5; g.stroke(); g.beginPath(); cutPath(c, Math.max(hot0, hot1), p); g.globalAlpha = V; g.strokeStyle = "#FFE19C"; g.lineWidth = 1.6; g.stroke(); }
+        if (p < 1) { const [u, v] = alongCut(c, p), x = S.cx + u * R, y = S.cy + v * R; g.globalAlpha = V * (night ? 1 : .9); g.drawImage(night ? S.halo : S.glint, x - 9, y - 9, 18, 18); }
+        g.globalCompositeOperation = "source-over"; }
+    }
+    // closing: by night a run of heat along every cut, fusing it, as it fades
+    if (night && !run) { const hk = env(close, 0, .22, .42, .95, E.sine); if (hk > .003) { g.globalCompositeOperation = "lighter"; for (const c of CUTS) { const w = clamp(close * 2.2 - c.t0 + EW.crack[0]); if (w <= 0) continue; g.beginPath(); cutPath(c, 0, w); g.globalAlpha = V * hk * .6; g.strokeStyle = "rgb(255,120,36)"; g.lineWidth = 4; g.stroke(); g.globalAlpha = V * hk; g.strokeStyle = "#FFC46E"; g.lineWidth = 1.2; g.stroke(); } g.globalCompositeOperation = "source-over"; } }
+    g.restore(); g.globalAlpha = 1;
+  }
+  /** the egg by day: the oiled picture the pass began on, cut and slid about, turned over to the one it leaves, slid home */
+  function eggDay(T, I, prev, cur) {
+    const { cx, cy, R } = S, V = S.vis, whole = (c, a = 1) => { if (a <= .003) return; g.globalAlpha = a * V; g.drawImage(c, cx - 1.05 * R, cy - 1.05 * R, 2.1 * R, 2.1 * R); g.globalAlpha = 1; };
+    if (I <= .01 || T < EW.lift[0]) { whole(prev.oiled); return; } // (at rest, and while the cuts run)
+    if (T >= EW.seal[0]) whole(cur.oiled); else eggPuzzle(T, I, 0, prev.oiled, cur.oiled, false, 1);
+    whole(prev.oiled, 1 - I); // (the list touched: back to the picture the pass began on)
+  }
+  /** the egg by night: the same, the tiles cut from the char with the lines burned in them */
+  function eggNight(T, I, A, prev, cur) {
+    const { cx, cy, R } = S, V = S.vis, pic = (c, a) => { if (a <= .003) return; g.globalAlpha = a * V; g.drawImage(c, cx - 1.05 * R, cy - 1.05 * R, 2.1 * R, 2.1 * R); g.globalAlpha = 1; };
+    if (I <= .01 || T < EW.lift[0]) { pic(prev.full, 1); return; }
+    if (T >= EW.seal[0]) pic(cur.full, I); else eggPuzzle(T, I, A, plateOf(prev), plateOf(cur), true, I);
+    pic(prev.full, 1 - I);
+  }
+  /** the click: the last tile down in its gap, a puff of sawdust (by night of ash, and a few sparks) out of the joins */
+  function eggClick(T, I, night) {
+    const u = (T - EW.back[1]) / .55; if (u < 0 || u > 1) return; const { cx, cy, R } = S, V = S.vis, k = R / S.RR, [hx, hy] = PZC[15], r = rng(977), h = PZS / 2;
+    g.save();
+    for (let i = 0; i < 26; i++) { const sd = i % 4, f = r() * 2 - 1, ex = sd === 0 ? f * h : sd === 1 ? h : sd === 2 ? f * h : -h, ey = sd === 0 ? -h : sd === 1 ? f * h : sd === 2 ? h : f * h, ox = sd === 1 ? 1 : sd === 3 ? -1 : 0, oy = sd === 0 ? -1 : sd === 2 ? 1 : 0, sp = (.05 + r() * .09) * E.out(u);
+      const x = cx + (hx + ex + ox * sp + (r() - .5) * .02) * R, y = cy + (hy + ey + oy * sp) * R - u * (6 + r() * 8) * k, s = (1.1 + r() * 1.6) * Math.max(1, k);
+      g.globalAlpha = V * I * (1 - u) * .85; g.fillStyle = night ? (i % 5 === 0 ? "#FFB257" : "rgb(196,182,166)") : "#C9AD80"; g.fillRect(x - s / 2, y - s / 2, s, s); }
+    g.restore(); g.globalAlpha = 1;
+  }
+
   const S = {
     res: "dpr", carry: true, // (the picture a pass lays, or burns, stays up through the quiet after it)
     wash: night ? 1 : 1.6, veil: night ? .6 : 1, // a light kit's small words have no room for the picture under them (scenes.js); a dark kit's do
@@ -973,7 +1149,7 @@ export default function wood(K, id) {
       const pr = H > W * 1.05;
       Object.assign(S, { W, H, pr, Rmin: pr ? 54 : 70, Rmax: pr ? 150 : 240 }); if (S.vis === undefined) S.vis = 1;
       if (!S.placed) { const R0 = pr ? Math.min(W * .3, 118) : Math.min(W * .14, H * .27); Object.assign(S, { cx: pr ? W * .5 : W * .8, cy: pr ? H * .77 : H * .5, R: R0, tx: pr ? W * .5 : W * .8, ty: pr ? H * .77 : H * .5, tR: R0, away: pr ? [0, 1] : [1, 0] }); }
-      S.RR = 0; S.landed = K.layer(); // the sprites are drawn again for this size, on the next frame
+      S.RR = 0; S.landed = K.layer(); S.bgc = bg.canvas; S.plates = null; // the sprites are drawn again for this size, on the next frame (the egg's night tiles carry the char from the backdrop)
       if (night) plankNight(bg, W, H); else plankDay(bg, W, H);
       if (S.raw) S.words(S.raw);
     },

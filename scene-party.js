@@ -38,6 +38,21 @@
 // ball, which throws them round the room as sharp points; a confetti cannon of foil streamers; a balloon drop; or the pin
 // spot, the room's lights down and one white light on the ball. About one pass in eight a second, smaller ball is let
 // down beside the first, or the spots gather into a heart round the ball, beat twice, and fly apart.
+//
+// 1.12 b417: the egg. Every twelfth pass (K.egg: three minutes of the list left alone) plays one of its own in place of
+// the pass it would have dealt. By day a balloon dog, twisted from one long balloon the way a clown twists one (the knot at
+// the end of its nose, the balloon's end at the tip of its tail, every bubble lit as the bouquet is), bounds in from the
+// side with the most room, under the bouquet and past it, skids and turns, sniffs up at the knot of the front balloon on
+// that side, boops it so it bobs away and back, hops back startled, cocks its head one way and the other, wags, drops into
+// a play bow, then leaps and snaps the balloon by its knot and bounds off the way it came with the balloon flying behind it
+// on its string, the string paying out through its teeth; another balloon comes up from below to fill the gap. Each egg
+// gives the dog the next of four colours (Koons's orange, then a blue, a green, a yellow). By night the mirror ball
+// dances: it spins up and its own tiles peel off it, the bottom row first, and pour down onto a floor of light under it,
+// standing up as a dancer in a suit of them, feet first, each tile still a mirror lit by the ball's own sums; on the beat
+// he strikes the pose (one arm to the ceiling, the other to the floor, the hip out), does the point, down and up and down,
+// to a disco record's tempo, spins, and holds it in the beams as the glitter comes down; then the tiles fly home, his
+// head's first, and the ball is whole again and slows. Each begins and ends on the resting picture and eases away with the
+// list's use as every beat does; its own dice, so no other pass draws a thing differently.
 export default function party(K, id) {
   const night = id === "superpink";
   const { clamp, lerp, E, seg, env, rng, canvas, rgb, mixc, css } = K;
@@ -377,6 +392,123 @@ export default function party(K, id) {
     if (pt > 0) { unit(); confetti(pt, x, top - 4, -Math.PI / 2 - gf.lv * .12, R * .75, V, T > 14.6 ? (15 - T) / .4 : 1, S.faces[gf.pal], S.backs[gf.pal], gf.shape, .8, w * .3); g.globalAlpha = 1; } /* and a fountain of confetti */
   };
 
+  /* ---------------- 1.12 b417: the egg, by day — a balloon dog ----------------
+     Twisted from one long balloon the way a clown twists one: the nose with the balloon's knot at its tip, two ears, the
+     neck, two front legs, the body, two back legs, and the tail with the balloon's end at its tip; every bubble lit as the
+     bouquet is (from up on the left, deeper where the latex turns away, the light through it low on the far side, a soft
+     shine and a sharp window in it) and its shadow on the wall. */
+  const DOGC = ["#FF8A1E", "#2F7FE8", "#12B08C", "#FFC21A"]; // Koons's orange, a blue, a green, a yellow (never the pinks of the balloons it's after): one an egg, in turn
+  const EGB = { in: [.55, 3.3], turn: [3.3, 3.64], sniff: [3.95, 6.05], boop: 6.15, hop: [6.32, 6.9], tilt: [6.95, 8.1], wag: [7.55, 9.1], bow: [8.1, 8.8], leap: [9.0, 9.98], grab: 9.5, out: [10.04, 12.9], rise: [11.4, 14.9] };
+  const DL = { body: 3.0, neck: 2.15, snout: 2.35, ear: 1.85, leg: 2.45, tail: 2.0 }; // each bubble, twist to twist, in the tube's widths
+  // the dog's poses, facing right (angles from the page's x axis, y down: π/2 is straight down)
+  const STAND = { phi: 0, neck: -1.12, snout: .16, e1: -2.02, e2: -1.8, f1: 1.48, f2: 1.64, h1: 1.66, h2: 1.5, tail: -2.12, sq: 1 };
+  const REACH = { phi: -.1, neck: -1.36, snout: -.5, e1: -2.34, e2: -2.12, f1: 1.4, f2: 1.56, h1: 1.74, h2: 1.58, tail: -1.92, sq: 1 };
+  const BOW = { phi: .42, neck: -.92, snout: -.12, e1: -1.92, e2: -1.68, f1: .58, f2: .72, h1: 1.64, h2: 1.5, tail: -1.55, sq: 1 };
+  const LEAP = { phi: -.16, neck: -1.42, snout: -1.22, e1: -2.7, e2: -2.5, f1: .62, f2: .8, h1: 2.72, h2: 2.9, tail: -2.75, sq: 1.05 };
+  const CARRY = { ...STAND, neck: -1.2, snout: -.16, e1: -2.25, e2: -2.02 };
+  const mixP = (a, b, t) => { if (t <= 0) return a; if (t >= 1) return b; const o = {}; for (const k in a) o[k] = lerp(a[k], b[k], t); return o; };
+  /** a bound, u from 0 (feet down) to 1: squashed on the ground, then up, nose first, front legs thrown forward to land and
+   *  the back ones pushing off behind, the ears streaming */
+  const gait = u => { const st = u < .2, v = st ? 0 : (u - .2) / .8, k = st ? Math.sin(Math.PI * u / .2) : 0;
+    return { up: st ? 0 : 4 * v * (1 - v), sq: st ? 1 - .15 * k : 1 + .05 * Math.sin(Math.PI * v), phi: st ? .1 * k - .04 : lerp(-.24, .2, E.sine(v)),
+      f: st ? lerp(1.62, 2.02, u / .2) : lerp(2.06, .98, E.io(v)), h: st ? lerp(1.42, 2.12, u / .2) : lerp(2.22, 1.18, E.io(v)), ear: st ? .3 * k : -.42 * Math.cos(Math.PI * v), tail: -.3 * Math.sin(u * TAU) }; };
+  /** where the dog is at loop time T and how it stands: its body's middle, which way it faces (±1, and between while it
+   *  turns round), its pose, the head's tilt; q says where it comes from and stands, in the page's pixels */
+  const dogAt = (T, q) => {
+    const d = q.d, s = q.s, legY = q.yG - DL.leg * d * .99, [i0, i1] = EGB.in, [o0, o1] = EGB.out, [l0, l1] = EGB.leap, [h0, h1] = EGB.hop, [t0, t1] = EGB.turn;
+    let x = q.xStand, y = legY, dir = s, pose = STAND, tilt = 0, gu = -1, gw = 1, hopH = 0, sq = 1, earK = 0;
+    if (T < i1) { const u = clamp((T - i0) / (i1 - i0)); x = lerp(q.xIn, q.xArrive, 1 - Math.pow(1 - u, 1.2)); dir = -s; gu = Math.min(.999, (u * 4) % 1 + (u >= 1 ? 1 : 0)); gw = 1 - seg(u, .9, 1, E.sine); hopH = 2.4 * d * (1 - .3 * Math.min(3, Math.floor(u * 4)) / 3); } // in, under the bouquet, past the knot
+    else if (T < EGB.sniff[0]) { const u = seg(T, t0, t1, E.io), k = (T - i1) / (EGB.sniff[0] - i1); x = lerp(q.xArrive, q.xStand - s * d * .25, E.out(clamp((T - i1) / .35))) + s * d * .25 * seg(T, t1 - .05, EGB.sniff[0], E.io); dir = -s * Math.cos(Math.PI * u); y = legY - d * .75 * Math.sin(Math.PI * u); // a skid, and round
+      sq = 1 - .11 * Math.sin(Math.min(Math.PI, k * 9)) * Math.exp(-k * 3); earK = .35 * Math.sin(Math.PI * u) - .3 * Math.exp(-k * 5) * Math.sin(k * 12); }
+    else if (T < h0) { const r = seg(T, EGB.sniff[0], EGB.sniff[0] + .5, E.io); pose = mixP(STAND, REACH, r); x = q.xStand + s * d * .35 * seg(T, 4.85, 5.15, E.io);
+      const sn = env(T, 4.25, 4.35, 4.85, 4.95) + env(T, 5.25, 5.35, 5.85, 5.95); pose = { ...pose, snout: pose.snout + .07 * Math.sin(T * TAU * 6.5) * sn, neck: pose.neck + .025 * Math.sin(T * TAU * 6.5 + 1) * sn }; // sniffing, in two bursts
+      const jab = env(T, EGB.boop - .1, EGB.boop, EGB.boop + .04, EGB.boop + .26); pose = { ...pose, neck: pose.neck - .14 * jab, snout: pose.snout - .34 * jab }; } // the boop
+    else if (T < h1) { const u = (T - h0) / (h1 - h0); x = lerp(q.xStand + s * d * .35, q.xBack, E.io(u)); y = legY - 1.3 * d * Math.sin(Math.PI * u); pose = mixP(REACH, STAND, E.out(u)); earK = .5 * Math.sin(Math.PI * u); sq = u < .12 ? 1 - .1 * Math.sin(Math.PI * u / .12) : 1; } // startled: a hop back
+    else if (T < l0) { x = q.xBack; const land = (T - h1) / .35; sq = land < 1 ? 1 - .09 * Math.sin(Math.PI * land) : 1;
+      tilt = .42 * seg(T, 6.95, 7.2, E.io) * (1 - seg(T, 7.48, 7.66, E.io)) - .32 * seg(T, 7.5, 7.66, E.io) * (1 - seg(T, 7.9, 8.1, E.io)); // the head cocked, one way, then the other
+      const bw = seg(T, EGB.bow[0], EGB.bow[0] + .25, E.io) * (1 - seg(T, EGB.bow[1] - .25, EGB.bow[1], E.io)); pose = mixP(STAND, BOW, bw); y = legY + d * .4 * bw; // the play bow
+      sq *= 1 - .1 * seg(T, l0 - .12, l0, E.io); }
+    else if (T < l1) { // the leap for the string: crouched, up, the string in its teeth at the top, and down
+      if (T < l0 + .16) { x = q.xBack; sq = .9 - .06 * seg(T, l0, l0 + .16, E.out); pose = mixP(STAND, LEAP, .15 * seg(T, l0, l0 + .16, E.io)); }
+      else if (T < EGB.grab) { const u = (T - l0 - .16) / (EGB.grab - l0 - .16); x = lerp(q.xBack, q.xApex, E.out(u)); y = lerp(legY, q.yApex, E.out(u)); pose = mixP(STAND, LEAP, .15 + .85 * E.out(Math.min(1, u * 1.6))); sq = lerp(.84, 1, E.out(clamp(u * 3))); }
+      else { const u = (T - EGB.grab) / (l1 - EGB.grab); x = lerp(q.xApex, q.xLand, u); y = lerp(q.yApex, legY, E.in(u)); pose = mixP(LEAP, CARRY, E.io(u)); } }
+    else if (T < o0) { x = q.xLand + s * d * .3 * seg(T, l1, o0, E.out); pose = CARRY; const land = (T - l1) / .3; sq = land < 1 ? 1 - .13 * Math.sin(Math.PI * land) : 1; }
+    else { const u = clamp((T - o0) / (o1 - o0)); x = lerp(q.xLand + s * d * .3, q.xOut, Math.pow(u, 1.1)); gu = (u * 4.4) % 1; gw = seg(T, o0, o0 + .14, E.sine); hopH = 2.3 * d; pose = CARRY; } // and away, the balloon flying behind it
+    if (gu >= 0 && gw > 0) { const gt = gait(gu); y -= hopH * gt.up * gw; sq = lerp(sq, gt.sq, gw); pose = { ...pose, phi: pose.phi + gt.phi * gw, f1: lerp(pose.f1, gt.f, gw), f2: lerp(pose.f2, gt.f + .16, gw), h1: lerp(pose.h1, gt.h, gw), h2: lerp(pose.h2, gt.h - .16, gw), e1: pose.e1 + gt.ear * gw, e2: pose.e2 + gt.ear * gw, tail: pose.tail + gt.tail * gw }; }
+    if (earK) pose = { ...pose, e1: pose.e1 + earK, e2: pose.e2 + earK * .8 };
+    const wag = env(T, EGB.wag[0], EGB.wag[0] + .2, EGB.wag[1] - .25, EGB.wag[1]) * Math.sin(T * TAU * 4.2); // (a dog's wag, four times a second)
+    if (wag) pose = { ...pose, tail: pose.tail + .48 * wag, phi: pose.phi + .035 * wag };
+    return { x, y, dir, pose, tilt, sq };
+  };
+  /** the dog's joints on the page: the body's ends, the head, the feet, the nose, the ears' and the tail's tips */
+  const dogJoints = (st, d) => {
+    const p = st.pose, ph = p.phi, sq = st.sq, ls = d * DL.leg, sx = 1 + (1 - sq) * .5, f = Math.abs(st.dir) < .14 ? .14 * Math.sign(st.dir || 1) : st.dir;
+    const P = (lx, ly) => [st.x + f * lx * sx, st.y + ls + (ly - ls) * sq], at = (o, a, l) => [o[0] + Math.cos(a) * l * d, o[1] + Math.sin(a) * l * d];
+    const S0 = [Math.cos(ph) * DL.body * d / 2, Math.sin(ph) * DL.body * d / 2], H0 = [-S0[0], -S0[1]], N0 = at(S0, p.neck + ph, DL.neck), hd = ph + st.tilt;
+    const L = { S: S0, Hp: H0, N: N0, nose: at(N0, p.snout + hd, DL.snout), e1: at(N0, p.e1 + hd, DL.ear), e2: at(N0, p.e2 + hd, DL.ear), f1: at(S0, p.f1 + ph, DL.leg), f2: at(S0, p.f2 + ph, DL.leg), h1: at(H0, p.h1 + ph, DL.leg), h2: at(H0, p.h2 + ph, DL.leg), tail: at(H0, p.tail + ph, DL.tail) };
+    const out = {}; for (const k in L) out[k] = P(L[k][0], L[k][1]); out.th = d * 1.14 * (1 + (1 - sq) * .6); return out; };
+  const SE = Array.from({ length: 40 }, (_, i) => { const t = i / 40 * TAU, c = Math.cos(t); return [Math.sign(c) * Math.pow(Math.abs(c), .6), Math.sin(t)]; }); // a bubble: blunt at its twists, round along its sides
+  /** one bubble of the dog from twist to twist, lit from up on the left wherever it points: its colour deepening where the
+   *  latex turns away, the light through it low on the far side, the shine along its lit side and the window in it */
+  const bubble = (x0, y0, x1, y1, d, C, a) => {
+    const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1, c = dx / L, s = dy / L, ha = L / 2 + d * .12, hb = d / 2, lx = -.6 * c - .8 * s, ly = .6 * s - .8 * c;
+    g.globalAlpha = a; g.setTransform(px * c * ha, px * s * ha, -px * s * hb, px * c * hb, px * (x0 + x1) / 2, px * (y0 + y1) / 2);
+    g.beginPath(); SE.forEach(([u, v], i) => i ? g.lineTo(u, v) : g.moveTo(u, v)); g.closePath();
+    let gr = g.createRadialGradient(lx * .42, ly * .5, .03, lx * .1, ly * .12, 1.34); gr.addColorStop(0, C.hi); gr.addColorStop(.3, C.mid); gr.addColorStop(.7, C.base); gr.addColorStop(1, C.deep); g.fillStyle = gr; g.fill();
+    gr = g.createRadialGradient(-lx * .42, -ly * .52, 0, -lx * .42, -ly * .52, .78); gr.addColorStop(0, C.glow); gr.addColorStop(1, C.glow0); g.fillStyle = gr; g.fill();
+    g.fillStyle = "rgba(255,255,255,.4)"; g.beginPath(); g.ellipse(lx * .3, ly * .5, .52 - .24 * Math.abs(lx), .16 + .12 * Math.abs(lx), 0, 0, TAU); g.fill();
+    g.fillStyle = "rgba(255,255,255,.95)"; g.beginPath(); g.ellipse(lx * .52, ly * .55, .11, .2, 0, 0, TAU); g.fill();
+  };
+  /** the dog on the page, its shadow on the wall behind it first */
+  const dogDraw = (st, d, C, a) => {
+    if (a <= .004) return; const J = dogJoints(st, d), th = J.th, far = [["S", "f2", th], ["Hp", "h2", th], ["N", "e2", th * .96], ["Hp", "tail", th * .96]], near = [["Hp", "S", th * 1.08], ["S", "N", th], ["S", "f1", th], ["Hp", "h1", th], ["N", "nose", th], ["N", "e1", th * .96]];
+    const all = [...far, ...near];
+    // the shadow: every bubble's, gathered on a canvas of their own and laid on the wall at once (so they don't darken where they meet)
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const k in J) if (Array.isArray(J[k])) { x0 = Math.min(x0, J[k][0]); y0 = Math.min(y0, J[k][1]); x1 = Math.max(x1, J[k][0]); y1 = Math.max(y1, J[k][1]); }
+    const pad = th * 1.6, w = x1 - x0 + pad * 2, h = y1 - y0 + pad * 2, cw = Math.ceil(w * px), ch = Math.ceil(h * px);
+    if (!S.dsc || S.dsc.width < cw || S.dsc.height < ch) { [S.dsc] = canvas(Math.max(cw, S.dsc ? S.dsc.width : 0) + 16, Math.max(ch, S.dsc ? S.dsc.height : 0) + 16); S.dsc.getContext("2d").imageSmoothingEnabled = true; }
+    const sx = S.dsc.getContext("2d"); sx.setTransform(1, 0, 0, 1, 0, 0); sx.clearRect(0, 0, cw + 2, ch + 2);
+    for (const [p, q, t] of all) { const A0 = J[p], B0 = J[q], dx = B0[0] - A0[0], dy = B0[1] - A0[1], L = Math.hypot(dx, dy) || 1, c = dx / L, s2 = dy / L, ha = (L / 2 + t * .12) * 1.12, hb = t / 2 * 1.5;
+      sx.setTransform(px * c * ha, px * s2 * ha, -px * s2 * hb, px * c * hb, px * ((A0[0] + B0[0]) / 2 - x0 + pad), px * ((A0[1] + B0[1]) / 2 - y0 + pad)); sx.drawImage(S.blob, -1, -1, 2, 2); }
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = a * .2; g.drawImage(S.dsc, 0, 0, cw, ch, (x0 - pad + th * .32) * px, (y0 - pad + th * .48) * px, cw, ch);
+    // the twists, deep where the bubbles meet; the far legs, ear and tail; the body, the neck, the near legs, the nose and the near ear
+    unit(); g.globalAlpha = a; g.fillStyle = C.twist; for (const k of ["S", "Hp", "N"]) { g.beginPath(); g.arc(J[k][0], J[k][1], th * .2, 0, TAU); g.fill(); }
+    for (const [p, q, t] of all) bubble(J[p][0], J[p][1], J[q][0], J[q][1], t, C, a);
+    unit(); g.globalAlpha = a;
+    const tip = (o, e, l, w, col) => { const dx = e[0] - o[0], dy = e[1] - o[1], L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, x = e[0] + ux * th * .02, y = e[1] + uy * th * .02;
+      g.fillStyle = col; g.beginPath(); g.moveTo(x - uy * w * .5, y + ux * w * .5); g.lineTo(x + ux * l - uy * w * .2, y + uy * l + ux * w * .2); g.quadraticCurveTo(x + ux * l * 1.18, y + uy * l * 1.18, x + ux * l + uy * w * .2, y + uy * l - ux * w * .2); g.lineTo(x + uy * w * .5, y - ux * w * .5); g.closePath(); g.fill(); };
+    tip(J.N, J.nose, th * .3, th * .34, C.deep); // the balloon's knot, at the end of its nose
+    tip(J.Hp, J.tail, th * .55, th * .18, C.nub); // and the end of it, not blown up, at the tip of its tail
+    g.globalAlpha = 1;
+  };
+
+  /** where the dog goes this frame, from where the bouquet is: the side it comes in from (the one with more room clear
+   *  of the words), the balloon it's after (the front one on that side, whose knot it can reach), where it stands to sniff
+   *  that knot, hops back to, leaps from for the string and lands; its size (a twisting balloon's tube is a fifth of a
+   *  party balloon across) and its colours */
+  const eggGeo = (e, bwOf, sink) => {
+    const { W, H, pr, cx, cy, R } = S, d = clamp(bwOf(1) * .23, pr ? 11 : 15, pr ? 19 : 27), sR = S.shade(Math.min(W - 12, cx + R * 1.25), cy + R * .62, 30), sL = S.shade(Math.max(12, cx - R * 1.25), cy + R * .62, 30);
+    const s = sR > sL + .02 ? 1 : sL > sR + .02 ? -1 : pr ? e.side : cx > W / 2 ? 1 : -1, si = s > 0 ? 6 : 5, sl = S.slots[si], sc = bwOf(sl.z) / S.bw, kx = cx + sl.u * R, ky = cy + sl.v * R + S.bal[sl.c].lift * sc + sink;
+    const off = pose => dogJoints({ x: 0, y: 0, dir: s, pose, tilt: 0, sq: 1 }, d).nose, nr = off(REACH), nl = off(LEAP), legs = DL.leg * d * .99;
+    const yG = Math.min(ky + d * .35 - nr[1] + legs, H - (pr ? 116 : 104)), xStand = kx - s * d * .3 - nr[0];
+    if (!S.dogC) S.dogC = {}; if (!S.dogC[e.col]) { const c = rgb(e.col); S.dogC[e.col] = { hi: css(tint(c, .55)), mid: css(tint(c, .12)), base: css(c), deep: css(deep(c, .62)), glow: css(tint(c, .45), .48), glow0: css(tint(c, .45), 0), twist: css(deep(c, .45)), nub: css(tint(c, .3), .92) }; }
+    if (!S.blob) S.blob = make(64, 64, x => { const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(140,36,92,1)"); gr.addColorStop(.55, "rgba(140,36,92,.85)"); gr.addColorStop(1, "rgba(140,36,92,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); });
+    const edge = s > 0 ? W : 0, ps = [kx, ky + d * .75];
+    return { d, s, si, kx, ky, yG, xStand, xArrive: xStand + s * d * .3, xIn: edge + s * d * 6.5, xBack: xStand - s * d * 1.6, xApex: ps[0] - nl[0], yApex: ps[1] - nl[1], xLand: ps[0] - nl[0] + s * d * 1.2, xOut: edge + s * d * 10, C: S.dogC[e.col] };
+  };
+
+  /** the balloon the dog took, on its string from the dog's mouth: lifted by its gas, slowed by the air, never farther from
+   *  the mouth than the string lets it, so it trails as the dog runs and swings over as it turns; worked out in sixtieths
+   *  of a second from the moment it was taken (kept as it goes; worked out again from that moment for one asked for out
+   *  of turn) */
+  const carried = (T, eg) => {
+    const key = plan.P + ":" + Math.round(eg.kx) + ":" + Math.round(eg.ky) + ":" + eg.d.toFixed(2), dt = 1 / 60, mo = t => dogJoints(dogAt(t, eg), eg.d).nose;
+    let c = S.carry; if (!c || c.key !== key || c.t > T + 1e-6) c = S.carry = { key, t: EGB.grab, x: eg.kx, y: eg.ky, vx: 0, vy: 0 };
+    while (c.t + dt <= T + 1e-6) { c.t += dt; const m = mo(c.t), k = Math.exp(-4 * dt), Ls = eg.d * (.75 + 2.95 * E.io(clamp((c.t - EGB.grab) / .9))); c.vx *= k; c.vy = c.vy * k - 1100 * dt * eg.d / 24; c.x += c.vx * dt; c.y += c.vy * dt;
+      const dx = c.x - m[0], dy = c.y - m[1], L = Math.hypot(dx, dy); if (L > Ls) { const ux = dx / L, uy = dy / L, vr = c.vx * ux + c.vy * uy; c.x = m[0] + ux * Ls; c.y = m[1] + uy * Ls; if (vr > 0) { c.vx -= vr * ux; c.vy -= vr * uy; } } }
+    return [c.x, c.y];
+  };
+
   /** a popper's load: its confetti (where each piece goes, how it falls and turns) and its streamers */
   const confOf = (r, pr, sc0) => Array.from({ length: pr ? 96 : 160 }, () => ({ a: (r() - .5) * 1.4, v: .4 + r() * .7, k: 3 + r() * 2.5, vt: .1 + r() * .06, fl: (8 + r() * 20) * sc0, fw: 2 + r() * 2.5, ph: r() * TAU, c: Math.floor(r() * 6), strip: r() < .38, s: (.75 + r() * .55) * (pr ? 8 : 11) * sc0, spin: (r() - .5) * 7, flip: (4 + r() * 8) * (r() < .5 ? -1 : 1), f0: r() * TAU }));
   const strmOf = (r, pr) => { const ns = pr ? 6 : 9; return Array.from({ length: ns }, (_, i) => ({ a: (i / (ns - 1) - .5) * 1.15 + (r() - .5) * .15, v: .7 + r() * .45, c: (i * 5 + 1) % 6, ph: r() * TAU, tw: 6 + r() * 5, cf: .45 + r() * .3, cu: 10 + r() * 9, vt: .11 + r() * .04, dr: (r() - .5) * 30 })); };
@@ -458,6 +590,8 @@ export default function party(K, id) {
     // the bouquet at home, bobbing on its strings; jostled by the popper's blast and by the balloon beside it bursting —
     // pushed away from each, and sprung back
     const jolts = on ? [[ox, oy, pa, 1.2], [gx, gy - gspr.lift * gsc, ba, .8]].filter(j => j[2] > 0 && j[2] < 3.5) : [];
+    const eg = pl.egg && on ? eggGeo(pl.egg, bwOf, sink) : null; /* (1.12 b417: the egg's dog, its nose boops the balloon it's after and its teeth take the string, */
+    if (eg) for (const [tt, k, dy] of [[EGB.boop, 1.7, .4], [EGB.grab, .8, .75]]) { const a2 = T - tt; if (a2 > 0 && a2 < 3.5) jolts.push([eg.kx, eg.ky + eg.d * dy, a2, k]); } /* and the bouquet is jostled) */
     if (on && pl.horns) for (const h of pl.horns.list) { const P0 = hornAt(h), tx = P0.x - P0.sd * P0.L * .9, t0 = pl.horns.t0 + h.d; for (const tt of [t0 + .1, t0 + .76, t0 + pl.horns.chord - h.d + .14]) { const a = T - tt; if (a > 0 && a < 3.5) jolts.push([tx, P0.y, a, .55]); } } /* (a dealt pass's horns jostle them too, */
     if (on && pl.gift) { const a = T - pl.gift.pop; if (a > 0 && a < 3.5) jolts.push([cx + pl.gift.side * R * .66, H - R * .2, a, .5]); } /* and the gift's lid flying off) */
     const home = S.slots.map(s => { const sc = bwOf(s.z) / S.bw, spr = S.bal[s.c]; let x = cx + s.u * R + Math.sin(A * .37 * s.f + s.ph) * R * .03, y = cy + s.v * R + Math.sin(A * .6 * s.f + s.ph2) * R * .022 + spr.lift * sc + sink, wob = Math.sin(A * .5 * s.f + s.ph) * .045;
@@ -476,11 +610,18 @@ export default function party(K, id) {
         const up = fly(0, 1.5, H * .8, ft), fx = h.x + Math.sin(ft * 1.3 + s.ph) * R * .08; trail(h.spr, s.c, fx, h.y - up, h.sc, .35 + .65 * S.shade(fx, h.y - up - h.spr.lift * h.sc, 30), Math.sin(ft * 1.9 + s.ph) * .1, H * .5, R * .1 * (s.u < 0 ? -1 : 1), s.ph);
         if (ti < 0 && F > .58 + i * .02) { const bt = seg(F, .58 + i * .02, .97, E.out); tether(h.spr, s.c, h.x, h.y + (1 - bt) * (H - h.y + h.spr.bh * h.sc + 60), h.sc, 1, h.wob, s.ph); }
         return; }
+      if (eg && i === eg.si && T >= EGB.grab) { const bt = seg(T, EGB.rise[0], EGB.rise[1], E.out), y = h.y + (1 - bt) * (H - h.y + h.spr.bh * h.sc + 60) * I; if (y - h.spr.bh * h.sc < H + 10) tether(h.spr, s.c, h.x, y, h.sc, 1, h.wob, s.ph); return; } /* (the egg's: taken; another comes up from below to fill the gap) */
       const ft = ti >= 0 && on ? T - b.free - ti * .22 : -1;
       if (ft <= 0) { tether(h.spr, s.c, h.x, h.y, h.sc, 1, h.wob, s.ph); return; }
       const up = fly(0, 1.1, H * .4, ft), sx = (ti - 1) * R * .3 * E.out(clamp(ft / 3)) + Math.sin(ft * 1.4 + s.ph) * R * .06; /* slipped free: up and away, its string trailing (gone with the loop if the list is touched) */
       trail(h.spr, s.c, h.x + sx, h.y - up, h.sc, I * (pl.sig ? .35 + .65 * S.shade(h.x + sx, h.y - up - h.spr.lift * h.sc, 30) : .1 + .9 * S.shade(h.x + sx, h.y - up - h.spr.lift * h.sc, h.spr.bw * h.sc * .8)), /* (a dealt pass's fade further by the words, as its own beats do) */ Math.sin(ft * 1.7 + s.ph) * .12 + h.wob, Math.hypot(G[0] - h.x, G[1] - h.y), (ti - 1) * R * .2, s.ph);
     });
+    // (the egg's: the balloon the dog took, riding on its string above the dog's mouth as it goes, leaning back as it runs)
+    let dog = null, mouth = null;
+    if (eg) { dog = dogAt(T, eg);
+      if (T >= EGB.grab) { const h = home[eg.si], sl = S.slots[eg.si], [cx2, cy2] = carried(T, eg), bl = E.io(clamp((T - EGB.grab) / .3)); mouth = dogJoints(dog, eg.d).nose;
+        const kx = lerp(h.x, cx2, bl), ky = lerp(h.y, cy2, bl), a = V * (.15 + .85 * S.shade(kx, ky - h.spr.lift * h.sc, h.spr.bw * h.sc * .6));
+        if (ky - h.spr.bh * h.sc < H + 20 && kx > -h.spr.bw && kx < W + h.spr.bw) items.push({ s: h.spr, c: sl.c, kx, ky, sc: h.sc, a, rot: Math.atan2(kx - mouth[0], mouth[1] - ky) * .9, ex: mouth[0], ey: mouth[1], qx: (kx + mouth[0]) / 2 + Math.sin(A * 2.3) * eg.d * .3, qy: (ky + mouth[1]) / 2, ph: sl.ph }); } }
     // the balloon that comes up to join them, and pops
     const gend = pl.fate === "pop" ? b.burst : b.leave; // (it pops, or it leaves another way: dealt, below)
     if (on && pl.guest >= 0 && T > b.guest[0] && T < gend) {
@@ -519,6 +660,9 @@ export default function party(K, id) {
     for (const it of items) put(it.s, it.kx, it.ky, it.s.ax, it.s.ay, it.rot, it.fx === undefined ? it.sc : it.sc * it.fx, it.sc, it.a);
     for (const it of items) if (it.gl > .01) { const c = Math.cos(it.rot), n = Math.sin(it.rot), hx = it.hx * it.fx; put(S.dglint, it.kx + hx * c - it.hy * n, it.ky + hx * n + it.hy * c, .5, .5, 0, it.sc * .9, it.sc * .9, it.gl * it.a); }
     unit();
+    if (dog) { const a = V * (.12 + .88 * S.shade(dog.x, dog.y - eg.d, eg.d * 5)); /* (the egg's dog, in front of the bouquet; the string it took hanging from its mouth) */
+      if (mouth) { const sl = S.slots[eg.si], sw = Math.sin(A * 3.1 + T) * eg.d * .5, bk = -eg.s * eg.d; g.globalAlpha = a; g.strokeStyle = S.rib[sl.c]; g.lineWidth = pr ? 1 : 1.25; g.beginPath(); g.moveTo(mouth[0], mouth[1]); g.quadraticCurveTo(mouth[0] + bk * .6 + sw, mouth[1] + eg.d * 1.6, mouth[0] + bk * 1.4 + sw * 1.6, mouth[1] + eg.d * 3.2); g.stroke(); g.globalAlpha = 1; }
+      dogDraw(dog, eg.d, eg.C, a); unit(); }
     // (in front: a dealt pass's balloon let go untied, its party horns, the rare gift box)
     if (on && pl.fate === "zip" && T >= b.leave) zipAt(pl, T, V, gx + Math.sin(A * .45) * R * .02, gy + Math.sin(A * .7) * R * .02, gspr, gsc, side);
     if (on && pl.horns) hornsAt(pl.horns, T, V);
@@ -595,6 +739,7 @@ export default function party(K, id) {
     let gr = bg.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, "rgba(18,0,11,.5)"); gr.addColorStop(.18, "rgba(18,0,11,0)"); gr.addColorStop(.7, "rgba(255,46,154,0)"); gr.addColorStop(1, "rgba(255,46,154,.12)"); bg.fillStyle = gr; bg.fillRect(0, 0, W, H);
     gr = bg.createRadialGradient(W * .6, H * .45, Math.min(W, H) * .3, W * .55, H * .5, Math.hypot(W, H) * .62); gr.addColorStop(0, "rgba(14,0,8,0)"); gr.addColorStop(1, "rgba(14,0,8,.5)"); bg.fillStyle = gr; bg.fillRect(0, 0, W, H);
     layNightDealt(W, H, LB, ha, wB, rng(947));
+    S.facets.forEach((f, i) => { f.i = i; }); S.dance = danceTiles(S.facets.length, rng(1307)); // (1.12 b417: the egg's dancer, as many tiles as the ball has)
   };
   // the second light's colour a pass deals (the first is always the kit's pink): its spots, its beam, the tiles that catch
   // it at three strengths, its glitter
@@ -773,12 +918,13 @@ export default function party(K, id) {
   /** a mirror ball at (bx, by), radius br, turned to th and turning at w: its tiles, grouped by colour and each group
    *  filled at once; which colour a tile shows is what it reflects of the room — the pink light, the second one, the
    *  white one, or the dark room and its lit floor (`fill`, the colours); the brightest throw a glint; `a` fades it all */
-  const ballAt = (bx, by, br, th, w, lit, A, facets, q, fill, glint1, a = 1) => {
-    unit(); if (a < 1) g.globalAlpha = a; g.fillStyle = "#14030E"; g.beginPath(); g.arc(bx, by, br, 0, TAU); g.fill();
+  const ballAt = (bx, by, br, th, w, lit, A, facets, q, fill, glint1, a = 1, keep = null, core = a) => { // (keep, core: 1.12 b417, the egg's ball, losing its tiles)
+    unit(); if (core < 1) g.globalAlpha = core; g.fillStyle = "#14030E"; g.beginPath(); g.arc(bx, by, br, 0, TAU); g.fill(); if (core !== a) g.globalAlpha = a < 1 ? a : 1;
     const cT = Math.cos(S.tilt), sT = Math.sin(S.tilt), gl = []; let nq = 0;
     const ka = A * .23, LK = nrm([Math.sin(ka) * .5, -.58 + Math.cos(ka * .7) * .14, .72]); /* the white light wanders, and its highlight travels over the upper tiles */
     const calm = 1 / (1 + w * .7), hotAt = .45 + (1 - calm) * .35; /* the faster it turns the more often a tile passes the light: softer glints then, a shimmer and never a flashing */
     for (const f of facets) {
+      if (keep && !keep(f)) continue;
       const lm = f.lm + th, sl = Math.sin(lm), cl = Math.cos(lm), Zc = f.ym * sT + f.cm * cl * cT; if (Zc < .03) continue;
       const Xc = f.cm * sl, Yc = f.ym * cT - f.cm * cl * sT; let nx = Xc + f.jx, ny = Yc + f.jy, nz = Zc; const nl = Math.hypot(nx, ny, nz); nx /= nl; ny /= nl; nz /= nl;
       const rx = 2 * nz * nx, ry = 2 * nz * ny, rz = 2 * nz * nz - 1;
@@ -793,7 +939,7 @@ export default function party(K, id) {
       if (hot > .3 && m > .1 && gl.length < 40) gl.push(bx + br * Xc, by + br * Yc, hot * Math.min(1.4, lit[fam]), fam);
     }
     for (let grp = 0; grp < FILL.length; grp++) { let any = false; g.beginPath(); for (let i = 0; i < nq; i++) { const o = i * 9; if (q[o + 8] !== grp) continue; any = true; g.moveTo(q[o], q[o + 1]); g.lineTo(q[o + 2], q[o + 3]); g.lineTo(q[o + 4], q[o + 5]); g.lineTo(q[o + 6], q[o + 7]); g.closePath(); } if (any) { g.fillStyle = fill[grp]; g.fill(); } }
-    put(S.rim, bx, by, .5, .5, 0, br * 2 / 100, br * 2 / 100, a);
+    put(S.rim, bx, by, .5, .5, 0, br * 2 / 100, br * 2 / 100, core);
     g.globalCompositeOperation = "lighter";
     for (let i = 0; i < gl.length; i += 4) { const k = clamp((gl[i + 2] - .3) / 1.1), z = br * (.28 + .5 * k) / 32 * (.6 + .4 * calm); put(S.glints[gl[i + 3] === 1 ? glint1 : gl[i + 3]], gl[i], gl[i + 1], .5, .5, .2, z, z, (.45 + .55 * k) * calm * a); }
     g.globalCompositeOperation = "source-over";
@@ -807,6 +953,117 @@ export default function party(K, id) {
     if (on && pa > 0) { streamers(pa, popX, mouthY, dir0, reach, I, late, S.faces[0], S.backs[0]); confetti(pa, popX, mouthY, dir0, reach, I, late, S.faces[0], S.backs[0], C.shape, 1, 0); g.globalAlpha = 1; }
     if (on && T > C.b.popper[0] && T < C.b.sink[1]) popperUp(T, I, C.b, popX, mouthY, aimRot, pa, popX, mouthY, dir0, S.npopper);
   };
+  /* ---------------- 1.12 b417: the egg, by night — the mirror ball dances ----------------
+     The ball's own tiles, peeled off it from the bottom row up as it spins, pour down onto a floor of light under it and
+     stand up as a dancer in a suit of them, feet first; every tile still a mirror, throwing back the pink light, the gold
+     one, the white one or the dark room as it turns (the ball's own sums). On the beat he strikes the pose — one arm to
+     the ceiling, the other to the floor, the hip out — does the point, down and up and down, spins, and holds it in the
+     beams as the glitter comes down; then the tiles fly home, the head's first, the ball is whole again, and it slows. */
+  const EN = { spin: [.9, 1.9, 13.3, 14.5], beams: [1.1, 1.9], aim: [4.12, 4.62, 10.6, 11.3], leave: [1.95, 3.8], fly: .72, yaw: [9.08, 9.8], ret: [10.85, 12.4], glit: [8.7, 9.6], dim: [12.4, 13.4], floor: [2.3, 3.6, 11.6, 12.8] };
+  const BEAT = 60 / 104; // a disco record's tempo
+  // his poses, in his own height's units, seen from the front (angles from the page's x axis, y down; π/2 straight down):
+  // where his hips are and how they tilt, his body, the cock of his head, each arm and leg
+  const DP = {
+    form: { px: 0, py: 0, hip: 0, torso: -1.571, head: 0, uaL: 1.76, faL: 1.68, uaR: 1.38, faR: 1.46, thL: 1.64, shL: 1.6, thR: 1.5, shR: 1.54 },
+    fever: { px: -.03, py: .008, hip: .1, torso: -1.46, head: .14, uaL: 2.3, faL: 2.36, uaR: -.84, faR: -.9, thL: 1.72, shL: 1.66, thR: 1.08, shR: 1.68 },
+    down: { px: .032, py: .02, hip: -.1, torso: -1.69, head: -.16, uaL: 2.76, faL: -.44, uaR: 2.3, faR: 2.46, thL: 1.79, shL: 1.62, thR: 1.37, shR: 1.6 },
+    tuck: { px: 0, py: 0, hip: 0, torso: -1.571, head: 0, uaL: 1.96, faL: .22, uaR: 1.18, faR: 2.92, thL: 1.6, shL: 1.57, thR: 1.54, shR: 1.57 },
+  };
+  const DK = [[0, "form"], [4.47, "fever"], [4.47 + 2 * BEAT, "down"], [4.47 + 4 * BEAT, "fever"], [4.47 + 6 * BEAT, "down"], [9.04, "tuck"], [9.8, "fever"]];
+  /** his pose at loop time T: each struck on the beat (quick, a little past and back), a dip on every beat between */
+  const dancePose = T => { let k = 0; while (k < DK.length - 1 && T >= DK[k + 1][0]) k++; const a = DP[DK[Math.max(0, k - 1)][1]], b = DP[DK[k][1]], q = k ? E.back(clamp((T - DK[k][0]) / .26)) : 1, o = {};
+    for (const n in b) { let d = b[n] - a[n]; if (n !== "px" && n !== "py") d = Math.atan2(Math.sin(d), Math.cos(d)); o[n] = a[n] + d * q; }
+    const gv = env(T, 4.62, 4.82, 8.86, 9.04); if (gv > 0) { const ph = ((T - 4.47) / BEAT) % 1, dip = Math.pow(Math.sin(Math.PI * ph), 2) * gv; o.py += .014 * dip; o.thL += .05 * dip; o.thR -= .05 * dip; o.shL -= .04 * dip; o.shR += .04 * dip; o.head += .05 * Math.sin(TAU * ph) * gv; }
+    return o; };
+  /** his joints in a pose, his hips at the origin: the body, shoulders, head, elbows, hands and fingertips, knees, ankles, toes */
+  const danceJoints = p => { const J = {}, at = (o, a, l) => [o[0] + Math.cos(a) * l, o[1] + Math.sin(a) * l], ch = Math.cos(p.hip), sh = Math.sin(p.hip), tx = Math.cos(p.torso), ty = Math.sin(p.torso);
+    J.pelvis = [p.px, p.py]; J.hipL = [p.px - .056 * ch, p.py + .01 - .056 * sh]; J.hipR = [p.px + .056 * ch, p.py + .01 + .056 * sh]; J.neck = at(J.pelvis, p.torso, .3);
+    J.shL = [J.neck[0] + ty * .098 - tx * .022, J.neck[1] - tx * .098 - ty * .022]; J.shR = [J.neck[0] - ty * .098 - tx * .022, J.neck[1] + tx * .098 - ty * .022]; J.head = at(J.neck, p.torso + p.head, .132); J.rot = p.torso + p.head + Math.PI / 2;
+    J.elL = at(J.shL, p.uaL, .145); J.haL = at(J.elL, p.faL, .135); J.fiL = at(J.haL, p.faL, .05); J.elR = at(J.shR, p.uaR, .145); J.haR = at(J.elR, p.faR, .135); J.fiR = at(J.haR, p.faR, .05);
+    J.kneeL = at(J.hipL, p.thL, .235); J.ankL = at(J.kneeL, p.shL, .225); J.toeL = [J.ankL[0] - .06, J.ankL[1] + .015]; J.kneeR = at(J.hipR, p.thR, .235); J.ankR = at(J.kneeR, p.shR, .225); J.toeR = [J.ankR[0] + .06, J.ankR[1] + .015];
+    return J; };
+  // his limbs and body as capsules (from, to, half-width at each end, layer: 1 legs, 2 body, 3 arms; side), the flares of
+  // his trousers wide at the ankle; and discs: his head (and its hair), his hands
+  const DB = [["hipL", "kneeL", .053, .043, 1, -1], ["kneeL", "ankL", .037, .064, 1, -1], ["hipR", "kneeR", .053, .043, 1, 1], ["kneeR", "ankR", .037, .064, 1, 1], ["ankL", "toeL", .025, .02, 1, -1], ["ankR", "toeR", .025, .02, 1, 1],
+    ["pelvis", "neck", .058, .102, 2, 0], ["neck", "head", .03, .03, 2, 0], ["shL", "elL", .034, .028, 3, -1], ["elL", "haL", .028, .022, 3, -1], ["haL", "fiL", .013, .009, 3, -1], ["shR", "elR", .034, .028, 3, 1], ["elR", "haR", .028, .022, 3, 1], ["haR", "fiR", .013, .009, 3, 1]];
+  const DD = [["head", .082, 2, 0], ["haL", .029, 3, -1], ["haR", .029, 3, 1]];
+  /** his tiles, cut once: rows across each limb and his body, a disc of them for his head and each hand, as many as the
+   *  ball has (a few over, so every one of the ball's goes); each knows which of the ball's it is, sorted so the ball's
+   *  bottom row makes his feet and its top his head, and when it flies there and home */
+  const danceTiles = (nf, r) => {
+    const J = danceJoints(DP.form), BL = DB.map(b => Math.hypot(J[b[1]][0] - J[b[0]][0], J[b[1]][1] - J[b[0]][1]));
+    const cut = st => { const out = [];
+      DB.forEach((b, bi) => { const L = BL[bi]; for (let u = -b[2] * .3; u <= L + b[3] * .3 + 1e-9; u += st) { const w = lerp(b[2], b[3], clamp(u / L)), n = Math.max(1, Math.round(2 * w / st));
+          for (let j = 0; j < n; j++) { const v = (j - (n - 1) / 2) * st; out.push({ bi, u, v, a: clamp(v / Math.max(w, st * .6), -.94, .94) }); } } });
+      DD.forEach(([, rad], di) => { for (let y = -rad + st / 2; y < rad; y += st) { const hw = Math.sqrt(Math.max(0, rad * rad - y * y)), n = Math.max(1, Math.round(2 * hw / st)); for (let j = 0; j < n; j++) { const x = (j - (n - 1) / 2) * st; out.push({ di, x, y: y - (di ? 0 : .01), nx: x / rad, ny: y / rad }); } } });
+      return out; };
+    let st = .022, tl = cut(st); for (let k = 0; k < 6 && (tl.length < nf || tl.length > nf * 1.14); k++) { st *= Math.sqrt(tl.length / (nf * 1.06)); tl = cut(st); }
+    const yOf = t => t.bi !== undefined ? (() => { const b = DB[t.bi], A0 = J[b[0]], B0 = J[b[1]], L = BL[t.bi]; return A0[1] + (B0[1] - A0[1]) / L * t.u + (B0[0] - A0[0]) / L * t.v; })() : J[DD[t.di][0]][1] + t.y;
+    tl.forEach(t => { t.y0 = yOf(t); t.jx = (r() - .5) * .16; t.jy = (r() - .5) * .16; t.b = r(); t.sp = (r() - .5) * 9; t.arc = r() < .5 ? -1 : 1; t.ph = r() * TAU; });
+    tl.sort((p, q) => q.y0 - p.y0); const nt = tl.length, leaveF = new Float32Array(nf).fill(99), backF = new Float32Array(nf);
+    tl.forEach((t, k) => { const f = Math.min(nf - 1, Math.floor(k * nf / nt)); t.f = f; t.t0 = EN.leave[0] + f / nf * (EN.leave[1] - EN.leave[0]) + r() * .06; t.t1 = t.t0 + EN.fly * (.85 + .3 * r());
+      t.t2 = EN.ret[0] + (nt - 1 - k) / nt * (EN.ret[1] - EN.ret[0]) + r() * .05; t.t3 = t.t2 + EN.fly * (.85 + .3 * r()); leaveF[f] = Math.min(leaveF[f], t.t0); backF[f] = Math.max(backF[f], t.t3); });
+    return { st, tiles: tl, leaveF, backF, q: new Float32Array(nt * 11), ord: new Uint16Array(nt), cnt: new Uint16Array(96) };
+  };
+  /** a mirror tile facing (nx, ny, nz): which of the ball's colours it shows (the pink light, the gold one, the white one
+   *  that wanders, or the dark room and its lit floor, a little brighter than the ball's so he reads as silver), and how
+   *  hot it glints */
+  const mirror = (nx, ny, nz, b, lit, LK, hotAt, out) => { const rx = 2 * nz * nx, ry = 2 * nz * ny, rz = 2 * nz * nz - 1;
+    const dP = Math.max(0, rx * LP[0] + ry * LP[1] + rz * LP[2]), dG = Math.max(0, rx * LG[0] + ry * LG[1] + rz * LG[2]), dK = Math.max(0, rx * LK[0] + ry * LK[1] + rz * LK[2]);
+    const hp = lit[0] * Math.pow(dP, 9), hg = lit[1] * Math.pow(dG, 9), hk = lit[2] * Math.pow(dK, 12); let fam = 0, m = hp, d = dP; if (hg > m) { fam = 1; m = hg; d = dG; } if (hk > m) { fam = 2; m = hk; d = dK; }
+    const hot = Math.pow(d, 50); out[0] = m > .1 ? 5 + fam * 3 + (hot > hotAt ? 2 : m > .4 ? 1 : 0) : clamp(Math.floor((.2 + .5 * b + .5 * Math.max(0, ry) + .1 * nz) * 5), 0, 4); out[1] = m > .1 ? hot * Math.min(1.4, lit[fam]) : 0; out[2] = fam; };
+  const MO = [0, 0, 0];
+  /** where a ball's tile is on the page with the ball turned to th, and whether it faces us */
+  const facetAt = (f, bx, by, br, th) => { const cT = Math.cos(S.tilt), sT = Math.sin(S.tilt), lm = f.lm + th, cl = Math.cos(lm); return [bx + br * f.cm * Math.sin(lm), by + br * (f.ym * cT - f.cm * cl * sT), f.ym * sT + f.cm * cl * cT]; };
+  /** the dancer, at loop time T: the floor under him, his tiles (landed ones in place, in their layers back to front, the
+   *  grout dark between them; the ones on their way flying between him and the ball), the glints off him */
+  const danceDraw = (T, Dg, lit, A, w, a) => {
+    if (a <= .004) return; const D = S.dance, { fx, fy, yF, Hf, side, bx, by, br } = Dg, J = danceJoints(dancePose(T)), Y = TAU * E.io(clamp((T - EN.yaw[0]) / (EN.yaw[1] - EN.yaw[0]))), cY = Math.cos(Y), sY = Math.sin(Y), th = S.th;
+    const ka = A * .23, LK = nrm([Math.sin(ka) * .5, -.58 + Math.cos(ka * .7) * .14, .72]), yv = env(T, EN.yaw[0], EN.yaw[0] + .2, EN.yaw[1] - .2, EN.yaw[1]), calm = 1 / (1 + yv * 2.5), hotAt = .45 + (1 - calm) * .35, h = D.st * Hf * .41, hg = D.st * Hf * .55;
+    // the floor of light: five by three in perspective, each square lit in turn, two beats a colour, a lift on every beat
+    const fk = env(T, EN.floor[0], EN.floor[1], EN.floor[2], EN.floor[3], E.sine) * a;
+    if (fk > .004) { const yb = yF - .05 * Hf, yfr = yF + .095 * Hf, wb = .52 * Hf, wf = .84 * Hf, P = (u, v) => { const e = (Math.pow(1.7, v) - 1) / .7; return [fx + (u - .5) * lerp(wb, wf, e), lerp(yb, yfr, e)]; }, bt2 = Math.max(0, (T - 4.47) / BEAT), pulse = T > 4.47 ? Math.exp(-(bt2 % 1) * 3.5) : 0, FLC = ["#FF2E9A", "#FFD36E", "#FFC2E2", "#B991FF"];
+      unit(); g.globalCompositeOperation = "lighter";
+      for (let j = 0; j < 3; j++) for (let i = 0; i < 5; i++) { const c = (i + 2 * j + Math.floor(bt2 / 2)) % 4, p0 = P((i + .06) / 5, (j + .08) / 3), p1 = P((i + .94) / 5, (j + .08) / 3), p2 = P((i + .94) / 5, (j + .92) / 3), p3 = P((i + .06) / 5, (j + .92) / 3);
+        g.globalAlpha = fk * (.26 + .2 * ((i + j) % 2) + .3 * pulse * ((i + j + Math.floor(bt2)) % 2)) * (.15 + .85 * S.shade((p0[0] + p2[0]) / 2, (p0[1] + p2[1]) / 2, 20)); g.fillStyle = FLC[c]; g.beginPath(); g.moveTo(p0[0], p0[1]); g.lineTo(p1[0], p1[1]); g.lineTo(p2[0], p2[1]); g.lineTo(p3[0], p3[1]); g.closePath(); g.fill(); }
+      put(S.halo, fx, yF + .02 * Hf, .5, .5, 0, Hf * .5 / 64, Hf * .16 / 64, fk * .8); g.globalCompositeOperation = "source-over"; }
+    // his glow behind him, as the ball has one
+    const land = clamp((T - EN.leave[0] - .4) / 2.4) * (1 - clamp((T - EN.ret[0]) / 1.6));
+    if (land > .01) { g.globalCompositeOperation = "lighter"; put(S.halo, fx, fy - .14 * Hf, .5, .5, 0, Hf * .45 / 64, Hf * .8 / 64, a * land * .55); g.globalCompositeOperation = "source-over"; }
+    // every tile where it is now: on the ball (not his), on him, or on its way
+    const fr = DB.map(b => { const A0 = J[b[0]], B0 = J[b[1]], dx = B0[0] - A0[0], dy = B0[1] - A0[1], L = Math.hypot(dx, dy) || 1; return [A0[0], A0[1], dx / L, dy / L]; }), cr = Math.cos(J.rot), sr = Math.sin(J.rot), q = D.q, gl = [];
+    let n = 0;
+    for (const t of D.tiles) { if (T < t.t0 || T >= t.t3) continue; const flying = T < t.t1 || T >= t.t2;
+      let x, y, nx, ny, nz, ax, ay, lay;
+      if (t.bi !== undefined) { const [ox, oy, dx, dy] = fr[t.bi], b = DB[t.bi]; x = ox + dx * t.u - dy * t.v; y = oy + dy * t.u + dx * t.v; nx = -dy * t.a; ny = dx * t.a; nz = Math.sqrt(1 - t.a * t.a); ax = dx; ay = dy; lay = b[4]; if (b[5] && b[5] * side * sY > .25) lay = 0; }
+      else { const dd = DD[t.di], c0 = J[dd[0]]; x = c0[0] + t.x * cr - t.y * sr; y = c0[1] + t.x * sr + t.y * cr; nx = t.nx * cr - t.ny * sr; ny = t.nx * sr + t.ny * cr; nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny)); ax = cr; ay = sr; lay = dd[2]; if (dd[3] && dd[3] * side * sY > .25) lay = 0; }
+      x *= side; nx *= side; ax *= side; nx += t.jx; ny += t.jy; let nl = Math.hypot(nx, ny, nz); nx /= nl; ny /= nl; nz /= nl;
+      const X = x * cY, nX = nx * cY + nz * sY; let nZ = -nx * sY + nz * cY; if (nZ < 0) nZ = -nZ;
+      let sx = fx + X * Hf, sy = fy + y * Hf, ux = ax * cY * h, uy = ay * h, vx = -ay * cY * h, vy = ax * h, size = 1;
+      if (flying) { const back = T >= t.t2, f = S.facets[t.f], u = back ? clamp((T - t.t2) / (t.t3 - t.t2)) : clamp((T - t.t0) / (t.t1 - t.t0)), e = E.io(u), [px0, py0] = facetAt(f, bx, by, br, back ? th + w * (t.t3 - T) : th - w * (T - t.t0));
+        const [s0x, s0y, e0x, e0y] = back ? [sx, sy, px0, py0] : [px0, py0, sx, sy], mx = (s0x + e0x) / 2, my = (s0y + e0y) / 2, ddx = e0x - s0x, ddy = e0y - s0y;
+        const cxp = mx - ddy * .24 * t.arc, cyp = my + ddx * .24 * t.arc, k1 = 1 - e; sx = k1 * k1 * s0x + 2 * k1 * e * cxp + e * e * e0x; sy = k1 * k1 * s0y + 2 * k1 * e * cyp + e * e * e0y;
+        const ang = t.sp * Math.sin(Math.PI * u) + T * 2, sz = lerp(back ? 1 : br * .17 / (D.st * Hf * .82), back ? br * .17 / (D.st * Hf * .82) : 1, e); size = sz; ux = Math.cos(ang) * h * sz; uy = Math.sin(ang) * h * sz; vx = -uy; vy = ux;
+        nx = Math.sin(T * 7 + t.ph) * .75; ny = Math.cos(T * 5.3 + t.ph) * .5; nZ = .55; nl = Math.hypot(nx, ny, nZ); mirror(nx / nl, ny / nl, nZ / nl, t.b, lit, LK, hotAt, MO); lay = 4; }
+      else mirror(nX, ny, nZ, t.b, lit, LK, hotAt, MO);
+      const sh = S.shade(sx, sy, 8); if (sh < .55) lay = 5; /* (behind or beside a word: faint, in a layer of its own) */
+      const o = n * 11; q[o] = sx + ux + vx; q[o + 1] = sy + uy + vy; q[o + 2] = sx - ux + vx; q[o + 3] = sy - uy + vy; q[o + 4] = sx - ux - vx; q[o + 5] = sy - uy - vy; q[o + 6] = sx + ux - vx; q[o + 7] = sy + uy - vy; q[o + 8] = lay * 16 + MO[0]; q[o + 9] = size; q[o + 10] = sh;
+      if (MO[1] > .3 && gl.length < 120) gl.push(sx, sy, MO[1], MO[2]);
+      const jt = T - t.t1; if (!flying && jt < .22 && gl.length < 120) gl.push(sx, sy, .9 * (1 - jt / .22), 2); /* (each one catching the light as it lands) */
+      n++; }
+    // in order, layer by layer (back to front) and colour by colour: a counting sort
+    const cnt = D.cnt, ord = D.ord; cnt.fill(0); for (let i = 0; i < n; i++) cnt[q[i * 11 + 8]]++; for (let i = 1; i < 96; i++) cnt[i] += cnt[i - 1]; for (let i = n - 1; i >= 0; i--) ord[--cnt[q[i * 11 + 8]]] = i;
+    unit(); let i0 = 0;
+    for (let lay = 0; lay <= 5; lay++) {
+      let i1 = i0; while (i1 < n && Math.floor(q[ord[i1] * 11 + 8] / 16) === lay) i1++; if (i1 === i0) continue;
+      if (lay < 4) { g.globalAlpha = a; g.fillStyle = "#14030E"; g.beginPath(); for (let k = i0; k < i1; k++) { const o = ord[k] * 11, cx0 = (q[o] + q[o + 4]) / 2, cy0 = (q[o + 1] + q[o + 5]) / 2, s2 = hg / h; for (let c = 0; c < 4; c++) { const px2 = cx0 + (q[o + c * 2] - cx0) * s2, py2 = cy0 + (q[o + c * 2 + 1] - cy0) * s2; c ? g.lineTo(px2, py2) : g.moveTo(px2, py2); } g.closePath(); } g.fill(); } /* (the grout) */
+      for (let k = i0; k < i1;) { const grp = q[ord[k] * 11 + 8] % 16; g.beginPath(); let k2 = k; for (; k2 < i1 && q[ord[k2] * 11 + 8] % 16 === grp; k2++) { const o = ord[k2] * 11; g.moveTo(q[o], q[o + 1]); g.lineTo(q[o + 2], q[o + 3]); g.lineTo(q[o + 4], q[o + 5]); g.lineTo(q[o + 6], q[o + 7]); g.closePath(); }
+        g.globalAlpha = a * (lay === 5 ? .2 : 1); g.fillStyle = FILL[grp]; g.fill(); k = k2; }
+      i0 = i1; }
+    g.globalCompositeOperation = "lighter";
+    for (let i = 0; i < gl.length; i += 4) { const k = clamp((gl[i + 2] - .3) / 1.1), z = D.st * Hf * (1.6 + 2.4 * k) / 32 * (.6 + .4 * calm); put(S.glints[gl[i + 3]], gl[i], gl[i + 1], .5, .5, .2, z, z, (.45 + .55 * k) * calm * a * S.shade(gl[i], gl[i + 1], 8)); }
+    g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
+  };
   /** the disco, at loop time T */
   const drawNight = (T, I, A, F, dt) => {
     const { W, H, pr, cx, cy, R } = S, on = I > .01, fin = F >= 0 ? env(F, 0, .16, .7, 1, E.sine) : 0, pl = plan, bt = pl.b;
@@ -817,6 +1074,10 @@ export default function party(K, id) {
     const L = lerp(yRest, yLow, drop) + 12 - (1 - S.vis) * (yRest + br + 80), bx = cx + Math.sin(sw) * L, by = -12 + Math.cos(sw) * L;
     const race = on ? env(T, bt.spin[0], bt.spin[1], bt.spin[2], bt.spin[3], E.sine) * I * pl.spin : 0, w = .045 + race * 1.3 + fin * 2.2;
     S.th = (S.th + dt * w) % (TAU * 100);
+    // (1.12 b417, the egg: where the dancer stands, on a floor under the ball, how tall he is, which hand points out; and
+    // how much of the ball is still a ball)
+    const de = pl.egg && on ? (() => { const yF = Math.min(cy + R * .78, H - 98), Hf = clamp(yF - (yRest + br * .1), R * 1.05, R * 1.6); return { fx: cx, fy: yF - .49 * Hf, yF, Hf, side: pr ? pl.egg.side : cx > W / 2 ? 1 : -1, bx, by, br }; })() : null;
+    const pres = de ? lerp(1, 1 - seg(T, EN.leave[0], EN.leave[1] + .4, x => x) + seg(T, EN.ret[0] + .4, EN.ret[1] + .9, x => x), I) : 1;
     // (a dealt pass's pin spot: the room's lights go down first, under everything)
     const pinK = pl.pin ? env(T, pl.pin[0], pl.pin[1], pl.pin[2], pl.pin[3], E.sine) * I : 0;
     if (pinK > .004) { unit(); g.globalAlpha = pinK * .55; g.fillStyle = "#0B0007"; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
@@ -827,7 +1088,7 @@ export default function party(K, id) {
     let most = 0;
     for (const [i, b] of S.beams.entries()) {
       b.inten = Math.max(on ? env(T, bt.beams[0] + i * .35, bt.beams[1] + i * .35, bt.dim[0] + i * .2, bt.dim[1] + i * .2, E.sine) * I * pl.bk : 0, fin);
-      const toBall = Math.atan2(bx - b.x, b.y - by), sweep = pl.sig ? b.base + b.amp * Math.sin((T - bt.sweep) * b.f + b.ph) : swing(pl, b, i, T, toBall);
+      const toBall = de ? Math.atan2(de.fx - b.x, b.y - (de.fy - .2 * de.Hf)) : Math.atan2(bx - b.x, b.y - by), sweep = pl.sig ? b.base + b.amp * Math.sin((T - bt.sweep) * b.f + b.ph) : swing(pl, b, i, T, toBall);
       b.ang = lerp(sweep, toBall, aimK); b.hit = b.inten * Math.exp(-(((b.ang - toBall) / .15) ** 2)); lit[b.fam] += b.hit * .9; most = Math.max(most, b.inten);
     }
     for (let k = 0; k < 3; k++) lit[k] = Math.min(lit[k], 1.9);
@@ -839,7 +1100,7 @@ export default function party(K, id) {
     // under each line the room steps back into shadow, the beams with it (the stage lays its pads over this)
     for (const [x0, y0, x1, y1, kind] of S.raw || []) if (kind === 1) { const mx = 18 + (y1 - y0) * .5, my = 6 + (y1 - y0) * .3; put(S.pad, x0 - mx, y0 - my, 0, 0, 0, (x1 - x0 + mx * 2) / 160, (y1 - y0 + my * 2) / 80, .45 + most * .45); }
     g.globalCompositeOperation = "lighter";
-    put(S.halo, bx, by, .5, .5, 0, br * 2.6 / 64, br * 2.6 / 64, .5 + (lit[0] + lit[1] - 1) * .35);
+    put(S.halo, bx, by, .5, .5, 0, br * 2.6 / 64, br * 2.6 / 64, (.5 + (lit[0] + lit[1] - 1) * .35) * pres);
     if (pinK > .004) put(S.haloW, bx, by, .5, .5, 0, br * 3.2 / 64, br * 3.2 / 64, pinK * .9);
     // the spots on the walls: each a direction from the ball, turning with it, where it meets the wall behind; round and
     // soft, larger and drawn out the farther off they land, streaking when the ball races, dim behind the words
@@ -848,7 +1109,7 @@ export default function party(K, id) {
     // and colours — a heart, a star, a sparkle — and turns back before the pass is out; `fm` how far that has gone)
     const fm = pl.sig ? 0 : pl.flip ? env(T, pl.flip[0], pl.flip[1], pl.flip[2], pl.flip[3], E.sine) * I : 0;
     const lz = pl.laser, hz = pl.heart, back = pl.sig ? 0 : Math.max(lz ? env(T, lz.t[3] - .15, lz.t[3] + .2, lz.t[4], lz.t[5], E.sine) * I : 0, hz ? env(T, hz.t[0], hz.t[0] + .5, hz.t[2], hz.t[2] + .4) * I : 0);
-    const sK = pl.sig ? 1 : pl.spotK * (1 - (lz ? 1 : .8) * back); // (the room's spots step back for the lasers' points, or the heart)
+    const sK = pl.sig ? 1 : pl.spotK * (1 - (lz ? 1 : .8) * back) * pres; // (the room's spots step back for the lasers' points, or the heart; or go with the ball's tiles)
     for (const d of S.dots) {
       const dx = d.x * cs + d.z * sn, dz = d.z * cs - d.x * sn; if (dz > -.3) continue;
       const k = 1 / -dz, x = bx + dx * Dz * k, y = by + d.y * Dz * k; if (x < -80 || x > W + 80 || y < -80 || y > H + 80) continue;
@@ -860,6 +1121,14 @@ export default function party(K, id) {
       if (kd < .5) put(S.spots[d.c], x, y, .5, .5, ang, maj / 16 * Math.max(.06, fx), rr / 16, a * sK);
       else upright(S.shapes[pl.shape][d.c ? pl.col : 0], x, y, ang, maj / 32 * pl.shapeZ, rr / 32 * pl.shapeZ, Math.max(.06, fx), a * sK * pl.shapeK);
     }
+    // (the egg's dancer is a mirror too: as he spins he throws the room's spots round it once, the way the ball does)
+    if (de) { const sp = env(T, EN.yaw[0], EN.yaw[0] + .12, EN.yaw[1] - .05, EN.yaw[1] + .55) * I;
+      if (sp > .01) { const u = clamp((T - EN.yaw[0]) / (EN.yaw[1] - EN.yaw[0])), Y = TAU * E.io(u) + 1.1, c2 = Math.cos(Y), s2 = Math.sin(Y), ox = de.fx, oy = de.fy - .22 * de.Hf, wY = Math.min(3.5, TAU * 3 * u * (1 - u) / (EN.yaw[1] - EN.yaw[0]) * 1.4);
+        for (const d of S.dots) { const dx = d.x * c2 + d.z * s2, dz = d.z * c2 - d.x * s2; if (dz > -.3) continue;
+          const k = 1 / -dz, x = ox + dx * Dz * k, y = oy + d.y * Dz * k; if (x < -80 || x > W + 80 || y < -80 || y > H + 80) continue;
+          const rr = S.spotR * d.s * Math.sqrt(k) * .9, el = Math.pow(k, .55), vX = -wY * Dz * (dx * dx + dz * dz) * k * k, vY = -wY * Dz * d.y * dx * k * k, streak = Math.hypot(vX, vY) / 30 * 1.5;
+          const long = streak > rr * (el - 1), ang = long ? Math.atan2(vY, vX) : Math.atan2(y - oy, x - ox), maj = long ? rr + streak : rr * el;
+          put(S.spots[d.c], x, y, .5, .5, ang, maj / 16, rr / 16, sp * lit[d.c] * .62 * d.b * clamp((-dz - .3) / .15) * S.shade(x, y, rr) * (long ? rr * el / maj : 1)); } } }
     // the twinkles
     unit(); for (const t of S.tw) { const a = (.15 + .85 * Math.pow(.5 + .5 * Math.sin(A * t.f + t.ph), 3)) * S.shade(t.x, t.y, 6) * .8; if (a < .02) continue; g.globalAlpha = a; g.fillStyle = GLIT[t.c]; g.fillRect(t.x - t.s / 2, t.y - t.s / 2, t.s, t.s); g.fillRect(t.x - t.s * 1.6, t.y - .35, t.s * 3.2, .7); g.fillRect(t.x - .35, t.y - t.s * 1.6, .7, t.s * 3.2); }
     // the glitter: falling from above the page and off the foot, glinting as it turns, bright where a beam catches it
@@ -884,7 +1153,8 @@ export default function party(K, id) {
     if (pl.twin) twinAt(pl.twin, pl, T, I, A, bx, by, br, tl, w, fill, gl1);
     // the chain, from past the top of the page down to the ball's cap; the ball
     chain(bx, by, br, sw);
-    ballAt(bx, by, br, S.th, w, tl, A, S.facets, S.fq, fill, gl1);
+    if (de) { const D = S.dance; ballAt(bx, by, br, S.th, w, tl, A, S.facets, S.fq, fill, gl1, 1, f => T < D.leaveF[f.i] || T >= D.backF[f.i], clamp(pres * 1.4)); if (I < 1) ballAt(bx, by, br, S.th, w, tl, A, S.facets, S.fq, fill, gl1, 1 - I); danceDraw(T, de, tl, A, w, I); } // (the egg's: the ball losing its tiles to him, and getting them back)
+    else ballAt(bx, by, br, S.th, w, tl, A, S.facets, S.fq, fill, gl1);
     // (in front of it: where a laser strikes it, the near balloons of a drop, a cannon's burst)
     if (lz) { const k = env(T, lz.t[2] + .3, lz.t[3], lz.t[4], lz.t[5], E.sine) * I; if (k > .004) { const sx = clamp(bx + lz.side * R * .3, 16, W - 16), dx = sx - bx, dy = H + 4 - by, dl = Math.hypot(dx, dy) || 1;
       g.globalCompositeOperation = "lighter"; put(S.lglow[lz.ci], bx + dx / dl * br * .9, by + dy / dl * br * .9, .5, .5, 0, 1.1, 1.1, k * S.shade(bx + dx / dl * br * .9, by + dy / dl * br * .9, 34)); g.globalCompositeOperation = "source-over"; } }
@@ -901,6 +1171,9 @@ export default function party(K, id) {
   const HORNC = [["#F6C84C", "#D62E86"], ["#4FC3A1", "#FFFFFF"], ["#A98BE6", "#F6C84C"], ["#FF6FB5", "#FFFFFF"], ["#6CBCEB", "#F6C84C"]];
   const shuffle = (a, r) => { for (let i = a.length - 1; i > 0; i--) { const q = Math.floor(r() * (i + 1)); [a[i], a[q]] = [a[q], a[i]]; } return a; };
   const dealDay = P => {
+    if (K.egg(P)) { const r = K.deal(P, 1201), nth = Math.max(0, Math.round((P + 1) / 12) - 1); // (1.12 b417: the egg, in place of the pass; its own dice)
+      return { P, sig: false, b: { gust: [NEVER, NEVER], guest: [NEVER, NEVER], popper: [NEVER, NEVER], pop: NEVER, sink: [NEVER, NEVER], tremble: [NEVER, NEVER], burst: NEVER, leave: NEVER, free: NEVER, back: [NEVER, NEVER] },
+        head: "egg", guest: -1, gc: 8, gz: .95, clear: false, fate: "none", ring: "#FFFFFF", gdir: 1, gk: 0, gside: 1, pflip: 1, popC: 0, pal: 0, cshape: 0, trio: [], egg: { col: DOGC[nth % DOGC.length], side: r() < .5 ? -1 : 1 } }; }
     if (P <= 0) return { P, sig: true, b: B, head: "popper", guest: GUEST, gc: GUEST, gz: .95, clear: false, fate: "pop", ring: BAL[GUEST], gdir: 1, gk: 1, gside: 1, pflip: 1, popC: 0, pal: 0, cshape: 0, trio: TRIO };
     const r = K.deal(P, 21), head = rareAt(P, 86) ? "gift" : HEADS_D[K.bag(P, HEADS_D.length, 23)], sh = (r() - .5) * .6;
     const b = { gust: [.3 + r() * 1.1, 0], guest: [.8 + r() * .6, 0], popper: [NEVER, NEVER], pop: NEVER, sink: [NEVER, NEVER], tremble: [NEVER, NEVER], burst: NEVER, leave: NEVER, free: 10.2 + r() * .4, back: [0, 14.95] };
@@ -937,6 +1210,7 @@ export default function party(K, id) {
   const HEADS_N = ["spin", "lasers", "cannon", "drop", "pin"];
   const nightSig = { P: 0, sig: true, b: B, head: "spin", depth: 1, spin: 1, bk: 1, bspr: [0, 1, 2], glit: GLIT, glint: 1, shape: 0, col: 1, flip: null, spotK: 1, shapeK: 1 };
   const dealNight = P => {
+    if (K.egg(P)) return { ...nightSig, P, sig: false, head: "egg", b: { lower: [NEVER, NEVER + 1], beams: EN.beams, sweep: 3.0, aim: EN.aim, spin: EN.spin, glitter: EN.glit, dim: EN.dim, raise: [NEVER, NEVER + 1] }, choreo: 0, cph: 0, cf: 1, fdir: 1, egg: { side: K.deal(P, 1301)() < .5 ? -1 : 1 } }; // (1.12 b417: the egg, in place of the pass)
     if (P <= 0) return { ...nightSig, P };
     const r = K.deal(P, 31), rare = rareAt(P, 45) ? (K.deal(P, 37)() < .5 ? "twin" : "heart") : null;
     let head = rare || HEADS_N[K.bag(P, HEADS_N.length, 32)], hue = K.bag(P, HUES.length, 33), shape = K.bag(P, 4, 34);

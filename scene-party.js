@@ -53,6 +53,30 @@
 // to a disco record's tempo, spins, and holds it in the beams as the glitter comes down; then the tiles fly home, his
 // head's first, and the ball is whole again and slows. Each begins and ends on the resting picture and eases away with the
 // list's use as every beat does; its own dice, so no other pass draws a thing differently.
+//
+// 1.12 b428: the long day's hour eggs. For a list left up for hours, once in each hour of the loops left alone (K.long)
+// a pass plays a film of its own instead of what it would have dealt: the first in odd hours, the second in even ones (the
+// sixth hour's crown is another thing). By day the first is a cake, as big as the open space lets it be, wheeled in on a
+// cart to stand in front of the bouquet or beside it — the balloons drifting aside or up a little to give its candle's
+// flame clear air — with a numeral candle in gold glitter on it that says how many hours the list has been up. The candle
+// lights itself; a gust runs along the garland, the bouquet leans, the flame streams and goes out in a curl of smoke — and
+// it catches again, a trick candle, and the bouquet jumps; a bigger gust, out, and it catches again, and the bouquet sags;
+// then a party blower slides in from the open side, its tassel swinging, feints, and unrolls at it in one long toot; it's
+// out for good (a last sputter comes to nothing), the blower curls up and goes, the bouquet bobs for joy, the cart rolls
+// away and the balloons settle back. The second is a piñata, a donkey in fringed crepe, let down on a rope into the open space
+// beside the bouquet, swinging and turning on it; a striped stick poked in from the near edge swings at it — the rope is
+// yanked up out of the way of the first, the second spins it round and knocks a sweet loose, the third bursts it: its
+// lower half drops away, sweets, confetti and crepe rain down through the bouquet, and what's left is hauled up out of
+// sight. By night the first is a laser show: the lights go down, a haze rolls in, the ball is let down, and a laser at the
+// foot of the room (or at a side, where its light would cross the words) finds the ball with one pencil of light, traces
+// a ring round it on the wall and sweeps it so fast it stands in the haze as a funnel of light; the ring becomes a heart,
+// a star that turns about its upright, a flower that turns, each in a colour of its own, then closes onto the ball, which
+// takes the light into every tile as the beam folds away. The second is a flamingo on roller skates: a follow spot finds
+// the edge of the floor, and in it glides on one skate, the other leg tucked up as a flamingo stands, to the foot of the
+// ball; it flags its head to the beat, salutes with its wings, spins on its skate with its wings flung up and out — fans of
+// pink fanning to black that sweep round with it, full when they face us, a sliver edge-on — as the ball spins up and the
+// glitter comes down, strikes its pose, and skates away, its light-up wheels leaving their light on the floor. Each begins and ends on the resting picture, eases away with the list's use as every beat does, and has its own
+// dice, so no other pass draws a thing differently.
 export default function party(K, id) {
   const night = id === "superpink";
   const { clamp, lerp, E, seg, env, rng, canvas, rgb, mixc, css } = K;
@@ -261,9 +285,9 @@ export default function party(K, id) {
    *  every way at once, each piece starting up to `from` out, inside it), slowed by the air, then falling at its own
    *  steady pace, fluttering side to side, spinning, and tumbling over so it shows its dull back side and its bright
    *  face in turn. Squares and strips (`shape` 0, the signature's), or a dealt pass's stars (1), hearts (2) or sequins (3) */
-  const confetti = (pa, ox, oy, dir0, reach, V, late, fc, bk, shape, spread, from) => {
-    const { H } = S, cq = S.cq; let nc = 0;
-    for (const p of S.conf) {
+  const confetti = (pa, ox, oy, dir0, reach, V, late, fc, bk, shape, spread, from, list = S.conf, cq = S.cq) => { // (1.12 b428: a piñata's load is a list of its own)
+    const { H } = S; let nc = 0;
+    for (const p of list) {
       const dir = dir0 + p.a * spread, v0 = p.v * reach * p.k, x0 = from ? ox + Math.cos(dir) * from * (p.v - .3) : ox, y0 = from ? oy + Math.sin(dir) * from * (p.v - .3) : oy;
       const x = x0 + fly(Math.cos(dir) * v0, p.k, 0, pa) + p.fl * (1 - Math.exp(-p.k * pa)) * Math.sin(pa * p.fw + p.ph), y = y0 + fly(Math.sin(dir) * v0, p.k, p.vt * H, pa);
       if (y > H + 16) continue;
@@ -509,6 +533,452 @@ export default function party(K, id) {
     return [c.x, c.y];
   };
 
+  /* ---------------- 1.12 b428: the long day's hour eggs, by day ----------------
+     Rarer than the egg: one in each hour of the list left alone (K.long), the cake in odd hours and the piñata in even
+     ones, each in place of its pass, on dice of its own, the bouquet left as it was found. */
+
+  // a numeral candle's figures, each a stroke along these in a box .62 wide and 1 tall (y down), and where its wick stands
+  const DIG = [
+    x => { x.moveTo(.51, .5); x.ellipse(.31, .5, .2, .39, 0, 0, TAU); },
+    x => { x.moveTo(.12, .25); x.lineTo(.36, .06); x.lineTo(.36, .95); },
+    x => { x.moveTo(.1, .27); x.bezierCurveTo(.12, .02, .52, 0, .52, .28); x.bezierCurveTo(.52, .48, .3, .62, .1, .94); x.lineTo(.55, .94); },
+    x => { x.moveTo(.1, .13); x.bezierCurveTo(.3, -.02, .55, .08, .5, .27); x.bezierCurveTo(.47, .41, .34, .46, .26, .47); x.bezierCurveTo(.42, .48, .57, .58, .52, .75); x.bezierCurveTo(.46, .97, .2, .98, .08, .86); },
+    x => { x.moveTo(.45, .95); x.lineTo(.45, .06); x.lineTo(.07, .66); x.lineTo(.57, .66); },
+    x => { x.moveTo(.52, .06); x.lineTo(.17, .06); x.lineTo(.13, .45); x.bezierCurveTo(.3, .34, .56, .42, .54, .67); x.bezierCurveTo(.52, .96, .2, 1, .08, .86); },
+    x => { x.moveTo(.49, .1); x.bezierCurveTo(.33, -.02, .1, .1, .1, .52); x.bezierCurveTo(.1, .82, .2, .95, .33, .95); x.bezierCurveTo(.47, .95, .54, .83, .54, .7); x.bezierCurveTo(.54, .55, .44, .46, .32, .46); x.bezierCurveTo(.2, .46, .12, .55, .11, .63); },
+    x => { x.moveTo(.07, .06); x.lineTo(.55, .06); x.bezierCurveTo(.41, .3, .3, .6, .27, .95); },
+    x => { x.moveTo(.47, .27); x.ellipse(.31, .27, .16, .2, 0, 0, TAU); x.moveTo(.53, .71); x.ellipse(.31, .71, .22, .23, 0, 0, TAU); },
+    x => { x.moveTo(.51, .32); x.ellipse(.31, .32, .2, .26, 0, 0, TAU); x.moveTo(.51, .34); x.bezierCurveTo(.52, .7, .4, .95, .12, .92); },
+  ];
+  const WICK = [[.31, .11], [.36, .06], [.32, .07], [.32, .05], [.45, .06], [.34, .06], [.3, .05], [.31, .06], [.31, .07], [.31, .06]];
+  /** the numeral candle — the hours the list has been up — in gold glitter, `ch` tall: each figure a fat stroke lit from up
+   *  on the left and flecked, its wick standing out of its top; its anchor the middle of its foot, s.wicks where each wick
+   *  ends, from there */
+  const candleSpr = (h, ch) => {
+    const ds = String(h).split("").map(Number), lw = .2, dw = .62 * ch, gap = .07 * ch, wT = ds.length * dw + (ds.length - 1) * gap, pad = ch * .3, W2 = wT + pad * 2, H2 = ch * 1.3 + pad * 2, top = pad + ch * .2, r = rng(4100 + h);
+    const s = make(W2, H2, x => {
+      x.translate(pad, top);
+      const path = (dx = 0, dy = 0) => { x.beginPath(); ds.forEach((d, i) => { x.save(); x.translate(i * (dw + gap) + dx, dy); x.scale(ch, ch); DIG[d](x); x.restore(); }); };
+      x.lineCap = "round"; x.lineJoin = "round";
+      soft(x, ch * .1, ch * .04, ch * .06, "rgba(150,60,60,.28)"); path(); x.strokeStyle = "#A06A16"; x.lineWidth = (lw + .03) * ch; x.stroke(); unsoft(x);
+      const gr = x.createLinearGradient(0, 0, wT * .6, ch); gr.addColorStop(0, "#FFF2C0"); gr.addColorStop(.3, "#F7CB56"); gr.addColorStop(.72, "#DDA232"); gr.addColorStop(1, "#B47A1A");
+      path(); x.strokeStyle = gr; x.lineWidth = lw * ch; x.stroke();
+      x.globalCompositeOperation = "source-atop"; // the glitter, and the light caught along it
+      for (let i = 0; i < 300 * ds.length; i++) { const gx = r() * wT, gy = -ch * .1 + r() * ch * 1.2, q = r(), z = ch * (.01 + r() * .012); x.fillStyle = q < .4 ? "rgba(255,255,236,.9)" : q < .78 ? "rgba(128,80,12,.42)" : "rgba(255,214,120,.95)"; x.fillRect(gx, gy, z, z); }
+      path(-lw * ch * .17, -lw * ch * .2); x.strokeStyle = "rgba(255,255,255,.62)"; x.lineWidth = lw * ch * .28; x.stroke();
+      path(lw * ch * .2, lw * ch * .22); x.strokeStyle = "rgba(110,60,0,.32)"; x.lineWidth = lw * ch * .3; x.stroke();
+      x.globalCompositeOperation = "source-over";
+      x.strokeStyle = "#3B2A2E"; x.lineWidth = ch * .035; x.beginPath(); ds.forEach((d, i) => { const wx = i * (dw + gap) + WICK[d][0] * ch, wy = (WICK[d][1] - lw * .45) * ch; x.moveTo(wx, wy); x.quadraticCurveTo(wx + ch * .015, wy - ch * .06, wx - ch * .01, wy - ch * .12); }); x.stroke();
+    });
+    s.ax = (pad + wT / 2) / W2; s.ay = (top + ch * .98) / H2; s.wicks = ds.map((d, i) => [i * (dw + gap) + WICK[d][0] * ch - ch * .01 - wT / 2, (WICK[d][1] - lw * .45 - .12) * ch - ch * .98]);
+    return s;
+  };
+  /** the cake on its plate, `cw` across its lower tier: white frosting lit from up on the left, a pink ribbon round it,
+   *  pearls of icing along its edges, sprinkles; and its upper tier, pink, a glossy glaze dripping down it, sprinkles on
+   *  top. Each anchored at the middle of its foot */
+  const tierSprs = cw => {
+    const r = rng(4211), pad = cw * .22, W2 = cw * 1.32 + pad * 2, hb = cw * .36, ry = cw * .1, pearl = (x, px0, py0, rr) => { x.fillStyle = "#F4E6EE"; x.beginPath(); x.arc(px0, py0, rr, 0, TAU); x.fill(); x.fillStyle = "#FFFFFF"; x.beginPath(); x.arc(px0 - rr * .3, py0 - rr * .35, rr * .45, 0, TAU); x.fill(); };
+    const sprinkle = (x, sx0, sy0, len) => { x.save(); x.translate(sx0, sy0); x.rotate(r() * TAU); x.fillStyle = CONF[Math.floor(r() * 6)]; x.beginPath(); x.roundRect(-len / 2, -len * .17, len, len * .34, len * .17); x.fill(); x.restore(); };
+    const low = make(W2, hb + ry * 2 + cw * .16 + pad * 2, x => {
+      x.translate(W2 / 2, pad + ry + hb + cw * .02);
+      soft(x, cw * .12, cw * .04, cw * .06, "rgba(150,40,100,.2)"); x.fillStyle = "#FFFFFF"; x.beginPath(); x.ellipse(0, cw * .045, cw * .64, cw * .075, 0, 0, TAU); x.fill(); unsoft(x); // the plate
+      x.strokeStyle = "#E3B95C"; x.lineWidth = cw * .012; x.beginPath(); x.ellipse(0, cw * .045, cw * .64, cw * .075, 0, .05, Math.PI - .05); x.stroke();
+      const w = cw, side = (y0, y1) => { x.beginPath(); x.moveTo(-w / 2, y0); x.lineTo(-w / 2, y1); x.ellipse(0, y1, w / 2, ry, 0, Math.PI, 0, true); x.lineTo(w / 2, y0); x.ellipse(0, y0, w / 2, ry, 0, 0, Math.PI, false); x.closePath(); };
+      let gr = x.createLinearGradient(-w / 2, 0, w / 2, 0); gr.addColorStop(0, "#FFFFFF"); gr.addColorStop(.28, "#FFF5F9"); gr.addColorStop(.72, "#F6D9E6"); gr.addColorStop(1, "#DDA9C2");
+      x.beginPath(); x.moveTo(-w / 2, -hb); x.lineTo(-w / 2, 0); x.ellipse(0, 0, w / 2, ry, 0, Math.PI, 0, true); x.lineTo(w / 2, -hb); x.closePath(); x.fillStyle = gr; x.fill();
+      x.save(); x.clip(); for (let i = 0; i < 34; i++) sprinkle(x, (r() - .5) * w * .92, -hb * (.08 + r() * .5) + ry * .6, cw * .045); x.restore();
+      side(-hb * .48, -hb * .3); gr = x.createLinearGradient(-w / 2, 0, w / 2, 0); gr.addColorStop(0, "#FF8CC6"); gr.addColorStop(.4, "#FF6FB5"); gr.addColorStop(1, "#C8407F"); x.fillStyle = gr; x.fill(); // the ribbon
+      x.strokeStyle = "rgba(255,255,255,.5)"; x.lineWidth = cw * .008; x.beginPath(); x.ellipse(0, -hb * .48, w / 2, ry, 0, 0, Math.PI, false); x.stroke();
+      gr = x.createRadialGradient(-w * .15, -hb - ry * .3, 0, 0, -hb, w * .55); gr.addColorStop(0, "#FFFFFF"); gr.addColorStop(1, "#F8E4EE"); x.fillStyle = gr; x.beginPath(); x.ellipse(0, -hb, w / 2, ry, 0, 0, TAU); x.fill(); // its top
+      for (let a = .06; a < Math.PI; a += .17) pearl(x, Math.cos(a) * w / 2, -hb + Math.sin(a) * ry, cw * .028); // pearls along the top edge
+      for (let a = .05; a < Math.PI; a += .14) pearl(x, Math.cos(a) * w / 2, Math.sin(a) * ry, cw * .024); // and the foot
+    });
+    low.ax = .5; low.ay = (pad + ry + hb + cw * .02) / low.h2; low.top = hb;
+    const wt = cw * .64, ht = cw * .3, ry2 = cw * .066, W3 = wt + pad * 2;
+    const up = make(W3, ht + ry2 * 2 + cw * .3 + pad * 2, x => {
+      x.translate(W3 / 2, pad + cw * .1 + ry2 + ht);
+      soft(x, cw * .08, cw * .03, cw * .04, "rgba(150,40,100,.18)");
+      let gr = x.createLinearGradient(-wt / 2, 0, wt / 2, 0); gr.addColorStop(0, "#FFE6F1"); gr.addColorStop(.3, "#FFD0E4"); gr.addColorStop(.75, "#F7AFCF"); gr.addColorStop(1, "#DB86AE");
+      x.beginPath(); x.moveTo(-wt / 2, -ht); x.lineTo(-wt / 2, 0); x.ellipse(0, 0, wt / 2, ry2, 0, Math.PI, 0, true); x.lineTo(wt / 2, -ht); x.closePath(); x.fillStyle = gr; x.fill(); unsoft(x);
+      // the glaze: over the top and down the side in drips, each a tongue of its own length
+      const drips = [], nd = 9; for (let i = 0; i < nd; i++) drips.push({ x: -wt / 2 + wt * (i + .3 + r() * .4) / nd, w: wt * (.035 + r() * .025), l: ht * (.18 + r() * .5) });
+      const glz = () => { x.beginPath(); x.moveTo(-wt / 2 - 1, -ht); x.lineTo(-wt / 2 - 1, -ht + ht * .14); for (let k = 0; k <= 40; k++) { const u = k / 40, xx = -wt / 2 + wt * u; x.lineTo(xx, -ht + ht * .14 + Math.sin(Math.PI * u) * ry2); } x.lineTo(wt / 2 + 1, -ht); x.closePath();
+        for (const d of drips) { const yy = -ht + ht * .1 + Math.sqrt(Math.max(0, 1 - (2 * d.x / wt) ** 2)) * ry2; x.moveTo(d.x - d.w / 2, yy); x.lineTo(d.x - d.w / 2, yy + d.l); x.arc(d.x, yy + d.l, d.w / 2, Math.PI, 0, true); x.lineTo(d.x + d.w / 2, yy); x.closePath(); } };
+      gr = x.createLinearGradient(-wt / 2, 0, wt / 2, 0); gr.addColorStop(0, "#FF73B4"); gr.addColorStop(.35, "#FF4FA0"); gr.addColorStop(1, "#C42D74"); x.fillStyle = gr; glz(); x.fill();
+      x.fillStyle = "#FF5AA6"; x.beginPath(); x.ellipse(0, -ht, wt / 2 + 1, ry2, 0, 0, TAU); x.fill(); // its top, glazed
+      gr = x.createRadialGradient(-wt * .18, -ht - ry2 * .4, 0, -wt * .18, -ht - ry2 * .4, wt * .4); gr.addColorStop(0, "rgba(255,255,255,.55)"); gr.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gr; x.beginPath(); x.ellipse(0, -ht, wt / 2, ry2, 0, 0, TAU); x.fill();
+      x.strokeStyle = "rgba(255,255,255,.75)"; x.lineWidth = cw * .01; x.lineCap = "round"; for (const d of drips) if (d.x < wt * .2) { const yy = -ht + ht * .12 + Math.sqrt(Math.max(0, 1 - (2 * d.x / wt) ** 2)) * ry2; x.beginPath(); x.moveTo(d.x - d.w * .18, yy + ht * .04); x.lineTo(d.x - d.w * .18, yy + d.l * .8); x.stroke(); } // the shine down the near drips
+      x.save(); x.beginPath(); x.ellipse(0, -ht, wt / 2 * .92, ry2 * .8, 0, 0, TAU); x.clip(); for (let i = 0; i < 26; i++) { const a = r() * TAU, q = Math.sqrt(r()); sprinkle(x, Math.cos(a) * q * wt * .44, -ht + Math.sin(a) * q * ry2 * .8, cw * .04); } x.restore();
+      for (let a = .05; a < Math.PI; a += .2) pearl(x, Math.cos(a) * wt / 2, Math.sin(a) * ry2, cw * .022);
+    });
+    up.ax = .5; up.ay = (pad + cw * .1 + ry2 + ht) / up.h2; up.top = ht;
+    return { low, up };
+  };
+  /** the cake's cart: a tray on gold legs, a pink cloth hanging from it to a scalloped hem, dotted, a rail between the
+   *  legs and a handle on the side it's pushed from (sd: ±1); its wheels are left off (they turn). Its anchor is the floor
+   *  under its middle */
+  const cartSpr = (cw, sd) => { const wr = cw * .075, W2 = cw * 2.1, H2 = cw * .98, ox = W2 / 2, s = make(W2, H2, x => {
+    x.translate(ox, H2 - cw * .04); x.scale(sd, 1); // (the handle out on side sd)
+    const tw = cw * .68, ty = -cw * .5, gold = "#D9A441"; x.lineCap = "round";
+    soft(x, cw * .1, cw * .03, cw * .05, "rgba(150,40,100,.16)"); /* (a shadow's offset ignores the mirror) */
+    x.strokeStyle = gold; x.lineWidth = cw * .04; x.beginPath(); for (const lx of [-.54, .54]) { x.moveTo(lx * cw, ty + cw * .06); x.lineTo(lx * cw, -wr * 2 - cw * .02); } x.stroke(); // its legs
+    x.lineWidth = cw * .026; x.beginPath(); x.moveTo(-.54 * cw, -cw * .175); x.lineTo(.54 * cw, -cw * .175); x.stroke(); // a rail between them
+    x.lineWidth = cw * .034; x.beginPath(); x.moveTo(tw - cw * .02, ty + cw * .03); x.bezierCurveTo(tw + cw * .16, ty + cw * .04, tw + cw * .22, ty - cw * .08, tw + cw * .14, ty - cw * .18); x.stroke(); // the handle
+    unsoft(x);
+    x.strokeStyle = "rgba(255,240,200,.7)"; x.lineWidth = cw * .01; x.beginPath(); for (const lx of [-.54, .54]) { x.moveTo(lx * cw - cw * .01, ty + cw * .07); x.lineTo(lx * cw - cw * .01, -wr * 2 - cw * .03); } x.stroke();
+    x.fillStyle = "#8F6A2C"; for (const lx of [-.54, .54]) { x.beginPath(); x.roundRect(lx * cw - cw * .035, -wr * 2 - cw * .04, cw * .07, cw * .045, cw * .01); x.fill(); } // the castors' forks
+    const c0 = ty + cw * .04, c1 = ty + cw * .26, n = 9, sc = tw * 2 / n, cloth = () => { x.beginPath(); x.moveTo(-tw, c0); x.lineTo(-tw, c1); for (let i = 0; i < n; i++) x.arc(-tw + sc * (i + .5), c1, sc / 2, Math.PI, 0, true); x.lineTo(tw, c0); x.closePath(); };
+    x.fillStyle = "#FFFFFF"; x.save(); x.translate(0, cw * .03); cloth(); x.fill(); x.restore(); // the lace under its hem
+    let gr = x.createLinearGradient(-tw * sd, 0, tw * sd, 0); gr.addColorStop(0, "#FFB8D9"); gr.addColorStop(.35, "#FF9ACB"); gr.addColorStop(.78, "#F07CB4"); gr.addColorStop(1, "#D65C98"); cloth(); x.fillStyle = gr; x.fill();
+    x.save(); x.clip();
+    for (let i = 0; i < n; i++) { const fx = -tw + (i + .5) * sc; gr = x.createLinearGradient(fx - sc * .5, 0, fx + sc * .5, 0); gr.addColorStop(0, "rgba(255,255,255,.12)"); gr.addColorStop(.45, "rgba(255,255,255,0)"); gr.addColorStop(.75, "rgba(120,20,70,.13)"); gr.addColorStop(1, "rgba(255,255,255,.05)"); x.fillStyle = gr; x.fillRect(fx - sc * .5, c0, sc, c1 - c0 + sc); } // its folds
+    x.fillStyle = "rgba(255,255,255,.72)"; for (let row = 0, yy = c0 + cw * .045; yy < c1 + sc * .3; yy += cw * .065, row++) for (let xx = -tw + (row % 2 ? cw * .035 : cw * .07); xx < tw; xx += cw * .07) { x.beginPath(); x.arc(xx, yy, cw * .011, 0, TAU); x.fill(); }
+    gr = x.createLinearGradient(0, c0, 0, c0 + cw * .06); gr.addColorStop(0, "rgba(110,20,60,.25)"); gr.addColorStop(1, "rgba(110,20,60,0)"); x.fillStyle = gr; x.fillRect(-tw, c0, tw * 2, cw * .06);
+    x.restore();
+    x.fillStyle = "#FFFFFF"; x.beginPath(); x.roundRect(-tw - cw * .03, ty, tw * 2 + cw * .06, cw * .05, cw * .015); x.fill(); x.fillStyle = gold; x.fillRect(-tw - cw * .03, ty + cw * .042, tw * 2 + cw * .06, cw * .014); // the tray, its gold edge
+  }); s.ax = ox / W2; s.ay = (H2 - cw * .04) / H2; s.wr = wr; s.top = cw * .5; return s; };
+
+  // the cake's beats: in on its cart; the candle lights itself; a gust blows it out, and it lights again; a bigger gust,
+  // and again; a party blower blows it out for good (a sputter that comes to nothing), and the cart goes off the way it
+  // came (the times that hang on where the cake stands, how long the gust takes to reach it, are worked out in cakeGeo)
+  const CK = { in: [.3, 2.85], lit: 3.45, gust1: 4.55, away: 14.5 };
+  /** where the cake stands and how big it is: on the floor at the foot of the page, under the bouquet or beside it, as big
+   *  as the open space lets it be (up to 200 across its lower tier on a desktop), wherever its candle and flame have clear
+   *  air — the bouquet drifting aside or up a little to make room for them (never into the words, nor off the page). Worked
+   *  out on where the bouquet is settling, so it holds while the open space glides */
+  const ckPlace = () => {
+    const { W, H, pr, tx: cx, ty: cy, tR: R } = S, yF = H - (pr ? 42 : 46), gap = pr ? 14 : 22, raw = (S.raw || []).filter(q => q[4] !== 2); // (a line's tools show only while it's hovered, which ends the egg)
+    const clearOf = (x0, y0, x1, y1, gp) => !raw.some(([a, b, c, d]) => a - gp < x1 && c + gp > x0 && b - gp < y1 && d + gp > y0);
+    const edge = R * .16 + 6, bw = z => clamp(R * .46, pr ? 38 : 54, pr ? 80 : 122) * z, bodies = S.slots.map(sl => [cx + sl.u * R, cy + sl.v * R, bw(sl.z) * .52, bw(sl.z) * .62]);
+    const moves = []; for (const dy of [0, -.1, -.2, -.3, -.4]) for (const dx of [0, .1, -.1, .2, -.2, .3, -.3, .4, -.4, .5, -.5]) moves.push([dx * R, dy * R]); moves.sort((p, q) => Math.hypot(p[0], p[1]) - Math.hypot(q[0], q[1]));
+    const fits = (z, dx, dy) => bodies.every(([bx, by, hw, hh]) => { const x = bx + dx, y = by + dy;
+      return !(x + hw > z[0] && x - hw < z[2] && y + hh > z[1] && y - hh < z[3]) && x - hw > edge && x + hw < W - edge && y - hh > (pr ? 70 : 60) && clearOf(x - hw, y - hh, x + hw, y + hh, gap * .7); }); // (room left at the page's edges for the gusts' lean)
+    const cwMax = pr ? 124 : 200, cwMin = pr ? 76 : 112, half = String(plan.hour.h).length > 1 ? .29 : .14; let best = null; // (half: its candle's half-width, in its own widths)
+    for (const [xs0, pref] of [[cx, 6], [cx + R * .95, 0], [cx - R * .95, 0], [cx + R * 1.2, -2], [cx - R * 1.2, -2], [cx + R * .5, 2], [cx - R * .5, 2]])
+      for (let cw = cwMax; cw >= cwMin; cw -= 8) {
+        const xs = clamp(xs0, cw * .74 + 6, W - cw * .74 - 6), side = Math.abs(xs - cx) > 4 ? Math.sign(xs - cx) : 0, far = Math.max(.34, half + .2) * cw, near = (half + .05) * cw; // (its flame streams toward the bouquet, away from the open side the air comes from)
+        const z = [side > 0 ? xs - far : side < 0 ? xs - near : xs - far, yF - cw * 2.08, side > 0 ? xs + near : xs + far, yF - cw * 1.2]; // (z: its candle and its flame)
+        if (!clearOf(xs - cw * .72, yF - cw * 1.3, xs + cw * .72, yF, gap) || !clearOf(z[0], z[1], z[2], z[3], gap)) continue;
+        const mv = moves.find(([dx, dy]) => fits(z, dx, dy)); if (!mv) continue;
+        const score = cw * (1 - .3 * Math.hypot(mv[0], mv[1]) / R) + pref; if (!best || score > best.score) best = { score, cw, xs, dx: mv[0], dy: mv[1] };
+        break; // (the biggest that fits there)
+      }
+    return best || { cw: cwMin, xs: clamp(cx, cwMin * .74 + 6, W - cwMin * .74 - 6), dx: 0, dy: 0 };
+  };
+  /** as S.shade, but blind to a line's tools: they show only while a line is hovered, which ends the egg anyway, and the
+   *  cake and its blower may stand where they'd be (a field of its own, worked out when the words change) */
+  const shadeNT = (x, y, r) => {
+    const raw = S.raw; if (!raw || !S.W) return 1; const gw = Math.ceil(S.W / 8) + 1, gh = Math.ceil(S.H / 8) + 1;
+    if (S.dfNTsrc !== raw || !S.dfNT || S.dfNT.length !== gw * gh) { const rr = raw.filter(q => q[4] !== 2).map(([x0, y0, x1, y1]) => [x0 - 8, y0 - 6, x1 + 8, y1 + 6]), df = new Float32Array(gw * gh);
+      for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) { const qx = i * 8, qy = j * 8; let d = 1e9; for (const [x0, y0, x1, y1] of rr) { const e = Math.hypot(Math.max(x0 - qx, 0, qx - x1), Math.max(y0 - qy, 0, qy - y1)); if (e < d) d = e; } df[j * gw + i] = d; }
+      S.dfNT = df; S.dfNTsrc = raw; }
+    const fx = clamp(x / 8, 0, gw - 1.001), fy = clamp(y / 8, 0, gh - 1.001), i = fx | 0, j = fy | 0, ax = fx - i, ay = fy - j, o = j * gw + i, df = S.dfNT;
+    return clamp(((df[o] * (1 - ax) + df[o + 1] * ax) * (1 - ay) + (df[o + gw] * (1 - ax) + df[o + gw + 1] * ax) * ay - r * .3) / (r + 6));
+  };
+  /** the cake's place, size and timings for this pass and page; its sprites, made the first time they're wanted. The cart
+   *  comes in from the side it stands nearer (under the bouquet, the side with more room), the gusts blow through the
+   *  bouquet toward it, and the blower comes from its open side */
+  const cakeGeo = (hr, sink) => {
+    const { W, H, pr } = S, yF = H - (pr ? 42 : 46) + sink, key = [W, H, Math.round(S.tx), Math.round(S.ty), Math.round(S.tR), S.raw ? S.raw.length : 0, px, hr.h, plan.P].join(":");
+    if (S.ckg && S.ckg.key === key) { S.ckg.yF = yF; return S.ckg; }
+    const pc = ckPlace(), cw = pc.cw, xs0 = pc.xs, cx = S.tx;
+    const room = sd => { let m = 1; for (let k = 0; k <= 10; k++) { const x = lerp(xs0, sd > 0 ? W : 0, k / 10); m = Math.min(m, S.shade(x, yF - cw * .4, cw * .4)); } return m; };
+    const s = xs0 > cx + 4 ? 1 : xs0 < cx - 4 ? -1 : room(1) > room(-1) + .02 ? 1 : room(-1) > room(1) + .02 ? -1 : pr ? hr.side : cx > W / 2 ? 1 : -1;
+    if (!S.cks || S.cks.key !== cw + ":" + px + ":" + hr.h) { const t = tierSprs(cw); S.cks = { key: cw + ":" + px + ":" + hr.h, low: t.low, up: t.up, cart: [cartSpr(cw, -1), cartSpr(cw, 1)], candle: candleSpr(hr.h, cw * .44),
+      glow: S.cks && S.cks.glow || make(64, 64, x => { const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,196,110,.62)"); gr.addColorStop(.35, "rgba(255,170,90,.26)"); gr.addColorStop(1, "rgba(255,160,90,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); }),
+      star: S.cks && S.cks.star || make(48, 48, x => { let gr = x.createRadialGradient(24, 24, 0, 24, 24, 8); gr.addColorStop(0, "rgba(255,250,220,1)"); gr.addColorStop(.5, "rgba(255,190,60,.8)"); gr.addColorStop(1, "rgba(255,150,30,0)"); x.fillStyle = gr; x.fillRect(0, 0, 48, 48);
+        for (const [a, l] of [[0, 23], [Math.PI / 2, 23], [Math.PI / 4, 10], [-Math.PI / 4, 10]]) { x.save(); x.translate(24, 24); x.rotate(a); gr = x.createLinearGradient(-l, 0, l, 0); gr.addColorStop(0, "rgba(255,140,20,0)"); gr.addColorStop(.5, "rgba(255,200,80,1)"); gr.addColorStop(1, "rgba(255,140,20,0)"); x.fillStyle = gr; x.beginPath(); x.ellipse(0, 0, l, 1.5, 0, 0, TAU); x.fill(); x.restore(); } }) }; }
+    const bs = Math.abs(xs0 - cx) > 4 ? Math.sign(xs0 - cx) : s, gdir = -bs; // (the blower, and the gusts, from the open side)
+    const d = (gdir > 0 ? xs0 / W : 1 - xs0 / W) * .9, r = rng(hr.seed);
+    const out1 = CK.gust1 + d + .62, re1 = out1 + 1.2, g2 = re1 + .5, out2 = g2 + d + .55, re2 = out2 + 1.1, toot = re2 + .85, out3 = toot + .2, fizz = out3 + .85;
+    const sparks = n => Array.from({ length: n }, () => ({ dt: r() * .34, life: .18 + r() * .16, ang: (r() - .5) * 2.3, v: 60 + r() * 80, w: r() }));
+    S.ckg = { key, cw, yF, s, gdir, bs, d, xs: xs0, mdx: pc.dx, mdy: pc.dy, xIn: (s > 0 ? W : 0) + s * cw * 1.25, gusts: [[CK.gust1, out1 + .5, .9], [g2, out2 + .55, 1.3]], outs: [out1, out2, out3], relit: [re1, re2], toot, fizz, away: [Math.max(12, fizz + .7), CK.away],
+      sp: [sparks(7), sparks(8), sparks(9), sparks(4)], ph: r() * TAU, tas: Array.from({ length: 4 }, (_, i) => ({ c: ["#FF5FA8", "#F6C84C", "#4FC3A1", "#A98BE6"][i], l: .12 + r() * .07, ph: r() * TAU })) };
+    return S.ckg;
+  };
+  /** how far the bouquet has drifted to make room for the cake's flame (0 … 1): as the cart rolls in, and back as it goes */
+  const ckDrift = (c, T) => seg(T, .55, 2.75, E.back) * (1 - seg(T, c.away[0] + .25, 14.35, E.io));
+  /** how hard the gust is blowing at x (0 … its strength), as it runs across the page from the side the cake came in */
+  const ckGust = (c, x, T) => { let m = 0; for (const [t0, t1, k] of c.gusts) m = Math.max(m, env(T - (c.gdir > 0 ? x / S.W : 1 - x / S.W) * .9, t0, t0 + .45, t0 + .75, t1, E.sine) * k); return m; };
+  /** the candle's flame at loop time T: how big (0 out … 1), and when it last went out or came back */
+  const ckFlame = (c, T) => {
+    if (T < CK.lit - .05) return 0;
+    let k = seg(T, CK.lit, CK.lit + .3, E.out);
+    for (let i = 0; i < 3; i++) { const o = c.outs[i]; if (T < o - .12) break; k = 1 - seg(T, o - .12, o + .05, E.in); const re = c.relit[i]; if (re === undefined || T < re) break; k = seg(T, re, re + .28, E.back); }
+    return clamp(k, 0, 1.15);
+  };
+  /** a flame on a wick at (x, y), `k` big, leaning `lean` (radians), flickering */
+  const ckFlameDraw = (x, y, k, lean, A, ph, cw, V) => {
+    if (k <= .01 || V <= .004) return;
+    const fl = .5 * Math.sin(A * 9.1 + ph) + .3 * Math.sin(A * 13.7 + ph * 2) + .2 * Math.sin(A * 5.3), fh = cw * .27 * k * (1 + .045 * fl) * (1 + Math.abs(lean) * .3), fw = cw * .078 * k * (1 - Math.abs(lean) * .22), tx = Math.sin(lean) * fh * .95 + fl * cw * .006, ty = -Math.cos(lean) * fh;
+    put(S.cks.glow, x + tx * .3, y + ty * .35, .5, .5, 0, fh * 7 / 64, fh * 7 / 64, V * .55 * Math.min(1, k)); // its warm light on the wall,
+    put(S.cks.glow, x + tx * .4, y + ty * .45, .5, .5, 0, fh * 2.6 / 64, fh * 2.6 / 64, V * .95 * Math.min(1, k)); // its halo
+    unit(); g.globalAlpha = V;
+    const body = (s) => { g.beginPath(); g.moveTo(x - fw * .2 * s, y + fw * .5 * s); g.bezierCurveTo(x - fw * 1.15 * s, y - fw * .1, x - fw * .7 * s + tx * .3, y + ty * .55, x + tx * (.4 + .6 * s), y + ty * (.35 + .65 * s)); g.bezierCurveTo(x + fw * .7 * s + tx * .3, y + ty * .55, x + fw * 1.15 * s, y - fw * .1, x + fw * .2 * s, y + fw * .5 * s); g.closePath(); };
+    let gr = g.createLinearGradient(x, y + fw * .5, x + tx, y + ty); gr.addColorStop(0, "#FF7A1E"); gr.addColorStop(.35, "#FF9A2E"); gr.addColorStop(.8, "#FFB040"); gr.addColorStop(1, "rgba(255,120,40,.7)");
+    g.fillStyle = gr; body(1); g.fill(); // its outer flame, orange,
+    gr = g.createLinearGradient(x, y, x + tx * .7, y + ty * .7); gr.addColorStop(0, "#FFF3B0"); gr.addColorStop(.5, "#FFFDF0"); gr.addColorStop(1, "#FFE58A");
+    g.fillStyle = gr; body(.62); g.fill(); // its bright heart,
+    g.fillStyle = "rgba(70,110,255,.62)"; g.beginPath(); g.ellipse(x + tx * .04, y + fw * .12, fw * .36, fw * .55, lean * .3, 0, TAU); g.fill(); // and its blue foot
+    g.globalAlpha = 1;
+  };
+  /** a thread of smoke off a wick put out at t0 at (x0, y0), rising, drifting off with the air (sd) and curling as it thins
+   *  into wisps: three threads off the one wick, each finer than the last */
+  const ckSmoke = (x0, y0, t0, T, k, V, sd, cw, ph) => {
+    const age = T - t0; if (age <= 0 || age > 3.8) return;
+    const emit = Math.min(age, .8 + .6 * k), n = 26, sc = cw / 120;
+    unit(); g.lineCap = "round"; g.strokeStyle = "rgb(146,120,140)";
+    for (let th = 0; th < 3; th++) { let px0 = 0, py0 = 0; const tp = ph + th * 2.1, tk = [1, .6, .4][th];
+      for (let i = 0; i <= n; i++) { const te = emit * (1 - i / n), a = age - te, curl = cw * (.045 + th * .02) * Math.pow(Math.min(1.8, a), 1.5) * k;
+        const x = x0 + sd * a * 16 * sc * (1 + a) + curl * Math.sin(a * (2.6 + th * .5) + te * 6.5 + tp) + curl * .55 * Math.sin(a * 6.1 + te * 11 + tp * 2), y = y0 - (36 * a + 10 * a * a) * sc * (1 - th * .06);
+        if (i) { g.globalAlpha = V * k * tk * .42 * Math.pow(clamp(1 - a / 3.5), 1.5) * Math.min(1, a * 5 + .2); g.lineWidth = (.9 + 2.6 * a * (1 - th * .25)) * sc; g.beginPath(); g.moveTo(px0, py0); g.lineTo(x, y); g.stroke(); }
+        px0 = x; py0 = y; } }
+    g.globalAlpha = 1; g.lineCap = "butt";
+  };
+  /** a trick candle catching again: sparks spat from its wick, and a twinkle at the wick, before the flame's back at `at` */
+  const ckSparks = (x0, y0, at, T, sp, V, cw) => {
+    const sc = cw / 120; unit(); g.lineCap = "round";
+    for (const p of sp) { const t0 = at - .46 + p.dt, a = T - t0; if (a < 0 || a > p.life) continue;
+      const vx = Math.sin(p.ang) * p.v * sc, vy = -Math.cos(p.ang) * p.v * sc, x = x0 + vx * a, y = y0 + vy * a + 260 * sc * a * a, q = a / p.life, bx = x - vx * .05, by = y - (vy + 520 * sc * a) * .05;
+      g.globalAlpha = V * (1 - q * q); g.strokeStyle = p.w < .5 ? "#FF7A10" : "#FFA020"; g.lineWidth = 2.6 * sc + .7; g.beginPath(); g.moveTo(bx, by); g.lineTo(x, y); g.stroke();
+      g.strokeStyle = "#FFF4C4"; g.lineWidth = 1.1 * sc + .4; g.beginPath(); g.moveTo((bx + x) / 2, (by + y) / 2); g.lineTo(x, y); g.stroke(); }
+    const tw = env(T, at - .42, at - .3, at - .2, at + .05); if (tw > .01) put(S.cks.star, x0, y0 - cw * .02, .5, .5, (T - at) * 1.5, cw * .016 * (.6 + .4 * tw), cw * .016 * (.6 + .4 * tw), V * tw);
+    g.globalAlpha = 1; g.lineCap = "butt";
+  };
+  /** the cake, its cart and its candle at loop time T: in, its flame lit, blown and lit again, and away */
+  const cakeAt = (c, T, V, A, hr) => {
+    const { W, H } = S, cw = c.cw, sp = S.cks, wr = sp.cart[0].wr;
+    const inU = clamp((T - CK.in[0]) / (CK.in[1] - CK.in[0])), outU = clamp((T - c.away[0]) / (c.away[1] - c.away[0]));
+    if (inU <= 0 || outU >= 1) return null;
+    const x = outU > 0 ? lerp(c.xs, c.xIn, Math.pow(outU, 2.1)) : lerp(c.xIn, c.xs, 1 - Math.pow(1 - inU, 2.4)), yF = c.yF;
+    // the cake rocks as the cart stops and as it starts away: the upper tier and the candle lag, and spring back
+    const st = T - CK.in[1], gt = T - c.away[0], rock = (st > 0 ? -c.s * Math.exp(-st * 3.6) * Math.sin(st * 13) : 0) + (gt > 0 && gt < 1.5 ? -c.s * .7 * Math.exp(-gt * 3) * Math.sin(gt * 11) : 0);
+    const a = V * (.12 + .88 * shadeNT(x, yF - cw * .8, cw * .45)), sx2 = rock * cw * .045, rot = rock * .06;
+    unit();
+    put(sp.cart[c.s > 0 ? 1 : 0], x, yF, sp.cart[0].ax, sp.cart[0].ay, 0, 1, 1, a);
+    unit(); g.globalAlpha = a; // the wheels, turning as it rolls
+    for (const lx of [-.54, .54]) { const wx = x + lx * cw, wy = yF - wr, ang = (x - c.xs) / wr;
+      g.fillStyle = "#4A3442"; g.beginPath(); g.arc(wx, wy, wr, 0, TAU); g.fill(); g.fillStyle = "#FFB3D6"; g.beginPath(); g.arc(wx, wy, wr * .5, 0, TAU); g.fill();
+      g.strokeStyle = "#B8487F"; g.lineWidth = wr * .2; g.beginPath(); for (let k = 0; k < 2; k++) { const q = ang + k * Math.PI / 2; g.moveTo(wx - Math.cos(q) * wr * .48, wy - Math.sin(q) * wr * .48); g.lineTo(wx + Math.cos(q) * wr * .48, wy + Math.sin(q) * wr * .48); } g.stroke();
+      g.fillStyle = "rgba(255,255,255,.5)"; g.beginPath(); g.arc(wx - wr * .3, wy - wr * .35, wr * .2, 0, TAU); g.fill(); }
+    const ty = yF - sp.cart[0].top, lowY = ty - cw * .1; // (the plate on the tray)
+    put(sp.low, x, lowY, sp.low.ax, sp.low.ay, rot * .3, 1, 1, a);
+    const upX = x + sx2 * .5, upY = lowY - sp.low.top; put(sp.up, upX, upY, sp.up.ax, sp.up.ay, rot * .6, 1, 1, a);
+    const cdX = upX + sx2, cdY = upY - sp.up.top + cw * .015, crot = rot * 1.4; put(sp.candle, cdX, cdY, sp.candle.ax, sp.candle.ay, crot, 1, 1, a);
+    // the wicks' tips, turned with the candle
+    const cs = Math.cos(crot), sn = Math.sin(crot);
+    return { x, a, wicks: sp.candle.wicks.map(([wx, wy]) => [cdX + wx * cs - wy * sn, cdY + wx * sn + wy * cs]) };
+  };
+  /** the party blower that settles it, slid in from the cake's open side: its mouthpiece, a tassel of crepe hanging from
+   *  it, its paper rolled up tight; a feint, then one long toot — the paper unrolls straight at the flame and its air blows
+   *  it flat — and it curls up again and slides away */
+  const BQ = new Float32Array(2 * 96); // the blower's paper this frame
+  /** a blower's paper from its mouthpiece at (x, y) along (ux, uy), `L` long and `w` wide: unrolled `u` of the way, the rest
+   *  rolled up in a flat spiral at its end, curling to side `cs`, its turns a paper's width apart; striped, edged, shining */
+  const ckPaper = (x, y, ux, uy, L, w, u, cs, a) => {
+    if (a <= .004) return;
+    const st = L * u, coil = L - st, ex = x + ux * st, ey = y + uy * st, nx = -uy * cs, ny = ux * cs; let m = 0;
+    BQ[0] = x; BQ[1] = y; BQ[2] = ex; BQ[3] = ey; m = 2;
+    if (coil > 1) { const pitch = w * 1.08, rin = w * .55, rout = Math.sqrt(coil * pitch / Math.PI + rin * rin), ccx = ex + nx * rout, ccy = ey + ny * rout, th0 = Math.atan2(ey - ccy, ex - ccx);
+      let left = coil, r2 = rout, th = 0; const dir = cs * (ux * ny - uy * nx > 0 ? 1 : -1);
+      while (left > 0 && m < 95 && r2 > rin * .6) { const dth = .32, ds = r2 * dth; th += dth; left -= ds; r2 = Math.max(rin * .6, rout - pitch * th / TAU); BQ[m * 2] = ccx + Math.cos(th0 + dir * th) * r2; BQ[m * 2 + 1] = ccy + Math.sin(th0 + dir * th) * r2; m++; } }
+    unit(); g.globalAlpha = a; g.lineJoin = "round"; g.lineCap = "round"; g.beginPath(); g.moveTo(BQ[0], BQ[1]); for (let i = 1; i < m; i++) g.lineTo(BQ[i * 2], BQ[i * 2 + 1]);
+    g.strokeStyle = "rgba(120,40,80,.32)"; g.lineWidth = w + 2.2; g.stroke(); g.strokeStyle = "#4FC3A1"; g.lineWidth = w; g.stroke();
+    g.lineCap = "butt"; g.setLineDash([w * .62, w * .62]); g.strokeStyle = "#FFFFFF"; g.stroke(); g.setLineDash([]); g.lineCap = "round"; g.strokeStyle = "rgba(255,255,255,.38)"; g.lineWidth = w * .24; g.stroke(); // (its stripes cut square)
+    g.lineJoin = "miter"; g.lineCap = "butt"; g.globalAlpha = 1;
+  };
+  const ckBlower = (c, cake, T, V, A) => {
+    const t0 = c.toot - .85, t3 = c.toot + 1.6; if (!cake || T <= t0 || T >= t3) return;
+    const { W } = S, cw = c.cw, wk = cake.wicks[c.bs > 0 ? cake.wicks.length - 1 : 0], ux = -c.bs * .998, uy = -.06, mL = cw * .17, mw = cw * .075;
+    const fx = wk[0] + c.bs * cw * .1, fy = wk[1] - cw * .12, room = Math.abs((c.bs > 0 ? W - 8 : 8) - fx), L = clamp(room - mL - cw * .14, cw * .35, cw * 1.02); // (shorter where the page's edge is near, its mouthpiece and tassel kept on the page)
+    const mx0 = fx - ux * (L + mL), my0 = fy - uy * (L + mL); // (its mouthpiece's end, where its paper unrolled reaches just short of the flame)
+    const slide = seg(T, t0, t0 + .45, E.out) * (1 - seg(T, c.toot + 1.1, t3, E.in)), off = (1 - slide) * (Math.abs((c.bs > 0 ? W : 0) - mx0) + cw * .5), bob = Math.sin(T * 2.6 + c.ph) * cw * .012;
+    const bx = mx0 + c.bs * off, by = my0 + bob, fxp = bx + ux * mL, fyp = by + uy * mL, u = keyed(T - c.toot, [[-.85, 0], [-.42, 0], [-.3, .3], [-.14, .02], [0, 0], [.15, 1], [.62, 1], [1.0, 0]]);
+    const a = V * (.12 + .88 * Math.min(shadeNT(bx, by, cw * .2), shadeNT(fxp + ux * L * u * .6, fyp + uy * L * u * .6, cw * .2)));
+    // the tassel, crepe strands off the mouthpiece's end, hanging and swaying
+    unit(); g.globalAlpha = a; g.lineCap = "round"; g.lineWidth = cw * .02;
+    for (const t of c.tas) { const sw = Math.sin(A * 3.2 + t.ph) * .35 + (1 - slide) * .6 * c.bs, l = t.l * cw; g.strokeStyle = t.c; g.beginPath(); g.moveTo(bx, by); g.quadraticCurveTo(bx + Math.sin(sw) * l * .4 + c.bs * cw * .02, by + l * .55, bx + Math.sin(sw) * l, by + Math.cos(sw) * l); g.stroke(); }
+    // the mouthpiece: a little tube, white with a gold band, lit from above
+    const ang = Math.atan2(uy, ux); g.save(); g.translate(bx, by); g.rotate(ang);
+    let gr = g.createLinearGradient(0, -mw * .6, 0, mw * .6); gr.addColorStop(0, "#FFFFFF"); gr.addColorStop(.5, "#F1E6EE"); gr.addColorStop(1, "#BFA6B8"); g.fillStyle = gr; g.beginPath(); g.moveTo(0, -mw * .42); g.lineTo(mL, -mw * .55); g.lineTo(mL, mw * .55); g.lineTo(0, mw * .42); g.closePath(); g.fill();
+    g.fillStyle = "#E3B95C"; g.fillRect(mL * .62, -mw * .56, mL * .16, mw * 1.12); g.fillStyle = "rgba(255,255,255,.7)"; g.fillRect(mL * .05, -mw * .32, mL * .9, mw * .14);
+    g.restore();
+    // its paper, from the mouthpiece: rolled up tight, then unrolled straight at the flame in the toot, and rolled up again
+    ckPaper(fxp, fyp, ux, uy, L, cw * .085, u, 1, a);
+    const q = (T - c.toot - .1) / .5; if (q > 0 && q < 1) { const tx = fxp + ux * L * u, ty = fyp + uy * L * u, nx = -uy, ny = ux; unit(); g.strokeStyle = "rgba(150,96,132,.55)"; g.lineCap = "round"; g.lineWidth = 1.4 * cw / 120 + .4; // its air, rushing at the flame
+      for (let k = -1; k <= 1; k++) { const s0 = cw * (.03 + q * .12), s1 = s0 + cw * (.08 + .04 * (1 - Math.abs(k))), o = k * cw * (.03 + q * .03); g.globalAlpha = a * (1 - q) * (1 - Math.abs(k) * .3); g.beginPath(); g.moveTo(tx + ux * s0 + nx * o, ty + uy * s0 + ny * o); g.lineTo(tx + ux * s1 + nx * o * 1.3, ty + uy * s1 + ny * o * 1.3); g.stroke(); } }
+    g.globalAlpha = 1; g.lineCap = "butt";
+  };
+  /** the cake's flame, smoke and sparks, and the horn that blows it out at last */
+  const cakeFire = (c, cake, T, V, A) => {
+    const cw = c.cw, k = ckFlame(c, T), gst = ckGust(c, cake.x, T), toot = clamp((T - c.toot) / .2) * (1 - seg(T, c.toot + .55, c.toot + .8, E.sine));
+    const lean = c.gdir * gst * 1.05 - c.bs * toot * 1.25 + .06 * Math.sin(A * 1.7 + c.ph) * (1 - gst);
+    cake.wicks.forEach(([wx, wy], i) => {
+      if (k > .05) for (let j = 0; j < 3; j++) { const tw = Math.pow(.5 + .5 * Math.sin(A * (2.6 + j * .7) + i * 2.1 + j * 1.9), 4); if (tw > .05) put(S.cks.star, wx + cw * [-.03, .035, -.01][j], wy + cw * [.13, .26, .4][j], .5, .5, A * .3 + j, cw * .009, cw * .009, cake.a * Math.min(1, k) * tw * .85); } // (the glitter catching its light)
+      ckFlameDraw(wx, wy, k * (1 - .35 * gst), lean, A + i * .7, c.ph + i, cw, cake.a);
+      c.outs.forEach((o, j) => ckSmoke(wx, wy, o, T, j === 2 ? 1.25 : .9, cake.a, j === 2 ? -c.bs : c.gdir, cw, c.ph + i * 2 + j));
+      c.relit.forEach((re, j) => ckSparks(wx, wy, re, T, c.sp[j], cake.a, cw));
+      ckSparks(wx, wy, CK.lit, T, c.sp[2], cake.a, cw);
+      ckSparks(wx, wy, c.fizz, T, c.sp[3], cake.a, cw); // (and one last sputter that comes to nothing)
+    });
+  };
+
+  /* the piñata (K.long 2): a donkey in fringed crepe paper is let down on a rope into the open space beside the bouquet,
+     swinging and turning on it; a striped stick poked in from the near edge swings — a miss, a hit that spins it round on
+     its rope and knocks a sweet loose, and a third that bursts it: its belly gives, sweets and confetti fly and rain down
+     through the bouquet, its lower half drops away, and what's left is hauled up out of sight */
+  const EGP = { down: [.3, 2.7], miss: 4.25, hit: 5.85, burst: 7.75, up: [10.8, 12.7] };
+  const PNC = ["#FF6FB5", "#FF9A3C", "#F7CB46", "#4FC3A1", "#5DB8EA", "#A98BE6"]; // its bands of crepe, top to bottom and round again
+  /** the piñata `B` long in the body, facing right, whole (0), or the top (1) or bottom (2) of it as it tears along its
+   *  belly: bands of crepe, each row's fringe hanging over the row below, lit from up on the left; a white head with a
+   *  pink muzzle, a big eye, long ears, a mane, hooves. Its anchor is the hook on its back the rope is tied to */
+  const pinSpr = (B, part) => {
+    const bh = B * .5, top = B * .07, pad = B * .1, X0 = -B * .66, X1 = B * 1.02, Y0 = top - bh * 1.82, Y1 = top + bh * 1.62, W2 = X1 - X0 + pad * 2, H2 = Y1 - Y0 + pad * 2, ox = pad - X0, oy = pad - Y0;
+    const cutY = top + bh * .56, zz = []; for (let i = 0; i <= 14; i++) zz.push([lerp(-B * .58, B * .58, i / 14), cutY + (i % 2 ? -1 : 1) * bh * .09]);
+    const s = make(W2, H2, x => {
+      const r = rng(5150); x.translate(ox, oy); x.lineJoin = "round";
+      if (part) { x.beginPath(); if (part === 1) { x.moveTo(X0 - pad, Y0 - pad); x.lineTo(X1 + pad, Y0 - pad); x.lineTo(X1 + pad, cutY); for (let i = zz.length - 1; i >= 0; i--) x.lineTo(zz[i][0], zz[i][1]); x.lineTo(X0 - pad, cutY); }
+        else { x.moveTo(X0 - pad, cutY); for (const [zx, zy] of zz) x.lineTo(zx, zy); x.lineTo(X1 + pad, cutY); x.lineTo(X1 + pad, Y1 + pad); x.lineTo(X0 - pad, Y1 + pad); } x.closePath(); x.clip(); }
+      const legs = [[B * .1, 1], [-B * .17, 1], [B * .27, 0], [-B * .34, 0]]; // (x, far): the far pair first
+      const body = dy => { x.roundRect(-B / 2, top + dy, B, bh, bh * .48); }, neck = dy => { x.moveTo(B * .2, top + bh * .22 + dy); x.lineTo(B * .38, top - bh * .8 + dy); x.lineTo(B * .62, top - bh * .6 + dy); x.lineTo(B * .47, top + bh * .32 + dy); x.closePath(); };
+      const leg = (lx, dy) => { x.roundRect(lx - bh * .14, top + bh * .55 + dy, bh * .28, bh * .9, bh * .08); };
+      const rowH = bh * .2, tabW = rowH * .36, tabH = rowH * .66;
+      /** crepe in bands over whatever `clip` outlines (and a fringe's length below it, so its foot is ragged) */
+      const crepe = (clip, dk, light) => { x.save(); x.beginPath(); clip(0); clip(tabH * .5); x.clip();
+        for (let k = Math.ceil((Y1 - Y0) / rowH); k >= 0; k--) { const yk = Y0 + k * rowH, col = rgb(light ? (k % 2 ? "#FFF4F9" : "#FFE0EE") : PNC[(k + 1) % 6]);
+          x.fillStyle = css(col); x.fillRect(X0, yk, X1 - X0, rowH + 1);
+          const sh = x.createLinearGradient(0, yk, 0, yk + rowH * .5); sh.addColorStop(0, light ? "rgba(200,90,140,.16)" : "rgba(90,20,60,.26)"); sh.addColorStop(1, "rgba(90,20,60,0)"); x.fillStyle = sh; x.fillRect(X0, yk, X1 - X0, rowH * .5);
+          for (let fx = X0 + (k % 2) * tabW * .5; fx < X1; fx += tabW) { const l = tabH * (.8 + r() * .45), w2 = tabW * (.8 + r() * .18), q = r(), ang = (r() - .5) * .24;
+            x.save(); x.translate(fx, yk + rowH); x.rotate(ang); x.fillStyle = css(q < .5 ? tint(col, .16) : deep(col, .9)); x.fillRect(-w2 / 2, -tabH * .3, w2, l); x.fillStyle = css(deep(col, .62), .32); x.fillRect(-w2 / 2, -tabH * .3, w2 * .16, l); x.restore(); } }
+        if (dk) { x.fillStyle = `rgba(70,16,50,${dk})`; x.fillRect(X0, Y0, X1 - X0, Y1 - Y0); }
+        const gr = x.createLinearGradient(-B * .4, top - bh, B * .3, top + bh * 1.4); gr.addColorStop(0, "rgba(255,255,255,.24)"); gr.addColorStop(.45, "rgba(255,255,255,0)"); gr.addColorStop(1, "rgba(80,16,56,.26)"); x.fillStyle = gr; x.fillRect(X0, Y0, X1 - X0, Y1 - Y0); // the light on it
+        x.restore(); };
+      soft(x, B * .06, B * .025, B * .04, "rgba(150,40,100,.22)"); x.fillStyle = "#FFB3D6"; x.beginPath(); body(0); neck(0); for (const [lx] of legs) leg(lx, 0); x.fill(); unsoft(x); // its shadow on the wall
+      for (const [lx, far] of legs) if (far) crepe(dy => leg(lx, dy), .2);
+      crepe(dy => { body(dy); neck(dy); for (const [lx, far] of legs) if (!far) leg(lx, dy); });
+      x.fillStyle = "#7A3FD6"; for (const [lx, far] of legs) { x.globalAlpha = far ? .8 : 1; x.beginPath(); x.roundRect(lx - bh * .16, top + bh * 1.36, bh * .32, bh * .16, bh * .05); x.fill(); } x.globalAlpha = 1; // its hooves
+      x.fillStyle = "rgba(255,255,255,.35)"; for (const [lx, far] of legs) if (!far) x.fillRect(lx - bh * .12, top + bh * 1.38, bh * .1, bh * .04);
+      // the ears, behind the head; the head, fringed in white; the muzzle, the nostril, the smile; the eye
+      for (const [ea, ex, d] of [[-2.05, B * .47, .86], [-1.74, B * .57, 1]]) { x.save(); x.translate(ex, top - bh * 1.02); x.rotate(ea + Math.PI / 2);
+        x.fillStyle = css(deep(rgb("#FFE3EF"), d)); x.beginPath(); x.moveTo(-bh * .13, 0); x.quadraticCurveTo(-bh * .18, -bh * .46, 0, -bh * .76); x.quadraticCurveTo(bh * .18, -bh * .46, bh * .13, 0); x.closePath(); x.fill();
+        x.fillStyle = css(deep(rgb("#FF8CC6"), d)); x.beginPath(); x.moveTo(-bh * .06, -bh * .06); x.quadraticCurveTo(-bh * .09, -bh * .42, 0, -bh * .62); x.quadraticCurveTo(bh * .09, -bh * .42, bh * .06, -bh * .06); x.closePath(); x.fill(); x.restore(); }
+      const head = dy => { x.ellipse(B * .62, top - bh * .86 + dy, bh * .52, bh * .33, .5, 0, TAU); };
+      crepe(head, 0, true);
+      x.fillStyle = "#FFA8CF"; x.beginPath(); x.ellipse(B * .83, top - bh * .64, bh * .25, bh * .21, .5, 0, TAU); x.fill();
+      x.fillStyle = "rgba(255,255,255,.45)"; x.beginPath(); x.ellipse(B * .8, top - bh * .72, bh * .1, bh * .05, .5, 0, TAU); x.fill();
+      x.fillStyle = "#8C1E55"; x.beginPath(); x.ellipse(B * .9, top - bh * .66, bh * .045, bh * .03, .9, 0, TAU); x.fill();
+      x.strokeStyle = "#8C1E55"; x.lineWidth = bh * .035; x.lineCap = "round"; x.beginPath(); x.arc(B * .79, top - bh * .58, bh * .1, .35, 1.5); x.stroke();
+      x.fillStyle = "#FFFFFF"; x.beginPath(); x.arc(B * .6, top - bh * .97, bh * .115, 0, TAU); x.fill(); x.fillStyle = "#2A0A1E"; x.beginPath(); x.arc(B * .625, top - bh * .955, bh * .08, 0, TAU); x.fill();
+      x.fillStyle = "#FFFFFF"; x.beginPath(); x.arc(B * .6, top - bh * .99, bh * .03, 0, TAU); x.fill();
+      x.strokeStyle = "#2A0A1E"; x.lineWidth = bh * .025; x.beginPath(); for (const a of [-2.3, -1.9, -1.5]) { x.moveTo(B * .6 + Math.cos(a) * bh * .12, top - bh * .97 + Math.sin(a) * bh * .12); x.lineTo(B * .6 + Math.cos(a) * bh * .19, top - bh * .97 + Math.sin(a) * bh * .19); } x.stroke();
+      // its mane: a crest of fringe down the back of its neck
+      for (let i = 0; i <= 9; i++) { const u = i / 9, mx = lerp(B * .44, B * .17, u), my = lerp(top - bh * 1.04, top + bh * .06, u), l = bh * (.24 - .06 * u);
+        x.save(); x.translate(mx, my); x.rotate(-2.35 + u * .25); x.fillStyle = i % 2 ? "#FF3D8B" : "#B256E8"; x.fillRect(-l * .05, -bh * .05, l, bh * .1); x.fillStyle = "rgba(255,255,255,.3)"; x.fillRect(-l * .05, -bh * .05, l, bh * .025); x.restore(); }
+      x.strokeStyle = "#7B4A2C"; x.lineWidth = B * .012; x.beginPath(); x.moveTo(0, 0); x.lineTo(0, top + bh * .05); x.stroke(); // the loop the rope is tied to
+      if (part) { x.strokeStyle = "#D7AE88"; x.lineWidth = bh * .1; x.beginPath(); zz.forEach(([zx, zy], i) => i ? x.lineTo(zx, zy) : x.moveTo(zx, zy)); x.stroke(); } // the torn edge: papier-mâché
+    });
+    s.ax = ox / W2; s.ay = oy / H2; s.belly = [B * .04, top + bh * .78]; s.tail = [-B * .5, top + bh * .3]; s.cut = cutY; s.B = B; s.bh = bh;
+    return s;
+  };
+  /** sweets out of the piñata, `z` across: a twist-wrapped candy (0), a lollipop (1), a coin in gold foil (2), a striped
+   *  mint (3), a jelly bean (4) — each lit from up on the left */
+  const SWC = ["#FF4F9E", "#18B79A", "#F2B33A", "#8E62F2", "#2E9BF0", "#FF7A3C"];
+  const sweetSpr = (k, col, z) => { const s = make(z * 1.6, z * 1.6, x => {
+    const c = rgb(col); x.translate(z * .8, z * .8); soft(x, z * .12, z * .04, z * .06, "rgba(120,30,80,.25)");
+    if (k === 0) { x.fillStyle = css(tint(c, .25)); for (const sd of [-1, 1]) { x.beginPath(); x.moveTo(sd * z * .26, 0); x.lineTo(sd * z * .52, -z * .2); x.lineTo(sd * z * .47, 0); x.lineTo(sd * z * .52, z * .2); x.closePath(); x.fill(); }
+      unsoft(x); x.fillStyle = col; x.beginPath(); x.ellipse(0, 0, z * .3, z * .21, 0, 0, TAU); x.fill(); x.save(); x.clip(); x.strokeStyle = "rgba(255,255,255,.55)"; x.lineWidth = z * .06; for (let i = -3; i <= 3; i++) { x.beginPath(); x.moveTo(i * z * .14 - z * .2, -z * .3); x.lineTo(i * z * .14 + z * .2, z * .3); x.stroke(); } x.restore();
+      x.strokeStyle = css(deep(c, .7), .5); x.lineWidth = z * .02; for (const sd of [-1, 1]) { x.beginPath(); x.moveTo(sd * z * .32, -z * .06); x.lineTo(sd * z * .46, -z * .1); x.moveTo(sd * z * .32, z * .06); x.lineTo(sd * z * .46, z * .1); x.stroke(); } }
+    else if (k === 1) { x.fillStyle = "#FFFFFF"; x.fillRect(-z * .035, 0, z * .07, z * .62); unsoft(x); x.fillStyle = col; x.beginPath(); x.arc(0, -z * .08, z * .3, 0, TAU); x.fill();
+      x.strokeStyle = "#FFFFFF"; x.lineWidth = z * .07; x.beginPath(); for (let i = 0; i <= 40; i++) { const a = i / 40 * TAU * 2.2, rr = z * .27 * i / 40; i ? x.lineTo(Math.cos(a) * rr, -z * .08 + Math.sin(a) * rr) : x.moveTo(0, -z * .08); } x.stroke(); }
+    else if (k === 2) { const gr = x.createLinearGradient(-z * .3, -z * .3, z * .3, z * .3); gr.addColorStop(0, "#FFF0B0"); gr.addColorStop(.45, "#E8B84A"); gr.addColorStop(1, "#A8761C"); x.fillStyle = gr; x.beginPath(); x.arc(0, 0, z * .3, 0, TAU); x.fill(); unsoft(x);
+      x.strokeStyle = "#B5862A"; x.lineWidth = z * .035; x.beginPath(); x.arc(0, 0, z * .23, 0, TAU); x.stroke(); x.fillStyle = "rgba(255,248,210,.75)"; x.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? z * .06 : z * .14; i ? x.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : x.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); } x.closePath(); x.fill(); }
+    else if (k === 3) { x.fillStyle = "#FFFFFF"; x.beginPath(); x.arc(0, 0, z * .28, 0, TAU); x.fill(); unsoft(x); x.fillStyle = col; for (let i = 0; i < 6; i++) { const a = i / 6 * TAU; x.beginPath(); x.moveTo(0, 0); x.arc(0, 0, z * .28, a, a + TAU / 12); x.closePath(); x.fill(); } x.strokeStyle = "rgba(200,150,180,.5)"; x.lineWidth = z * .02; x.beginPath(); x.arc(0, 0, z * .28, 0, TAU); x.stroke(); }
+    else { x.fillStyle = col; x.beginPath(); x.moveTo(-z * .26, 0); x.bezierCurveTo(-z * .28, -z * .2, -z * .05, -z * .22, 0, -z * .1); x.bezierCurveTo(z * .05, -z * .22, z * .28, -z * .2, z * .26, 0); x.bezierCurveTo(z * .26, z * .2, -z * .26, z * .2, -z * .26, 0); x.closePath(); x.fill(); unsoft(x); }
+    x.fillStyle = "rgba(255,255,255,.7)"; x.beginPath(); x.ellipse(-z * .1, -z * .12, z * .07, z * .035, -.5, 0, TAU); x.fill(); // the shine
+  }); return s; };
+  /** where the piñata hangs: the largest circle of the page clear of the words, the edges and the bouquet, a rope's
+   *  drop below the top that crosses no line, near an edge the stick can reach it from; its size; its sprites and its
+   *  load, made the first time they're wanted */
+  const pnGeo = hr => {
+    const { W, H, pr } = S, key = [W, H, Math.round(S.tx), Math.round(S.ty), Math.round(S.tR), S.wr ? S.wr.length : 0, px, plan.P].join(":");
+    if (S.png && S.png.key === key) return S.png;
+    const gap = pr ? 14 : 24, top = pr ? 96 : 112, foot = H - (pr ? 110 : 120), rects = S.wr || [], lines = (S.raw || []).filter(q => q[4] === 1);
+    let best = -1, bx = W * (pr ? .5 : .25), by = H * .4, brad = 60;
+    for (let j = 0; j <= 20; j++) for (let i = 0; i <= 24; i++) {
+      const x = W * (.05 + .9 * i / 24), y = top + (foot - top) * j / 20; let rad = Math.min(x - gap, W - gap - x, y - top, foot - y, Math.hypot(x - S.tx, y - (S.ty - S.tR * .2)) - S.tR * 1.08); if (rad <= 0) continue;
+      for (const [x0, y0, x1, y1] of rects) { rad = Math.min(rad, Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(y0 - y, 0, y - y1)) - gap); if (rad <= 0) break; }
+      if (rad <= 0) continue;
+      const up = lines.some(([a, b, c]) => x > a - 10 && x < c + 10 && b < y), score = Math.min(rad, pr ? 110 : 180) * (up ? .4 : 1) * (pr ? 1 : 1 - .4 * clamp(Math.min(x, W - x) / W * 2.4 - .3));
+      if (score > best) { best = score; bx = x; by = y; brad = rad; }
+    }
+    const B = Math.round(clamp(brad * 1.12, pr ? 92 : 124, pr ? 150 : 214)), s = bx > W / 2 + 4 ? 1 : bx < W / 2 - 4 ? -1 : hr.side, r = rng(hr.seed + 77);
+    if (!S.pns || S.pns.key !== B + ":" + px) S.pns = { key: B + ":" + px, whole: pinSpr(B, 0), top: pinSpr(B, 1), bot: pinSpr(B, 2), sweets: Array.from({ length: 15 }, (_, i) => sweetSpr(i % 5, SWC[(i * 2 + Math.floor(i / 5)) % 6], B * .18)) };
+    const sp = S.pns.whole, bh = B * .5, hookY = by - B * .04, ay = -B * 1.15 - 30, Lr = hookY - ay, /* (the figure, ears to hooves, is centred on its hook; the rope's anchor a figure's height above the page, so it starts out of sight) */ belly = [bx + sp.belly[0], hookY + sp.belly[1]];
+    const pv = [s > 0 ? W + B * .32 : -B * .32, belly[1] + B * .62], Ls = Math.hypot(belly[0] - pv[0], belly[1] - pv[1]) + B * .12;
+    if (!S.pns.stick || S.pns.stick.L !== Math.round(Ls)) { const tk = B * .075; S.pns.stick = make(Ls + tk * 2, tk * 3, x => { x.translate(tk, tk * 1.5); soft(x, tk * .6, tk * .2, tk * .35, "rgba(120,30,80,.25)"); x.fillStyle = "#FFFFFF"; x.beginPath(); x.roundRect(0, -tk / 2, Ls, tk, tk / 2); x.fill(); unsoft(x);
+      x.save(); x.clip(); x.fillStyle = "#FF4F9E"; for (let d = -tk; d < Ls + tk; d += tk * 1.6) { x.beginPath(); x.moveTo(d, -tk / 2); x.lineTo(d + tk * .7, -tk / 2); x.lineTo(d + tk * .2, tk / 2); x.lineTo(d - tk * .5, tk / 2); x.closePath(); x.fill(); }
+      const gr = x.createLinearGradient(0, -tk / 2, 0, tk / 2); gr.addColorStop(0, "rgba(255,255,255,.55)"); gr.addColorStop(.4, "rgba(255,255,255,0)"); gr.addColorStop(1, "rgba(90,10,50,.3)"); x.fillStyle = gr; x.fillRect(0, -tk / 2, Ls, tk); x.restore(); }); S.pns.stick.L = Math.round(Ls); S.pns.stick.ax = (B * .075) / S.pns.stick.w2; }
+    const load = n => Array.from({ length: n }, (_, i) => { const a = -Math.PI / 2 + (r() - .5) * 3.4, v = (pr ? 260 : 340) * (.45 + r() * .75); return { k: i % 15, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, dx: (r() - .5) * B * .5, dy: (r() - .5) * bh * .3, sp: (r() - .5) * 14, r0: r() * TAU, dt: r() * .12 }; });
+    const conf = Array.from({ length: pr ? 70 : 110 }, () => ({ a: (r() - .5) * 1.4, v: .4 + r() * .7, k: 3 + r() * 2.5, vt: .1 + r() * .06, fl: (8 + r() * 20) * S.sc0, fw: 2 + r() * 2.5, ph: r() * TAU, c: Math.floor(r() * 6), strip: r() < .38, s: (.75 + r() * .55) * (pr ? 8 : 11) * S.sc0, spin: (r() - .5) * 7, flip: (4 + r() * 8) * (r() < .5 ? -1 : 1), f0: r() * TAU }));
+    const bits = Array.from({ length: pr ? 12 : 18 }, () => ({ a: (r() - .5) * 1.4, v: .3 + r() * .6, k: 3 + r() * 2, vt: .12 + r() * .05, fl: (6 + r() * 14) * S.sc0, fw: 2 + r() * 2, ph: r() * TAU, c: Math.floor(r() * 6), strip: true, s: (1.2 + r() * .6) * (pr ? 9 : 12) * S.sc0, spin: (r() - .5) * 8, flip: (4 + r() * 6) * (r() < .5 ? -1 : 1), f0: r() * TAU }));
+    S.png = { key, B, bh, s, x: bx, hookY, ax: bx, ay, Lr, w: Math.sqrt(2600 / Lr), belly, pv, Ls, sweets: load(pr ? 24 : 34), loose: load(2), conf, bits, cq: new Float32Array(Math.max(conf.length, bits.length) * 10), ph: r() * TAU, tails: Array.from({ length: 5 }, (_, i) => ({ c: PNC[(i * 2 + 1) % 6], l: bh * (.62 + r() * .3), ph: r() * TAU, a: .35 + i * .12 })) };
+    return S.png;
+  };
+  /** the piñata's swing on its rope (radians, + to the right) at loop time T: let down swinging; a puff from the stick
+   *  that misses; knocked away by the hit, and swung hard by the blow that bursts it; at rest, a sway */
+  const pnSwing = (c, T, A) => {
+    const d = T - EGP.down[0], w = c.w; let th = .028 * Math.sin(A * 1.1 + c.ph);
+    if (d > 0) th += -c.s * .32 * Math.sin(w * 1.25 * d) * Math.exp(-d * .85);
+    for (const [t0, k] of [[EGP.miss + .3, .1], [EGP.hit, .4], [EGP.burst, .58]]) { const a = T - t0; if (a > 0) th += -c.s * k * Math.sin(w * a) * Math.exp(-a * (t0 === EGP.burst ? .45 : .7)); }
+    return th;
+  };
+  /** the stick's swing, from out of sight below the edge (-1.75) through the piñata (0) and on (+): three goes */
+  const pnStick = T => {
+    const sw = (t0, back, hit, follow) => { if (T < t0 - .62 || T > t0 + 1.1) return null; if (T < t0 - .3) return lerp(-1.75, back, E.io(clamp((T - t0 + .62) / .32)));
+      if (T < t0) return lerp(back, hit, E.in(clamp((T - t0 + .3) / .3))); if (T < t0 + .16) return lerp(hit, follow, E.out(clamp((T - t0) / .16))); return lerp(follow, -1.75, E.io(clamp((T - t0 - .16) / .94))); };
+    return sw(EGP.miss, -1.3, .55, 1.05) ?? sw(EGP.hit, -1.32, 0, .16) ?? sw(EGP.burst, -1.5, 0, 1.1);
+  };
+  /** the piñata at loop time T: its rope, its tail of streamers, its body (whole, or torn in two), the stick, the sweets,
+   *  the confetti and the bits of crepe */
+  const pinataAt = (c, T, V, A) => {
+    const { H, sc0 } = S, sp = S.pns, B = c.B, bh = c.bh, g2 = 1500 * sc0;
+    const down = seg(T, EGP.down[0], EGP.down[1], E.out), haul = seg(T, EGP.up[0], EGP.up[1], E.in);
+    const m = EGP.miss, yank = B * .9 * (seg(T, m - .36, m - .12, E.out) - seg(T, m + .1, m + .6, E.back)); // (the first swing: whoever holds the rope yanks it up out of the way, and lets it drop back)
+    const th = pnSwing(c, T, A), L = lerp(0, c.Lr, down) - haul * (c.Lr + B * .4) - yank, hx = c.ax + Math.sin(th) * L, hy = c.ay + Math.cos(th) * L;
+    const burst = T >= EGP.burst, room = .12 + .88 * S.shade(hx, hy + bh * .8, B * .55), a = V * room;
+    if (hy > -B * 1.4) { // the rope, down from above the page; the piñata on it
+      unit(); g.globalAlpha = a; g.strokeStyle = "#B88A5E"; g.lineWidth = Math.max(1.2, B * .014); g.beginPath(); g.moveTo(c.ax, c.ay); g.lineTo(hx, hy); g.stroke();
+      g.setLineDash([B * .02, B * .025]); g.strokeStyle = "#E6C49A"; g.lineWidth = Math.max(.6, B * .007); g.stroke(); g.setLineDash([]);
+      const spin = T > EGP.hit ? TAU * (1 - Math.exp(-(T - EGP.hit) * 2.4)) : 0, yaw = .3 * Math.sin(A * .6 + c.ph) + spin + (burst ? Math.PI * .9 * (1 - Math.exp(-(T - EGP.burst) * 1.6)) * Math.sin(Math.min(Math.PI, (T - EGP.burst) * 1.4)) : 0);
+      const fx = Math.cos(yaw), face = fx < 0 ? -1 : 1, rot = th * 1.12;
+      let sq = 1; for (const t0 of [EGP.hit, EGP.burst]) { const e = T - t0; if (e > 0 && e < .5) sq *= 1 - .09 * Math.exp(-e * 12) * Math.cos(e * 30); }
+      const sx = Math.max(.08, Math.abs(fx)) * face * (2 - sq), sy = sq;
+      // the tail: streamers off its rump, fluttering
+      const cs = Math.cos(rot), sn = Math.sin(rot), tl = [sp.whole.tail[0] * sx, sp.whole.tail[1] * sy], tx = hx + tl[0] * cs - tl[1] * sn, ty = hy + tl[0] * sn + tl[1] * cs;
+      unit(); g.lineCap = "round"; for (const t of c.tails) { g.globalAlpha = a; g.strokeStyle = t.c; g.lineWidth = bh * .075; g.beginPath(); g.moveTo(tx, ty);
+        for (let k = 1; k <= 6; k++) { const u = k / 6, ang = rot + Math.PI / 2 + face * (t.a + .2 * Math.sin(A * 3.1 + t.ph + u * 2)) * Math.max(.25, Math.abs(fx)); g.lineTo(tx + Math.cos(ang) * t.l * u + Math.sin(A * 4 + t.ph + u * 3) * bh * .05 * u, ty + Math.sin(ang) * t.l * u); } g.stroke(); }
+      g.lineCap = "butt";
+      put(burst ? sp.top : sp.whole, hx, hy, sp.whole.ax, sp.whole.ay, rot, sx, sy, a);
+      if (burst) { // its lower half, dropping away and tumbling
+        const t = T - EGP.burst, bl = [sp.whole.belly[0] * sx, (sp.whole.cut + bh * .45) * sy], c0x = hx + bl[0] * cs - bl[1] * sn, c0y = hy + bl[0] * sn + bl[1] * cs;
+        const px2 = c0x - c.s * 90 * sc0 * t, py2 = c0y - 120 * sc0 * t + g2 * .5 * t * t, r2 = rot - c.s * 2.4 * t;
+        if (py2 < H + B) { const c2 = Math.cos(r2), s2 = Math.sin(r2); put(sp.bot, px2 - (bl[0] * c2 - bl[1] * s2), py2 - (bl[0] * s2 + bl[1] * c2), sp.whole.ax, sp.whole.ay, r2, sx, sy, V * (.12 + .88 * S.shade(px2, py2, B * .4))); } }
+    }
+    // the stick, poked in from the edge, a smear behind it as it swings
+    const dl = pnStick(T);
+    if (dl !== null) { const hitA = Math.atan2(c.belly[1] - c.pv[1], c.belly[0] - c.pv[0]), reach = 1, ga = V * (.15 + .85 * S.shade((c.pv[0] + c.belly[0]) / 2, (c.pv[1] + c.belly[1]) / 2, B * .3)), vel = (pnStick(T + .02) ?? dl) - dl;
+      for (let k = 3; k >= 0; k--) { if (k && Math.abs(vel) < .02) continue; const dd = dl - k * vel * 1.6; put(sp.stick, c.pv[0], c.pv[1], sp.stick.ax, .5, hitA + c.s * dd, reach, 1, ga * (k ? .22 / k : 1)); } }
+    // the sweets: two knocked loose by the hit, the rest out of its belly as it bursts; the confetti; the crepe
+    for (const [list, t0] of [[c.loose, EGP.hit + .05], [c.sweets, EGP.burst]]) { const t = T - t0; if (t <= 0) continue;
+      for (const q of list) { const u = t - q.dt; if (u <= 0) continue; const x = c.belly[0] + q.dx + q.vx * sc0 * u, y = c.belly[1] + q.dy + q.vy * sc0 * u + g2 * .5 * u * u; if (y > H + 30) continue;
+        put(sp.sweets[q.k], x, y, .5, .5, q.r0 + q.sp * u, 1, 1, V * (.15 + .85 * S.shade(x, y, B * .1))); } }
+    const late = T > 14.5 ? (15 - T) / .5 : 1, pf = T - EGP.burst;
+    if (pf > 0 && pf < .45) { const q = pf / .45; unit(); g.globalAlpha = V * (1 - q) * .42; g.fillStyle = "#E8C4B0"; g.beginPath(); g.arc(c.belly[0], c.belly[1], B * (.18 + .5 * E.out(q)), 0, TAU); g.fill(); g.globalAlpha = V * (1 - q) * .3; g.fillStyle = "#FFFFFF"; g.beginPath(); g.arc(c.belly[0], c.belly[1], B * (.1 + .32 * E.out(q)), 0, TAU); g.fill(); g.globalAlpha = 1; } // a puff of papier-mâché dust as it bursts
+    if (T > EGP.hit) { unit(); confetti(T - EGP.hit, c.belly[0], c.belly[1], -Math.PI / 2, B * .6, V, late, S.faces[0], S.backs[0], 0, 3, B * .2, c.bits, c.cq); }
+    if (burst) { unit(); confetti(T - EGP.burst, c.belly[0], c.belly[1], -Math.PI / 2, B * 1.15, V, late, S.faces[2], S.backs[2], 0, 4.2, B * .3, c.conf, c.cq); }
+    g.globalAlpha = 1; unit();
+  };
+
   /** a popper's load: its confetti (where each piece goes, how it falls and turns) and its streamers */
   const confOf = (r, pr, sc0) => Array.from({ length: pr ? 96 : 160 }, () => ({ a: (r() - .5) * 1.4, v: .4 + r() * .7, k: 3 + r() * 2.5, vt: .1 + r() * .06, fl: (8 + r() * 20) * sc0, fw: 2 + r() * 2.5, ph: r() * TAU, c: Math.floor(r() * 6), strip: r() < .38, s: (.75 + r() * .55) * (pr ? 8 : 11) * sc0, spin: (r() - .5) * 7, flip: (4 + r() * 8) * (r() < .5 ? -1 : 1), f0: r() * TAU }));
   const strmOf = (r, pr) => { const ns = pr ? 6 : 9; return Array.from({ length: ns }, (_, i) => ({ a: (i / (ns - 1) - .5) * 1.15 + (r() - .5) * .15, v: .7 + r() * .45, c: (i * 5 + 1) % 6, ph: r() * TAU, tw: 6 + r() * 5, cf: .45 + r() * .3, cu: 10 + r() * 9, vt: .11 + r() * .04, dr: (r() - .5) * 30 })); };
@@ -569,11 +1039,12 @@ export default function party(K, id) {
     // the garland: each swag sways and its sag breathes; the pennants turn on the string; a gust runs along it (from
     // the side the pass deals)
     const gustAt = xf => on ? env(T - (pl.gdir > 0 ? xf : 1 - xf) * .9, b.gust[0], b.gust[0] + .5, b.gust[0] + .8, b.gust[1], E.sine) * I * pl.gk : 0, fg = fin ? env(F, 0, .12, .6, 1, E.sine) : 0;
+    const hr = pl.hour, ck = hr && hr.kind === 1 && on ? cakeGeo(hr, (1 - S.vis) * (H - cy + R + 80)) : null, pn = hr && hr.kind === 2 && on ? pnGeo(hr) : null; // (1.12 b428: an hour egg's — the cake's gusts run along the garland too)
     for (const sw of S.swags) {
-      const gm = Math.max(gustAt((sw.xa + sw.xb) / 2 / W), fg), sag = sw.sag * (1 + .04 * Math.sin(A * .8 + sw.ph) + gm * .12 * Math.sin(A * 4.1 + sw.ph)), sh = (sw.xb - sw.xa) * (.025 * Math.sin(A * .55 + sw.ph) + gm * .05 * Math.sin(A * 3.3));
+      const gm0 = Math.max(gustAt((sw.xa + sw.xb) / 2 / W), fg), gm = ck ? Math.max(gm0, ckGust(ck, (sw.xa + sw.xb) / 2, T) * I) : gm0, sag = sw.sag * (1 + .04 * Math.sin(A * .8 + sw.ph) + gm * .12 * Math.sin(A * 4.1 + sw.ph)), sh = (sw.xb - sw.xa) * (.025 * Math.sin(A * .55 + sw.ph) + gm * .05 * Math.sin(A * 3.3));
       const at = t => { const q = 4 * t * (1 - t); return [lerp(sw.xa, sw.xb, t) + sh * q, -5 + sag * q]; };
       unit(); g.strokeStyle = "rgba(150,60,110,.55)"; g.lineWidth = pr ? 1 : 1.3; g.beginPath(); for (let k = 0; k <= 16; k++) { const [x, y] = at(k / 16); k ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
-      for (const f of sw.flags) { const [x, y] = at(f.t), [x2, y2] = at(f.t + .02), ga = Math.max(gustAt(x / W), fg), wave = Math.sin(A * 1.6 - x * .011 + f.ph * .3), turn = Math.sin(A * 2.2 + f.ph);
+      for (const f of sw.flags) { const [x, y] = at(f.t), [x2, y2] = at(f.t + .02), ga0 = Math.max(gustAt(x / W), fg), ga = ck ? Math.max(ga0, ckGust(ck, x, T) * I) : ga0, wave = Math.sin(A * 1.6 - x * .011 + f.ph * .3), turn = Math.sin(A * 2.2 + f.ph);
         put(S.flags[f.c][f.d], x, y, S.fax, S.fay, Math.atan2(y2 - y, x2 - x) + (.05 + ga * .32) * wave, 1 - (.06 + ga * .4) * (.5 + .5 * turn), 1, 1); }
     }
     unit();
@@ -594,9 +1065,17 @@ export default function party(K, id) {
     if (eg) for (const [tt, k, dy] of [[EGB.boop, 1.7, .4], [EGB.grab, .8, .75]]) { const a2 = T - tt; if (a2 > 0 && a2 < 3.5) jolts.push([eg.kx, eg.ky + eg.d * dy, a2, k]); } /* and the bouquet is jostled) */
     if (on && pl.horns) for (const h of pl.horns.list) { const P0 = hornAt(h), tx = P0.x - P0.sd * P0.L * .9, t0 = pl.horns.t0 + h.d; for (const tt of [t0 + .1, t0 + .76, t0 + pl.horns.chord - h.d + .14]) { const a = T - tt; if (a > 0 && a < 3.5) jolts.push([tx, P0.y, a, .55]); } } /* (a dealt pass's horns jostle them too, */
     if (on && pl.gift) { const a = T - pl.gift.pop; if (a > 0 && a < 3.5) jolts.push([cx + pl.gift.side * R * .66, H - R * .2, a, .5]); } /* and the gift's lid flying off) */
+    if (ck) { const a = T - ck.toot - .1; if (a > 0 && a < 3.5) jolts.push([ck.xs - ck.bs * ck.cw * .3, ck.yF - ck.cw * 1.75, a, .7]); } /* (1.12 b428: the cake's blower, tooting; */
+    if (pn && Math.abs(pn.belly[0] - cx) < R * 1.4 && pn.belly[1] < cy) for (const [dt, k, du] of [[.3, 1, -.2], [.42, .8, .3], [.55, .7, 0]]) { const a = T - EGP.burst - dt; if (a > 0 && a < 3.5) jolts.push([cx + du * R, cy - R * 1.1, a, k]); } /* the piñata's sweets, raining on them) */
     const home = S.slots.map(s => { const sc = bwOf(s.z) / S.bw, spr = S.bal[s.c]; let x = cx + s.u * R + Math.sin(A * .37 * s.f + s.ph) * R * .03, y = cy + s.v * R + Math.sin(A * .6 * s.f + s.ph2) * R * .022 + spr.lift * sc + sink, wob = Math.sin(A * .5 * s.f + s.ph) * .045;
       for (const [x0, y0, t, k] of jolts) { const dx = x - x0, dy = y - spr.lift * sc - y0, d = Math.hypot(dx, dy) || 1, f = k * I * Math.exp(-t * 2.4) * Math.sin(t * 8.5) * clamp(1.5 - d / (R * 2.4)); x += dx / d * f * R * .08; y += dy / d * f * R * .05; wob += (dx > 0 ? 1 : -1) * f * .12; }
       return { sc, spr, x, y, wob }; });
+    if (ck) { // (the cake's: the bouquet leans with each gust and springs back; jumps when the candle comes back the first time, sags the second, bobs for joy when it's out for good)
+      const jump = T > ck.relit[0] ? -Math.exp(-(T - ck.relit[0]) * 4.2) * Math.sin((T - ck.relit[0]) * 10.5) : 0, sag = env(T, ck.relit[1] + .05, ck.relit[1] + .55, ck.relit[1] + .8, ck.relit[1] + 1.5, E.sine), joy = T > ck.outs[2] + .35 ? Math.abs(Math.sin((T - ck.outs[2] - .35) * 8)) * Math.exp(-(T - ck.outs[2] - .35) * 2.6) : 0;
+      const dr = ckDrift(ck, T) * I; // (and first it drifts aside, or up, to give the candle's flame clear air)
+      home.forEach((h, i) => { h.x += ck.mdx * dr; h.y += ck.mdy * dr; const gs = ckGust(ck, h.x, T), gp = ckGust(ck, h.x, T - .25), lift = clamp((cy - h.y) / R + .6, .3, 1.4);
+        h.x += I * ck.gdir * (gs * .8 + (gs - gp) * .6) * R * .09 * lift; h.wob += I * ck.gdir * gs * .16 * lift;
+        h.y += I * R * (.085 * jump * (1 + (i % 3) * .1) + .05 * sag - .04 * joy * (i % 2 ? 1 : .6)); }); }
     // the three that come back up, behind the rest, in the bouquet's own order so they overlap as they did: from the
     // moment each slips free it waits below the page for its time; if the list is touched it comes up into place at once
     const trio = fin ? TRIO : pl.trio; // (the ones a pass lets go: the signature's three, or one or two of them)
@@ -660,6 +1139,8 @@ export default function party(K, id) {
     for (const it of items) put(it.s, it.kx, it.ky, it.s.ax, it.s.ay, it.rot, it.fx === undefined ? it.sc : it.sc * it.fx, it.sc, it.a);
     for (const it of items) if (it.gl > .01) { const c = Math.cos(it.rot), n = Math.sin(it.rot), hx = it.hx * it.fx; put(S.dglint, it.kx + hx * c - it.hy * n, it.ky + hx * n + it.hy * c, .5, .5, 0, it.sc * .9, it.sc * .9, it.gl * it.a); }
     unit();
+    if (ck) { const cake = cakeAt(ck, T, V, A, hr); if (cake) cakeFire(ck, cake, T, V, A); ckBlower(ck, cake, T, V, A); unit(); } // (1.12 b428: the cake, in front of the bouquet;
+    if (pn) pinataAt(pn, T, V, A); // the piñata, beside it)
     if (dog) { const a = V * (.12 + .88 * S.shade(dog.x, dog.y - eg.d, eg.d * 5)); /* (the egg's dog, in front of the bouquet; the string it took hanging from its mouth) */
       if (mouth) { const sl = S.slots[eg.si], sw = Math.sin(A * 3.1 + T) * eg.d * .5, bk = -eg.s * eg.d; g.globalAlpha = a; g.strokeStyle = S.rib[sl.c]; g.lineWidth = pr ? 1 : 1.25; g.beginPath(); g.moveTo(mouth[0], mouth[1]); g.quadraticCurveTo(mouth[0] + bk * .6 + sw, mouth[1] + eg.d * 1.6, mouth[0] + bk * 1.4 + sw * 1.6, mouth[1] + eg.d * 3.2); g.stroke(); g.globalAlpha = 1; }
       dogDraw(dog, eg.d, eg.C, a); unit(); }
@@ -1064,6 +1545,247 @@ export default function party(K, id) {
     for (let i = 0; i < gl.length; i += 4) { const k = clamp((gl[i + 2] - .3) / 1.1), z = D.st * Hf * (1.6 + 2.4 * k) / 32 * (.6 + .4 * calm); put(S.glints[gl[i + 3]], gl[i], gl[i + 1], .5, .5, .2, z, z, (.45 + .55 * k) * calm * a * S.shade(gl[i], gl[i + 1], 8)); }
     g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
   };
+  /* ---------------- 1.12 b428: the long day's hour eggs, by night ----------------
+     The laser show (K.long 1): the room's lights go down and a haze rolls in; the ball is let down; a laser at the foot of
+     the room (or, where the words would be crossed, at a side) finds the ball with one pencil of light, then traces a ring
+     round it on the wall behind, and the beam sweeps round and round so fast it stands in the haze as a funnel of light —
+     a laser tunnel; the ring becomes a heart, a star that turns, a flower that turns faster, each in a colour of its own;
+     then it closes onto the ball, which takes the light into every tile, and the beam folds away; the haze thins, the
+     lights come up and the ball is taken up again. */
+  const LS = { dim: [.3, 1.7, 12.3, 13.9], haze: [.9, 2.7, 12.1, 13.8], beam: [3.0, 3.45], trace: [3.5, 4.75], shapes: [[5.6, 6.4], [7.5, 8.3], [9.4, 10.2]], close: [11.0, 11.75], fold: [11.85, 12.45], lower: [1.0, 2.9], raise: [12.5, 14.6] };
+  const LSC = [3, 0, 1, 2]; // the colour of each figure, from LASER: aqua for the ring, the kit's pink for the heart, gold for the star, violet for the flower
+  const LM = 160; // points round each figure
+  /** the figures the laser draws, each LM points round it from its top, clockwise, spaced evenly along it, at most 1 from
+   *  its middle: a ring, a heart, a five-pointed star, a five-petalled flower — so one turns into the next point for point */
+  const LSHAPES = (() => {
+    const fig = f => { const n = 2000, raw = []; for (let i = 0; i <= n; i++) raw.push(f(i / n)); const len = [0]; for (let i = 1; i <= n; i++) len.push(len[i - 1] + Math.hypot(raw[i][0] - raw[i - 1][0], raw[i][1] - raw[i - 1][1]));
+      let m = 0; for (const p of raw) m = Math.max(m, Math.hypot(p[0], p[1])); const out = new Float32Array(LM * 2); let j = 0;
+      for (let k = 0; k < LM; k++) { const want = len[n] * k / LM; while (j < n - 1 && len[j + 1] < want) j++; const u = (want - len[j]) / ((len[j + 1] - len[j]) || 1); out[k * 2] = lerp(raw[j][0], raw[j + 1][0], u) / m; out[k * 2 + 1] = lerp(raw[j][1], raw[j + 1][1], u) / m; }
+      return out; };
+    const star = t => { const k = t * 10, i = Math.floor(k) % 10, u = k - Math.floor(k), a0 = -Math.PI / 2 + i * Math.PI / 5, a1 = a0 + Math.PI / 5, r0 = i % 2 ? .42 : 1, r1 = i % 2 ? 1 : .42; return [lerp(Math.cos(a0) * r0, Math.cos(a1) * r1, u), lerp(Math.sin(a0) * r0, Math.sin(a1) * r1, u) + .06]; };
+    return [fig(t => [Math.cos(-Math.PI / 2 + t * TAU), Math.sin(-Math.PI / 2 + t * TAU)]),
+      fig(t => { const a = t * TAU; return [Math.pow(Math.sin(a), 3), -(13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)) / 16 + .12]; }),
+      fig(star),
+      fig(t => { const a = -Math.PI / 2 + t * TAU, r = .58 + .42 * Math.cos(5 * (a + Math.PI / 2)); return [Math.cos(a) * r, Math.sin(a) * r]; })];
+  })();
+  const LQ = new Float32Array(LM * 2); // the figure this frame, on the page
+  /** where the show stands: the laser's place — the foot of the room under the ball, or a side, or the top, whichever lets
+   *  its funnel cross the fewest words — and how big its figures can be round the ball (as big as the open space lets
+   *  them, short of the words); worked out once a pass and layout */
+  const lsGeo = (bx, by, br) => {
+    const { W, H, cx, cy, R } = S, key = [W, H, Math.round(cx), Math.round(cy), Math.round(R), S.wr ? S.wr.length : 0, plan.P].join(":");
+    if (S.lsg && S.lsg.key === key) return S.lsg;
+    const yL = cy + (R - br) * .3, Rs = Math.max(br * 1.5, Math.min(br * 2.5, (R - (R - br) * .3) * .96));
+    const clear = (ox, oy) => { let m = 1; for (const [ex, ey] of [[cx - Rs, yL], [cx + Rs, yL], [cx, yL - Rs], [cx, yL + Rs], [cx, yL]]) for (let k = 1; k <= 12; k++) { const u = k / 13; m = Math.min(m, S.shade(lerp(ox, ex, u), lerp(oy, ey, u), 10)); } return m; };
+    const cand = [[cx, H + 8, .06], [-8, yL, 0], [W + 8, yL, 0], [cx, -8, -.04]]; let best = -1, o = cand[0];
+    for (const c of cand) { const sc = clear(c[0], c[1]) + c[2]; if (sc > best + .001) { best = sc; o = c; } }
+    S.lsg = { key, ox: o[0], oy: o[1], Rs };
+    return S.lsg;
+  };
+  /** how far through the show the laser is at T: which figure (0…3, between them while it turns from one to the next),
+   *  its colour, how big, how much of it is drawn (the trace), how bright the beam is, how much the ball has taken in */
+  /** two colours mixed round the colour wheel rather than through grey, as a laser's own colours change */
+  const hueMix = (a, b, t) => { const hsl = c => { const [r, g2, b2] = c.map(v => v / 255), mx = Math.max(r, g2, b2), mn = Math.min(r, g2, b2), l = (mx + mn) / 2, d = mx - mn; if (!d) return [0, 0, l];
+      const s2 = d / (1 - Math.abs(2 * l - 1)), h = mx === r ? ((g2 - b2) / d + 6) % 6 : mx === g2 ? (b2 - r) / d + 2 : (r - g2) / d + 4; return [h * 60, s2, l]; };
+    const [h0, s0, l0] = hsl(a), [h1, s1, l1] = hsl(b), dh = ((h1 - h0 + 540) % 360) - 180, h = (h0 + dh * t + 360) % 360, s2 = lerp(s0, s1, t), l = lerp(l0, l1, t), c = (1 - Math.abs(2 * l - 1)) * s2, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2;
+    const [r, g2, b2] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x]; return [r, g2, b2].map(v => Math.round((v + m) * 255)); };
+  const lsState = T => {
+    let f = 0; for (const [a, b] of LS.shapes) f += seg(T, a, b, E.io);
+    const ci = Math.min(3, Math.floor(f)), cu = f - ci, c0 = rgb(LASER[LSC[ci]]), c1 = rgb(LASER[LSC[Math.min(3, ci + 1)]]), col = hueMix(c0, c1, cu);
+    const on = seg(T, LS.beam[0], LS.beam[0] + .3, E.out) * (1 - seg(T, LS.fold[0], LS.fold[1], E.in)), trace = seg(T, LS.trace[0], LS.trace[1], x => x), grow = seg(T, LS.trace[0] - .15, LS.trace[0] + .15, E.out);
+    const close = seg(T, LS.close[0], LS.close[1], E.io), take = env(T, LS.close[0] + .3, LS.close[1], LS.fold[1], LS.fold[1] + .9, E.sine);
+    const spinA = Math.max(0, T - LS.shapes[2][0]) * .9 * seg(T, LS.shapes[2][0], LS.shapes[2][1]), turn = TAU * seg(T, LS.shapes[1][1] - .1, LS.shapes[2][0] + .05, E.io); // (the star turns once about its upright, the flower round its middle)
+    return { f, col, on, trace, grow, close, take, rot: spinA, yaw: Math.cos(turn), scan: (T - LS.trace[0]) * TAU * .85 };
+  };
+  /** the laser show at loop time T, round the ball at (bx, by): the haze, the funnel of beams and the figure on the wall */
+  const laserShow = (T, I, A, bx, by, br) => {
+    const { W, H } = S, hz = env(T, LS.haze[0], LS.haze[1], LS.haze[2], LS.haze[3], E.sine) * I; if (hz <= .004) return null;
+    const G = lsGeo(bx, by, br), st = lsState(T), ox = G.ox, oy = G.oy, colS = css(st.col);
+    unit(); g.globalCompositeOperation = "lighter";
+    // the haze: soft banks of it drifting across the room, faintly lit, brighter where the light runs through it
+    for (let k = 0; k < 6; k++) { const hx = (W * (.1 + k * .19) + A * (8 + k * 3) * (k % 2 ? 1 : -1)) % (W * 1.3) - W * .15, hy = H * (.42 + .5 * ((k * .37) % 1)) - A * 4 % 40, rr = Math.max(W, H) * (.22 + (k % 3) * .06);
+      put(S.halo, hx, hy, .5, .5, 0, rr / 64, rr * .55 / 64, hz * .09); }
+    unit(); const on = st.on * I; if (on <= .004) { g.globalCompositeOperation = "source-over"; return st; }
+    // the figure this frame: the one it is, or between two; turned; as big as it's grown (or closing onto the ball)
+    const s0 = LSHAPES[Math.min(3, Math.floor(st.f))], s1 = LSHAPES[Math.min(3, Math.floor(st.f) + 1)], mu = st.f - Math.floor(st.f), cr = Math.cos(st.rot), sr = Math.sin(st.rot);
+    const Rs = lerp(G.Rs, br * 1.06, st.close) * (.15 + .85 * st.grow) * (1 + .025 * Math.sin(A * 2.3)), shut = seg(T, LS.fold[0], LS.fold[1], E.in);
+    for (let k = 0; k < LM; k++) { const ux = lerp(s0[k * 2], s1[k * 2], mu), uy = lerp(s0[k * 2 + 1], s1[k * 2 + 1], mu), rx = (ux * cr - uy * sr) * st.yaw, ry = ux * sr + uy * cr, rr = lerp(Rs, 0, shut); LQ[k * 2] = bx + rx * rr; LQ[k * 2 + 1] = by + ry * rr; }
+    // before the trace, one pencil of light from the laser to the ball; then the traced part of the figure, and the beam's head running round it
+    const beamUp = seg(T, LS.beam[0], LS.beam[1], E.out), traced = T < LS.trace[0] ? 0 : st.trace, nOn = traced >= 1 ? LM : Math.floor(traced * LM);
+    const nb = S.pr ? 80 : 110, gr = g.createLinearGradient(ox, oy, bx, by); gr.addColorStop(0, css(st.col, 1)); gr.addColorStop(.5, css(st.col, .62)); gr.addColorStop(1, css(st.col, .4));
+    g.lineCap = "round";
+    if (nOn > 1) { // the funnel's light in the haze: a cone of it from the laser out to the figure, brightest at the laser
+      const fg = g.createLinearGradient(ox, oy, bx, by); fg.addColorStop(0, css(st.col, .38)); fg.addColorStop(.6, css(st.col, .13)); fg.addColorStop(1, css(st.col, .06));
+      g.beginPath(); g.moveTo(ox, oy); for (let k = 0; k < nOn; k++) g.lineTo(LQ[k * 2], LQ[k * 2 + 1]); g.closePath(); g.fillStyle = fg; g.globalAlpha = on * (.55 + .45 * Math.min(1, traced * 1.5)); g.fill(); }
+    if (nOn > 1) for (let layer = 0; layer < 3; layer++) { // the funnel: a beam to every point of the figure traced so far, each fainter where it would cross a word
+      g.beginPath(); let dim = 0;
+      for (let i = 0; i < nb; i++) { const k = Math.floor(i * LM / nb); if (k >= nOn) break; const ex = LQ[k * 2], ey = LQ[k * 2 + 1]; if (S.shade((ox + ex) / 2, (oy + ey) / 2, 12) < .5 || S.shade(lerp(ox, ex, .8), lerp(oy, ey, .8), 12) < .5) { dim++; continue; } g.moveTo(ox, oy); g.lineTo(ex, ey); }
+      g.strokeStyle = gr; g.globalAlpha = on * [.03, .06, .17][layer] * (S.pr ? 1.2 : 1); g.lineWidth = [14, 4.5, 1.1][layer]; g.stroke(); }
+    // the beam's head, sweeping round the figure (or, before it, the pencil of light up to the ball)
+    const hk = traced >= 1 ? Math.floor(((st.scan / TAU) % 1) * LM) : Math.max(0, nOn - 1), hxp = T < LS.trace[0] ? lerp(ox, bx, beamUp) : LQ[hk * 2], hyp = T < LS.trace[0] ? lerp(oy, by, beamUp) : LQ[hk * 2 + 1];
+    for (let layer = 0; layer < 3; layer++) { g.beginPath(); g.moveTo(ox, oy); g.lineTo(hxp, hyp); g.strokeStyle = layer === 2 ? css(tint(st.col, .7)) : colS; g.globalAlpha = on * [.12, .32, .9][layer] * (.2 + .8 * S.shade((ox + hxp) / 2, (oy + hyp) / 2, 12)); g.lineWidth = [16, 5, 1.6][layer]; g.stroke(); }
+    // the figure on the wall, sharp and bright, where the beams end
+    if (nOn > 1) for (let layer = 0; layer < 3; layer++) { g.beginPath(); for (let k = 0; k < nOn; k++) k ? g.lineTo(LQ[k * 2], LQ[k * 2 + 1]) : g.moveTo(LQ[0], LQ[1]); if (nOn >= LM) g.closePath();
+      g.strokeStyle = layer === 2 ? css(tint(st.col, .75)) : colS; g.globalAlpha = on * [.16, .4, 1][layer]; g.lineWidth = [12, 4, 1.5][layer]; g.stroke(); }
+    put(S.lglow[LSC[Math.min(3, Math.round(st.f))]], ox, oy, .5, .5, 0, 1.4, 1.4, on * (.25 + .75 * S.shade(ox, Math.min(oy, H - 10), 30))); // the laser's own glare at its aperture
+    if (T >= LS.trace[0] - .1) put(S.lglow[LSC[Math.min(3, Math.round(st.f))]], hxp, hyp, .5, .5, 0, .55, .55, on * .9 * S.shade(hxp, hyp, 12)); // and where it strikes
+    g.globalCompositeOperation = "source-over"; g.globalAlpha = 1; g.lineCap = "butt";
+    return st;
+  };
+  /** the ball's tiles while it takes the laser's light: the dark room in the laser's colour too, the lit tiles brighter */
+  const lsFill = (k, col) => FILL.map((c, i) => { const base = rgb(c), to = i < 5 ? deep(col, .22 + i * .14) : tint(col, [.0, .3, .7][(i - 5) % 3]); return css(mixc(base, to, k * (i < 5 ? .85 : 1))); });
+  /* The flamingo (K.long 2): a follow spot finds the edge of the floor; in glides a flamingo on roller skates — on one
+     skate, of course, the other leg tucked up, as a flamingo stands — through the beams to the foot of the ball; it pulls
+     up, flags its head to the beat (left, right, left, right, the way flamingos court), salutes with its wings open, the
+     black of their flight feathers showing; then it spins on its one skate under the ball, wings out, the light-up wheels
+     drawing rings on the floor as the ball spins up and the glitter comes down; strikes its pose; and skates away. */
+  const FL = { spot: [.2, 1.1, 13.0, 14.1], dim: [.3, 1.2, 12.6, 13.8], in: [1.0, 3.9], push: [1.75, 2.55], stop: [3.75, 4.35], flag: 4.4, wing: [6.95, 7.25, 7.8, 8.15], spin: [8.25, 10.35], tada: [10.3, 10.6, 11.0, 11.35], turn: [11.25, 11.7], out: [11.5, 13.85], push2: [11.6, 12.3] }; // (flag: four beats from there)
+  const FLC = { body: "#FF8FBE", hi: "#FFD3E6", lo: "#E85A92", cov: "#FF5E8E", covHi: "#FF9DBC", black: "#1E0812", leg: "#F27FA2", legHi: "#FFC1D5", beak: "#FFE9F0", eye: "#FFE066" };
+  /** the flamingo's sprites, `hf` tall (its height, skate to crown): its body with the wing folded on it, its head and
+   *  beak, a wing spread, and a roller skate — each facing right, lit from above by the follow spot, a rim of the room's
+   *  pink along the back */
+  const flSprs = hf => {
+    const Lb = hf * .57, hb = hf * .245, body = make(Lb * 1.3, hb * 1.6, x => { x.translate(Lb * .65, hb * .8);
+      const shape = () => { x.beginPath(); x.moveTo(-.52 * Lb, .02 * hb); x.bezierCurveTo(-.3 * Lb, -.6 * hb, .22 * Lb, -.66 * hb, .42 * Lb, -.3 * hb); x.bezierCurveTo(.56 * Lb, -.08 * hb, .52 * Lb, .36 * hb, .3 * Lb, .46 * hb); x.bezierCurveTo(.05 * Lb, .6 * hb, -.26 * Lb, .44 * hb, -.52 * Lb, .02 * hb); x.closePath(); };
+      soft(x, hb * .25, 0, hb * .12, "rgba(10,0,6,.35)"); shape(); x.fillStyle = FLC.body; x.fill(); unsoft(x);
+      x.save(); shape(); x.clip();
+      let gr = x.createLinearGradient(0, -hb * .6, 0, hb * .55); gr.addColorStop(0, FLC.hi); gr.addColorStop(.35, FLC.body); gr.addColorStop(1, FLC.lo); x.fillStyle = gr; x.fillRect(-Lb, -hb, Lb * 2, hb * 2);
+      // the black flight feathers, at the back; the coverts over them, coral, each feather's tip scalloped
+      x.fillStyle = FLC.black; x.beginPath(); x.moveTo(-.12 * Lb, -.05 * hb); x.quadraticCurveTo(-.4 * Lb, .02 * hb, -.62 * Lb, .02 * hb); x.quadraticCurveTo(-.4 * Lb, .3 * hb, -.1 * Lb, .22 * hb); x.closePath(); x.fill();
+      x.strokeStyle = "rgba(255,255,255,.18)"; x.lineWidth = hb * .025; for (let i = 0; i < 4; i++) { x.beginPath(); x.moveTo(-.15 * Lb - i * .05 * Lb, .05 * hb + i * .03 * hb); x.lineTo(-.5 * Lb + i * .02 * Lb, .06 * hb + i * .03 * hb); x.stroke(); }
+      x.fillStyle = FLC.cov; x.beginPath(); x.moveTo(.3 * Lb, -.32 * hb); x.bezierCurveTo(.1 * Lb, -.5 * hb, -.3 * Lb, -.42 * hb, -.45 * Lb, -.02 * hb);
+      for (let i = 0; i <= 7; i++) { const u = i / 7, fx = lerp(-.45 * Lb, .26 * Lb, u), fy = lerp(-.02 * hb, .18 * hb, Math.sin(u * Math.PI * .9)); x.quadraticCurveTo(fx - .04 * Lb, fy + .14 * hb, fx + .05 * Lb, fy); } x.closePath(); x.fill();
+      x.strokeStyle = FLC.covHi; x.lineWidth = hb * .03; x.lineCap = "round"; for (let i = 0; i < 6; i++) { const u = (i + .5) / 6, fx = lerp(-.36 * Lb, .2 * Lb, u); x.beginPath(); x.arc(fx, lerp(-.02, .12, Math.sin(u * Math.PI * .9)) * hb, hb * .09, .2, 2.4); x.stroke(); }
+      gr = x.createRadialGradient(.05 * Lb, -.45 * hb, 0, .05 * Lb, -.45 * hb, Lb * .45); gr.addColorStop(0, "rgba(255,255,255,.5)"); gr.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gr; x.fillRect(-Lb, -hb, Lb * 2, hb * 2); // the spot's light on its back
+      x.restore();
+      shape(); x.strokeStyle = "rgba(255,60,160,.55)"; x.lineWidth = hb * .05; x.stroke(); // the room's pink, round its edge
+    }); body.ax = .5; body.ay = .5;
+    const hr = hf * .034, head = make(hr * 5.4, hr * 4.2, x => { x.translate(hr * 1.6, hr * 1.8);
+      x.fillStyle = FLC.beak; x.beginPath(); x.moveTo(hr * .5, -hr * .55); x.quadraticCurveTo(hr * 1.6, -hr * .75, hr * 2.15, -hr * .3); x.quadraticCurveTo(hr * 2.7, hr * .3, hr * 2.75, hr * 1.55); x.quadraticCurveTo(hr * 2.2, hr * 1.2, hr * 1.9, hr * .55); x.quadraticCurveTo(hr * 1.4, hr * .5, hr * .6, hr * .55); x.closePath(); x.fill(); // the beak, bent
+      x.save(); x.clip(); x.fillStyle = FLC.black; x.beginPath(); x.moveTo(hr * 2.0, -hr * 1); x.lineTo(hr * 3, -hr * 1); x.lineTo(hr * 3, hr * 2); x.lineTo(hr * 1.75, hr * 2); x.closePath(); x.fill(); x.restore(); // its tip, black
+      x.strokeStyle = "rgba(120,40,70,.5)"; x.lineWidth = hr * .12; x.beginPath(); x.moveTo(hr * .7, hr * .1); x.quadraticCurveTo(hr * 1.6, hr * .05, hr * 2.1, hr * .2); x.stroke();
+      const gr = x.createRadialGradient(-hr * .3, -hr * .5, 0, 0, 0, hr * 1.1); gr.addColorStop(0, FLC.hi); gr.addColorStop(1, FLC.body); x.fillStyle = gr; x.beginPath(); x.arc(0, 0, hr, 0, TAU); x.fill(); // the head
+      x.fillStyle = "#FFE4EE"; x.beginPath(); x.ellipse(hr * .55, hr * .05, hr * .38, hr * .45, 0, 0, TAU); x.fill(); // the bare face by the beak
+      x.fillStyle = FLC.eye; x.beginPath(); x.arc(hr * .12, -hr * .25, hr * .3, 0, TAU); x.fill(); x.fillStyle = FLC.black; x.beginPath(); x.arc(hr * .16, -hr * .25, hr * .15, 0, TAU); x.fill(); x.fillStyle = "#FFFFFF"; x.beginPath(); x.arc(hr * .1, -hr * .33, hr * .06, 0, TAU); x.fill();
+    }); head.ax = (hr * 1.6) / head.w2; head.ay = (hr * 1.8) / head.h2;
+    const Lw = hf * .44, wing = make(Lw * 1.12, Lw * .5, x => { x.translate(Lw * .04, Lw * .22); // along +x from the shoulder, its leading edge up
+      const shape = () => { x.beginPath(); x.moveTo(0, -Lw * .07); x.bezierCurveTo(Lw * .35, -Lw * .16, Lw * .78, -Lw * .11, Lw * 1.03, -Lw * .005); // the leading edge, to the tip
+        for (let i = 0; i < 10; i++) { const u0 = 1 - i / 10, u1 = 1 - (i + 1) / 10, x0 = Lw * (.06 + .96 * u0), x1 = Lw * (.06 + .96 * u1), y1 = Lw * (.02 + .17 * Math.sin(Math.PI * Math.min(1, (1 - u1) * .9 + .1)) * (u1 < .45 ? 1 : .8)); x.quadraticCurveTo((x0 + x1) / 2 + Lw * .02, Math.max(y1, Lw * .03) + Lw * .07, x1, y1); } // its trailing edge, feather by feather
+        x.lineTo(0, Lw * .12); x.closePath(); };
+      soft(x, Lw * .05, 0, Lw * .03, "rgba(10,0,6,.3)"); shape(); x.fillStyle = FLC.body; x.fill(); unsoft(x);
+      x.save(); shape(); x.clip();
+      x.fillStyle = FLC.black; x.beginPath(); x.moveTo(Lw * .5, -Lw * .2); x.lineTo(Lw * 1.1, -Lw * .2); x.lineTo(Lw * 1.1, Lw * .3); x.lineTo(Lw * .58, Lw * .3); x.closePath(); x.fill(); // the long black flight feathers out at its tip
+      x.fillStyle = FLC.cov; x.beginPath(); x.moveTo(0, -Lw * .1); x.bezierCurveTo(Lw * .3, -Lw * .2, Lw * .55, -Lw * .14, Lw * .62, -Lw * .06); for (let i = 0; i <= 5; i++) { const fx = Lw * (.62 - i * .12); x.quadraticCurveTo(fx - Lw * .02, Lw * .06, fx - Lw * .1, Lw * .02); } x.lineTo(0, Lw * .02); x.closePath(); x.fill(); // the coral coverts over the pink
+      x.strokeStyle = "rgba(255,255,255,.22)"; x.lineWidth = Lw * .012; for (let i = 1; i < 10; i++) { const fx = Lw * (.06 + .96 * (1 - i / 10)); x.beginPath(); x.moveTo(fx, Lw * .0); x.lineTo(fx + Lw * .03, Lw * .16); x.stroke(); } // the feathers' edges
+      const gr = x.createLinearGradient(0, -Lw * .15, 0, Lw * .2); gr.addColorStop(0, "rgba(255,255,255,.3)"); gr.addColorStop(.4, "rgba(255,255,255,0)"); gr.addColorStop(1, "rgba(60,0,30,.25)"); x.fillStyle = gr; x.fillRect(0, -Lw * .2, Lw * 1.1, Lw * .5);
+      x.restore();
+    }); wing.ax = .04 / 1.12; wing.ay = .22 / .5; wing.L = Lw;
+    const sk = hf * .19, skate = make(sk * 1.3, sk * .9, x => { x.translate(sk * .65, sk * .62); // the floor under its middle is at (0, +wheel)
+      x.fillStyle = "#B9A9B8"; x.fillRect(-sk * .43, -sk * .2, sk * .86, sk * .05); // the plate
+      x.fillStyle = "#FF3D8B"; x.beginPath(); x.roundRect(sk * .38, -sk * .24, sk * .1, sk * .1, sk * .03); x.fill(); // the toe stop
+      const bt = () => { x.beginPath(); x.moveTo(-sk * .4, -sk * .2); x.lineTo(sk * .42, -sk * .2); x.quadraticCurveTo(sk * .48, -sk * .38, sk * .22, -sk * .42); x.lineTo(sk * .02, -sk * .5); x.lineTo(-sk * .02, -sk * .86); x.lineTo(-sk * .36, -sk * .86); x.quadraticCurveTo(-sk * .44, -sk * .5, -sk * .4, -sk * .2); x.closePath(); };
+      let gr = x.createLinearGradient(-sk * .4, -sk * .86, sk * .3, -sk * .2); gr.addColorStop(0, "#FFFFFF"); gr.addColorStop(.6, "#FFEAF3"); gr.addColorStop(1, "#E9C3D6"); x.fillStyle = gr; bt(); x.fill(); // the boot
+      x.fillStyle = "#FF3D8B"; x.fillRect(-sk * .41, -sk * .26, sk * .84, sk * .06); x.beginPath(); x.roundRect(-sk * .38, -sk * .9, sk * .38, sk * .08, sk * .03); x.fill(); // its sole and collar, pink
+      x.strokeStyle = "#FF3D8B"; x.lineWidth = sk * .025; x.beginPath(); for (let i = 0; i < 4; i++) { const y0 = -sk * (.48 + i * .09); x.moveTo(-sk * .05, y0); x.lineTo(sk * .08 - i * sk * .02, y0 + sk * .06); } x.stroke(); // laces
+    }); skate.ax = .5; skate.ay = .62 / .9; skate.sk = sk;
+    const glow = make(48, 48, x => { const gr = x.createRadialGradient(24, 24, 0, 24, 24, 24); gr.addColorStop(0, "rgba(255,255,255,.95)"); gr.addColorStop(.25, "rgba(255,255,255,.5)"); gr.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = gr; x.fillRect(0, 0, 48, 48); });
+    return { body, head, wing, skate, glow, hf };
+  };
+  /** where the flamingo skates: the floor under the ball (as the dancer's), how tall it is (its crown below the ball), the
+   *  side it comes in from (the one with more room), and whether it goes on across or turns back the way it came */
+  const flGeo = (hr, yRest, br) => {
+    const { W, H, pr, cx, R } = S, yF = H - (pr ? 90 : 98), hf = Math.round(clamp(yF - (yRest + br) - Math.max(24, br * .4), pr ? 96 : 140, Math.min(pr ? 200 : 300, R * 1.8)) / 8) * 8; // (on the room's floor, the foot of the page, its crown clear of the ball; in steps, as the cake's)
+    const key = [W, H, Math.round(cx), Math.round(yF), hf, S.wr ? S.wr.length : 0, px, plan.P].join(":"); if (S.flg && S.flg.key === key) return S.flg;
+    const path = (x0, x1) => { let m = 1; for (let k = 0; k <= 16; k++) { const x = lerp(x0, x1, k / 16); for (const f of [.2, .5, .8]) m = Math.min(m, S.shade(x, yF - hf * f, hf * .12)); } return m; };
+    const rR = path(cx, W), rL = path(cx, 0), s = rR > rL + .02 ? 1 : rL > rR + .02 ? -1 : pr ? hr.side : cx > W / 2 ? 1 : -1, across = path(cx, s > 0 ? 0 : W) > .9;
+    if (!S.fls || S.fls.hf !== hf || S.fls.px !== px) { S.fls = flSprs(hf); S.fls.px = px; }
+    S.flg = { key, yF, hf, s, across, fx: cx, xIn: (s > 0 ? W : 0) + s * hf * .7, xOut: across ? (s > 0 ? 0 : W) - s * hf * .7 : (s > 0 ? W : 0) + s * hf * .7, ph: hr.side * 1.3 };
+    return S.flg;
+  };
+  /** where the flamingo is at loop time T and how it stands: x on the floor, which way it faces (yaw: 0 to the right),
+   *  how far its free leg is out, its wings open, its neck straightened, its head turned, its lean and bob */
+  const flPose = (c, T) => {
+    const iu = seg(T, FL.in[0], FL.in[1], x => 1 - Math.pow(1 - x, 1.8)), ou = seg(T, FL.out[0], FL.out[1], x => x * x * (1.6 - .6 * x));
+    let x = ou > 0 ? lerp(c.fx, c.xOut, ou) : lerp(c.xIn, c.fx, iu), yaw = c.s > 0 ? Math.PI : 0; // (in from side s, facing where it goes)
+    const spin = seg(T, FL.spin[0], FL.spin[1], E.io); yaw += spin * TAU * 3;
+    if (!c.across) yaw += Math.PI * seg(T, FL.turn[0], FL.turn[1], E.io); // (to go back the way it came)
+    const push = env(T, FL.push[0], FL.push[0] + .3, FL.push[1] - .3, FL.push[1], E.sine) + env(T, FL.push2[0], FL.push2[0] + .3, FL.push2[1] - .3, FL.push2[1], E.sine);
+    const st = T - FL.stop[0], lean = .07 * (seg(T, FL.in[0], FL.in[0] + .5) - seg(T, FL.stop[0], FL.stop[0] + .3)) - (st > 0 && st < 1.2 ? .1 * Math.exp(-st * 4) * Math.sin(st * 9) : 0) + .06 * seg(T, FL.out[0], FL.out[0] + .5) + .03 * push;
+    const spinW = env(T, FL.spin[0], FL.spin[0] + .4, FL.spin[1] - .3, FL.spin[1], E.sine), wing = Math.max(env(T, FL.wing[0], FL.wing[1], FL.wing[2], FL.wing[3], E.back), spinW, env(T, FL.tada[0], FL.tada[1], FL.tada[2], FL.tada[3], E.sine)), wout = spinW > .01 ? 1 : 0;
+    const raise = Math.max(env(T, FL.spin[0] - .2, FL.spin[0] + .3, FL.spin[1] - .2, FL.spin[1] + .3, E.sine), env(T, FL.tada[0], FL.tada[1], FL.tada[2], FL.tada[3]) * .8, .4 * env(T, FL.wing[0], FL.wing[1], FL.wing[2], FL.wing[3]));
+    let flip = 1; if (T > FL.flag && T < FL.flag + 4.6 * BEAT) { const bt = (T - FL.flag) / BEAT, k = Math.min(4, Math.floor(bt)), u = bt - k, to = k % 2 ? -1 : 1, from = k ? ((k - 1) % 2 ? -1 : 1) : 1; flip = lerp(from, to, E.io(Math.min(1, u / .3))); } // (its head flagged on the beat: back, forward, back, forward)
+    const bob = .008 * Math.sin((T - FL.flag) * TAU / BEAT) * env(T, FL.stop[1], FL.stop[1] + .3, FL.spin[0], FL.spin[0] + .2) + .01 * push;
+    return { x, yaw, push, lean, wing, wout, raise, flip, bob };
+  };
+  /** the flamingo drawn at (its pose): a card that turns about its upright for its body, head and skates, its wings
+   *  out to either side in depth so they sweep round as it spins; the light-up wheels and their glow; returns its feet */
+  const flDraw = (c, p, A, a) => {
+    const sp = S.fls, hf = c.hf, cy2 = Math.cos(p.yaw), sy2 = Math.sin(p.yaw), face = cy2 < 0 ? -1 : 1, X = (lx, lz = 0) => p.x + (lx * cy2 + lz * sy2) * hf, Y = ly => c.yF + ly * hf;
+    const lc = Math.cos(p.lean), ls = Math.sin(p.lean), B = (lx, ly) => [-.02 + (lx * lc - ly * ls), -.63 + p.bob + (lx * ls + ly * lc)]; // a point on its body, leaned
+    const [hx, hy] = B(-.01, .07), [kx, ky] = [.014, -.37], [n0x, n0y] = B(.21, -.07), r = p.raise;
+    // its far wing first, out to the far side; the free leg, tucked up or pushing; the standing leg; its body; the near wing; the neck and head
+    /* a wing is a flat fan of feathers in the body's space (x forward, y down, z out to its side): its span from the
+       shoulder to the tip, its chord from the leading edge back to the trailing feathers. Folded, it lies back along the
+       body; raised for a salute, it stands up behind, broadside to the side; flung out for the spin, it rises out to the
+       side in a V, its face forward. Drawn as the exact image of that plane as the bird turns: a full fan when it faces
+       us, narrowing to a sliver when it's edge-on */
+    const nrm3 = v => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }, mix3 = (a3, b3, t) => [lerp(a3[0], b3[0], t), lerp(a3[1], b3[1], t), lerp(a3[2], b3[2], t)];
+    const wingPlane = side => { const w = p.wing, o = p.wout, F = [[-1, .08, .05], [0, 1, 0]], U = [[-.42, -.9, .12], [-.9, .42, 0]], Vv = [[-.05, -.5, .86], [0, .86, .5]];
+      let sv = nrm3(mix3(F[0], mix3(U[0], Vv[0], o), w)), cv = mix3(F[1], mix3(U[1], Vv[1], o), w); const d = cv[0] * sv[0] + cv[1] * sv[1] + cv[2] * sv[2]; cv = nrm3([cv[0] - d * sv[0], cv[1] - d * sv[1], cv[2] - d * sv[2]]);
+      return [[sv[0], sv[1], sv[2] * side], [cv[0], cv[1], cv[2] * side]]; };
+    const depth = v => -v[0] * sy2 + v[2] * cy2; // (toward us)
+    const wingAt = side => { const w = p.wing; if (w < .02) return; const [sv, cv] = wingPlane(side), [sx, sy] = B(.06, -.07), x0 = X(sx, side * .03), y0 = Y(sy), Lb = sp.wing.L / hf;
+      const Sx = (sv[0] * cy2 + sv[2] * sy2) * Lb * hf, Sy = sv[1] * Lb * hf, Cx = (cv[0] * cy2 + cv[2] * sy2) * Lb * hf, Cy = cv[1] * Lb * hf, n = [sv[1] * cv[2] - sv[2] * cv[1], sv[2] * cv[0] - sv[0] * cv[2], sv[0] * cv[1] - sv[1] * cv[0]];
+      const al = a * clamp(w * 3) * (depth(n) * side < 0 ? .86 : 1); if (al <= .004) return; const L = sp.wing.L; // (its underside a shade darker)
+      g.globalAlpha = al; g.setTransform(px * Sx / L, px * Sy / L, px * Cx / L, px * Cy / L, px * x0, px * y0); g.drawImage(sp.wing, -sp.wing.ax * sp.wing.w2, -sp.wing.ay * sp.wing.h2, sp.wing.w2, sp.wing.h2); g.globalAlpha = 1; };
+    const wd = side => { const [sv] = wingPlane(side); return depth([sv[0], sv[1], sv[2]]) + side * .03 * cy2; }, near = wd(1) >= wd(-1) ? 1 : -1; // (the wing nearer us is drawn over the body)
+    if (p.wing >= .02) wingAt(-near);
+    unit(); g.globalAlpha = a; g.lineCap = "round"; g.lineJoin = "round";
+    const leg = (pts, w) => { g.strokeStyle = FLC.leg; g.lineWidth = w * hf; g.beginPath(); pts.forEach(([lx, ly, lz], i) => i ? g.lineTo(X(lx, lz), Y(ly)) : g.moveTo(X(lx, lz), Y(ly))); g.stroke(); g.strokeStyle = FLC.legHi; g.lineWidth = w * hf * .35; g.stroke(); };
+    // the free leg: tucked under it (its skate up by its belly), or reaching back to push
+    const pu = p.push, k2 = [lerp(-.12, -.19, pu), lerp(-.47, -.29, pu)], f2 = [lerp(.02, -.32, pu), lerp(-.42, -.16, pu)], z2 = -.04 * face;
+    leg([[hx, hy, z2], [k2[0], k2[1], z2], [f2[0], f2[1], z2]], .02);
+    put(sp.skate, X(f2[0] + .015, z2), Y(f2[1] + .16), .5, sp.skate.ay, lerp(.5, .06, pu) * face, Math.max(.3, Math.abs(cy2)) * face, 1, a);
+    unit(); g.globalAlpha = a; leg([[hx, hy, .02], [kx, ky, .02], [-.012, -.155, .02]], .023); g.fillStyle = FLC.leg; g.beginPath(); g.arc(X(kx, .02), Y(ky), hf * .016, 0, TAU); g.fill(); // the standing leg, its backward knee
+    put(sp.skate, X(0), Y(-.0), .5, sp.skate.ay, 0, Math.max(.3, Math.abs(cy2)) * face, 1, a); // its skate
+    const [bx2, by2] = B(0, 0); put(sp.body, X(bx2), Y(by2), .5, .5, p.lean * face, Math.max(.38, Math.abs(cy2)) * face, 1, a);
+    if (p.wing >= .02) wingAt(near);
+    // the neck, an S that straightens as it spins; the head on it, flagging to the beat
+    const c1 = [n0x + lerp(.15, .02, r), n0y + lerp(-.08, -.11, r)], c2 = [n0x + lerp(-.17, -.01, r), n0y + lerp(-.2, -.22, r)], hb2 = [n0x + lerp(-.035, .01, r), n0y + lerp(-.32, -.35, r)];
+    unit(); g.globalAlpha = a; const nk = (w, col) => { g.strokeStyle = col; g.lineWidth = w * hf; g.beginPath(); g.moveTo(X(n0x), Y(n0y)); g.bezierCurveTo(X(c1[0]), Y(c1[1]), X(c2[0]), Y(c2[1]), X(hb2[0]), Y(hb2[1])); g.stroke(); };
+    nk(.04, FLC.body); nk(.014, FLC.hi);
+    const hfl = p.flip, hx2 = hb2[0] + .022 * Math.sign(hfl || 1) * Math.abs(hfl);
+    put(sp.head, X(hx2), Y(hb2[1] - .012), sp.head.ax, sp.head.ay, -.12 * face * Math.sign(hfl || 1), Math.max(.4, Math.abs(cy2)) * face * (Math.abs(hfl) < .15 ? .15 * Math.sign(hfl || 1) : hfl), 1, a);
+    g.lineCap = "butt"; g.lineJoin = "miter";
+    // its wheels: the standing skate's two on the floor, the free one's two in the air, each lit from inside
+    const wr = sp.skate.sk * .11, ws = [[.058, 0], [-.058, 0]], hue = (A * .25) % 1, WC = [[255, 61, 160], [255, 208, 80], [79, 226, 240]], wc = mixc(WC[Math.floor(hue * 3) % 3], WC[(Math.floor(hue * 3) + 1) % 3], (hue * 3) % 1);
+    const feet = [];
+    for (const [wx, wz] of ws) { const px2 = X(wx, wz), py2 = Y(-.024); feet.push([px2, py2]); }
+    unit(); g.globalCompositeOperation = "lighter";
+    for (const [px2, py2] of feet) put(sp.glow, px2, py2, .5, .5, 0, wr * 5 / 24, wr * 5 / 24, a * .55);
+    g.globalCompositeOperation = "source-over"; unit(); g.globalAlpha = a;
+    for (const [px2, py2] of feet) { g.fillStyle = css(wc); g.beginPath(); g.ellipse(px2, py2, wr * Math.max(.35, Math.abs(cy2)), wr, 0, 0, TAU); g.fill(); g.fillStyle = "rgba(255,255,255,.75)"; g.beginPath(); g.ellipse(px2, py2, wr * .45 * Math.max(.35, Math.abs(cy2)), wr * .45, 0, 0, TAU); g.fill(); }
+    g.globalAlpha = 1;
+    return { feet, wc };
+  };
+  /** the flamingo's follow spot: a white beam from above (or from the side, where that would cross the words) that finds
+   *  the floor's edge before it comes in and stays on it; its pool on the floor; and the light-up wheels' light, left on
+   *  the floor behind them as they go, and in rings as it spins */
+  const flSpot = (c, p, T, I) => {
+    const k = env(T, FL.spot[0], FL.spot[1], FL.spot[2], FL.spot[3], E.sine) * I; if (k <= .004) return;
+    const { W } = S, hf = c.hf, tx = clamp(p.x, hf * .2, W - hf * .2), ty = c.yF - hf * .5;
+    if (c.sx === undefined) { const top = [lerp(c.fx, W / 2, .15), -40]; let m = 1; for (let i = 1; i < 12; i++) m = Math.min(m, S.shade(lerp(top[0], c.fx, i / 12), lerp(top[1], ty, i / 12), 16)); [c.sx, c.sy] = m > .6 ? top : [c.s > 0 ? -40 : W + 40, ty - hf * .9]; }
+    g.globalCompositeOperation = "lighter";
+    put(S.beamW, c.sx, c.sy, .5, 1, Math.atan2(tx - c.sx, -(ty - c.sy)), 1.15, 1, k * .7);
+    put(S.haloW, tx, c.yF, .5, .5, 0, hf * 1.5 / 64, hf * .3 / 64, k * .8);
+    const wc = (() => { const hue = (S.lastA * .25) % 1, WC = [[255, 61, 160], [255, 208, 80], [79, 226, 240]]; return mixc(WC[Math.floor(hue * 3) % 3], WC[(Math.floor(hue * 3) + 1) % 3], (hue * 3) % 1); })();
+    unit(); g.lineCap = "round"; g.strokeStyle = css(wc);
+    for (const wx of [.058, -.058]) for (let layer = 0; layer < 2; layer++) { let px0 = null, py0 = 0; // (each wheel's line on the floor, fading behind it)
+      for (let j = 0; j <= 24; j++) { const t2 = T - j * .045; if (t2 < FL.in[0]) break; const q = flPose(c, t2), x2 = q.x + wx * Math.cos(q.yaw) * hf * 1.6, y2 = c.yF + wx * Math.sin(q.yaw) * hf * .45;
+        if (px0 !== null) { g.globalAlpha = k * (1 - j / 25) * (layer ? .9 : .25) * S.shade(x2, y2, 10); g.lineWidth = layer ? 1.6 : 6; g.beginPath(); g.moveTo(px0, py0); g.lineTo(x2, y2); g.stroke(); }
+        px0 = x2; py0 = y2; } }
+    g.lineCap = "butt"; g.globalAlpha = 1; g.globalCompositeOperation = "source-over";
+  };
   /** the disco, at loop time T */
   const drawNight = (T, I, A, F, dt) => {
     const { W, H, pr, cx, cy, R } = S, on = I > .01, fin = F >= 0 ? env(F, 0, .16, .7, 1, E.sine) : 0, pl = plan, bt = pl.b;
@@ -1081,6 +1803,12 @@ export default function party(K, id) {
     // (a dealt pass's pin spot: the room's lights go down first, under everything)
     const pinK = pl.pin ? env(T, pl.pin[0], pl.pin[1], pl.pin[2], pl.pin[3], E.sine) * I : 0;
     if (pinK > .004) { unit(); g.globalAlpha = pinK * .55; g.fillStyle = "#0B0007"; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
+    // (1.12 b428, the laser show: the room's lights go down for it too)
+    const hl = pl.hour && pl.hour.kind === 1 && on ? pl.hour : null, lsDim = hl ? env(T, LS.dim[0], LS.dim[1], LS.dim[2], LS.dim[3], E.sine) * I : 0;
+    if (lsDim > .004) { unit(); g.globalAlpha = lsDim * .62; g.fillStyle = "#0B0007"; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
+    // (the flamingo: where it skates and how it stands this frame; the room's lights down a little for its follow spot)
+    const fh = pl.hour && pl.hour.kind === 2 && on ? pl.hour : null, flc = fh ? flGeo(fh, yRest, br) : null, flp = flc ? flPose(flc, T) : null, flDim = flc ? env(T, FL.dim[0], FL.dim[1], FL.dim[2], FL.dim[3], E.sine) * I : 0;
+    if (flDim > .004) { unit(); g.globalAlpha = flDim * .32; g.fillStyle = "#0B0007"; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
     // the beams: up from below one by one, sweeping; then onto the ball, and apart again, and down (a dealt pass moves
     // them its own way: `swing`)
     const aimK = Math.max(on ? env(T, bt.aim[0], bt.aim[1], bt.aim[2], bt.aim[3], E.sine) * I : 0, fin);
@@ -1088,7 +1816,7 @@ export default function party(K, id) {
     let most = 0;
     for (const [i, b] of S.beams.entries()) {
       b.inten = Math.max(on ? env(T, bt.beams[0] + i * .35, bt.beams[1] + i * .35, bt.dim[0] + i * .2, bt.dim[1] + i * .2, E.sine) * I * pl.bk : 0, fin);
-      const toBall = de ? Math.atan2(de.fx - b.x, b.y - (de.fy - .2 * de.Hf)) : Math.atan2(bx - b.x, b.y - by), sweep = pl.sig ? b.base + b.amp * Math.sin((T - bt.sweep) * b.f + b.ph) : swing(pl, b, i, T, toBall);
+      const toBall = de ? Math.atan2(de.fx - b.x, b.y - (de.fy - .2 * de.Hf)) : flp ? Math.atan2(flp.x - b.x, b.y - (flc.yF - flc.hf * .45)) : Math.atan2(bx - b.x, b.y - by), sweep = pl.sig ? b.base + b.amp * Math.sin((T - bt.sweep) * b.f + b.ph) : swing(pl, b, i, T, toBall);
       b.ang = lerp(sweep, toBall, aimK); b.hit = b.inten * Math.exp(-(((b.ang - toBall) / .15) ** 2)); lit[b.fam] += b.hit * .9; most = Math.max(most, b.inten);
     }
     for (let k = 0; k < 3; k++) lit[k] = Math.min(lit[k], 1.9);
@@ -1097,6 +1825,8 @@ export default function party(K, id) {
     g.globalCompositeOperation = "source-over";
     if (pl.laser) laserFan(pl.laser, T, I, bx, by, br);
     if (pinK > .004) pinBeam(pinK, bx, by);
+    const ls = hl ? laserShow(T, I, A, bx, by, br) : null; // (the laser show: its haze, its funnel and its figure, under the lines' shadow)
+    if (flp) flSpot(flc, flp, T, I); // (the flamingo's follow spot, its pool on the floor and the light its wheels leave there)
     // under each line the room steps back into shadow, the beams with it (the stage lays its pads over this)
     for (const [x0, y0, x1, y1, kind] of S.raw || []) if (kind === 1) { const mx = 18 + (y1 - y0) * .5, my = 6 + (y1 - y0) * .3; put(S.pad, x0 - mx, y0 - my, 0, 0, 0, (x1 - x0 + mx * 2) / 160, (y1 - y0 + my * 2) / 80, .45 + most * .45); }
     g.globalCompositeOperation = "lighter";
@@ -1109,7 +1839,8 @@ export default function party(K, id) {
     // and colours — a heart, a star, a sparkle — and turns back before the pass is out; `fm` how far that has gone)
     const fm = pl.sig ? 0 : pl.flip ? env(T, pl.flip[0], pl.flip[1], pl.flip[2], pl.flip[3], E.sine) * I : 0;
     const lz = pl.laser, hz = pl.heart, back = pl.sig ? 0 : Math.max(lz ? env(T, lz.t[3] - .15, lz.t[3] + .2, lz.t[4], lz.t[5], E.sine) * I : 0, hz ? env(T, hz.t[0], hz.t[0] + .5, hz.t[2], hz.t[2] + .4) * I : 0);
-    const sK = pl.sig ? 1 : pl.spotK * (1 - (lz ? 1 : .8) * back) * pres; // (the room's spots step back for the lasers' points, or the heart; or go with the ball's tiles)
+    let sK = pl.sig ? 1 : pl.spotK * (1 - (lz ? 1 : .8) * back) * pres; // (the room's spots step back for the lasers' points, or the heart; or go with the ball's tiles)
+    if (hl) sK *= 1 - .85 * lsDim; // (or for the laser show)
     for (const d of S.dots) {
       const dx = d.x * cs + d.z * sn, dz = d.z * cs - d.x * sn; if (dz > -.3) continue;
       const k = 1 / -dz, x = bx + dx * Dz * k, y = by + d.y * Dz * k; if (x < -80 || x > W + 80 || y < -80 || y > H + 80) continue;
@@ -1148,13 +1879,15 @@ export default function party(K, id) {
     g.globalCompositeOperation = "source-over";
     // (a dealt pass's balloons falling behind the ball, and the rare second ball, lit as the first is — or, under the
     // pin spot, white)
-    const tl = pinK > .004 ? [lit[0] * (1 - .8 * pinK), lit[1] * (1 - .8 * pinK), lit[2] + 1.3 * pinK] : lit, fill = fm > 0 ? pl.fillAt(fm) : FILL, gl1 = fm > .5 ? pl.glint : 1;
+    const tl = pinK > .004 ? [lit[0] * (1 - .8 * pinK), lit[1] * (1 - .8 * pinK), lit[2] + 1.3 * pinK] : lit, fill = ls && ls.take > .01 ? lsFill(ls.take, ls.col) : fm > 0 ? pl.fillAt(fm) : FILL, gl1 = fm > .5 ? pl.glint : 1; // (the laser show's ball takes the laser's colour)
     if (pl.drop) dropAt(pl.drop, T, I, false);
     if (pl.twin) twinAt(pl.twin, pl, T, I, A, bx, by, br, tl, w, fill, gl1);
     // the chain, from past the top of the page down to the ball's cap; the ball
     chain(bx, by, br, sw);
     if (de) { const D = S.dance; ballAt(bx, by, br, S.th, w, tl, A, S.facets, S.fq, fill, gl1, 1, f => T < D.leaveF[f.i] || T >= D.backF[f.i], clamp(pres * 1.4)); if (I < 1) ballAt(bx, by, br, S.th, w, tl, A, S.facets, S.fq, fill, gl1, 1 - I); danceDraw(T, de, tl, A, w, I); } // (the egg's: the ball losing its tiles to him, and getting them back)
     else ballAt(bx, by, br, S.th, w, tl, A, S.facets, S.fq, fill, gl1);
+    if (flp) { flDraw(flc, flp, A, I * (.12 + .88 * S.shade(flp.x, flc.yF - flc.hf * .5, flc.hf * .3))); unit(); } // (the flamingo, in front of it all)
+    if (ls && ls.take > .01) { g.globalCompositeOperation = "lighter"; put(S.lglow[LSC[3]], bx, by, .5, .5, 0, br * 3.4 / 64, br * 3.4 / 64, ls.take * .5); put(S.halo, bx, by, .5, .5, 0, br * 3 / 64, br * 3 / 64, ls.take * .4); g.globalCompositeOperation = "source-over"; } // (and glows with it)
     // (in front of it: where a laser strikes it, the near balloons of a drop, a cannon's burst)
     if (lz) { const k = env(T, lz.t[2] + .3, lz.t[3], lz.t[4], lz.t[5], E.sine) * I; if (k > .004) { const sx = clamp(bx + lz.side * R * .3, 16, W - 16), dx = sx - bx, dy = H + 4 - by, dl = Math.hypot(dx, dy) || 1;
       g.globalCompositeOperation = "lighter"; put(S.lglow[lz.ci], bx + dx / dl * br * .9, by + dy / dl * br * .9, .5, .5, 0, 1.1, 1.1, k * S.shade(bx + dx / dl * br * .9, by + dy / dl * br * .9, 34)); g.globalCompositeOperation = "source-over"; } }
@@ -1171,6 +1904,7 @@ export default function party(K, id) {
   const HORNC = [["#F6C84C", "#D62E86"], ["#4FC3A1", "#FFFFFF"], ["#A98BE6", "#F6C84C"], ["#FF6FB5", "#FFFFFF"], ["#6CBCEB", "#F6C84C"]];
   const shuffle = (a, r) => { for (let i = a.length - 1; i > 0; i--) { const q = Math.floor(r() * (i + 1)); [a[i], a[q]] = [a[q], a[i]]; } return a; };
   const dealDay = P => {
+    const LG = K.long ? K.long(P) : 0; if (LG === 1 || LG === 2) return hourDay(P, LG); // (1.12 b428: an hour egg, in place of the pass)
     if (K.egg(P)) { const r = K.deal(P, 1201), nth = Math.max(0, Math.round((P + 1) / 12) - 1); // (1.12 b417: the egg, in place of the pass; its own dice)
       return { P, sig: false, b: { gust: [NEVER, NEVER], guest: [NEVER, NEVER], popper: [NEVER, NEVER], pop: NEVER, sink: [NEVER, NEVER], tremble: [NEVER, NEVER], burst: NEVER, leave: NEVER, free: NEVER, back: [NEVER, NEVER] },
         head: "egg", guest: -1, gc: 8, gz: .95, clear: false, fate: "none", ring: "#FFFFFF", gdir: 1, gk: 0, gside: 1, pflip: 1, popC: 0, pal: 0, cshape: 0, trio: [], egg: { col: DOGC[nth % DOGC.length], side: r() < .5 ? -1 : 1 } }; }
@@ -1205,11 +1939,25 @@ export default function party(K, id) {
     }
     return pl;
   };
+  /** 1.12 b428: an hour egg's pass by day — the cake (1) or the piñata (2) — on dice of its own: nothing of the pass's
+   *  own beats plays, and the hour it is (the list left up that long) goes on the cake's candle */
+  const hourDay = (P, LG) => { const r = K.deal(P, 1401);
+    return { P, sig: false, b: { gust: [NEVER, NEVER], guest: [NEVER, NEVER], popper: [NEVER, NEVER], pop: NEVER, sink: [NEVER, NEVER], tremble: [NEVER, NEVER], burst: NEVER, leave: NEVER, free: NEVER, back: [NEVER, NEVER] },
+      head: LG === 1 ? "cake" : "pinata", guest: -1, gc: 8, gz: .95, clear: false, fate: "none", ring: "#FFFFFF", gdir: 1, gk: 0, gside: 1, pflip: 1, popC: 0, pal: 0, cshape: 0, trio: [],
+      hour: { kind: LG, h: Math.max(1, Math.floor(P / 240)), side: r() < .5 ? -1 : 1, seed: Math.floor(r() * 1e9), pal: Math.floor(r() * 3) } }; };
   /** a pass of the disco: pass 0 is the signature; the rest deal the spots' shape (round, hearts, stars, sparkles) and
    *  the second light's colour from bags, the beams' dance, and a headline from a bag, now and then the rare one */
   const HEADS_N = ["spin", "lasers", "cannon", "drop", "pin"];
   const nightSig = { P: 0, sig: true, b: B, head: "spin", depth: 1, spin: 1, bk: 1, bspr: [0, 1, 2], glit: GLIT, glint: 1, shape: 0, col: 1, flip: null, spotK: 1, shapeK: 1 };
+  /** 1.12 b428: an hour egg's pass by night — the laser show (1) or the flamingo (2) — on dice of its own: nothing of the
+   *  pass's own beats plays but what the egg asks for (the ball let down and taken up for the show; for the flamingo the
+   *  beams, the ball's spin and the glitter, on its cue) */
+  const hourNight = (P, LG) => { const r = K.deal(P, 1501), side = r() < .5 ? -1 : 1;
+    if (LG === 1) return { ...nightSig, P, sig: false, head: "show", b: { lower: LS.lower, beams: [NEVER, NEVER + 1], sweep: 3.0, aim: [NEVER, NEVER, NEVER, NEVER], spin: [11.25, 11.9, 12.3, 13.4], glitter: [NEVER, NEVER], dim: [NEVER, NEVER + 1], raise: LS.raise }, choreo: 0, cph: 0, cf: 1, fdir: 1, spin: .8, hour: { kind: 1, side } };
+    return { ...nightSig, P, sig: false, head: "flamingo", b: { lower: [NEVER, NEVER + 1], beams: [1.3, 2.1], sweep: 3.0, aim: [8.1, 8.7, 10.7, 11.3], spin: [8.3, 8.9, 10.2, 11.0], glitter: [8.5, 10.1], dim: [12.3, 13.3], raise: [NEVER, NEVER + 1] }, choreo: 0, cph: 0, cf: 1, fdir: 1, spin: .8, hour: { kind: 2, side } };
+  };
   const dealNight = P => {
+    const LG = K.long ? K.long(P) : 0; if (LG === 1 || LG === 2) return hourNight(P, LG); // (1.12 b428: an hour egg, in place of the pass)
     if (K.egg(P)) return { ...nightSig, P, sig: false, head: "egg", b: { lower: [NEVER, NEVER + 1], beams: EN.beams, sweep: 3.0, aim: EN.aim, spin: EN.spin, glitter: EN.glit, dim: EN.dim, raise: [NEVER, NEVER + 1] }, choreo: 0, cph: 0, cf: 1, fdir: 1, egg: { side: K.deal(P, 1301)() < .5 ? -1 : 1 } }; // (1.12 b417: the egg, in place of the pass)
     if (P <= 0) return { ...nightSig, P };
     const r = K.deal(P, 31), rare = rareAt(P, 45) ? (K.deal(P, 37)() < .5 ? "twin" : "heart") : null;

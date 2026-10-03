@@ -33,6 +33,15 @@
 // blows up into a ball of spines and the school scatters and comes back together. The puffer goes down with a puff of
 // bubbles and swims off, the school leaves, the kelp goes out from its tips and the last bubbles pop. Whatever lights
 // catches once and comes on, never flashing, and fades where it passes a word, as the moth does.
+// 1.12 b447: the crown. In the sixth hour left alone, and every sixth after (scenes.js, `K.long` 3), the wall turns out
+// to be a whole street of signs. Their dead glass comes up on the bricks all round the list; the heart beats, and they
+// light outward from it one by one, each tube catching once — a flamingo, a cocktail, a diner's cup, a palm, a motel
+// arrow whose bulbs chase at the heart, a ringed planet, a starburst, dice, cherries, a bar of music, the spade, the
+// club and the diamond the heart never had, a star — and a marquee's bulbs run along the top of the wall and its foot.
+// The strip at night: the flamingo dips its head, the cup steams, the palm sways, the starburst's spikes take turns.
+// The heart beats again and the light runs out through every sign; then they go out in a wave back to it, and their
+// glass leaves the wall. The signs hang where the wall is open — the biggest round of it each time, a wide berth from
+// the words and their boxes, out of the bar along the top and the footer — and fade where a word is near.
 export default function heart(K) {
   const { clamp, lerp, E, seg, env, rng, canvas } = K;
   const TAU = Math.PI * 2;
@@ -98,6 +107,39 @@ export default function heart(K) {
   // ball of spines and the school scatters, and comes back together; the puffer goes down again and swims off, the school
   // leaves, the kelp goes out from its tips, the last bubbles pop
   const SEA = { bub0: .8, bub1: 10.3, kelp0: 1.0, kelp1: 11.2, school0: 2.0, school1: 11.0, jelly0: 2.9, jelly1: 12.1, puff0: 4.7, nose: 6.0, beat: 6.62, deflate: 8.7, puff1: 10.9 };
+  // 1.12 b447: the crown, the strip. The wall's own signs, dead and dark until the sixth hour: a flamingo, a cocktail, a
+  // diner's cup, a palm, a motel arrow with bulbs, a ringed planet, a starburst, dice, cherries, music, the three suits the
+  // heart never had, and a star — each tube a polyline in a sign's own units (a unit round), its part (the order it lights
+  // in; 3 and on, a starburst's spikes, which take turns), its hue and its weight; a sign that moves has frames, as a sign's
+  // do. And the film: the glass comes up on the wall; the heart beats and the signs light outward from it, one by one,
+  // each tube catching once; the strip at night; the heart beats again and the light runs out through all of them; they go
+  // out in a wave back to the heart; the glass leaves the wall.
+  const RING = (x, y, rx, ry = rx, n = 16) => Array.from({ length: n + 1 }, (_, i) => [x + Math.cos(i / n * TAU) * rx, y + Math.sin(i / n * TAU) * ry]);
+  const SIGNS = {
+    flamingo: [2, f => { const neck = f ? [[.3, -.12], [.5, -.36], [.52, -.58], [.66, -.7]] : [[.3, -.12], [.46, -.42], [.26, -.66], [.34, -.9]], hx = neck[3][0] + .06, hy = neck[3][1];
+      return [[CR([[-.5, 0], [-.2, -.22], [.18, -.22], [.4, -.04], [.2, .17], [-.22, .16]], 4, true), 0, 330, 1], [CR(neck, 4), 0, 330, .9], [RING(hx, hy, .08, .08, 8), 1, 330, .8], [[[hx + .07, hy - .02], [hx + .2, hy + .06], [hx + .16, hy + .12]], 1, 45, .7],
+        [[[.06, .17], [.06, .95], [.2, .95]], 2, 330, .7], [[[-.06, .16], [-.08, .5], [.06, .42]], 2, 330, .7], [[[-.5, 0], [-.66, -.06]], 1, 330, .7], [[[-.45, .06], [-.62, .08]], 1, 330, .7]]; }, .8],
+    cocktail: [1, () => [[[[-.62, -.5], [0, .12], [.62, -.5], [-.62, -.5]], 0, 186, 1], [[[0, .12], [0, .72]], 0, 186, .9], [CR([[-.34, .8], [0, .74], [.34, .8]], 4), 0, 186, .9], [[[-.44, -.36], [.44, -.36]], 1, 300, .8], [RING(-.14, -.22, .1, .1, 10), 2, 110, .8], [[[-.34, -.55], [.06, -.06]], 2, 50, .6]]],
+    cup: [3, f => { const st = []; for (const [x, ph] of [[-.22, 0], [0, 1.8], [.22, 3.6]]) { const pts = []; for (let i = 0; i <= 8; i++) { const v = i / 8; pts.push([x + Math.sin(v * 5 + ph + f * 2.1) * .07, -.34 - v * .6]); } st.push([pts, 2, 200, .6]); }
+      return [[[[-.5, -.18], [-.46, .32], [-.3, .5], [.3, .5], [.46, .32], [.5, -.18]], 0, 175, 1], [CR([[-.5, -.18], [0, -.27], [.5, -.18], [0, -.1]], 4, true), 0, 175, .8], [CR([[.48, -.06], [.72, -.04], [.74, .18], [.45, .3]], 4), 0, 175, .9], [CR([[-.78, .6], [0, .7], [.78, .6]], 4), 1, 175, .9], ...st]; }, 2.9],
+    palm: [2, f => { const sw = f ? .05 : -.04, tp = [-.1, -.36], fr = (a, b) => [CR([tp, a, [b[0] + sw, b[1] + Math.abs(sw)]], 4), 1, 120, .9];
+      return [[CR([[.12, .95], [.16, .5], [.05, .06], tp], 4), 0, 30, 1], fr([-.5, -.62], [-.88, -.32]), fr([-.48, -.3], [-.72, .05]), fr([.3, -.64], [.78, -.42]), fr([.34, -.3], [.62, .02]), fr([0, -.78], [.2, -.96]), [RING(-.04, -.24, .07, .07, 8), 2, 30, .7], [RING(-.2, -.22, .07, .07, 8), 2, 30, .7], [[[-.6, .95], [.75, .95]], 2, 30, .7]]; }, .7],
+    arrow: [1, () => [[[[-.85, .7], [-.85, -.18], [.42, -.18], [.42, -.38], [.88, -.02], [.42, .34], [.42, .14], [-.55, .14], [-.55, .7], [-.85, .7]], 0, 15, 1]]], // (its bulbs are drawn as bulbs, chasing)
+    saturn: [1, () => { const el = (a0, a1, n) => Array.from({ length: n + 1 }, (_, i) => { const a = a0 + (a1 - a0) * i / n, x = Math.cos(a) * .95, y = Math.sin(a) * .26, c = Math.cos(-.32), sn = Math.sin(-.32); return [x * c - y * sn, x * sn + y * c]; });
+      return [[RING(0, 0, .46, .46, 20), 0, 280, 1], [el(0, Math.PI, 18), 1, 50, .9], [el(Math.PI, Math.PI * 1.17, 6), 1, 50, .9], [el(Math.PI * 1.83, TAU, 6), 1, 50, .9], [RING(.62, -.62, .05, .05, 6), 2, 50, .6], [RING(-.7, .55, .04, .04, 6), 2, 50, .6]]; }],
+    starburst: [1, () => Array.from({ length: 8 }, (_, k) => { const a = k * Math.PI / 4 + .2, L = k % 2 ? .55 : 1, b = .1; return [[[Math.cos(a - b) * .2, Math.sin(a - b) * .2], [Math.cos(a) * L, Math.sin(a) * L], [Math.cos(a + b) * .2, Math.sin(a + b) * .2]], 3 + k, 50, .8]; }).concat([[RING(0, 0, .14, .14, 10), 0, 50, .9]])],
+    dice: [1, () => { const sq = (x, y, sz, r) => [[-1, -1], [1, -1], [1, 1], [-1, 1], [-1, -1]].map(([u, v]) => [x + (u * Math.cos(r) - v * Math.sin(r)) * sz, y + (u * Math.sin(r) + v * Math.cos(r)) * sz]), pip = ([x, y, sz, r], u, v) => RING(x + (u * Math.cos(r) - v * Math.sin(r)) * sz, y + (u * Math.sin(r) + v * Math.cos(r)) * sz, .055, .055, 6);
+      const a = [-.36, .14, .32, -.22], b = [.38, -.16, .3, .28], out = [[sq(...a), 0, 190, 1], [sq(...b), 0, 190, 1]]; for (const [u, v] of [[-.5, -.5], [0, 0], [.5, .5]]) out.push([pip(a, u, v), 1, 350, .7]); for (const [u, v] of [[-.5, -.5], [.5, -.5], [0, 0], [-.5, .5], [.5, .5]]) out.push([pip(b, u, v), 2, 350, .7]); return out; }],
+    cherries: [1, () => [[RING(-.36, .42, .27, .27, 14), 0, 355, 1], [RING(.28, .5, .27, .27, 14), 0, 355, 1], [CR([[-.36, .15], [-.22, -.3], [.06, -.62]], 4), 1, 110, .8], [CR([[.28, .23], [.24, -.2], [.06, -.62]], 4), 1, 110, .8], [CR([[.06, -.62], [.35, -.78], [.6, -.62], [.3, -.52], [.06, -.62]], 3), 2, 110, .8], [[[-.48, .3], [-.42, .24]], 2, 355, .6], [[[.16, .38], [.22, .32]], 2, 355, .6]]],
+    notes: [2, f => { const d = f ? -.05 : .05; return [[RING(-.42, .48 + d, .17, .12, 10), 0, 265, 1], [RING(.36, .32 - d, .17, .12, 10), 0, 265, 1], [[[-.26, .46 + d], [-.26, -.48]], 1, 265, .9], [[[.52, .3 - d], [.52, -.64]], 1, 265, .9], [[[-.26, -.48], [.52, -.64]], 2, 265, 1.1], [[[-.26, -.32], [.52, -.48]], 2, 265, 1.1]]; }, 1.6],
+    spade: [1, () => [[HEART.filter((_, i) => i % 3 === 0).map(([u, v]) => [u * 1.5, (-v - .02) * 1.5 - .1]).concat([[0, (-.36 - .02) * 1.5 - .1]]), 0, 270, 1], [[[0, .32], [-.2, .72], [.2, .72], [0, .32]], 1, 270, .8]]],
+    club: [1, () => [[RING(0, -.36, .27, .27, 12), 0, 140, 1], [RING(-.32, .1, .27, .27, 12), 0, 140, 1], [RING(.32, .1, .27, .27, 12), 0, 140, 1], [[[0, .2], [-.18, .72], [.18, .72], [0, .2]], 1, 140, .8]]],
+    diamond: [1, () => [[[[0, -.82], [.55, 0], [0, .82], [-.55, 0], [0, -.82]], 0, 20, 1], [[[0, -.48], [.3, 0], [0, .48], [-.3, 0], [0, -.48]], 1, 40, .6]]],
+    star: [1, () => [[Array.from({ length: 11 }, (_, i) => { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? .38 : .92; return [Math.cos(a) * r, Math.sin(a) * r + .08]; }), 0, 52, 1]]],
+  };
+  const SIGN_ORDER = ["flamingo", "cocktail", "palm", "cup", "arrow", "saturn", "starburst", "dice", "cherries", "notes", "spade", "diamond", "club", "star"];
+  const LITE = [[3.6, .14], [1.9, .32]]; // (a small sign's halo: the heart's tubes' but their widest, faintest stroke)
+  const STRIP = { glass0: .8, glass1: 1.7, beat0: 2.0, wave0: 2.3, gap: .26, ripple: 8.0, off0: 10.5, offGap: .17, gone0: 13.0, gone1: 13.7 };
   const S = {
     res: "dpr",
     wash: 1, veil: .6, hug: .72, list: .4, // the wall is behind the words and the lines sit on pads
@@ -647,6 +689,74 @@ export default function heart(K) {
       S.batch(parts, 2);
       S.finaleFire(F, hue);
     },
+    /** 1.12 b447: the crown's plan, worked out for the screen and the words (and where the heart is settling): the signs'
+     *  places — the biggest round of open wall each time, clear of the words, the bar along the top, the footer, the heart
+     *  and the signs already hung, until there is no room for another — which sign goes where (the biggest place gets the
+     *  first in SIGN_ORDER), the order they light in (nearest the heart first), and each one's tubes on the screen, frame by
+     *  frame (the arrow pointing at the heart, its bulbs along it), worked out once */
+    stripPlan() {
+      const o = S.spl, { W, H, pr, raw, tx, ty, tR } = S; if (o && o.W === W && o.H === H && o.tx === tx && o.ty === ty && o.tR === tR) { if (o.raw === raw) return o; const sg = (raw || []).join(";"); if (sg === o.sig) { o.raw = raw; return o; } } // (the same words measured again keep the plan)
+      const gap = pr ? 14 : 24, lg = pr ? 26 : 34, top = pr ? 100 : 128, foot = H - (pr ? 108 : 132), step = pr ? 9 : 13, rMin = pr ? 21 : 30, rMax = pr ? 60 : 98;
+      const rs = (raw || [[W * .06, H * .36, W * (pr ? .94 : .66), H * (pr ? .5 : .68), 1]]).map(([x0, y0, x1, y1, kd]) => kd === 1 ? [x0 - (pr ? 40 : 110), y0, x1, y1, lg] : [x0, y0, x1, y1, gap]); // a line's words from its box on, and a wider berth (no words known yet — the lab — the list's usual place stands in for them)
+      const nx = Math.floor(W / step) + 1, ny = Math.max(1, Math.floor((foot - top) / step) + 1), cl = new Float32Array(nx * ny);
+      for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) { const x = i * step, y = top + j * step; let r = Math.min(x - 6, W - 6 - x, y - top, foot - y, Math.hypot(x - tx, y - ty) - tR * 1.42);
+        if (r > rMin) for (const [x0, y0, x1, y1, gp] of rs) { r = Math.min(r, Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(y0 - y, 0, y - y1)) - gp); if (r <= rMin) break; }
+        cl[j * nx + i] = r; }
+      const signs = [];
+      for (let n = 0; n < SIGN_ORDER.length; n++) { let bs = rMin, bi = -1;
+        for (let k = 0; k < cl.length; k++) { let r = cl[k]; if (r <= bs) continue; const x = (k % nx) * step, y = top + Math.floor(k / nx) * step; for (const sg of signs) { r = Math.min(r, Math.hypot(x - sg.x, y - sg.y) - sg.r - gap * .6); if (r <= bs) break; } if (r > bs) { bs = r; bi = k; } }
+        if (bi < 0) break; signs.push({ x: (bi % nx) * step, y: top + Math.floor(bi / nx) * step, r: Math.min(bs, rMax) }); }
+      const byNear = signs.map((sg, k) => [Math.hypot(sg.x - tx, sg.y - ty), k]).sort((a, b) => a[0] - b[0]);
+      byNear.forEach(([d, k], n) => { signs[k].order = n; signs[k].d = d; });
+      signs.forEach((sg, n) => { const name = SIGN_ORDER[n], [nf, fr, rate = 0] = SIGNS[name], u = sg.r * .92, rot = name === "arrow" ? Math.atan2(ty - sg.y, tx - sg.x) : 0, c = Math.cos(rot), sn = Math.sin(rot), tf = ([a, b]) => [sg.x + (a * c - b * sn) * u, sg.y + (a * sn + b * c) * u];
+        let dw = 1e9; for (const [x0, y0, x1, y1] of rs) dw = Math.min(dw, Math.hypot(Math.max(x0 - sg.x, 0, sg.x - x1), Math.max(y0 - sg.y, 0, sg.y - y1)));
+        const w = clamp(sg.r * .055, 1.6, 4.6), frames = Array.from({ length: nf }, (_, f) => { const gm = new Map(); for (const [pts, part, h, wk] of fr(f)) { const w2 = Math.round(w * wk * 2) / 2, key = part * 1e6 + h * 100 + w2 * 2; if (!gm.has(key)) gm.set(key, [part, h, w2, new Path2D()]); const pa = gm.get(key)[3], q = pts.map(tf); pa.moveTo(q[0][0], q[0][1]); for (let i = 1; i < q.length; i++) pa.lineTo(q[i][0], q[i][1]); } return [...gm.values()]; }); // each frame's tubes, as paths, one for each part, hue and weight
+        Object.assign(sg, { name, rate, w, fade: lerp(.2, 1, clamp((dw - sg.r) / gap)), hue: fr(0)[0][2], frames });
+        if (name === "arrow") { const path = [[-.7, .6], [-.7, -.02], [.62, -.02]], b = []; for (let k = 0; k < path.length - 1; k++) { const [a0, a1] = [path[k], path[k + 1]], L = Math.hypot(a1[0] - a0[0], a1[1] - a0[1]), n2 = Math.round(L / .17); for (let j = k ? 1 : 0; j <= n2; j++) b.push(tf([lerp(a0[0], a1[0], j / n2), lerp(a0[1], a1[1], j / n2)])); } sg.bulbs = b; } });
+      // and a marquee's bulbs along the top of the wall and its foot, where no words are near them
+      const mq = []; for (const [y, k0] of [[top - (pr ? 12 : 16), 0], [foot + (pr ? 12 : 16), 1]]) { const n = Math.floor((W - 24) / (pr ? 19 : 25)), row = []; for (let j = 0; j <= n; j++) { const x = 12 + (W - 24) * j / n; let d = 1e9; for (const [x0, y0, x1, y1] of rs) d = Math.min(d, Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(y0 - y, 0, y - y1))); if (d > (pr ? 26 : 34)) row.push([x, y, j, k0, Math.hypot(x - tx, y - ty)]); } if (row.length > n * .75) mq.push(...row); } // (a row only where it can run nearly the width of the wall)
+      return S.spl = { raw, sig: (raw || []).join(";"), W, H, tx, ty, tR, signs, mq };
+    },
+    /** 1.12 b447: a soft glow of one hue, made once, for a sign's light on the bricks */
+    glowOf(h) {
+      if (!S.gsp) S.gsp = new Map(); let c = S.gsp.get(h); if (c) return c;
+      const s2 = 1, l = .55, a = s2 * Math.min(l, 1 - l), f = n => { const k = (n + h / 30) % 12; return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))); };
+      c = K.glowSpr(40, [f(0), f(8), f(4)], .9); S.gsp.set(h, c); return c;
+    },
+    /** 1.12 b447: the crown, the strip. The heart's wall in the sixth hour: the dead glass of a whole street of signs comes up on
+     *  the bricks round it; the heart beats and they light outward from it, one by one, each tube catching once; the strip
+     *  at night, each sign doing what it does — the flamingo dipping its head, the cup steaming, the palm swaying, the arrow's
+     *  bulbs chasing at the heart, the starburst's spikes taking turns, the notes bouncing; the heart beats again and the
+     *  light runs out through all of them; and they go out in a wave back to the heart, and their glass leaves the wall. */
+    hourStrip(T, I, A, F) {
+      const on = I > .01, b = STRIP, lit = new Map(), bulbs = []; let gA = 0, glassC = null;
+      const beat = on ? Math.max(env(T, b.beat0, b.beat0 + .08, b.beat0 + .12, b.beat0 + .3), env(T, b.beat0 + .38, b.beat0 + .46, b.beat0 + .5, b.beat0 + .75) * .7, env(T, b.ripple, b.ripple + .08, b.ripple + .12, b.ripple + .3), env(T, b.ripple + .38, b.ripple + .46, b.ripple + .5, b.ripple + .75) * .7) * I : 0;
+      if (on && T > b.glass0 && T < b.gone1) {
+        const pl = S.stripPlan(), N = pl.signs.length; gA = clamp((T - b.glass0) / (b.glass1 - b.glass0)) * (1 - clamp((T - b.gone0) / (b.gone1 - b.gone0))) * I;
+        const catchOn = t0 => { const d = T - t0; return d < 0 ? 0 : d < .2 ? .8 * d / .2 : d < .45 ? .8 - .5 * (d - .2) / .25 : d < .7 ? .3 + .7 * (d - .45) / .25 : 1; }, dropOff = t0 => { const d = T - t0; return d < 0 ? 1 : d < .15 ? 1 - .6 * d / .15 : d < .35 ? .4 + .3 * (d - .15) / .2 : d < .55 ? .7 * (1 - (d - .35) / .2) : 0; };
+        const a0 = g.globalAlpha; g.globalCompositeOperation = "lighter";
+        for (const sg of pl.signs) { const t1 = b.wave0 + sg.order * b.gap, t2 = b.off0 + (N - 1 - sg.order) * b.offGap, rp = 1 + .35 * env(T, b.ripple + .06 + sg.d / 1100, b.ripple + .16 + sg.d / 1100, b.ripple + .26 + sg.d / 1100, b.ripple + .7 + sg.d / 1100);
+          sg.lv = catchOn(t1) * dropOff(t2 + .24) * I * sg.fade; sg.t1 = t1; sg.t2 = t2; sg.rp = rp;
+          if (sg.lv > .01) { const gr = sg.r * 1.18; g.globalAlpha = a0 * Math.min(1, .27 * sg.lv * rp); g.drawImage(S.glowOf(sg.hue), sg.x - gr, sg.y - gr, gr * 2, gr * 2); } } // its light on the bricks
+        g.globalAlpha = a0; g.globalCompositeOperation = "source-over";
+        if (!pl.glass) { const [gc, gx] = K.canvas(Math.round(S.W * px), Math.round(S.H * px)); gx.setTransform(px, 0, 0, px, 0, 0); gx.lineCap = gx.lineJoin = "round"; // the signs' glass, every frame's (an animated sign's unlit frames stay dark on the wall), laid once for the crown
+          for (const sg of pl.signs) for (const fr of sg.frames) for (const [, , w2, path] of fr) { gx.strokeStyle = `rgba(70,30,52,${(.475 * sg.fade).toFixed(3)})`; gx.lineWidth = w2 * 1.25; gx.stroke(path); gx.strokeStyle = `rgba(255,255,255,${(.04 * sg.fade).toFixed(3)})`; gx.lineWidth = w2 * .3; gx.stroke(path); }
+          const bulb = (x, y, r) => { gx.fillStyle = "rgba(92,44,66,.85)"; gx.beginPath(); gx.arc(x, y, r, 0, TAU); gx.fill(); gx.fillStyle = "rgba(255,226,240,.16)"; gx.beginPath(); gx.arc(x - r * .3, y - r * .3, r * .35, 0, TAU); gx.fill(); }; // a bulb, unlit
+          for (const [x, y] of pl.mq) bulb(x, y, S.pr ? 2.3 : 2.8); for (const sg of pl.signs) if (sg.bulbs) for (const [x, y] of sg.bulbs) bulb(x, y, sg.r * .04);
+          pl.glass = gc; }
+        for (const sg of pl.signs) { const f = sg.frames.length > 1 ? Math.floor(A * sg.rate) % sg.frames.length : 0;
+          for (const [part, h, w2, path] of sg.frames[f]) { const p2 = Math.min(part, 2), ch2 = part >= 3 ? .3 + .7 * Math.pow(Math.max(0, Math.cos((part - 3 - A * 2.2) * TAU / 8)), 2) : 1, lv = catchOn(sg.t1 + p2 * .16) * dropOff(sg.t2 + (2 - p2) * .12) * I * sg.fade * sg.rp * ch2; // (a starburst's spikes, a light running round them)
+            const lq = Math.round(lv * 24); if (lq > 0) { const k = h * 1e5 + w2 * 2 * 100 + lq; let e = lit.get(k); if (!e) lit.set(k, e = [h, w2, lq / 24, new Path2D()]); e[3].addPath(path); } } // its light, merged with every other tube of the same look
+          if (sg.bulbs) { const st = Math.floor(A * 4.5); sg.bulbs.forEach((q, j) => { if (((j - st) % 3 + 3) % 3 === 0) bulbs.push([q, sg.lv * sg.rp, sg.r * .1]); }); } } // the arrow's bulbs, chasing at the heart (only those lit are drawn)
+        glassC = pl.glass; const st2 = Math.floor(A * 4), bmr = S.pr ? 6.5 : 8; for (const [x, y, j, row, d] of pl.mq) { if (((j + (row ? st2 : -st2)) % 4 + 4) % 4) continue; const lv = catchOn(b.wave0 + d / 520) * dropOff(b.off0 + 1.6 - d / 700) * I; if (lv > .01) bulbs.push([[x, y], lv, bmr]); } // the marquee: lit outward from the heart, a bulb in four chasing round the wall
+      }
+      if (glassC && gA > .005) { const a0 = g.globalAlpha; g.globalAlpha = a0 * gA; g.drawImage(glassC, 0, 0, S.W, S.H); g.globalAlpha = a0; } // the signs' glass on the wall, behind the heart's light
+      const hue = S.restSign(I, A, F, beat);
+      g.globalCompositeOperation = "lighter"; for (const [h, w2, l2, path] of lit.values()) { for (const [k, a2] of LITE) { g.strokeStyle = hsl(h, 100, 62, a2 * l2); g.lineWidth = w2 * k; g.stroke(path); } g.strokeStyle = hsl(h, 100, 66, .95 * l2); g.lineWidth = w2; g.stroke(path); g.strokeStyle = hsl(h, 100, 92, .9 * l2); g.lineWidth = w2 * .35; g.stroke(path); }
+      g.globalCompositeOperation = "source-over";
+      if (bulbs.length) { const a0 = g.globalAlpha; g.globalCompositeOperation = "lighter"; for (const [[x, y], l, br] of bulbs) { if (l <= .01) continue; g.globalAlpha = a0 * Math.min(1, l); g.drawImage(S.bulb, x - br, y - br, br * 2, br * 2); } g.globalAlpha = a0; g.globalCompositeOperation = "source-over"; }
+      S.finaleFire(F, hue);
+    },
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; P: the pass */
     draw(T, I, A, F, P = 0) {
       const { W, H } = S;
@@ -654,8 +764,9 @@ export default function heart(K) {
       const jump = S.lastA === undefined || A < S.lastA || A - S.lastA > .15, dt = jump ? 0 : A - S.lastA; S.lastA = A;
       const gl = jump ? 1 : 1 - Math.exp(-dt * 2.2); S.cx += (S.tx - S.cx) * gl; S.cy += (S.ty - S.cy) * gl; S.R += (S.tR - S.R) * gl;
       S.vis += ((S.room === 0 ? 0 : 1) - S.vis) * (jump ? 1 : 1 - Math.exp(-dt * 4)); if (S.vis < .01) return;
-      const hl = P > 0 ? K.long(P) : 0; // 1.12 b426: an hour egg's pass (the crown, 3, plays as a dealt pass still)
-      g.save(); g.globalAlpha = S.vis; if (P > 0 && K.egg(P)) S.eggPass(T, I, A, F, P); else if (hl === 1) S.hourCat(T, I, A, F); else if (hl === 2) S.hourSea(T, I, A, F); else if (P > 0) S.neon2(T, I, A, F, S.plan && S.plan.P === P ? S.plan : (S.plan = dealPass(P))); else S.neon(T, I, A, F); g.restore();
+      const hl = P > 0 ? K.long(P) : 0; // 1.12 b426: an hour egg's pass; 1.12 b447: the crown's (3)
+      if (hl !== 3 && S.spl) S.spl = null; // (the crown's plan goes with it)
+      g.save(); g.globalAlpha = S.vis; if (P > 0 && K.egg(P)) S.eggPass(T, I, A, F, P); else if (hl === 1) S.hourCat(T, I, A, F); else if (hl === 2) S.hourSea(T, I, A, F); else if (hl === 3) S.hourStrip(T, I, A, F); else if (P > 0) S.neon2(T, I, A, F, S.plan && S.plan.P === P ? S.plan : (S.plan = dealPass(P))); else S.neon(T, I, A, F); g.restore();
     },
   };
   return S;

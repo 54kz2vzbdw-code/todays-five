@@ -44,6 +44,17 @@
 // flips over in the air and comes down on it again with a clatter in a burst of steam; and the scanline takes it away
 // and the plasma dissolves back. Each keeps to the open part of the screen (the teapot to the biggest box of it, the
 // glider to the longest run of it), the characters under the words stay blank, and nothing on the screen is a word.
+//
+// 1.12 b447: the crown. In the sixth hour left alone, and every sixth after (scenes.js, `K.long` 3), the demo ends the
+// day the way the space games of the eighties ended a flight: it docks. The plasma breaks into stars streaming past —
+// you drop out of hyperspace — and they slow and settle; a station draws itself line by line out of the dark, a
+// cuboctahedron turning about its slot, a crescent planet beyond it, and you close on it while it drifts onto your line
+// and turns to face you. You roll to match it: its turn eases to a stop with its slot level, and the stars and the
+// planet wheel round it instead. You close in until the slot is all there is; the tunnel's rings rush past out of its
+// middle, and the plasma opens out of them, back where the pass began. It is drawn as the vector games drew a solid —
+// its faces dark, its edges in the screen's bright intensity, its outline brightest — in the open part of the screen
+// that leaves most room (a third of it words at most, which keep their blank cells as they do over every effect here),
+// nothing bright behind the bar along the top, and nothing on the screen a word.
 export default function demo(K) {
   const { clamp, lerp, E, seg, rng, canvas } = K;
   const TAU = Math.PI * 2;
@@ -81,6 +92,23 @@ export default function demo(K) {
   // and steam from the spout, until the lid pops off, flips over in the air and lands back on with a bounce, in a burst
   // of steam; and it is gone the way it came, the scanline sweeping back up, before the plasma returns
   const TEA = { dots: 2.8, scan0: 3.35, scan1: 4.55, turn0: 4.65, turn1: 7.95, boil0: 8.2, pop: 10.05, land: 10.85, boil1: 11.5, gone0: 12.15, gone1: 13.3, hero: -.3 };
+  // 1.12 b447: the crown, a docking. The station: a cuboctahedron (its twelve corners, its six squares and eight triangles),
+  // its docking slot on the square that faces you; its faces, each with the way it faces, and its edges, worked out once.
+  const solid = (V, F) => { const c = [0, 1, 2].map(k => V.reduce((a, v) => a + v[k], 0) / V.length), E2 = new Map();
+    const N = F.map(f => { const m = [0, 1, 2].map(k => f.reduce((a, q) => a + V[q][k], 0) / f.length), a = V[f[0]], b = V[f[1]], d = V[f[2]], u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [d[0] - a[0], d[1] - a[1], d[2] - a[2]];
+      let n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]; const l = Math.hypot(...n) || 1; n = n.map(x => x / l); if (n[0] * (m[0] - c[0]) + n[1] * (m[1] - c[1]) + n[2] * (m[2] - c[2]) < 0) n = n.map(x => -x); return n; }); // outward
+    F.forEach((f, fi) => f.forEach((q, k) => { const r = f[(k + 1) % f.length], key = Math.min(q, r) + "," + Math.max(q, r); if (!E2.has(key)) E2.set(key, [Math.min(q, r), Math.max(q, r), []]); E2.get(key)[2].push(fi); }));
+    return { V, F, N, E: [...E2.values()] }; };
+  const STATION = (() => { const V = []; for (const [a, b] of [[0, 1], [0, 2], [1, 2]]) for (const sa of [1, -1]) for (const sb of [1, -1]) { const v = [0, 0, 0]; v[a] = sa; v[b] = sb; V.push(v); }
+    const at = v => V.findIndex(w => w[0] === v[0] && w[1] === v[1] && w[2] === v[2]), F = [];
+    for (let ax = 0; ax < 3; ax++) for (const sg of [1, -1]) F.push([[1, 0], [0, 1], [-1, 0], [0, -1]].map(([u, w]) => { const v = [0, 0, 0]; v[ax] = sg; v[(ax + 1) % 3] = u; v[(ax + 2) % 3] = w; return at(v); }));
+    for (const x of [1, -1]) for (const y of [1, -1]) for (const z of [1, -1]) F.push([at([x, y, 0]), at([x, 0, z]), at([0, y, z])]);
+    return solid(V, F); })();
+  // the film: the plasma breaks into stars streaming past — you drop out of hyperspace — slowing; the station draws itself,
+  // turning, the planet behind it, and you close on it; you roll to match its turn — it stops turning, its slot level, and
+  // the stars and the planet wheel round it instead — and close in until the slot is all there is; the tunnel's rings rush
+  // past; the plasma opens out of them
+  const DOCK = { warp0: 2.1, mix1: 2.65, warp1: 3.6, draw0: 3.2, draw1: 4.3, match0: 7.3, match1: 8.7, near0: 8.5, inside: 10.45, tun0: 10.3, tun1: 12.2, back0: 12.1, back1: 14.2, spin: .38 }, G_LOW = 13;
   /** b381: the effects the passes after the first add. Each fills the screen's brightness (0…1 a cell) and, where it draws
    *  in lines or glyphs, `gly`; `t` is the wall clock (for what drifts), `lt` the seconds since the effect came up (for what
    *  runs its course), `an` where a thing sits in the open part of the screen: [col, row, size in columns] */
@@ -225,13 +253,19 @@ export default function demo(K) {
       S.tick = tick; S.tickT = T; S.tickF = F; S.tickP = P; g.clearRect(0, 0, W, H);
       if (!S.bufA || S.bufA.length !== cols * rows) { S.bufA = new Float32Array(cols * rows); S.bufB = new Float32Array(cols * rows); S.row = new Array(cols); S.glyB = new Uint8Array(cols * rows); }
       let tr = null, q = 0; // b381: a pass after the first — its own effects, and the way each comes in
-      const hl = dealt ? K.long(P) : 0, hr = hl === 1 || hl === 2 ? hl : 0; // 1.12 b426: an hour egg's pass (the crown, 3, plays as a dealt pass still)
+      const hl = dealt ? K.long(P) : 0, hr = hl === 1 || hl === 2 ? hl : 0, crown = hl === 3; // 1.12 b426: an hour egg's pass; 1.12 b447: the crown's
       if (hr !== 1 && S.lb) S.lb = null; if (hr !== 2 && S.tm) S.tm = S.tz = S.tv = S.ts = null; // (an hour egg's working memory — the board's history, the teapot's surface — goes with it)
+      if (!crown && S.dr) S.dr = S.dst = S.dsl = S.dto = null;
       if (dealt && K.egg(P)) { // 1.12 b414: the egg — the plasma; a bar brings in the room, the ball bounces through, a bar brings the plasma back
         const room = T >= 2.1 && T < 14.2;
         if (room) S.room(T, S.bufA, S.gly); else S.fill("plasma", S.bufA, S.gly, t, 0);
         if ((T >= 2.1 && T < 2.8) || (T >= 13.5 && T < 14.2)) { q = (T - (T < 3 ? 2.1 : 13.5)) / BAR; if (T < 3) { S.bufB.set(S.bufA); S.glyB.set(S.gly); S.fill("plasma", S.bufA, S.gly, t, 0); } else S.fill("plasma", S.bufB, S.glyB, t, 0); S.mix("bar", q, t); bar = q; }
         if (I < .6) { S.fill("plasma", S.bufB, S.glyB, A * .25, 0); const e = 1 - I / .6; for (let i = 0; i < S.bufA.length; i++) if (S.hsh[i] < e) { S.bufA[i] = S.bufB[i]; S.gly[i] = 0; } } // the list in use: back to the slow plasma, a dissolve
+      }
+      else if (crown) { // 1.12 b447: the crown — the plasma; the docking, in and out of it as it plays
+        if (!S.hiG || S.hiG.length !== cols * rows) S.hiG = new Uint8Array(cols * rows);
+        if (T >= DOCK.warp0 && T < DOCK.back1) S.dock(T, t); else { S.fill("plasma", S.bufA, S.gly, t, 0); S.hiG.fill(0); }
+        if (I < .6) { S.fill("plasma", S.bufB, S.glyB, A * .25, 0); const e = 1 - I / .6; for (let i = 0; i < S.bufA.length; i++) if (S.hsh[i] < e) { S.bufA[i] = S.bufB[i]; S.gly[i] = 0; S.hiG[i] = 0; } } // the list in use: back to the slow plasma, a dissolve
       }
       else if (hr) { // 1.12 b426: an hour egg — the plasma; a bar brings in the egg's screen, another takes it away again
         if (!S.hiG || S.hiG.length !== cols * rows) S.hiG = new Uint8Array(cols * rows);
@@ -255,7 +289,7 @@ export default function demo(K) {
         // 1.12 b426: an hour egg's bright cells (the screen's high intensity, as text mode had it) come off the ordinary
         // rows and are drawn after them, in a brighter green, and the hottest nearly white
         let hiRows = null;
-        if (hr) { hiRows = []; for (let rr = 0; rr < rows; rr++) { let a1 = null, a2 = null; for (let c = 0; c < cols; c++) { const i = rr * cols + c, h = S.hiG[i]; if (!h || S.mask[i]) continue; if (fin) { const d = Math.hypot(c - cols / 2, (rr - rows / 2) * 1.9); if (Math.max(Math.exp(-Math.pow(d - F * 1.4 * cols, 2) / 30), Math.exp(-Math.pow(d - (F - .3) * 1.4 * cols, 2) / 30)) > .12) continue; } /* (where the finale's ring passes, the ring has the cell) */ const k = Math.min(NR - 1, Math.floor(clamp(S.bufA[i]) * NR)), chr = S.gly[i] && k ? GL[S.gly[i]] : RAMP[k]; if (h === 1) (a1 || (a1 = Array(cols).fill(" ")))[c] = chr; else (a2 || (a2 = Array(cols).fill(" ")))[c] = chr; S.bufA[i] = 0; } if (a1 || a2) hiRows.push([rr, a1 && a1.join(""), a2 && a2.join("")]); } }
+        if (hr || crown) { hiRows = []; for (let rr = 0; rr < rows; rr++) { let a1 = null, a2 = null; for (let c = 0; c < cols; c++) { const i = rr * cols + c, h = S.hiG[i]; if (!h || S.mask[i]) continue; if (fin) { const d = Math.hypot(c - cols / 2, (rr - rows / 2) * 1.9); if (Math.max(Math.exp(-Math.pow(d - F * 1.4 * cols, 2) / 30), Math.exp(-Math.pow(d - (F - .3) * 1.4 * cols, 2) / 30)) > .12) continue; } /* (where the finale's ring passes, the ring has the cell) */ const k = Math.min(NR - 1, Math.floor(clamp(S.bufA[i]) * NR)), chr = S.gly[i] && k ? GL[S.gly[i]] : RAMP[k]; if (h === 1) (a1 || (a1 = Array(cols).fill(" ")))[c] = chr; else (a2 || (a2 = Array(cols).fill(" ")))[c] = chr; S.bufA[i] = 0; } if (a1 || a2) hiRows.push([rr, a1 && a1.join(""), a2 && a2.join("")]); } }
         for (let rr = 0; rr < rows; rr++) {
           const y = rr - rows / 2, src = rr < barTo ? S.bufB : S.bufA; let any = false;
           for (let c = 0; c < cols; c++) {
@@ -524,6 +558,111 @@ export default function demo(K) {
           const i = r * cols + cc; if (mask[i] || tz[i] < 1e8) continue; const dx = ((cc + .5) * cw - cx) / R, dy = ((r + .5) * ch - cy) / R, d2 = dx * dx + dy * dy; if (d2 >= 1) continue;
           const v = w * (1 - d2) * (.45 + 1.2 * S.fbm(cc * .19 + p.ph, r * .42 - age * 1.7)); if (v > buf[i]) buf[i] = Math.min(.66, v);
         } }
+    },
+    /** 1.12 b447: the crown's room, worked out for the screen and the words: the biggest square (in pixels) that is mostly
+     *  open screen — no more than a third of it words, which stay on their blank cells as they do over every effect here —
+     *  out of the bar along the top and the footer, toward the right of a wide screen and the foot of a tall one, and as
+     *  little of it words as can be. The station turns in its middle; the planet hangs off its lower corner. */
+    dockRoom() {
+      const o = S.dr, { cols, rows, pr, mask, cw, ch, W } = S; if (o && o.cols === cols && o.rows === rows) { if (o.raw === S.raw) return o; const sg = (S.raw || []).join(";"); if (sg === o.sig) { o.raw = S.raw; return o; } } // (the same words measured again keep the room)
+      const m = new Uint8Array(cols * rows); if (S.raw) m.set(mask); else for (let r = Math.round(rows * (pr ? .33 : .3)); r <= Math.round(rows * (pr ? .58 : .65)); r++) for (let c = 0; c <= Math.round(cols * (pr ? 1 : .64)); c++) if (c < cols) m[r * cols + c] = 1; // (the lab: a list's usual place, as place() has it)
+      const ps = new Int32Array((cols + 1) * (rows + 1)); for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) ps[(r + 1) * (cols + 1) + c + 1] = m[r * cols + c] + ps[r * (cols + 1) + c + 1] + ps[(r + 1) * (cols + 1) + c] - ps[r * (cols + 1) + c];
+      const busy = (c0, r0, w, h) => ps[(r0 + h) * (cols + 1) + c0 + w] - ps[r0 * (cols + 1) + c0 + w] - ps[(r0 + h) * (cols + 1) + c0] + ps[r0 * (cols + 1) + c0];
+      const top = Math.ceil(104 / S.ch), foot = rows - Math.ceil(84 / S.ch), asp = ch / cw;
+      const at = h => { const w = Math.min(cols - 2, Math.round(h * asp)), lim = w * h * .33; let b = null, bs = -1e9; for (let r0 = top; r0 + h <= foot; r0++) for (let c0 = 1; c0 + w <= cols - 1; c0++) { const n = busy(c0, r0, w, h); if (n > lim) continue; const sc = (pr ? r0 / rows : c0 / cols + .25 * r0 / rows) - 2.5 * n / (w * h); if (sc > bs) { bs = sc; b = [c0, r0, w, h]; } } return b; }; // (the lower the better, away from the bar along the top; the fewer words the better)
+      let best = null; for (let h = Math.max(4, foot - top); h >= 4 && !best; h--) best = at(h);
+      if (!best) best = [1, Math.max(0, foot - 8), cols - 2, 8];
+      const [c0, r0, w, h] = best, size = Math.min(w * cw, h * ch), cx = (c0 + w / 2) * cw, cy = (r0 + h / 2) * ch, side = cx > W / 2 ? 1 : -1;
+      return S.dr = { raw: S.raw, sig: (S.raw || []).join(";"), cols, rows, cx, cy, size, side };
+    },
+    /** 1.12 b447: a line (in pixels) drawn in characters: each cell it crosses gets the glyph its slope and its height in the
+     *  cell call for — "-" across (or "_" low in the cell), "|" up, "/" and "\" aslant — at brightness v, in the bright
+     *  intensity (`hi` 1 or 2) or not; only from `a` to `b` of its length (a line drawing itself) */
+    cline(x0, y0, x1, y1, v, hi, a = 0, b = 1) {
+      const { cols, rows, cw, ch, mask } = S, buf = S.bufA, gly = S.gly, hiG = S.hiG;
+      if (a > 0 || b < 1) { const X0 = x0, Y0 = y0; x0 = lerp(X0, x1, a); y0 = lerp(Y0, y1, a); x1 = lerp(X0, x1, b); y1 = lerp(Y0, y1, b); }
+      const dx = x1 - x0, dy = y1 - y0, n = Math.max(1, Math.ceil(Math.max(Math.abs(dx) / (cw * .45), Math.abs(dy) / (ch * .45)))); if (n > 4000) return;
+      let an = Math.atan2(dy, dx); if (an < 0) an += Math.PI;
+      const g0 = an < .39 || an > 2.75 ? -1 : an < 1.18 ? G_BACK : an < 1.96 ? G_BAR : G_SLASH;
+      for (let j = 0; j <= n; j++) { const x = x0 + dx * j / n, y = y0 + dy * j / n, c = Math.floor(x / cw), r = Math.floor(y / ch); if (c < 0 || c >= cols || r < 0 || r >= rows) continue; const i = r * cols + c; if (mask[i]) continue;
+        buf[i] = v; gly[i] = g0 >= 0 ? g0 : y - r * ch > ch * .62 ? G_LOW : G_DASH; hiG[i] = hi; }
+    },
+    /** 1.12 b447: a convex polygon (in pixels) filled in characters from the ramp at brightness v (0: blank, hiding what is
+     *  behind it), or in the bright intensity (`hi`) */
+    cfill(pts, v, hi = 0) {
+      const { cols, rows, cw, ch, mask } = S, buf = S.bufA, gly = S.gly, hiG = S.hiG, n = pts.length; if (n < 3) return;
+      let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, ar = 0;
+      for (let k = 0; k < n; k++) { const p = pts[k], q = pts[(k + 1) % n]; if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; ar += p[0] * q[1] - p[1] * q[0]; }
+      const sg = ar < 0 ? -1 : 1;
+      for (let r = Math.max(0, Math.floor(y0 / ch)); r <= Math.min(rows - 1, Math.floor(y1 / ch)); r++) { const py = (r + .5) * ch;
+        for (let c = Math.max(0, Math.floor(x0 / cw)); c <= Math.min(cols - 1, Math.floor(x1 / cw)); c++) { const px = (c + .5) * cw; let k = 0;
+          for (; k < n; k++) { const p = pts[k], q = pts[(k + 1) % n]; if (((q[0] - p[0]) * (py - p[1]) - (q[1] - p[1]) * (px - p[0])) * sg < 0) break; }
+          if (k < n) continue; const i = r * cols + c; if (mask[i]) continue; buf[i] = v; gly[i] = 0; hiG[i] = hi; } }
+    },
+    /** 1.12 b447: the crown's stars, where they rest once the ship is out of hyperspace: [x, y, brightness], in pixels, out of
+     *  the bar along the top; made once with dice of their own */
+    dockStars() {
+      const o = S.dst; if (o && o.W === S.W && o.H === S.H) return o.st;
+      const r = rng(61), n = Math.round(S.W * S.H / 7600), st = []; for (let k = 0; k < n; k++) { const x = r() * S.W, y = 104 + r() * (S.H - 104), b = r(); st.push([x, y, b * b]); }
+      S.dst = { W: S.W, H: S.H, st }; return st;
+    },
+    /** 1.12 b447: the planet, off the station's lower corner toward the screen's middle, behind it: lit from up and to
+     *  the left and a little behind, so it shows a crescent — broad cloud bands, its lit limb brightest; drawn `k` of the
+     *  way up */
+    dockPlanet(k, t, a = 0) {
+      const { cols, rows, cw, ch, mask } = S, dr = S.dr, buf = S.bufA, gly = S.gly, hiG = S.hiG, pr = dr.size * .3, ca = Math.cos(a), sa = Math.sin(a), ox = -dr.side * dr.size * .44, oy = dr.size * .4, px = dr.cx + ox * ca - oy * sa, py = dr.cy + ox * sa + oy * ca, L = [-.72 * ca + .58 * sa, -.72 * sa - .58 * ca, .38]; // (turning with the stars as you roll)
+      for (let r = Math.max(0, Math.floor((py - pr) / ch)); r <= Math.min(rows - 1, Math.floor((py + pr) / ch)); r++) { const dy = ((r + .5) * ch - py) / pr;
+        for (let c = Math.max(0, Math.floor((px - pr) / cw)); c <= Math.min(cols - 1, Math.floor((px + pr) / cw)); c++) { const dx = ((c + .5) * cw - px) / pr, d2 = dx * dx + dy * dy; if (d2 >= 1) continue; const i = r * cols + c; if (mask[i]) continue;
+          const nz = -Math.sqrt(1 - d2), lam = dx * L[0] + dy * L[1] + nz * L[2], limb = Math.pow(1 + nz, 3), band = .8 + .2 * Math.sin(dy * 7.5 + 1.6 * S.fbm(dx * 2 + t * .02, dy * 3));
+          buf[i] = lam <= 0 ? 0 : clamp((.06 + .5 * lam * band + .32 * limb * lam), 0, .66) * k; gly[i] = 0; hiG[i] = 0; } } // (its night side blank: it hides the stars behind it)
+    },
+    /** 1.12 b447: the crown, at loop time T, into the buffers. You are a ship out of hyperspace, coming in to the station,
+     *  as the vector games of the eighties had you dock: it is a little off your line and turning; you close on it, roll
+     *  to match its turn, and close in until its slot is all there is. Then the tunnel, and the plasma. */
+    dock(T, t) {
+      const { cols, rows, mask, cw, ch, W, H, hsh } = S, dr = S.dockRoom(), buf = S.bufA, gly = S.gly, hiG = S.hiG, D = DOCK, vx = dr.cx, vy = dr.cy, w0 = D.spin;
+      buf.fill(0); gly.fill(0); hiG.fill(0);
+      const f = dr.size * 1.7; // the lens: the station all of the room across at 3.4 out, its slot more than all of it at 2.3
+      // the station's turn as you see it: at its own rate until you match it, then easing to a stop with its slot level;
+      // your roll is what you no longer see of it, and the stars and the planet turn the other way by as much
+      const mid = D.match0 + (D.match1 - D.match0) / 2, ph = Math.ceil((w0 * mid) / Math.PI) * Math.PI - w0 * mid, spinAt = tt => tt <= D.match0 ? w0 * tt + ph : tt < D.match1 ? w0 * D.match0 + ph + w0 * ((tt - D.match0) - (tt - D.match0) ** 2 / (2 * (D.match1 - D.match0))) : w0 * mid + ph;
+      const sp = spinAt(T), roll = w0 * T + ph - sp;
+      // how far off it is: from far to 12 while the other ship docks, then on in; how far off your line, and how turned
+      const Dz = T < D.near0 ? 1 / lerp(1 / 9.5, 1 / 5.6, E.io(clamp((T - D.draw0) / (D.near0 - D.draw0)))) : 1 / lerp(1 / 5.6, 1 / 2.3, E.in(clamp((T - D.near0) / (D.inside - D.near0))) ** .85), aim = 1 - E.io(clamp((T - D.draw0) / (D.match1 - D.draw0)));
+      const C = [-dr.side * dr.size * .1 / f * Dz * aim, dr.size * .08 / f * Dz * aim, Dz], yaw = .55 * dr.side * aim, pit = .4 * aim, cs = Math.cos(sp), ss = Math.sin(sp), cp = Math.cos(pit), sn = Math.sin(pit), cy2 = -Math.cos(yaw), sy2 = -Math.sin(yaw);
+      const rot = v => { const x = v[0] * cs - v[1] * ss, y = v[0] * ss + v[1] * cs, z = v[2], y2 = y * cp - z * sn, z2 = y * sn + z * cp; return [x * cy2 + z2 * sy2, y2, -x * sy2 + z2 * cy2]; };
+      const prj = P => [vx + f * P[0] / P[2], vy + f * P[1] / P[2]], around = (x, y, a) => { const c2 = Math.cos(a), s2 = Math.sin(a); return [vx + (x - vx) * c2 - (y - vy) * s2, vy + (x - vx) * s2 + (y - vy) * c2]; };
+      // the stars: streaming out of the station's place as you drop out of hyperspace, slowing, then still and faint; when
+      // you roll, wheeling round it
+      const o0 = prj(C), u = clamp((T - D.warp0) / (D.warp1 - D.warp0)), sc = lerp(.1, 1, 1 - Math.pow(1 - u, 3)), stk = .6 * Math.pow(1 - u, 2.4);
+      for (const [x, y, b] of S.dockStars()) { const ex = o0[0] + (x - o0[0]) * sc, ey = o0[1] + (y - o0[1]) * sc;
+        if (stk > .03) { S.cline(o0[0] + (x - o0[0]) * sc * (1 - stk), o0[1] + (y - o0[1]) * sc * (1 - stk), ex, ey, .32 + .45 * b, 0); continue; }
+        const [qx, qy] = around(x, y, -roll);
+        const c = Math.floor(qx / cw), r = Math.floor(qy / ch); if (c >= 0 && c < cols && r >= 0 && r < rows && !mask[r * cols + c]) buf[r * cols + c] = .11 + .16 * b * (.75 + .25 * Math.sin(t * 1.7 + x)); }
+      const pk = clamp((T - D.draw0 - .2) / 1.1); if (pk > 0) S.dockPlanet(pk, t, -roll); // the planet, as the stars come to rest, turning with them
+      // the station, drawing itself: its faces dark (hiding what is behind it, as the vector games drew a solid), its edges in
+      // the bright intensity and its outline brightest; its slot dark, its rim bright
+      const show = clamp((T - D.draw0) / (D.draw1 - D.draw0)), out = rot([0, 0, 1]), Ps = [C[0] + out[0], C[1] + out[1], C[2] + out[2]], NEAR = .12;
+      const V = STATION.V.map(v => { const q = rot(v); return [C[0] + q[0], C[1] + q[1], C[2] + q[2]]; }), PV = V.map(prj), vis = STATION.N.map((n, fi) => { const q = rot(n), m = STATION.F[fi].reduce((a, kk) => [a[0] + V[kk][0], a[1] + V[kk][1], a[2] + V[kk][2]], [0, 0, 0]); return q[0] * m[0] + q[1] * m[1] + q[2] * m[2] < 0; });
+      const sl = [[-.6, -.18, 1], [.6, -.18, 1], [.6, .18, 1], [-.6, .18, 1]].map(v => { const q = rot(v); return prj([C[0] + q[0], C[1] + q[1], C[2] + q[2]]); }); S.dsl = sl;
+      if (show > 0 && V.every(P => P[2] > NEAR)) {
+        if (show > .55) STATION.F.forEach((fc, fi) => { if (vis[fi]) S.cfill(fc.map(kk => PV[kk]), 0); });
+        STATION.E.forEach(([a, b2, fs], kk) => { if (!fs.some(fi => vis[fi])) return; const pa = PV[a], pb = PV[b2], d = clamp((T - D.draw0 - kk * .035) / .42), rim = fs.every(fi => vis[fi]) ? 1 : 2; if (d > 0) S.cline(pa[0], pa[1], pb[0], pb[1], .92, rim, 0, d); }); // (in the bright intensity, its outline brightest)
+        if (vis[4]) { S.cfill(sl, 0); const sd2 = clamp((T - D.draw1 + .3) / .4); for (let j = 0; j < 4; j++) S.cline(sl[j][0], sl[j][1], sl[(j + 1) % 4][0], sl[(j + 1) % 4][1], 1, 1, 0, sd2); }
+      }
+      // the tunnel: once the slot is all there is, rings rushing past out of its middle, turning; inside the oldest, dark
+      if (T > D.tun0) { const o = [(sl[0][0] + sl[2][0]) / 2, (sl[0][1] + sl[2][1]) / 2]; let rmax = 0; const rings = [];
+        for (let j = 0; j < 12; j++) { const tj = D.tun0 + j * .17; if (tj > T || tj > D.tun1) break; const r = 6 * Math.pow(2, (T - tj) / .28); rings.push([r, j]); if (r > rmax) rmax = r; }
+        const r2 = rmax * rmax * .94; for (let r = 0; r < rows; r++) { const dy = (r + .5) * ch - o[1]; for (let c = 0; c < cols; c++) { const dx = (c + .5) * cw - o[0]; if (dx * dx + dy * dy < r2) { const i = r * cols + c; buf[i] = 0; gly[i] = 0; hiG[i] = 0; } } }
+        for (const [r, j] of rings) { if (r > Math.hypot(W, H) * 1.2) continue; const a0 = j * .2 - roll, pts = []; for (let kk = 0; kk <= 8; kk++) { const a = a0 + kk * Math.PI / 4; pts.push([o[0] + Math.cos(a) * r, o[1] + Math.sin(a) * r]); }
+          const v = r < dr.size * .7 ? .95 : .7; for (let kk = 0; kk < 8; kk++) S.cline(pts[kk][0], pts[kk][1], pts[kk + 1][0], pts[kk + 1][1], v, r < dr.size * .45 ? 1 : 0); }
+        S.dto = o; }
+      // nothing bright behind the bar along the top and its small words: there, all of it dim
+      for (let i = 0, n = Math.ceil(120 / ch) * cols; i < n; i++) { if (buf[i] > .42) buf[i] = .42; hiG[i] = 0; }
+      // in and out: the plasma dissolving into the stars, and opening again out of the tunnel's middle
+      if (T < D.mix1) { const q = clamp((T - D.warp0) / (D.mix1 - D.warp0)); S.fill("plasma", S.bufB, S.glyB, t, 0); for (let i = 0; i < buf.length; i++) if (hsh[i] >= q) { buf[i] = S.bufB[i]; gly[i] = S.glyB[i]; hiG[i] = 0; } }
+      if (T > D.back0) { const o = S.dto || [vx, vy], md = Math.max(Math.hypot(o[0], o[1]), Math.hypot(W - o[0], o[1]), Math.hypot(o[0], H - o[1]), Math.hypot(W - o[0], H - o[1])) + ch, R = md * Math.pow(clamp((T - D.back0) / (D.back1 - D.back0 - .05)), 2.2);
+        S.fill("plasma", S.bufB, S.glyB, t, 0); for (let r = 0; r < rows; r++) { const dy = (r + .5) * ch - o[1]; for (let c = 0; c < cols; c++) { const i = r * cols + c, d = Math.hypot((c + .5) * cw - o[0], dy); if (d < R - ch * .8) { buf[i] = S.bufB[i]; gly[i] = S.glyB[i]; hiG[i] = 0; } else if (d < R + ch * .3 && !mask[i]) { buf[i] = .95; gly[i] = 0; hiG[i] = 0; } } } }
     },
     /** b381: the change from the effect in bufA to the one in bufB, `q` of the way: the raster bar, a dissolve, a melt, a
      *  wipe, an iris or a glitch; the result in bufA */

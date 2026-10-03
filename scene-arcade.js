@@ -344,7 +344,9 @@ export default function arcade(K) {
     /** where the words are (scenes.js): the hero stands where the column above its ground is clear of them, and the
      *  banners go up in the clearest open space */
     words(rects) {
-      S.raw = rects; S.wr = rects.map(([x0, y0, x1, y1, k]) => [x0 - 8, y0 - 8, x1 + 8, y1 + 8, k]); if (!S.bw) return;
+      S.raw = rects; S.wr = rects.map(([x0, y0, x1, y1, k]) => [x0 - 8, y0 - 8, x1 + 8, y1 + 8, k]);
+      S.barB = rects.reduce((m, r) => r[4] === 0 && r[1] < innerHeight * .15 ? Math.max(m, r[3]) : m, 0); // (b424: the top bar's strip, down to the rail's foot, which an hour egg keeps dark)
+      if (!S.bw) return;
       const { PS, bw, bh, gy, pr } = S, top = (gy - (pr ? 58 : 48)) * PS, hit = (x0, y0, x1, y1) => S.wr.some(r => r[0] < x1 && r[2] > x0 && r[1] < y1 && r[3] > y0);
       // the small words (kind 0: the date, the count, the pills, the hint) keep the sky behind them starless — each one's
       // box and a pixel round it, in the game's pixels, and three more for the stars to fade across
@@ -537,11 +539,25 @@ export default function arcade(K) {
         S.lowSkyC = K.paint(bw, bh - gy + 1, (x, y) => { const v = clamp((Math.hypot(x + .5 - bw / 2, y + gy + .5 - bh / 2) - r0) / (r1 - r0)) * .5; return (K.dith(x, y) < .62 ? c : a).map(n => Math.round(n * (1 - v))); }); }
       b.drawImage(S.lowSkyC, 0, 0, bw, Math.min(cg, bh - gy), 0, gy, bw, Math.min(cg, bh - gy));
     },
+    /** what an hour egg brings down the sky — coin heaven's clouds, coins and beanstalk; player two, its coin and the
+     *  saucer, dropping in — is kept out of the strip behind the top bar's small words (the date, the count, the pills: kind
+     *  0, in the top of the page), where every level keeps the night sky: drawn on a layer of its own, that strip cleared
+     *  and the layer fading in a little below it, far enough down that the bloom off it falls short of the words too */
+    barCut(fn) {
+      const top = S.barB ? Math.ceil(S.barB / S.PS) : 0; if (!top) { fn(); return; }
+      const { bw, bh } = S, keep = b; if (!S.cutL || S.cutL[0].width !== bw || S.cutL[0].height !== bh) { S.cutL = canvas(bw, bh); S.cutL[1].imageSmoothingEnabled = false; }
+      const [lc, lx] = S.cutL; lx.globalCompositeOperation = "source-over"; lx.globalAlpha = 1; lx.clearRect(0, 0, bw, bh); b = lx;
+      try { fn(); } finally { b = keep; }
+      const m = 6, f = 8; lx.globalCompositeOperation = "destination-out"; lx.fillStyle = "#000"; lx.globalAlpha = 1; lx.fillRect(0, 0, bw, top + m);
+      for (let i = 0; i < f; i++) { lx.globalAlpha = 1 - (i + .5) / f; lx.fillRect(0, top + m + i, bw, 1); }
+      lx.globalCompositeOperation = "source-over"; lx.globalAlpha = 1; b.globalAlpha = 1; b.drawImage(lc, 0, 0);
+    },
     /** coin heaven, drawn: `H` the frame's moment and the drawing helpers */
     heavenDraw(H) {
       const { T, I, A, F, L, hx, top0, wX, cam, on, put, dot, txt, panel, shadeB } = H, { bw, bh, gy, jk } = S, e = L.hv, o = { shake: 0, warn: 0, flashL: 0 }, art = S.hvArt && S.hvArt.bw === bw ? S.hvArt : (S.hvArt = Object.assign(S.heavenArt(), { bw }));
       const cg = Math.round(cam), up = cam / e.CAM, yF = gy - e.CAM + cg - 5, hW = tc => hx + 2 + e.R2 * (e.F2(tc) - e.F2(T)); // the clouds' tops on the screen; where a thing met up there at tc is now
       const ring = (x, y, p, n, rad, col, a, sq = 1) => { if (p <= 0 || p >= 1) return; for (let i = 0; i < n; i++) { const an = i / n * TAU; dot(x + Math.cos(an) * p * rad, y + Math.sin(an) * p * rad * sq, col, a * (1 - p)); } };
+      S.barCut(() => { // (all that comes down the sky as the screen climbs, kept out of the strip behind the top bar)
       // the heights: little clouds drifting, a glow over the sea of cloud, a bank behind it, the sea itself (it ends where the hero jumps)
       if (on && yF + art.H2 > 0 && yF - 80 < bh) {
         art.clouds.forEach((c, i) => { const px = ((60 + i * 97 - e.R2 * e.F2(T) * .22 - A * (1.5 + i)) % (bw + 40) + bw + 40) % (bw + 40) - 30, py = yF - [46, 70, 30][i] * jk; put(c, px, py, I * .9 * shadeB(px + c.width / 2, py + 3, 12)); });
@@ -557,7 +573,7 @@ export default function arcade(K) {
       if (on && bxs > -14 && bxs < bw + 2) put(T < e.tb ? S.block : S.used, bxs, byk - env(T, e.tb, e.tb + .05, e.tb + .06, e.tb + .16) * 3, I * shadeB(bxs + 6, byk + 6, 8));
       if (on && T > e.tb && T < 3.62) { const u = (T - e.tb) / .5, bx = lerp(bxs + 4, hx + 12, clamp(u)), by = u < 1 ? byk - 4 - Math.sin(Math.PI * u) * 12 + u * u * (gy - 5 + cg - byk) : gy - 5 + cg; put(art.bean, bx, by, I); if (T > 3.42) ring(hx + 14, gy - 2 + cg, (T - 3.42) / .3, 8, 6, "#7CFF6B", I, .5); }
       const grow = on ? E.out(seg(T, 3.5, 3.95)) : 0;
-      if (grow > 0 && xs > -8) { const base = gy + cg, len = Math.round((e.CAM + 26) * grow), tip = base - len, st = art.st && art.st.height === e.CAM + 28 ? art.st : (art.st = art.stalk(e.CAM + 26)); // (it stands well up out of the clouds) // the stalk, drawn once, shown as far up as it has grown
+      if (grow > 0 && xs > -8) { const base = gy + cg, len = Math.round((e.CAM + 26) * grow), tip = base - len, st = art.st && art.st.height === e.CAM + 28 ? art.st : (art.st = art.stalk(e.CAM + 26)); // the stalk, drawn once, shown as far up as it has grown (it stands well up out of the clouds)
         b.globalAlpha = I; b.drawImage(st, 0, st.height - len - 2, st.width, len + 2, xs - 5, tip - 1, st.width, len + 2); b.globalAlpha = 1;
         if (tip > -3 && grow < 1) for (let i = 0; i < 6; i++) { const an = A * 9 + i * TAU / 6; dot(xs + Math.cos(an) * 3, tip + Math.sin(an) * 3, i % 2 ? "#FFFFFF" : "#7CFF6B", I); } } // its tip, sparkling up
       if (on && T > 3.5 && T < 3.62) o.shake = .9;
@@ -569,6 +585,7 @@ export default function arcade(K) {
         else if (T < c.t + .45) { const p = (T - c.t) / .45; ring(x + 4, y0 + 4, p, 6, 7, "#FFE14D", I); txt("+10", x - 3, y0 - 6 - p * 8, "#FFFFFF", I * (1 - p) * .9); } }
       if (on && up > .01) { const x = hW(e.big), y = top0 + 3 - Math.round(26 * jk * .9) - 6 + ho; if (T < e.big) { if (x < bw + 16) { put(S.coin[Math.floor(A * 8) % 4], x - 4, y - 4, I * shadeB(x + 4, y + 4, 10), 2, 2); for (let i = 0; i < 4; i++) { const an = A * 3 + i * TAU / 4; dot(x + 4 + Math.cos(an) * 12, y + 4 + Math.sin(an) * 12, "#FFE14D", I * .8); } } }
         else if (T < e.big + .9) { const p = (T - e.big) / .9; ring(x + 4, y + 4, p, 16, 16, "#FFE14D", I); ring(x + 4, y + 4, clamp(p * 1.4), 10, 10, "#FFFFFF", I); txt("+1000", x - 10, y - 8 - p * 10, "#FFFFFF", I * (1 - seg(p, .6, 1)), 1, true); } }
+      });
       // the hero: running, leaping, climbing the stalk, falling, landing; the trophy at the finale
       const hS = e.hS(T) * I, dx = Math.round((T >= 4.0 && T < 4.25 ? 2 * E.out((T - 4) / .25) : T >= 4.25 && T < 6.45 ? 2 : T >= 6.45 && T < 6.62 ? 2 * (1 - E.io((T - 6.45) / .17)) : 0) * I), climbing = on && T >= 4.25 && T < 6.45;
       const spd = e.R * (e.F1(T + .05) - e.F1(T)) + e.R2 * (e.F2(T + .05) - e.F2(T)), set = S.norm; let spr = set.idle[Math.floor(A * 1.6) % 2], y = Math.round(top0 - hS), sx = 1, sy = 1;
@@ -635,7 +652,7 @@ export default function arcade(K) {
       const ring = (x, y, p, n, rad, col, a, sq = 1) => { if (p <= 0 || p >= 1) return; for (let i = 0; i < n; i++) { const an = i / n * TAU; dot(x + Math.cos(an) * p * rad, y + Math.sin(an) * p * rad * sq, col, a * (1 - p)); } };
       const spd = L.X(T + .05) - L.X(T), pow = on ? env(T, d.starT, d.starT + .15, 8.9, 9.3) * I : 0, tp = T;
       // the coin that goes in, and the high block with the star in it
-      if (on && T > 1.45 && T < 1.85) { const u = (T - 1.45) / .4, cx = Math.round(S.bx) - 4, cy = Math.round(lerp(-10, S.by - 6, u * u)); put(S.coin[Math.floor(A * 18) % 4], cx, cy, I); }
+      if (on && T > 1.45 && T < 1.85) S.barCut(() => { const u = (T - 1.45) / .4, cx = Math.round(S.bx) - 4, cy = Math.round(lerp(-10, S.by - 6, u * u)); put(S.coin[Math.floor(A * 18) % 4], cx, cy, I); }); // (out of the sky, kept clear of the top bar's words: barCut)
       if (on) ring(Math.round(S.bx), Math.round(S.by) - 2, seg(T, 1.85, 2.3, x => x), 12, 14, "#FFE14D", I);
       const tb = d.blockT, bxs = hx + wX(tb), byk = top0 - Math.round(d.top) - 13;
       if (on && bxs > -14 && bxs < bw + 2) put(T < tb ? S.block : S.used, bxs, byk - env(T, tb, tb + .05, tb + .06, tb + .16) * 3, I * shadeB(bxs + 6, byk + 6, 8));
@@ -648,13 +665,14 @@ export default function arcade(K) {
       if (o.warn > .02) { const blink = Math.floor(A * 6) % 2; b.globalAlpha = o.warn * (blink ? .8 : .3); b.fillStyle = "#FF2B4E"; b.fillRect(0, gy - 1, bw, 1); b.fillRect(0, 0, 1, gy); b.fillRect(bw - 1, 0, 1, gy); b.globalAlpha = 1; }
       const bossX = Math.round(Math.min(hx + (pr ? 36 : 44), bw - 31)), hover = gy - 31, drop = seg(T, 8.3, 9.0, E.back), dead = T >= 11.3, dying = seg(T, 11.1, 11.3, x => x), HT = [9.86, 10.46, 11.06], SH = [9.2, 9.8, 10.4];
       const hitNow = HT.some(t => T > t && T < t + .12), knock = HT.reduce((m, t) => Math.max(m, env(T, t, t + .03, t + .06, t + .2) * 2), 0), jit = dying > 0 ? Math.round((rng(Math.floor(A * 30) + 3)() - .5) * 3) : 0, flick = hitNow || (dying > 0 && Math.floor(A * 30) % 2);
-      if (on && T > 8.3 && !dead) { const by2 = Math.round(lerp(-20, hover, drop) + Math.sin(A * 3) * 1.2), bx2 = bossX + Math.round(knock) + jit, a = I * shadeB(bx2 + 15, by2 + 8, 16);
+      const saucer = () => { const by2 = Math.round(lerp(-20, hover, drop) + Math.sin(A * 3) * 1.2), bx2 = bossX + Math.round(knock) + jit, a = I * shadeB(bx2 + 15, by2 + 8, 16);
         put(flick ? S.bossWhite : S.boss, bx2, by2, a); const look = Math.floor(A * .9) % 2 ? -1 : 1, ex = bx2 + 15 + look, ey = by2 + 4; // its eye goes from one of them to the other
         for (let q = -2; q <= 2; q++) for (let w = -2; w <= 2; w++) if (q * q + w * w <= 5) dot(bx2 + 15 + q, ey + w, "#FFFFFF", a); dot(ex - 1, ey - 1, "#FF2B5E", a, 2); dot(ex - 1, ey, "#FF2B5E", a, 2); dot(ex - (look < 0 ? 1 : 0), ey, "#0B0820", a);
         for (let k = 0; k < 7; k++) dot(bx2 + 3 + k * 4, by2 + 10, NEON[(k + Math.floor(A * 8)) % 3], a);
         for (const fx2 of [5, 11, 17, 23]) { const f = Math.floor(A * 20 + fx2) % 3; dot(bx2 + fx2, by2 + 16, f ? "#FFE14D" : "#FF7A3C", a, 2); if (f) dot(bx2 + fx2, by2 + 18, "#FF7A3C", a * .6, 2); }
         if (T > 9.0) { const hp = 3 - HT.filter(t => T > t).length; b.globalAlpha = a; b.fillStyle = "#0B0820"; b.fillRect(bx2 - 1, by2 - 6, 32, 4); for (let k = 0; k < 3; k++) { b.fillStyle = k < hp ? "#FF2B5E" : "#3A1024"; b.fillRect(bx2 + k * 10, by2 - 5, 9, 2); } b.globalAlpha = 1; }
-        if (T > 9.0 && T < 9.12) o.shake = 1.5; if (hitNow) o.shake = 1.2; }
+        if (T > 9.0 && T < 9.12) o.shake = 1.5; if (hitNow) o.shake = 1.2; };
+      if (on && T > 8.3 && !dead) { if (T < 9.15) S.barCut(saucer); else saucer(); } // (dropping in, it comes out from behind the top bar)
       if (on) for (const t of SH) { const k = (T - t) / .7; if (k <= 0) continue; const x = lerp(bossX + 2, hx - 26, k), y = gy - 7; if (x < -4) continue; dot(x - 1, y - 1, "#FF5A8A", I, 3); dot(x, y, "#FFFFFF", I); for (let q = 1; q < 4; q++) dot(x + q * 3, y, "#FF5A8A", I * (1 - q / 4)); }
       if (on) HT.forEach((t, i) => { const k = seg(T, t - .08, t + .12, x => x), hy = gy - 9; if (k <= 0 || k >= 1) return; // their beams: the first's, the second's, and both together, joined
         const one = (x0, col) => { b.globalAlpha = I * (1 - k); b.fillStyle = col; b.fillRect(x0, hy, bossX + 2 - x0, 2); b.fillStyle = "#FFFFFF"; b.fillRect(x0, hy, bossX + 2 - x0, 1); b.globalAlpha = 1; };
@@ -666,8 +684,8 @@ export default function arcade(K) {
         for (let q = 0; q < 48; q++) { const an = q / 48 * TAU; dot(cx + Math.cos(an) * rr, cy + Math.sin(an) * rr * .7, bu.ring[q % 2], I * (1 - boom)); }
         for (const p of S.bits) { const d2 = E.out(boom) * 30 * p.v; dot(cx + Math.cos(p.a) * d2, cy + Math.sin(p.a) * d2 * .8 + boom * boom * 20, bu.bits[p.c], I * (1 - boom), p.s); }
         if (boom < .2) o.shake = 2.5 * (1 - boom / .2); txt("+5000", cx - 14, cy - 18 - boom * 10, "#FFE14D", I * (1 - seg(boom, .7, 1)), 1, true); }
-      // the speed lines, while the star lasts
-      if (pow > .02) { const r2 = rng(Math.floor(A * 30)); for (let k = 0; k < 14; k++) { const y = 6 + r2() * (gy - 14), x = r2() * bw, l = 8 + r2() * 20; if (shadeB(x + l / 2, y, l / 2 + 4) < .95) continue; b.globalAlpha = pow * .55; b.fillStyle = NEON[k % 6]; b.fillRect(Math.round(x), Math.round(y), Math.round(l), 1); } b.globalAlpha = 1; }
+      // the speed lines, while the star lasts (and kept out of the strip behind the top bar, bloom and all)
+      if (pow > .02) S.barCut(() => { const r2 = rng(Math.floor(A * 30)); for (let k = 0; k < 14; k++) { const y = 6 + r2() * (gy - 14), x = r2() * bw, l = 8 + r2() * 20; if (shadeB(x + l / 2, y, l / 2 + 4) < .95) continue; b.globalAlpha = pow * .55; b.fillStyle = NEON[k % 6]; b.fillRect(Math.round(x), Math.round(y), Math.round(l), 1); } b.globalAlpha = 1; });
       // the two of them
       const run = on && spd > .2, fin = F >= 0 ? seg(F, 0, .5, x => x) : 0, finY = fin > 0 && fin < 1 ? Math.round(4 * fin * (1 - fin) * 26 * jk) : 0;
       const at = (x, y) => [hx + Math.round(x * I), Math.round(top0 - y * I)];
@@ -690,7 +708,8 @@ export default function arcade(K) {
       if ((T > 3.75 && T < 4.35 && Math.abs(d.x1(T) - d.x2(T)) < 9) || [2.55, 6.95, ...d.JB.map(t => t + .46), 12.3].some(t => T > t && T < t + .08) || (T > 2.9 && T < 3.1)) { sx2 = 1.16; sy2 = .82; }
       const a1 = shadeB(X1 + 6, y1 + 7, 10), a2 = I * shadeB(X2 + 6, Yp2 + 7, 10) * (show2 ? 1 : 0);
       ghosts(s1, n1, X1, y1); put(s1, X1, y1, a1, sx1, sy1); if (s1 !== art.p1.five && !(on && v1 > .2 && v1 < .8)) { dot(X1 + 6, y1 - 2, "#9FB6DC", a1); dot(X1 + 6, y1 - 3, "#9FB6DC", a1); dot(X1 + 6, y1 - 4, "#FF2BD6", a1 * (.5 + .5 * Math.sin(A * 4))); }
-      if (a2 > .01) { ghosts(s2, q2, X2, Yp2 - finY); put(s2, X2, Yp2 - finY, a2, sx2, sy2); if (!falling && !(v2 > .2 && v2 < .8)) { dot(X2 + 5, Yp2 - finY - 2, "#B9A6DC", a2); dot(X2 + 5, Yp2 - finY - 3, "#B9A6DC", a2); dot(X2 + 5, Yp2 - finY - 4, "#2BE8FF", a2 * (.5 + .5 * Math.sin(A * 4 + 2))); } }
+      const two = () => { ghosts(s2, q2, X2, Yp2 - finY); put(s2, X2, Yp2 - finY, a2, sx2, sy2); if (!falling && !(v2 > .2 && v2 < .8)) { dot(X2 + 5, Yp2 - finY - 2, "#B9A6DC", a2); dot(X2 + 5, Yp2 - finY - 3, "#B9A6DC", a2); dot(X2 + 5, Yp2 - finY - 4, "#2BE8FF", a2 * (.5 + .5 * Math.sin(A * 4 + 2))); } };
+      if (a2 > .01) { if (falling) S.barCut(two); else two(); } // (it drops in from behind the top bar)
       if (F >= 0 && F < .92) put(S.cup, X1 + 3, y1 - 12, 1);
       // the high five: a burst of stars where their hands meet
       if (on) { const p = seg(T, 12.0, 12.6, x => x); if (p > 0 && p < 1) { const cx = hx + 10, cy = top0 - Math.round(15 * jk) - 1; for (let q = 0; q < 8; q++) { const an = q / 8 * TAU; dot(cx + Math.cos(an) * p * 12, cy + Math.sin(an) * p * 9, q % 2 ? "#FFFFFF" : "#FFE14D", I * (1 - p), q % 2 ? 1 : 2); } if (p < .3) { dot(cx - 1, cy - 1, "#FFFFFF", I, 3); } } }

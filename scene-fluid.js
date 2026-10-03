@@ -5,10 +5,12 @@
 // it stays crisp however thin it is drawn). The list's words are solid: the stage says where they are, they go into the
 // grid as rounded blocks (a line's box with its words), and the paint flows round them, curls off their ends, and never
 // runs under them — so the words need no pad.
-// Light is marbling, ebru, in the kit's own inks — burnt orange, slate, steel blue and rust on the paper — mixed the way
-// inks mix (each takes its share of the light: Beer–Lambert), with a wet sheen where it lies thick. Dark is the same
-// water poured in metals — gold, copper, bronze, a pale silver — under a studio's softboxes, seen from a little way off
-// so a flat pool catches the light across it, its edges dark and bright where they turn.
+// Light is marbling, ebru, in ebru's own inks — crimson, indigo, a soft blue and sage on the paper — mixed the way inks
+// mix (each takes its share of the light: Beer–Lambert), matte, as marbled paper is once it is lifted. Dark is the same
+// water poured in metals — abalone's: teal, violet, blue and silver — under a studio's softboxes, seen from a little way
+// off so a flat pool catches the light across it, its edges dark and bright where they turn. (1.12 b437: until then
+// Light's inks were the kit's own burnt orange, slate, steel blue and rust, with a wet sheen, and Dark's were gold, copper
+// and bronze; round drops of orange and gold ringed in white read as eggs.)
 // The loop, fifteen seconds: drops land, each pushing the rings before it outward (a drop is a source in the flow, as on
 // a marbler's tray); a comb is drawn through them; two vortices wind them into spirals; a last drop blooms in the middle
 // of one; it settles. While the list is in use the paint drifts on three slow eddies, the pointer or a finger drags it
@@ -25,9 +27,9 @@ export default function fluid(K, id) {
   const lin = h => K.rgb(h).map(v => (v /= 255) <= .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4));
   const GROUND = lin(night ? "#070A08" : "#FAF8F4");
   // Light's inks, each the colour it is at full strength on the paper (absorbance: −ln of that over the paper)
-  const INKS = ["#CB6015", "#4B4F54", "#7C9CA9", "#A34A1C"].map(h => lin(h).map((v, i) => -Math.log(Math.max(v, 1e-4) / GROUND[i])));
+  const INKS = ["#B32A3C", "#212F55", "#7FA6CC", "#5E9278"].map(h => lin(h).map((v, i) => -Math.log(Math.max(v, 1e-4) / GROUND[i])));
   // Dark's metals (what they reflect) and the glow of each where it pools
-  const METALS = [[1, .71, .29], [.95, .52, .3], [.52, .29, .1], [.93, .91, .86]], GLOWS = ["#D29663", "#A86014", "#6F3B00", "#F7F2E8"].map(lin);
+  const METALS = [[.28, .86, .76], [.56, .38, .95], [.25, .5, 1], [.9, .92, .95]], GLOWS = ["#3CC8B0", "#7A4FD8", "#2E64E0", "#E6ECF4"].map(lin);
   const ONE = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], CLEAR = [0, 0, 0, 0], ink = k => k < 0 ? CLEAR : ONE[k & 3];
   const MAXR = 120, MAXF = 24, MAXD = 20, MAXS = 16, PAD = [14, 10], FADE = 10, PASSIVE = { passive: true, capture: true };
 
@@ -423,7 +425,7 @@ void main() { vec4 c = at(vUv); float s = c.x + c.y + c.z + c.w, cov = smoothste
      dealt for the visit), the first and second taking turns. */
   /** the wake: a pool of clear water opens, a stone drops in at one side of it and crosses it, and behind it the eddies
    *  it sheds by turns from either shoulder are left in a line, each winding up the ink that runs off that shoulder (by
-   *  day burnt orange on one side and steel blue on the other; by night gold and silver) — von Kármán's vortex street,
+   *  day crimson on one side and soft blue on the other; by night teal and silver) — von Kármán's vortex street,
    *  the picture fluid dynamics is known by, as a rod drawn through a soap film leaves it. At the far side the stone
    *  stops and sinks, and the eddies wind on, tighter the older they are, and come to rest. The motion is the scene's
    *  own, laid down step by step as the egg's stir is (the stone carries the water it covers; each eddy turns as a
@@ -449,9 +451,9 @@ void main() { vec4 c = at(vUv); float s = c.x + c.y + c.z + c.w, cov = smoothste
     if (vs > U * .05) for (const sd of [1, -1]) wisp(x - ux * rho * .7 + sd * nx * rho * 1.05, y - uy * rho * .7 + sd * ny * rho * 1.05, rho * .38, ink(c[sd > 0 ? 1 : 2]), 2 * vs / (1.77 * rho * .38));
     return 0;
   }
-  /** the galaxy: a pool of clear water opens and turns to night (by day a wash of slate, a window in the paper; by
+  /** the galaxy: a pool of clear water opens and turns to night (by day a wash of indigo, a window in the paper; by
    *  night the dark itself); a drop for its heart, and a line of drops through it out to either side (by day of clear
-   *  water, so the galaxy is the light in the slate, as a photograph's is; by night of metal); then the water turns,
+   *  water, so the galaxy is the light in the indigo, as a photograph's is; by night of metal); then the water turns,
    *  nearly as fast out at the edge as near the middle, the way a galaxy turns (Vera Rubin's flat curves), so the line
    *  winds into two trailing arms round a bright core, with knots along them. Then it turns all of a piece, slowly, and
    *  its stars come out. */
@@ -547,7 +549,7 @@ void main() { vec4 c = at(vUv); float s = c.x + c.y + c.z + c.w, cov = smoothste
     clock = 0; mode = "live"; chkOn = stampNow = wipeMap = false; eggP = eggCut = -1; puffs.length = 0;
     for (let k = 0; k < 50; k++) { forcing(0, 0, -1, 0); amp = 1; signature(k / 20 * .9 + .1); step(1 / 20); }
   }
-  const eggInk = [1.15, 0, 0, 0]; // gold; the burnt orange
+  const eggInk = [1.15, 0, 0, 0]; // teal; the crimson
   const chkU = () => ({ uMap: mp.r, uCA: geo.A, uCB: geo.B, uCC: geo.C, uCW: geo.w, uRev: geo.rev, uView: [W, H] });
   /** a moment asked for out of turn (the lab, the instruments): worked out again from the start of the visit (a pass
    *  hours in, from the start of the pass before it), one thirtieth of a second at a time, as if left alone throughout
@@ -560,8 +562,8 @@ void main() { vec4 c = at(vUv); float s = c.x + c.y + c.z + c.w, cov = smoothste
   }
   function render() {
     const tx = [1.25 / dw, 1.25 / dh], base = { uS: dye.r, uO: sdf, uTx: tx, uFade: FADE, uSeed: steps % 97, uG: GROUND, uChk: chkOn ? 1 : 0, uCI: eggInk, ...chkU() };
-    if (night) run(PR.show, null, { ...base, uBump: 6, uGlow: .1, uAsp: [.62 * W / Math.max(W, H), .62 * H / Math.max(W, H)], uM0: METALS[0], uM1: METALS[1], uM2: METALS[2], uM3: METALS[3], uE0: GLOWS[0], uE1: GLOWS[1], uE2: GLOWS[2], uE3: GLOWS[3] });
-    else run(PR.show, null, { ...base, uBump: 2.2, uSpec: .35, uK0: INKS[0], uK1: INKS[1], uK2: INKS[2], uK3: INKS[3] });
+    if (night) run(PR.show, null, { ...base, uBump: 6, uGlow: .14, uAsp: [.62 * W / Math.max(W, H), .62 * H / Math.max(W, H)], uM0: METALS[0], uM1: METALS[1], uM2: METALS[2], uM3: METALS[3], uE0: GLOWS[0], uE1: GLOWS[1], uE2: GLOWS[2], uE3: GLOWS[3] });
+    else run(PR.show, null, { ...base, uBump: 1.6, uSpec: .12, uK0: INKS[0], uK1: INKS[1], uK2: INKS[2], uK3: INKS[3] });
   }
 
   /* The graphics card can take its memory back (a phone puts the page away, a driver resets): the canvas would show

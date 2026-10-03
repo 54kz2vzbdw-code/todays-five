@@ -3776,3 +3776,19 @@ b421–b435 decisions". Web only; the version holds at 1.12, and nothing in `app
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on the change: every scene test, the three-minute eggs' test, the new hour eggs' test, and the worker's two tests, both viewports: 32 passed; again after the three fixes (Scenes off and on, nearly still in use, every kit's module, the hidden kits', both kinds of egg, Arcade's score, the water's keep-clear): 16 passed |
 | Looked at | every hour egg in the app on a desktop (frame-stepped reels at 8 a second), judged at full size; the helpers' sheets on both viewports; four sent back for a second pass |
+
+# Today's Five 1.12 b437 — Light's and Dark's water, recoloured
+
+*Shipped as build 438. b437 is its commit.*
+
+Light's water in ebru's inks (crimson, indigo, soft blue, sage), matte; Dark's in abalone's metals (teal, violet, blue,
+silver). The drops had looked like eggs. `scene-fluid.js` only; the decisions are in DECISIONS.md under "1.12 b437
+decisions". Web only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
+
+## Verification results
+
+| | |
+| --- | --- |
+| Looked at | both kits in the app on a desktop: the signature, the three-minute egg (pass 11), both hour eggs (348, 664), the finale |
+| Focused runs | on the change: every kit's module, Light's and Dark's keep-clear, the water on the graphics card, both viewports: 6 passed |
+| Contrast | against build 436, pass 0, both kits and viewports, `CLOCK=2026-09-28T15:00:00`: nothing under 4.5 that build 436 doesn't share (the finale's line 4.21 over Light on a phone, both builds, three runs) |

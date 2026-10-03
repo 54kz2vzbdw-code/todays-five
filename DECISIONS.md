@@ -3426,3 +3426,28 @@ alone) against the same pass on the untouched build, side by side under the same
 ground too, and within the untouched build's own spread from run to run (the same chip read 3.94 and 4.36 on two runs of
 the untouched build). One egg failed it and was fixed: coin heaven's camera scrolled the bright city and clouds behind
 the top bar, taking the date to 4.21 (b434).
+
+# 1.12 b437 decisions — Light's and Dark's water, recoloured
+
+**What happened.** Price relayed a first-time viewer's reaction to Light's water: the drops looked like eggs, and she
+didn't want to touch it. Seen with that in mind, they did: round drops of the kit's burnt orange ringed in the paper's
+white, with a wet sheen on them, are a yolk in its white; by night, rings of gold round a white middle. The water itself
+was never the trouble ("I like the fluid mechanics"), so only its colours changed.
+
+**What changed.** Three palettes for each kit were rendered in the app at the same moments of the signature pass and
+Price chose: Light is now ebru's own inks — crimson, indigo, a soft blue and sage — and matte, as marbled paper is once
+it is lifted (the wet sheen was most of the egg white: specular .35 → .12, relief 2.2 → 1.6); Dark's metals are
+abalone's — teal, violet, blue and silver — with a little more of their own glow. The brand's orange stays where it was,
+in the kit's controls (the checks, the count), and reads the better against blue water. Each ink keeps its channel's
+role (0 the bright one, 1 the dark, 2 the middle, 3 the fourth), so every pass, the three-minute egg's check and both
+hour eggs recolour as they were drawn: the wake's eddies are crimson and soft blue (teal and silver by night), the galaxy
+is drawn in clear water in an indigo night.
+
+**Shipped alone.** It changes what everyone with Light or Dark and Scenes on sees, without anything of theirs changing,
+so it is its own build, ahead of the crowns.
+
+**Checked.** In the app on a desktop, both kits: the signature, the three-minute egg, both hour eggs and the finale. The
+scene tests (every kit's module, Light's and Dark's keep-clear, the water on the graphics card) on both viewports: 6
+passed. Contrast against build 436 (pass 0, both kits and viewports): no reading under 4.5 that build 436 doesn't share.
+The finale's line ("That's the list.", 24 px bold) reads 4.21 over Light on a phone on both builds, run after run — the
+low finale readings already set aside for a fix of their own.

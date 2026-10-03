@@ -46,6 +46,17 @@
 // the pencil looks it over and makes it the big wheel of a penny-farthing, the brush paints its frame red, its bell rings
 // twice and it rolls off the page. Either way the pencil comes back, a little unsure, and draws this pass's subject as any
 // pass does, only quicker and without its moment, so the pass ends on the very picture the next one starts from.
+//
+// 1.12 b448: the crown. In the sixth hour of the list left alone and every sixth after (K.long 3), in place of the pass it
+// would have dealt, a curtain call for the day's drawings. The eraser takes the drawing the pass before left, and the
+// pencil, in a hurry, draws a little theatre — its arch, the valance along its top, two curtains in their folds, the stage
+// and its footlights — and the brush paints it gold and crimson. The curtains open on the whole company of the day, every
+// subject a pass draws, standing in two rows on the stage under a painted moon: the balloon, the lighthouse and the
+// sailboat at the back, the humpback, the teapot, the hummingbird and the cat in front. The footlights come up; they bow one
+// after another down the line, flowers are thrown up onto the stage, and they bow together. The curtains close, and the
+// pencil, the brush and the eraser come out in front of them, one after another, and take a bow of their own. Then the
+// eraser strikes the set, and the pencil draws this pass's subject as any pass does, only quicker and without its moment,
+// so the pass ends on the very picture the next one starts from.
 export default function sketch(K) {
   const { clamp, lerp, E, seg, env, rng, canvas, boil } = K;
   const TAU = Math.PI * 2;
@@ -744,6 +755,71 @@ export default function sketch(K) {
     return { L, H, SM, SAD, BACK, pen: L.map(e => [e[5] === "small" ? e[0].map(([u, v]) => [u + SM[0], v + SM[1]]) : e[0], e[1], e[2], e[3], e[4], e[5], lens(e[0])]), paint: [[tubeU(BACK, .02), [210, 50, 44], .74, H], [tubeU([[0, 0], H], .02), [210, 50, 44], .74, H], [SAD, [126, 72, 40], .72, [-.2, -RH - .145]]] };
   })();
 
+  /* ---------------- 1.12 b448: the crown ---------------- */
+  /** The crown, its beats in the pass's seconds: the eraser takes the drawing the pass before left (`erase`); the pencil
+   *  draws a little theatre, fast (`draw`: its arch, its valance, its curtains and their folds, its stage and footlights)
+   *  and the brush paints it (`paint`); the curtains open (`open`) on the day's company, every subject a pass draws,
+   *  standing in two rows under a painted moon, and the footlights come up (`lights`); they bow one after another down the
+   *  line (`wave`), flowers are thrown up onto the stage (`flowers`), and they bow together (`bow`); the curtains close
+   *  (`close`) and the pencil, the brush and the eraser come out in front of them and take a bow of their own (`tools`);
+   *  the eraser strikes the set (`strike`), and from `sub` the pencil draws this pass's subject as any pass does, only quicker */
+  const CRB = { erase: [.3, 1.4], draw: [1.45, 3.4], paint: [3.4, 4.0], open: [4.1, 4.85], lights: [4.5, 5.0], wave: [5.0, 6.6], flowers: [6.25, 7.35], bow: [7.05, 7.8], close: [7.9, 8.5], tools: [8.45, 9.5], strike: [9.55, 10.3], sub: 10.3 };
+  /** the theatre's own clock: drawn on a subject's (the pencil 1.95 – 6.45, the brush 6.45 – 9.1), only faster */
+  const stageT = T => T < CRB.draw[0] ? 1.9 : T < CRB.draw[1] ? lerp(1.95, 6.45, (T - CRB.draw[0]) / (CRB.draw[1] - CRB.draw[0])) : T < CRB.paint[1] ? lerp(6.45, 9.1, (T - CRB.paint[0]) / (CRB.paint[1] - CRB.paint[0])) : 9.1 + (T - CRB.paint[1]);
+  /** a crescent: circle c0 (radius r0) with circle c1 (radius r1) taken out of it, as a closed line */
+  const crescent = (c0, r0, c1, r1, n = 18) => { const dx = c1[0] - c0[0], dy = c1[1] - c0[1], d = Math.hypot(dx, dy), a = (r0 * r0 - r1 * r1 + d * d) / (2 * d), h = Math.sqrt(Math.max(0, r0 * r0 - a * a)), ux = dx / d, uy = dy / d, bx = c0[0] + a * ux, by = c0[1] + a * uy, H1 = [bx - h * uy, by + h * ux], H2 = [bx + h * uy, by - h * ux], ang = (c, p) => Math.atan2(p[1] - c[1], p[0] - c[0]);
+    let a1 = ang(c0, H1), a2 = ang(c0, H2); while (a2 < a1) a2 += TAU; let b1 = ang(c1, H2), b2 = ang(c1, H1); while (b2 > b1) b2 -= TAU;
+    return [...Array.from({ length: n + 1 }, (_, i) => { const t = lerp(a1, a2, i / n); return [c0[0] + Math.cos(t) * r0, c0[1] + Math.sin(t) * r0]; }), ...Array.from({ length: n + 1 }, (_, i) => { const t = lerp(b1, b2, i / n); return [c1[0] + Math.cos(t) * r1, c1[1] + Math.sin(t) * r1]; })]; };
+  /** The theatre, in the 200-box: its arch (gold), the valance along its top, two crimson curtains in folds, the stage and
+   *  its footlights; behind the curtains, a backdrop of night with a painted moon and stars. Drawn and painted as a subject
+   *  is, its parts the backdrop (0), the stage (1), the arch (2) and the two curtains (3, 4), which gather to the sides. */
+  const STAGE = (() => {
+    const b = kit(), back = b.part(), floor = b.part(), frame = b.part(), cur = [b.part(), b.part()];
+    const P = pts => pts.map(([x, y]) => [U(x), U(y)]), archY = x => 42 + 15 * Math.pow((x - 100) / 74, 2), outY = x => 33 + 19 * Math.pow((x - 100) / 82, 2), fy = x => 156 + 32 * ((x - 24) / 152) * (1 - (x - 24) / 152); // the opening's top, the arch's, the stage's front edge
+    const along2 = (f, x0, x1, n = 24, dy = 0) => Array.from({ length: n + 1 }, (_, i) => { const x = lerp(x0, x1, i / n); return [x, f(x) + dy]; });
+    const IN = [[26, 146], ...along2(archY, 26, 174), [174, 146]], OUT = [[18, 148], ...along2(outY, 18, 182, 28), [182, 148]];
+    const MID = [[22, 147], ...along2(x => (archY(clamp(x, 26, 174)) + outY(x)) / 2 - .5, 22, 178, 28), [178, 147]];
+    const VB = []; for (let i = 0; i < 9; i++) for (let k = i ? 1 : 0; k <= 8; k++) { const x = lerp(26, 174, (i + k / 8) / 9); VB.push([x, archY(x) + 10 + 5.5 * Math.sin(k / 8 * Math.PI)]); } // the valance's scalloped hem
+    const hemY = x => 146 + 1.6 * Math.abs(Math.sin((x - 26) / 9.25 * Math.PI));
+    const CUR = sd => { const xo = sd < 0 ? 26 : 174; return [[xo, archY(xo) + 6], ...along2(archY, xo, 100, 12, 6).slice(1), [100, 146], ...along2(hemY, 100, xo, 32).slice(1)]; };
+    const MOON = crescent([56, 80], 8, [59.6, 77.4], 7.2);
+    // the pencil: a guide, the arch and its moulding, the valance and its fringe, the curtains (where they meet, their hems,
+    // their folds, the shadow in the folds), the stage, its boards and the footlights
+    b.ink(frame, "guide", P([[26, 146], [174, 146]]), .7, .2); b.ink(frame, "guide", P(along2(archY, 26, 174, 16)), .7, .18);
+    b.ink(frame, "frame", P(OUT), 1.45, .92); b.ink(frame, "frame", P(IN), 1.2, .88); b.ink(frame, "frame", P(MID), .75, .55); b.ink(frame, "frame", P(VB), 1.15, .88);
+    for (let i = 0; i < VB.length; i += 3) b.ink(frame, "fringe", P([VB[i], [VB[i][0] + .4, VB[i][1] + 3.2]]), .7, .7);
+    [-1, 1].forEach((sd, c) => { const k = cur[c], x0 = sd < 0 ? 26 : 100, x1 = sd < 0 ? 100 : 174;
+      b.ink(k, "curtain", sv(`M ${100 - sd * .4} 52 C ${100 - sd * 1.2} 90, ${100 + sd * .3} 120, ${100 - sd * .4} 146`, 3), 1.25, .9); b.ink(k, "curtain", P(along2(hemY, x0, x1, 32)), 1.1, .85);
+      for (let f = 1; f <= 7; f++) { const x = sd < 0 ? 26 + 9.25 * f : 174 - 9.25 * f, w = f % 2 ? 1.6 : -1.6; b.ink(k, "curtain", sv(`M ${x} ${archY(x) + 12} C ${x + w} ${archY(x) + 40}, ${x - w} 110, ${x + w * .4} 145.5`, 3), .85, .62); }
+      for (const h of hatchIn(P(CUR(sd)), 1.4, .03, (x, y) => { const X = x * 100 + 100, q = (((X - 26) / 9.25) % 1 + 1) % 1; return q > .5 && q < .92 && y > U(62); })) b.ink(k, "shade", h, .55, .3); });
+    b.ink(floor, "floor", P(along2(fy, 24, 176, 30)), 1.35, .9); b.ink(floor, "floor", P([[26, 146], [24, 156]]), 1.1, .85); b.ink(floor, "floor", P([[174, 146], [176, 156]]), 1.1, .85);
+    for (let x = 38; x <= 162; x += 15.5) { const xe = 100 + (x - 100) * 1.07; b.ink(floor, "boards", P([[x, 146.5], [xe, fy(xe) - .5]]), .7, .5); }
+    const LAMPS = [44, 72, 100, 128, 156].map(x => [x, fy(x) - 3]); for (const [x, y] of LAMPS) b.ink(floor, "lamps", ring(x, y, 3.8, 2.6, 0, Math.PI, 10), 1, .85), b.ink(floor, "lamps", P([[x - 3.8, y], [x + 3.8, y]]), .9, .8);
+    b.ink(back, "back", P(MOON), 1, .82); for (const [x, y, s] of [[120, 64, 2.6], [146, 80, 2.2], [90, 60, 2], [134, 98, 2.4], [74, 100, 2], [162, 104, 1.8], [104, 84, 1.6], [42, 112, 1.8]]) { b.ink(back, "back", P([[x - s, y], [x + s, y]]), .8, .72); b.ink(back, "back", P([[x, y - s], [x, y + s]]), .8, .72); }
+    b.time("guide", 2.0, 2.3); b.time("frame", 2.35, 3.55, .02); b.time("fringe", 3.55, 3.8, .004); b.time("curtain", 3.82, 5.0, .012); b.time("shade", 5.0, 5.45, .002); b.time("floor", 5.47, 5.85, .02); b.time("boards", 5.86, 6.08, .006); b.time("lamps", 6.08, 6.3, .006); b.time("back", 0, .01, 0);
+    // the brush: the backdrop's night and its moon (there all along, behind the curtains), the arch's gold, the valance, the curtains, the stage, the lamps
+    b.wash(back, P(IN), [44, 56, 122], .64, 0, .01, [0, 0]); b.wash(back, P(MOON), [252, 224, 132], .86, 0, .01, [U(56), U(80)]);
+    b.wash(frame, P([...OUT, ...IN.slice().reverse()]), [214, 166, 62], .64, 6.5, 6.9, [U(22), U(110)]); b.wash(frame, P([...along2(archY, 26, 174), ...VB.slice().reverse()]), [150, 26, 46], .82, 6.9, 7.15, [U(100), U(50)]);
+    b.wash(cur[0], P(CUR(-1)), [196, 38, 56], .78, 7.15, 7.7, [U(62), U(92)]); b.wash(cur[1], P(CUR(1)), [196, 38, 56], .78, 7.5, 8.05, [U(138), U(92)]);
+    b.wash(floor, P([[26, 146], [174, 146], [176, 156], ...along2(fy, 176, 24, 24).slice(1)]), [178, 120, 62], .52, 8.05, 8.5, [U(100), U(154)]);
+    LAMPS.forEach(([x, y], k) => b.wash(floor, ring(x, y, 3.8, 2.6, 0, Math.PI, 10), [196, 164, 96], .62, 8.5 + k * .05, 8.6 + k * .05, [U(x), U(y + 1)]));
+    return { parts: b.parts, flicks: [], pal: [[196, 38, 56], [214, 166, 62]], LAMPS: LAMPS.map(([x, y]) => [U(x), U(y)]), back, floor, frame, cur, fy, curP: [P(CUR(-1)), P(CUR(1))] };
+  })();
+  /** the day's company, as it stands on the stage: [the subject (0 the balloon), its parts that come on (the rest is its
+   *  scenery), where it stands (its feet, in the 200-box), how tall it stands there, which way it faces] — the tall ones
+   *  at the back, the small ones in front */
+  const CAST = [[0, null, 56, 125, 58, 0], [1, [2], 100, 124, 70, 0], [2, [2], 145, 126, 52, 1], [3, [2, 3], 47, 147, 22, 1], [4, [1, 2], 81, 147, 30, 0], [5, [2], 116, 139, 28, 0], [6, [1, 2, 3, 4], 152, 147, 34, 0]];
+  const CAST_X = CAST.map((c, i) => [c[2], i]).sort((a, b) => a[0] - b[0]).map(([, i]) => i); // left to right, for the bows down the line
+  /** the flowers thrown up onto the stage: where each lands (the 200-box), when it's thrown, how it spins */
+  const ROSES = [64, 90, 108, 126, 144].map((x, k) => { const xl = x + (k % 2 ? 2 : -2), yl = STAGE.fy(xl) - 4.5; return { x0: U(xl + (xl - 100) * .3 + 8), y0: U(198), x1: U(xl), y1: U(yl), t: CRB.flowers[0] + k * .17, spin: (k % 2 ? 1 : -1) * (5 + k), rest: -.5 + k * .22 }; });
+  /** a rose, at (u, v) turned r, `s` across, in the drawing's units */
+  const rose = (x, u, v, r, s) => { x.save(); x.translate(u, v); x.rotate(r);
+    x.strokeStyle = rgba([66, 124, 62], .9); x.lineWidth = 1.5 / S.RR; x.beginPath(); x.moveTo(0, s * .4); x.quadraticCurveTo(s * .7, s * 1.4, s * .35, s * 2.5); x.stroke();
+    x.fillStyle = rgba([96, 152, 78], .8); x.beginPath(); x.ellipse(s * .6, s * 1.45, s * .42, s * .17, -.75, 0, TAU); x.fill();
+    x.fillStyle = rgba([214, 44, 72], .88); x.beginPath(); x.arc(0, 0, s * .6, 0, TAU); x.fill();
+    x.strokeStyle = rgba([120, 18, 40], .85); x.lineWidth = 1 / S.RR; x.beginPath(); for (let k = 0; k <= 18; k++) { const t = k / 18 * 4.6, rr = s * (.06 + .11 * t); k ? x.lineTo(Math.cos(t * 1.9) * rr, Math.sin(t * 1.9) * rr) : x.moveTo(Math.cos(t * 1.9) * rr, Math.sin(t * 1.9) * rr); } x.stroke();
+    x.restore(); };
+
   const S = {
     res: "dpr",
     wash: 1.6, veil: 1, // a light kit (scenes.js)
@@ -874,12 +950,13 @@ export default function sketch(K) {
     },
     /** a subject drawn into context x, in the drawing's units: part by part, each turned by its pose, its washes under its
      *  lines; then the birds and the drops (or, `inkOnly`, just its lines: the ghost an eraser leaves) */
-    pieceOf(ins, x, st, mirror, inkOnly) {
+    pieceOf(ins, x, st, mirror, inkOnly, only) {
       const ga = x.globalAlpha;
       if (ins.balloon) { const key = "p" + st.inkKey; if (key !== S.inkKey) { const c = S.ink, x2 = c.getContext("2d"); x2.setTransform(1, 0, 0, 1, 0, 0); x2.clearRect(0, 0, c.width, c.height); x2.setTransform(px * S.RR, 0, 0, px * S.RR, 1.15 * S.RR * px, 1.15 * S.RR * px); x2.lineCap = "round"; x2.lineJoin = "round"; S.inkInto(x2, st.prog, st.jit, 1); S.inkKey = key; }
         st.inkC = S.ink; x.save(); if (mirror) x.scale(-1, 1); if (!inkOnly) { const keep = S.washes; if (ins.washes) S.washes = ins.washes; S.piece(x, st); S.washes = keep; } else { x.translate(0, st.lift); x.rotate(st.sway); x.drawImage(S.ink, -1.15, -1.15, 2.3, 2.3); } x.restore(); return; }
       const sub = ins.sub; x.save(); if (mirror) x.scale(-1, 1);
       sub.parts.forEach((pt, k) => {
+        if (only && !only.includes(k)) return; // (b448: just these parts, as the crown puts a subject on its stage)
         const ps = sub.pose ? sub.pose(st, k) : null; x.save();
         if (ps) { x.translate(pt.pivot[0] + ps[0], pt.pivot[1] + ps[1]); if (ps[2]) x.rotate(ps[2]); x.translate(-pt.pivot[0], -pt.pivot[1]); }
         if (!inkOnly && sub.live) sub.live(x, st, k, 0, ins);
@@ -888,7 +965,7 @@ export default function sketch(K) {
         if (!inkOnly && sub.live) sub.live(x, st, k, 1, ins);
         x.restore(); x.globalAlpha = ga;
       });
-      if (!inkOnly) {
+      if (!inkOnly && !only) {
         for (const [bx, by, s, ph] of sub.birds || []) { const v = st.birds; if (v <= 0) continue; const fly = st.fly, ox = fly * Math.sin(st.A * .9 + ph) * .1, oy = fly * Math.cos(st.A * 1.1 + ph) * .05 - fly * .04, flap = Math.sin(st.A * (3 + fly * 9) + ph) * (.35 + fly * .5);
           const cx2 = bx + ox, cy2 = by + oy, pts = [[cx2 - s, cy2 - s * (.2 + flap * .6)], [cx2 - s * .45, cy2 - s * (.45 + flap * .25)], [cx2, cy2], [cx2 + s * .45, cy2 - s * (.45 + flap * .25)], [cx2 + s, cy2 - s * (.2 + flap * .6)]];
           x.lineWidth = 1.2 / S.RR; x.strokeStyle = rgba(INK, .85); K.partial(x, pts.map(([u, w2]) => st.jit(u, w2)), v); }
@@ -1261,6 +1338,161 @@ export default function sketch(K) {
       });
       x.globalAlpha = ga;
     },
+    /** 1.12 b448: the crown's theatre, made for the drawing's size and kept, as `inst` makes a subject: its washes, its
+     *  lines' caches, the pencil's and the brush's ways round it (not round the backdrop: that's there all along) */
+    crownStage() {
+      if (S.cst && S.cst.RR === S.RR) return S.cst;
+      const sub = STAGE, RR = S.RR, box = pts => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const [u, v] of pts) { x0 = Math.min(x0, u); y0 = Math.min(y0, v); x1 = Math.max(x1, u); y1 = Math.max(y1, v); } return [x0, y0, x1, y1]; };
+      const ins = { sub, RR, key: "stage", spr: null, drops: [],
+        washes: sub.parts.map((pt, k) => pt.washes.map((w, j) => { const c = S.washOf(w[0], w[1], w[2], 4401 + k * 31 + j * 17, w[6]); let far = 0; for (const [u, v] of w[0]) far = Math.max(far, Math.hypot(u - w[5][0], v - w[5][1])); c.reach = far * 1.12 + .02; c.nz = K.noise1(70 + j + k * 7, 16); return c; })),
+        ink: sub.parts.map(pt => { if (!pt.strokes.length) return null; const [x0, y0, x1, y1] = box(pt.strokes.flatMap(s => s[0])), m = .05, [c] = canvas(Math.ceil((x1 - x0 + 2 * m) * RR * px), Math.ceil((y1 - y0 + 2 * m) * RR * px)); return { c, x0: x0 - m, y0: y0 - m, w: x1 - x0 + 2 * m, h: y1 - y0 + 2 * m, key: null }; }),
+        pen: sub.parts.flatMap((pt, k) => k === sub.back ? [] : pt.strokes.map(s => [s[0], s[1], s[2], k])).sort((a, b) => a[1] - b[1]).map(e => [...e, lens(e[0])]),
+        brush: sub.parts.flatMap((pt, k) => k === sub.back ? [] : pt.washes.map(w => { const [x0, y0, x1, y1] = box(w[0]); return [w[3], w[4], w[5], k, x1 - x0, y1 - y0]; })).sort((a, b) => a[0] - b[0]),
+        glow: mk(64, 64, x => { const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,236,170,.95)"); gr.addColorStop(.3, "rgba(255,214,120,.45)"); gr.addColorStop(1, "rgba(255,200,100,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); }), curC: null };
+      return (S.cst = ins);
+    },
+    /** a curtain, drawn once into its own canvas when it's painted (its lines held still), to be gathered in bands */
+    crownCurtain(ins, st, c) {
+      ins.curC = ins.curC || []; if (ins.curC[c]) return ins.curC[c];
+      const x0 = U(c ? 98 : 24), y0 = U(44), w = U(176) - U(98), h = U(150) - U(44), [cv, x] = canvas(Math.ceil(w * ins.RR * px), Math.ceil(h * ins.RR * px));
+      x.imageSmoothingEnabled = true; x.setTransform(px * ins.RR, 0, 0, px * ins.RR, -x0 * px * ins.RR, -y0 * px * ins.RR); x.lineCap = "round"; x.lineJoin = "round";
+      x.fillStyle = "#F8F6F1"; x.beginPath(); STAGE.curP[c].forEach(([u, v], i) => i ? x.lineTo(u, v) : x.moveTo(u, v)); x.closePath(); x.fill(); // on the paper's own white, so the bands it's gathered in lay over each other without showing
+      S.pieceOf(ins, x, st, 0, false, [STAGE.cur[c]]);
+      return (ins.curC[c] = Object.assign(cv, { x0, y0, w, h }));
+    },
+    /** how far across a curtain reaches at height v (the drawing's units), gathered to its tie-back as it opens (o: 0 … 1) */
+    crownGather(v, o) { const y = v * 100 + 100, t = (y - 112) / 40, shape = .12 + (y < 112 ? .17 : .09) * Math.min(1, t * t); return lerp(1, shape, o); },
+    /** a member of the crown's company, made for its size on the stage: its subject (or the balloon's own lines and paint),
+     *  just the parts that come on (the rest is its scenery), its lines drawn once and held still */
+    crownMember(i) {
+      const [id, only, sx, sy, h, mir] = CAST[i], keep = S.RR, fit = [1e9, 1e9, -1e9, -1e9], put = pts => { for (const [u, v] of pts) { fit[0] = Math.min(fit[0], u); fit[1] = Math.min(fit[1], v); fit[2] = Math.max(fit[2], u); fit[3] = Math.max(fit[3], v); } };
+      const sub = id ? SUBJECTS[id](0) : null; if (sub) { for (const k of only) for (const s of sub.parts[k].strokes) put(s[0]); } else { put(CONTOUR); put(BASKET); }
+      const s = (h / 100) / (fit[3] - fit[1]), RR = Math.max(6, keep * s), jit = boil(5, .3 / RR); S.RR = RR;
+      let ins;
+      if (sub) ins = { sub, RR, key: "cast" + i, spr: sub.sprites ? sub.sprites(mk) : null, drops: [],
+        washes: sub.parts.map((pt, k) => only.includes(k) ? pt.washes.map((w, j) => S.washOf(w[0], w[1], w[2], 211 + id * 97 + k * 31 + j * 17, w[6])) : []),
+        ink: sub.parts.map((pt, k) => { if (!only.includes(k) || !pt.strokes.length) return null; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const st2 of pt.strokes) for (const [u, v] of st2[0]) { x0 = Math.min(x0, u); y0 = Math.min(y0, v); x1 = Math.max(x1, u); y1 = Math.max(y1, v); } const m = .05, [c] = canvas(Math.ceil((x1 - x0 + 2 * m) * RR * px), Math.ceil((y1 - y0 + 2 * m) * RR * px)); return { c, x0: x0 - m, y0: y0 - m, w: x1 - x0 + 2 * m, h: y1 - y0 + 2 * m, key: null }; }) };
+      else { ins = { washes: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(w => S.washOf(WASH[w][0], WASH[w][1], WASH[w][2], 101 + w * 17)) }; const [c] = canvas(Math.ceil(2.3 * RR * px), Math.ceil(2.3 * RR * px)), x2 = c.getContext("2d"); x2.setTransform(px * RR, 0, 0, px * RR, 1.15 * RR * px, 1.15 * RR * px); x2.lineCap = "round"; x2.lineJoin = "round"; S.inkInto(x2, () => 1, jit, 1, STROKES.slice(1)); ins.inkC = c; }
+      const st = { A: 0, T: 0, I: 1, jit, fin: 0, live: false, alive: 0, prog: () => 1, inkKey: "cast", w: sub ? sub.parts.map(pt => pt.washes.map(() => 1)) : null, wet: sub ? sub.parts.map(pt => pt.washes.map(() => 0)) : null, birds: 1, fly: 0, drops: [] };
+      const m = .14, bx = fit[0] - m, by = fit[1] - m, bw = fit[2] - fit[0] + 2 * m, bh = fit[3] - fit[1] + 2 * m, [spr, x] = canvas(Math.ceil(bw * RR * px), Math.ceil(bh * RR * px)); // all of it drawn once into a sprite of its own, its lines held still
+      x.imageSmoothingEnabled = true; x.setTransform(px * RR, 0, 0, px * RR, -bx * px * RR, -by * px * RR); x.lineCap = "round"; x.lineJoin = "round";
+      if (sub) S.pieceOf(ins, x, st, 0, false, only); else { for (const c of ins.washes) x.drawImage(c, c.x0, c.y0, c.lw, c.lh); x.drawImage(ins.inkC, -1.15, -1.15, 2.3, 2.3); }
+      S.RR = keep;
+      return { id, spr, box: [bx, by, bw, bh], s, mir, foot: [(fit[0] + fit[2]) / 2, fit[3]], at: [U(sx), U(sy)], dir: sx < 96 ? 1 : sx > 104 ? -1 : 0 };
+    },
+    /** the company, made a member a frame until the curtains open (all of it at once if it's wanted sooner) */
+    crownCast(T) {
+      if (!S.cc || S.cc.RR !== S.RR) S.cc = { RR: S.RR, m: [] };
+      const want = T >= CRB.open[0] - .4 ? CAST.length : Math.min(CAST.length, S.cc.m.length + 1);
+      while (S.cc.m.length < want) S.cc.m.push(S.crownMember(S.cc.m.length));
+      return S.cc.m;
+    },
+    /** the company on the stage, in the drawing's units, the back row first: each bows about its feet, one after another
+     *  down the line and then all together, a little rise before each */
+    crownCompany(x, T) {
+      const list = S.cc ? S.cc.m : [];
+      for (let i = 0; i < list.length; i++) {
+        const m = list[i], j = CAST_X.indexOf(i), t0 = CRB.wave[0] + j * .16, b0 = CRB.bow[0], b1 = CRB.bow[1];
+        const k = Math.max(env(T, t0, t0 + .24, t0 + .3, t0 + .62, E.io), 1.15 * env(T, b0, b0 + .3, b1 - .3, b1, E.io)), ant = env(T, t0 - .14, t0 - .03, t0, t0 + .08) + env(T, b0 - .16, b0 - .04, b0, b0 + .08);
+        x.save(); x.translate(m.at[0], m.at[1]); x.rotate(m.dir * .42 * k); x.scale(m.s * (1 - .02 * ant) * (m.mir ? -1 : 1), m.s * (1 - (m.dir ? .08 : .22) * k + .05 * ant)); x.translate(-m.foot[0], -m.foot[1]);
+        x.drawImage(m.spr, m.box[0], m.box[1], m.box[2], m.box[3]); x.restore();
+      }
+    },
+    /** the theatre into context x, in the drawing's units: the backdrop and the company in the gap between the curtains,
+     *  the stage under them, the curtains gathered as far as they're open (o: 0 closed … 1 open), the arch over all, the
+     *  footlights (lit) and the flowers on the stage */
+    crownTheatre(x, ins, st, o, T, A, fin, lit) {
+      const ga = x.globalAlpha, open = o > .002, N = 52, top = U(46), bot = U(150);
+      const edge = (c, v) => { const xo = U(c ? 174 : 26); return xo + (c ? -1 : 1) * ((U(100) - U(26)) * S.crownGather(v, o) - .03); }; // (a little under each curtain, so no paper shows between)
+      const gap = () => { x.beginPath(); for (let b = 0; b <= N; b++) { const v = lerp(top, bot, b / N); b ? x.lineTo(edge(0, v), v) : x.moveTo(edge(0, v), v); } for (let b = N; b >= 0; b--) { const v = lerp(top, bot, b / N); x.lineTo(edge(1, v), v); } x.closePath(); };
+      if (open) { x.save(); gap(); x.clip(); S.pieceOf(ins, x, st, 0, false, [STAGE.back]); x.restore(); }
+      S.pieceOf(ins, x, st, 0, false, [STAGE.floor]);
+      if (open) { x.save(); gap(); x.clip(); S.crownCompany(x, T); x.restore(); }
+      STAGE.cur.forEach((k, c) => {
+        if (!open && st.T < 9.1) { S.pieceOf(ins, x, st, 0, false, [k]); return; } // (drawn as it's drawn and painted; then held, and gathered)
+        const cv = S.crownCurtain(ins, st, c), xo = U(c ? 174 : 26), sh = cv.height / cv.h, bands = (y, oo) => { for (let b = 0; b < N; b++) { const v0 = lerp(top, bot, b / N), v1 = lerp(top, bot, (b + 1) / N), f = S.crownGather((v0 + v1) / 2, oo); y.drawImage(cv, 0, (v0 - cv.y0) * sh, cv.width, (v1 - v0) * sh + .5, xo + (cv.x0 - xo) * f, v0, cv.w * f, v1 - v0 + .002); } }; // in bands, each drawn in to its own width
+        if (o < .001) x.drawImage(cv, cv.x0, cv.y0, cv.w, cv.h); // closed: as it hangs
+        else if (o > .999) { if (!cv.open) { const [c2, y] = canvas(cv.width, cv.height); y.imageSmoothingEnabled = true; y.setTransform(cv.width / cv.w, 0, 0, sh, -cv.x0 * cv.width / cv.w, -cv.y0 * sh); bands(y, 1); cv.open = c2; } x.drawImage(cv.open, cv.x0, cv.y0, cv.w, cv.h); } // open: gathered once, and held
+        else bands(x, o);
+        if (o > .82) { const v = U(112), e = edge(c, v) + (c ? -.03 : .03), xo2 = U(c ? 174 : 26); x.strokeStyle = rgba([196, 150, 52], .9 * clamp((o - .82) * 8)); x.lineWidth = 2.2 / S.RR; x.beginPath(); x.moveTo(xo2, v - .01); x.quadraticCurveTo((xo2 + e) / 2, v + .02, e + (c ? -.006 : .006), v + .004); x.stroke(); } // the tie-back
+      });
+      S.pieceOf(ins, x, st, 0, false, [STAGE.frame]);
+      if (lit > .002) { for (const [u, v] of STAGE.LAMPS) { x.globalAlpha = ga * lit * .85; x.drawImage(ins.glow, u - .09, v - .1, .18, .18); } x.globalAlpha = ga; }
+      for (const r of ROSES) { const tt = (T - r.t) / .5; if (tt <= 0) continue; const f = Math.min(1, tt), u = lerp(r.x0, r.x1, f), v = lerp(r.y0, r.y1, f) - .5 * 4 * f * (1 - f), rot = r.rest + r.spin * (1 - E.out(f)); x.globalAlpha = ga * clamp(tt * 6); rose(x, u, v, rot, .045); x.globalAlpha = ga; }
+    },
+    /** 1.12 b448: the crown's pass (K.long 3: the sixth hour of the list left alone, and every sixth after) — the drawing
+     *  the pass before left, rubbed out; the theatre drawn and painted, the curtain call, the set struck; then this pass's
+     *  subject drawn and painted as any pass's is, only quicker and without its moment, so the pass ends on the very picture
+     *  the next one starts from; worked out from the pass and the time alone */
+    crownPass(T, I, A, F, P) {
+      const { W, H } = S, on = I > .01;
+      g.clearRect(0, 0, W, H);
+      const jump = S.lastA === undefined || A < S.lastA || A - S.lastA > .15, dt = jump ? 0 : A - S.lastA; S.lastA = A;
+      const gl = jump ? 1 : 1 - Math.exp(-dt * 2.2); S.cx += (S.tx - S.cx) * gl; S.cy += (S.ty - S.cy) * gl; S.R += (S.tR - S.R) * gl; S.vis += ((S.room === 0 ? 0 : 1) - S.vis) * (jump ? 1 : 1 - Math.exp(-dt * 4)); if (S.vis < .01) return;
+      if (!S.RR || (Math.abs(S.R / S.RR - 1) > .08 && Math.abs(S.tR - S.R) < 2)) S.build();
+      if (S.plP !== P) { const cur = planOf(P), prev = planOf(P - 1); S.pl = { cur, prev }; S.plP = P; for (const k of [...S.subs.keys()]) if (k !== cur.key + "@" + S.RR && k !== prev.key + "@" + S.RR) S.subs.delete(k); }
+      const { cx, cy, R } = S, { cur, prev } = S.pl, iN = S.inst(cur), iO = S.inst(prev), fin = F >= 0 ? env(F, .05, .15, .55, .85, E.sine) : 0;
+      const fr = Math.floor(A * 8), jit = boil(fr, .35 / S.RR), stO = S.stOf(iO, false, T, I, A, F, fin, jit, fr);
+      const [e0, e1] = CRB.erase, erasing = on && T > e0 && T < e1, gone = on && T >= e1, [k0, k1] = CRB.strike, striking = on && T > k0 && T < k1, struck = on && T >= k1;
+      // this pass's subject from `sub` on, on a clock of its own (Ts) that runs from its first line to its last wash dried by the pass's end
+      const Ts = 1.95 + Math.max(0, T - CRB.sub) * (9.85 - 1.95) / (14.82 - CRB.sub), sub = gone && T >= CRB.sub, pr2 = (t0, t1) => seg(Ts, t0, t1, x => x);
+      const inkKey = fr + ":" + (Ts < 6.5 ? Math.round(Ts * 30) : "all") + ":" + S.RR, finD = F >= 0 ? S.fin.map(d => ({ ...d, k: seg(F, d.t, d.t + .12, x => x), a: 1 - seg(F, .8, 1) })) : [], dropsOf = list => [...list.map(d => ({ ...d, k: seg(Ts, d.t + .1, d.t + .25, x => x), a: 1 })), ...finD];
+      const stN = !sub ? null : iN.balloon ? { A, jit, prog: pr2, inkKey, w: WASH.map(([, , , t0, t1]) => pr2(t0, t1)), wet: WASH.map(([, , , t0, t1]) => env(Ts, t0, t0 + .1, t1 + .2, t1 + .9) * I), cp: CSTROKES.map(([, t0, t1]) => pr2(t0, t1)), ghost: [1, 1], ghostB: 1, cloud: [Math.sin(A * .12) * .03, Math.sin(A * .1 + 2) * .025], birds: seg(Ts, 6.16, 6.4, x => x), fly: 0, lift: -fin * .12 + Math.sin(A * .9) * .01, sway: Math.sin(A * .7) * .025 * .35, flame: (.15 + .1 * Math.sin(A * 5) * Math.sin(A * 3.3) + fin) * pr2(4.65, 4.75), drops: dropsOf(S.drops) }
+        : { A, T: Ts, I, jit, fin, live: false, redraw: true, alive: 0, prog: pr2, inkKey, w: iN.sub.parts.map(pt => pt.washes.map(w => pr2(w[3], w[4]))), wet: iN.sub.parts.map(pt => pt.washes.map(w => env(Ts, w[3], w[3] + .1, w[4] + .2, w[4] + .9) * I)), birds: seg(Ts, 6.16, 6.4, x => x), fly: 0, drops: dropsOf(iN.drops) };
+      // the theatre, on a clock of its own (Tq); how far the curtains are open (o); the footlights (lit); the company, made a member a frame
+      const stage = gone && T < k1 + 2 ? S.crownStage() : null, Tq = stageT(T), pq = (t0, t1) => seg(Tq, t0, t1, x => x);
+      const stS = stage ? { A, T: Tq, I, jit, fin, live: false, redraw: true, alive: 0, prog: pq, inkKey: (Tq < 6.5 ? fr + ":" + Math.round(Tq * 30) : "all") + ":" + S.RR, w: STAGE.parts.map(pt => pt.washes.map(w => pq(w[3], w[4]))), wet: STAGE.parts.map(pt => pt.washes.map(w => env(Tq, w[3], w[3] + .1, w[4] + .2, w[4] + .9) * I)), birds: 1, fly: 0, drops: [] } : null;
+      const o = E.io(seg(T, CRB.open[0], CRB.open[1])) - E.io(seg(T, CRB.close[0], CRB.close[1])), lit = env(T, CRB.lights[0], CRB.lights[1], CRB.close[0], CRB.close[1] - .2);
+      if (on && T < CRB.close[1]) S.crownCast(T);
+      const rot = ([u, v]) => { const c = Math.cos(cur.ang), s = Math.sin(cur.ang); return [u * c - v * s, u * s + v * c]; };
+      if (!gone && !erasing) { g.save(); g.globalAlpha = S.vis; g.translate(cx, cy); g.scale(R, R); S.pieceOf(iO, g, stO, prev.mirror); g.restore(); }
+      else if (erasing) { // the drawing the pass before left, drawn aside and rubbed out there, row after row
+        const size = Math.ceil(2.3 * R * px); if (!S.comp || S.comp.width !== size) [S.comp] = canvas(size, size);
+        const x = S.comp.getContext("2d"); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.clearRect(0, 0, size, size); x.setTransform(px * R, 0, 0, px * R, 1.15 * R * px, 1.15 * R * px); x.imageSmoothingEnabled = true; x.lineCap = "round"; x.lineJoin = "round";
+        S.pieceOf(iO, x, stO, prev.mirror);
+        const e = seg(T, e0, e1, x2 => x2), s = EL2[EL2.length - 1] * e; x.globalCompositeOperation = "destination-out"; x.strokeStyle = `rgba(0,0,0,${I.toFixed(3)})`; x.lineWidth = .46; x.beginPath(); let p0 = rot(EP2[0]); x.moveTo(p0[0], p0[1]); for (let i = 1; i < EP2.length && EL2[i - 1] < s; i++) { const f = clamp((s - EL2[i - 1]) / (EL2[i] - EL2[i - 1])), q = rot([lerp(EP2[i - 1][0], EP2[i][0], f), lerp(EP2[i - 1][1], EP2[i][1], f)]); x.lineTo(q[0], q[1]); } x.stroke(); x.globalCompositeOperation = "source-over";
+        g.globalAlpha = S.vis; g.drawImage(S.comp, cx - 1.15 * R, cy - 1.15 * R, 2.3 * R, 2.3 * R); g.globalAlpha = 1;
+      } else { // rubbed out: a ghost of it a moment; the theatre, and after the strike its ghost; then this pass's subject; a touch brings the old one back as it eases
+        g.save(); g.translate(cx, cy); g.scale(R, R);
+        if (I < .99) { g.globalAlpha = S.vis * (1 - I); S.pieceOf(iO, g, stO, prev.mirror); }
+        const gh = .07 * I * (1 - seg(T, e1 + 1, e1 + 2.2)); if (gh > .002) { g.globalAlpha = S.vis * gh; S.pieceOf(iO, g, stO, prev.mirror, true); }
+        if (stage && T <= k0) { g.globalAlpha = S.vis * I; S.crownTheatre(g, stage, stS, o, T, A, fin, lit); }
+        const gs = stage && struck ? .07 * I * (1 - seg(T, k1 + .5, k1 + 1.7)) : 0; if (gs > .002) { g.globalAlpha = S.vis * gs; S.pieceOf(stage, g, stS, 0, true, [STAGE.floor, STAGE.frame, ...STAGE.cur]); }
+        if (sub) { g.globalAlpha = S.vis * I; S.pieceOf(iN, g, stN, cur.mirror); }
+        g.restore(); g.globalAlpha = 1;
+        if (striking && stage) { // the set struck: the theatre, drawn aside and rubbed out there, row after row
+          const size = Math.ceil(2.3 * R * px); if (!S.comp || S.comp.width !== size) [S.comp] = canvas(size, size);
+          const x = S.comp.getContext("2d"); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.clearRect(0, 0, size, size); x.setTransform(px * R, 0, 0, px * R, 1.15 * R * px, 1.15 * R * px); x.imageSmoothingEnabled = true; x.lineCap = "round"; x.lineJoin = "round";
+          S.crownTheatre(x, stage, stS, 0, T, A, fin, 0);
+          const e = seg(T, k0, k1, x2 => x2), s = EL2[EL2.length - 1] * e; x.globalCompositeOperation = "destination-out"; x.strokeStyle = "#000"; x.lineWidth = .46; x.beginPath(); x.moveTo(EP2[0][0], EP2[0][1]); for (let i = 1; i < EP2.length && EL2[i - 1] < s; i++) { const f = clamp((s - EL2[i - 1]) / (EL2[i] - EL2[i - 1])); x.lineTo(lerp(EP2[i - 1][0], EP2[i][0], f), lerp(EP2[i - 1][1], EP2[i][1], f)); } x.stroke(); x.globalCompositeOperation = "source-over";
+          g.globalAlpha = S.vis * I; g.drawImage(S.comp, cx - 1.15 * R, cy - 1.15 * R, 2.3 * R, 2.3 * R); g.globalAlpha = 1; }
+      }
+      const tool = (spr, sh, [sx, sy], lift, ang, a) => { if (a <= .005) return; g.globalAlpha = a * S.vis; g.save(); g.translate(sx + 6 + lift * 10, sy + 9 + lift * 14); g.rotate(ang); g.drawImage(sh, -sh.w2 * .06, -sh.h2 / 2, sh.w2, sh.h2); g.restore(); g.save(); g.translate(sx, sy - lift * 6); g.rotate(ang); g.drawImage(spr, 0, -spr.h2 / 2, spr.w2, spr.h2); g.restore(); g.globalAlpha = 1; };
+      const ta = S.toolAng || -.62;
+      // the eraser at work, its crumbs flying: the drawing the pass before left, and the set
+      for (const [a0, a1, turn] of [[e0, e1, true], [k0, k1, false]]) if (on && T > a0 && T < a1 + .9) {
+        const e = seg(T, a0, a1, x => x), at = q => turn ? rot(q) : q;
+        for (const c of S.crumbs) { if (c.e > e) continue; const te = a0 + c.e * (a1 - a0), dtc = T - te; if (dtc > .9) continue; const [u, v] = at(along(EP2, EL2, c.e)), x = cx + (u + c.vx * dtc) * R, y = cy + (v + c.vy * dtc + .9 * dtc * dtc) * R; g.strokeStyle = rgba(c.c, (1 - dtc / .9) * .8 * I * S.vis); g.lineWidth = 1.2; g.beginPath(); g.arc(x, y, 2.2, c.rot, c.rot + 2.4); g.stroke(); }
+        if (T < a1) { const [u0, v0, d0] = along(EP2, EL2, e), sc = Math.sin(A * 34) * .09, [u, v] = at([u0 - Math.sin(d0) * sc, v0 + Math.cos(d0) * sc]), rt = d0 + (turn ? cur.ang : 0) + Math.sin(A * 24) * .12, spr = S.eraserS, sh = S.eraserSh, sx = cx + u * R, sy = cy + v * R;
+          g.globalAlpha = I * S.vis; g.save(); g.translate(sx + 5, sy + 7); g.rotate(rt); g.drawImage(sh, -sh.w2 / 2, -sh.h2 / 2, sh.w2, sh.h2); g.restore(); g.save(); g.translate(sx, sy); g.rotate(rt); g.drawImage(spr, -spr.w2 / 2, -spr.h2 / 2, spr.w2, spr.h2); g.restore(); g.globalAlpha = 1; }
+      }
+      // the pencil drawing the theatre and the brush painting it, on its clock
+      if (stage && on && Tq > 1.95 && Tq < 9.1) { const tl = S.toolsAt(stage, Tq);
+        if (tl.pen) tool(S.pencil, S.pencilSh, S.toScr(stage, stS, 0, tl.pen.k, tl.pen.at[0], tl.pen.at[1]), tl.pen.lift, ta + tl.pen.lift * .06, I * env(Tq, 1.95, 2.05, 6.35, 6.5));
+        if (tl.brush) tool(S.brush, S.brushSh, S.toScr(stage, stS, 0, tl.brush.k, tl.brush.at[0], tl.brush.at[1]), tl.brush.lift * .4, ta * 1.12, I * env(Tq, 6.4, 6.5, 9.0, 9.1)); }
+      // the tools' own bow, in front of the closed curtains: in from the side one after another, a hop as each stops, a bow together, and off
+      if (on && T > CRB.tools[0] && T < CRB.tools[1]) { const [t0, t1] = CRB.tools, bowK = env(T, t0 + .5, t0 + .66, t0 + .74, t0 + .9, E.io);
+        [[S.pencil, S.pencilSh, -.28], [S.brush, S.brushSh, 0], [S.eraserS, S.eraserSh, .28]].forEach(([spr, sh, u], i) => {
+          const tin = t0 + i * .07, k = E.out(seg(T, tin, tin + .34)), out = E.in(seg(T, t1 - .3 + i * .05, t1 - .02 + i * .05)), hop = Math.abs(Math.sin(seg(T, tin, tin + .34) * Math.PI * 3)) * (1 - k) * .05, v = U(STAGE.fy(100 + u * 100)) - .055;
+          const x = cx + (lerp(1.1, u, k) + out * 1.3) * R, y = cy + (v - hop) * R, ang = -Math.PI / 2 - bowK * .34, dip = 1 - .24 * bowK; // a bow: its top dipping to us as it leans
+          g.globalAlpha = S.vis * I; g.save(); g.translate(x + 5, y + 4); g.rotate(ang); g.scale(dip, 1); g.drawImage(sh, -sh.w2 * .06, -sh.h2 / 2, sh.w2, sh.h2); g.restore(); g.save(); g.translate(x, y); g.rotate(ang); g.scale(dip, 1); g.drawImage(spr, 0, -spr.h2 / 2, spr.w2, spr.h2); g.restore(); g.globalAlpha = 1; }); }
+      // then this pass's subject: the pencil while it draws, the brush while it paints, on its own clock
+      if (sub && Ts > 1.95 && Ts < 9.1) { const tl = S.toolsAt(iN, Ts);
+        if (tl.pen) tool(S.pencil, S.pencilSh, S.toScr(iN, stN, cur.mirror, tl.pen.k, tl.pen.at[0], tl.pen.at[1]), tl.pen.lift, ta + tl.pen.lift * .06, I * env(Ts, 1.95, 2.05, 6.35, 6.5));
+        if (tl.brush) { const fl = (iN.balloon ? FLICKS : iN.sub.flicks).reduce((m, t) => Math.max(m, env(Ts, t - .06, t, t + .02, t + .14)), 0); tool(S.brush, S.brushSh, S.toScr(iN, stN, cur.mirror, tl.brush.k, tl.brush.at[0], tl.brush.at[1]), tl.brush.lift * .4, ta * 1.12 - Math.sign(ta) * fl * .5, I * env(Ts, 6.4, 6.5, 9.0, 9.1)); } }
+      // the finale: stars sketched in round it
+      if (F >= 0) for (const s of S.stars) { const p = seg(F, s.t, s.t + .16, x => x); if (p <= 0) continue; const pts = Array.from({ length: 11 }, (_, k) => { const a = -Math.PI / 2 + k * TAU * 2 / 5, rr = s.s; return [s.x + Math.cos(a) * rr, s.y + Math.sin(a) * rr]; }); g.save(); g.translate(cx, cy); g.scale(R, R); g.lineWidth = 1.4 / R; g.strokeStyle = rgba([157, 119, 0], .9 * (1 - seg(F, .82, 1)) * S.vis); K.partial(g, pts.map(([u, v]) => jit(u, v)), p); g.restore(); }
+    },
     /** the pencil lines, drawn into the cache for this boil frame and this much of the drawing */
     inkInto(x, prog, jit, ghost, list = STROKES) {
       const RR = S.RR, stroke = (pts, p, w, a) => {
@@ -1310,7 +1542,7 @@ export default function sketch(K) {
       g.restore();
     },
     paint(T, I, A, F, P = 0) {
-      if (P > 0) { const L = K.long(P); if (K.egg(P)) S.eggPass(T, I, A, F, P); else if (L === 1 || L === 2) S.hourPass(T, I, A, F, P, L); else S.drawPass(T, I, A, F, P); return; } // b416: every twelfth pass, the egg; b427: once an hour, an hour egg
+      if (P > 0) { const L = K.long(P); if (K.egg(P)) S.eggPass(T, I, A, F, P); else if (L === 1 || L === 2) S.hourPass(T, I, A, F, P, L); else if (L === 3) S.crownPass(T, I, A, F, P); else S.drawPass(T, I, A, F, P); if (L !== 3 && S.cst) S.cst = S.cc = null; return; } // b416: every twelfth pass, the egg; b427: once an hour, an hour egg; b448: in the sixth hour and every sixth, the crown (its theatre and its company let go once it's over)
       const { W, H } = S, on = I > .01;
       g.clearRect(0, 0, W, H);
       // glide to the room the words leave, and draw the caches again if the size has changed much

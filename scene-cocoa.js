@@ -40,6 +40,16 @@
 // it flies in over the table from the side away from the words and lands on the saucer's rim, watches the pour, hops up
 // onto the cup, takes the foam in two sips, comes up with some on its beak and shakes it off into the cup, cocks its head
 // at you and is gone the way it came. The pass's dusting falls after either, so it ends where the next pass starts.
+//
+// 1.12 b448: the crown. In the sixth hour of the list left alone and every sixth after (K.long 3), a day goes by at the
+// café in fifteen seconds. The afternoon's light swings round across the table, stretching out and going gold, the cup's
+// shadow lengthening in it; it reddens and goes, and the room goes dark while the spoon stirs the last of the day's art
+// away. The café's lights come on one bulb at a time, warm round the cup, and the moon lays the window's panes across the
+// table in blue, the leaves moving in them, and catches the rims of the cup and the saucer. The cocoa, still and dark,
+// holds the window with the night in it: the stars, a crescent moon climbing a pane, the string of lights; a star falls
+// across it. Then dawn: the window in the cup goes rose and gold, the lights go out one by one, the morning's light comes
+// back across the table to where it lies all day, and the first pour of the day blooms in the dawn. The pass's dusting
+// falls after it, so the pass ends on the very picture the next one starts from.
 export default function cocoa(K) {
   const { clamp, lerp, E, seg, env, rng, canvas } = K;
   const TAU = Math.PI * 2;
@@ -192,6 +202,25 @@ export default function cocoa(K) {
   const TS = 1.9; // the tit's size: its own units to the cup's radii
   const TB = { in: [.7, 2.15], fold: [2.1, 2.45], watch: [2.45, 6.0], hops: [3.3, 4.6], hop: [6.05, 6.45], sips: [6.6, 7.55], foam: [8.0, 9.3], shake: [8.45, 8.85], cock: [9.15, 9.75], off: [9.9, 11.1], dust: 3.15 };
 
+  /* ---------------- 1.12 b448: the crown ---------------- */
+  /** The crown, a day going by at the café in fifteen seconds, its beats in the pass's seconds: the afternoon's light swings
+   *  across the table, stretching and going gold (`gold`), reddens and goes (`set`), and the room goes dark (`dark`) while
+   *  the last of the day's art is stirred away (`stir`); the café's lights come on one bulb at a time (`bulbs`: the first,
+   *  the gap between, then going out) and throw a warm pool round the cup (`pool`); the cocoa, still and dark, holds the
+   *  window with the night in it (`mirror`), the moon climbing a pane (`moon`), while the moon lays the window's panes across
+   *  the table (`moonL`); a star falls across the window in the cup (`star`); then dawn (`dawn`): the window in the cup goes
+   *  rose and gold, the lights go out, the morning's light comes back across the table to where it lies all day (`light`),
+   *  and the first pour of the day (`pour`) blooms in the dawn; the pass's dusting falls after it, `dust` seconds late, and
+   *  from `end` on the pass is the resting picture */
+  const CB = { gold: [.3, 3.4], set: [3.0, 5.2], dark: [3.4, 5.8, 9.0, 11.6], stir: [3.5, 5.3], bulbs: [4.9, .18, 9.0, .14], pool: [4.9, 6.1, 9.0, 10.0], mirror: [4.6, 6.0, 10.4, 12.2], moonL: [5.2, 6.4, 9.2, 10.2], moon: [5.0, 10.8], star: [7.0, 7.8], dawn: [8.6, 10.4], light: [9.6, 12.3], pour: 9.6, dust: 4.4, end: 12.4 };
+  /** the window the cocoa holds at night, in the cocoa's radii: where it lies, how it's turned and skewed (as its light on
+   *  the table is), its size, the bars between its four panes */
+  const CW = { x: -.08, y: -.1, r: -.16, k: -.18, w: 1.62, h: 1.3, m: .075 }, CPW = (CW.w - CW.m) / 2, CPH = (CW.h - CW.m) / 2;
+  const CSTARS = (() => { const r = rng(8059); return Array.from({ length: 9 }, () => ({ x: (r() - .5) * CW.w * .92, y: (r() - .5) * CW.h * .92, s: .03 + r() * .035, f: .6 + r() * .9, ph: r() * TAU })); })(); // the brighter stars, twinkling
+  const CBULB = Array.from({ length: 7 }, (_, i) => { const f = (i + .5) / 7; return [lerp(-1.02, 1.02, f), lerp(.46, .26, f) + .2 * Math.sin(f * Math.PI)]; }); // the café's string of lights, as the cocoa holds them
+  /** the window's light, as S.win is drawn, in another colour (the crown's afternoon, sunset, dawn and moon) */
+  const winOf = (rgb, a = .12) => make(280, 184, x => { x.transform(1, 0, -.28, 1, 54, 0); for (const [i, j] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { const w = 96, h = 78, ox = 14 + i * (w + 12), oy = 8 + j * (h + 12); for (let q = 0; q < 9; q++) { x.fillStyle = `rgba(${rgb},${a})`; x.beginPath(); x.roundRect(ox + q * 1.6, oy + q * 1.6, w - q * 3.2, h - q * 3.2, 6); x.fill(); } } });
+
   const S = {
     res: "dpr",
     wash: 1, veil: .6, hug: .7, hugFinale: true, list: .4, // a dark kit; the table is behind the words, and the lines and the finale's words sit on pads
@@ -300,8 +329,9 @@ export default function cocoa(K) {
      *  what goes over the light and when, whether the cat comes */
     passPlan(P) {
       if (S.plP === P && S.pl) return S.pl;
+      S.cs = null; // (b448: the crown's sprites let go once its pass is over; made again if the pass is a crown)
       if (K.egg(P)) { S.pl = S.eggPlanOf(P); S.plP = P; return S.pl; } // b416: every twelfth pass, the egg
-      { const L = K.long(P); if (L === 1 || L === 2) { S.pl = S.hourPlanOf(P, L); S.plP = P; return S.pl; } } // b427: once an hour, an hour egg
+      { const L = K.long(P); if (L === 1 || L === 2) { S.pl = S.hourPlanOf(P, L); S.plP = P; return S.pl; } if (L === 3) { S.pl = S.crownPlanOf(P); S.plP = P; return S.pl; } } // b427: once an hour, an hour egg; b448: in the sixth hour and every sixth, the crown
       const cur = planOf(P), prev = planOf(P - 1), pr = PROGS[cur.art], end = pr ? pr.end : 5.8, r = rng(cur.seed + 7), t0 = Math.max(6.25, end + .4);
       const n = [3, 5, 9, 0][cur.drop], small = cur.drop === 2, o = r() * TAU;
       const mallows = Array.from({ length: n }, (_, i) => { const a = o + i / Math.max(1, n) * TAU + (r() - .5) * .6, d = small ? .2 + r() * .34 : .22 + r() * .22; return { u: Math.cos(a) * d, v: Math.sin(a) * d, rot: r() * TAU, t: t0 + i * (small ? .08 : .4) + r() * .08, ph: r() * TAU, s: small ? .06 + r() * .025 : .14 + r() * .025, pink: r() < .45 }; });
@@ -329,6 +359,101 @@ export default function cocoa(K) {
     hourPlanOf(P, which) {
       const cur = planOf(P), prev = planOf(P - 1), pr = PROGS[cur.art];
       return { P, cur, prev, end: pr ? pr.end : 5.8, mallows: [], lt: -1, c0: 0, deep: 0, paw: false, hour: { which, dust: which === 1 ? DB.dust : TB.dust } };
+    },
+    /** 1.12 b448: the crown's pass (K.long 3: the sixth hour of the list left alone, and every sixth after). The day goes
+     *  by over it (see CB): the old art is stirred away at dusk and this pass's pour is poured at dawn, in place of what drops
+     *  in and what crosses the light; its dusting falls after the pour, `dust` seconds late, so the pass ends on the very
+     *  picture the next one starts from */
+    crownPlanOf(P) {
+      const cur = planOf(P), prev = planOf(P - 1), pr = PROGS[cur.art];
+      return { P, cur, prev, end: pr ? pr.end : 5.8, mallows: [], lt: -1, c0: 0, deep: 0, paw: false, crown: { dust: CB.dust } };
+    },
+    /** the crown's time on the cocoa: still (the old art) through the afternoon, the spoon's stir drawn out over the dusk,
+     *  the cup still through the night, the pour at dawn as a pass pours it */
+    crownT(T) { return T < CB.stir[0] ? Math.min(.39, T * .1) : T < CB.stir[1] ? lerp(.4, 2.25, (T - CB.stir[0]) / (CB.stir[1] - CB.stir[0])) : T < CB.pour ? lerp(2.25, 2.29, (T - CB.stir[1]) / (CB.pour - CB.stir[1])) : POUR0 + DT + (T - CB.pour); }, /* (a step on, so the pour's first frame isn't the stirred art's last) */
+    /** where the crown's day has got to at T, taken back to the resting picture as the list is used (I): the window's light
+     *  (where it lies, how it's turned and stretched, how strong, in which colours), the cup's shadow in it, the moon's light,
+     *  the café's lights, how dark the room is, how much of the night the cocoa holds; null either side of it */
+    crownAt(T, I, tS) {
+      if (T < CB.gold[0] || T >= CB.end) return null;
+      const sm = (a, b) => seg(T, a, b, E.io); let dx, dy, rot, sx, a, wA, wG = 0, wR = 0, wD = 0, sh = 0, day;
+      if (T < 7) { const k = sm(CB.gold[0], CB.gold[1]), c1 = sm(.5, 2.4), c2 = sm(2.4, 4.4); dx = -.7 * k; dy = .3 * k; rot = -.62 * k; sx = 1 + .8 * k; sh = k; // the afternoon going by
+        a = .62 * (1 + .1 * env(T, .3, 1.8, 2.6, 3.6, E.sine)) * (1 - seg(T, CB.set[0], CB.set[1], E.in)); wA = 1 - c1; wG = c1 * (1 - c2); wR = c2; day = 1 - seg(T, 3.4, 5.0); }
+      else { const k = 1 - sm(CB.light[0], CB.light[1]), c3 = sm(10.6, CB.light[1]); dx = .45 * k; dy = -.25 * k; rot = .3 * k; sx = 1 + .35 * k; // the morning coming back
+        a = .62 * seg(T, CB.light[0], 11.0, E.out); wA = c3; wD = 1 - c3; day = seg(T, 10.8, CB.light[1]); }
+      const dark = env(T, CB.dark[0], CB.dark[1], CB.dark[2], CB.dark[3], E.sine) * I;
+      return { dx: dx * I, dy: dy * I, rot: rot * I, sx: 1 + (sx - 1) * I, a: lerp(.62, a, I), wA: 1 - (1 - wA) * I, wG: wG * I, wR: wR * I, wD: wD * I, day: lerp(1, day, I),
+        shx: .22 + .3 * sh * I, shy: .3 + .22 * sh * I, shr: .9 + .25 * sh * I, shl: 1 + .9 * sh * I,
+        moonA: env(T, CB.moonL[0], CB.moonL[1], CB.moonL[2], CB.moonL[3], E.sine) * .55 * I, mx: lerp(-.75, -.3, seg(T, CB.moonL[0], CB.moonL[3])), my: -.32, mr: -.42, msx: 1.12,
+        pool: env(T, CB.pool[0], CB.pool[1], CB.pool[2], CB.pool[3], E.sine) * I, dark, tint: dark * .84, T, I,
+        mirror: env(T, CB.mirror[0], CB.mirror[1], CB.mirror[2], CB.mirror[3], E.sine) * I, dawn: sm(CB.dawn[0], CB.dawn[1]), moonP: seg(T, CB.moon[0], CB.moon[1]), star: (T - CB.star[0]) / (CB.star[1] - CB.star[0]),
+        veil: dark * Math.max(tS < POUR0 ? 1 - seg(tS, 1.2, 2.25, E.in) : 0, .55 * seg(T, CB.pour, CB.pour + .8)), steam: lerp(1, .8, dark) };
+    },
+    /** how far bulb i of the café's lights is on: one at a time coming on, one at a time going out */
+    bulbOn(cl, i) { const [t0, d0, t1, d1] = CB.bulbs; return (seg(cl.T, t0 + i * d0, t0 + i * d0 + .22) - seg(cl.T, t1 + i * d1, t1 + i * d1 + .22)) * cl.I; },
+    /** the crown's sprites, made once (and again if the screen's density changes): the window's light in the afternoon's
+     *  gold, the sunset's red, the dawn's rose and the moon's blue; the warm pool the café's lights throw round the cup; and,
+     *  for the window the cocoa holds, its panes in the night's sky and in the dawn's, the moon, a star's glint, a bulb's
+     *  glow, a falling star's streak */
+    crownSprites() {
+      if (S.cs && S.cs.px === px) return S.cs;
+      const fixed = (w, h, fn) => { const [c, x] = canvas(Math.ceil(w), Math.ceil(h)); x.imageSmoothingEnabled = true; fn(x); return c; };
+      const s = 280, w = CW.w * s, h = CW.h * s, r = rng(8053), PANES = [[0, 0], [1, 0], [0, 1], [1, 1]];
+      const panes = x => { x.beginPath(); for (const [i, j] of PANES) x.roundRect((i ? CPW + CW.m : 0) * s, (j ? CPH + CW.m : 0) * s, CPW * s, CPH * s, .035 * s); };
+      const sky = (stops, fn) => fixed(w, h, x => { const gr = x.createLinearGradient(0, 0, 0, h); for (const [o, c] of stops) gr.addColorStop(o, c); x.fillStyle = gr; x.fillRect(0, 0, w, h); fn(x);
+        x.globalCompositeOperation = "destination-in"; x.fillStyle = "#000"; panes(x); x.fill(); x.globalCompositeOperation = "source-over";
+        x.strokeStyle = "rgba(200,214,255,.16)"; x.lineWidth = 1.5; panes(x); x.stroke(); }); // the glass's edge catching what light there is
+      const night = sky([[0, "#070C22"], [.55, "#0E1B40"], [1, "#1A2C58"]], x => { for (let i = 0; i < 110; i++) { const sx = r() * w, sy = r() * h, rr = .5 + r() * r() * 1.3; x.fillStyle = `rgba(${r() < .2 ? "255,236,206" : "220,230,255"},${(.25 + r() * .6).toFixed(2)})`; x.beginPath(); x.arc(sx, sy, rr, 0, TAU); x.fill(); } });
+      const dawn = sky([[0, "#1B2152"], [.36, "#5A3D78"], [.64, "#C9696E"], [.84, "#F09A5E"], [1, "#FAC676"]], x => { const gr = x.createRadialGradient(w * .62, h * 1.02, 0, w * .62, h * 1.02, h * .7); gr.addColorStop(0, "rgba(255,226,150,.85)"); gr.addColorStop(1, "rgba(255,200,120,0)"); x.fillStyle = gr; x.fillRect(0, 0, w, h); });
+      const moon = fixed(128, 128, x => { const gr = x.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, "rgba(214,226,255,.5)"); gr.addColorStop(.28, "rgba(214,226,255,.16)"); gr.addColorStop(1, "rgba(214,226,255,0)"); x.fillStyle = gr; x.fillRect(0, 0, 128, 128);
+        x.fillStyle = "#F4F0E2"; x.beginPath(); x.arc(64, 64, 15, 0, TAU); x.fill(); x.fillStyle = "rgba(160,160,150,.28)"; for (const [a, b, c] of [[60, 58, 4], [68, 66, 3], [58, 70, 2.5]]) { x.beginPath(); x.arc(a, b, c, 0, TAU); x.fill(); }
+        x.globalCompositeOperation = "destination-out"; x.globalAlpha = .93; x.beginPath(); x.arc(72.5, 58, 14.2, 0, TAU); x.fill(); }); // a crescent, the rest of it faint in the earth's light
+      const glow = c => fixed(64, 64, x => { const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, `rgba(${c},1)`); gr.addColorStop(.18, `rgba(${c},.55)`); gr.addColorStop(.5, `rgba(${c},.14)`); gr.addColorStop(1, `rgba(${c},0)`); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); });
+      const streak = fixed(256, 16, x => { const gr = x.createLinearGradient(0, 0, 256, 0); gr.addColorStop(0, "rgba(220,232,255,0)"); gr.addColorStop(.75, "rgba(230,238,255,.45)"); gr.addColorStop(1, "rgba(255,255,255,1)"); x.fillStyle = gr; x.beginPath(); x.moveTo(0, 8); x.lineTo(252, 5); x.arc(252, 8, 3, -Math.PI / 2, Math.PI / 2); x.closePath(); x.fill(); });
+      const pool = fixed(128, 128, x => { const gr = x.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, "rgba(255,178,104,.62)"); gr.addColorStop(.6, "rgba(255,160,90,.2)"); gr.addColorStop(1, "rgba(255,150,80,0)"); x.fillStyle = gr; x.fillRect(0, 0, 128, 128); });
+      const pp = new Path2D(); for (const [i, j] of PANES) pp.roundRect(-CW.w / 2 + (i ? CPW + CW.m : 0), -CW.h / 2 + (j ? CPH + CW.m : 0), CPW, CPH, .035);
+      S.cs = { px, night, dawn, moon, glint: glow("226,234,255"), bulb: glow("255,204,130"), streak, pool, panes: pp, gold: winOf("255,150,52"), red: winOf("236,92,52"), rose: winOf("255,150,128"), moonWin: winOf("150,182,255") };
+      return S.cs;
+    },
+    /** the crown's light on the table, in place of the morning's: the moon's panes, and the day's (the afternoon's or the
+     *  morning's), each with the leaves' shadows moving in it */
+    crownLights(cl, cx, cy, R, ww, wh, A, leafCut) {
+      const cs = S.crownSprites(), wob = Math.sin(A * .05) * .02;
+      if (cl.moonA > .002) { g.save(); g.translate(cx + R * (.3 + cl.mx), cy + R * (.12 + cl.my)); g.rotate(-.16 + cl.mr + wob); g.scale(cl.msx, 1); g.globalAlpha = S.vis * cl.moonA; g.drawImage(cs.moonWin, -ww / 2, -wh / 2, ww, wh); leafCut(); g.restore(); }
+      if (cl.a > .002) { g.save(); g.translate(cx + R * (.3 + cl.dx), cy + R * (.12 + cl.dy)); g.rotate(-.16 + cl.rot + wob); g.scale(cl.sx, 1);
+        for (const [img, w] of [[S.win, cl.wA], [cs.gold, cl.wG], [cs.red, cl.wR], [cs.rose, cl.wD]]) if (w > .002) { g.globalAlpha = S.vis * cl.a * w; g.drawImage(img, -ww / 2, -wh / 2, ww, wh); }
+        leafCut(); g.restore(); }
+    },
+    /** the café's lights, a warm pool round the cup */
+    crownPool(cl, cx, cy, R) { const cs = S.crownSprites(), r = R * 2.1; g.globalAlpha = S.vis * cl.pool * .9; g.drawImage(cs.pool, cx - r, cy - r, r * 2, r * 2); g.globalAlpha = S.vis; },
+    /** the room gone dark: under the light that's left (the moon's, the café's), over the table */
+    crownNight(cl, W, H) { g.globalCompositeOperation = "destination-over"; g.globalAlpha = S.vis * cl.dark * .7; g.fillStyle = "#090B1A"; g.fillRect(0, 0, W, H); g.globalCompositeOperation = "source-over"; g.globalAlpha = S.vis; },
+    /** the saucer, the cup, the spoon and the beans gone dark with the room, the café's lights and the moon catching the rims */
+    crownDim(cl, cx, cy, R, SR, CR) {
+      g.globalAlpha = S.vis * cl.dark * .64; g.fillStyle = "#1E1512"; g.beginPath(); g.arc(cx, cy, SR + .5, 0, TAU); for (const b of S.beans) { const bx = cx + b.u * R, by = cy + b.v * R; g.moveTo(bx + R * .08, by); g.arc(bx, by, R * .08, 0, TAU); } g.fill();
+      if (cl.pool > .002) { g.globalAlpha = S.vis * cl.pool * .42; g.strokeStyle = "#FFC88C"; g.lineWidth = Math.max(1, SR * .018); g.beginPath(); g.arc(cx, cy, SR * .975, Math.PI * .08, Math.PI * .5); g.stroke(); g.lineWidth = Math.max(1, R * .012); g.beginPath(); g.arc(cx, cy, CR * .985, Math.PI * .1, Math.PI * .45); g.stroke(); } // and the café's lights catching them on the other side
+      const mo = cl.moonA / .55; if (mo > .002) { g.globalAlpha = S.vis * mo * .5; g.strokeStyle = "#C4D4FF"; g.lineWidth = Math.max(1, SR * .016); g.beginPath(); g.arc(cx, cy, SR * .975, Math.PI * .95, Math.PI * 1.45); g.stroke(); g.lineWidth = Math.max(1, R * .012); g.beginPath(); g.arc(cx, cy, CR * .985, Math.PI, Math.PI * 1.5); g.stroke(); }
+      g.globalAlpha = S.vis;
+    },
+    /** the night in the cup, in the cocoa's radii: the cocoa gone dark, holding the window — its panes in the night's sky and
+     *  the dawn's, the brighter stars twinkling, the moon climbing a pane, a star falling across it — and the café's lights */
+    crownMirror(cl, A) {
+      const cs = S.crownSprites(), v = S.vis;
+      if (cl.tint > .002) { g.globalAlpha = v * cl.tint; g.fillStyle = "#0C090E"; g.fillRect(-1, -1, 2, 2); }
+      if (cl.mirror > .002) {
+        const m = v * cl.mirror, W2 = CW.w / 2, H2 = CW.h / 2;
+        g.save(); g.translate(CW.x, CW.y); g.rotate(CW.r); g.transform(1, 0, CW.k, 1, 0, 0);
+        if (cl.dawn < .998) { g.globalAlpha = m * (1 - cl.dawn); g.drawImage(cs.night, -W2, -H2, CW.w, CW.h); }
+        if (cl.dawn > .002) { g.globalAlpha = m * cl.dawn; g.drawImage(cs.dawn, -W2, -H2, CW.w, CW.h); }
+        g.save(); g.clip(cs.panes);
+        const st = m * (1 - cl.dawn); if (st > .002) for (const q of CSTARS) { g.globalAlpha = st * (.62 + .38 * Math.sin(A * q.f + q.ph)); g.drawImage(cs.glint, q.x - q.s, q.y - q.s, q.s * 2, q.s * 2); }
+        const p = cl.moonP, mx = lerp(.16, .5, p), my = lerp(-.14, -.4, p) - .05 * Math.sin(p * Math.PI); g.globalAlpha = m * (1 - .55 * cl.dawn); g.drawImage(cs.moon, mx - .36, my - .36, .72, .72);
+        if (cl.star > 0 && cl.star < 1) { const f = cl.star, hx = lerp(-.2, -.62, f), hy = lerp(-.48, -.1, f), len = .5 * Math.min(1, f * 2.5); g.save(); g.translate(hx, hy); g.rotate(Math.atan2(.38, -.42)); g.globalAlpha = m * env(f, 0, .12, .62, 1); g.drawImage(cs.streak, -len, -.02, len, .04); g.restore(); }
+        g.restore(); g.restore();
+      }
+      const lit = clamp(cl.dark * 1.6) * v; // the café's lights, strung across the room above, once the cocoa is dark enough to hold them
+      if (lit > .002) for (let i = 0; i < CBULB.length; i++) { const b = S.bulbOn(cl, i) * lit; if (b <= .002) continue; const [bx, by] = CBULB[i], x = bx + Math.sin(A * 1.1 + i * 2.1) * .006; g.globalAlpha = b * .8; g.drawImage(cs.bulb, x - .13, by - .13, .26, .26); g.globalAlpha = b; g.fillStyle = "#FFF0CC"; g.beginPath(); g.arc(x, by, .016, 0, TAU); g.fill(); }
+      g.globalAlpha = v;
     },
     /** a puff of steam, soft, in a colour, drawn once */
     puffS(c = [255, 248, 236]) { const key = "pf" + c.join(","); if (!S[key] || S[key].k !== px) { S[key] = make(64, 64, x => { const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, `rgba(${c},1)`); gr.addColorStop(.35, `rgba(${c},.62)`); gr.addColorStop(.7, `rgba(${c},.18)`); gr.addColorStop(1, `rgba(${c},0)`); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); }); S[key].k = px; } return S[key]; },
@@ -595,15 +720,15 @@ export default function cocoa(K) {
       if (on) { S.simPass(T, cur, prev);
         const drawn = pl.egg ? (c2 => c2 ? 1 - .86 * clamp(c2.h * 1.15) * c2.I : 1)(S.catAt(pl, T, A, I)) : 1; // (b416: the art's foam drawn up into the egg's cat, and back)
         if (T < KS * DT) put(imgO, prev.ang, S.vis); else if (T >= k1 * DT) put(imgN, cur.ang, S.vis * drawn);
-        else { g.save(); g.rotate(T < POUR0 ? prev.ang : cur.ang); S.lay(S.pa, S.vis * (T < POUR0 ? 1 - seg(T, 1.2, 2.25, E.in) * I : 1), foam); g.restore(); } }
+        else { const a = S.vis * (T < POUR0 ? 1 - seg(T, 1.2, 2.25, E.in) * I : 1); if (a > 0) { g.save(); g.rotate(T < POUR0 ? prev.ang : cur.ang); S.lay(S.pa, a, foam); g.restore(); } } } // (b448: not at all when it's stirred quite away, as the crown's night holds it)
       if (I < .99) put(imgO, prev.ang, S.vis * (1 - (on ? I : 0)));
       const [sx, sy, kind] = pr ? progAt(pr, T) : pourIs(T) >= 0 ? [...pourAt(T), T > 5.25 ? 2 : 1] : [0, 0, 0];
       if (on && kind && T >= POUR0) { const c = Math.cos(cur.ang), sn = Math.sin(cur.ang), px2 = sx * c - sy * sn, py2 = sx * sn + sy * c; g.globalAlpha = S.vis * I; for (let q = 0; q < 3; q++) { const rr = ((A * 1.6 + q / 3) % 1) * .2; g.strokeStyle = `rgba(250,240,222,${(.45 * (1 - rr / .2)).toFixed(3)})`; g.lineWidth = .012; g.beginPath(); g.arc(px2, py2, rr, 0, TAU); g.stroke(); } g.fillStyle = "#FFF9EE"; g.beginPath(); g.arc(px2, py2, kind === 2 ? .035 : .06, 0, TAU); g.fill(); }
       g.globalAlpha = S.vis;
     },
     /** the dusts: the pass before's, there until the spoon stirs it in; this pass's, sifted on at its moment */
-    dusts(pl, T, I, on, stir) {
-      const kp = lerp(1, T < 2.3 ? 1 - stir : 0, I), late = pl.egg ? pl.egg.dust : pl.hour ? pl.hour.dust : 0; S.dustOf(pl.prev.dust, () => kp); if (on) S.dustOf(pl.cur.dust, d => T >= d.t + late ? I : 0); // (b416: in the egg's pass, after the cat)
+    dusts(pl, T, I, on, stir, To = T) {
+      const kp = lerp(1, To < 2.3 ? 1 - stir : 0, I), late = pl.egg ? pl.egg.dust : pl.hour ? pl.hour.dust : pl.crown ? pl.crown.dust : 0; /* (b448: the crown's old dust stirred in on the cocoa's own time, To) */ S.dustOf(pl.prev.dust, () => kp); if (on) S.dustOf(pl.cur.dust, d => T >= d.t + late ? I : 0); // (b416: in the egg's pass, after the cat)
       g.globalAlpha = S.vis;
     },
     /** one dust: cinnamon (the signature's), cocoa sifted from one side, chocolate shavings, or none */
@@ -676,12 +801,17 @@ export default function cocoa(K) {
       const SR = R * .92, CR = R * .6, LR = R * .52; // the saucer, the cup's rim, the cocoa's surface
       // the morning's light through a window, across the table round the cup; the leaves outside moving their shadows
       // through it; the cup's shadow in it; a cloud goes over and it dims and comes back
-      const sun = 1 - .72 * (on ? (pl ? S.dimOf(pl, T) : env(T, 8.2, 9.0, 9.7, 10.7, E.sine)) * I : 0), ww = R * 4.8, wh = ww * 184 / 280, gust = pl && pl.lt === 2 && on ? env(T, pl.c0, pl.c0 + .5, pl.c0 + 1.6, pl.c0 + 2.6, E.sine) * I : 0;
-      g.save(); g.translate(cx + R * .3, cy + R * .12); g.rotate(-.16 + Math.sin(A * .05) * .02); g.globalAlpha = S.vis * .62 * sun; g.drawImage(S.win, -ww / 2, -wh / 2, ww, wh);
-      g.globalCompositeOperation = "destination-out"; for (const l of S.leaves) { const z = l.s * R * 2, x = l.u * R + Math.sin(A * l.f + l.ph) * R * .12 + (gust ? gust * Math.sin(A * l.f * 6 + l.ph) * R * .1 : 0), y = l.v * R + Math.sin(A * l.f * .8 + l.ph * 2) * R * .07 + (gust ? gust * Math.sin(A * l.f * 5 + l.ph * 2) * R * .06 : 0); g.globalAlpha = l.a; g.drawImage(S.soft, x - z / 2, y - z / 2, z, z * .8); }
+      const tS = pl && pl.crown ? S.crownT(T) : T, cl = pl && pl.crown && on ? S.crownAt(T, I, tS) : null; // b448: the crown's time on the cocoa, and where its day has got to
+      const sun = cl ? cl.day : 1 - .72 * (on ? (pl ? S.dimOf(pl, T) : env(T, 8.2, 9.0, 9.7, 10.7, E.sine)) * I : 0), ww = R * 4.8, wh = ww * 184 / 280, gust = pl && pl.lt === 2 && on ? env(T, pl.c0, pl.c0 + .5, pl.c0 + 1.6, pl.c0 + 2.6, E.sine) * I : 0;
+      const leafCut = () => { g.globalCompositeOperation = "destination-out"; for (const l of S.leaves) { const z = l.s * R * 2, x = l.u * R + Math.sin(A * l.f + l.ph) * R * .12 + (gust ? gust * Math.sin(A * l.f * 6 + l.ph) * R * .1 : 0), y = l.v * R + Math.sin(A * l.f * .8 + l.ph * 2) * R * .07 + (gust ? gust * Math.sin(A * l.f * 5 + l.ph * 2) * R * .06 : 0); g.globalAlpha = l.a; g.drawImage(S.soft, x - z / 2, y - z / 2, z, z * .8); } };
+      if (cl) S.crownLights(cl, cx, cy, R, ww, wh, A, leafCut); else { g.save(); g.translate(cx + R * .3, cy + R * .12); g.rotate(-.16 + Math.sin(A * .05) * .02); g.globalAlpha = S.vis * .62 * sun; g.drawImage(S.win, -ww / 2, -wh / 2, ww, wh);
+      leafCut();
       if (pl && pl.lt === 1 && on && T > pl.c0 && T < pl.c0 + 1.7) S.birdShadow(T - pl.c0, R, I); // a bird's shadow flits across the light (b375)
-      g.restore(); g.save(); g.globalCompositeOperation = "destination-out"; g.globalAlpha = .92; g.translate(cx + R * .22, cy + R * .3); g.rotate(.9); g.drawImage(S.soft, -SR * 1.25, -SR * 1.05, SR * 2.5, SR * 2.1); g.restore(); /* the cup's shadow: the light taken away */
+      g.restore(); } // (b448: the crown's day going by, in its place)
+      g.save(); g.globalCompositeOperation = "destination-out"; g.globalAlpha = .92; if (cl) { g.translate(cx + R * cl.shx, cy + R * cl.shy); g.rotate(cl.shr); g.drawImage(S.soft, -SR * 1.25, -SR * 1.05, SR * 2.5 * cl.shl, SR * 2.1); } else { g.translate(cx + R * .22, cy + R * .3); g.rotate(.9); g.drawImage(S.soft, -SR * 1.25, -SR * 1.05, SR * 2.5, SR * 2.1); } g.restore(); /* the cup's shadow: the light taken away (b448: long in the crown's evening) */
+      if (cl && cl.pool > .002) S.crownPool(cl, cx, cy, R); // b448: the café's lights, warm round the cup
       g.globalCompositeOperation = "destination-out"; for (const [y0, y1] of [[0, S.pr ? 150 : 110], [H, H - (S.pr ? 120 : 130)]]) { const eg = g.createLinearGradient(0, y0, 0, y1); eg.addColorStop(0, "#000"); eg.addColorStop(.45, "#000"); eg.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = eg; g.fillRect(0, Math.min(y0, y1), W, Math.abs(y1 - y0)); } g.globalCompositeOperation = "source-over"; /* nor into the shadow at the top and the foot */
+      if (cl && cl.dark > .002) S.crownNight(cl, W, H); // b448: the room gone dark, under the light that's left
       shade();
       let gr;
       // shadows on the table, the saucer, its rim
@@ -702,12 +832,14 @@ export default function cocoa(K) {
       gr = g.createRadialGradient(cx + LR * .15, cy + LR * .2, LR * .7, cx, cy, LR * 1.08); gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(60,35,20,.4)"); g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, LR * 1.08, 0, TAU); g.fill();
       g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = R * .012; g.beginPath(); g.arc(cx, cy, CR * .985, Math.PI * 1.1, Math.PI * 1.55); g.stroke();
       // the cocoa's surface: poured, stepped to the loop's time; when the list is touched it settles back to the heart
-      const stir = on ? seg(T, .4, 2.2, E.io) * I : 0, milky = on ? env(T, .4, 2.2, 2.4, 4.0) * I : 0;
+      if (cl && cl.dark > .002) S.crownDim(cl, cx, cy, R, SR, CR); // b448: and the cup with it
+      const stir = on ? seg(tS, .4, 2.2, E.io) * I : 0, milky = on ? env(tS, .4, 2.2, 2.4, 4.0) * I : 0;
       g.save(); g.beginPath(); g.arc(cx, cy, LR * .995, 0, TAU); g.clip();
       gr = g.createRadialGradient(cx - LR * .2, cy - LR * .25, LR * .05, cx, cy, LR); gr.addColorStop(0, `rgb(${lerp(110, 150, milky) | 0},${lerp(64, 98, milky) | 0},${lerp(38, 62, milky) | 0})`); gr.addColorStop(.75, "#4A2918"); gr.addColorStop(1, "#8A5A38");
       g.fillStyle = gr; g.fillRect(cx - LR, cy - LR, LR * 2, LR * 2); /* the cocoa, milkier where it's been stirred, its crema at the wall */
       g.translate(cx, cy); g.scale(LR, LR);
       const foam = g.createRadialGradient(-.16, -.2, .04, 0, .05, .75); foam.addColorStop(0, "#FFF9EE"); foam.addColorStop(.65, "#F6E7CF"); foam.addColorStop(1, "#E8CFA8");
+      if (cl) S.crownMirror(cl, A); // b448: the night in the cup
       if (!pl) {
         const still = T < KS * DT || T >= K1 * DT, img = S.heartImg(LR); /* before the stir and after the pour the surface is the heart */
         if (on) { S.sim(T); if (still) { g.globalAlpha = S.vis; g.drawImage(img, -1, -1, 2, 2); } else S.lay(S.art, S.vis * (T >= KS * DT && T < POUR0 ? 1 - seg(T, 1.2, 2.25, E.in) * I : 1), foam); } /* stirred in, the old art goes */
@@ -715,17 +847,18 @@ export default function cocoa(K) {
         g.globalAlpha = S.vis;
         // the stream, seen from above, where it lands; rings spreading from it
         const pz = pourIs(T); if (on && pz >= 0) { const [px2, py2] = pourAt(T); g.globalAlpha = S.vis * I; for (let q = 0; q < 3; q++) { const rr = ((A * 1.6 + q / 3) % 1) * .2; g.strokeStyle = `rgba(250,240,222,${(.45 * (1 - rr / .2)).toFixed(3)})`; g.lineWidth = .012; g.beginPath(); g.arc(px2, py2, rr, 0, TAU); g.stroke(); } g.fillStyle = "#FFF9EE"; g.beginPath(); g.arc(px2, py2, T > 5.25 ? .035 : .06, 0, TAU); g.fill(); }
-      } else S.surface(pl, T, I, A, on, LR, foam); // a pass after the signature: its own pour over the art the pass before left (b375)
+      } else S.surface(pl, tS, I, A, on, LR, foam); // a pass after the signature: its own pour over the art the pass before left (b375)
       // cinnamon, dusted on
       if (!pl) {
         for (const d of S.dust) { const k = L(T < 2.3 ? 1 - stir : T >= d.t ? 1 : 0); if (k <= .01) continue; g.globalAlpha = S.vis * k; g.fillStyle = "rgba(140,70,30,.55)"; g.fillRect(d.u - d.s / 2, d.v - d.s / 2, d.s, d.s); } g.globalAlpha = S.vis;
-      } else S.dusts(pl, T, I, on, stir);
+      } else S.dusts(pl, T, I, on, stir, tS);
       // the marshmallows: dropped in, bobbing, drifting round, melting
       if (!pl) {
         if (on) for (const m of S.mallows) { const k = seg(T, m.t, m.t + .45, E.in), melt = seg(T, 11.5, 14.3, E.io); if (k <= 0 || melt >= 1) continue; const drift = (T - m.t) * .12, a = Math.atan2(m.v, m.u) + drift, d = Math.hypot(m.u, m.v), u = Math.cos(a) * d, v = Math.sin(a) * d, sc = lerp(2.4, 1, k) * (1 - melt * .6), s = .15 * sc, bob = Math.sin(A * 3 + m.ph) * .01;
           if (k >= 1) { const rp = clamp((T - m.t - .45) / .8); if (rp < 1) { g.strokeStyle = `rgba(243,228,204,${(.6 * (1 - rp)).toFixed(3)})`; g.lineWidth = .014; g.beginPath(); g.arc(u, v, .12 + rp * .25, 0, TAU); g.stroke(); } }
           g.save(); g.translate(u, v + bob); g.rotate(m.rot + drift * 2); g.globalAlpha = S.vis * I * (1 - melt * .5); gr = g.createLinearGradient(-s, -s, s, s); gr.addColorStop(0, "#FFFFFF"); gr.addColorStop(1, melt > .3 ? "#F6E9D8" : "#F4DCDF"); g.fillStyle = gr; g.beginPath(); g.roundRect(-s / 2, -s / 2, s, s, s * (.22 + melt * .3)); g.fill(); g.strokeStyle = "rgba(160,120,100,.3)"; g.lineWidth = .008; g.stroke(); g.restore(); }
       } else S.mallowsOf(pl, T, I, A, on);
+      if (cl && cl.veil > .002) { g.globalAlpha = S.vis * cl.veil; g.fillStyle = "#0C090E"; g.fillRect(-1, -1, 2, 2); g.globalAlpha = S.vis; } // b448: the art in the dark with the room
       // the finale: small foam hearts bloom round the big one
       if (F >= 0) for (const m of S.minis) { const k = seg(F, m.t, m.t + .25, E.back), s = .1 * k * (1 - seg(F, .85, 1)); if (s <= 0) continue; g.globalAlpha = S.vis; g.fillStyle = FOAM; g.beginPath(); shape(s, 0, 1, 0, 0, 32).forEach(([u, v], j) => j ? g.lineTo(m.u + u, m.v + v) : g.moveTo(m.u + u, m.v + v)); g.closePath(); g.fill(); }
       const cat = pl && pl.egg && on ? S.catAt(pl, T, A, I) : null; if (cat) S.drawCat(cat, LR, true); // b416: the egg's cat, where it comes up through the foam
@@ -734,7 +867,7 @@ export default function cocoa(K) {
       if (cat) { g.save(); g.translate(cx, cy); g.scale(LR, LR); g.lineCap = "round"; g.lineJoin = "round"; S.drawCat(cat, LR, false); g.restore(); } // and the cat itself, over the rim
       if (pl && pl.paw && on) S.pawAt(pl, T, I, cx, cy, R); // the rare one: a cat's paw reaching in from the edge (b375)
       if (hr === 2) S.titAt(pl, T, I, A, cx, cy, R); // b427: hour egg 2, the blue tit
-      const sk = hr === 1 ? S.dragonSteam(T, I) : 1; // b427: hour egg 1 gathers the cup's steam into the dragon, and gives it back
+      const sk = hr === 1 ? S.dragonSteam(T, I) : cl ? cl.steam : 1; // b427: hour egg 1 gathers the cup's steam into the dragon, and gives it back
       // the steam, curling up off it; stronger at first and in the finale, a heart in the finale
       const hot = .55 + (on ? env(T, 11.5, 12.5, 14, 15) * .45 * I : 0) + (F >= 0 ? .5 : 0);
       g.lineCap = "round"; for (let w = 0; w < 3; w++) { const ph = w * 1.7, y0 = cy - LR * .3, rise = R * 1.05, pts = Array.from({ length: 26 }, (_, i) => { const t = i / 25, sway = Math.sin(t * 5.5 - A * 1.4 + ph) * R * .09 * t + Math.sin(t * 2.2 + A * .5 + ph) * R * .05 * t; return [cx + (w - 1) * R * .17 + sway, y0 - t * rise]; });

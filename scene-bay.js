@@ -1109,14 +1109,19 @@ export default function bay(K, id) {
     [9.6, [.61, .42], [.22, .66], "kiku", [[255, 143, 184], [255, 233, 168]], .62, 2.4],
     [9.95, [.86, .36], [.8, .62], "kiku", [[201, 180, 255], [237, 230, 255]], .62, 2.4],
     [10.4, [.72, .21], [.52, .58], "willow", [[255, 231, 160], [255, 176, 80]], 1.45, 4.3]];
-  /** the show's places, sizes and stars, worked out once per layout and again when the words move */
+  /** the show's places, sizes and stars, worked out once per layout and again when the words move. (For cost: each
+   *  star's way out is worked out here once, and each shell keeps only the words near enough to fade any of its stars) */
   function showMake() {
     const { W, H, u, hz, pr } = S, base = (pr ? 16.5 : 15) * u, mo = S.moon, out = [];
     for (const [i, [t, wide, narrow, kind, col, size, life]] of LFW.entries()) {
       let x, y; if (kind === "ring") { x = mo.x; y = mo.y; } else { [x, y] = pr ? narrow : wide; x *= W; y *= H; if (S.wr) { let best = null, bs = -1e9; for (let gy = -2; gy <= 2; gy++) for (let gx = -2; gx <= 2; gx++) { const cx = x + gx * W * (pr ? .08 : .05), cy = Math.min(hz - base * .5, y + gy * H * .05), sc = Math.min(S.clear(cx, cy), base * size * 1.2) - Math.hypot(cx - x, cy - y) * .12; if (sc > bs) { bs = sc; best = [cx, cy]; } } [x, y] = best; } }
       const Rm = kind === "ring" ? mo.r * (pr ? 3.4 : 3.8) : Math.max(base * .35, Math.min(base * size, S.clear(x, y) * .9)), n = kind === "willow" ? 54 : kind === "palm" ? 9 : kind === "heart" ? 58 : kind === "ring" ? 54 : kind === "kiku" ? 66 : 58, r = rng(9100 + i * 17), stars = [];
       for (let j = 0; j < n; j++) { const a = j / n * TAU + (r() - .5) * (kind === "ring" || kind === "heart" ? .02 : .2); stars.push({ a, v: kind === "ring" || kind === "heart" ? 1 : .82 + r() * .18, tw: r() * TAU, f: .7 + r() * .9 }); }
-      out.push({ t, x, y, kind, col, Rm, life, stars, lx: x + (r() - .5) * Rm * .3 });
+      for (const st of stars) if (kind === "heart") { const th = st.a; st.cx = Math.pow(Math.sin(th), 3) * st.v; st.cy = -(13 * Math.cos(th) - 5 * Math.cos(2 * th) - 2 * Math.cos(3 * th) - Math.cos(4 * th)) / 16 * st.v; } else { st.cx = Math.cos(st.a) * st.v; st.cy = Math.sin(st.a) * st.v * (kind === "palm" ? .85 : 1); } // where it heads, per unit of the burst's spread
+      // everything a star of it draws — head, trail, its dash in the water — lies inside this box (open below), and S.shade
+      // reaches no further than 21 px for those, so the words more than 24 px from the box can never fade it
+      const bx0 = x - Rm * 1.1 - 4, bx1 = x + Rm * 1.1 + 4, by0 = y - Rm * 1.15 - 4, near = (S.wr || []).filter(([x0, , x1, y1]) => Math.hypot(Math.max(x0 - bx1, 0, bx0 - x1), Math.max(by0 - y1, 0)) < 24);
+      out.push({ t, x, y, kind, col, Rm, life, stars, lx: x + (r() - .5) * Rm * .3, near });
     }
     return out;
   }
@@ -1125,8 +1130,9 @@ export default function bay(K, id) {
     const L = lgGet(), { W, H, u, hz } = S;
     if (!L.show || L.wr !== S.wr) { L.show = showMake(); L.wr = S.wr; }
     if (!L.fx) { const c = new Path2D(); c.rect(-20, -20, W + 40, H + 40); for (const pts of [S.left, S.right]) { c.moveTo(pts[0][0], hz + 1); for (const q of pts) c.lineTo(q[0], Math.min(hz + 1, q[1])); c.lineTo(pts[pts.length - 1][0], hz + 1); c.closePath(); }
-      L.fx = { dots: {}, clip: c, smoke: make(60, 40, x => { const r = rng(9301); for (let k = 0; k < 90; k++) { const a = r() * TAU, d = Math.sqrt(r()), px2 = 30 + Math.cos(a) * d * 27, py2 = 20 + Math.sin(a) * d * 16, rr = (1 - d) * 2.6 + .4; x.fillStyle = "rgba(170,156,210,.5)"; x.beginPath(); x.arc(px2, py2, rr, 0, TAU); x.fill(); } }), glows: {} }; }
-    const F = L.fx, mirror = y => hz + (hz - y) * .42;
+      L.fx = { clip: c, smoke: make(60, 40, x => { const r = rng(9301); for (let k = 0; k < 90; k++) { const a = r() * TAU, d = Math.sqrt(r()), px2 = 30 + Math.cos(a) * d * 27, py2 = 20 + Math.sin(a) * d * 16, rr = (1 - d) * 2.6 + .4; x.fillStyle = "rgba(170,156,210,.5)"; x.beginPath(); x.arc(px2, py2, rr, 0, TAU); x.fill(); } }),
+        glows: {}, dots: {}, pos: new Float64Array(66 * 7 * 2), refl: new Float64Array(66 * 3) }; } // (for cost) its glows made once per colour, and where its stars are kept in place of a new array per star
+    const F = L.fx, mirror = y => hz + (hz - y) * .42, sprite = (cache, c, mk) => { const key = c[0] + "," + c[1] + "," + c[2]; return cache[key] || (cache[key] = mk(c)); };
     g.save(); g.lineCap = "round";
     for (const sh of L.show) { const tau = T - sh.t, [c0, c1] = sh.col, smoke = Math.min(sh.life + 3.6, 14.7 - sh.t); /* its smoke gone before the loop comes round */ if (tau < -1.1 || tau > smoke) continue;
       // the launch: a thin trail up from the far shore, its head bright, its light on the water
@@ -1134,26 +1140,31 @@ export default function bay(K, id) {
         g.save(); g.clip(F.clip, "evenodd"); g.globalCompositeOperation = "lighter"; const gr = g.createLinearGradient(0, hy, 0, ty); gr.addColorStop(0, `rgba(255,236,190,${(.85 * I).toFixed(3)})`); gr.addColorStop(1, "rgba(255,200,140,0)"); g.strokeStyle = gr; g.lineWidth = 1.3; g.globalAlpha = S.shade(hx, hy, 6 * u); g.beginPath(); g.moveTo(hx + wig, hy); g.lineTo(hx, ty); g.stroke();
         g.fillStyle = "#FFF4D8"; g.beginPath(); g.arc(hx + wig, hy, 1.4, 0, TAU); g.fill(); g.restore(); continue; }
       if (tau < 0) continue;
-      const k = tau / sh.life, open = 1 - Math.exp(-tau / (sh.kind === "willow" ? .55 : .38)), Rm = sh.Rm, fall = (sh.kind === "willow" ? .55 : sh.kind === "palm" ? .4 : .22) * Rm * tau * tau / Math.max(1, sh.life * .5), alive = k < 1;
-      const lum = I * clamp(tau / .2) * (alive ? (k < .55 ? 1 : Math.pow((1 - k) / .45, 1.4)) : 0), col = c0.map((v, i) => Math.round(lerp(v, c1[i], clamp(k * 1.3))));
+      const k = tau / sh.life, Rm = sh.Rm, alive = k < 1, m = clamp(k * 1.3);
+      const lum = I * clamp(tau / .2) * (alive ? (k < .55 ? 1 : Math.pow((1 - k) / .45, 1.4)) : 0), col = c0.map((v, i) => Math.round(lerp(v, c1[i], m)));
       // its smoke, drifting off in halftone, and the light it lays about it
       { const sk = clamp(tau / smoke), sa = I * .55 * Math.sin(sk * Math.PI) * (1 - sk); if (sa > .01) { const sw = Rm * (1 + sk * 1.2) * 2, shh = sw * .62; g.globalAlpha = sa * S.shade(sh.x, sh.y, Rm); g.drawImage(F.smoke, sh.x - sw / 2 + sk * Rm * 1.1, sh.y - shh / 2 + Rm * .25 + sk * Rm * .3, sw, shh); } }
       if (!alive) continue;
-      const key = col.join(","); if (!F.glows[key]) F.glows[key] = glow(40, col, .6); const gw = F.glows[key], gk = lum * .45 * Math.min(1, tau / .5) * S.shade(sh.x, sh.y, Rm * 1.2);
-      g.globalCompositeOperation = "lighter"; if (gk > .01) { g.globalAlpha = gk; g.drawImage(gw, sh.x - Rm * 1.5, sh.y - Rm * 1.5, Rm * 3, Rm * 3); const my = mirror(sh.y); g.globalAlpha = gk * .5; g.drawImage(gw, sh.x - Rm * 1.3, my - Rm * .35, Rm * 2.6, Rm * .7); }
+      const key = col.join(","), gk = lum * .45 * Math.min(1, tau / .5) * S.shade(sh.x, sh.y, Rm * 1.2);
+      g.globalCompositeOperation = "lighter";
+      if (gk > .01) for (let e = 0; e < 2; e++) { const wgt = e ? m : 1 - m; if (wgt <= .002) continue; const gw = sprite(F.glows, e ? c1 : c0, c => glow(40, c, .6)), my = mirror(sh.y); /* its glow in its two colours, crossfaded: added light, so exactly the glow of the colour between */
+        g.globalAlpha = gk * wgt; g.drawImage(gw, sh.x - Rm * 1.5, sh.y - Rm * 1.5, Rm * 3, Rm * 3); g.globalAlpha = gk * .5 * wgt; g.drawImage(gw, sh.x - Rm * 1.3, my - Rm * .35, Rm * 2.6, Rm * .7); }
       // the stars: each at its place along its way, its trail behind it
-      const at = (st, tt) => { let x, y; const d = Rm * st.v * (1 - Math.exp(-tt / (sh.kind === "willow" ? .55 : .38))), dr = (sh.kind === "willow" ? .55 : sh.kind === "palm" ? .4 : .22) * Rm * tt * tt / Math.max(1, sh.life * .5);
-        if (sh.kind === "heart") { const th = st.a, hx = Math.pow(Math.sin(th), 3), hy = -(13 * Math.cos(th) - 5 * Math.cos(2 * th) - 2 * Math.cos(3 * th) - Math.cos(4 * th)) / 16; x = sh.x + hx * d; y = sh.y + hy * d + dr; }
-        else { x = sh.x + Math.cos(st.a) * d; y = sh.y + Math.sin(st.a) * d * (sh.kind === "palm" ? .85 : 1) + dr; } return [x, y]; };
-      const trail = sh.kind === "willow" ? 1.4 : sh.kind === "palm" ? .6 : sh.kind === "kiku" ? .34 : sh.kind === "ring" ? .14 : .09, segs = sh.kind === "willow" ? 6 : 3, wid = (sh.kind === "palm" ? 3.4 : sh.kind === "willow" ? 1.7 : 2.1) * Math.max(.75, u / 10);
+      const willow = sh.kind === "willow", palm = sh.kind === "palm", tk = willow ? .55 : .38, fk = (willow ? .55 : palm ? .4 : .22) * Rm / Math.max(1, sh.life * .5);
+      const trail = willow ? 1.4 : palm ? .6 : sh.kind === "kiku" ? .34 : sh.kind === "ring" ? .14 : .09, segs = willow ? 6 : 3, wid = (palm ? 3.4 : willow ? 1.7 : 2.1) * Math.max(.75, u / 10);
+      const stars = sh.stars, n = stars.length, P2 = F.pos, D0 = Rm * (1 - Math.exp(-tau / tk)), DR0 = fk * tau * tau, ex0 = sh.x - D0 - 1, ex1 = sh.x + D0 + 1, ey0 = sh.y - D0 * 1.07 - 1, ey1 = sh.y + D0 * 1.07 + DR0 + 1, ry1 = hz + (hz - ey0) * .42 + 1;
+      const near = sh.near.length ? sh.near.filter(([x0, y0, x1, y1]) => { const dx = Math.max(x0 - ex1, 0, ex0 - x1); return Math.hypot(dx, Math.max(y0 - ey1, 0, ey0 - y1)) < 24 || Math.hypot(dx, Math.max(y0 - ry1, 0, hz - y1)) < 24; }) : sh.near; /* of those, the ones near where its stars are now, and their dashes in the water */
+      /** S.shade, from the words near enough to matter (the same number it gives) */
+      const shade = near.length ? (x, y, r) => { let d = 1e9; for (const [x0, y0, x1, y1] of near) { const dx = Math.max(x0 - x, 0, x - x1), dy = Math.max(y0 - y, 0, y - y1), q = Math.hypot(dx, dy); if (q < d) d = q; } return lerp(.1, 1, clamp((d - r * .5) / (r * 1.2 + 10))); } : null;
+      let steps = 0; for (let j = 0; j <= segs; j++) { const tt = Math.max(0, tau - trail * j / segs), D = Rm * (1 - Math.exp(-tt / tk)), DR = fk * tt * tt, o = j * n * 2; for (let i = 0; i < n; i++) { const st = stars[i]; P2[o + i * 2] = sh.x + st.cx * D; P2[o + i * 2 + 1] = sh.y + st.cy * D + DR; } if (j < segs && tau - trail * j / segs > 0) steps = j + 1; } // where each is, at its head and at each step back along its trail
       g.strokeStyle = `rgb(${key})`; g.save(); g.beginPath(); g.rect(-10, -10, W + 20, hz + 10); g.clip(); /* far out over the bay: what falls to the horizon is in the water */
-      for (let sgi = 0; sgi < segs; sgi++) { const t1 = Math.max(0, tau - trail * sgi / segs), t2 = Math.max(0, tau - trail * (sgi + 1) / segs); if (t1 <= t2) break; g.globalAlpha = lum * (1 - sgi / segs) * .95; g.lineWidth = wid * (1 - sgi / segs * .6); g.beginPath(); for (const st of sh.stars) { const [x1, y1] = at(st, t1), [x2, y2] = at(st, t2); if (S.shade(x1, y1, 4) < .5) continue; g.moveTo(x1, y1); g.lineTo(x2, y2); } g.stroke(); }
-      if (!F.dots[key]) F.dots[key] = glow(Math.max(4, Math.round(u * .55)), col, .9); const dot = F.dots[key], dw = dot.w2 * (sh.kind === "palm" ? 1.5 : 1), core = `rgb(${col.map(v => Math.round(lerp(v, 255, .55))).join(",")})`;
-      const refl = [];
-      for (const st of sh.stars) { const [x, y] = at(st, tau), tw = sh.kind === "willow" ? .55 + .45 * Math.sin(A * 5 * st.f + st.tw) : 1, a = lum * tw * S.shade(x, y, 6); if (a < .02 || y >= hz) continue; g.globalAlpha = a * .9; g.drawImage(dot, x - dw / 2, y - dw / 2, dw, dw); g.globalAlpha = a; g.fillStyle = core; const rr = (sh.kind === "palm" ? 3.2 : 2.3) * Math.max(.8, u / 11); g.fillRect(x - rr / 2, y - rr / 2, rr, rr); refl.push(x, y, a); }
+      for (let sgi = 0; sgi < steps; sgi++) { const o1 = sgi * n * 2, o2 = o1 + n * 2; g.globalAlpha = lum * (1 - sgi / segs) * .95; g.lineWidth = wid * (1 - sgi / segs * .6); g.beginPath(); for (let i = 0; i < n; i++) { const x1 = P2[o1 + i * 2], y1 = P2[o1 + i * 2 + 1]; if (shade && shade(x1, y1, 4) < .5) continue; g.moveTo(x1, y1); g.lineTo(P2[o2 + i * 2], P2[o2 + i * 2 + 1]); } g.stroke(); }
+      const mq = Math.round(m * 7) / 7, dot = sprite(F.dots, c0.map((v, i) => Math.round(lerp(v, c1[i], mq))), c => glow(Math.max(4, Math.round(u * .55)), c, .9)), dw = dot.w2 * (palm ? 1.5 : 1), core = `rgb(${col.map(v => Math.round(lerp(v, 255, .55))).join(",")})`, rr = (palm ? 3.2 : 2.3) * Math.max(.8, u / 11); /* (its dots' colour in eighths of the way) */
+      const R2 = F.refl; let nr = 0, ga = -1;
+      g.fillStyle = core; for (let i = 0; i < n; i++) { const x = P2[i * 2], y = P2[i * 2 + 1], tw = willow ? .55 + .45 * Math.sin(A * 5 * stars[i].f + stars[i].tw) : 1, a = lum * tw * (shade ? shade(x, y, 6) : 1); if (a < .02 || y >= hz) continue; g.globalAlpha = a * .9; g.drawImage(dot, x - dw / 2, y - dw / 2, dw, dw); g.globalAlpha = a; g.fillRect(x - rr / 2, y - rr / 2, rr, rr); R2[nr++] = x; R2[nr++] = y; R2[nr++] = a; } /* each star's glow and then its core (in that order: light that runs to white adds up differently in another) */
       g.restore(); g.fillStyle = core;
-      if (sh.kind === "willow" || sh.kind === "palm" || sh.kind === "kiku") { g.save(); g.beginPath(); g.rect(-10, hz + 1, W + 20, S.H - hz); g.clip(); g.lineWidth = wid * .7; for (let sgi = 0; sgi < segs; sgi++) { const t1 = Math.max(0, tau - trail * sgi / segs), t2 = Math.max(0, tau - trail * (sgi + 1) / segs); if (t1 <= t2) break; g.globalAlpha = lum * (1 - sgi / segs) * .28; g.beginPath(); for (const st of sh.stars) { const [x1, y1] = at(st, t1), [x2, y2] = at(st, t2); if (y2 >= hz) continue; g.moveTo(x1, mirror(Math.min(y1, hz))); g.lineTo(x2, mirror(y2)); } g.stroke(); } g.restore(); } // its trails in the water too
-      for (let i = 0; i < refl.length; i += 3) { const x = refl[i], my = mirror(refl[i + 1]), wv = Math.sin(A * 2.2 + x * .05) * u * .4; g.globalAlpha = refl[i + 2] * .34 * S.shade(x, my, 4); g.fillRect(x - 2.5 + wv, my, 5, 1); } // and in the water, a dash each
+      if (willow || palm || sh.kind === "kiku") { g.save(); g.beginPath(); g.rect(-10, hz + 1, W + 20, S.H - hz); g.clip(); g.lineWidth = wid * .7; for (let sgi = 0; sgi < steps; sgi++) { const o1 = sgi * n * 2, o2 = o1 + n * 2; g.globalAlpha = lum * (1 - sgi / segs) * .28; g.beginPath(); for (let i = 0; i < n; i++) { const y2 = P2[o2 + i * 2 + 1]; if (y2 >= hz) continue; g.moveTo(P2[o1 + i * 2], mirror(Math.min(P2[o1 + i * 2 + 1], hz))); g.lineTo(P2[o2 + i * 2], mirror(y2)); } g.stroke(); } g.restore(); } // its trails in the water too
+      ga = -1; for (let q = 0; q < nr; q += 3) { const x = R2[q], my = mirror(R2[q + 1]), wv = Math.sin(A * 2.2 + x * .05) * u * .4, a2 = R2[q + 2] * .34 * (shade ? shade(x, my, 4) : 1); if (a2 !== ga) { ga = a2; g.globalAlpha = ga; } g.fillRect(x - 2.5 + wv, my, 5, 1); } // and in the water, a dash each
       g.globalCompositeOperation = "source-over"; }
     g.restore(); g.globalAlpha = 1; g.globalCompositeOperation = "lighter";
   }

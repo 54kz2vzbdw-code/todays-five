@@ -21,6 +21,9 @@
 // 1.12 b422: the long day's hour eggs. Left alone an hour, the water plays one of two pieces of its own, by turns: a
 // stone crosses a pool and leaves von Kármán's vortex street behind it, or a galaxy winds itself up out of a line of
 // drops. Each lays the water's motion down itself, as the egg's stir does, so it comes out crisp on any screen.
+// 1.12 b439: the crown. Every sixth hour left alone, the water paints The Starry Night: a pool turns to night, its sky is
+// laid in strokes and raked, two eddies wind its middle into the great double swirl, a cypress is drawn up out of the
+// foreground, and the stars and a crescent moon land as a marbler's stones.
 export default function fluid(K, id) {
   const night = id === "dark";
   const { clamp, lerp, E, env, deal, bag } = K, LOOP = K.LOOP, TAU = Math.PI * 2;
@@ -473,6 +476,43 @@ void main() { vec4 c = at(vUv); float s = c.x + c.y + c.z + c.w, cov = smoothste
     const w = .13 * sg * env(t, 8.3, 9.5, 12.6, 14.2, E.sine); if (w) spin(ax, ay, R * 1.6, w); // and the whole of it turning
     return 0;
   }
+  /* 1.12 b439: the crown (K.long 3: the sixth hour of loops left alone, and every sixth after), for whoever has had the
+     list up through a whole working day. */
+  /** the water paints The Starry Night: a pool of clear water opens and turns to night sky (by day a wash of steel blue
+   *  and slate; by night the dark itself); rows of drops are laid across it and raked in waves into the sky's brushwork;
+   *  the stars land as a marbler's stones, ring inside ring, each turned a little so its halo swirls, and the moon is a
+   *  drop of orange pushed into a crescent by a drop of sky; then two eddies turning against each other wind the middle
+   *  of the sky into the painting's great double swirl, and a cypress is pulled up out of the foreground the way a
+   *  marbler pulls a tulip. It holds a moment, and the water takes it. (By night the stars and the moon are gold and
+   *  copper, the swirls silver and bronze.) The motion is laid down by the scene, as the hour eggs' is. */
+  function crownStarry(t, P) {
+    const [ax, ay, ar] = spot(0), R = ar * .8, r = deal(P, 89), mir = r() < .5 ? 1 : -1; // the painting the right way round or mirrored, dealt
+    const X = u => ax + mir * u * R, Y = v => ay - v * R; // the painting's own frame, in units of the pool's radius, v downward as on the page
+    const sky = night ? null : [0, .35, 1, 0], dark = night ? ink(2) : [0, 1, .45, 0], band = night ? ink(3) : [0, .15, 1.5, 0];
+    const core = night ? [1.25, 0, 0, 0] : CLEAR, ring1 = night ? ink(0) : CLEAR, ring2 = night ? ink(1) : [0, 0, 0, .9]; // by day the stars and the moon are the paper's own white, in sage halos
+    beats = "starry"; hold = true;
+    drop(t, .15, ax, ay, ar * .85, CLEAR, .75); // the pool
+    if (sky && t > .9 && t < 2.15) { const S = u => { u = clamp((u - .9) / 1.2); return u * u * (3 - 2 * u); }, s0 = S(t - 1 / 30), f = (S(t) - s0) / Math.max(1e-3, 1 - s0); disc(ax, ay, ar * .83, sky, f * 30); } // night falls in it
+    // the sky's brushwork: long strokes across it, dark, pale and bright by turns, each laid by a brush moving across
+    for (let k = 0; k < 7; k++) {
+      const v = -.66 + k * .2, c = Math.sqrt(Math.max(0, .86 * .86 - v * v)), t0 = 2.1 + k * .32, q = clamp((t - t0) / 1.1); if (q <= 0 || q >= 1) continue;
+      const u = -c + 2 * c * E.io(q), x = X(u), y = Y(v + .03 * Math.sin(u * 7 + k));
+      if (k % 3 === 1) disc(x, y, R * .045, CLEAR, 60); else wisp(x, y, R * .05, k % 3 ? band : dark, 22);
+    }
+    combOver(t, 4.8, 6.6, [ax, ay + R * .05, R * .5], [mir, 0], R * .2, 7, 0, R * .07); // raked across in waves, starting and ending inside the pool
+    // the stars, ring inside ring, and the moon, a drop of orange pushed into a crescent by a drop of sky
+    const stars = [[-.62, -.5], [-.28, -.68], [.08, -.58], [.36, -.72], [-.74, -.1], [.56, -.3], [-.46, .16], [.72, .12]];
+    // the great double swirl, two eddies turning against each other in the middle of the sky
+    vortex(t, 6.6, 10.2, X(-.12), Y(-.08), R * .36, 1.15, mir); vortex(t, 6.8, 10.2, X(.3), Y(.04), R * .26, 1, -mir);
+    // the cypress low on one side: a dark stone, darker in its heart, drawn up once into a flame
+    drop(t, 9.9, X(-.68), Y(.6), R * .19, night ? dark : [0, 1.1, 0, 1], .4); drop(t, 10.2, X(-.68), Y(.6), R * .08, night ? ink(1) : [0, 1.5, 0, 1.3], .3); // by day indigo in sage: the cypress's near-black green
+    stylus(t, 10.4, 11.3, u => [X(-.68 + .04 * Math.sin(u * 10)), Y(.74 - u * .7)], R * .085, 16);
+    // then the stars land round the swirl, each pushing the sky's strokes into rings about itself (its halo), and the
+    // moon, a drop of orange pushed into a crescent by a drop of sky; the water stilled first, so they stay round
+    stars.forEach(([u, v], k) => { const t0 = 10.9 + k * .15, rr = R * (.1 + (k % 3) * .016); drop(t, t0, X(u), Y(v), rr, ring2, .3); drop(t, t0 + .13, X(u), Y(v), rr * .64, ring1, .26); drop(t, t0 + .24, X(u), Y(v), rr * .3, core, .22); });
+    drop(t, 12.1, X(.62), Y(-.6), R * .16, ring1, .4); drop(t, 12.55, X(.69), Y(-.54), R * .125, sky || CLEAR, .35);
+    return t > 4.8 && t < 10.2 ? .45 : t >= 10.2 && t < 14.2 ? 2.4 : 0; // slow to settle while the sky is worked; then stilled, and held
+  }
   /** the day is done: a flower in each of the biggest open spaces, made as a marbler makes one — a stone of rings, then a
    *  stylus drawn in from beyond it toward its middle at each petal, all at once — and the biggest turned a little */
   function finale(f) {
@@ -488,7 +528,7 @@ void main() { vec4 c = at(vUv); float s = c.x + c.y + c.z + c.w, cov = smoothste
   function forcing(t, I, f, P) {
     fv.n = fd.n = fsrc.n = 0; fsrc.area = 0; eps = 0; iters = 16; setV = false; hold = false;
     let kb = 0; amp = I;
-    if (I > .002) { iters = 22; const lg = K.long ? K.long(P) : 0; kb = P === 0 ? (signature(t), 0) : lg === 1 ? hourWake(t, P) : lg === 2 ? hourGalaxy(t, P) : K.egg(P) ? eggPass(t, P) : dealt(t, P); }
+    if (I > .002) { iters = 22; const lg = K.long ? K.long(P) : 0; kb = P === 0 ? (signature(t), 0) : lg === 1 ? hourWake(t, P) : lg === 2 ? hourGalaxy(t, P) : lg === 3 ? crownStarry(t, P) : K.egg(P) ? eggPass(t, P) : dealt(t, P); }
     if (chkOn && (eggP !== P || I < .5 || !setV)) { stampNow = true; setV = false; eggCut = eggP; } // the egg over, or cut short: its check, as far as it got, stays in the paint
     kV = lerp(.7, kb || 1.1, I); kD = lerp(Math.LN2 / 300, Math.LN2 / 30, I); kS = lerp(.004, .02, I); // what fades, and what thin paint loses outright
     if (hold) { kD *= .2; kS *= .2; } // an hour egg's picture, fifteen seconds in the making, is still whole at its end

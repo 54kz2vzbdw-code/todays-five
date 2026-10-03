@@ -58,7 +58,20 @@
 // a huge moon rises out of it where the sunset's sun sits, amber, its seas in halftone where they lie on the near side,
 // its light a road of broken bars across the bay; a junk under battened sails crosses its face from behind one headland
 // to behind the other; then it settles back into the sea, and the crescent is in the sky again. Nothing carries: each
-// begins and ends on the bay at rest, and a touch eases it out; a crown's pass (K.long 3) is dealt as it always was.
+// begins and ends on the bay at rest, and a touch eases it out.
+// 1.12 b442: the crown. For whoever has had the list up the whole of a working day: in the sixth hour, and every sixth
+// after (K.long 3), one pass plays the bay's best piece in place of the dealt beats. At sunset, the breach: far out in
+// the sun's path a whale blows, and her calf beside her; the water swells, and she comes up out of it in front of the
+// sun, the whole length of her, nose to the sky and her long fins spread, water streaming gold off her, turns over at
+// the top and falls back in a crown of white water lit by the sun, its rings running out across the bay; then the two
+// of them come up together, she in the sun and her calf beside her, and go back in side by side (a humpback breaching
+// against the setting sun: the poster's own picture of the end of a day). At dusk, the River of Heaven: the lanterns
+// light all along the bay, on the water and the shore, out from the middle one after another; then they go up, all of
+// them, in a slow river of light mirrored in the bay, and each turns into a star where it gets to, until the river of
+// lanterns is the river of stars — the Milky Way, its heart warm and low, the dust down its middle in halftone and its
+// light in the water, standing up out of the sea past the moon — and a star or two falls along it; then it wheels on
+// and fades. Each begins and ends on the bay at rest, a touch eases it out, and anything bright in it fades near the
+// words, as the lanterns always have.
 export default function bay(K, id) {
   const dusk = id === "dusk";
   const { clamp, lerp, E, seg, env, rng, canvas } = K;
@@ -177,7 +190,7 @@ export default function bay(K, id) {
      *  (b384: pass 0 is the loop, the passes after it are dealt) */
     draw(T, I, A, F, pass = 0) {
       const { W, H, u, hz, pr } = S, on = I > .01;
-      if (!plan || plan.pass !== pass || plan.gen !== gen) { const hr = K.egg(pass) ? 0 : K.long(pass); plan = K.egg(pass) ? eggPlan(pass) : hr === 1 || hr === 2 ? longPlan(pass, hr) : dusk ? dealDusk(pass) : dealSunset(pass); } /* (b415) the egg's pass deals no beats; (b425) nor does an hour egg's */
+      if (!plan || plan.pass !== pass || plan.gen !== gen) { const hr = K.egg(pass) ? 0 : K.long(pass); plan = K.egg(pass) ? eggPlan(pass) : hr === 1 || hr === 2 ? longPlan(pass, hr) : hr === 3 ? crownPlan(pass) : dusk ? dealDusk(pass) : dealSunset(pass); } /* (b415) the egg's pass deals no beats; (b425) nor does an hour egg's */
       const pl = plan;
       g.clearRect(0, 0, W, H);
       const add = (spr, x, y, a, s = 1) => { if (a <= .005) return; g.globalAlpha = clamp(a); g.drawImage(spr, x - spr.w2 * s / 2, y - spr.h2 * s / 2, spr.w2 * s, spr.h2 * s); };
@@ -223,7 +236,7 @@ export default function bay(K, id) {
         const wt = pl.water; if (wt.k === "sail") for (const b of wt.boats) sSail(T, I, b); else if (wt.k === "windsurf") sWindsurf(T, I, A, wt); else if (wt.k === "dolphins") sDolphins(T, I, A, wt); else if (wt.k === "whale") sWhale(T, I, A, wt);
         if (cl.k === "fish") sFish(T, I, A, cl); /* (b384) flying fish skimming the sun's path */
         if (ev) eggSunset(T, I, A, ev, sx, sy, R); /* (b415) the egg: the dusk coming on, the green flash, the stars */
-        if (pl.long === 1) lSurf(T, I, A, pl, sx, sy, R); else if (pl.long === 2) lBalloon(T, I, A, pl, sx, sy, R); /* (b425) the hour eggs, under the finale */
+        if (pl.long === 1) lSurf(T, I, A, pl, sx, sy, R); else if (pl.long === 2) lBalloon(T, I, A, pl, sx, sy, R); else if (pl.long === 3) cWhale(T, I, A, pl); /* (b442) the crown */ /* (b425) the hour eggs, under the finale */
         // a flare streaking across, and the ghosts it leaves
         if (flare > .01) { g.globalCompositeOperation = "lighter"; const fx = lerp(sx - R * 3, sx + R * 3, seg(T, cl.fx[0], cl.fx[1], E.io)); g.globalAlpha = flare * .5; g.fillStyle = "#FFD6A0"; g.fillRect(0, sy - R * .08, W, 1.4); add(S.flare, sx, sy - R * .05, flare * .7, 1.6); for (const [k, s2] of [[.4, .5], [.8, .8], [1.3, .35]]) add(S.flare, lerp(sx, W - fx, k), lerp(sy, H * .3, k), flare * .35, s2); g.globalCompositeOperation = "source-over"; }
         // the finale: fireworks over the bay, and in the water
@@ -247,6 +260,7 @@ export default function bay(K, id) {
         // the stars that twinkle, pricking in at the loop's start
         const pk = pl.prick, prick = seg(T, pk[0], pk[1], x => x) * I * (1 - seg(T, pk[2], pk[3], E.sine)); /* the new ones gone again before the loop comes round */
         g.fillStyle = "#F4F0FF"; for (const p of S.sparkles) { const shown = p.ph < 3.6 ? 1 : clamp((3.6 + prick * 2.7 - p.ph) / .35); if (shown <= 0) continue; const k = .35 + .65 * Math.pow(Math.max(0, Math.sin(A * p.f + p.ph)), 3); const x = p.x * W, y = H * .09 + p.y * (hz * .75 - H * .09), s = 1 + (p.f > 2.4 ? 1 : 0); g.globalAlpha = k * shown * S.shade(x, y, 4); g.fillRect(x, y, s, s); }
+        if (pl.long === 3) cMilky(T, I, A, pl); /* (b442) the crown: the river of stars, behind the moon */
         // the moon, a crescent with its halo, and its path on the water
         const { x: mx, y: my, r: mr } = S.moon; if (pl.long === 2) lMoon(T, I, A, pl); else { g.globalCompositeOperation = "lighter"; add(S.moonGlow, mx, my, .8); g.globalCompositeOperation = "source-over"; /* (b425) the moonrise draws the moon itself */
         g.globalAlpha = 1; g.drawImage(S.moonDisc, mx - mr - 1, my - mr - 1, S.moonDisc.w2, S.moonDisc.h2);
@@ -273,6 +287,7 @@ export default function bay(K, id) {
         if (hd.k === "flotilla") dFlotilla(T, I, A, hd); /* (b384) lanterns set floating on the water */
         if (wt.k === "row" && wt.far) dRow(T, I, A, wt); /* (b384) a rowboat far out on the bay, behind the egret */
         if (pl.egg) eggDragon(T, I, A); /* (b415) the egg: the lantern dragon */
+        if (pl.long === 3) cLanterns(T, I, A, pl); /* (b442) the crown: the lanterns that go up to be it */
         if (F >= 0) for (const f of S.festival) { const k = clamp((F - f.lag) / (1 - f.lag)); if (k <= 0 || k >= 1) continue; lant(f.x, E.sine(k), f.z, f.sw, f.ph, clamp(k * 10) * (1 - seg(k, .8, 1))); }
         // the egret: standing in the shallows, then up and away, its rings spreading (b384: or it stands and fishes)
         const es = u * (pr ? 1.15 : .95), x0 = S.egret.x, y0 = S.egret.y, fly = wt.k === "egret" || !!wt.flush, away = fly ? seg(T, wt.away[0], wt.away[1], E.in) : 0, home = fly ? seg(T, wt.home[0], wt.home[1], E.out) : 0;
@@ -1225,6 +1240,212 @@ export default function bay(K, id) {
       g.globalAlpha = I; g.save(); g.translate(x, y); g.rotate(roll); g.drawImage(J, -J.w2 * J.ox, -J.h2 * J.oy, J.w2, J.h2); g.restore();
       g.globalCompositeOperation = "lighter"; for (let k = 0; k < 3; k++) { const lx = x + (4.3 + k * .45) * u * D.js, ly = y - 1.5 * u * D.js; g.globalAlpha = I * (.85 + .15 * Math.sin(A * 7 + k)); g.drawImage(D.lamp, lx - D.lamp.w2 / 2, ly - D.lamp.h2 / 2, D.lamp.w2, D.lamp.h2); } g.restore(); } // its stern lanterns
     g.globalCompositeOperation = "lighter"; g.globalAlpha = 1;
+  }
+
+  /* ---------------- 1.12 b442: the crown ---------------- */
+  /** a crown's pass (K.long 3, the sixth hour and every sixth after): none of the dealt beats, the bay's quiet life around it */
+  const crownPlan = pass => longPlan(pass, 3);
+  let CR = null; // what the crowns draw with, made when one first comes up (and again after a layout)
+
+  /* Sunset's: the breach. Far out in the sun's path a whale blows, and her calf beside her; the water swells, and she comes
+     up out of it in front of the sun — the whole length of her, nose to the sky, her long fins spread like wings, water
+     streaming gold off her — and turns over at the top and falls back in a splash as tall as she is, its spray lit by the
+     sun and its rings running out across the bay. Her calf jumps after her, half as high; then she lies at the top of the
+     water and lifts one long fin into the air and waves it, twice, slaps it down, and they go under. (A humpback breaching
+     against the setting sun: the poster's own picture of the end of a day.) */
+  const CW = { blows: [[.2, 2.4, 0], [.9, 2.9, 1], [2.0, 3.7, 0]], bulge: [3.35, 4.05], breach: [3.85, 6.55], twin: [8.4, 11.1], calf: [8.62, 10.72] };
+  /** where the mother and the calf are, from the sun and the page */
+  function whaleGeo() {
+    const { W, H, hz, pr } = S, R = S.sun.R, sx = S.sun.x, L = R * (pr ? 1.7 : 1.85), yw = hz + (H - hz) * (pr ? .17 : .15), dir = sx > W * .55 ? -1 : 1;
+    return { R, sx, L, yw, dir, xm: sx + dir * R * .05, xc: sx + dir * R * .9, xw: sx - dir * R * .3 };
+  }
+  /** a humpback in its own frame, a unit long, head to +x, belly to +y: its outline (dorsal fin and flukes in it), the root of
+   *  each long fin */
+  const HUMP = (() => {
+    const top = [[.5, .012], [.488, -.018], [.46, -.04], [.4, -.056], [.32, -.07], [.22, -.083], [.12, -.091], [.02, -.09], [-.07, -.085], [-.13, -.081], [-.165, -.094], [-.205, -.114], [-.215, -.084], [-.26, -.064], [-.33, -.046], [-.4, -.032], [-.46, -.022], [-.49, -.016]];
+    const fl = [[-.49, -.016], [-.55, -.05], [-.6, -.1], [-.625, -.135], [-.61, -.09], [-.575, -.035], [-.535, 0], [-.575, .035], [-.61, .09], [-.625, .135], [-.6, .1], [-.55, .05], [-.49, .016]];
+    const bot = [[-.49, .016], [-.44, .022], [-.36, .034], [-.26, .052], [-.16, .072], [-.06, .092], [.04, .106], [.14, .112], [.24, .108], [.32, .096], [.4, .078], [.46, .056], [.495, .034], [.5, .012]];
+    return { outline: [...top, ...fl.slice(1), ...bot.slice(1)], pecRoot: [.25, .088], pecRootB: [.25, -.06] };
+  })();
+  /** the body's path, smoothed through its points, its spine bent by `bend` (a unit long), with the knobs along its head */
+  function humpBody(bend) {
+    const pts = HUMP.outline.map(([x, y]) => [x, y + bend * (x * x - .25)]), p = new Path2D(); p.moveTo((pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2);
+    for (let i = 1; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; p.quadraticCurveTo(a[0], a[1], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); } p.closePath();
+    for (const x of [.33, .37, .41, .445, .475]) { const y = -.07 + (x - .32) * .3 + .004 + bend * (x * x - .25); p.moveTo(x + .0055, y); p.arc(x, y, .0055, 0, TAU); } return p; }
+  /** a long fin from its root, along angle ψ, a third of the body long, its leading edge scalloped */
+  function humpFin(rx, ry, psi, len = .33, wk = 1) {
+    const p = new Path2D(), c = Math.cos(psi), s = Math.sin(psi), nx = -s, ny = c, n = 9, lead = [], trail = [];
+    for (let i = 0; i <= n; i++) { const t = i / n, w = (.042 * Math.pow(1 - t, .75) + .006) * wk, sc = i > 0 && i < n ? .009 * Math.abs(Math.sin(t * Math.PI * 4.5)) : 0; lead.push([rx + c * len * t + nx * (w * .55 + sc), ry + s * len * t + ny * (w * .55 + sc)]); trail.push([rx + c * len * t - nx * w * .45, ry + s * len * t - ny * w * .45]); }
+    p.moveTo(lead[0][0], lead[0][1]); for (const q of lead) p.lineTo(q[0], q[1]); for (let i = trail.length - 1; i >= 0; i--) p.lineTo(trail[i][0], trail[i][1]); p.closePath(); return p;
+  }
+  /** a humpback on the page: centre (x, y), its head along angle th (counter-clockwise from the right), L long, its fins at
+   *  pn (the near one) and pf (the far), its spine bent, its rim lit; only what is above the water line `wy` */
+  function drawHump(x, y, th, L, pn, pf, bend, a, wy, flip = 1) {
+    if (a <= .01) return; const { W, u } = S, body = humpBody(bend), rootN = [HUMP.pecRoot[0], HUMP.pecRoot[1] + bend * (HUMP.pecRoot[0] ** 2 - .25)], rootF = [HUMP.pecRootB[0], HUMP.pecRootB[1] + bend * (HUMP.pecRootB[0] ** 2 - .25)];
+    g.save(); g.beginPath(); g.rect(-10, -10, W + 20, wy + 10); g.clip();
+    const one = (col, oy) => { g.save(); g.translate(x, y + oy); g.rotate(-th); g.scale(L, L * flip); g.fillStyle = col; g.fill(humpFin(rootF[0], rootF[1], pf)); g.fill(body); g.fill(humpFin(rootN[0], rootN[1], pn)); g.restore(); };
+    g.globalAlpha = a; one(P.rim, -.2 * u); one(P.palm, 0);
+    // the pleats of its throat, catching the light
+    g.save(); g.translate(x, y); g.rotate(-th); g.scale(L, L * flip); g.strokeStyle = "rgba(255,170,120,.3)"; g.lineWidth = 1.1 / L; g.beginPath(); for (let k = 1; k <= 4; k++) { const b2 = (q) => bend * (q * q - .25); g.moveTo(.45, .05 - k * .002 + b2(.45)); g.quadraticCurveTo(.3, .1 - k * .012 + b2(.3), .08, .1 - k * .014 + b2(.08)); } g.stroke(); g.restore();
+    g.restore();
+  }
+  /** white water thrown up where something big hits the sea along x0…x1, h tall: a column of it flung up and a skirt of it
+   *  round its foot, in puffs lit on top and shaded beneath, that stands a moment and falls back; drops flung off its top,
+   *  lit gold; its foam spreading on the water and its mist drifting off in halftone; k: 0 the moment it hits … 1 settled */
+  function bigSplash(x0, x1, y, k, h, a, seed, dir) {
+    if (k <= 0 || k >= 1 || a <= .01) return; const { u } = S, w = Math.abs(x1 - x0), xc = (x0 + x1) / 2, r0 = rng(seed);
+    const fa = a * (1 - E.in(k)); g.fillStyle = "#FFE9C8"; g.globalAlpha = fa * .7; g.beginPath(); g.ellipse(xc, y + h * .02, w * (.55 + k * .8), h * (.045 + k * .07), 0, 0, TAU); g.fill(); // its foam on the water
+    // its mist, drifting off with the wind in halftone
+    const mk = clamp((k - .1) / .9); if (mk > 0) { g.fillStyle = "#FFE6C8"; const mx = xc + dir * mk * w * .55, my = y - h * (.5 + mk * .3); for (let i = 0; i < 40; i++) { const ox = (r0() - .5) * w * (1.1 + mk), oy = (r0() - .5) * h * (.6 + mk * .5), rr = (.35 + r0() * .9) * u * (1 - mk * .4); g.globalAlpha = a * Math.sin(mk * Math.PI) * .32 * S.shade(mx + ox, my + oy, 4); g.beginPath(); g.arc(mx + ox, my + oy, rr, 0, TAU); g.fill(); } }
+    // the column and its skirt: up fast, a moment at their height, and down
+    const up = Math.sin(Math.min(1, k / .12) * Math.PI / 2), fall = E.in(clamp((k - .14) / .44)), shade = new Path2D(), lit = new Path2D();
+    if (fall < 1) { for (let i = 0; i < 26; i++) { const col = i < 15, f = col ? (i + .5) / 15 : r0(), hh = col ? f * up : (.04 + .2 * r0()) * up, sz = col ? lerp(.17, .075, f) : .09 + r0() * .06, ox = col ? (r0() - .5) * w * .35 * (1 + f * .8) + dir * f * f * w * .12 : (r0() - .5) * w * 1.25 * (1 + k * .4), px2 = xc + ox, py2 = y - h * hh * (1 - fall * .85) + fall * h * .06, rr = h * sz * (1 - fall * .5) * (1 + k * .25);
+        shade.moveTo(px2 + rr, py2); shade.arc(px2, py2, rr, 0, TAU); lit.moveTo(px2 - rr * .12 + rr * .72, py2 - rr * .22); lit.arc(px2 - rr * .12, py2 - rr * .22, rr * .72, 0, TAU); }
+      const ga = a * (1 - fall * .7) * Math.min(S.shade(xc, y - h * .7, h * .3), S.shade(xc - w * .5, y - h * .3, h * .3), S.shade(xc + w * .5, y - h * .3, h * .3)); g.globalAlpha = ga; g.fillStyle = "#F2B49C"; g.fill(shade); /* (faded, the whole of it, if a word is near) */ g.fillStyle = "#FFF4E2"; g.globalAlpha = ga * .95; g.fill(lit);
+      g.save(); g.clip(shade); g.fillStyle = "#C76A80"; g.globalAlpha = ga * .28; g.beginPath(); for (let row = 0; row < 4; row++) { const yy = y - h * (.015 + row * .026), rr = Math.max(.35, h * .009 * (1 - row / 5)); for (let x = xc - w; x < xc + w; x += rr * 3.6) { g.moveTo(x + rr + (row % 2) * rr * 1.8, yy); g.arc(x + (row % 2) * rr * 1.8, yy, rr, 0, TAU); } } g.fill(); g.restore(); } // fine halftone in the shade at its foot
+    // the drops flung off its top, lit, falling
+    g.fillStyle = "#FFE2B0"; for (let i = 0; i < 56; i++) { const f = r0(), ox = (f - .5) * w * .7, vx = (f - .5) * w * 1.3 + (r0() - .5) * w * .4, vy = h * (1.5 + r0() * 1.3), tt = k * 2.2, x = xc + ox + vx * tt * .5, yy = y - vy * tt + h * 3.3 * tt * tt, rr = (.2 + r0() * .45) * u; if (yy > y + 2) continue; g.globalAlpha = a * (1 - k) * .95 * S.shade(x, yy, 4); g.beginPath(); g.arc(x, yy, rr, 0, TAU); g.fill(); }
+  }
+  /** a whale's leap: up out of the water and back, over b (0 … 1) of it; at x0, `L` long, up to `top` of her out, tipping
+   *  over by `tip` degrees; facing `dir`; what the water does about her included */
+  function breach(b, x0, yw, L, top, tip, dir, a, seed) {
+    if (b <= 0 || b >= 1 || a <= .01) return; const { u } = S, apex = .48, k = (top - .01) / (apex - .14) ** 2; /* the nose breaks the water at .14, she is `top` of her out at the apex */
+    const thDeg = lerp(78, tip, E.io(seg(b, .3, .72))), th = thDeg * Math.PI / 180, thd = dir > 0 ? th : Math.PI - th; // she faces dir, and tips back over the other way
+    const cyy = yw - (top - .5) * L + L * k * Math.pow(b - apex, 2), cx = x0 - dir * (b - .15) * L * .3;
+    const spread = E.io(seg(b, .2, .45)), fling = E.io(seg(b, .5, .72)), pn = lerp(Math.PI - .12, Math.PI / 2 + .3, spread) - fling * .9, pf = lerp(Math.PI + .12, Math.PI * 1.5 - .3, spread) + fling * .35, bend = .05 * Math.sin(b * Math.PI * 1.4) - fling * .06;
+    const ex = seg(b, .12, .55, x => x); // the spray flung up where she breaks the surface, behind her; the white collar round her, in front
+    if (ex > 0 && ex < 1) { g.fillStyle = "#FFE2B0"; const r0 = rng(seed + 7); for (let i = 0; i < 26; i++) { const an = -Math.PI / 2 + (r0() - .5) * 2.2, v = L * (.5 + r0() * .9), tt = ex * 1.4, px2 = x0 + Math.cos(an) * v * tt * .6, py2 = yw + Math.sin(an) * v * tt + L * 1.5 * tt * tt; if (py2 > yw) continue; g.globalAlpha = a * (1 - ex) * .9; g.beginPath(); g.arc(px2, py2, (.25 + r0() * .35) * u, 0, TAU); g.fill(); } }
+    drawHump(cx, cyy, thd, L, pn, pf, bend, a, yw, -dir);
+    // the water streaming off her, gold, down to the sea
+    if (b > .18 && b < .62) { const sa = a * Math.sin(seg(b, .18, .62) * Math.PI) * .75, ca = Math.cos(thd), sn = Math.sin(thd); g.strokeStyle = "#FFF0D2"; g.lineWidth = Math.max(1.2, u * .17); g.lineCap = "round"; g.beginPath(); for (let i = 0; i < 12; i++) { const f = -.42 + i * .075, side = i % 2 ? .1 : -.08, px2 = cx + ca * f * L - sn * side * L * (dir > 0 ? -1 : 1), py2 = cyy - sn * f * L - ca * side * L; if (py2 >= yw - 2) continue; const len = (yw - py2) * (.25 + .6 * ((i * .37 + b * 2.3) % 1)); g.moveTo(px2, py2); g.lineTo(px2 + (i % 3 - 1) * .3 * u, Math.min(yw, py2 + len)); } g.globalAlpha = sa; g.stroke(); g.lineCap = "butt";
+      g.fillStyle = "#FFE6B8"; for (let i = 0; i < 18; i++) { const f = ((i * .618 + b * 3.1) % 1), px2 = cx + ca * (f - .5) * L * .8 + (i % 2 ? 1 : -1) * L * .07, py2 = cyy - sn * (f - .5) * L * .8 + ((b * 7 + i * .37) % 1) * L * .3; if (py2 >= yw) continue; g.globalAlpha = sa * .9; g.beginPath(); g.arc(px2, py2, (.2 + (i % 3) * .1) * u, 0, TAU); g.fill(); } }
+    if (ex > 0 && ex < 1) { g.globalAlpha = a * (1 - ex) * .9; g.fillStyle = "#FFEED4"; g.beginPath(); g.ellipse(x0, yw, L * (.1 + ex * .16), L * (.018 + ex * .01), 0, 0, TAU); g.fill(); }
+  }
+  function cWhale(T, I, A, pl) {
+    if (I <= .01) return;
+    if (!CR || CR.gen !== gen) CR = { gen };
+    const G = whaleGeo(), { u, hz } = S, { L, yw, dir } = G;
+    // far out, the blows: bushy breaths of mist up out of the water, spreading at the top and drifting off
+    for (const [t0, t1, who] of CW.blows) { const k = seg(T, t0, t1, x => x); if (k <= 0 || k >= 1) continue; const x = (who ? G.xc : G.xm) + dir * (who ? -.15 : .25) * G.R, y = hz + (yw - hz) * .5, s = (who ? .6 : 1) * L * .009, rise = E.out(clamp(k / .35)), thin = 1 - E.in(clamp((k - .25) / .75)), drift = k * 4 * u * s;
+      g.fillStyle = "#FFF1D8"; for (let i = 0; i < 16; i++) { const q = (i + 1) / 16 * rise, px2 = x + (i % 2 ? 1 : -1) * q * q * 1.6 * u * s + drift * q, py2 = y - q * 7 * u * s, r = (.22 + q * .75) * u * s; g.globalAlpha = I * thin * (.18 + .3 * (1 - q)); g.beginPath(); g.ellipse(px2, py2, r * 1.15, r, 0, 0, TAU); g.fill(); }
+      g.globalAlpha = I * thin * .5; g.beginPath(); g.ellipse(x, y, 1.6 * u * s, .4 * u * s, 0, 0, TAU); g.fill(); }
+    // the swell where she is coming up
+    { const k = seg(T, CW.bulge[0], CW.bulge[1], x => x); if (k > 0 && k < 1) { const hh = Math.sin(k * Math.PI * .9) * L * .06, ww = L * .32; g.globalAlpha = I * .9; g.fillStyle = "#5E1A44"; g.beginPath(); g.ellipse(G.xm, yw, ww, hh, 0, Math.PI, TAU); g.fill(); g.strokeStyle = "#FFD9A0"; g.lineWidth = 1.2; g.beginPath(); g.ellipse(G.xm, yw, ww, hh, 0, Math.PI * 1.08, Math.PI * 1.92); g.stroke(); rings(G.xm, yw, k, 2, L * .45, I * .5); } }
+    // her breach, and back in: the splash, its rings
+    const sp = (t0, t1, x, l, h, seed) => { const ti = lerp(t0, t1, .74), sk = (T - ti) / 3.1; if (sk > 0 && sk < 1) { bigSplash(x - dir * l * .5, x + dir * l * .12, yw, sk, l * h, I, seed, -dir); rings(x - dir * l * .2, yw, sk, 4, l * 1.4, I * .6); } };
+    breach(seg(T, CW.breach[0], CW.breach[1], x => x), G.xm, yw, L, .78, 132, dir, I, 9511); sp(CW.breach[0], CW.breach[1], G.xm, L, .8, 9521);
+    // then the two of them together, she in the sun and her calf beside her, half her size
+    breach(seg(T, CW.calf[0], CW.calf[1], x => x), G.xc, yw, L * .52, .7, 126, dir, I, 9531); sp(CW.calf[0], CW.calf[1], G.xc, L * .52, .8, 9541);
+    breach(seg(T, CW.twin[0], CW.twin[1], x => x), G.xm, yw, L, .8, 134, dir, I, 9551); sp(CW.twin[0], CW.twin[1], G.xm, L, .85, 9561);
+  }
+
+  /* Dusk's: the River of Heaven. The lanterns light all along the bay, on the water and along the shore, one after another
+     out from the middle; then they go up, all of them, in a slow river of light mirrored in the bay, and each one turns into
+     a star where it gets to, until the river of lanterns is the river of stars — the Milky Way, its heart warm and low, the
+     dust down its middle in halftone and its light in the water, standing up out of the sea past the moon — and a star or
+     two falls along it; then it wheels on and fades, and the bay is as it was. (Every wish of the day, gone up to be the
+     sky.) */
+  const CM = { light: [.2, 4.6], band: [4.2, 10.6], fade: [11.3, 14.3], meteors: [[10.9, .55], [12.0, .5]] };
+  /** where the band lies, as an arc of a circle from its foot (`b0`, setting off along `th0` and turning `bendA` over its
+   *  length `Lt`), with where its heart is, how its ends fade, the point it is revealed from and the point it wheels about */
+  function milkyGeo() {
+    const { W, H, hz, pr } = S; let G;
+    const b0 = pr ? [W * .5, hz + 4] : [W * .63, hz + 4], b1 = pr ? [W * 1.06, H * .02] : [W * .95, 0], len = Math.hypot(b1[0] - b0[0], b1[1] - b0[1]), bendA = pr ? -.3 : -.22; // standing up out of the sea, leaning over a little as it climbs past the moon (on a narrow screen, past the lines' ends)
+    G = { b0, Lt: len * 1.06, th0: Math.atan2(b1[1] - b0[1], b1[0] - b0[0]) - .3 * bendA, bendA, wid: pr ? 250 : 520, heart: .12, e0: .035, e1: .72, barY: pr ? .09 : .07, wk: 1 };
+    G.pivot = G.b0; G.rc = G.b0; G.hs = 0;
+    G.rmax = Math.max(...[0, .25, .5, .75, 1].map(f => { const q = archPt(G, f * G.Lt, 0, 0); return Math.hypot(q[0] - G.rc[0], q[1] - G.rc[1]); }));
+    return G;
+  }
+  /** a point of the band, `s` along it from its foot and `off` across it, as it lies when it has wheeled `wheel` about its
+   *  pivot; and which way it runs there (its angle turns evenly along it: a circle's arc, worked out exactly) */
+  const archPt = (G, s, off, wheel) => { const k = G.bendA / G.Lt, t0 = G.th0, th = t0 + k * s, x = G.b0[0] + (Math.sin(th) - Math.sin(t0)) / k - Math.sin(th) * off, y = G.b0[1] - (Math.cos(th) - Math.cos(t0)) / k + Math.cos(th) * off;
+    if (!wheel) return [x, y, th]; const c = Math.cos(wheel), sn = Math.sin(wheel), dx = x - G.pivot[0], dy = y - G.pivot[1]; return [G.pivot[0] + dx * c - dy * sn, G.pivot[1] + dx * sn + dy * c, th + wheel]; };
+  /** the band itself, made once, printed like the poster and laid out along its arc where it lies on the page: a soft glow
+   *  in clouds, warm at its heart; a halftone screen of light dots as big as the band is bright there; the dark lanes of dust
+   *  down its middle where the dots give out; its stars over all. Faded at its ends and its sides, and gone well below the
+   *  bar's words. */
+  function milkyMake(G) {
+    const { H } = S, Lt = G.Lt, Wd = G.wid, h = G.heart, r = rng(9601), gauss = () => (r() + r() + r() - 1.5) / 1.5;
+    const sig = f => Wd * (.085 + .15 * Math.exp(-Math.pow((f - h) / .2, 2)) + .025 * Math.sin(f * 7 + 1) + .015 * Math.sin(f * 19)), cen = f => Wd * (.025 * Math.sin(f * 5.3 + .4) + .012 * Math.sin(f * 13)), rift = f => cen(f) + Wd * (.03 * Math.sin(f * 9 + .5) + .025 * Math.sin(f * 4.1 - 1) - .02), rw = f => Wd * (.016 + .026 * Math.pow(Math.sin(f * Math.PI * 1.3 + .4), 2)) * (1 - .45 * Math.abs(f - h));
+    const rift2 = f => rift(f) + Wd * .09 * clamp((f - h + .02) / .25) * (1 - clamp((f - h - .33) / .2)), rw2 = f => rw(f) * .6 * (f > h - .02 && f < h + .5 ? 1 : 0); // and the lane branching off it
+    const ends = f => clamp(f / G.e0) * (1 - clamp((f - G.e1) / (1 - G.e1))), sides = n => 1 - clamp((Math.abs(n) - Wd * .28) / (Wd * .22)), bar = y => clamp((y - H * G.barY) / (H * .08)), warm = f => Math.abs(f - h) < .18;
+    const bright = (f, n) => { const b = Math.exp(-Math.pow((n - cen(f)) / sig(f), 2)) * (.5 + .5 * Math.exp(-Math.pow((f - h) / .24, 2))) * (.75 + .25 * Math.sin(f * 23 + Math.sin(n * .05) * 2)), d = Math.max(Math.exp(-Math.pow((n - rift(f)) / rw(f), 2)), rw2(f) > 0 ? Math.exp(-Math.pow((n - rift2(f)) / rw2(f), 2)) * .8 : 0) * .95; return b * (1 - d) * ends(f) * sides(n); };
+    const at = (f, n) => archPt(G, f * Lt, n, 0);
+    // its box on the page, and the arc's own circle (to find where a point of the page lies along it and across it)
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (let i = 0; i <= 40; i++) for (const n of [-Wd / 2, 0, Wd / 2]) { const [x, y] = at(i / 40, n); x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+    x0 = Math.floor(Math.max(x0 - 8, -40)); y0 = Math.floor(Math.max(y0 - 8, H * G.barY - 4)); x1 = Math.ceil(Math.min(x1 + 8, S.W + 40)); y1 = Math.ceil(Math.min(y1 + 8, S.hz + 30));
+    const k = G.bendA / Lt, t0 = G.th0, rho = 1 / k, Ox = G.b0[0] - Math.sin(t0) / k, Oy = G.b0[1] + Math.cos(t0) / k;
+    const inv = (px2, py2) => { const vx = px2 - Ox, vy = py2 - Oy, d = Math.hypot(vx, vy), sg = k < 0 ? -1 : 1, th = Math.atan2(sg * vx, -sg * vy); /* P − O = (1/k − n)(sin θ, −cos θ) */ let dth = th - t0; while (dth > Math.PI) dth -= TAU; while (dth < -Math.PI) dth += TAU; return [dth / k / Lt, k < 0 ? rho + d : rho - d]; }; // (f along it, n across it)
+    const cv = make(x1 - x0, y1 - y0, x => { x.translate(-x0, -y0);
+      for (let i = 0; i < 26; i++) { const f = i < 4 ? h - .07 + i * .05 : .03 + .94 * r(), [px2, py2] = at(f, cen(f) + gauss() * sig(f) * .5), rr = sig(f) * (i < 4 ? 1.6 : .6 + r() * .9), kk = ends(f) * bar(py2), rg = x.createRadialGradient(px2, py2, 0, px2, py2, rr), col = warm(f) ? (r() < .6 ? "255,176,196" : "255,206,160") : r() < .4 ? "232,160,236" : "176,166,255"; if (kk <= .01) continue; rg.addColorStop(0, `rgba(${col},${((i < 4 ? .5 : .32) * kk).toFixed(3)})`); rg.addColorStop(1, `rgba(${col},0)`); x.fillStyle = rg; x.fillRect(px2 - rr, py2 - rr, rr * 2, rr * 2); } // its glow in clouds, warm at its heart
+      x.globalCompositeOperation = "destination-out"; for (let sv = 0; sv <= Lt; sv += 4) { const f = sv / Lt; for (const [nc, w0, kk] of [[rift(f), rw(f) * 1.3, .55], [rift2(f), rw2(f) * 1.3, .45]]) { if (w0 <= .5) continue; const [px2, py2] = at(f, nc), rg = x.createRadialGradient(px2, py2, 0, px2, py2, w0 * 1.5); rg.addColorStop(0, `rgba(0,0,0,${kk})`); rg.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = rg; x.fillRect(px2 - w0 * 1.5, py2 - w0 * 1.5, w0 * 3, w0 * 3); } } x.globalCompositeOperation = "source-over"; // the dark lanes of dust down its middle
+      const sp = 4.6, dots = [new Path2D(), new Path2D()]; for (let yy = y0 + sp / 2, row = 0; yy < y1; yy += sp * .87, row++) { const by = bar(yy); if (by <= 0) continue; for (let xx = x0 + ((row & 1) ? sp / 2 : 0); xx < x1; xx += sp) { const [f, n] = inv(xx, yy); if (f < 0 || f > 1 || Math.abs(n) > Wd / 2) continue; const rr = sp * .52 * Math.sqrt(bright(f, n) * by); if (rr < .4) continue; const d = dots[warm(f) ? 0 : 1]; d.moveTo(xx + rr, yy); d.arc(xx, yy, rr, 0, TAU); } }
+      x.globalAlpha = .8; x.fillStyle = "#FFE4EC"; x.fill(dots[0]); x.fillStyle = "#E6DEFF"; x.fill(dots[1]); x.globalAlpha = 1; // the halftone screen, warm at its heart
+      const N = Math.round(Lt * Wd / 45); for (let i = 0; i < N; i++) { const f = r(), n = cen(f) + gauss() * Wd * .3, b = bright(f, n), rr = .35 + Math.pow(r(), 3) * 1.1, q = r(), [px2, py2] = at(f, n), a2 = (.45 + r() * .55) * bar(py2); if (r() > .15 + b || a2 <= .01) continue; x.globalAlpha = a2; x.fillStyle = q < .7 ? "#FBF8FF" : q < .85 ? "#CFE0FF" : "#FFE0C4"; x.beginPath(); x.arc(px2, py2, rr, 0, TAU); x.fill(); } x.globalAlpha = 1; // its stars, thickest where it is brightest
+    });
+    cv.ox = x0; cv.oy = y0; return cv;
+  }
+  /** the band at loop time T: how far out from where it starts it is, how bright, and how far it has wheeled */
+  const milkyNow = (T, G) => ({ rv: E.io(seg(T, CM.band[0], CM.band[1], x => x)), fa: 1 - seg(T, CM.fade[0], CM.fade[1], E.sine), wheel: lerp(-.03, .045, seg(T, 3, 14.5, E.sine)) * G.wk });
+  function cMilky(T, I, A, pl) {
+    if (I <= .01) return; if (!CR || CR.gen !== gen) CR = { gen };
+    const G = CR.mg || (CR.mg = milkyGeo()), tex = CR.mw || (CR.mw = milkyMake(G)), { W, H, hz } = S, now = milkyNow(T, G), a = I * now.fa, rv = now.rv * (G.rmax / .72 + 4); /* how far out from where it starts its soft edge has got (whole within .72 of that, so whole everywhere when it has come) */
+    if (rv < 1 || a <= .01) return;
+    if (!CR.clip) { // the sky above the headlands (the topmost of them at each x), and the water but for their reflections
+      const ridgeY = (pts, x) => { if (x < pts[0][0] || x > pts[pts.length - 1][0]) return 1e9; let i = 1; while (i < pts.length - 1 && pts[i][0] < x) i++; const a = pts[i - 1], b = pts[i]; return lerp(a[1], b[1], clamp((x - a[0]) / ((b[0] - a[0]) || 1))); };
+      const c = new Path2D(), w = new Path2D(); c.moveTo(-20, -20); c.lineTo(W + 20, -20); w.moveTo(-20, H + 20); w.lineTo(W + 20, H + 20);
+      for (let x = W + 20; x >= -20; x -= 4) { const top = Math.min(hz + 1, ridgeY(S.left, x), ridgeY(S.right, x), ridgeY(S.farL, x)), refl = Math.min(hz + 1, ridgeY(S.left, x), ridgeY(S.right, x)); c.lineTo(x, top); w.lineTo(x, hz + (hz - refl) * .5); }
+      c.closePath(); w.closePath(); CR.clip = c; CR.wclip = w; }
+    /* the band, revealed out to `rv` from where it starts with a soft edge: while it is coming, a copy of it on a canvas of its
+       own with a round mask laid over it (both made once: the mask is a soft disc, drawn as big as the band has got) */
+    let img = tex; if (now.rv < 1) {
+      if (!CR.off) { const [c2, x2] = canvas(tex.width, tex.height); x2.imageSmoothingEnabled = true; c2.w2 = tex.w2; c2.h2 = tex.h2; c2.ox = tex.ox; c2.oy = tex.oy; CR.off = [c2, x2]; CR.mask = make(200, 200, x => { const rg = x.createRadialGradient(100, 100, 0, 100, 100, 100); rg.addColorStop(0, "#000"); rg.addColorStop(.72, "#000"); rg.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = rg; x.fillRect(0, 0, 200, 200); }); }
+      const [c2, x2] = CR.off, sc2 = c2.width / tex.w2, R2 = Math.max(rv, 1); x2.setTransform(1, 0, 0, 1, 0, 0); x2.globalCompositeOperation = "copy"; x2.globalAlpha = 1; x2.drawImage(tex, 0, 0);
+      x2.globalCompositeOperation = "destination-in"; x2.setTransform(sc2, 0, 0, sc2, -tex.ox * sc2, -tex.oy * sc2); x2.drawImage(CR.mask, G.rc[0] - R2, G.rc[1] - R2, R2 * 2, R2 * 2); x2.setTransform(1, 0, 0, 1, 0, 0); x2.globalCompositeOperation = "source-over"; img = c2; }
+    const band = k => { g.translate(G.pivot[0], G.pivot[1]); g.rotate(now.wheel); g.translate(-G.pivot[0], -G.pivot[1]); g.globalAlpha = a * k; g.drawImage(img, tex.ox, tex.oy, tex.w2, tex.h2); };
+    g.globalCompositeOperation = "lighter";
+    g.save(); g.clip(CR.clip); band(1); g.restore();
+    g.save(); g.clip(CR.wclip); g.translate(0, hz); g.scale(1, -.42); g.translate(0, -hz); band(.34); g.restore(); // and in the water
+    // its brightest stars, twinkling; and a star or two falling along it
+    const shown = (s0) => { const q = archPt(G, s0, 0, 0); return Math.hypot(q[0] - G.rc[0], q[1] - G.rc[1]) < rv * .8; }, top = y => 1 - clamp((H * (G.barY + .08) - y) / (H * .08));
+    if (!CR.tw) { const r = rng(9621); CR.tw = Array.from({ length: S.pr ? 14 : 24 }, () => ({ s: G.heart * .4 + r() * .62, n: (r() - .5) * .34, f: 1.5 + r() * 2.5, ph: r() * TAU })); CR.star = glow(Math.max(3, Math.round(S.u * .45)), [235, 230, 255], .95); }
+    for (const t of CR.tw) { const sc = t.s * G.Lt; if (!shown(sc)) continue; const [x, y] = archPt(G, sc, t.n * G.wid, now.wheel), k = .45 + .55 * Math.pow(Math.max(0, Math.sin(A * t.f + t.ph)), 2); g.globalAlpha = a * k * S.shade(x, y, 6) * top(y); g.drawImage(CR.star, x - CR.star.w2 / 2, y - CR.star.h2 / 2, CR.star.w2, CR.star.h2); }
+    g.globalCompositeOperation = "source-over";
+    for (const [t0, s0] of CM.meteors) { const k = (T - t0) / .7; if (k <= 0 || k >= 1) continue; const e = E.in(k), sc = (s0 + .22 * e) * G.Lt, [x, y, th] = archPt(G, sc, G.wid * .22, now.wheel), tx = -Math.cos(th) * 80, ty = -Math.sin(th) * 80, fa = I * (1 - k) * S.shade(x, y, 12) * top(y); if (fa <= .01) continue; const gr = g.createLinearGradient(x, y, x + tx, y + ty); gr.addColorStop(0, `rgba(255,255,255,${(.9 * fa).toFixed(3)})`); gr.addColorStop(1, "rgba(200,190,255,0)"); g.globalAlpha = 1; g.strokeStyle = gr; g.lineWidth = 1.3; g.beginPath(); g.moveTo(x, y); g.lineTo(x + tx, y + ty); g.stroke(); } // falling along it
+    // and the module's own shade under any line it lies behind
+    if (S.lines && CR.padL !== S.lines) { CR.padL = S.lines; const pts = []; for (let i = 0; i <= 30; i++) pts.push(archPt(G, i / 30 * G.Lt, 0, 0)); CR.padTop = S.lines.reduce((m, [x0, y0, x1, y1]) => pts.some(([x, y]) => Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(y0 - y, 0, y - y1)) < G.wid * .32) ? Math.min(m, y0 - 1) : m, 1e9); }
+    if (CR.padTop < 1e8) padLines(CR.padTop, a * now.rv);
+    g.globalAlpha = 1;
+  }
+  /** the lanterns, worked out once: where each sits on the water or the shore, when it lights (out from the middle of the
+   *  bay, one after another) and goes up, and where on the band it gets to and when (where the band has got to by then) */
+  function lanternsMake(G) {
+    const { W, H, hz, pr } = S, r = rng(9631), n = pr ? 80 : 140, xl = S.left[S.left.length - 1][0], xr = S.right[0][0], xc = (xl + xr) / 2, out = [];
+    for (let i = 0; i < n; i++) { let x0, y0; if (r() < .2) { const side = r() < .5 ? S.left : S.right, p = side[Math.floor(side.length * (side === S.left ? .55 + r() * .45 : r() * .45))]; x0 = p[0]; y0 = lerp(p[1], hz, .8 + r() * .2); } else { const dn = Math.pow(r(), 1.6); y0 = hz + (H - hz) * (.02 + dn * .5); const sp2 = clamp(dn * 3.2); x0 = lerp(lerp(xl - W * .03, W * .04, sp2), lerp(xr + W * .03, W * .96, sp2), r()); } /* far out between the headlands, and across the whole bay nearer in */
+      const q = r(); out.push({ x0, y0, d: Math.abs(x0 - xc) / W + r() * .12, z0: Math.min(1, .36 + (y0 - hz) / (H - hz) * 1.2 + r() * .1), /* nearer, larger, as the loop's own lanterns are */ sw: .5 + r() * 1.2, ph: r() * TAU, c: q < .6 ? 0 : q < .8 ? 1 : 2, n: (r() + r() - 1) * .45, tr: 3.4 + r() * .7, side: r() < .5 ? -1 : 1, q: r() }); }
+    out.sort((p, q) => p.d - q.d);
+    const dist = s0 => { const p2 = archPt(G, s0, 0, 0); return Math.hypot(p2[0] - G.rc[0], p2[1] - G.rc[1]); };
+    out.forEach((l, i) => { l.tl = lerp(CM.light[0], CM.light[1], (i + .5) / n); l.tu = l.tl + .55; l.ta = l.tu + l.tr; const rv = E.io(seg(l.ta, CM.band[0], CM.band[1], x => x)) * (G.rmax / .72 + 4), want = Math.max(10, rv * .76 * .92); /* where it is whole by then */
+      let lo = 0, hi = G.Lt * G.e1; for (let k = 0; k < 24; k++) { const m = (lo + hi) / 2; if (dist(m) < want) lo = m; else hi = m; } l.s = Math.max(G.Lt * .04, lo); }); // up the band, as far up as it has got
+    return out;
+  }
+  function cLanterns(T, I, A, pl) {
+    if (I <= .01) return; if (!CR || CR.gen !== gen) CR = { gen };
+    const G = CR.mg || (CR.mg = milkyGeo()), { W, H, u, hz } = S, now = milkyNow(T, G), sm = G.Lt * .1, [mouthX, mouthY] = archPt(G, sm, 0, now.wheel);
+    if (!CR.lan) { CR.lan = lanternsMake(G); CR.lspr = S.lcols.map(([spr, glw]) => make(glw.w2, glw.h2, x => { x.globalAlpha = .6; x.drawImage(glw, 0, 0, glw.w2, glw.h2); x.globalAlpha = 1; x.drawImage(spr, (glw.w2 - spr.w2) / 2, (glw.h2 - spr.h2) / 2, spr.w2, spr.h2); })); } // each colour's lantern and its glow, in one
+    const rc = ["#FFB45C", "#FF9DBB", "#FFE2A0"], top = y => 1 - clamp((H * (G.barY + .08) - y) / (H * .08));
+    for (const l of CR.lan) { if (T < l.tl || T > l.ta + 1.3) continue;
+      const lit = clamp((T - l.tl) / .45), e = E.sine(seg(T, l.tu, l.ta, x => x)), off = l.n * G.wid * .3, [tx, ty] = archPt(G, l.s, off, now.wheel); // where on the band it goes
+      // up from where it sat, into the river, and along the band to its place
+      const [p2x, p2y] = archPt(G, (sm + l.s) / 2, off * .8, now.wheel), p1x = l.x0 + (mouthX - l.x0) * .3, p1y = l.y0 - (l.y0 - mouthY) * .85, m = 1 - e;
+      let x = m * m * m * l.x0 + 3 * m * m * e * p1x + 3 * m * e * e * p2x + e * e * e * tx, y = m * m * m * l.y0 + 3 * m * m * e * p1y + 3 * m * e * e * p2y + e * e * e * ty;
+      const z = lerp(l.z0, .16, Math.pow(e, .75)), s = lerp(.35, 1.45, z) * (1 - seg(T, l.ta - .35, l.ta + .1, E.in)); x += Math.sin(A * .9 * l.sw + l.ph) * 1.4 * u * z * (1 - e * .8); if (e < .01) y += Math.sin(A * 1.3 + l.ph) * .15 * u;
+      const fade = S.shade(x, y, S.lr * s * 3) * top(y), flick = .88 + .12 * Math.sin(A * 13 + l.ph * 3) * Math.sin(A * 7.3 + l.ph), a = I * lit * fade;
+      if (s > .02 && a > .01) { const sp = CR.lspr[l.c]; g.globalAlpha = a * flick; g.drawImage(sp, x - sp.w2 * s / 2, y - sp.h2 * s / 2, sp.w2 * s, sp.h2 * s);
+        const hgt = l.y0 - y; if (hgt < H * .22) { g.globalCompositeOperation = "lighter"; g.fillStyle = rc[l.c]; const ry = l.y0 + hgt * .45 + 2 * s, rw = S.lr * s * 1.1, k = a * .35 * (1 - hgt / (H * .22)) * flick; g.globalAlpha = k; g.fillRect(x - rw / 2 + Math.sin(A * 3 + l.ph) * u * .5, ry, rw, 1.2 + s); g.globalAlpha = k * .6; g.fillRect(x - rw * .3, ry + 3 * s, rw * .6, 1); g.globalCompositeOperation = "source-over"; } } // its light on the water while it is low
+      const tw = env(T, l.ta - .25, l.ta + .05, l.ta + .25, l.ta + 1.2, E.sine); if (tw > .01) { if (!CR.star) CR.star = glow(Math.max(3, Math.round(u * .45)), [235, 230, 255], .95); const sz = 1 + tw * .8; g.globalCompositeOperation = "lighter"; g.globalAlpha = I * tw * S.shade(tx, ty, 6) * top(ty); g.drawImage(CR.star, tx - CR.star.w2 * sz / 2, ty - CR.star.h2 * sz / 2, CR.star.w2 * sz, CR.star.h2 * sz); g.globalCompositeOperation = "source-over"; } // where it gets to, a star
+    }
+    g.globalAlpha = 1;
   }
 
   return S;

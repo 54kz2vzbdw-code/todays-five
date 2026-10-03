@@ -83,6 +83,23 @@
 // before it left and ends on what this pass would have drawn (pic(P)), so the pass after it rests on just what it always
 // would; each keeps to the room the words leave (what drifts goes out at its edge); the eggs have dice of their own, and
 // nothing else on the board draws any differently.
+//
+// 1.12 b445: the crown. In the sixth hour of the list left alone and every sixth after (scenes.js, `K.long`: 3), for
+// whoever has had it up all day, the board celebrates the end of a long day. By night, the display: the sponge takes the
+// lesson off as ever, and six sticks of chalk in the rainbow's colours come down onto the wet slate in a V, out of the
+// air in front of it, and fly in low, laying their lines as they go, and loop the loop, the red outside; they come down
+// again three and three at the top of a heart, and each three goes round a lobe and down to its point, where they cross;
+// the white flies an arrow through it and flicks its head on; the heart beats, twice, warm behind it; and the sponge comes
+// back for all of it, and behind the sponge is the next lesson. By day, five o'clock: the old plan comes off as ever; the
+// marker draws a chart, the day along the bottom from 9am to 5pm, and five notes are slapped on in a stack by its side, a
+// task each, as high as there are tasks left; the blue draws the line the day should take, dashed, from all five at nine
+// to none at five; then the red draws the day as it goes, along the top of the stack, and as each task is done it is
+// ticked, the line steps down, and the note peels off the stack, goes up like a rocket and bursts into confetti over the
+// chart (a slow afternoon, a rush at the end); the last step is at five, down onto the bottom, and the red rings it, and up
+// goes a fountain of confetti and streamers; then the eraser goes over it all, and behind the eraser is the plan, its
+// notes slapped on. Each starts on what the pass before it left and ends on what this pass would have drawn (pic(P)), so
+// the pass after it rests on just what it always would; each keeps to the room the words leave; the crowns have dice of
+// their own, and nothing else on the board draws any differently.
 export default function board(K, id) {
   const chalk = id !== "whiteboard";
   const { clamp, lerp, E, seg, env, rng, canvas, paint } = K;
@@ -869,6 +886,31 @@ export default function board(K, id) {
   const strokesOn = (x, list) => { for (const st of list) { if (chalk) { chalkSegs(x, st, 0, st.n); chalkHalo(x, st, st.len); } else markerLine(x, st, st.len); } };
   const bboxOf = list => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const st of list) for (const [a, b] of st.p) { x0 = Math.min(x0, a); y0 = Math.min(y0, b); x1 = Math.max(x1, a); y1 = Math.max(y1, b); } return [x0, y0, x1, y1]; };
 
+  /* ---------------- 1.12 b445: the crown, its pieces ---------------- */
+  // its beats, in seconds. By night: the sponge as ever; the display (the loop, the heart, the arrow); the heart beating;
+  // the sponge again, the next lesson behind it, and the slate drying. By day: the old plan off as ever; the chart and
+  // the day's five tasks; the line the day should take; the day (the red line, a step down and a note gone up for each
+  // task done); five o'clock, ringed; the fountain; the eraser, the plan behind it.
+  const CB = chalk ? { wipe: [.5, 2.2], dry: [2.2, 5.6], loop: [2.45, 5.6], heart: [5.75, 8.4], arrow: [8.55, 9.45], beat: [9.5, 11.15], out: [11.45, 13.15], dry2: [13.15, 14.85] }
+    : { black: [3.45, 5.25], tasks: [3.7, 4.75], blue: [5.4, 5.85], red: [6.05, 9.6], ring: [9.74, 10.04], pop: 10.45, out: [12.45, 14.15] };
+  /** a flight: from (x, y) heading th (on the page: 0 to the right, growing clockwise), through its legs, straight on
+   *  (["l", length]) or turning (["t", radius, sweep], sweep > 0 the way th grows), straight on before the first and past
+   *  the last; at(q, o): where it is q along it, o to its left, and which way it is heading */
+  const flight = (x0, y0, th0, legs) => {
+    const sg = []; let x = x0, y = y0, th = th0, s = 0;
+    for (const [k, a, b] of legs) {
+      if (k === "l") { sg.push({ s0: s, L: a, x, y, th, R: 0 }); x += Math.cos(th) * a; y += Math.sin(th) * a; s += a; continue; }
+      const d = Math.sign(b), cx = x - Math.sin(th) * a * d, cy = y + Math.cos(th) * a * d; sg.push({ s0: s, L: Math.abs(b) * a, cx, cy, th, R: a, d }); th += b; x = cx + Math.sin(th) * a * d; y = cy - Math.cos(th) * a * d; s += Math.abs(b) * a;
+    }
+    const pre = { s0: 0, x: x0, y: y0, th: th0, R: 0 }, end = { s0: s, x, y, th, R: 0 };
+    return { len: s, at(q, o = 0) { let e = q < 0 ? pre : end; if (q >= 0) for (const z of sg) if (q < z.s0 + z.L) { e = z; break; } const dq = q - e.s0; let x2, y2, h;
+      if (!e.R) { h = e.th; x2 = e.x + Math.cos(h) * dq; y2 = e.y + Math.sin(h) * dq; } else { h = e.th + e.d * dq / e.R; x2 = e.cx + Math.sin(h) * e.R * e.d; y2 = e.cy - Math.cos(h) * e.R * e.d; }
+      return [x2 - Math.sin(h) * o, y2 + Math.cos(h) * o, h]; } };
+  };
+  /** a flight along a line through points (straight on before the first and past the last) */
+  const along2 = pts => { const L = [0]; for (let i = 1; i < pts.length; i++) L.push(L[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    return { len: L[L.length - 1], at(q) { let i = 1; while (i < pts.length - 1 && L[i] < q) i++; const a = pts[i - 1], b = pts[i], f = (q - L[i - 1]) / ((L[i] - L[i - 1]) || 1); return [lerp(a[0], b[0], f), lerp(a[1], b[1], f), Math.atan2(b[1] - a[1], b[0] - a[0])]; } }; };
+
   // the pool: the signature's first, then the others (each run of passes deals all of them once); and the rare ones,
   // about one pass in ten, never two within four passes of each other
   const POOL = chalk ? [null, solar, music, prism, water, dna] : [null, flow, venn, road, mind, rocket, dash], RAREP = chalk ? [ttt, cat] : [ttt, doodles], NS = POOL.length, NR = RAREP.length;
@@ -1163,7 +1205,7 @@ export default function board(K, id) {
       if (S.pending && S.vis < .03) { S.box = S.pending; S.pending = null; S.build(); }
       S.F = F; if (F < 0 && S.refit) { S.refit = false; S.fit(false); }
       const vis = S.vis, on = I > .01;
-      if (vis > .005 && S.box) { const pp = S.passOf(P), lg = K.long ? K.long(P) : 0; if (lg === 1 || lg === 2) S.hour(T, I, A, on, vis, pp, lg); /* (b430: once in an hour, an hour's egg) */ else { S.hr = null; /* (its layers let go once it is over) */ if (K.egg && K.egg(P)) S.egg(T, I, A, on, vis, pp); /* (b418: every twelfth pass, the egg) */ else if (chalk) S.lesson(T, I, A, on, vis, pp); else if (pp.P) S.planOn(T, I, A, on, vis, pp); else S.plan(T, I, A, on, vis); } }
+      if (vis > .005 && S.box) { const pp = S.passOf(P), lg = K.long ? K.long(P) : 0; if (lg !== 3) S.cr = null; /* (b445: the crown's layers let go once it is over) */ if (lg === 1 || lg === 2) S.hour(T, I, A, on, vis, pp, lg); /* (b430: once in an hour, an hour's egg) */ else { S.hr = null; /* (its layers let go once it is over) */ if (lg === 3) S.crown(T, I, A, on, vis, pp); /* (b445: in the sixth hour and every sixth, the crown) */ else if (K.egg && K.egg(P)) S.egg(T, I, A, on, vis, pp); /* (b418: every twelfth pass, the egg) */ else if (chalk) S.lesson(T, I, A, on, vis, pp); else if (pp.P) S.planOn(T, I, A, on, vis, pp); else S.plan(T, I, A, on, vis); } }
       if (chalk) S.dustMotes(A);
       if (F >= 0 && S.box) { if (chalk) S.aplus(F, S.passOf(P)); else S.notesBurst(F, A); }
       g.globalAlpha = 1;
@@ -2073,6 +2115,242 @@ export default function board(K, id) {
       const win = i => { const s0 = b0 + (b1 - b0 - .55) * i / Math.max(1, n - 1); return [s0, s0 + .55]; }, L = h.BL || (h.BL = S.layer()); if (h.blT === undefined || T < h.blT) { L.x.save(); L.x.setTransform(1, 0, 0, 1, 0, 0); L.x.clearRect(0, 0, L.c.width, L.c.height); L.x.restore(); h.blN = 0; } h.blT = T;
       while (h.blN < n && win(h.blN)[1] <= T) { markerLine(L.x, all[h.blN], all[h.blN].len); h.blN++; }
       S.blit(L, a); g.globalAlpha = a; for (let i = h.blN; i < n; i++) { const [s0, s1] = win(i); if (T <= s0) break; markerLine(g, all[i], all[i].len * jerk((T - s0) / (s1 - s0))); } g.globalAlpha = 1;
+    },
+    /* ---------------- 1.12 b445: the crown ----------------
+       In the sixth hour of the list left alone and every sixth after (K.long: 3), for whoever has had it up all day: the
+       end of a long day, celebrated. It starts from the picture the pass before it left and ends on the one this pass
+       would have drawn (pic(P)), so the pass after it rests on just what it always would; it has dice of its own, and
+       chalk (or ink) of its own. */
+    crown(T, I, A, on, vis, pp) { if (chalk) S.air(T, I, A, on, vis, pp); else S.five(T, I, A, on, vis, pp); },
+    /** the crown for this room and this pass, worked out once: kept by the room and the pass it was worked out for (kb
+     *  and kp; nothing else is ever stored under those names) */
+    crownOf(P) {
+      const b = S.box; if (S.cr && S.cr.kb === b && S.cr.kp === P) return S.cr;
+      const keep = seedN, c = { kb: b, kp: P }; seedN = 940000 + (P % 997) * 600;
+      S[chalk ? "airOf" : "fiveOf"](c, b, K.deal(P, chalk ? 101 : 102));
+      seedN = keep; return (S.cr = c);
+    },
+    /* by night, the display */
+    /** its sorties for this room: six sticks in the rainbow's colours fly in low in a V and loop the loop; come down again
+     *  three and three at the top of a heart, each three round a lobe and down to its point, where they cross; and the
+     *  white flies an arrow through it. Each stick's line is a stroke of its own, laid as it flies */
+    airOf(c, b, r) {
+      const H = CB, u = b.u, tall = b.k === "tall", sd = S.side === "l" ? -1 : 1, X = f => b.x + b.w * (sd > 0 ? f : 1 - f), W = clamp(u * .2, 2.4, 6) * 1.1, d = W * 1.55;
+      const fl = c.fl = [[], [], [], [], [], [], []], tr = c.tr = [], dust = c.dust = [];
+      const firm = st => { const p0 = st.pr; st.pr = q => Math.max(.62, p0(q)); return st; }; /* it bears on evenly: a line that skips, but never breaks */
+      /* stick k (0 … 5 the rainbow's, 6 the white) flies p, o to its left and lag behind the lead, at v; the lead is at its start at tOn */
+      const sortie = (k, p, o, lag, v, tOn, col, land = .32, off = .45, ly = 0) => {
+        const n = Math.max(2, Math.ceil(p.len / 2.5)), pts = []; for (let i = 0; i <= n; i++) { const q = p.at(i / n * p.len, o); pts.push([q[0], q[1]]); }
+        const st = firm(mk(pts, col, W)), tA = tOn + lag / v, tB = tOn + (p.len + lag) / v;
+        fl[k].push({ p, o, lag, v, tOn, land, off, col }); tr.push({ st, tA, tB, m: n, col, ly });
+        for (let i = 0, nd = Math.ceil((tB - tA) / .045); i < nd; i++) { const f = (i + r()) / nd, q = p.at(f * p.len, o); dust.push({ t: lerp(tA, tB, f), x: q[0], y: q[1], vx: (r() - .5) * 24, vy: 3 + r() * 12, s: .6 + r() * 1.1, life: .45 + r() * .6, c: col }); } };
+      const RB = [3, 5, 2, 4, 1, 6]; /* pink, orange, yellow, green, blue, violet: from the outside of the loop in */
+      // the loop: in low from the far side in a V, and once round, the rainbow's red outside
+      { const Rl = tall ? Math.min(b.h * .115, b.w * .15) : Math.min(b.h * .27, b.w * .17), yl = b.y + b.h * (tall ? .95 : .91) - 2.5 * d - (tall ? W : 0), lx = X(tall ? .36 : .25), x0 = X(tall ? .95 : .55), L2 = b.w * (tall ? .22 : .15);
+        const p = flight(x0, yl, sd > 0 ? Math.PI : 0, [["l", Math.abs(x0 - lx)], ["t", Rl, sd * TAU], ["l", L2]]), lag = i => Math.abs(i - 2.5) * Math.max(d * 2.6, S.tl * .42), /* (a V, each a little way behind the next in) */ tOn = H.loop[0] + .32, v = (p.len + lag(0)) / (H.loop[1] - .45 - tOn);
+        RB.forEach((col, i) => sortie(i, p, sd * (i - 2.5) * d, lag(i), v, tOn, col)); }
+      // the heart: three and three from its cleft, each three round a lobe and down to the point, where they cross
+      { const R = tall ? Math.min(b.h * .46 / 3.99, b.w * .7 / 3.88) : Math.min(b.h * .78 / 3.99, b.w * .42 / 3.88), hx = X(tall ? .5 : .71), hy = b.y + b.h * (tall ? .045 : .07) + .657 * R, tOn = H.heart[0] + .32;
+        const half = s => flight(hx, hy, -Math.PI / 2 + s * .35, [["t", R, s * (Math.PI + .28)], ["l", 3.27 * R]]), v = half(1).len / (H.heart[1] - .45 - tOn);
+        for (const s of [1, -1]) { const p = half(s); (s > 0 ? [6, 1, 4] : [3, 5, 2]).forEach((col, j) => sortie(s > 0 ? 5 - j : j, p, s * (j - 1) * d, 0, v, tOn, col, .32, .45, 1)); }
+        c.heart = { x: hx, y: hy + 1.45 * R, R }; }
+      // the arrow: the white, through the heart from low on the near side to high on the far, and its head flicked on
+      { const { x: hx, y: hy, R } = c.heart, an = sd > 0 ? -.52 : Math.PI + .52, ux = Math.cos(an), uy = Math.sin(an); let Ls = 3.88 * R * (tall ? 1.45 : 1.5);
+        const inside = q => q[0] > b.x + u && q[0] < b.x + b.w - u && q[1] > b.y + u * .6 && q[1] < b.y + b.h - u * .6;
+        while (Ls > 2 * R && !(inside([hx + ux * Ls * .5, hy + uy * Ls * .5]) && inside([hx - ux * Ls * .5, hy - uy * Ls * .5]))) Ls *= .96;
+        const tail = [hx - ux * Ls * .5, hy - uy * Ls * .5], tip = [hx + ux * Ls * .5, hy + uy * Ls * .5], hl = clamp(R * .42, u * .8, u * 2.2), tOn = H.arrow[0] + .26, v = Ls / .5;
+        sortie(6, flight(tail[0], tail[1], an, [["l", Ls]]), 0, 0, v, tOn, 0, .26, .12);
+        const bar = s => [tip[0] - Math.cos(an + s * .55) * hl, tip[1] - Math.sin(an + s * .55) * hl], hd = along2([bar(1), tip, bar(-1)]);
+        sortie(6, hd, 0, 0, hd.len / .2, tOn + Ls / v + .12, 0, .1, .4); }
+      c.nt = tr.length;
+    },
+    /** by night, the display: the sponge takes the lesson off as ever; six sticks of chalk in the rainbow's colours come
+     *  down onto the wet slate in a V, out of the air in front of it, fly in low laying their lines as they go, and loop
+     *  the loop; they come down again three and three at the top of a heart, and each three goes round a lobe and down to
+     *  its point, where they cross; the white flies an arrow through it and flicks its head on; the heart beats; and the
+     *  sponge comes back for all of it, and behind the sponge is the next lesson */
+    air(T, I, A, on, vis, pp) {
+      const H = CB, X = S.wholeOf(pp.prev), a = vis * I;
+      if (!(on && T >= H.wipe[0])) { S.blit(X, vis); return; }
+      const c = S.crownOf(pp.P), cur = pp.cur, w1 = S.wiperAt(T, H.wipe), w2 = S.wiperAt(T, H.out), s1 = w1 ? w1.s : T >= H.wipe[1] ? S.wipe.len : 0, s2 = w2 ? w2.s : T >= H.out[1] ? S.wipe.len : 0;
+      S.hidden(c, cur, T, H.loop[0], H.out[0]);
+      if (T < H.dry[1]) S.eggWet(s1, seg(T, H.dry[0], H.dry[1], x => x), a);
+      else if (T >= H.out[0] && T < H.dry2[1]) S.eggWet(s2, seg(T, H.dry2[0], H.dry2[1], x => x), a);
+      if (T < H.wipe[1]) S.wiped(s1, vis, I, X);
+      else {
+        if (I < .99) S.blit(X, vis * (1 - I));
+        if (T < H.out[0]) { const bt = S.airBeat(c, T, a), live = S.airTrails(c, T, a, 1 + .065 * bt); S.airDust(c, live, T, a); for (let k = 0; k < 7; k++) S.flyStick(S.flyer(c.fl[k], T), a); }
+        else { S.airTrails(c, T, 0); S.airOut(c, cur, T, a); }
+      }
+      S.drawWiper(w1 || w2, a, A);
+    },
+    /** the lines laid so far, on a layer of their own (and all of them again from nothing if time has gone back); of the
+     *  ones being laid, the last bit, on the frame */
+    airTrails(c, T, a, sc = 1) {
+      const Ls = c.TL || (c.TL = [S.layer(), S.layer()]), n = c.nt, live = [], has = [0, 0];
+      if (c.tT === undefined || T < c.tT) { for (const L of Ls) { L.x.setTransform(1, 0, 0, 1, 0, 0); L.x.clearRect(0, 0, L.c.width, L.c.height); L.x.setTransform(px, 0, 0, px, -S.lx * px, -S.ly * px); } c.kd = new Int32Array(n); c.dn = new Uint8Array(n); c.mg = 0; }
+      c.tT = T;
+      for (let j = 0; j < n; j++) { const t = c.tr[j], st = t.st, x = Ls[t.ly].x; if (T > t.tA) has[t.ly] = 1; if (c.dn[j] || T <= t.tA) continue;
+        if (T >= t.tB) { chalkSegs(x, st, c.kd[j], st.n); chalkHalo(x, st, st.len); c.dn[j] = 1; continue; }
+        const s = S.trS(t, T), k = Math.floor(s / (st.len / st.n)); if (k > c.kd[j]) { chalkSegs(x, st, c.kd[j], k); c.kd[j] = k; } live.push([j, s]); }
+      if (a > .003) { if (has[0]) S.blit(Ls[0], a); if (!has[1]) { /* (no heart yet) */ } else if (sc === 1) S.blit(Ls[1], a); else { const { x: hx, y: hy } = c.heart, bt = (sc - 1) / .065; g.save(); g.translate(hx, hy); g.scale(sc, sc); g.translate(-hx, -hy); S.blit(Ls[1], a); if (bt > .04) { g.globalCompositeOperation = "lighter"; S.blit(Ls[1], a * .3 * Math.min(1, bt)); g.globalCompositeOperation = "source-over"; } g.restore(); } /* (its lines brighter with each beat) */
+        for (const [j, s] of live) { const st = c.tr[j].st; chalkSegs(g, st, c.kd[j], c.kd[j] + 1, s, a); chalkHalo(g, st, s, a); } }
+      return live;
+    },
+    /** how far along its line a stick is at T (the lead's pace, so a V keeps its shape round the turns) */
+    trS(t, T) { const f = clamp((T - t.tA) / (t.tB - t.tA)) * t.m, i = Math.min(t.m - 1, Math.floor(f)), L = t.st.L; return lerp(L[i], L[i + 1], f - i); },
+    /** where a stick is at T and how it flies: on its line; coming down onto the board out of the air in front of it; or
+     *  going up off it into the air again; null while it is away */
+    flyer(fl, T) {
+      for (const f of fl) {
+        const q = (T - f.tOn) * f.v - f.lag, L = f.p.len, qa = -f.v * f.land, qb = L + f.v * f.off; if (q < qa || q > qb) continue;
+        const k = q < 0 ? (q - qa) / -qa : q > L ? (q - L) / (qb - L) : 0, [x, y, th] = f.p.at(q > L ? L + (q - L) * (1 - .5 * k) : q, f.o); /* (slowing as it goes up off the board) */
+        return { x, y, th, col: f.col, lift: q < 0 ? 1 - E.out(k) : E.in(k), al: q < 0 ? clamp(k * 1.7) : 1 - k * k };
+      }
+      return null;
+    },
+    /** a stick in flight: its worn end on its line, its length along the way it goes; in the air, larger, its shadow
+     *  further off */
+    flyStick(p, a) {
+      const b = S.box; if (!p) return; const spr = S.tools[p.col], sh = S.toolSh, s = 1 + p.lift * .55, al = a * p.al * clamp((Math.min(p.x - b.x, b.x + b.w - p.x, p.y - b.y, b.y + b.h - p.y) + b.u * 1.2) / (b.u * 1.5)); if (al <= .01) return; /* (never far past the room) */
+      g.save(); g.globalAlpha = al * .5 * (1 - p.lift * .55); g.translate(p.x + 2 + p.lift * 16, p.y + 3 + p.lift * 22); g.rotate(p.th); g.scale(s, s); g.drawImage(sh, -8, -sh.h2 / 2, sh.w2, sh.h2); g.restore();
+      g.save(); g.globalAlpha = al; g.translate(p.x, p.y - p.lift * 6); g.rotate(p.th); g.scale(s, s); g.drawImage(spr, -2, -spr.h2 / 2, spr.w2, spr.h2); g.restore();
+    },
+    /** the chalk's dust: a puff where each line begins, a haze about each stick as it lays its line, specks falling */
+    airDust(c, live, T, a) {
+      const u = S.box.u;
+      for (const t of c.tr) { const age = T - t.tA; if (age < 0 || age > .55) continue; const k = age / .55, R = u * (.45 + .7 * E.out(k)), p0 = t.st.p[0]; g.globalAlpha = a * .26 * (1 - k); g.drawImage(S.puffs[t.col], p0[0] - R, p0[1] - R, R * 2, R * 2); }
+      for (const [j, s] of live) { const t = c.tr[j], q = along(t.st, s), R = u * .75; g.globalAlpha = a * .15; g.drawImage(S.puffs[t.col], q[0] - R, q[1] - R, R * 2, R * 2); }
+      for (const d of c.dust) { const age = T - d.t; if (age < 0 || age > d.life) continue; g.globalAlpha = a * .55 * (1 - age / d.life); g.fillStyle = rgba(INKS[d.c]); g.fillRect(d.x + d.vx * age, d.y + d.vy * age + 70 * age * age, d.s, d.s); }
+      g.globalAlpha = 1;
+    },
+    /** the heart beating, twice: a warm glow behind it, and the heart swelling a little with each beat (ba-dum, ba-dum);
+     *  how far into a beat it is (0 … 1) */
+    airBeat(c, T, a) {
+      const [b0, b1] = CB.beat; if (T < b0 - .1 || T > b1) return 0;
+      const bt = [.18, .42, .98, 1.22].reduce((m, t, i) => m + Math.exp(-Math.pow((T - b0 - t) / .09, 2)) * (i % 2 ? .7 : 1), 0), ev = seg(T, b0 - .1, b0 + .12, E.out) * (1 - seg(T, b1 - .45, b1, E.in));
+      const { x, y, R } = c.heart, R2 = R * (2.3 + .25 * bt); g.globalAlpha = a * ev * (.12 + .24 * bt); g.drawImage(S.puffs[3], x - R2, y - R2, R2 * 2, R2 * 2); g.globalAlpha = 1;
+      return bt;
+    },
+    /** the sponge going over the display, and behind it, where it has been, the next lesson */
+    airOut(c, cur, T, a) {
+      const [o0, o1] = CB.out, w = S.wiperAt(T, CB.out), s = w ? w.s : T >= o1 ? S.wipe.len : 0, Y = S.hidden(c, cur, T, 0, 0);
+      if (T >= o1) { S.blit(Y, a); return; }
+      if (s > 0) { const l = c.Y2 || (c.Y2 = S.layer()), x = l.x; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, l.c.width, l.c.height); x.drawImage(Y.c, 0, 0); x.setTransform(px, 0, 0, px, -S.lx * px, -S.ly * px); x.globalCompositeOperation = "destination-in"; x.strokeStyle = "#000"; x.lineWidth = S.band; x.lineCap = "butt"; x.lineJoin = "miter"; trace(x, S.wipe, 0, s); x.stroke(); x.globalCompositeOperation = "source-over"; x.lineCap = "round"; x.lineJoin = "round"; S.blit(l, a); }
+      const L0 = c.TL[0]; if (!c.mg) { L0.x.save(); L0.x.setTransform(1, 0, 0, 1, 0, 0); L0.x.drawImage(c.TL[1].c, 0, 0); L0.x.restore(); c.mg = 1; } /* (the heart done beating: one layer again) */
+      S.wiped(s, a, 1, L0);
+    },
+    /* by day, five o'clock */
+    /** its chart for this room: the day's five tasks, a note each, stacked by the side of the chart as high as there are
+     *  tasks left; the axes, the hours along the bottom (9am to 5pm); the line the day should take (blue, dashed) and the
+     *  one it takes (red), a step down for each task done; where each note goes up to and bursts; five o'clock's fountain
+     *  of confetti in the notes' own colours, and its streamers */
+    fiveOf(c, b, r) {
+      const H = CB, u = b.u, tall = b.k === "tall", Wd = clamp(u * .2, 2.4, 6.2);
+      const cy0 = b.y + b.h * (tall ? .32 : .12), cy1 = b.y + b.h * (tall ? .86 : .84), lv = (cy1 - cy0) / 5, ns = Math.min(lv * (tall ? .95 : 1.22), b.w * (tall ? .16 : .12));
+      const nx = b.x + ns * .62, cx0 = nx + ns * .5 + .8 * u, cx1 = b.x + b.w - 1.1 * u, Y = k => cy1 - k * lv;
+      const put = (list, pts, col, k = 1, kind = "l", ex) => { const st = mk(pts, col, Wd * k, kind); st.streaks = streaks(st, r); if (ex) Object.assign(st, ex); list.push(st); return st; };
+      const blk = [], blu = [], red = [], ring = [];
+      // black: the axes in one stroke (down the side and along the bottom), the hours ticked off along it, 9am and 5pm
+      put(blk, [...hline([cx0, Y(5) - lv * .55], [cx0, cy1], r, .004), ...hline([cx0, cy1], [cx1, cy1], r, .003).slice(1)], 0, 1.05);
+      for (let i = 1; i <= 8; i++) { const x = lerp(cx0, cx1, i / 8); put(blk, [[x, cy1 - .05 * u], [x + .02 * u, cy1 + .42 * u]], 0, .7); }
+      const ls = clamp(u * .95, 10, 22); [["9am", cx0, .5], ["5pm", cx1, .85]].forEach(([str, x, al], i) => { const tw = width(str, ls); write(str, x - tw * al, cy1 + .75 * u + ls, ls, 140 + i).forEach(p => put(blk, p, 0, clamp(ls / u * .8, .75, 1.1), "w")); });
+      // blue: the day as it should go, dashed, from all five at nine to none at five
+      put(blu, hline([cx0, Y(5)], [cx1, Y(0)], r, .004), 1, .8, "l", { dash: [Wd * 2.2, Wd * 2.1] });
+      pace([{ win: H.black, strokes: blk }, { win: H.blue, strokes: blu }], u);
+      // red: the day as it goes, along the top of the stack and a step down as each task is done (a slow afternoon, a
+      // rush at the end), down onto the bottom at five; and five o'clock ringed
+      const fx = [.15, .34, .63, .83, 1], [r0, r1] = H.red, dd = .1, j = .16 * u, vd = (cx1 - cx0 - 8 * j) / (r1 - r0 - 5 * dd);
+      let t = r0, x = cx0; c.go = [];
+      for (let k = 0; k < 5; k++) { const xa = lerp(cx0, cx1, fx[k]) - (k < 4 ? j : 0), xb = k < 4 ? xa + 2 * j : cx1, y0 = Y(5 - k), y1 = Y(4 - k);
+        const a1 = put(red, hline([x, y0], [xa, y0], r, .003), 3, 1.05, "d", { t0: t, t1: t + Math.max(.02, (xa - x) / vd) }); t = a1.t1;
+        const a2 = put(red, [[xa, y0], [xb, y1]], 3, 1.05, "d", { t0: t, t1: t + dd }); t = a2.t1; x = xb; c.go.push(t); }
+      put(ring, hring([cx1, cy1], 1.15 * u, 1.05 * u, r, -2.5, .12), 3, .9, "l", { t0: H.ring[0], t1: H.ring[1] });
+      c.phases = [{ col: 0, strokes: blk }, { col: 1, strokes: blu }, { col: 3, strokes: [...red, ...ring] }]; c.board = [...blk, ...blu, ...red, ...ring]; c.Z0 = [cx1, cy1];
+      // the five tasks, a note each in a colour of its own (which, dealt), stacked by the chart bottom first, each with
+      // its top edge at its count; each a box to tick and a scribble
+      const cols = [0, 1, 2, 3, 4]; for (let i = 4; i > 0; i--) { const k = Math.floor(r() * (i + 1)); [cols[i], cols[k]] = [cols[k], cols[i]]; }
+      c.notes = cols.map((ci, k) => { const col = NOTE[ci], rr = rng(150 + k), spr = make(ns, ns, x2 => { x2.drawImage(S.noteSpr(col, "", 0), 0, 0, ns, ns); x2.strokeStyle = "rgba(34,40,49,.88)"; x2.lineWidth = Math.max(1.1, ns * .045); x2.strokeRect(ns * .14, ns * .43, ns * .17, ns * .17);
+          for (const [x0, y0, l0] of [[.4, .6, .46], [.14, .82, .7]]) { const q = scrawl(ns * x0, ns * y0, ns * l0, ns * .17, rr); x2.beginPath(); q.forEach(([a2, b2], i2) => i2 ? x2.lineTo(a2, b2) : x2.moveTo(a2, b2)); x2.stroke(); } });
+        const tk = [[ns * .17, ns * .52], [ns * .23, ns * .6], [ns * .38, ns * .36]], sprT = make(ns, ns, x2 => { x2.drawImage(spr, 0, 0, ns, ns); x2.strokeStyle = rgba(INKS[2], .92); x2.lineWidth = Math.max(1.6, ns * .075); x2.beginPath(); tk.forEach(([a2, b2], i2) => i2 ? x2.lineTo(a2, b2) : x2.moveTo(a2, b2)); x2.stroke(); });
+        return { k, s: ns, col, ci, spr, spr0: spr, sprT, tk, back: S.noteSpr(col, "", 0, true), x: nx + (r() - .5) * .06 * ns, y: Y(k + 1) + ns / 2 + (r() - .5) * .04 * ns, rot: (r() - .5) * .07, ph: r() * TAU, ts: H.tasks[0] + k * (H.tasks[1] - H.tasks[0] - .3) / 4 }; });
+      // where each goes up to and bursts: over the chart, the later ones further along (the day going by)
+      c.burst = [0, 1, 2, 3, 4].map(m => { const f2 = (m + .5) / 5, bx = tall ? lerp(b.x + b.w * .34, b.x + b.w * .9, f2) : lerp(b.x + b.w * .44, b.x + b.w * .92, f2), by = b.y + b.h * (tall ? .08 + r() * .14 : .1 + r() * .2);
+        return { m, n: c.notes[4 - m], x: bx + (r() - .5) * .04 * b.w, y: by, rb: b.w * (tall ? .12 : .085) * (.88 + r() * .24) * (m === 4 ? 1.3 : 1), t0: c.go[m] - .04, t1: c.go[m] + .12, tp: c.go[m] + .7 }; }); /* (the last, the biggest) */
+      // the confetti: each burst's, then five o'clock's fountain from the end of the line. A piece: where from, how fast
+      // which way, when, for how long, its colour, its size, how it turns, tumbles and sways
+      const cf = [], add = (x0, y0, vx, vy, t0, life, ci, sz) => cf.push(x0, y0, vx, vy, t0, life, ci, sz, r() * TAU, (r() - .5) * 9, r() * TAU, 5 + r() * 7, r() * TAU, 3 + r() * 4);
+      for (const bq of c.burst) { const n = (tall ? 26 : 18) + (bq.m === 4 ? 10 : 0); for (let i = 0; i < n; i++) { const an = (i + r() * .8) / n * TAU, sp = bq.rb * (1 + r() * 2.4); add(bq.x, bq.y, Math.cos(an) * sp, Math.sin(an) * sp, bq.tp, 1.6 + r() * .7, r() < .7 ? bq.n.ci : Math.floor(r() * 5), ns * (.2 + r() * .1)); } }
+      { const n = tall ? 140 : 90, hh = (cy1 - b.y) * .85; for (let i = 0; i < n; i++) { const an = -Math.PI / 2 - .55 + (r() - .5) * 1.5, sp = hh * 2.6 * (.45 + r() * .65); add(cx1, cy1, Math.cos(an) * sp, Math.sin(an) * sp, H.pop + r() * .14, 2.1 + r() * .8, Math.floor(r() * 5), ns * (.22 + r() * .12)); } }
+      c.cf = Float32Array.from(cf); c.ncf = cf.length / 14; c.bk = Array.from({ length: 30 }, () => []);
+      const nst = tall ? 8 : 6; c.str = Array.from({ length: nst }, (_, i) => { const an = -Math.PI / 2 - .6 + (i / (nst - 1) - .5) * 1.3 + (r() - .5) * .2, sp = (cy1 - b.y) * 2.6 * (.7 + r() * .35); return { vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, t0: H.pop + r() * .1, col: 1 + i % 5, ph: r() * TAU, L: u * (3 + r() * 1.4) }; });
+    },
+    /** by day, five o'clock: the old plan comes off as ever; the marker draws a chart, the day along the bottom from 9am
+     *  to 5pm, and five notes are slapped on in a stack by its side, a task each; the blue draws the line the day should
+     *  take, dashed, from five tasks at nine to none at five; then the red draws the day as it goes, along the top of the
+     *  stack, and as each task is done the line steps down and the note on top of the stack peels off, goes up like a
+     *  rocket and bursts into confetti over the chart (a slow afternoon, a rush at the end); the last step is at five, down
+     *  onto the bottom, and the red rings it, and up goes a fountain of confetti and streamers; then the eraser goes over
+     *  the chart, and behind it is the plan, its notes slapped on */
+    five(T, I, A, on, vis, pp) {
+      const H = CB, a = vis * I, rest = S.wholeOf(pp.prev), cur = pp.cur, c = S.crownOf(pp.P), [e0, e1] = H.out;
+      S.hidden(c, cur, T, H.black[0], e0);
+      if (S.dayRest(T, I, on, vis, rest)) { if (T < e0) { const st = S.grow(S.live, c.board, T); S.blit(S.live, a); if (st) S.hand(st, T, a); } else S.fiveOut(c, cur, T, a); }
+      S.dayTop(T, I, A, on, vis, pp);
+      if (!on) return;
+      S.daySlap(cur, T, A, a, e0 + .95);
+      S.fiveNotes(c, T, A, a); S.roomClip(() => S.fiveFx(c, T, A, a));
+      if (T > e0 && T < e1) { const WP = S.wipeAll, q = along(WP.ride, WP.at((T - e0) / (e1 - e0)) * WP.ride.len); S.drawWiper({ x: q[0], y: q[1], dir: q[2] }, a, A, S.sponge2, S.spongeSh2); }
+      S.tool(S.toolAt(T, c.phases), a);
+    },
+    /** the task notes: slapped on, at rest in their stack, the top one peeling off as its task is done and going up, a
+     *  curve up and over to where it bursts, turning as it goes, a dotted trail behind it */
+    fiveNotes(c, T, A, a) {
+      const curl = n => .12 + .025 * Math.sin(A * .9 + n.ph), u = S.box.u;
+      for (const n of c.notes) { const bq = c.burst[4 - n.k]; if (T < n.ts || T >= bq.tp) continue; /* (the bottom one first: each over the one below it) */
+        n.spr = T >= bq.t0 ? n.sprT : n.spr0; /* (its face ticked once its task is done) */
+        if (T < n.ts + .6) { const sl = S.slap(T - n.ts); S.note(n, n.x, n.y - sl.lift * n.s * .08, n.rot + sl.lift * .12, sl.sc, curl(n) + sl.flap, a * sl.a, sl.lift); continue; }
+        if (T < bq.t0 - .2) { S.note(n, n.x, n.y, n.rot, 1, curl(n), a, 0); continue; }
+        if (T < bq.t0) { S.note(n, n.x, n.y, n.rot, 1, curl(n), a, 0); const k = clamp((T - bq.t0 + .2) / .16), L = n.tk; g.save(); g.translate(n.x, n.y); g.rotate(n.rot); g.translate(-n.s / 2, -n.s / 2); g.strokeStyle = rgba(INKS[2], .92); g.lineWidth = Math.max(1.6, n.s * .075); g.lineCap = "round"; g.globalAlpha = a; g.beginPath(); g.moveTo(L[0][0], L[0][1]); if (k < .35) g.lineTo(lerp(L[0][0], L[1][0], k / .35), lerp(L[0][1], L[1][1], k / .35)); else { g.lineTo(L[1][0], L[1][1]); g.lineTo(lerp(L[1][0], L[2][0], (k - .35) / .65), lerp(L[1][1], L[2][1], (k - .35) / .65)); } g.stroke(); g.restore(); continue; } /* (ticked as it is done) */
+        if (T < bq.t1) { const k = seg(T, bq.t0, bq.t1, E.in); S.note(n, n.x, n.y - k * n.s * .05, n.rot - k * .08, 1 + k * .04, curl(n) + k * .5, a, k); continue; }
+        const k = (T - bq.t1) / (bq.tp - bq.t1), qx = lerp(n.x, bq.x, .2), qy = Math.min(n.y, bq.y) - Math.abs(bq.y - n.y) * .35 - n.s, at = q => { const e = E.out(q), i1 = 1 - e; return [i1 * i1 * n.x + 2 * i1 * e * qx + e * e * bq.x, i1 * i1 * n.y + 2 * i1 * e * qy + e * e * bq.y]; };
+        g.fillStyle = rgba(mix(n.col, K3, .3)); for (let i = 1; i <= 7; i++) { const q = k - i * .05; if (q <= 0) break; const [x, y] = at(q); g.globalAlpha = a * (1 - i / 8) * .85; g.beginPath(); g.arc(x, y, Math.max(1, u * .13) * (1 - i / 11), 0, TAU); g.fill(); } g.globalAlpha = 1;
+        const [x, y] = at(k); S.note(n, x, y, n.rot - .08 + k * k * 4.2, 1.04 - .22 * k, .3, a, 1, Math.cos(k * 3.2));
+      }
+    },
+    /** the bursts (sparks flung out, a glow) and the confetti, tumbling and swaying down, and the streamers */
+    fiveFx(c, T, A, a) {
+      const u = S.box.u, gs = S.glowY || (S.glowY = K.glowSpr(40, [255, 214, 72], 1));
+      for (const bq of c.burst) { const age = T - bq.tp; if (age < 0 || age > .6) continue; const k = E.out(clamp(age / .2));
+        if (age < .4) { const R2 = bq.rb * (.6 + .5 * k); g.globalAlpha = a * .3 * (1 - age / .4); g.drawImage(gs, bq.x - R2, bq.y - R2, 2 * R2, 2 * R2); }
+        g.strokeStyle = rgba(mix(bq.n.col, K3, .3)); g.lineWidth = Math.max(1.6, u * .16); g.lineCap = "round"; g.globalAlpha = a * (1 - E.in(clamp((age - .15) / .45))); g.beginPath();
+        for (let i = 0; i < 10; i++) { const an = i / 10 * TAU + bq.m, r0 = bq.rb * (.25 + .35 * k), r1 = bq.rb * (.3 + .75 * k); g.moveTo(bq.x + Math.cos(an) * r0, bq.y + Math.sin(an) * r0); g.lineTo(bq.x + Math.cos(an) * r1, bq.y + Math.sin(an) * r1); } g.stroke(); }
+      // the confetti: each piece a little square of note, turning, tumbling (its back darker), swaying as it falls
+      const D = c.cf, bk = c.bk, kd = 2.6, vt = u * 3.6; for (const q of bk) q.length = 0;
+      for (let i = 0; i < c.ncf; i++) { const o = i * 14, age = T - D[o + 4], life = D[o + 5]; if (age <= 0 || age >= life) continue;
+        const tau = (1 - Math.exp(-kd * age)) / kd, sw = Math.sin(D[o + 12] + D[o + 13] * age) * u * .45 * clamp(age * 1.5), x = D[o] + D[o + 2] * tau + sw, y = D[o + 1] + D[o + 3] * tau + vt * (age - tau);
+        const v = (1 - clamp((age - life + .5) / .5)) * clamp(age / .05) * S.edge(x, y); if (v < .05) continue;
+        const th = D[o + 8] + D[o + 9] * age, fl = Math.cos(D[o + 10] + D[o + 11] * age), h = D[o + 7] / 2, ux = Math.cos(th) * h, uy = Math.sin(th) * h, wx = -Math.sin(th) * h * fl, wy = Math.cos(th) * h * fl;
+        bk[(D[o + 6] * 2 + (fl < 0 ? 1 : 0)) * 3 + Math.min(2, Math.floor(v * 3))].push(x - ux - wx, y - uy - wy, x + ux - wx, y + uy - wy, x + ux + wx, y + uy + wy, x - ux + wx, y - uy + wy); }
+      bk.forEach((q, i) => { if (!q.length) return; const ci = Math.floor(i / 6), back = Math.floor(i / 3) % 2; g.fillStyle = rgba(mix(NOTE[ci], K3, back ? .2 : .04)); g.globalAlpha = a * [.4, .7, .95][i % 3]; g.beginPath(); for (let j = 0; j < q.length; j += 8) { g.moveTo(q[j], q[j + 1]); g.lineTo(q[j + 2], q[j + 3]); g.lineTo(q[j + 4], q[j + 5]); g.lineTo(q[j + 6], q[j + 7]); g.closePath(); } g.fill(); });
+      // the streamers: a ribbon of marker's colour each, curling behind its head as it goes up and falls
+      g.lineWidth = Math.max(1.4, u * .22); g.lineCap = "round"; g.lineJoin = "round";
+      for (const sq of c.str) { const age = T - sq.t0, life = 2.4; if (age <= 0 || age >= life) continue; g.strokeStyle = rgba(INKS[sq.col]); g.globalAlpha = a * .85 * (1 - clamp((age - life + .6) / .6)); g.beginPath();
+        const at = ag => { const tau = (1 - Math.exp(-kd * ag)) / kd; return [c.Z0[0] + sq.vx * tau, c.Z0[1] + sq.vy * tau + vt * .8 * (ag - tau)]; }, gap = sq.L / 13; /* a ribbon its own length back along the way its head came */
+        let [x0, y0] = at(age), ag = age, run = 0, i = 0; g.moveTo(x0, y0);
+        while (i < 13 && ag > 0) { ag = Math.max(0, ag - .01); const [x, y] = at(ag), l = Math.hypot(x - x0, y - y0); run += l;
+          if (run >= gap * (i + 1) && l > 0) { i++; const w = Math.sin(sq.ph + A * 7 + i * .95) * u * .5 * clamp(i / 3); g.lineTo(x - (y - y0) / l * w, y + (x - x0) / l * w); }
+          x0 = x; y0 = y; }
+        g.stroke(); }
+      g.globalAlpha = 1;
+    },
+    /** the eraser going over the chart, and behind it, where it has been, the plan */
+    fiveOut(c, cur, T, a) {
+      const [e0, e1] = CB.out, WP = S.wipeAll, k = (T - e0) / (e1 - e0), s = k <= 0 ? 0 : k >= 1 ? WP.len : WP.at(k) * WP.len, Y = S.hidden(c, cur, T, 0, 0);
+      if (k >= 1) { S.blit(Y, a); return; }
+      S.grow(S.live, c.board, 99);
+      if (s > 0) { const l = c.Y2 || (c.Y2 = S.layer()), x = l.x; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, l.c.width, l.c.height); x.drawImage(Y.c, 0, 0); x.setTransform(px, 0, 0, px, -S.lx * px, -S.ly * px); x.globalCompositeOperation = "destination-in"; x.strokeStyle = "#000"; x.lineWidth = S.band2; x.lineCap = "butt"; x.lineJoin = "miter"; trace(x, WP, 0, s); x.stroke(); x.globalCompositeOperation = "source-over"; x.lineCap = "round"; x.lineJoin = "round"; S.blit(l, a); }
+      S.wiped(s, a, 1, S.live, WP, S.band2);
     },
   };
   return S;

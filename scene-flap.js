@@ -49,6 +49,17 @@
 // hand jumps on to the minute it now is; then the face clatters round to plain again. The clock reads the time once,
 // when its pass comes up (the one thing on the wall that isn't dealt from the pass alone). With no room clear of the
 // words for the moon or the clock, the wall rests plain all pass, as it does for the horse.
+//
+// 1.12 b443: the crown. In the sixth hour of the list left alone, and every sixth after (K.long 3), the wall plays the
+// Lumières' train: L'Arrivée d'un train en gare de La Ciotat, 1896. It clatters over, out from the far end of the line,
+// into a printed frame of the station: the far platform with its lamps and the people waiting, the station's wall behind
+// them, the hills, the track running away into the open wall below and beside the list. A speck and its plume appear far
+// down the line; frame by frame, every frame a flip, the train comes on, braking all the way, and at the last rushes up
+// — as the first audiences ducked — to stop with its engine's front filling the corner, steam rolling from its cylinders
+// either side. Then the film runs out: the wall wipes back to plain from the left. The station and the train are drawn
+// in perspective, every part of the engine a box or a drum, its wheels turning, so it grows as a real one would; a new
+// frame comes every .36 seconds, so no flap turns more than three times a second; only the flaps the train and its steam
+// cross are worked out again for each frame (the station is printed once); the flaps under the words stay plain.
 export default function flap(K) {
   const { clamp, rng, canvas } = K;
   const TAU = Math.PI * 2;
@@ -577,11 +588,111 @@ export default function flap(K) {
         delay: (e, x, y, h) => e.wave === "round" ? ((Math.atan2(x - cx, cy - y) / TAU + 1) % 1) * 1.15 + h * .03 : h * .03,
         ink(g, e) { if (e.m !== undefined) clockFace(g, cx, cy, cr, e.h, e.m, e.s); } };
     },
+    /** 1.12 b443: the crown — L'Arrivée d'un train en gare de La Ciotat, 1896. The station seen from the platform, the
+     *  track running away to the horizon in the open part of the wall: the far platform with its lamps and the people
+     *  waiting, the station's wall behind them, the hills. The train comes in from the horizon, a speck and its plume,
+     *  nearer frame by frame, slowing as it comes, and at the last rushes up to fill the open wall — as the audience
+     *  ducked — and stops, hissing steam; then the film ends, the wall wiping back to plain. Every frame drawn from the
+     *  scene in perspective, the train's every part a box or a drum, so it grows as a real one would */
+    trainFilm(P, rm) {
+      const { W, H, pr, C, R, fw, fh, gap, ox, oy } = S, pw = fw + gap, ph = fh + gap, eh = 1.5, zEnd = 6;
+      // the open part: the wall beside the list (its right edge) and below it (its foot). The camera stands on the near
+      // platform well back from the track, so the train comes in across the open wall below the list and stops with its
+      // front filling the corner beside it
+      let edge = 0, foot = 0; for (let rr = 0; rr < R; rr++) for (let c = 0; c < C; c++) if (rm.masked(c, rr)) { const y0 = oy + rr * ph, y1 = y0 + fh; if (y1 < 118 || y0 > H - 70) continue; edge = Math.max(edge, ox + c * pw + fw); foot = Math.max(foot, y1); }
+      let s, vpX, vpY, tx; // the train's scale when it stops (px a metre), the vanishing point, how far the track is from the camera
+      if (!pr) { const colL = (edge || W * .82) + 16; s = Math.max(40, Math.min((W - colL) * 1.3 / 3.0, (H + 12 - 128) / 4.6)); vpY = H + 12 - 1.5 * s; tx = 8; vpX = colL - s * (tx - 1.5); if (vpX < W * .25) { vpX = W * .25; tx = 1.5 + (colL - vpX) / s; } } /* it stops with its front in the corner beside the list, a little of it past the edge and the foot of the page, as a film's would be */
+      else { const top = (foot || H * .66) + 14; s = Math.max(28, Math.min((H + 10 - top) / 4.6, W * 1.25 / 3.0)); vpY = H + 10 - 1.5 * s; tx = 5; vpX = W * 1.08 - 3 * s - s * (tx - 1.5); if (vpX < 16) { vpX = 16; tx = 1.5 + (W * 1.08 - 3 * s - vpX) / s; } }
+      const f = zEnd * s, Pj = (x, y, z) => [vpX + f * x / z, vpY - f * (y - eh) / z];
+      const ev = [{ t: 0 }], F2 = (t, o) => ev.push(Object.assign({ t }, o));
+      const T0 = 2.0, dt = .36, N = 17, T1 = T0 + dt * (N - 1); // the approach: a frame every .36 s, no flap turning more than three times a second
+      F2(.6, { z: 170, wave: "in" });
+      for (let k = 0; k < N; k++) { const q = k / (N - 1); F2(T0 + k * dt, { z: zEnd + (170 - zEnd) * Math.pow(1 - q, 2.0), tt: T0 + k * dt }); } // braking all the way in: far off for a while, then all at once
+      for (let t = T1 + dt; t < 11.4; t += dt) F2(t, { z: zEnd, tt: t, hiss: t - T1 }); // it stands, steam pouring from its cylinders
+      F2(11.75, { wave: "out" });
+      // the station's furniture, fixed: the lamps on the far platform, the people waiting, the windows in the wall
+      const r = K.deal(P, 51), folk = []; for (let k = 0; k < (pr ? 7 : 10); k++) folk.push({ x: tx + 2.3 + r() * 3.2, z: 7 + k * 3.6 + r() * 2.5, h: 1.55 + r() * .3, kind: Math.floor(r() * 4) });
+      const TONES = { sky: "#E6F0E3", hill: "#C9DFCB", hill2: "#B5D3BC", wall: "#ADCDB5", wallLo: "#97C1A2", win: "#7DAF8E", roof: "#5E9A74", plat: "#BCD8C1", platE: "#5F9B75", bed: "#A3C9AD", sleeper: "#78A887", rail: "#3D7B57", people: "#2D6649", lamp: "#3D7B57", glass: "#F2F8F0", dark: "#1D4D35", mid: "#2C6448", side: "#3B7856", hi: "#7DB592", win2: "#CFE6D4", steam: "#FAFDF8", steamE: "#B9D7C0", grain: "#5E9A74" };
+      let still = null; // the station without its train, printed once and laid under every frame
+      const stillOn = g => { if (!still) { const [c, x] = canvas(Math.ceil(W * px), Math.ceil(H * px)); x.imageSmoothingEnabled = true; x.setTransform(px, 0, 0, px, 0, 0); station(x); still = c; } g.drawImage(still, 0, 0, W, H); };
+      const drawScene = (g, e) => { stillOn(g); S.trainInk(g, e, Pj, f, tx, TONES, zEnd); }; // the station, and the train at e.z (its front's distance), as frame e of the film
+      const station = g => {
+        g.save(); g.lineJoin = "round"; g.lineCap = "round";
+        const poly = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); };
+        const quad = (a, b, c, d, col) => poly([Pj(...a), Pj(...b), Pj(...c), Pj(...d)], col);
+        g.fillStyle = TONES.sky; g.fillRect(0, 0, W, H);
+        // the hills on the horizon, two ranges
+        for (const [col, amp, fr, off] of [[TONES.hill, .06, 3.1, 0], [TONES.hill2, .035, 5.3, 1.7]]) { g.fillStyle = col; g.beginPath(); g.moveTo(0, vpY + 2); for (let x = 0; x <= W; x += 12) g.lineTo(x, vpY - H * amp * (.55 + .45 * Math.sin(x / W * fr * Math.PI + off)) * (.4 + .6 * Math.min(1, Math.abs(x - vpX) / (W * .25)))); g.lineTo(W, vpY + 2); g.closePath(); g.fill(); }
+        const ZF = 3, ZB = 400;
+        // the ground between: the track bed, and the near platform on the left of it
+        const nE = tx - 1.35, fE = tx + 1.5, wl = tx + 7.7; // the near platform's edge, the far one's, the station's wall
+        quad([-30, 0, ZF], [60, 0, ZF], [60, 0, ZB], [-30, 0, ZB], TONES.bed);
+        quad([-30, .9, ZF], [nE, .9, ZF], [nE, .9, ZB], [-30, .9, ZB], TONES.plat); g.strokeStyle = TONES.glass; g.lineWidth = Math.max(1, f * .08 / 10); g.beginPath(); g.moveTo(...Pj(nE, .9, ZF)); g.lineTo(...Pj(nE, .9, ZB)); g.stroke(); // its white edge
+        // the station's wall behind the far platform: its windows and doors, its eaves; the far platform, its edge, its lamps
+        quad([wl, .9, ZF], [wl, 5.2, ZF], [wl, 5.2, ZB], [wl, .9, ZB], TONES.wall);
+        for (let z = 6; z < 160; z += 5.5) { quad([wl - .02, 1.4, z], [wl - .02, 3.6, z], [wl - .02, 3.6, z + 2.2], [wl - .02, 1.4, z + 2.2], (z / 5.5 | 0) % 3 ? TONES.win : TONES.wallLo); }
+        quad([wl, 5.2, ZF], [wl - .9, 5.6, ZF], [wl - .9, 5.6, ZB], [wl, 5.2, ZB], TONES.roof); // the eaves
+        quad([fE, .9, ZF], [wl, .9, ZF], [wl, .9, ZB], [fE, .9, ZB], TONES.plat); quad([fE, 0, ZF], [fE, .9, ZF], [fE, .9, ZB], [fE, 0, ZB], TONES.platE);
+        for (let z = 7; z < 130; z += 9) { const a = Pj(tx + 2.2, .9, z), b = Pj(tx + 2.2, 4.0, z), w = Math.max(.6, f * .09 / z); g.strokeStyle = TONES.lamp; g.lineWidth = w; g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.stroke(); const lr = Math.max(.8, f * .22 / z); g.fillStyle = TONES.lamp; g.fillRect(b[0] - lr, b[1] - lr * 1.6, lr * 2, lr * 1.8); g.fillStyle = TONES.glass; g.fillRect(b[0] - lr * .6, b[1] - lr * 1.3, lr * 1.2, lr * 1.2); }
+        // the people waiting on the far platform: a coat or a long skirt, a hat, the nearest the biggest
+        for (const p of folk.slice().sort((a, b) => b.z - a.z)) { const k = f / p.z, [fx, fy] = Pj(p.x, .9, p.z), h = p.h * k, w = h * .26; g.fillStyle = TONES.people;
+          g.beginPath(); if (p.kind % 2) { g.moveTo(fx - w * .75, fy); g.lineTo(fx - w * .32, fy - h * .62); g.lineTo(fx + w * .32, fy - h * .62); g.lineTo(fx + w * .75, fy); } else { g.moveTo(fx - w * .38, fy); g.lineTo(fx - w * .45, fy - h * .66); g.lineTo(fx + w * .45, fy - h * .66); g.lineTo(fx + w * .38, fy); } g.closePath(); g.fill(); // the skirt, or the coat to the knees
+          g.beginPath(); g.ellipse(fx, fy - h * .74, w * .5, h * .14, 0, 0, TAU); g.fill(); g.beginPath(); g.arc(fx, fy - h * .88, w * .26, 0, TAU); g.fill(); // the shoulders, the head
+          g.beginPath(); if (p.kind === 0) g.rect(fx - w * .26, fy - h * 1.06, w * .52, h * .16); else if (p.kind === 2) g.ellipse(fx, fy - h * .96, w * .55, h * .035, 0, 0, TAU); else g.ellipse(fx, fy - h * .97, w * .5, h * .06, 0, 0, TAU); g.fill(); // a top hat, a boater, a bonnet
+          if (p.kind === 0) g.fillRect(fx - w * .45, fy - h * .91, w * .9, h * .03); }
+        // the track: the sleepers, then the rails, running away to the horizon
+        g.fillStyle = TONES.sleeper; for (let z = ZF; z < 120; z += .75) { const a = Pj(tx - 1.3, .08, z), b = Pj(tx + 1.3, .08, z), c = Pj(tx + 1.3, .08, z + .26), d = Pj(tx - 1.3, .08, z + .26); if (Math.abs(a[1] - c[1]) < .4) break; g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.lineTo(...c); g.lineTo(...d); g.closePath(); g.fill(); }
+        for (const dx of [-.72, .72]) quad([tx + dx - .04, .18, ZF], [tx + dx + .04, .18, ZF], [tx + dx + .04, .18, ZB], [tx + dx - .04, .18, ZB], TONES.rail);
+        g.restore(); };
+      /** where a frame's train and its steam can be: the box round them, seen from the platform */
+      const region = e => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const x of [tx - 4.6, tx + 4.6]) for (const y of [-.4, 11.2]) for (const z of [Math.max(.8, e.z - .3), e.z + 44.5]) { const [a, b] = Pj(x, y, z); x0 = Math.min(x0, a); y0 = Math.min(y0, b); x1 = Math.max(x1, a); y1 = Math.max(y1, b); }
+        return [Math.max(0, x0 - 4), Math.max(0, y0 - 4), Math.min(W, x1 + 4), Math.min(H, y1 + 4)]; };
+      return { box: [0, 0, W, H], ev, vp: [vpX, vpY], s, still: stillOn, region,
+        delay: (e, x, y, h) => e.wave === "in" ? Math.hypot(x - vpX, y - vpY) / Math.hypot(W, H) * 1.6 + h * .03 : e.wave === "out" ? (x / W) * 1.3 + h * .03 : h * .03,
+        ink(g, e) { if (e.z !== undefined) drawScene(g, e); } };
+    },
+    /** the train at frame e: its engine's front `e.z` metres off, every part a box or a drum seen from the platform,
+     *  furthest first; its steam — the plume it trails from the chimney, and when it stands, the hiss from its cylinders */
+    trainInk(g, e, Pj, f, tx, Q, zEnd) {
+      const zf = e.z, poly = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); };
+      const box = (x0, x1, y0, y1, z0, z1, side, front) => { if (z0 < .5) return; poly([Pj(x0, y0, z0), Pj(x0, y1, z0), Pj(x0, y1, z1), Pj(x0, y0, z1)], side); if (front) poly([Pj(x0, y0, z0), Pj(x1, y0, z0), Pj(x1, y1, z0), Pj(x0, y1, z0)], front); };
+      const disc = (x, y, z, r, col) => { const [a, b] = Pj(x, y, z); g.fillStyle = col; g.beginPath(); g.arc(a, b, Math.max(.4, f * r / z), 0, TAU); g.fill(); };
+      const ring = (x, y, z, r, col, w) => { const [a, b] = Pj(x, y, z); g.strokeStyle = col; g.lineWidth = Math.max(.5, f * w / z); g.beginPath(); g.arc(a, b, Math.max(.4, f * r / z), 0, TAU); g.stroke(); };
+      const wheel = (x, zc, rad, col, rim) => { const pts = []; for (let k = 0; k < 24; k++) { const a = k / 24 * TAU; pts.push(Pj(x, rad + rad * Math.sin(a), zc + rad * Math.cos(a))); } poly(pts, col); g.strokeStyle = rim; g.lineWidth = Math.max(.5, f * .06 / zc); g.beginPath(); pts.forEach(([a, b], i) => i ? g.lineTo(a, b) : g.moveTo(a, b)); g.closePath(); g.stroke();
+        const turn = (170 - zf) / rad; g.beginPath(); for (let k = 0; k < 8; k++) { const a = turn + k / 8 * TAU, [p, q] = Pj(x - .02, rad, zc), [p2, q2] = Pj(x - .02, rad + rad * .85 * Math.sin(a), zc + rad * .85 * Math.cos(a)); g.moveTo(p, q); g.lineTo(p2, q2); } g.stroke(); }; // its spokes, turning as it comes
+      // the steam it trails: a puff from the chimney at every few metres it came, rising and spreading where the air left it
+      const puffs = []; for (let k = 0; k < 10; k++) { const back = k * 4 + (zf % 4), age = back / 20 + .15; if (zf + back > 200) break; puffs.push([tx + .35 * Math.sin(k * 2.3) * age, 4.5 + 1.8 * age, zf + 1.1 + back, .45 + .8 * age, k]); } /* a puff every four metres it came, left where the air took it: rising and spreading behind it */
+      // the coaches, the tender, the cab, then the boiler, back to front
+      for (let k = 2; k >= 0; k--) { const z0 = zf + 12.5 + k * 10.4, z1 = z0 + 10; if (z0 > 400) continue; box(tx - 1.45, tx + 1.45, 1.0, 3.5, z0, z1, Q.side, Q.mid); box(tx - 1.45, tx + 1.45, 3.5, 3.85, z0 - .1, z1 + .1, Q.hi, Q.side); // the coach, its roof
+        for (let w = 0; w < 7; w++) { const za = z0 + .8 + w * 1.3; poly([Pj(tx - 1.47, 2.0, za), Pj(tx - 1.47, 3.0, za), Pj(tx - 1.47, 3.0, za + .8), Pj(tx - 1.47, 2.0, za + .8)], Q.win2); } // its windows
+        wheel(tx - 1.0, z0 + 1.6, .5, Q.dark, Q.mid); wheel(tx - 1.0, z1 - 1.6, .5, Q.dark, Q.mid); }
+      box(tx - 1.3, tx + 1.3, .9, 3.0, zf + 8.2, zf + 12.1, Q.side, Q.mid); box(tx - 1.2, tx + 1.2, 3.0, 3.35, zf + 8.6, zf + 11.8, Q.dark, Q.dark); // the tender, its coal
+      wheel(tx - 1.05, zf + 9.2, .5, Q.dark, Q.mid); wheel(tx - 1.05, zf + 11.1, .5, Q.dark, Q.mid);
+      box(tx - 1.3, tx + 1.3, 1.6, 3.9, zf + 6.0, zf + 7.9, Q.side, Q.mid); box(tx - 1.42, tx + 1.42, 3.9, 4.08, zf + 5.85, zf + 8.05, Q.dark, Q.dark); // the cab, its roof
+      poly([Pj(tx - 1.31, 2.7, zf + 6.3), Pj(tx - 1.31, 3.6, zf + 6.3), Pj(tx - 1.31, 3.6, zf + 7.3), Pj(tx - 1.31, 2.7, zf + 7.3)], Q.win2); // its window
+      wheel(tx - .95, zf + 4.5, .85, Q.dark, Q.hi); wheel(tx - .95, zf + 2.6, .85, Q.dark, Q.hi); wheel(tx - .95, zf + 1.05, .48, Q.dark, Q.hi); // the driving wheels and the leading one
+      for (let z = zf + 6.0; z >= zf + 1.7; z -= .5) disc(tx, 2.35, z, .78, Q.mid); // the boiler, drum by drum
+      for (const z of [zf + 5.2, zf + 3.9, zf + 2.6]) ring(tx, 2.35, z, .78, Q.hi, .05); // its bands
+      { const [a, b] = Pj(tx, 3.0, zf + 3.4), [, b2] = Pj(tx, 3.62, zf + 3.4), rr = f * .34 / (zf + 3.4); g.fillStyle = Q.side; g.beginPath(); g.moveTo(a - rr, b); g.lineTo(a - rr, b2 + rr * .6); g.quadraticCurveTo(a, b2 - rr * .5, a + rr, b2 + rr * .6); g.lineTo(a + rr, b); g.closePath(); g.fill(); } // the dome
+      box(tx - 1.4, tx + 1.4, 1.45, 1.62, zf + .4, zf + 8.2, Q.hi, Q.dark); // the footplate
+      for (let z = zf + 1.75; z >= zf + .6; z -= .3) disc(tx, 2.35, z, .86, Q.mid); // the smokebox
+      { const zc = zf + 1.1, [a, b] = Pj(tx, 3.15, zc), [, b2] = Pj(tx, 4.45, zc), r0 = f * .27 / zc, r1 = f * .34 / zc; g.fillStyle = Q.dark; g.beginPath(); g.moveTo(a - r0, b); g.lineTo(a - r0 * .92, b2 + r1 * .5); g.lineTo(a - r1, b2); g.lineTo(a + r1, b2); g.lineTo(a + r0 * .92, b2 + r1 * .5); g.lineTo(a + r0, b); g.closePath(); g.fill(); g.fillStyle = Q.hi; g.fillRect(a - r0 * .7, b2 + r1 * .55, r0 * .35, b - b2 - r1 * .8); } // the tall chimney, its flared cap, the light on it
+      disc(tx, 2.35, zf + .58, .86, Q.dark); disc(tx, 2.35, zf + .56, .6, Q.mid); ring(tx, 2.35, zf + .55, .6, Q.hi, .04); // the smokebox front, its door
+      { const [a, b] = Pj(tx, 2.35, zf + .54), k = f / (zf + .54); g.strokeStyle = Q.dark; g.lineWidth = Math.max(.6, k * .06); g.beginPath(); g.moveTo(a - k * .55, b); g.lineTo(a + k * .55, b); g.stroke(); g.fillStyle = Q.hi; g.beginPath(); g.arc(a, b, Math.max(.5, k * .08), 0, TAU); g.fill(); } // its strap and its handle
+      box(tx - 1.38, tx + 1.38, .85, 1.45, zf + .35, zf + .6, Q.mid, Q.dark); // the buffer beam
+      for (const dx of [-.95, .95]) { for (let z = zf + .35; z >= zf; z -= .12) disc(tx + dx, 1.15, z, .2, Q.mid); disc(tx + dx, 1.15, zf, .22, Q.dark); disc(tx + dx, 1.15, zf - .01, .13, Q.hi); } // the buffers
+      for (const dx of [-.6, .6]) { disc(tx + dx, 1.62, zf + .4, .13, Q.dark); disc(tx + dx, 1.62, zf + .39, .08, Q.glass); } // the lamps
+      // the steam: the plume behind, back to front, and when it stands the hiss from its cylinders, either side
+      const cloud = (a, b, rr, seed, al = 1) => { const lumps = [[-.55, .12, .62], [.5, .18, .58], [0, -.22, .78], [.18, .32, .55], [-.25, -.05, .6], [.62, -.12, .45]]; g.globalAlpha = al; g.fillStyle = Q.steamE; for (const [dx, dy, s2] of lumps) { g.beginPath(); g.arc(a + dx * rr + rr * .05, b + dy * rr + rr * .07, rr * s2 * (.9 + .2 * Math.sin(seed * 3.1 + dx * 7)), 0, TAU); g.fill(); } /* its shadowed underside, then its lit body */
+        g.fillStyle = Q.steam; for (const [dx, dy, s2] of lumps) { g.beginPath(); g.arc(a + dx * rr, b + dy * rr, rr * s2 * (.9 + .2 * Math.sin(seed * 3.1 + dx * 7)), 0, TAU); g.fill(); } g.globalAlpha = 1; };
+      for (let k = puffs.length - 1; k >= 0; k--) { const [x, y, z, r, i] = puffs[k]; if (z < 1) continue; const [a, b] = Pj(x, y, z); cloud(a, b, f * r / z, i); }
+      if (e.hiss !== undefined) { const h = e.hiss; for (let n = Math.floor((h - 2.6) / .55); n * .55 <= h; n++) { if (n < 0) continue; const tb = n * .55, age = (h - tb) / 2.6; if (age < 0 || age >= 1) continue; const sd = n % 2 ? 1 : -1, x = tx + sd * (1.4 + age * 2.6), y = .5 + age * 1.7, z = zf + .9 - sd * age * .8, [a, b] = Pj(x, y, z); cloud(a, b, f * (.25 + age * 1.0) / z, n * 1.7, Math.min(1, (1 - age) * 1.6)); } } // the hiss from its cylinders: billows rolling out either side in turn, each growing and thinning away over a few frames
+    },
     /** 1.12 b423: the hour egg's plan — its film, the flaps it plays on (those it reaches, clear of the words), and when
      *  each of them turns to each frame; the frames printed as they're asked for */
     hourPlan(P, kind, T) {
       const o = S.hp; if (o && o.P === P && o.kind === kind && o.raw === S.raw && o.W === S.W && o.H === S.H) return o;
-      const { C, R, fw, fh, gap, ox, oy } = S, pw = fw + gap, ph = fh + gap, rm = S.hourRoom(), film = kind === 1 ? S.moonFilm(P, rm) : S.clockFilm(P, rm, T);
+      const { C, R, fw, fh, gap, ox, oy } = S, pw = fw + gap, ph = fh + gap, rm = S.hourRoom(), film = kind === 1 ? S.moonFilm(P, rm) : kind === 2 ? S.clockFilm(P, rm, T) : S.trainFilm(P, rm); /* (b443: 3, the crown's film) */
       const E0 = { P, kind, raw: S.raw, W: S.W, H: S.H, film }; S.hp = E0; if (!film) return E0;
       const [X0, Y0, X1, Y1] = film.box, c0 = clamp(Math.floor((X0 - ox) / pw), 0, C - 1), c1 = clamp(Math.floor((X1 - ox) / pw), 0, C - 1), r0 = clamp(Math.floor((Y0 - oy) / ph), 0, R - 1), r1 = clamp(Math.floor((Y1 - oy) / ph), 0, R - 1);
       const bx = ox + c0 * pw - gap / 2, by = oy + r0 * ph - gap / 2, bw = (c1 - c0 + 1) * pw, bh = (r1 - r0 + 1) * ph, at = new Int16Array(C * R).fill(-1), fl = [];
@@ -591,13 +702,14 @@ export default function flap(K) {
       const mk = (w, h2) => { const [c, x] = canvas(Math.ceil(w * px), Math.ceil(h2 * px)); x.imageSmoothingEnabled = true; return [c, x]; };
       const [base, bx2] = mk(bw, bh), clip = new Path2D(); bx2.setTransform(px, 0, 0, px, 0, 0);
       for (const f of fl) { bx2.drawImage(S.faces[0], f.lx + gap / 2, f.ly + gap / 2, fw, fh); clip.roundRect(f.lx + gap / 2, f.ly + gap / 2, fw, fh, fw * .1); }
-      const [print, pX] = mk(bw, bh), lo = document.createElement("canvas"); lo.width = Math.ceil(bw / 2); lo.height = Math.ceil(bh / 2);
-      const loX = lo.getContext("2d", { willReadFrequently: true }), lr = fl.map(f => [Math.floor((f.lx + gap / 2) / 2), Math.floor((f.ly + gap / 2) / 2), Math.ceil((f.lx + gap / 2 + fw) / 2), Math.ceil((f.ly + gap / 2 + fh) / 2)]);
-      return S.hp = Object.assign(E0, { bx, by, bw, bh, at, fl, n, tt, base, clip, print, pX, lo, loX, lr, sig: [], cache: new Map() });
+      const sc = film.region ? .25 : .5, [print, pX] = mk(bw, bh), lo = document.createElement("canvas"); lo.width = Math.ceil(bw * sc); lo.height = Math.ceil(bh * sc); /* (b443: the crown's film, the whole wall, is told apart at a quarter size) */
+      const loX = lo.getContext("2d", { willReadFrequently: true }), lr = fl.map(f => [Math.floor((f.lx + gap / 2) * sc), Math.floor((f.ly + gap / 2) * sc), Math.ceil((f.lx + gap / 2 + fw) * sc), Math.ceil((f.ly + gap / 2 + fh) * sc)]);
+      return S.hp = Object.assign(E0, { bx, by, bw, bh, at, fl, n, tt, base, clip, print, pX, lo, loX, lr, sc, sig: [], cache: new Map() });
     },
     /** 1.12 b423: which flaps frame e changes: each flap's piece of it, drawn at half size, summed up as a number */
     hourSig(hp, e) {
       if (hp.sig[e]) return hp.sig[e];
+      if (hp.film.region) return hp.sig[e] = S.regionSig(hp, e); /* (b443) */
       const { lo, loX } = hp; loX.setTransform(1, 0, 0, 1, 0, 0); loX.clearRect(0, 0, lo.width, lo.height); loX.setTransform(.5, 0, 0, .5, -hp.bx * .5, -hp.by * .5); if (e > 0) hp.film.ink(loX, hp.film.ev[e]);
       const d = loX.getImageData(0, 0, lo.width, lo.height).data, out = new Uint32Array(hp.fl.length);
       hp.lr.forEach(([x0, y0, x1, y1], b) => { let h = 2166136261; for (let y = y0; y < Math.min(y1, lo.height); y++) for (let x = x0; x < Math.min(x1, lo.width); x++) { const i = (y * lo.width + x) * 4; h = Math.imul(h ^ d[i] ^ d[i + 1] << 8 ^ d[i + 2] << 16 ^ d[i + 3] << 24, 16777619) >>> 0; } out[b] = h; });
@@ -607,10 +719,53 @@ export default function flap(K) {
     hourFace(hp, e) {
       let c = hp.cache.get(e); if (c) { hp.cache.delete(e); hp.cache.set(e, c); return c; }
       if (hp.cache.size >= 4) { const [k0, c0] = hp.cache.entries().next().value; hp.cache.delete(k0); c = c0; } else [c] = canvas(hp.base.width, hp.base.height);
+      if (hp.film.region) { S.regionFace(hp, e, c); hp.cache.set(e, c); return c; } /* (b443) */
       const x = c.getContext("2d"), { print, pX } = hp; x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = "copy"; x.drawImage(hp.base, 0, 0); x.globalCompositeOperation = "source-over";
       pX.setTransform(1, 0, 0, 1, 0, 0); pX.fillStyle = "#fff"; pX.fillRect(0, 0, print.width, print.height); pX.setTransform(px, 0, 0, px, -hp.bx * px, -hp.by * px); hp.film.ink(pX, hp.film.ev[e]);
       x.save(); x.setTransform(px, 0, 0, px, 0, 0); x.clip(hp.clip); x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = "multiply"; x.drawImage(print, 0, 0); x.restore();
       hp.cache.set(e, c); return c;
+    },
+    /** 1.12 b443: the crown's film fills the wall, but only its train moves: each frame is told apart, and printed, only
+     *  where its train and steam are (`film.region`), the rest the station as it was printed once (`still`) */
+    regionSig(hp, e) {
+      const { lo, loX, sc, film, lr } = hp, ev = film.ev[e], F = hp.fl.length;
+      const hashIn = (x0, y0, x1, y1, d, w, out, only) => lr.forEach(([a, b2, c2, d2], b) => { if (only && (c2 <= x0 || a >= x1 || d2 <= y0 || b2 >= y1)) return; let h = 2166136261; for (let y = b2; y < Math.min(d2, lo.height); y++) for (let x = a; x < Math.min(c2, lo.width); x++) { const i = ((y - y0) * w + (x - x0)) * 4; h = Math.imul(h ^ d[i] ^ d[i + 1] << 8 ^ d[i + 2] << 16 ^ d[i + 3] << 24, 16777619) >>> 0; } out[b] = h; });
+      const draw = (x0, y0, x1, y1, fn) => { loX.setTransform(1, 0, 0, 1, 0, 0); loX.clearRect(x0, y0, x1 - x0, y1 - y0); loX.save(); loX.beginPath(); loX.rect(x0, y0, x1 - x0, y1 - y0); loX.clip(); loX.setTransform(sc, 0, 0, sc, -hp.bx * sc, -hp.by * sc); fn(); loX.restore(); return loX.getImageData(x0, y0, x1 - x0, y1 - y0).data; };
+      if (!hp.plainSig) { const d = draw(0, 0, lo.width, lo.height, () => {}); hashIn(0, 0, lo.width, lo.height, d, lo.width, hp.plainSig = new Uint32Array(F), false); }
+      if (e < 0) { if (!hp.stillSig) { const d = draw(0, 0, lo.width, lo.height, () => film.still(loX)); hashIn(0, 0, lo.width, lo.height, d, lo.width, hp.stillSig = new Uint32Array(F), false); } return null; } // (made ahead, a piece a frame: regionPrep)
+      if (e === 0 || ev.z === undefined) return hp.plainSig; // no picture: the flaps plain
+      if (!hp.stillSig) S.regionSig(hp, -1);
+      const out = hp.stillSig.slice(), r = film.region(ev); if (!r) return out;
+      let x0 = Math.floor((r[0] - hp.bx) * sc), y0 = Math.floor((r[1] - hp.by) * sc), x1 = Math.ceil((r[2] - hp.bx) * sc), y1 = Math.ceil((r[3] - hp.by) * sc); // the region, out to the edges of the flaps it touches
+      for (const [a, b2, c2, d2] of lr) if (c2 > x0 && a < x1 && d2 > y0 && b2 < y1) { x0 = Math.min(x0, a); y0 = Math.min(y0, b2); x1 = Math.max(x1, c2); y1 = Math.max(y1, d2); }
+      x0 = clamp(x0, 0, lo.width); y0 = clamp(y0, 0, lo.height); x1 = clamp(x1, 0, lo.width); y1 = clamp(y1, 0, lo.height); if (x1 <= x0 || y1 <= y0) return out;
+      const d = draw(x0, y0, x1, y1, () => film.ink(loX, ev)); hashIn(x0, y0, x1, y1, d, x1 - x0, out, true); return out;
+    },
+    regionFace(hp, e, c) {
+      const x = c.getContext("2d"), { print, pX, film } = hp, ev = film.ev[e]; x.setTransform(1, 0, 0, 1, 0, 0);
+      const stamp = (fn, clipR) => { pX.setTransform(1, 0, 0, 1, 0, 0); pX.fillStyle = "#fff"; if (clipR) pX.fillRect(clipR[0], clipR[1], clipR[2] - clipR[0], clipR[3] - clipR[1]); else pX.fillRect(0, 0, print.width, print.height); pX.save(); if (clipR) { pX.beginPath(); pX.rect(clipR[0], clipR[1], clipR[2] - clipR[0], clipR[3] - clipR[1]); pX.clip(); } pX.setTransform(px, 0, 0, px, -hp.bx * px, -hp.by * px); fn(); pX.restore();
+        x.save(); x.setTransform(px, 0, 0, px, 0, 0); x.clip(hp.clip); x.setTransform(1, 0, 0, 1, 0, 0); if (clipR) { x.beginPath(); x.rect(clipR[0], clipR[1], clipR[2] - clipR[0], clipR[3] - clipR[1]); x.clip(); } x.globalCompositeOperation = "multiply"; x.drawImage(print, 0, 0); x.restore(); };
+      if (ev.z === undefined) { x.globalCompositeOperation = "copy"; x.drawImage(hp.base, 0, 0); x.globalCompositeOperation = "source-over"; return; }
+      S.regionStill(hp); x.globalCompositeOperation = "copy"; x.drawImage(hp.stillFace, 0, 0); x.globalCompositeOperation = "source-over";
+      const r = film.region(ev); if (!r) return;
+      const R2 = [Math.floor((r[0] - hp.bx) * px), Math.floor((r[1] - hp.by) * px), Math.ceil((r[2] - hp.bx) * px), Math.ceil((r[3] - hp.by) * px)].map((v, k) => clamp(v, 0, k % 2 ? print.height : print.width));
+      if (R2[2] <= R2[0] || R2[3] <= R2[1]) return;
+      x.save(); x.beginPath(); x.rect(R2[0], R2[1], R2[2] - R2[0], R2[3] - R2[1]); x.clip(); x.globalCompositeOperation = "copy"; x.drawImage(hp.base, 0, 0); x.restore(); x.globalCompositeOperation = "source-over"; // the plain flaps there, to print the frame on
+      stamp(() => film.ink(pX, ev), R2);
+    },
+    /** 1.12 b443: the station printed on the flaps, once (made ahead too) */
+    regionStill(hp) {
+      const { print, pX, film } = hp;
+      if (!hp.stillFace) { const [sf, sx] = canvas(hp.base.width, hp.base.height); sx.drawImage(hp.base, 0, 0); // the station printed once on the flaps
+        pX.setTransform(1, 0, 0, 1, 0, 0); pX.fillStyle = "#fff"; pX.fillRect(0, 0, print.width, print.height); pX.setTransform(px, 0, 0, px, -hp.bx * px, -hp.by * px); film.still(pX);
+        sx.save(); sx.setTransform(px, 0, 0, px, 0, 0); sx.clip(hp.clip); sx.setTransform(1, 0, 0, 1, 0, 0); sx.globalCompositeOperation = "multiply"; sx.drawImage(print, 0, 0); sx.restore(); hp.stillFace = sf; }
+    },
+    /** 1.12 b443: what the crown's film needs before its first frame, made a piece a frame while the wall still rests:
+     *  the station drawn, the plain flaps and the station's told apart, the station printed */
+    regionPrep(hp) {
+      if (!hp.film || !hp.film.region) return; const step = hp.prep || 0;
+      if (step === 0) hp.film.still(hp.pX); else if (step === 1) S.regionSig(hp, 0); else if (step === 2) S.regionSig(hp, -1); else if (step === 3) S.regionStill(hp); else return;
+      hp.prep = step + 1;
     },
     /** 1.12 b423: a flap of the hour egg at time T: the frame it turns from, the one it turns to (0 plain), how far */
     hourFlap(hp, b, i, T, I) {
@@ -626,7 +781,8 @@ export default function flap(K) {
       const { W, H, C, R, fw, fh, gap, ox, oy, faces, wx } = S; let moved = S.full;
       const on = I > .01, fin = F >= 0, Tb = fin ? F * 3.4 : on ? T : 0, plan = fin ? [[0, "burst", "out"], [1.9, "plain", "out"]] : PLAN;
       const egg = K.egg(P), eg = egg && on && !fin ? S.eggPlan(P) : null; if (!egg) S.ep = null; // 1.12 b414: the egg's pass plays the egg (its pictures let go after)
-      const hr = egg ? 0 : K.long(P), hour = hr === 1 || hr === 2, hp = hour && on && !fin ? S.hourPlan(P, hr, T) : null; if (!hour) S.hp = null; // 1.12 b423: an hour egg's pass plays its film (a crown's, 3, is dealt as any pass)
+      const hr = egg ? 0 : K.long(P), hour = hr === 1 || hr === 2 || hr === 3, hp = hour && on && !fin ? S.hourPlan(P, hr, T) : null; if (!hour) S.hp = null; /* (b443: and the crown, 3, plays the Lumières' train) */ // 1.12 b423: an hour egg's pass plays its film (a crown's, 3, is dealt as any pass)
+      if (hp && hp.film && hp.film.region && T < .62) S.regionPrep(hp); // (b443) the crown's film made ready, a piece a frame, before it clatters in
       const pl = fin || !(P > 0) || egg || hour ? null : S.plan(P); // b381: a pass after the first plays its own changes (the finale is the same over any pass)
       for (let rr = 0; rr < R; rr++) for (let c = 0; c < C; c++) {
         const i = rr * C + c, x = (ox + c * (fw + gap) + fw / 2) / W, y = (oy + rr * (fh + gap) + fh / 2) / H;

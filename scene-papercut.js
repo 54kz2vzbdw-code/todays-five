@@ -61,6 +61,19 @@
 // the words (the bow the biggest of a few arches that is), fade where they pass behind them, and lie under the
 // paper's ground where a long list's lines reach down over them (by night, the night's ground under the words over
 // what is lit); their pieces are made the first time one plays after a layout, from dice of their own.
+// 1.12 b443: the crown. In the sixth hour of the list left alone, and every sixth after (K.long 3), the whole town folds
+// itself into a paper crane. The windmill first, then house by house and tree by tree, nearest first, each piece folds
+// down flat into its page and its paper flies up, tumbling, to become a facet of the crane taking shape where the town
+// stood (on a tall screen, on the near bank): the roofs' reds its wings and its crown, the windmill's cream its body, the
+// trees' greens its neck and tail — by night all of it lantern gold, lit from within. Its head makes the last fold; it
+// stretches its wings once, and takes off. On a wide screen it rides the evening air up the open sky beside the list,
+// circling as a crane does, round and away and back, then turns toward us and comes swooping down at us, wings wide, and
+// swings round to settle on the river, rings spreading round it and its reflection under it; on a tall one it flies a
+// slow circuit over the river, out along it, round behind, smaller, and back, and settles. Then it comes apart, each
+// facet flying home to its piece, and the town stands up again, piece by piece, as it was, the sun turning its notch.
+// The crane is a paper model worked out in three dimensions — its facets turned to its heading, looked down on a little
+// more as it flies, and lit by how they face the light, in the paper's own grain — and it is the biggest crane whose
+// whole flight keeps clear of the words; the paper on its way fades where it passes behind them.
 export default function papercut(K, id) {
   const night = id === "midnight";
   const { clamp, lerp, E, seg, env, rng, canvas, grain, noise1, fbm } = K;
@@ -298,10 +311,11 @@ export default function papercut(K, id) {
      *  (b384: pass 0 is the loop, the passes after it are dealt) */
     draw(T, I, A, F, pass = 0) {
       const { W, H, u, orb } = S, egg = K.egg(pass);
-      if (!plan || plan.pass !== pass || plan.gen !== gen) { const hr = egg ? 0 : K.long(pass); plan = egg ? eggPlan(pass) : hr === 1 || hr === 2 ? hourPlan(pass, hr) : night ? dealNight(pass) : dealDay(pass); } /* (b423) an hour egg's pass has a plan of its own; a crown's (3) is dealt as any pass */
+      if (!plan || plan.pass !== pass || plan.gen !== gen) { const hr = egg ? 0 : K.long(pass); plan = egg ? eggPlan(pass) : hr === 1 || hr === 2 ? hourPlan(pass, hr) : hr === 3 ? crownPlan(pass) : night ? dealNight(pass) : dealDay(pass); } /* (b423) an hour egg's pass has a plan of its own; (b443) and the crown's */
       if (egg) { if (eggDraw(T, I, A, F)) return; } else if (EG) eggOff(); /* (b415) the egg draws its own frames; any other pass lets it go */
       const pl = plan;
       g.clearRect(0, 0, W, H);
+      if (pl.cr) crownUnder(T, I, A, pl); /* (b443) the crown: the land behind the town while its pieces are down, the houses as cards */
       const dt = S.lastA === null ? 0 : clamp(A - S.lastA, 0, .1); S.lastA = A;
       let breeze = env(T, pl.b[0], pl.b[1], pl.b[2], pl.b[3], E.sine) * pl.bk * I;
       if (pl.gust) breeze = Math.max(breeze, env(T, pl.gust[0], pl.gust[1], pl.gust[2], pl.gust[3], E.sine) * pl.gust[4] * I); /* a gust: the leaves go tumbling */
@@ -336,9 +350,9 @@ export default function papercut(K, id) {
       if (pl.hr) hourSky(T, I, A, pl); /* (b423) the hour egg's sky: the storm cloud on its threads */
       // the windmill's sails, turning at their own pace and faster in the breeze
       S.millAngle += dt * ((night ? .22 : .42) + breeze * 1.6);
-      { const m = S.mill; for (let k = 0; k < 4; k++) put(S.millSail, m.x, m.y + m.h * .12, .1, .5, S.millAngle + k * TAU / 4); g.fillStyle = P.millLo; g.beginPath(); g.arc(m.x, m.y + m.h * .12, .7 * u, 0, TAU); g.fill(); }
+      if (!(pl.cr && crownSails(T, I, A, pl))) { const m = S.mill; for (let k = 0; k < 4; k++) put(S.millSail, m.x, m.y + m.h * .12, .1, .5, S.millAngle + k * TAU / 4); g.fillStyle = P.millLo; g.beginPath(); g.arc(m.x, m.y + m.h * .12, .7 * u, 0, TAU); g.fill(); } /* (b443: the crown folds them with the tower) */
       // the trees, each swaying from its foot: the town's now, the near bank's once the trains have been drawn
-      const trees = front => { for (const t of S.trees) if (t.front === front) put(t.spr, t.x, t.y, .5, 1 - 1.4 * u / t.spr.h2, Math.sin(A * 1.1 + t.ph) * .018 + breeze * .09 * Math.sin(A * 3.4 + t.ph)); };
+      const trees = front => { for (const t of S.trees) if (t.front === front && !(pl.cr && pl.cr.off.has(t))) put(t.spr, t.x, t.y, .5, 1 - 1.4 * u / t.spr.h2, Math.sin(A * 1.1 + t.ph) * .018 + breeze * .09 * Math.sin(A * 3.4 + t.ph)); };
       trees(false);
 
       if (!night) {
@@ -365,6 +379,7 @@ export default function papercut(K, id) {
       } else {
         // the windows: a few lit always, the rest light across the town (in the pass's own order) and go out again
         for (let i = 0; i < S.windows.length; i++) {
+          if (pl.cr && pl.cr.winOff[i]) continue; /* (b443) a house gone into the crown */
           const w = S.windows[i], wo = pl.won[i], wf = pl.woff[i];
           const on = seg(T, .2 + wo * 1.7, .45 + wo * 1.7, E.back) * (1 - seg(T, 12.3 + wf * 1.6, 12.55 + wf * 1.6, E.in)) * I;
           const base = w.base ? .82 + .18 * Math.sin(A * w.f + w.ph) : (Math.sin(A * w.f + w.ph) > .985 ? .8 : 0);
@@ -1504,7 +1519,7 @@ export default function papercut(K, id) {
   /** the hour egg's middle ground: by the storm, its shadow on the town, the rain that falls on the street (and on
    *  the umbrellas), the umbrellas, the bow behind the near bank */
   function hourLand(T, I, A, pl) {
-    if (I <= .01) return; if (pl.hr === 2) { dFair(T, I, A, pl, false); return; } const st = pl.st, G = hourGear(), { u } = S;
+    if (I <= .01 || pl.hr === 3) return; if (pl.hr === 2) { dFair(T, I, A, pl, false); return; } const st = pl.st, G = hourGear(), { u } = S;
     const k = seg(T, STORM.cloud[0], STORM.cloud[1], E.out) * (1 - seg(T, STORM.lift[0], STORM.lift[1], E.io));
     if (!night && k > .002) { const x = lerp(st.sx, st.cx, k), w = st.cw * 1.9, h = S.H * .32; g.globalAlpha = .3 * k * I; g.drawImage(G.shadow, x - w / 2 + st.cw * .1, S.townY(x) - h * .38, w, h); g.globalAlpha = 1; } // the cloud's shadow on the town
     if (T > STORM.bow[0] && T < STORM.bowOff[1]) dBow(T, I, st.bow);
@@ -1518,13 +1533,15 @@ export default function papercut(K, id) {
   /** the hour egg's near ground: the rain on the river and the near bank, its rings and splashes */
   function hourNear(T, I, A, pl) {
     if (I <= .01) return; const st = pl.st;
-    if (pl.hr === 1) { dRain(T, I, st, false, null); dWalk(T, I, A, st); } else dFair(T, I, A, pl, true); /* the rides stand on the near bank, in front of its trees */
+    if (pl.hr === 3) crownCrane(T, I, A, pl); /* (b443) the crane, and the paper flying to it and home */
+    else if (pl.hr === 1) { dRain(T, I, st, false, null); dWalk(T, I, A, st); } else dFair(T, I, A, pl, true); /* the rides stand on the near bank, in front of its trees */
     const pa = night && S.rects ? env(T, .5, 1.5, 13.3, 14.3, E.sine) * I : 0; /* the words that lie over what the egg lights (the moonbow, the fair), on the night's own ground while it is lit */
     if (pa > .01) { const G = hourGear(), lit = litBoxes(pl); g.globalAlpha = pa; for (const [x0, y0, x1, y1, kd] of S.rects) if (kd !== 2 && lit.some(b => x1 > b[0] - 30 && x0 < b[2] + 30 && y1 > b[1] - 30 && y0 < b[3] + 30)) { const mx = 18 + (y1 - y0) * .5, my = 6 + (y1 - y0) * .3; g.drawImage(G.nPad, x0 - mx, y0 - my, x1 - x0 + mx * 2, y1 - y0 + my * 2); } g.globalAlpha = 1; }
   }
   /** where the hour egg lights the night: the moonbow's arch; the wheel, the roundabout and the bunting */
   function litBoxes(pl) {
     if (pl.lit) return pl.lit; const { u } = S;
+    if (pl.hr === 3) return pl.lit = [pl.cr.box]; /* (b443) the crane, lit from within, wherever it flies */
     if (pl.hr === 1) { const b = pl.st.bow; return pl.lit = [[b.cx - b.rx - 8 * b.bw, b.cy - b.ry - 8 * b.bw, b.cx + b.rx + 8 * b.bw, b.cy]]; }
     const f = pl.fair, xs = f.str.pts.map(q => q[0]), ys = f.str.pts.map(q => q[1]);
     return pl.lit = [[f.wx - f.R * 1.15, f.hub - f.R * 1.15, f.wx + f.R * 1.15, f.wy], [f.cx - f.Rc * 1.2, f.cy - f.Rc * 2.7, f.cx + f.Rc * 1.2, f.cy], [Math.min(...xs) - u, Math.min(...ys) - u, Math.max(...xs) + u, Math.max(...ys) + 3 * u]];
@@ -1709,6 +1726,182 @@ export default function papercut(K, id) {
       g.strokeStyle = Q.shaft; g.lineWidth = Math.max(1, .1 * u); g.beginPath(); g.moveTo(.5 * u, hip - 1.3 * u); g.lineTo(.42 * u, hip - 3.6 * u); g.stroke(); // the umbrella's shaft
       const spr = G.umb[p.c * 4 + p.p], top = ur * 1.3, cw2 = spr.w2, lean = .16 + Math.sin(stp * Math.PI * 2) * .03; g.save(); g.translate(.42 * u, hip - 3.5 * u); g.rotate(lean); g.drawImage(spr, 0, 0, spr.width, (top / spr.h2) * spr.height, -cw2 / 2, -top * .92, cw2, top); g.restore(); // its canopy, held up, leaning into the weather
       g.restore(); }
+    g.globalAlpha = 1;
+  }
+
+  /* ---------------- 1.12 b443: the crown ---------------- */
+  /** the crown's beats: the town's pieces fold down one after another and their paper flies up into the crane; it comes
+   *  alive and takes off; a slow loop over the river; it lands on the water; its paper flies home and the town stands
+   *  up again, piece by piece */
+  const CROWN = { leave: [.7, 3.2], fold: .34, fly: 1.1, alive: 4.75, take: 5.2, land: 10.4, settle: 10.9, back: [11.0, 12.55], pop: .6 };
+  /** the crane, a paper model in its own unit (its length): x along it to the beak, y up, z toward its near side; the
+   *  body a flat diamond, the neck and the tail long points, the head bent down off the neck's tip, the wings hinged
+   *  along its back. It is turned to the page by its heading h (about .6 rad: seen three-quarters from the side, facing
+   *  right; π − .6 facing left; π/2 coming at you) and looked at a little from above; each facet lit by how it faces the
+   *  light, so the wings catch it as they beat */
+  const CR_FACETS = 11; /* 0 1 the near wing, 2 3 the far wing, 4 5 the body, 6 7 the neck, 8 the head, 9 10 the tail */
+  const CR3 = { Bf: [.16, 0, 0], Bb: [-.16, 0, 0], Bt: [0, .045, .018], Bd: [0, -.07, -.012], A1: [.08, -.03, -.012], Am: [.12, -.015, .012], N: [.38, .33, 0], H1: [.402, .347, .008], HT: [.472, .284, 0], B2: [-.08, -.03, -.012], Bm: [-.12, -.015, .012], TT: [-.45, .31, 0], Wb: [-.14, .012, 0], Wf: [.12, .022, 0], Wm: [-.01, .017, 0], tn: [0, 0, 0], tf: [0, 0, 0] };
+  const CR_TRI = [["Wm", "Wf", "tn"], ["Wb", "Wm", "tn"], ["Wm", "Wf", "tf"], ["Wb", "Wm", "tf"], ["Bb", "Bt", "Bf"], ["Bb", "Bd", "Bf"], ["A1", "Am", "N"], ["Am", "Bf", "N"], ["N", "H1", "HT"], ["B2", "Bm", "TT"], ["Bm", "Bb", "TT"]];
+  const CR_KEYS = Object.keys(CR3), CRP = {}; for (const k of CR_KEYS) CRP[k] = [0, 0, 0];
+  /** the crane's facets on the page's axes (x right, y down, in its unit), at heading h with its wings at φ (0 straight
+   *  up … π/2 straight out … beyond it down): [points, depth, light] each, into `out` (made once) */
+  function crane3(h, phi, out, th = .32, hf = 1) {
+    const span = .48, sp = Math.sin(phi), cp = Math.cos(phi), Wm = CR3.Wm; CR3.H1[0] = lerp(.395, .402, hf); CR3.H1[1] = lerp(.36, .347, hf); CR3.HT[0] = lerp(.44, .472, hf); CR3.HT[1] = lerp(.41, .284, hf); /* hf: its head, straight up the neck … folded down, the last fold */ CR3.tn[0] = Wm[0] - .07; CR3.tn[1] = Wm[1] + cp * span; CR3.tn[2] = sp * span; CR3.tf[0] = Wm[0] - .045; CR3.tf[1] = Wm[1] + cp * span * .97; CR3.tf[2] = -sp * span * .97;
+    const ch = Math.cos(h), sh = Math.sin(h), ct = Math.cos(th), st = Math.sin(th); /* th: how far we look down on it */
+    for (const k of CR_KEYS) { const [x, y, z] = CR3[k], x1 = x * ch + z * sh, z1 = -x * sh + z * ch, y2 = y * ct - z1 * st, z2 = y * st + z1 * ct, q = CRP[k]; q[0] = x1; q[1] = -y2; q[2] = z2; }
+    const F = out || CR_TRI.map(() => [[[0, 0], [0, 0], [0, 0]], 0, 1]);
+    CR_TRI.forEach((t, f) => { const a = CRP[t[0]], b = CRP[t[1]], c = CRP[t[2]], E2 = F[f], pts = E2[0];
+      for (let k = 0; k < 3; k++) { const q = CRP[t[k]]; pts[k][0] = q[0]; pts[k][1] = q[1]; }
+      const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2], nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx, nl = Math.hypot(nx, ny, nz) || 1;
+      E2[1] = (a[2] + b[2] + c[2]) / 3; E2[2] = .5 + .5 * Math.abs((nx * -.45 + ny * -.6 + nz * .66) / nl); }); /* paper: lit on either side, by how square it faces the light (from the upper left, in front) */
+    return F;
+  }
+  /** the order to lay the facets in: furthest first */
+  const crOrder = (F, idx) => { idx.sort((i, j) => F[i][1] - F[j][1]); return idx; };
+  let CRG = null; // the crown's pieces: the land behind the town, the houses and the windmill as cards, made the first time it plays after a layout
+  /** the crown's pass: the town's quiet life (by night its windows lit), and the crane's plan — each piece of the town
+   *  (the windmill, the houses, the trees), when it folds and flies up, which facet of the crane its paper becomes, when it
+   *  flies home; where the crane forms, its flight, where it lands */
+  function crownPlan(pass) {
+    const { W, H, u, pr } = S, no = 99, r = K.deal(pass, 7900);
+    const pl = { pass, gen, hr: 3, gust: null, b: [no, no + 1, no + 2, no + 3], bk: 0 };
+    if (night) Object.assign(pl, { won: S.windows.map(w => (.5 + w.o * 1.6 + r() * .3) / 1.7), woff: S.windows.map(w => (w.o * .9 + r() * .3) / 1.6), low: { k: "train", t0: no, t1: no + 1, dir: 1, cars: [S.engine] }, moon: null, show: { k: "none" }, close: { k: "none" } });
+    else Object.assign(pl, { n: [12.6, 14.2, r() < .5 ? 1 : -1], cross: { k: "plane", planes: [] }, deck: { k: "train", t0: no, t1: no + 1, dir: -1, parts: [S.dengine], xs: W, xe: 0 }, head: { k: "kite", t: null }, close: { k: "birds", t0: no, t1: no + 1, dir: -1, y: 0, flock: [], end: 0 } });
+    const cr = pl.cr = craneFlight();
+    // the pieces, nearest the crane first; each one's paper is a facet of it (the windmill the body, the houses the wings,
+    // the trees the neck, the head and the tail; any left over fold into one already laid)
+    const m = S.mill, ps = [{ k: "mill", x: m.x, y: m.y + m.h * .45, base: m.base }];
+    S.houses.forEach((h, i) => ps.push({ k: "house", i, x: h.x + h.w / 2, y: h.base - h.h * .42, base: h.base }));
+    S.trees.forEach((t, i) => ps.push({ k: "tree", i, t, x: t.x, y: t.y - t.spr.h2 * .5, base: t.y }));
+    const near = (a, b) => Math.hypot(a.x - cr.p0[0], a.y - cr.p0[1]) - Math.hypot(b.x - cr.p0[0], b.y - cr.p0[1]);
+    const hs = ps.filter(p => p.k === "house").sort(near), ts = ps.filter(p => p.k === "tree").sort(near), wing = [0, 1, 2, 3, 8, 5], neck = [7, 6, 10, 9];
+    ps[0].f = 4; hs.forEach((p, j) => p.f = wing[j % wing.length]); ts.forEach((p, j) => p.f = neck[j % neck.length]); /* (the head, a red crown, cut from a roof) */
+    for (let f = 0; f < CR_FACETS; f++) if (!ps.some(p => p.f === f)) (hs.length > 6 ? hs[6] : ts[ts.length - 1]).f = f;
+    const order = [ps[0], ...[...hs, ...ts].sort(near)], n = order.length, [l0, l1] = CROWN.leave, [b0, b1] = CROWN.back;
+    order.forEach((p, j) => { p.t0 = l0 + (l1 - l0) * j / (n - 1) + r() * .06; p.t1 = b0 + (b1 - b0) * j / (n - 1) + r() * .06; p.spin = (r() < .5 ? -1 : 1) * (2 + r() * 2.5); p.lift = (pr ? .03 + r() * .06 : .06 + r() * .12); p.ph = r() * TAU; }); /* (each scrap's arc: low, to keep clear of the list) */
+    // each facet's paper: the first piece to fold into it; its colour by day, and by night the lit paper's
+    const pal = night ? ["#FFE3AE", "#FFD28E", "#FFDA9C", "#F9C67E", "#FFEABD"] : null; /* by night the paper is lit from inside: lantern golds */
+    cr.col = Array(CR_FACETS).fill(null); for (const p of order) if (!cr.col[p.f]) cr.col[p.f] = night ? pal[(p.f * 3 + (p.i || 0)) % pal.length] : p.k === "mill" ? P.mill : p.k === "tree" ? P.tree[p.i % 3] : P.roof[S.houses[p.i].roof % P.roof.length]; /* by day the roofs' reds for its wings and its crown, the mill's cream for its body, the trees' greens for its neck and tail */
+    cr.first = Array(CR_FACETS).fill(99); for (const p of order) cr.first[p.f] = Math.min(cr.first[p.f], p.t0 + CROWN.fold + CROWN.fly); cr.last = Array(CR_FACETS).fill(-1); for (const p of order) cr.last[p.f] = Math.max(cr.last[p.f], p.t1);
+    cr.ps = order; cr.off = new Set(); cr.winOff = new Uint8Array(S.windows.length); cr.wh = []; { let i = 0; S.houses.forEach((h, hi) => h.wins.forEach(() => cr.wh[i++] = hi)); }
+    const keep = F2 => F2.map(f => [f[0].map(q => q.slice()), f[1], f[2]]); cr.rest0 = keep(crane3(.6, .4, null, .32, 0)); cr.rest1 = keep(crane3(.6, .4, null, .32, 1)); /* its pose as it forms (the head not yet folded) and as it sits on the water */ cr.shown = new Uint8Array(CR_FACETS); cr.F = crane3(.6, .4, null); cr.idx = [...Array(CR_FACETS).keys()]; /* (its pose as it forms, and as it sits on the water) */
+    cr.st = new Float32Array(order.length * 2); // each piece now: its standing (1 up … 0 flat) and where its paper is (0 at home … 1 in the crane)
+    return pl;
+  }
+  /** where the crane forms — standing on the town hill where the town stood — and its flight. On a wide screen it rides
+   *  the evening air up the open sky beside the list, circling as a crane does (round and away, smaller, and back), then
+   *  turns toward us and comes swooping down at us, wings wide, and swings round to settle on the river; on a tall one it
+   *  flies a slow circuit over the river, out along it, round behind (smaller, further off) and back, and settles on the
+   *  water. The biggest crane whose whole flight keeps clear of the words, below the bar and above the footer; with no
+   *  room for even the smallest, faded where it passes behind them */
+  function craneFlight() {
+    const { W, H, pr, u } = S, R = (S.rects || []).filter(q => q[4] !== 2), riv = S.riverY + S.riverH * .8;
+    const box = (x, y, Ls, ang = 0) => { const c = Math.abs(Math.cos(ang)), s2 = Math.abs(Math.sin(ang)), e = Ls * (c * .42 + s2 * .5), up = Ls * (c * .5 + s2 * .42), dn = Ls * (c * .14 + s2 * .42); return [x - e, y - up, x + e, y + dn]; }; // a crane's reach: its wings up, its neck and tail out
+    const hit = b => b[1] < 118 || b[3] > H - 24 || b[0] < -.1 * (b[2] - b[0]) || b[2] > W + .1 * (b[2] - b[0]) || R.some(([x0, y0, x1, y1]) => b[2] > x0 - 14 && b[0] < x1 + 14 && b[3] > y0 - 14 && b[1] < y1 + 14);
+    const edge = R.reduce((m, q) => q[3] > 118 && q[1] < S.riverY ? Math.max(m, q[2]) : m, 0), col = Math.max(.3 * W, W - (edge ? edge + 14 : .66 * W)); /* the open sky beside the list */
+    let cr = null;
+    for (let k = 0; k < 8; k++) { const z = Math.pow(.88, k), L = (pr ? .6 * W : Math.min(.3 * W, col * 1.12)) * z, x0 = pr ? .5 * W : W - Math.min(col / 2, .5 * L + 3 * u), p0 = [x0, (pr ? S.frontY(x0) + 1.2 * u : S.townY(x0)) - .04 * L], /* on a tall screen the town hill is close under the list: it forms on the near bank */ p1 = [pr ? .64 * W : W - Math.min(col / 2, .4 * L + 3 * u), riv], bs = [box(p0[0], p0[1], L), box(p1[0], p1[1], L * .7)];
+      let fl; if (pr) fl = { kind: "circuit", cx: .5 * W, cy: S.riverY + .005 * H, Rx: .3 * W, Ry: .05 * H, s: .8 };
+      else { const s0 = .62, Rx = Math.max(0, Math.min(.09 * W, (col - .84 * L * s0) / 2)), y0 = p0[1] - .25 * L; fl = { kind: "helix", cx: W - col / 2, y0, y1: Math.max(118 + .5 * L * s0 * .5 + 3 * u, .24 * H), Rx, Ry: .028 * H, s: s0 }; }
+      cr = { L, p0, p1, fl }; for (let q = 0; q <= 24; q++) { const c = craneAt(lerp(CROWN.take, CROWN.land, q / 24), 0, cr); bs.push(box(c.x, c.y, L * c.s, c.bank)); } /* every moment of its flight */
+      cr.box = [Math.min(...bs.map(b => b[0])), Math.min(...bs.map(b => b[1])), Math.max(...bs.map(b => b[2])), Math.max(...bs.map(b => b[3]))];
+      cr.fade = k === 7; if (!bs.some(hit)) break; } // smaller until it fits
+    return cr;
+  }
+  /** the crane at loop time T: where it is, its heading (h: .6 three-quarters facing right, π/2 away, π − .6 left,
+   *  3π/2 toward us), how big, its roll on the page, its wings' angle; whether it stands or sits on the water */
+  const CRT = { in: 5.9, out: 8.6 };
+  function craneAt(T, A, cr) {
+    const { L, p0, p1, fl } = cr, flap = (T - CROWN.take) * 6.2, beat = Math.sin(flap);
+    if (T <= CROWN.take) { const breath = seg(T, CROWN.alive, CROWN.take, E.sine); return { x: p0[0], y: p0[1], h: .6, s: 1, bank: 0, phi: .4 + .6 * Math.sin(breath * Math.PI), stand: 1 }; } // standing where the town stood; it stretches its wings once
+    if (T >= CROWN.land) { const q = seg(T, CROWN.land, CROWN.settle, E.out); return { x: p1[0], y: p1[1] + Math.sin(A * 1.6) * .004 * L, h: .6, s: .7, bank: 0, phi: lerp(1.3, .4, q), float: 1 }; }
+    const bez = (a, b, c2, d, q) => { const m = 1 - q; return m * m * m * a + 3 * m * m * q * b + 3 * m * q * q * c2 + q * q * q * d; };
+    const along = (X, Y, q) => { const x = bez(...X, q), y = bez(...Y, q), dx = bez(...X, Math.min(1, q + .02)) - bez(...X, Math.max(0, q - .02)), dy = bez(...Y, Math.min(1, q + .02)) - bez(...Y, Math.max(0, q - .02)); return [x, y, Math.atan2(dy, Math.max(.001, Math.abs(dx))) * Math.sign(dx || 1)]; };
+    const ring = (th, cx, cy, Rx, Ry, s0) => { const near = Math.cos(th); return { x: cx + Rx * Math.sin(th), y: cy + Ry * near, h: Math.atan2(Ry * 2.2 * Math.sin(th), Rx * near), s: s0 * (.74 + .26 * near) }; }; // round a ring seen a little from above: further off, higher and smaller
+    if (fl.kind === "helix") { /* up off the hill into a climbing circle; round and up; then it turns to us and swoops down to the water */
+      const TH = 1.5 * TAU, at = T2 => { const q = clamp((T2 - CROWN.take) / (CRT.out - CROWN.take)), th = TH * (q * .8 + E.sine(q) * .2), r = ring(th, fl.cx, 0, fl.Rx, fl.Ry, fl.s); r.y += lerp(fl.y0, fl.y1, E.io(q)); return r; };
+      if (T < CRT.out) { const r = at(T), lift = seg(T, CROWN.take, CROWN.take + .6, E.out); return { x: lerp(p0[0], r.x, lift), y: lerp(p0[1], r.y, lift), h: r.h, s: lerp(1, r.s, lift), bank: .1 * Math.sin(TH * (T - CROWN.take) / (CRT.out - CROWN.take)), phi: 1.1 + .45 * beat, tilt: lerp(.32, .62, lift) }; }
+      const e = at(CRT.out), q = E.io(seg(T, CRT.out, CROWN.land, x => x)), X = [e.x, e.x - .6 * fl.Rx - .1 * L, p1[0] - .5 * L, p1[0]], Y = [e.y, e.y + .3 * (p1[1] - e.y), p1[1] - .12 * L, p1[1]], [x, y] = along(X, Y, q); // the swoop: toward us, then round to the right
+      const hh = lerp(e.h < 0 ? e.h + TAU : e.h, TAU + .6, E.io(q)), big = Math.sin(Math.PI * Math.min(1, q * 1.2)); return { x, y, h: hh, s: lerp(e.s, .7, q) + .55 * big * fl.s, bank: 0, phi: lerp(1.2, 1.3, q) + .3 * beat * (1 - q), tilt: lerp(.62, .32, q) }; }
+    const at0 = [fl.cx, fl.cy + fl.Ry, fl.s];
+    if (T < CRT.in) { const q = E.io(seg(T, CROWN.take, CRT.in, x => x)), X = [p0[0], p0[0] + .05 * L, at0[0] - .35 * L, at0[0]], Y = [p0[1], p0[1] - .35 * L, at0[1], at0[1]], [x, y, ang] = along(X, Y, q); /* up off the hill, into the circuit */
+      return { x, y, h: .6 * (1 - q), s: lerp(1, at0[2], q), bank: ang * Math.min(1, q * 3) * (1 - q), phi: 1.05 + .5 * beat, tilt: lerp(.32, .58, q) }; }
+    if (T < CRT.out) { const q = (T - CRT.in) / (CRT.out - CRT.in), th = TAU * (q * .85 + E.sine(q) * .15), r = ring(th, fl.cx, fl.cy, fl.Rx, fl.Ry, fl.s); return { x: r.x, y: r.y, h: r.h, s: r.s, bank: .12 * Math.sin(th), phi: 1.1 + .45 * beat, tilt: .58 }; } // round, further off as it goes behind
+    const q = E.io(seg(T, CRT.out, CROWN.land, x => x)), X = [at0[0], at0[0] + .3 * L, p1[0] - .3 * L, p1[0]], Y = [at0[1], at0[1], p1[1] - .2 * L, p1[1]], [x, y, ang] = along(X, Y, q); /* a glide down onto the water */
+    return { x, y, h: .6 * q, s: lerp(at0[2], .7, q), bank: ang * (1 - q), phi: lerp(1.25, 1.3, q) + .25 * beat * (1 - q), tilt: lerp(.58, .32, q) };
+  }
+  /** a piece's state at T: how far it stands (1 … 0), and how far its paper has gone (0 at home … 1 in the crane) */
+  function pieceAt(T, p) {
+    const f = CROWN.fold, fl = CROWN.fly, up = T < p.t1 ? 1 - E.in(seg(T, p.t0, p.t0 + f, x => x)) : K.spring(clamp((T - (p.t1 + fl)) / CROWN.pop), 2.4, 5);
+    const go = T < p.t1 ? seg(T, p.t0 + f, p.t0 + f + fl, x => x) : 1 - seg(T, p.t1, p.t1 + fl, x => x);
+    return [T < p.t0 ? 1 : up, go];
+  }
+  /** the crown's pieces, made once a layout: the land behind the town (the paper, the hills, no houses), each house and
+   *  the windmill's tower as a card, a glow for the crane by night, its shadow */
+  function crownGear() {
+    if (CRG && CRG.gen === gen) return CRG; const { u } = S, m = S.mill; CRG = { gen, houses: [] };
+    let x0 = m.x - m.h * .2, x1 = m.x + m.h * .2, y0 = m.y - m.h * .02, y1 = m.base; for (const h of S.houses) { x0 = Math.min(x0, h.x); x1 = Math.max(x1, h.x + h.w); y0 = Math.min(y0, h.base - h.h); y1 = Math.max(y1, h.base); }
+    CRG.strip = cardOf(x0 - 2 * u, y0 - 1.5 * u, x1 + 2 * u, y1 + 1.2 * u, 0, x => { printOn(x, false); for (const k of BANDS) pieceOn(x, k, false); });
+    S.houses.forEach((h, i) => { CRG.houses[i] = cardOf(h.x - 1.5 * u, h.base - h.h - 1.2 * u, h.x + h.w + 1.5 * u, h.base + .8 * u, h.base, x => houseOn(x, h, false)); });
+    CRG.mill = cardOf(m.x - m.h * .2 - 1.2 * u, m.y - m.h * .02 - 1.2 * u, m.x + m.h * .2 + 1.2 * u, m.base + .8 * u, m.base, x => millOn(x, false));
+    CRG.grain = g.createPattern(S.grainTile, "repeat");
+    CRG.glow = K.glowSpr(Math.round(Math.max(8, S.W * (S.pr ? .2 : .1))), [255, 214, 140], .5);
+    CRG.shadow = make(200, 100, x => { const gr = x.createRadialGradient(100, 100, 0, 100, 100, 100); gr.addColorStop(0, night ? "rgba(0,0,0,.9)" : "rgba(70,56,38,.9)"); gr.addColorStop(1, "rgba(0,0,0,0)"); x.setTransform(px, 0, 0, px * .5, 0, 0); x.fillStyle = gr; x.fillRect(0, 0, 200, 200); });
+    return CRG;
+  }
+  /** every piece's state now, worked out once a frame: the trees the crown draws itself (the scene draws the rest) and
+   *  the windows whose house has gone */
+  function crownNow(T, I, cr) {
+    cr.off.clear(); cr.winOff.fill(0); cr.away = false; cr.mill = -1; const k = clamp(I / .85), ie = cr.ie = k * k * (3 - 2 * k); /* its strength: whole once the stretch is a moment old; if the list is touched, the pieces stand up again as it goes */
+    cr.ps.forEach((p, j) => { const [up0, go] = pieceAt(T, p), up = 1 - (1 - up0) * ie; cr.st[j * 2] = up; cr.st[j * 2 + 1] = go; const out = ie > .002 && (up < .9999 || go > 0); if (out) cr.away = true; if (p.k === "tree" && out) cr.off.add(p.t); if (p.k === "house" && out) for (let i = 0; i < cr.wh.length; i++) if (cr.wh[i] === p.i) cr.winOff[i] = 1; if (p.k === "mill" && out) cr.mill = up; });
+  }
+  /** under it all, after the frame is cleared: while any piece is down, the land behind the town is laid over it and
+   *  the houses and the windmill's tower drawn as cards, each standing as far as it does; the trees that are folding */
+  function crownUnder(T, I, A, pl) {
+    const cr = pl.cr; crownNow(T, I, cr); if (!cr.away) return;
+    const G = crownGear(), { u } = S, sp = G.strip; g.drawImage(sp.c, sp.x0, sp.y0, sp.w, sp.h);
+    cr.ps.forEach((p, j) => { const up = cr.st[j * 2]; if (p.k === "house") { cardDraw(G.houses[p.i], up); if (night && up > .02) { g.save(); fold(S.houses[p.i].base, up); for (let i = 0; i < cr.wh.length; i++) { if (cr.wh[i] !== p.i) continue; const w = S.windows[i], on = seg(T, .2 + pl.won[i] * 1.7, .45 + pl.won[i] * 1.7, E.back) * (1 - seg(T, 12.3 + pl.woff[i] * 1.6, 12.55 + pl.woff[i] * 1.6, E.in)) * I, base = w.base ? .82 + .18 * Math.sin(A * w.f + w.ph) : (Math.sin(A * w.f + w.ph) > .985 ? .8 : 0), a = Math.max(base, on); if (a <= .02) continue; /* (lit as the scene lights its windows) */
+          g.globalAlpha = clamp(a) * .55; g.drawImage(S.glow, w.x + w.w / 2 - S.glow.width / 2, w.y + w.h / 2 - S.glow.height / 2); g.globalAlpha = clamp(a); g.fillStyle = P.lit; g.fillRect(w.x, w.y, w.w, w.h); g.globalAlpha = 1; } g.restore(); } }
+      else if (p.k === "mill") cardDraw(G.mill, up);
+      else if (p.k === "tree" && up > .002) { const t = p.t; g.save(); fold(t.y, up); put(t.spr, t.x, t.y, .5, 1 - 1.4 * u / t.spr.h2, Math.sin(A * 1.1 + t.ph) * .018); g.restore(); } });
+  }
+  /** the windmill's sails, folding with its tower (true: the crown has drawn them, or they are away) */
+  function crownSails(T, I, A, pl) {
+    const up = pl.cr.mill; if (up === undefined || up < 0) return false; if (up <= .002) return true;
+    const m = S.mill, { u } = S; g.save(); fold(m.base, up); for (let k = 0; k < 4; k++) put(S.millSail, m.x, m.y + m.h * .12, .1, .5, S.millAngle + k * TAU / 4); g.fillStyle = P.millLo; g.beginPath(); g.arc(m.x, m.y + m.h * .12, .7 * u, 0, TAU); g.fill(); g.restore(); return true;
+  }
+  /** a facet of the crane, filled with its paper and lit as it faces, its edges creased */
+  function facetFill(pts, col, lit, a, ox = 0, oy = 0, cb = 1, sb = 0) {
+    g.globalAlpha = a; g.fillStyle = col; g.beginPath(); for (let k = 0; k < pts.length; k++) { const x = ox + pts[k][0] * cb - pts[k][1] * sb, y = oy + pts[k][0] * sb + pts[k][1] * cb; k ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); g.fill(); /* (its points in the crane's unit, turned and scaled onto the page by cb, sb) */
+    if (lit < .999) { g.globalAlpha = a * (1 - lit) * (night ? .55 : .7); g.fillStyle = night ? "#6A3A12" : "#3E2A16"; g.fill(); }
+    else { g.globalAlpha = a * (night ? .18 : .12); g.fillStyle = "#FFFFFF"; g.fill(); }
+    if (CRG && CRG.grain) { g.globalAlpha = a; g.fillStyle = CRG.grain; g.fill(); } // the paper's own grain
+    g.globalAlpha = a * (night ? .5 : .38); g.strokeStyle = night ? "#8A4E1C" : "#5C4428"; g.stroke(); g.globalAlpha = 1;
+  }
+  /** the crane and the paper flying to and from it: by its pose, each facet laid as far as its paper has come — the
+   *  pieces' paper tumbling up from the town into their places, and home again */
+  function crownCrane(T, I, A, pl) {
+    const cr = pl.cr, { u } = S, c = craneAt(T, A, cr), Ls = cr.L * c.s, cb = Math.cos(c.bank) * Ls, sb = Math.sin(c.bank) * Ls;
+    const F = crane3(c.h, c.phi, cr.F, c.tilt || .32, K.spring(clamp((T - CROWN.alive + .45) / .5), 2.5, 5)); crOrder(F, cr.idx); /* turned to its heading, its wings where they are in the beat, furthest facet first (in flight we look down on it a little more: its wings show) */
+    const shown = cr.shown; for (let f = 0; f < CR_FACETS; f++) shown[f] = T >= cr.first[f] && T <= cr.last[f] ? 1 : 0;
+    const a = cr.ie * (cr.fade ? vel(c.x, c.y - .2 * Ls, .5 * Ls) : 1);
+    // its shadow on the land under it as it flies
+    if (T > cr.first[4] && T < CROWN.land) { const G = crownGear(), gy = c.stand ? c.y + .05 * Ls : Math.max(c.y + .2 * Ls, S.frontY(c.x) + 1.5 * u), hgt = c.stand ? 0 : clamp((gy - c.y) / (S.H * .3)), w = Ls * (1 - .4 * hgt); g.globalAlpha = a * .24 * (1 - hgt * .6) * seg(T, cr.first[4], cr.first[4] + .4, E.sine); g.drawImage(G.shadow, c.x - w / 2, gy - w * .08, w, w * .16); g.globalAlpha = 1; } // its shadow: at its feet as it stands, on the land under it as it flies
+    const glowK = night && T > cr.first[4] - .3 ? Math.min(1, (T - cr.first[4] + .3) / .8) * (1 - seg(T, CROWN.back[0] - .2, CROWN.back[1], E.sine)) : 0, gw = night ? crownGear().glow.width / px * c.s * 1.3 : 0;
+    if (glowK > .01) { g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = a * .5 * glowK; g.drawImage(crownGear().glow, c.x - gw / 2, c.y - .12 * Ls - gw / 2, gw, gw); g.restore(); } // by night it lights the dark round it
+    if (c.float) { const q = seg(T, CROWN.land, CROWN.land + 1.6, x => x); for (let k = 0; k < 2; k++) { const qq = (q + k * .5) % 1; if (q <= 0 || T > CROWN.back[1]) break; g.globalAlpha = a * (1 - qq) * .7; g.strokeStyle = night ? "rgba(255,226,170,.8)" : "rgba(255,255,255,.9)"; g.lineWidth = Math.max(1, .14 * u); g.beginPath(); g.ellipse(c.x, c.y + .06 * Ls, Ls * (.3 + .4 * qq), Ls * (.04 + .05 * qq), 0, 0, TAU); g.stroke(); } g.globalAlpha = 1; } // rings where it sits on the water
+    g.lineJoin = "round"; g.lineWidth = Math.max(.8, .1 * u);
+    if (c.float) { const wl = c.y + .06 * Ls, top = wl; g.save(); g.beginPath(); g.rect(c.x - Ls, top, Ls * 2, S.riverY + S.riverH + .6 * u - top); g.clip(); g.translate(0, 2 * wl); g.scale(1, -1); /* its reflection in the river, upside down under it */
+      for (const f of cr.idx) if (shown[f]) facetFill(F[f][0], cr.col[f], F[f][2], a * (night ? .3 : .2), c.x + Math.sin(A * 2.2) * .01 * Ls, c.y, cb, sb); g.restore(); }
+    for (const f of cr.idx) if (shown[f]) facetFill(F[f][0], cr.col[f], F[f][2], a, c.x, c.y, cb, sb);
+    if (glowK > .01) { g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = a * .32 * glowK; g.drawImage(crownGear().glow, c.x - gw * .3, c.y - .12 * Ls - gw * .3, gw * .6, gw * .6); g.restore(); } // and glows through its own paper
+    // the paper on its way: from each piece to its facet (and back), a triangle of its paper tumbling along an arc
+    const c0 = craneAt(CROWN.alive - .01, A, cr), c1 = craneAt(CROWN.back[0], A, cr), rest0 = cr.rest0, rest1 = cr.rest1;
+    cr.ps.forEach((p, j) => { const go = cr.st[j * 2 + 1]; if (go <= 0 || go >= 1) return; const out = T < p.t1, cc = out ? c0 : c1, F2 = (out ? rest0 : rest1)[p.f][0], Lc = cr.L * cc.s;
+      const tgt = F2.map(q => [cc.x + q[0] * Lc, cc.y + q[1] * Lc]), cx = (tgt[0][0] + tgt[1][0] + tgt[2][0]) / 3, cy = (tgt[0][1] + tgt[1][1] + tgt[2][1]) / 3;
+      const e = E.io(go), mx = lerp(p.x, cx, e), my = lerp(p.y, cy, e) - Math.sin(go * Math.PI) * S.H * p.lift, sc = lerp(.22, 1, e), rot = (1 - e) * p.spin, cs = Math.cos(rot), sn2 = Math.sin(rot);
+      const pts = tgt.map(([x, y]) => { const dx = (x - cx) * sc, dy = (y - cy) * sc; return [mx + dx * cs - dy * sn2, my + dx * sn2 + dy * cs]; });
+      facetFill(pts, cr.col[p.f], .75 + .25 * Math.abs(Math.cos(rot * 2)), a * S.shade(mx, my, Lc * .15)); }); /* (its light turning as it tumbles; gone where it passes behind the words) */
     g.globalAlpha = 1;
   }
 

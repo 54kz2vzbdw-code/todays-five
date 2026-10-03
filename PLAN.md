@@ -3792,3 +3792,45 @@ decisions". Web only; the version holds at 1.12, and nothing in `apple/` changed
 | Looked at | both kits in the app on a desktop: the signature, the three-minute egg (pass 11), both hour eggs (348, 664), the finale |
 | Focused runs | on the change: every kit's module, Light's and Dark's keep-clear, the water on the graphics card, both viewports: 6 passed |
 | Contrast | against build 436, pass 0, both kits and viewports, `CLOCK=2026-09-28T15:00:00`: nothing under 4.5 that build 436 doesn't share (the finale's line 4.21 over Light on a phone, both builds, three runs) |
+
+# Today's Five 1.12 b439–b449 — The long day's crowns
+
+*Shipped as build 450. b439–b449 are its commits.*
+
+Round B of the long day: in the sixth hour of the list left alone, and every sixth after, each scene plays its crown in
+place of that hour's egg — its single best piece. Not in the changelog. The decisions are in DECISIONS.md under "1.12
+b439–b449 decisions". Web only; the version holds at 1.12, and nothing in `apple/` changed but the stamp. Build 438,
+between the rounds, recoloured Light's and Dark's water on its own.
+
+## What shipped
+
+1. **Light's and Dark's Starry Night** (b439). `scene-fluid.js`.
+2. **Birthday's bouquet lifts off, Superpink's floor lights up** (b440). `scene-party.js`.
+3. **Harbor's regatta, Arcade's kill screen** (b441). `scene-harbor.js`, `scene-arcade.js`.
+4. **Sunset's breach, Dusk's River of Heaven** (b442). `scene-bay.js`.
+5. **Paper's and Midnight's crane, Teletype's Lumière train** (b443). `scene-papercut.js`, `scene-flap.js`.
+6. **Blush's giant bubble, Bark's and Char's day's end** (b444). `scene-bubbles.js`, `scene-wood.js`.
+7. **Chalkboard's air display, Whiteboard's five o'clock** (b445). `scene-board.js`.
+8. **Forest's day goes round, Ember's northern lights** (b446). `scene-forest.js`, `scene-ember.js`.
+9. **Terminal's docking, Pink's strip** (b447). `scene-demo.js`, `scene-heart.js`.
+10. **Sketch's curtain call, Cocoa's day at the café** (b448). `scene-sketch.js`, `scene-cocoa.js`.
+11. **A browser test and the record** (b449). Every kit with a scene, the hidden ones too, plays its crown's pass and
+    throws nothing; DECISIONS.md and this entry.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| every other pass unchanged | ALL IDENTICAL for all twenty 2D kits at 134 moments a viewport of passes 0, 1, 2, 11, 347, 348, 349, 663, 664, 665, 1588, 1590 (the hour eggs included) | `samecv2.mjs` against an untouched build 438 |
+| the seams either side of each crown | 0.00–0.04 %, or the same as the untouched build's at that moment (Terminal's plasma, Pink's buzz, Ember's fire, Arcade's wall-clock flicker, Dark's metal, Sketch's boil) | `tools/scene-seams.mjs <kits> phone,desktop 3 1588` |
+| contrast, each crown's pass against the same pass on the untouched build | no reading under 4.5 that the untouched build doesn't share, all twenty-two, both viewports | `tools/contrast.mjs`, `AT=idle PASS=1589`, both builds side by side, `CLOCK=2026-09-28T15:00:00` |
+| CPU, each crown's pass against the pass before | within 1.5 points of a core on the main thread for all twenty-two; dearest Ember's aurora (+1.4), Pink's strip, Cocoa's day and Superpink's floor (+1.2) | `tools/idle.mjs 15`, `SCENES=1 PASS=1588` against `1589`, twice each, interleaved (`UNLOCK=1` for the hidden kits) |
+| bytes, gzipped (lazy, Scenes on under the kit only) | the sixteen modules 704.0 → **815.8 KB** together; nothing on the first-paint path | `gzip -9 -n` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on the change: every scene test, the three-minute eggs', the hour eggs', the new crowns' test, and the worker's two tests, both viewports: 34 passed |
+| Looked at | every crown in the app on a desktop (frame-stepped reels at 8 a second), judged at full size; the helpers' sheets and real-app frames on both viewports |

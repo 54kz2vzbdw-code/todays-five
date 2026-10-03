@@ -3451,3 +3451,73 @@ scene tests (every kit's module, Light's and Dark's keep-clear, the water on the
 passed. Contrast against build 436 (pass 0, both kits and viewports): no reading under 4.5 that build 436 doesn't share.
 The finale's line ("That's the list.", 24 px bold) reads 4.21 over Light on a phone on both builds, run after run — the
 low finale readings already set aside for a fix of their own.
+
+# 1.12 b439–b449 decisions — The long day's crowns
+
+**What Price asked.** Round B of the long day (b421–b435 shipped the hour eggs as build 436): in the sixth hour of the list
+left alone, and every sixth after, each scene plays its crown in place of that hour's egg — for whoever has had the list
+up through a whole working day. He asked to see them as he saw the hour eggs ("Can you make a page like the long day
+page for the crowns so I can see those too?").
+
+**When.** `K.long(P) === 3`, already on the stage's clock since b421 (the sixth hour's dealt pass, never one `K.egg`
+has); in the lab (visit 1) pass 1589. Until now a crown's pass played as a dealt pass does.
+
+**How they were made.** The same nine helpers against one brief (`crown-brief.md`), the water by the lead. A crown is the
+scene's single best piece, bigger than both its hour eggs: "the end of a long day, celebrated". The ideas held back in
+round A for the crowns went to them: the town folding into an origami crane, the Lumière train, Arcade's kill screen, a
+wall of neon lighting up like a strip, a bouquet that lifts off whole. Each helper measured its own cost this time
+(tools/idle.mjs, the crown's pass against the pass before, interleaved), after round A's instruments caught two eggs
+rebuilding themselves every frame; every crown came back within a point of a core of the pass before.
+
+**The crowns.**
+- **Light and Dark (b439) — The Starry Night.** A pool of clear water turns to night, its sky is laid in strokes and
+  raked across, two eddies turning against each other wind its middle into the great double swirl, a cypress is drawn
+  up out of the foreground the way a marbler pulls a tulip, and the stars and a crescent moon land as stones (by day
+  the paper's own white in sage halos, by night teal and violet metal). The water is stilled before the stars land, so
+  they stay round, and the picture holds to the end of the pass.
+- **Birthday and Superpink (b440) — the bouquet lifts off; the floor lights up.** A teddy bear climbs the bouquet's
+  strings, the knot slips, and the whole bouquet floats off with it by the way that crosses no line; a new bouquet rises.
+  A full-width dance floor of coloured glass rises under the list and sweeps in bands and rings at 104 beats a minute.
+- **Harbor and Arcade (b441) — the regatta; the kill screen.** Seven dinghies race round a mark and run home under
+  spinnakers in every colour. Pac-Man's level 256: the right half of the screen comes apart into garbage tiles, the hero
+  walks through it, and the machine powers down and reboots; it banks exactly what the dealt level would have.
+- **Sunset and Dusk (b442) — the breach; the River of Heaven.** A humpback breaches in the sun's path, then again
+  beside her calf. Lanterns rise from the bay in a slow river past the moon and become the Milky Way.
+- **Paper, Midnight and Teletype (b443) — the crane; the Lumière train.** The town folds itself into an origami crane
+  that flies a circle past the sun (by night the moon, lantern gold) and unfolds back. The wall becomes a printed film
+  frame of a station platform and the train steams in until its engine fills the corner (La Ciotat, 1896).
+- **Blush, Bark and Char (b444) — the giant bubble; the day's end.** A hoop draws one long iridescent bubble across the
+  page, which pinches off into a flight of bubbles. The medallion sets like the sun (by night the moon) into the grain,
+  the board goes to dusk and stars, and it rises at dawn carrying the next picture; the tint is cut away under every word.
+- **Chalkboard and Whiteboard (b445) — the air display; five o'clock.** Six sticks of rainbow chalk fly like a display
+  team, loop the loop and draw a heart that beats. The day as a burn-down chart whose finished notes rocket off into
+  confetti until the last step lands on 5pm.
+- **Forest and Ember (b446) — the day goes round; the northern lights.** A whole day over the forest in fifteen seconds,
+  moonset to moonrise. Curtains of aurora rise over the hills and gather into a turning corona as the fire's sparks rise.
+- **Terminal and Pink (b447) — the docking; the strip.** In characters, you drop out of hyperspace and dock with a
+  station, Elite's view. A whole street of neon signs lights up round the heart, marquee bulbs chasing round the wall.
+- **Sketch and Cocoa (b448) — the curtain call; a day at the café.** A little theatre where the scene's drawings take
+  their bows, then the pencil, brush and eraser. The café's day from gold afternoon through a night window held in the
+  cocoa to dawn.
+
+**Every other pass, unchanged.** The 2D kits' canvases hashed against an untouched build 438 at 134 moments a viewport
+of passes 0, 1, 2, 11, 347, 348, 349, 663, 664, 665, 1588 and 1590 — the hour eggs' passes and the crown's neighbours
+included: ALL IDENTICAL for all twenty. The water by screenshots, each pass worked out from rest: identical on both
+desktops; on phones identical but for the fixed one-level flicker the untouched build shows against itself.
+
+**Contrast.** Each crown's pass read whole (`AT=idle PASS=1589`) against the same pass on the untouched build, side by
+side under the same load, both viewports, all twenty-two: no reading under 4.5 that the untouched build doesn't share.
+Those under 4.5 are the app's own dimmed tools (the rail's chips and the hint in the idle fade, which sit the same
+distance above their own plain ground on both builds) and the finale's line (Birthday's on a phone read 4.45 on both
+builds in a second run). The crowns that light the whole page keep the words readable: Forest's noon sky takes the date
+to 5.82 and the first line to 7.61; Superpink's beams take the count to 4.70; the wood's dusk is cut away under every
+word. One fault was in the instrument, not the app: the comparison script labelled each reading's phase by searching for
+its plain value, and two phases with the same plain value collapsed into one; it reads each cell by its column now, and
+both rounds' comparisons were run again with it (no conclusion changed).
+
+**Cost.** Each crown's pass against the pass before it (tools/idle.mjs, 15 s windows, 1588 against 1589 twice each,
+interleaved, desktop): every one within a point and a half of a core on the main thread of the pass before; the dearest
+are Ember's aurora (+1.4), Pink's strip, Cocoa's day and Superpink's floor (about +1.2), and several cost less than the
+pass before (Char, Arcade, Light, Birthday). Each helper measured its own crown this round and trimmed it before handing
+it back (Teletype's film printed only where the train is, Superpink's glows cut to the bright tiles, Sketch's company
+drawn once into sprites, Blush's tube worked out on a quarter-size buffer).

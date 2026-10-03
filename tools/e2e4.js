@@ -3710,6 +3710,24 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  // 1.12 b449: the crowns (K.long 3: the sixth hour of loops left alone, and every sixth after)
+  await test(label + ": 1.12 b449: every scene's crown plays — the sixth hour's pass, left alone, in every kit with a scene and the hidden ones — and throws nothing", async () => {
+    const { KIT: SK } = await import("../scenes.js"), crown = SK.longAt(6); // visit 1's, as scenePass is told below
+    assert.equal(SK.long(crown), 3, "the sixth hour plays the crown: " + crown);
+    const t = await fresh(opts, { init: hiddenDevice });
+    await sceneUp(t, "forest");
+    for (const kit of [...SCENE_KITS, ...Object.keys(HIDDEN_MODS)]) {
+      await openPicker(t, "night"); await t.page.click(`#p-theme .swatch[data-code="T1:curated:${kit}"]`); await wait(300); await t.esc(); await wait(200);
+      await sceneUp(t, kit);
+      await t.page.evaluate(p => { window.__tfTest.scenePass(p, 1); window.__tfTest.sceneIdle(); }, crown);
+      await t.page.waitForFunction(p => { const s = window.__tf().scene; return s.idle && s.pass === p && s.t >= 8; }, crown, { timeout: 20000, polling: 100 });
+      const sc = (await t.s()).scene; assert.ok(sc.running && sc.frames > 0 && sc.pass === crown, kit + ": the crown's pass playing: " + JSON.stringify(sc));
+      await t.page.keyboard.press("Shift");
+    }
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0, "csp: " + t.csp.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join("; "));
+    await t.close();
+  });
+
   await test(label + ": 1.12 b328: Light's and Dark's scene (a liquid that kept to one place until b411, then water that flows round the words; and, from b332, Sketch's balloon; from b334, Pink's heart; from b336, Cocoa's cup; from b353, Blush's wand and its big bubble; from b361, Birthday's bouquet and Superpink's mirror ball; from b363, Whiteboard's plan and Chalkboard's lesson; from b365, Bark's inlay and Char's burned medallion) keeps to the empty part of the page — no pad under the words, and wherever it settles it is clear of every line, before and after a long line is added", async () => {
     const t = await fresh(opts, { init: hiddenDevice });
     await sceneUp(t, "forest");

@@ -3319,3 +3319,110 @@ alone, about 0.3 % of a core averaged over that time; recorded rather than cut f
 no egg reads lower than the pass it replaces; the readings under 4.5 that there are (Forest's struck line in its finale
 on a phone, 3.53; Harbor's finale line, 3.73; Sketch's struck line and its Bring them all back on a wide screen) read
 the same on the untouched build, and are left for a fix of their own.
+
+# 1.12 b421–b435 decisions — The long day: hour eggs in every scene
+
+**What Price asked.** After the three-minute eggs (b420): "Now, like we did with arcade, I'd like some easter eggs that
+show up way later. So, for example, I expect some people to leave their list up on a computer screen during a full
+8-10 hour workday. I'd like to give those people something randomly interesting throughout the day, so having some pop
+up only after a really long time of the list being open."
+
+**When (b421).** The stage's kit has a second clock beside `K.egg`: `K.long(P)`, on the loops left alone (240 passes
+an hour). From the first hour on, one pass in each hour plays an hour egg, at a pass dealt for the visit in the hour's
+middle three fifths, so two never come within twenty-four minutes of each other nor more than an hour and a half apart.
+The scene's two hour eggs take turns (the first in odd hours, the second in even), and in the sixth hour and every sixth
+after, the scene's crown plays instead; the crowns are the next round, and until then a crown's pass plays as any pass
+does. `K.longAt(h)` is hour h's pass, for the instruments; never one `K.egg` has. In the lab (visit 1) the first hour
+egg is pass 348 and the second 664. The clock counts loops left alone in this page; a touch eases an egg out like any
+beat, and the next stretch alone deals a new pass. None of it is in the changelog.
+
+**How they were made.** Nine helpers against one brief (`long-brief.md`), the water by the lead. The eggs had to be
+each scene's most ambitious pieces yet, a complete little film with an entrance, a moment and an exit, the kind of thing
+that makes someone at the next desk say "wait, what was that?" Every egg was recorded in the app on a desktop at eight
+frames a second and judged at full size; four came back for a second pass (Birthday's cake, which stood behind the
+bouquet's balloons at a hundred pixels wide and now chooses the biggest clear spot, in front, its flame in clear air,
+with a real party blower; Superpink's flamingo, whose wings read as stubs mid-spin and are now feather fans in its own
+depth; Forest's saucer, grey-green on a grey-green night and now the brightest thing in the forest; and the wolves'
+walk-in, now moonlit along their backs). Three ideas changed on the way: Harbor's submarine would have repeated Nessie
+beat for beat, so a tug tows in a giant rubber duck; Blush already deals a bubble snake as an ordinary pass, so its
+second egg is a murmuration; Superpink's skater became a flamingo on one roller skate, the room's own creature.
+
+**The eggs.** (Hour egg 1 plays in odd hours, hour egg 2 in even.)
+- **Light and Dark (b422) — the wake; the galaxy.** A pool of clear water opens and a stone crosses it, leaving von
+  Kármán's vortex street behind it, each eddy winding up the ink off one shoulder (orange and steel blue by day, gold and
+  silver by night). Or the pool turns to night (by day a wash of slate and steel blue: the galaxy is drawn in clear water,
+  the light in the slate as a photograph's is) and a line of drops winds into two trailing arms round a bright core, the
+  way a galaxy turns (nearly as fast at its rim as near its middle, Vera Rubin's flat curves); then its stars come out.
+  The first cut pushed a current past a held stone: a push as wide as a closed tray barely moves it, and the solver's grid
+  smeared eddies that small. So each egg lays the water's motion down itself, as the three-minute egg's stir does (the
+  stone carries the water it covers, each eddy turns as a vortex does), and the picture comes out crisp on any grid; the
+  stone's ink is kept to itself by a clear rim, or the first eddies wound it up dark. Both hold their ink while they play
+  (the water's fading slowed to a fifth for the fifteen seconds).
+- **Paper and Midnight (b423) — the storm; the fair.** A paper cloud covers the sun (the moon), paper rain falls, a card
+  bolt is lowered on its thread, the town opens its umbrellas, and a pop-up rainbow stands up band by band (a pale
+  moonbow). Or a ferris wheel opens like a fan by the windmill, a roundabout turns and one horse bolts, bunting strings
+  itself, and it is all lit by night.
+- **Teletype (b423) — A Trip to the Moon; the station clock.** In flaps: Méliès's man in the moon wakes, takes the shell
+  in his eye and winks. Or the wall turns into a railway clock whose hands step round to the real time — the one thing in
+  these eggs read off the wall clock rather than dealt from the pass, because a clock on a screen left up all day should
+  tell the time.
+- **Harbor (b424) — the pirate ship; the duck.** A galleon runs up the skull and crossbones and fires a broadside that
+  throws up plumes in the bay. Or a tug tows in a giant rubber duck, which turns to face you with a gull on its head.
+- **Arcade (b424) — coin heaven; player two.** A beanstalk to a sea of neon cloud and raining coins; or INSERT COIN, and
+  a second hero plays the level with the first. Each banks exactly what the dealt level would have scored (the rest as a
+  counted-up bonus), so the score and every later level are unchanged; an hour egg on a fiftieth level wins over its boss.
+- **Sunset and Dusk (b425) — the surfer, the balloon; the fireworks, the moonrise.** A surfer rides a wave through the
+  tube in front of the sun; a balloon touches down in the sun's path and lifts off dripping. A slow show over the bay,
+  none closer than a third of a second to the last; a huge amber moon rises with a junk crossing its face.
+- **Terminal and Pink (b426) — the Game of Life, the teapot; the neon cat, the aquarium.** Gosper's glider gun, the camera
+  following one glider; the Utah teapot rendered by scanline, boiling until its lid pops. A neon cat stalks a butterfly up
+  the sign's arrow and slides back down; kelp, fish, a jellyfish and a pufferfish round the heart.
+- **Sketch and Cocoa (b427) — Drawing Hands, the coffee ring; the steam dragon, the blue tit.** Escher's two hands drawing
+  each other; a mug's ring that becomes a penny-farthing's wheel. A dragon of steam round the cup; a blue tit sipping the
+  foam. Sketch's eggs end by drawing the pass's own subject, Cocoa's pour the art a dealt pass would, so the next pass
+  rests where it always did.
+- **Birthday and Superpink (b428) — the cake, the piñata; the laser show, the flamingo.** A cake whose gold numeral
+  candle is the hours the list has been up, relighting itself until a party blower settles it; a donkey piñata. A laser
+  drawing a ring, a heart, a star and a flower round the mirror ball; a flamingo on one roller skate.
+- **Forest and Ember (b429) — the wolves, the visitors; the Great Bear, the launch.** The moon comes down to sit huge
+  behind a howling pack; a saucer beams up a pine cone. The stars gather into the Great Bear, which walks the sky; a
+  rocket's plume opens into the pale jellyfish of a twilight launch.
+- **Chalkboard and Whiteboard (b430) — the proof, the rocket; the machine, the maze.** Pythagoras by Perigal's
+  dissection; a chalk rocket to a chalk moon. A ball run that lights a bulb; a maze that grows its own walls and is
+  solved by a marker line that backs out of a dead end.
+- **Blush, Bark and Char (b431) — inside the bubble, the murmuration; the cuckoo, the clockwork.** The page inside a
+  bubble until it bursts; a flock of bubbles settling into a heart. A marquetry cuckoo calling once per hour the list has
+  been up; an iris opening on clockwork that strikes the hours (by night charred, an ember below).
+
+**The lab's way into a late pass (b422).** The water is worked out step by step when the lab asks for a moment; pass 664
+from the visit's start would have meant 166 minutes of water. A pass hours in is now worked out from the start of the
+pass before it, and a moment asked for soon after the last (less than three passes on) carries on from it, so one pass
+runs into the next in the lab as it does on the page and the seam tool reads the water truly. The contrast tool gains
+`AT=idle` (b435), which starts the pass once the list is left alone: in use a pass's beats are held back, and an hour
+egg opens with its biggest moves.
+
+**Every other pass, unchanged.** The 2D kits' canvases hashed against an untouched copy of build 420 at 90 moments of
+passes 0, 1, 2, 11, 347, 349, 663 and 665 on each viewport: ALL IDENTICAL for all twenty. The water, being WebGL, by
+screenshots against build 420's water given only the new seek, each pass worked out from rest at its own start: identical
+at all 67 moments on both desktops; on phones identical but for a fixed one-level flicker over 58,204 pixels that the
+untouched build shows against itself. In the lab's own order the passes just after the water's eggs differ, by the paint
+they inherit: the water carries its picture from pass to pass.
+
+**Cost.** Each egg's pass against the pass before it (tools/idle.mjs, 15 s windows, interleaved, desktop): most cost
+within a point or two of a core on the main thread of the pass they replace, some less (Teletype's two, Sketch's,
+Birthday's cake). Two did not, and were fixed before shipping: the whiteboard's machine read 10–14 % against 3–4 %
+(its frame-to-page mapping was stored in the field the egg is cached by, so the whole machine was rebuilt thirty times a
+second; with a field of its own it reads what the pass before does, b432), and Dusk's fireworks read about twice the
+pass before (every shell's shifting colour made two new canvases a frame and every star asked every word whether to
+fade; now its glows are its two end colours crossfaded, its dots a cached ramp, its words only those near enough, b433).
+The dearest left are Harbor's duck (about +3 points on the main thread: its tug and duck are drawn from frames
+ray-cast once and kept, each with a broken reflection) and Cocoa's dragon (+3, a big cloud-shaded body drawn each
+frame), fifteen seconds once in two hours.
+
+**Contrast.** Each egg's pass read whole (the contrast tool's new `AT=idle`, the pass started once the list is left
+alone) against the same pass on the untouched build, side by side under the same load, both viewports: no reading under
+4.5 that the untouched build doesn't share. The readings under 4.5 that there are belong to the app's own dimmed text
+(the top bar's chips and the hint in the app's idle fade, a struck line, Bring them all back), which read so on the plain
+ground too, and within the untouched build's own spread from run to run (the same chip read 3.94 and 4.36 on two runs of
+the untouched build). One egg failed it and was fixed: coin heaven's camera scrolled the bright city and clouds behind
+the top bar, taking the date to 4.21 (b434).

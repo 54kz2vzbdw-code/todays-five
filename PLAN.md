@@ -3730,3 +3730,49 @@ only; the version holds at 1.12, and nothing in `apple/` changed but the stamp.
 | Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
 | Focused runs | on the change: every scene test (Scenes off and on, nearly still in use, every kit's module, the hidden kits', the keep-clear, the water's, Sunset's pads, Everything's sections, the forever cycle, the panel's hold, Arcade's score, the stamp), the new test (every kit's egg pass plays and throws nothing), and the worker's two tests, both viewports: 30 passed |
 | Looked at | every egg in the real app on a phone (frame-stepped reels at 8 a second) and in the helpers' sheets on both viewports, the hidden kits by the device's own latch |
+
+# Today's Five 1.12 b421–b435 — The long day: hour eggs in every scene
+
+*Shipped as build 436. b421–b435 are its commits.*
+
+For a list left up on a screen all day: from the first hour of loops left alone on, one pass in each hour plays an hour
+egg, the scene's two taking turns (the first in odd hours, the second in even), each a fifteen-second piece bigger than
+its three-minute egg. Not in the changelog — they are easter eggs. The decisions are in DECISIONS.md under "1.12
+b421–b435 decisions". Web only; the version holds at 1.12, and nothing in `apple/` changed but the stamp. The crowns
+(every sixth hour) are the next round.
+
+## What shipped
+
+1. **The clock** (b421). `K.long` and `K.longAt` in the stage's kit (`scenes.js`).
+2. **Light's and Dark's wake and galaxy** (b422). `scene-fluid.js`; the lab's way into a late pass.
+3. **Paper's and Midnight's storm and fair, Teletype's moon and station clock** (b423). `scene-papercut.js`, `scene-flap.js`.
+4. **Harbor's pirate ship and duck, Arcade's coin heaven and player two** (b424). `scene-harbor.js`, `scene-arcade.js`.
+5. **Sunset's surfer and balloon, Dusk's fireworks and moonrise** (b425). `scene-bay.js`.
+6. **Terminal's Game of Life and teapot, Pink's neon cat and aquarium** (b426). `scene-demo.js`, `scene-heart.js`.
+7. **Sketch's Drawing Hands and coffee ring, Cocoa's steam dragon and blue tit** (b427). `scene-sketch.js`, `scene-cocoa.js`.
+8. **Birthday's cake and piñata, Superpink's laser show and flamingo** (b428). `scene-party.js`.
+9. **Forest's wolves and visitors, Ember's Great Bear and launch** (b429). `scene-forest.js`, `scene-ember.js`.
+10. **Chalkboard's proof and rocket, Whiteboard's machine and maze** (b430). `scene-board.js`.
+11. **Blush's bubble and murmuration, Bark's and Char's cuckoo and clockwork** (b431). `scene-bubbles.js`, `scene-wood.js`.
+12. **The whiteboard's machine keeps its cache** (b432), **Dusk's fireworks cost what the pass before them does** (b433),
+    **coin heaven keeps the top bar dark** (b434): found by the instruments below before shipping.
+13. **A browser test and the record** (b435). Every kit with a scene, the hidden ones too, plays both hour eggs' passes
+    and throws nothing; the contrast tool's `AT=idle`; DECISIONS.md and this entry.
+
+## The numbers, each with its instrument
+
+| | measured | instrument |
+| --- | --- | --- |
+| every other pass unchanged | ALL IDENTICAL for all twenty 2D kits (90 moments a viewport of passes 0, 1, 2, 11, 347, 349, 663, 665); the water identical at all 67 moments on both desktops with each pass worked out from rest, on phones but for a fixed one-level flicker the untouched build shows against itself | `samecv2.mjs` against an untouched copy of build 420; for the water `samegl.mjs` (screenshots, two captures that agree) against build 420's water given only the new seek |
+| the seams either side of each hour egg | 0.00–0.04 %, or the same as the untouched build at that moment (Terminal's plasma 1.4–1.6 %, Pink's buzz 0.3–0.55 %, Ember's fire 0.4 %, Arcade's wall-clock flicker 0.4–0.9 %, Dark's metal 0.15–0.8 %) | `tools/scene-seams.mjs <kits> phone,desktop 3 347` and `… 3 663` |
+| CPU, each egg's pass against the pass before | within a point or two of a core on the main thread for all forty-four; the whiteboard's machine (10–14 against 3–4 %) and Dusk's fireworks (about twice) fixed to the pass before's (b432, b433); dearest left Harbor's duck and Cocoa's dragon, about +3 | `tools/idle.mjs 15`, `SCENES=1 PASS=347` against `348` and `663` against `664`, interleaved (`UNLOCK=1` for the hidden kits) |
+| contrast, each egg's pass against the same pass on the untouched build | no reading under 4.5 that the untouched build doesn't share, all forty-four, both viewports; coin heaven's top bar fixed (b434) | `tools/contrast.mjs`, `AT=idle PASS=348` and `664`, both builds side by side, `CLOCK=2026-09-28T15:00:00` |
+| bytes, gzipped (lazy, Scenes on under the kit only) | the sixteen modules 487.5 → **704.0 KB** together; nothing on the first-paint path. The worker still precaches every scene module on every device | `gzip -9 -n` |
+
+## Verification results
+
+| | |
+| --- | --- |
+| Node suites | model 28, theme 36, crypto 10, sync 21, sound 17, features 30, compat 9 |
+| Focused runs | on the change: every scene test, the three-minute eggs' test, the new hour eggs' test, and the worker's two tests, both viewports: 32 passed; again after the three fixes (Scenes off and on, nearly still in use, every kit's module, the hidden kits', both kinds of egg, Arcade's score, the water's keep-clear): 16 passed |
+| Looked at | every hour egg in the app on a desktop (frame-stepped reels at 8 a second), judged at full size; the helpers' sheets on both viewports; four sent back for a second pass |

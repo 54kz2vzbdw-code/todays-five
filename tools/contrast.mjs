@@ -28,7 +28,8 @@ const FIXTURE = !!process.env.FIXTURE, VIEW = process.env.VIEW || "today";
 // Today depends on the day of the week, so two builds measured either side of midnight would otherwise see two lists
 const CLOCK = process.env.CLOCK || "";
 // 1.12 b367: left alone, a scene deals each time round its own pass; the loop phase reads PASSES of them (1 unless asked)
-// from pass PASS (0, the signature loop, unless asked) of visit 1, so two runs read the same passes
+// from pass PASS (0, the signature loop, unless asked) of visit 1, so two runs read the same passes; AT=idle starts it
+// once the list is left alone (b435), so an hour egg is read from its first second
 const PASS = +(process.env.PASS || 0), PASSES = +(process.env.PASSES || 1);
 const { seedScript } = await import("./audit/harness.mjs");
 const { VERSION } = await import("../version.js"); // the device has seen this version's news: no toast over the words
@@ -123,6 +124,9 @@ async function measure(vp, kit, on) {
   // ground on the same clock)
   // (on Everything the loop waits for Today, so there "left alone" is the quiet scene under the app's own idle fade)
   if (on && VIEW !== "all") { await page.evaluate(() => window.__tfTest.sceneIdle()); await page.waitForFunction(() => window.__tf().scene.level > .95, null, { timeout: 6000 }); } else await wait(1500);
+  // 1.12 b435: AT=idle starts the pass asked for here, once the list is left alone, so the loop reads all of it from its
+  // first second (an hour egg opens with its biggest moves, and in use a pass's beats are held back)
+  if (on && process.env.AT === "idle") await page.evaluate(p => window.__tfTest.scenePass(p, 1), PASS);
   const t0 = Date.now(); while (Date.now() - t0 < PASSES * 15000 + 1000) await sample("loop");
   // the finale: the lines crossed off, and the scene's own moment
   if (!FIXTURE && VIEW !== "all") {

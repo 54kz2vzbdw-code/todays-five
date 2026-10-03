@@ -3690,6 +3690,26 @@ for (const [label, opts, touch] of VIEWPORTS) {
     await t.close();
   });
 
+  // 1.12 b435: the long day's hour eggs, on the passes the stage's clock says (K.long: one an hour of loops left alone)
+  await test(label + ": 1.12 b435: every scene's two hour eggs play — the first hour's pass and the second's, left alone, in every kit with a scene and the hidden ones — and throw nothing", async () => {
+    const { KIT: SK } = await import("../scenes.js"), hours = [SK.longAt(1), SK.longAt(2)]; // visit 1's, as scenePass is told below
+    assert.deepEqual(hours.map(SK.long), [1, 2], "the first hour plays the first hour egg, the second the second: " + hours);
+    const t = await fresh(opts, { init: hiddenDevice });
+    await sceneUp(t, "forest");
+    for (const kit of [...SCENE_KITS, ...Object.keys(HIDDEN_MODS)]) {
+      await openPicker(t, "night"); await t.page.click(`#p-theme .swatch[data-code="T1:curated:${kit}"]`); await wait(300); await t.esc(); await wait(200);
+      await sceneUp(t, kit);
+      for (const p of hours) {
+        await t.page.evaluate(p => { window.__tfTest.scenePass(p, 1); window.__tfTest.sceneIdle(); }, p);
+        await t.page.waitForFunction(p => { const s = window.__tf().scene; return s.idle && s.pass === p && s.t >= 8; }, p, { timeout: 20000, polling: 100 });
+        const sc = (await t.s()).scene; assert.ok(sc.running && sc.frames > 0 && sc.pass === p, kit + ": the hour egg's pass " + p + " playing: " + JSON.stringify(sc));
+      }
+      await t.page.keyboard.press("Shift");
+    }
+    assert.equal(t.errors.length, 0, t.errors.join("; ")); assert.equal(t.csp.length, 0, "csp: " + t.csp.join("; ")); assert.equal(t.consoleErrors.length, 0, t.consoleErrors.join("; "));
+    await t.close();
+  });
+
   await test(label + ": 1.12 b328: Light's and Dark's scene (a liquid that kept to one place until b411, then water that flows round the words; and, from b332, Sketch's balloon; from b334, Pink's heart; from b336, Cocoa's cup; from b353, Blush's wand and its big bubble; from b361, Birthday's bouquet and Superpink's mirror ball; from b363, Whiteboard's plan and Chalkboard's lesson; from b365, Bark's inlay and Char's burned medallion) keeps to the empty part of the page — no pad under the words, and wherever it settles it is clear of every line, before and after a long line is added", async () => {
     const t = await fresh(opts, { init: hiddenDevice });
     await sceneUp(t, "forest");

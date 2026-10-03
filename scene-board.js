@@ -1900,7 +1900,7 @@ export default function board(K, id) {
           if (hit && x + rb > face) { x = face - rb; vx = Math.min(0, vx); }
           if (on) { vx *= 1 - .4 * dt; ang += vx / rb * dt; } run.push(x, y, ang); if (hit && k * dt > hit + 4) break; }
         h.hit = hit || 2; }
-      h.run = run; h.ks = clamp(h.hit / 2.05, .4, 3); h.bc = bc; h.P = P; h.m = m;
+      h.run = run; h.ks = clamp(h.hit / 2.05, .4, 3); h.bc = bc; h.Pg = P; h.m = m; /* (not h.P: that is the pass the egg is cached by) */
       // the dominoes, each falling into the next, the last onto the seesaw's raised end; the plank thrown, the lever
       // flicked, a spark up the wire, the bulb lit
       const th = h.t0 + h.hit / h.ks; h.Df = .27; h.doms = doms.map((d, i) => ({ ...d, t: th + i * .12, end: i < dn - 1 ? Math.acos(clamp(dw / dsp)) * .97 : (tall ? .98 : 1.12) }));
@@ -1937,7 +1937,7 @@ export default function board(K, id) {
       h.doms.forEach((d, i) => { const q = (T - d.t) / h.Df, th = q <= 0 ? 0 : q < 1 ? d.end * q * q : d.end * (1 - .05 * Math.sin(Math.PI * clamp((q - 1) * 4))); drawSpr(sp.doms[i], 0, 0, a, 1, th, d.piv[0], d.piv[1], x); });
       { const q = (T - h.saw.t) / .16, ph = q <= 0 ? 0 : q < 1 ? -2 * h.saw.a0 * q * q : -2 * h.saw.a0 * (1 + .07 * Math.sin(Math.PI * clamp((q - 1) * 3.5)) * Math.exp(-(q - 1) * 2)); drawSpr(sp.saw, 0, 0, a, 1, ph, h.saw.piv[0], h.saw.piv[1], x); }
       { const q = (T - h.lev.t) / .14; drawSpr(sp.lev, 0, 0, a, 1, q <= 0 ? 0 : 2.5 * E.back(Math.min(1, q)), h.lev.piv[0], h.lev.piv[1], x); }
-      { const n = h.run.length / 3, i = clamp(Math.floor((T - h.t0) * h.ks * 240), 0, n - 1), p = h.P(h.run[i * 3], h.run[i * 3 + 1]); drawSpr(sp.ball, p[0] - h.bc[0], p[1] - h.bc[1], a, 1, h.run[i * 3 + 2], h.bc[0], h.bc[1], x); }
+      { const n = h.run.length / 3, i = clamp(Math.floor((T - h.t0) * h.ks * 240), 0, n - 1), p = h.Pg(h.run[i * 3], h.run[i * 3 + 1]); drawSpr(sp.ball, p[0] - h.bc[0], p[1] - h.bc[1], a, 1, h.run[i * 3 + 2], h.bc[0], h.bc[1], x); }
       const [s0, s1] = h.spark; if (x === g && T > s0 && T < s1 + .2) { const w = h.wire, e = q => along(w, E.io(clamp((q - s0) / (s1 - s0))) * w.len), p = e(T), fade = 1 - clamp((T - s1) / .2);
         g.lineCap = "round"; g.strokeStyle = "rgb(255,196,60)"; for (let j = 1; j <= 6; j++) { const p0 = e(T - j * .02), p1 = e(T - (j - 1) * .02); g.globalAlpha = a * fade * (1 - j / 7) * .8; g.lineWidth = 4 - j * .45; g.beginPath(); g.moveTo(p0[0], p0[1]); g.lineTo(p1[0], p1[1]); g.stroke(); }
         const R2 = h.box.u * 1.5; g.globalAlpha = a * fade * .8; g.drawImage(S.puffs[5], p[0] - R2, p[1] - R2, R2 * 2, R2 * 2); g.fillStyle = "#FFF6D8"; g.beginPath(); g.arc(p[0], p[1], 2.4, 0, TAU); g.fill(); g.globalAlpha = 1; }

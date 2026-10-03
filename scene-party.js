@@ -77,6 +77,22 @@
 // pink fanning to black that sweep round with it, full when they face us, a sliver edge-on — as the ball spins up and the
 // glitter comes down, strikes its pose, and skates away, its light-up wheels leaving their light on the floor. Each begins and ends on the resting picture, eases away with the list's use as every beat does, and has its own
 // dice, so no other pass draws a thing differently.
+//
+// 1.12 b440: the crown. In the sixth hour of the list left alone, and every sixth after (K.long 3), the end of a long day:
+// by day the bouquet lifts off. It strains at its strings, twice, and rises as far as the room above it lets it; up its
+// strings from below the page climbs a teddy bear in a party hat, paw over paw, to just under the balloons, and looks
+// about at us; a last tug, the knot below slips, and off they go together — straight up past the bunting and out of the
+// top, or, where the words fill the page above, off on the breeze to the side, whichever crosses no line — the loose
+// ends trailing under the teddy. It waves goodbye and startles when a balloon pops on the way, and the room's light warms
+// to evening as they go; then a new bouquet comes up from below, balloon by balloon, into its place. By night the floor
+// lights up: the room goes down, and out of the dark at the foot of the page, below the words, comes a dance floor of
+// coloured glass in perspective, lit from beneath; it wakes in a ring from under the ball, tile by tile, the ball is let
+// down over it and the beams come up, and on the downbeat it all goes at a disco record's 104 a minute — bands of light
+// sweeping across the floor in turn, then rings going out from under the spinning ball, one a beat, the beams swinging
+// in time, the ball taking the floor's colours; at the top every tile comes up at once as the glitter falls and the beams
+// close on the ball; then the floor goes out row by row, from the front to the back, and the room is as it was. A tile
+// flares once a beat at most, never faster. Each plays in place of its pass on dice of its own and begins and ends on the
+// resting picture.
 export default function party(K, id) {
   const night = id === "superpink";
   const { clamp, lerp, E, seg, env, rng, canvas, rgb, mixc, css } = K;
@@ -979,6 +995,106 @@ export default function party(K, id) {
     g.globalAlpha = 1; unit();
   };
 
+  /* ---------------- 1.12 b440: the crown, by day — the bouquet lifts off ----------------
+     For the sixth hour and every sixth after (K.long 3): the bouquet strains at its strings, twice, and rises as far as
+     the room above it lets it; up its strings from below the page climbs a teddy bear in a party hat, paw over paw, to
+     just under the balloons, and looks at us; a last tug, the knot below slips — and off they go, the loose ends
+     trailing under the teddy, up past the bunting and out of the top (or, where the words fill the page above, off on
+     the breeze to the side). It waves goodbye, startles when a balloon pops on the way, and the room's light warms to
+     evening as they go; then a new bouquet comes up from below, balloon by balloon, into its place. */
+  const CR = { strain: [.3, .72, .85, 1.3], climb: [1.4, 3.05], look: [3.05, 3.65], tug: 3.78, slip: 4.05, rise: [4.1, 11.1], pop: 6.55, wave: [7.35, 8.75], fresh: 11.0, glow: [3.6, 6.2, 11.0, 13.9] };
+  /** the teddy, `t` tall as it hangs: its head (ears, muzzle, nose, eyes, blush and a party hat, tipped) and its body (a
+   *  bow tie), fur lit from up on the left; its arms and legs are drawn as it moves. Anchors: the middle of each */
+  const tedSprs = t => {
+    const fur = "#C98A55", hi = "#EDBB86", lo = "#8E5530", furG = (x, cx0, cy0, r) => { const gr = x.createRadialGradient(cx0 - r * .35, cy0 - r * .4, r * .1, cx0, cy0, r * 1.05); gr.addColorStop(0, hi); gr.addColorStop(.55, fur); gr.addColorStop(1, lo); return gr; };
+    const hr = t * .15, head = make(t * .5, t * .66, x => { x.translate(t * .25, t * .4);
+      soft(x, t * .03, t * .008, t * .015, "rgba(90,40,30,.25)");
+      for (const sd of [-1, 1]) { x.fillStyle = furG(x, sd * t * .115, -t * .11, t * .056); x.beginPath(); x.arc(sd * t * .115, -t * .11, t * .056, 0, TAU); x.fill(); }
+      unsoft(x); for (const sd of [-1, 1]) { x.fillStyle = "#F4A6B8"; x.beginPath(); x.arc(sd * t * .115, -t * .11, t * .028, 0, TAU); x.fill(); }
+      x.fillStyle = furG(x, 0, 0, hr); x.beginPath(); x.arc(0, 0, hr, 0, TAU); x.fill();
+      x.fillStyle = "#F2D2AE"; x.beginPath(); x.ellipse(0, t * .05, t * .075, t * .056, 0, 0, TAU); x.fill(); // its muzzle
+      x.fillStyle = "#3A2018"; x.beginPath(); x.ellipse(0, t * .028, t * .024, t * .017, 0, 0, TAU); x.fill(); x.fillStyle = "rgba(255,255,255,.6)"; x.beginPath(); x.ellipse(-t * .008, t * .022, t * .008, t * .005, 0, 0, TAU); x.fill(); // its nose
+      x.strokeStyle = "#3A2018"; x.lineWidth = t * .009; x.lineCap = "round"; x.beginPath(); x.moveTo(0, t * .045); x.lineTo(0, t * .062); x.moveTo(-t * .03, t * .066); x.quadraticCurveTo(-t * .015, t * .078, 0, t * .062); x.quadraticCurveTo(t * .015, t * .078, t * .03, t * .066); x.stroke(); // its smile
+      for (const sd of [-1, 1]) { x.fillStyle = "#2A140E"; x.beginPath(); x.arc(sd * t * .055, -t * .022, t * .019, 0, TAU); x.fill(); x.fillStyle = "#FFFFFF"; x.beginPath(); x.arc(sd * t * .055 - t * .006, -t * .029, t * .007, 0, TAU); x.fill();
+        x.fillStyle = "rgba(255,120,150,.35)"; x.beginPath(); x.ellipse(sd * t * .095, t * .03, t * .028, t * .016, 0, 0, TAU); x.fill(); } // its eyes, its cheeks
+      x.save(); x.translate(t * .035, -t * .135); x.rotate(.3); const hb = t * .062, hh = t * .17; // a party hat, tipped
+      x.beginPath(); x.moveTo(-hb, 0); x.lineTo(0, -hh); x.lineTo(hb, 0); x.closePath(); x.fillStyle = "#FF5FA8"; x.fill(); x.save(); x.clip(); x.strokeStyle = "#FFFFFF"; x.lineWidth = t * .018; for (let k = -1; k < 6; k++) { x.beginPath(); x.moveTo(-hb * 1.5, -k * hh * .22); x.lineTo(hb * 1.5, -k * hh * .22 - hh * .22); x.stroke(); } x.restore();
+      x.fillStyle = "#F6C84C"; x.beginPath(); x.arc(0, -hh, t * .024, 0, TAU); x.fill(); x.fillStyle = "#FFFFFF"; x.fillRect(-hb, -t * .009, hb * 2, t * .018); x.restore();
+    }); head.ax = .5; head.ay = .4 / .66;
+    const body = make(t * .36, t * .44, x => { x.translate(t * .18, t * .22);
+      soft(x, t * .03, t * .01, t * .02, "rgba(90,40,30,.25)"); x.fillStyle = furG(x, 0, 0, t * .17); x.beginPath(); x.ellipse(0, 0, t * .13, t * .175, 0, 0, TAU); x.fill(); unsoft(x);
+      x.fillStyle = "#F2D2AE"; x.beginPath(); x.ellipse(0, t * .035, t * .075, t * .1, 0, 0, TAU); x.fill(); // its tummy
+      x.fillStyle = "#FF5FA8"; for (const sd of [-1, 1]) { x.beginPath(); x.moveTo(0, -t * .15); x.lineTo(sd * t * .068, -t * .188); x.lineTo(sd * t * .068, -t * .112); x.closePath(); x.fill(); } x.fillStyle = "#D63B86"; x.beginPath(); x.arc(0, -t * .15, t * .021, 0, TAU); x.fill(); // a bow tie
+    }); body.ax = .5; body.ay = .5;
+    const warm = S.teds && S.teds.warm || make(64, 64, x => { const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,176,104,.55)"); gr.addColorStop(.5, "rgba(255,160,120,.22)"); gr.addColorStop(1, "rgba(255,150,130,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); });
+    return { head, body, fur, hi, lo, warm };
+  };
+  /** where the crown goes, worked out from where the bouquet settles and where the words are (a line's tools aside: they
+   *  show only on hover): how far the bouquet may strain up into the room above it; how big the teddy is, and where it
+   *  holds the strings, so that it hangs whole above the foot of the page; and the way out — straight up if that crosses
+   *  no line, else the nearest way that doesn't, off the side on the breeze at the most — and how far that is */
+  const crGeo = () => {
+    const { W, H, pr, tx: cx, ty: cy, tR: R } = S, key = [W, H, Math.round(cx), Math.round(cy), Math.round(R), S.raw ? S.raw.length : 0, px, plan.P].join(":"); if (S.crg && S.crg.key === key) return S.crg;
+    const raw = (S.raw || []).filter(q => q[4] !== 2), gap = pr ? 14 : 24, r = rng(plan.crown.seed), bwOf = z => clamp(R * .46, pr ? 38 : 54, pr ? 80 : 122) * z;
+    let bx0 = 1e9, by0 = 1e9, bx1 = -1e9, knotY = -1e9; for (const sl of S.slots) { const w = bwOf(sl.z), x = cx + sl.u * R, y = cy + sl.v * R; bx0 = Math.min(bx0, x - w * .55); bx1 = Math.max(bx1, x + w * .55); by0 = Math.min(by0, y - w * .62); knotY = Math.max(knotY, y + w * .69); }
+    let above = by0 - (pr ? 80 : 84); for (const [a, b, c, d] of raw) if (a < bx1 + gap && c > bx0 - gap && d <= by0 + 4) above = Math.min(above, by0 - d - gap);
+    const lift0 = clamp(above, 0, R * .55), cy0 = cy + R * .05;
+    const tH = Math.round(clamp(Math.min(pr ? R * .85 : R * .95, (H - 16 - (knotY - lift0 + R * .4)) / 1.1), pr ? 84 : 112, pr ? 120 : 180) / 4) * 4, gripY = Math.min(knotY - lift0 + R * .7, H - 16 - tH * 1.1), L = Math.max(R * .5, gripY - (cy0 - lift0));
+    if (!S.teds || S.teds.t !== tH || S.teds.px !== px) { S.teds = tedSprs(tH); S.teds.t = tH; S.teds.px = px; }
+    const box = [bx0, by0 - lift0, bx1, gripY + tH * 1.1], top = pr ? 70 : 60;
+    const cost = (x0, y0, x1, y1) => { let v = 0; for (const [a, b, c, d, k] of raw) { if (d < top) continue; const w = Math.min(x1, c + 8) - Math.max(x0, a - 8), h = Math.min(y1, d + 6) - Math.max(y0, b - 6); if (w > 0 && h > 0) v += w * h * (k === 1 ? 1 : 2); } return v; }; // (the bar's own small words are under its wash)
+    let best = null;
+    for (const deg of [0, 15, -15, 30, -30, 45, -45, 60, -60, 75, -75, 90, -90]) { const an = deg * Math.PI / 180, ux = Math.sin(an), uy = -Math.cos(an);
+      let D = 1e9; if (uy < -1e-3) D = Math.min(D, (box[3] + 20) / -uy); if (ux > 1e-3) D = Math.min(D, (W + 20 - box[0]) / ux); if (ux < -1e-3) D = Math.min(D, (box[2] + 20) / -ux);
+      let v = 0; for (let k = 1; k <= 16; k++) { const d = D * k / 16; v += cost(box[0] + ux * d, box[1] + uy * d, box[2] + ux * d, box[3] + uy * d); }
+      const score = v + Math.abs(deg) * 60; if (!best || score < best.score) best = { score, ux, uy, D }; }
+    const side = best.ux > .05 ? 1 : best.ux < -.05 ? -1 : (bx0 + bx1) / 2 > W / 2 ? 1 : -1;
+    S.crg = { key, side, tH, L, lift0, ux: best.ux, uy: best.uy, D: best.D, pi: 2, ph: r() * TAU, kick: r() * TAU, order: [3, 5, 0, 2, 6, 1, 4], loose: Array.from({ length: 5 }, () => ({ l: .2 + r() * .14, ph: r() * TAU, dx: (r() - .5) * .3 })) };
+    return S.crg;
+  };
+  /** the crown's bouquet at T, from home (px): strained up in two tugs, a tug before the slip, then away along its way out,
+   *  slowly at first, swaying on the breeze, with a dip when a balloon pops */
+  const crRise = (c, T) => { const R = S.R, st = c.lift0 * (.55 * seg(T, CR.strain[0], CR.strain[1], E.back) + .45 * seg(T, CR.strain[2], CR.strain[3], E.back)), tg = T - CR.tug, j = tg > 0 && tg < 1.3 ? R * .07 * Math.sin(Math.PI * Math.min(1, tg / .24)) * Math.exp(-tg * 3.2) : 0;
+    const u = clamp((T - CR.rise[0]) / (CR.rise[1] - CR.rise[0])), d = c.D * u * u * (1.3 - .3 * u), sway = Math.sin(u * Math.PI * 1.5) * R * .12 * c.side * Math.abs(c.uy), pa = T - CR.pop, dip = pa > 0 ? R * .08 * Math.sin(Math.min(Math.PI, pa * 6)) * Math.exp(-pa * 2.2) : 0;
+    return [c.ux * d + sway, -st - j + c.uy * d + dip]; };
+  /** where the teddy holds the strings before the knot slips: from where they meet below the page up their bunch to just
+   *  under the balloons, paw over paw (a pull, a pause) — and which paw is the lower */
+  const crClimb = (c, T, G, top) => { const n = 6, u = clamp((T - CR.climb[0]) / (CR.climb[1] - CR.climb[0])), k = Math.min(n - 1, Math.floor(u * n)), f = u * n - k, q = u >= 1 ? 1 : (k + E.io(clamp(f / .62))) / n;
+    return [lerp(G[0], top[0], q), lerp(G[1], top[1], q), u > 0 && u < 1 ? k % 2 : -1]; };
+  const crSwing = (c, T) => { let th = .05 * Math.sin(T * 2.1 + c.ph) * seg(T, CR.slip, CR.slip + 1); const d = T - CR.rise[0] - .4; if (d > 0) th -= c.side * (.08 + .14 * Math.abs(c.ux)) * Math.sin(Math.min(Math.PI, d * .9)) * Math.exp(-d * .35);
+    const pa = T - CR.pop; if (pa > 0) th += .16 * Math.sin(pa * 7) * Math.exp(-pa * 2.4) * c.side; const tg = T - CR.slip; if (tg > 0) th += .1 * Math.sin(tg * 5) * Math.exp(-tg * 1.8); return th; };
+  /** the gust the bouquet makes in the bunting as it goes up past it */
+  const crGust = (c, x, T) => { const [dx, dy] = crRise(c, T), by = S.cy + S.R * .05 + dy, bx = S.cx + dx; return T > CR.slip ? clamp(1 - Math.abs(by - S.R * .5) / (S.R * 1.8)) * Math.exp(-(((x - bx) / (S.R * 1.5)) ** 2)) * 1.3 : 0; };
+  /** the teddy hanging from its paws at (px0, py0), turned `rot`: its arms up to the strings (one let go to wave), its legs
+   *  dangling and kicking, its body, its head looking about */
+  const crTeddy = (c, x0, y0, rot, T, A, a, climb = -1) => {
+    if (a <= .004) return; const sp = S.teds, t = c.tH, cs = Math.cos(rot), sn = Math.sin(rot), P = (lx, ly) => [x0 + (lx * cs - ly * sn) * t, y0 + (lx * sn + ly * cs) * t];
+    const pa = T - CR.pop, startle = pa > 0 ? Math.exp(-pa * 3) * Math.sin(Math.min(Math.PI, pa * 5)) : 0, wave = env(T, CR.wave[0], CR.wave[0] + .3, CR.wave[1] - .3, CR.wave[1], E.io), ws = c.side > 0 ? -1 : 1; // (it waves with the paw on the side it's leaving from)
+    const kick = climb >= 0 ? 0 : .25 * Math.sin(T * 4.2 + c.kick) * (.4 + .6 * seg(T, CR.rise[0], CR.rise[0] + 1)) + .5 * startle;
+    unit(); g.globalAlpha = a; g.lineCap = "round"; g.lineJoin = "round";
+    const limb = (pts, w) => { g.beginPath(); pts.forEach(([lx, ly], i) => { const [px2, py2] = P(lx, ly); i ? g.lineTo(px2, py2) : g.moveTo(px2, py2); }); g.strokeStyle = sp.lo; g.lineWidth = w * t + 1.6; g.stroke(); g.strokeStyle = sp.fur; g.lineWidth = w * t; g.stroke(); g.strokeStyle = "rgba(255,226,180,.35)"; g.lineWidth = w * t * .35; g.stroke(); };
+    // its arms: up to its paws on the strings — the waving one let go, out and waving
+    for (const sd of [-1, 1]) { const sh = [sd * .1, .37], low = climb >= 0 && (climb === 0) === (sd < 0) ? .13 : 0; if (low) { limb([sh, [sd * .035, .02 + low]], .085); const [hx, hy] = P(sd * .03, .01 + low); g.fillStyle = sp.fur; g.beginPath(); g.arc(hx, hy, t * .048, 0, TAU); g.fill(); continue; } // (climbing: one paw a pull below the other)
+      if (sd === ws && wave > .01) { const el = [sd * lerp(.06, .24, wave), lerp(.18, .3, wave)], hd = [sd * lerp(.035, .33, wave) + Math.sin(T * 9) * .05 * wave, lerp(.02, .12, wave) - Math.abs(Math.sin(T * 9)) * .03 * wave]; limb([sh, el, hd], .085); const [hx, hy] = P(hd[0], hd[1]); g.fillStyle = sp.fur; g.beginPath(); g.arc(hx, hy, t * .05, 0, TAU); g.fill(); }
+      else { limb([sh, [sd * .035, .02]], .085); const [hx, hy] = P(sd * .03, .01); g.fillStyle = sp.fur; g.beginPath(); g.arc(hx, hy, t * .048, 0, TAU); g.fill(); } }
+    // its legs, dangling, kicking (and flung up when the balloon pops)
+    for (const sd of [-1, 1]) { const up = climb >= 0 && (climb === 0) === (sd > 0) ? .1 : 0, ang = sd * (.1 + up * 2.2) + kick * sd * (sd > 0 ? 1 : -.8), hip = [sd * .065, .66], ft = [hip[0] + Math.sin(ang) * .24, hip[1] + Math.cos(ang) * .24 - .1 * startle - up]; // (climbing, one knee drawn up)
+      limb([hip, ft], .1); const [fx, fy] = P(ft[0], ft[1] + .02); g.fillStyle = sp.fur; g.beginPath(); g.ellipse(fx, fy, t * .058, t * .044, rot + ang, 0, TAU); g.fill(); g.fillStyle = "#F4A6B8"; g.beginPath(); g.ellipse(fx, fy + t * .012, t * .034, t * .024, rot + ang, 0, TAU); g.fill(); }
+    const [bx, by] = P(0, .54); put(sp.body, bx, by, .5, .5, rot, 1, 1, a);
+    const look = env(T, CR.look[0], CR.look[0] + .15, CR.look[1] - .15, CR.look[1], E.io), tilt = .28 * look * Math.sin((T - CR.look[0]) * 5.2) - .25 * startle, [hx, hy] = P(0, .27); // (at the top, it looks about at us)
+    put(sp.head, hx, hy, sp.head.ax, sp.head.ay, rot + tilt, 1, 1, a);
+    g.globalAlpha = 1; g.lineCap = "butt"; g.lineJoin = "miter"; unit();
+  };
+  /** a balloon popping softly at (x, y): rubber flung out and falling, a snap of lines, the air it held in a ring */
+  const crPop = (x, y, rb, age, ci, V) => {
+    if (age < 0 || age > 2.2) return; const { H } = S;
+    for (const s of S.shreds) { const sx = x + Math.cos(s.a) * rb * .6 + fly(Math.cos(s.a) * s.v * .8, 4, 0, age), sy = y + Math.sin(s.a) * rb * .6 + fly(Math.sin(s.a) * s.v * .8, 4, 620, age); if (sy > H + 20) continue;
+      put(S.scraps[ci][s.k], sx, sy, .5, .5, s.a + s.spin * age, Math.cos(s.flip * age), 1, V * (.15 + .85 * S.shade(sx, sy, 10))); }
+    unit(); if (age < .24) { const q = age / .24, sh = .15 + .85 * S.shade(x, y, rb); g.globalAlpha = V * (1 - q) * .6 * sh; g.strokeStyle = "#96125A"; g.lineWidth = 2; g.beginPath(); for (let k = 0; k < 9; k++) { const an = k / 9 * TAU + .2, r0 = rb * (1 + q * .9), r1 = r0 + rb * .34 * (1 - q * .6); g.moveTo(x + Math.cos(an) * r0, y + Math.sin(an) * r0); g.lineTo(x + Math.cos(an) * r1, y + Math.sin(an) * r1); } g.stroke();
+      g.globalAlpha = V * (1 - q) * .55 * sh; g.strokeStyle = BAL[ci]; g.lineWidth = 2.4 * (1 - q) + .5; g.beginPath(); g.arc(x, y, rb * (.9 + E.out(q)), 0, TAU); g.stroke(); }
+    g.globalAlpha = 1;
+  };
+
   /** a popper's load: its confetti (where each piece goes, how it falls and turns) and its streamers */
   const confOf = (r, pr, sc0) => Array.from({ length: pr ? 96 : 160 }, () => ({ a: (r() - .5) * 1.4, v: .4 + r() * .7, k: 3 + r() * 2.5, vt: .1 + r() * .06, fl: (8 + r() * 20) * sc0, fw: 2 + r() * 2.5, ph: r() * TAU, c: Math.floor(r() * 6), strip: r() < .38, s: (.75 + r() * .55) * (pr ? 8 : 11) * sc0, spin: (r() - .5) * 7, flip: (4 + r() * 8) * (r() < .5 ? -1 : 1), f0: r() * TAU }));
   const strmOf = (r, pr) => { const ns = pr ? 6 : 9; return Array.from({ length: ns }, (_, i) => ({ a: (i / (ns - 1) - .5) * 1.15 + (r() - .5) * .15, v: .7 + r() * .45, c: (i * 5 + 1) % 6, ph: r() * TAU, tw: 6 + r() * 5, cf: .45 + r() * .3, cu: 10 + r() * 9, vt: .11 + r() * .04, dr: (r() - .5) * 30 })); };
@@ -1040,11 +1156,13 @@ export default function party(K, id) {
     // the side the pass deals)
     const gustAt = xf => on ? env(T - (pl.gdir > 0 ? xf : 1 - xf) * .9, b.gust[0], b.gust[0] + .5, b.gust[0] + .8, b.gust[1], E.sine) * I * pl.gk : 0, fg = fin ? env(F, 0, .12, .6, 1, E.sine) : 0;
     const hr = pl.hour, ck = hr && hr.kind === 1 && on ? cakeGeo(hr, (1 - S.vis) * (H - cy + R + 80)) : null, pn = hr && hr.kind === 2 && on ? pnGeo(hr) : null; // (1.12 b428: an hour egg's — the cake's gusts run along the garland too)
+    const cr = pl.crown && on ? crGeo() : null; // (1.12 b440: the crown's, and the evening light it brings)
+    if (cr) { const k = env(T, CR.glow[0], CR.glow[1], CR.glow[2], CR.glow[3], E.sine) * V; if (k > .004) { const m = Math.max(W, H); put(S.teds.warm, cr.side > 0 ? W * 1.02 : -W * .02, -H * .08, .5, .5, 0, m * 2.2 / 64, m * 1.7 / 64, k * .62); unit(); } }
     for (const sw of S.swags) {
-      const gm0 = Math.max(gustAt((sw.xa + sw.xb) / 2 / W), fg), gm = ck ? Math.max(gm0, ckGust(ck, (sw.xa + sw.xb) / 2, T) * I) : gm0, sag = sw.sag * (1 + .04 * Math.sin(A * .8 + sw.ph) + gm * .12 * Math.sin(A * 4.1 + sw.ph)), sh = (sw.xb - sw.xa) * (.025 * Math.sin(A * .55 + sw.ph) + gm * .05 * Math.sin(A * 3.3));
+      const gm0 = Math.max(gustAt((sw.xa + sw.xb) / 2 / W), fg), gm = ck ? Math.max(gm0, ckGust(ck, (sw.xa + sw.xb) / 2, T) * I) : cr ? Math.max(gm0, crGust(cr, (sw.xa + sw.xb) / 2, T) * I) : gm0, sag = sw.sag * (1 + .04 * Math.sin(A * .8 + sw.ph) + gm * .12 * Math.sin(A * 4.1 + sw.ph)), sh = (sw.xb - sw.xa) * (.025 * Math.sin(A * .55 + sw.ph) + gm * .05 * Math.sin(A * 3.3));
       const at = t => { const q = 4 * t * (1 - t); return [lerp(sw.xa, sw.xb, t) + sh * q, -5 + sag * q]; };
       unit(); g.strokeStyle = "rgba(150,60,110,.55)"; g.lineWidth = pr ? 1 : 1.3; g.beginPath(); for (let k = 0; k <= 16; k++) { const [x, y] = at(k / 16); k ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
-      for (const f of sw.flags) { const [x, y] = at(f.t), [x2, y2] = at(f.t + .02), ga0 = Math.max(gustAt(x / W), fg), ga = ck ? Math.max(ga0, ckGust(ck, x, T) * I) : ga0, wave = Math.sin(A * 1.6 - x * .011 + f.ph * .3), turn = Math.sin(A * 2.2 + f.ph);
+      for (const f of sw.flags) { const [x, y] = at(f.t), [x2, y2] = at(f.t + .02), ga0 = Math.max(gustAt(x / W), fg), ga = ck ? Math.max(ga0, ckGust(ck, x, T) * I) : cr ? Math.max(ga0, crGust(cr, x, T) * I) : ga0, wave = Math.sin(A * 1.6 - x * .011 + f.ph * .3), turn = Math.sin(A * 2.2 + f.ph);
         put(S.flags[f.c][f.d], x, y, S.fax, S.fay, Math.atan2(y2 - y, x2 - x) + (.05 + ga * .32) * wave, 1 - (.06 + ga * .4) * (.5 + .5 * turn), 1, 1); }
     }
     unit();
@@ -1083,8 +1201,20 @@ export default function party(K, id) {
       if (fin ? F <= .58 + ti * .03 : T <= b.free + ti * .22) return;
       const bt = fin ? seg(F, .58 + ti * .03, .97, E.out) : seg(T, b.back[0] + ti * .25, b.back[1], E.out), y = h.y + (1 - bt) * (H - h.y + h.spr.bh * h.sc + 60) * (fin ? 1 : I);
       if (y - h.spr.bh * h.sc < H + 10) tether(h.spr, s.c, h.x, y, h.sc, 1, h.wob, s.ph); });
-    // the bouquet
-    S.slots.forEach((s, i) => { const h = home[i], ti = trio.indexOf(i);
+    // the bouquet (1.12 b440: on the crown's pass, its own: lifting off on the teddy's strings, then a new one coming up)
+    let cpaw = null;
+    if (cr) { // (before the knot slips the bouquet strains and the teddy climbs, eased with the loop as every beat is; after it,
+      // the bouquet that has flown fades with a touch while the one at rest comes back; the new one glides into place)
+      const fly = T >= CR.slip, [dx0, dy0] = crRise(cr, T), dx = fly ? dx0 : dx0 * I, dy = fly ? dy0 : dy0 * I, th = crSwing(cr, T), C = [cx + dx, cy + R * .05 + dy], Pp = [C[0] + Math.sin(th) * cr.L, C[1] + Math.cos(th) * cr.L], cl = crClimb(cr, T, G, [cx, cy + R * .05 - cr.lift0 * I + cr.L]);
+      cpaw = fly ? [Pp[0], Pp[1], th, -1] : [lerp(G[0], cl[0], I), lerp(G[1], cl[1], I), 0, cl[2]]; // (where the strings meet: in the teddy's paws as it climbs, and from the slip as it's carried off)
+      const wf = seg(T, CR.slip, CR.slip + .6);
+      if (T < CR.fresh + .5) S.slots.forEach((s, i) => { const h = home[i]; if (i === cr.pi && T >= CR.pop) return; const kx = h.x + dx, ky = h.y + dy, w2 = h.spr.bw * h.sc; if (ky < -h.spr.bh * h.sc * 1.3 - 10 || kx < -w2 - 10 || kx > W + w2 + 10) return;
+        const a = fly ? V * lerp(1, .15 + .85 * S.shade(kx, ky - h.spr.lift * h.sc, w2 * .6), wf) : 1;
+        items.push({ s: h.spr, c: s.c, kx, ky, sc: h.sc, a, rot: Math.atan2(kx - cpaw[0], cpaw[1] - ky) * (1 - .15 * wf) + h.wob, ex: cpaw[0], ey: cpaw[1], qx: (kx + cpaw[0]) / 2 + Math.sin(A * .8 + s.ph) * R * .06, qy: (ky + cpaw[1]) / 2, ph: s.ph }); }); // (at rest, exactly as the bouquet's own)
+      if (fly && T < CR.fresh && I < .995) S.slots.forEach((s, i) => { const h = home[i]; tether(h.spr, s.c, h.x, h.y, h.sc, 1 - I, h.wob, s.ph); }); // (the list touched mid-flight: the bouquet back in its place as the flown one fades)
+      if (T >= CR.fresh) S.slots.forEach((s, i) => { const t0 = CR.fresh + cr.order.indexOf(i) * .4, q = seg(T, t0, t0 + 1.3, E.back); if (q <= 0 && I > .995) return; const h = home[i], y = h.y + (1 - q) * (H - h.y + h.spr.bh * h.sc + 60) * I, x = h.x - cr.side * R * .45 * (1 - q) * (1 - q) * I; // (in the bouquet's own order, so they overlap as it does)
+        if (y - h.spr.bh * h.sc < H + 10) tether(h.spr, s.c, x, y, h.sc, 1, h.wob + (1 - Math.min(1, q)) * cr.side * .2 * I, s.ph); }); }
+    if (!cr) S.slots.forEach((s, i) => { const h = home[i], ti = trio.indexOf(i);
       if (fin) { const ft = F * 3.4 - .08 - i * .07; if (ft <= 0) { tether(h.spr, s.c, h.x, h.y, h.sc, 1, h.wob, s.ph); return; }
         const up = fly(0, 1.5, H * .8, ft), fx = h.x + Math.sin(ft * 1.3 + s.ph) * R * .08; trail(h.spr, s.c, fx, h.y - up, h.sc, .35 + .65 * S.shade(fx, h.y - up - h.spr.lift * h.sc, 30), Math.sin(ft * 1.9 + s.ph) * .1, H * .5, R * .1 * (s.u < 0 ? -1 : 1), s.ph);
         if (ti < 0 && F > .58 + i * .02) { const bt = seg(F, .58 + i * .02, .97, E.out); tether(h.spr, s.c, h.x, h.y + (1 - bt) * (H - h.y + h.spr.bh * h.sc + 60), h.sc, 1, h.wob, s.ph); }
@@ -1139,6 +1269,12 @@ export default function party(K, id) {
     for (const it of items) put(it.s, it.kx, it.ky, it.s.ax, it.s.ay, it.rot, it.fx === undefined ? it.sc : it.sc * it.fx, it.sc, it.a);
     for (const it of items) if (it.gl > .01) { const c = Math.cos(it.rot), n = Math.sin(it.rot), hx = it.hx * it.fx; put(S.dglint, it.kx + hx * c - it.hy * n, it.ky + hx * n + it.hy * c, .5, .5, 0, it.sc * .9, it.sc * .9, it.gl * it.a); }
     unit();
+    if (cr && cpaw && T > CR.climb[0]) { const [x0, y0, th, climb] = cpaw, t = cr.tH, a = V * (.12 + .88 * S.shade(x0, y0 + t * .5, t * .45)); // (1.12 b440: the crown's teddy on the strings, below it the rest of them)
+      if (y0 - t * .2 < H + 20 && y0 + t * 1.1 > -10) { unit(); g.lineWidth = pr ? 1 : 1.25; const fall = seg(T, CR.slip, CR.slip + .5, E.out);
+        cr.loose.forEach((l, j) => { g.globalAlpha = a; g.strokeStyle = S.rib[S.slots[j].c]; g.beginPath(); g.moveTo(x0, y0); // (down to where they met below the page, till the knot slips; then loose ends, trailing)
+          const ex = lerp(G[0] + (j - 2) * 3, x0 + Math.sin(A * 1.3 + l.ph) * t * .2 + l.dx * t * 1.6, fall), ey = lerp(G[1], y0 + l.l * t * 2.6, fall); g.quadraticCurveTo(lerp((x0 + ex) / 2, x0 + Math.sin(A * 1.6 + l.ph) * t * .12 + l.dx * t, fall), lerp((y0 + ey) / 2, y0 + l.l * t * 1.4, fall), ex, ey); g.stroke(); });
+        crTeddy(cr, x0, y0, th * .8, T, A, a, climb); } }
+    if (cr && T >= CR.pop && T < CR.pop + 2.2) { const [dx, dy] = crRise(cr, CR.pop), h = home[cr.pi], s = S.slots[cr.pi]; crPop(h.x + dx, h.y + dy - h.spr.lift * h.sc * 1.1, h.spr.bw * h.sc * .55, T - CR.pop, s.c, V); unit(); }
     if (ck) { const cake = cakeAt(ck, T, V, A, hr); if (cake) cakeFire(ck, cake, T, V, A); ckBlower(ck, cake, T, V, A); unit(); } // (1.12 b428: the cake, in front of the bouquet;
     if (pn) pinataAt(pn, T, V, A); // the piñata, beside it)
     if (dog) { const a = V * (.12 + .88 * S.shade(dog.x, dog.y - eg.d, eg.d * 5)); /* (the egg's dog, in front of the bouquet; the string it took hanging from its mouth) */
@@ -1381,6 +1517,7 @@ export default function party(K, id) {
     if (pl.choreo === 1) return b.base * .3 + .52 * Math.sin(t * .85 + pl.cph);
     if (pl.choreo === 2) return (b.x < S.W / 2 ? 1 : -1) * (.44 + .3 * Math.sin(t * 1.05 + pl.cph));
     if (pl.choreo === 3) return toBall + (b.amp + .22) * Math.sin(t * .75 + i * 2.1 + pl.cph);
+    if (pl.choreo === 4) return b.base * .55 + (b.x < S.W / 2 ? 1 : -1) * .3 * Math.sin(Math.PI * (T - CN.down) / BEAT + i * .6); // (1.12 b440: the crown's, swinging in time, a swing every two beats)
     return b.base + b.amp * Math.sin(t * b.f * pl.cf + b.ph + pl.cph);
   };
 
@@ -1786,11 +1923,83 @@ export default function party(K, id) {
         px0 = x2; py0 = y2; } }
     g.lineCap = "butt"; g.globalAlpha = 1; g.globalCompositeOperation = "source-over";
   };
+  /* ---------------- 1.12 b440: the crown, by night — the floor lights up ----------------
+     For the sixth hour and every sixth after (K.long 3): the room goes down, and out of the dark at the foot of the page
+     comes a dance floor of coloured glass in perspective, lit from beneath — it wakes in a ring from under the ball, tile
+     by tile; the ball is let down, the beams come up, and on the downbeat it all goes, at a disco record's 104 a minute:
+     bands of light sweep across the floor in turn, then rings go out from under the spinning ball, one a beat, the beams
+     swinging in time; at the top every tile comes up at once as the glitter falls and the beams close on the ball; then
+     the floor goes out row by row, from the front to the back, and the room comes back as it was. Gentle all through:
+     a tile flares at most once a beat, never faster. */
+  const CN = { dim: [.15, 1.0, 12.5, 13.9], rise: [.35, 1.6], wake: .95, down: 3.0, crest: [11.08, 11.55, 12.15], out: [12.15, 13.6] };
+  const FLR = ["#FF2E9A", "#FFD36E", "#A77BFF", "#4FD6E6", "#FF8A5A", "#FFC2E2"]; // the floor's glass: the kit's pink, gold, violet, aqua, coral, blush
+  const CNL = 10; // a tile's brightness, in steps, so the floor is filled a colour and a step at a time
+  /** the floor, laid out once for a page and a pass: where its back meets the wall (below the words), its perspective,
+   *  its tiles (each one's quad, its glass's bright middle, its colour, how far it is from under the ball and along the
+   *  diagonal, how far from the words), the dark glass under them all, and the glows the lit tiles throw */
+  const crnGeo = () => {
+    const { W, H, pr, cx } = S, key = [W, H, Math.round(S.tx), px, plan.P].join(":"); if (S.cng && S.cng.key === key && S.cng.raw === S.raw) return S.cng;
+    const raw = (S.raw || []).filter(q => q[4] !== 2); let low = 0; for (const [, , , d] of raw) if (d < H * .86 && d > low) low = d;
+    const yB = Math.round(clamp(Math.max(H * (pr ? .7 : .735), low + (pr ? 24 : 30)), H * .6, H * .84)), zb = 4.4, zf = 1.3, K = (H + 30 - yB) / (1 / zf - 1 / zb), yH = yB - K / zb, vx = pr ? W / 2 : lerp(W / 2, S.tx, .3), s = pr ? .36 : .5, rows = Math.round((zb - zf) / s);
+    const P = (X, z) => [vx + K * X / z, yH + K / z], Xc = (S.tx - vx) * 2.6 / K, tiles = [];
+    for (let j = 0; j < rows; j++) { const z0 = zb - j * s, z1 = Math.max(zf - .3, z0 - s), n = Math.ceil((W / 2 + Math.abs(vx - W / 2) + 60) * z1 / K / s);
+      for (let i = -n; i < n; i++) { const X0 = i * s, X1 = X0 + s, e = .03, a = P(X0 + e, z0 - e), b = P(X1 - e, z0 - e), c = P(X1 - e, z1 + e), d = P(X0 + e, z1 + e);
+        if (Math.max(a[0], b[0], c[0], d[0]) < -8 || Math.min(a[0], b[0], c[0], d[0]) > W + 8 || a[1] > H + 4) continue;
+        const mx = (a[0] + b[0] + c[0] + d[0]) / 4, my = (a[1] + b[1] + c[1] + d[1]) / 4, k = .5, q = new Float32Array(16);
+        [a, b, c, d].forEach((p, m) => { q[m * 2] = p[0]; q[m * 2 + 1] = p[1]; q[8 + m * 2] = mx + (p[0] - mx) * k; q[8 + m * 2 + 1] = my + (p[1] - my) * k; });
+        const X = (X0 + X1) / 2, Z = (z0 + z1) / 2;
+        tiles.push({ q, x: mx, y: my, w: Math.abs(b[0] - a[0]), h: Math.abs(d[1] - a[1]), j, c: ((i % 6) + 6 + j * 2) % 6, d: Math.hypot(X - Xc, (Z - 2.6) * 1.4) / s, dg: (X / s) + (zb - Z) / s * 1.6, sh: .1 + .9 * S.shade(mx, my, Math.max(8, Math.abs(b[0] - a[0]) * .4)) }); } }
+    let dg0 = 1e9, dg1 = -1e9; for (const t of tiles) { dg0 = Math.min(dg0, t.dg); dg1 = Math.max(dg1, t.dg); } for (const t of tiles) t.dn = (t.dg - dg0) / (dg1 - dg0 || 1);
+    if (!S.cnS) { S.cnS = { glow: FLR.map(col => make(64, 64, x => { const cc = rgb(col), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, css(tint(cc, .35), .75)); gr.addColorStop(.35, css(cc, .32)); gr.addColorStop(1, css(cc, 0)); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); })),
+      css: FLR.map(col => css(rgb(col))), hot: FLR.map(col => css(tint(rgb(col), .55))), fills: FLR.map(col => { const cc = rgb(col); return [1, 2, 3, 4].map(l => FILL.map((f, i) => i < 5 ? css(mixc(rgb(f), cc, (.3 + i * .06) * l / 4)) : f)); }) }; } // (the ball's dark tiles taking the floor's colour, in four steps)
+    const base = make(W, H - yH + 2, x => { x.translate(0, -yH); // the floor's dark glass: deeper at the back, a sheen toward the front, the grout between the tiles
+      const gr = x.createLinearGradient(0, yB, 0, H); gr.addColorStop(0, "rgba(12,0,8,.75)"); gr.addColorStop(1, "rgba(34,4,24,.9)"); x.fillStyle = gr; x.beginPath(); const L0 = P(-40, zb), R0 = P(40, zb); x.moveTo(L0[0], yB); x.lineTo(R0[0], yB); x.lineTo(R0[0], H + 40); x.lineTo(L0[0], H + 40); x.closePath(); x.fill();
+      for (const t of tiles) { const q = t.q; x.beginPath(); x.moveTo(q[0], q[1]); x.lineTo(q[2], q[3]); x.lineTo(q[4], q[5]); x.lineTo(q[6], q[7]); x.closePath(); x.fillStyle = "rgba(70,18,52,.55)"; x.fill(); x.strokeStyle = "rgba(255,150,210,.07)"; x.lineWidth = 1; x.stroke(); }
+      x.strokeStyle = "rgba(255,140,200,.22)"; x.lineWidth = 1.5; x.beginPath(); x.moveTo(0, yB); x.lineTo(W, yB); x.stroke(); }); // its far edge, where it meets the wall
+    S.cng = { key, raw: S.raw, yB, yH, tiles, base, ord: new Uint16Array(tiles.length * 2), cnt: new Uint16Array(FLR.length * CNL + 1), ov: new Float32Array(tiles.length * 3) };
+    return S.cng;
+  };
+  /** which colour leads at T (for the light the floor throws up onto the ball and the wall) */
+  const cnLead = T => { if (T < CN.down) return 0; const k = Math.floor((T - CN.down) / BEAT); return k < 8 ? (k * 2 + 1) % 6 : k < 14 ? (k * 3) % 6 : 0; };
+  /** the floor at loop time T: each tile's own glow (woken in a ring from under the ball, held while the music plays, up
+   *  for the crest, out row by row) and the light that runs over it in the music's patterns, in the pattern's colour — the
+   *  two drawn as layers, each a colour and a step at a time; glows rising off the brightest; the floor's light on the
+   *  wall above its far edge */
+  const crnFloor = (G, T, I, a) => {
+    const pres = seg(T, CN.rise[0], CN.rise[1], E.out) * (1 - seg(T, CN.out[1] - .2, CN.out[1] + .25, E.io)) * I * a; if (pres <= .004) return;
+    const { W } = S, tiles = G.tiles, n = tiles.length, ov = G.ov, bt = (T - CN.down) / BEAT, k = Math.floor(bt), rows = tiles.length ? tiles[tiles.length - 1].j + 1 : 1;
+    put(G.base, 0, G.yH, 0, 0, 0, 1, 1, pres); unit();
+    // each tile: its own glow (layer 0) and the pattern's light over it (layer 1)
+    for (let m = 0; m < n; m++) { const t = tiles[m]; let b0 = 0, b1 = 0, c1 = t.c;
+      const tw = CN.wake + t.d * .07; if (T >= tw) b0 = .26 + .74 * Math.exp(-(T - tw) * 3) * Math.min(1, (T - tw) / .12); // woken: a flare, settling to a glow
+      if (T >= CN.down && k < 14) { if (k < 8) { for (const kk of [k, k - 1]) { if (kk < 0) continue; const pos = (bt - kk) / 2 * 1.5 - .25, e = Math.exp(-(((t.dn - pos) / .11) ** 2)); if (e > b1) { b1 = e; c1 = (kk * 2 + 1) % 6; } } } // bands sweeping across in turn, two beats each, one a beat
+        else for (const kk of [k, k - 1]) { const r = (bt - kk) * 4.4, e = Math.exp(-(((t.d - r) / 1.15) ** 2)); if (e > b1) { b1 = e; c1 = (kk * 3) % 6; } } } // rings out from under the ball, one a beat
+      const cr = seg(T, CN.crest[0] + t.d * .025, CN.crest[1] + t.d * .025, E.out); if (cr > 0) { b0 = Math.max(b0, lerp(b0, 1, cr)); b1 *= 1 - cr; } // the crest: every tile up
+      const out = seg(T, CN.out[0] + (rows - 1 - t.j) * .16, CN.out[0] + (rows - 1 - t.j) * .16 + .55, E.io); b0 *= 1 - out; b1 *= 1 - out; // out row by row, from the front to the back
+      ov[m * 3] = b0 * pres * t.sh; ov[m * 3 + 1] = b1 * .85 * pres * t.sh; ov[m * 3 + 2] = c1; }
+    const cnt = G.cnt, ord = G.ord, S2 = S.cnS;
+    for (let layer = 0; layer < 2; layer++) { // a counting sort by colour and step, then a fill for each
+      cnt.fill(0); let nn = 0; for (let m = 0; m < n; m++) { const b = ov[m * 3 + layer]; if (b < .04) continue; const c = layer ? ov[m * 3 + 2] : tiles[m].c, key2 = c * CNL + Math.min(CNL - 1, Math.floor(b * CNL)); cnt[key2 + 1]++; nn++; }
+      for (let i = 1; i < cnt.length; i++) cnt[i] += cnt[i - 1]; const pos = cnt; // (the running starts, used up as each is placed)
+      for (let m = 0; m < n; m++) { const b = ov[m * 3 + layer]; if (b < .04) continue; const c = layer ? ov[m * 3 + 2] : tiles[m].c, key2 = c * CNL + Math.min(CNL - 1, Math.floor(b * CNL)); ord[pos[key2]++] = m; }
+      for (let i0 = 0; i0 < nn;) { const m0 = ord[i0], b0 = ov[m0 * 3 + layer], c = layer ? ov[m0 * 3 + 2] : tiles[m0].c, key2 = c * CNL + Math.min(CNL - 1, Math.floor(b0 * CNL)); let i1 = i0;
+        g.beginPath(); for (; i1 < nn; i1++) { const m = ord[i1], b = ov[m * 3 + layer], cc = layer ? ov[m * 3 + 2] : tiles[m].c; if (cc * CNL + Math.min(CNL - 1, Math.floor(b * CNL)) !== key2) break; const q = tiles[m].q; g.moveTo(q[0], q[1]); g.lineTo(q[2], q[3]); g.lineTo(q[4], q[5]); g.lineTo(q[6], q[7]); g.closePath(); }
+        const lv = (key2 % CNL + .5) / CNL; g.globalAlpha = lv * .82; g.fillStyle = S2.css[c]; g.fill(); // the glass, lit
+        g.beginPath(); for (let i = i0; i < i1; i++) { const q = tiles[ord[i]].q; g.moveTo(q[8], q[9]); g.lineTo(q[10], q[11]); g.lineTo(q[12], q[13]); g.lineTo(q[14], q[15]); g.closePath(); }
+        g.globalAlpha = lv * .9; g.fillStyle = S2.hot[c]; g.fill(); // its bright middle, where the lamp is
+        i0 = i1; } }
+    // glows rising off the brightest tiles into the haze, and the floor's light on the wall above its far edge
+    g.globalCompositeOperation = "lighter";
+    for (let m = 0; m < n; m++) { const b = Math.max(ov[m * 3], ov[m * 3 + 1]); if (b < .5) continue; const t = tiles[m], c = ov[m * 3 + 1] > ov[m * 3] ? ov[m * 3 + 2] : t.c; put(S2.glow[c], t.x, t.y - t.h * .4, .5, .5, 0, t.w * 1.5 / 64, (t.h * 2.2 + t.w * .3) / 64, (b - .4) * .75); } // (off the bright ones only)
+    const lead = cnLead(T), wl = pres * (.35 + .25 * (T > CN.down && T < CN.out[0] ? Math.exp(-((bt % 1) * 3)) : 0));
+    for (let i = 0; i < 4; i++) { const x = W * (.12 + i * .25); put(S2.glow[(lead + i) % 6], x, G.yB - 6, .5, .5, 0, W * .34 / 64, 120 / 64, wl * .5 * S.shade(x, G.yB - 30, 40)); }
+    g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
+  };
   /** the disco, at loop time T */
   const drawNight = (T, I, A, F, dt) => {
     const { W, H, pr, cx, cy, R } = S, on = I > .01, fin = F >= 0 ? env(F, 0, .16, .7, 1, E.sine) : 0, pl = plan, bt = pl.b;
     // the ball: let down on its chain from its resting height, swinging a little, and back up; turning, faster in the race
-    const br = S.ballR(R), yRest = Math.min(S.rest, cy), yLow = cy + (R - br) * .3 * pl.depth;
+    const br = S.ballR(R), yRest = Math.min(S.rest, cy), yLow = pl.crown && on ? Math.max(yRest, Math.min(cy + (R - br) * .3 * pl.depth, crnGeo().yB - br * 2.2)) : cy + (R - br) * .3 * pl.depth; // (1.12 b440: the crown's ball hangs over its floor, never on it)
     const drop = on ? seg(T, bt.lower[0], bt.lower[1], E.back) * (1 - seg(T, bt.raise[0], bt.raise[1], E.io)) * I : 0, after = T - bt.lower[1];
     const sw = Math.sin(A * .7) * .01 + (on && after > 0 ? Math.sin(after * 5.2) * Math.exp(-after * 1.5) * .035 * I : 0);
     const L = lerp(yRest, yLow, drop) + 12 - (1 - S.vis) * (yRest + br + 80), bx = cx + Math.sin(sw) * L, by = -12 + Math.cos(sw) * L;
@@ -1809,6 +2018,10 @@ export default function party(K, id) {
     // (the flamingo: where it skates and how it stands this frame; the room's lights down a little for its follow spot)
     const fh = pl.hour && pl.hour.kind === 2 && on ? pl.hour : null, flc = fh ? flGeo(fh, yRest, br) : null, flp = flc ? flPose(flc, T) : null, flDim = flc ? env(T, FL.dim[0], FL.dim[1], FL.dim[2], FL.dim[3], E.sine) * I : 0;
     if (flDim > .004) { unit(); g.globalAlpha = flDim * .32; g.fillStyle = "#0B0007"; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
+    // (1.12 b440, the crown: the room goes down, and the floor lights up)
+    const cn = pl.crown && on ? crnGeo() : null, cnDim = cn ? env(T, CN.dim[0], CN.dim[1], CN.dim[2], CN.dim[3], E.sine) * I : 0;
+    if (cnDim > .004) { unit(); g.globalAlpha = cnDim * .5; g.fillStyle = "#0B0007"; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
+    if (cn) crnFloor(cn, T, I, S.vis);
     // the beams: up from below one by one, sweeping; then onto the ball, and apart again, and down (a dealt pass moves
     // them its own way: `swing`)
     const aimK = Math.max(on ? env(T, bt.aim[0], bt.aim[1], bt.aim[2], bt.aim[3], E.sine) * I : 0, fin);
@@ -1841,6 +2054,7 @@ export default function party(K, id) {
     const lz = pl.laser, hz = pl.heart, back = pl.sig ? 0 : Math.max(lz ? env(T, lz.t[3] - .15, lz.t[3] + .2, lz.t[4], lz.t[5], E.sine) * I : 0, hz ? env(T, hz.t[0], hz.t[0] + .5, hz.t[2], hz.t[2] + .4) * I : 0);
     let sK = pl.sig ? 1 : pl.spotK * (1 - (lz ? 1 : .8) * back) * pres; // (the room's spots step back for the lasers' points, or the heart; or go with the ball's tiles)
     if (hl) sK *= 1 - .85 * lsDim; // (or for the laser show)
+    if (cn) sK *= 1 - .45 * cnDim; // (and a little for the floor)
     for (const d of S.dots) {
       const dx = d.x * cs + d.z * sn, dz = d.z * cs - d.x * sn; if (dz > -.3) continue;
       const k = 1 / -dz, x = bx + dx * Dz * k, y = by + d.y * Dz * k; if (x < -80 || x > W + 80 || y < -80 || y > H + 80) continue;
@@ -1879,7 +2093,7 @@ export default function party(K, id) {
     g.globalCompositeOperation = "source-over";
     // (a dealt pass's balloons falling behind the ball, and the rare second ball, lit as the first is — or, under the
     // pin spot, white)
-    const tl = pinK > .004 ? [lit[0] * (1 - .8 * pinK), lit[1] * (1 - .8 * pinK), lit[2] + 1.3 * pinK] : lit, fill = ls && ls.take > .01 ? lsFill(ls.take, ls.col) : fm > 0 ? pl.fillAt(fm) : FILL, gl1 = fm > .5 ? pl.glint : 1; // (the laser show's ball takes the laser's colour)
+    const tl = pinK > .004 ? [lit[0] * (1 - .8 * pinK), lit[1] * (1 - .8 * pinK), lit[2] + 1.3 * pinK] : lit, fill = ls && ls.take > .01 ? lsFill(ls.take, ls.col) : cn && Math.round(cnDim * 4) > 0 ? S.cnS.fills[cnLead(T)][Math.round(cnDim * 4) - 1] : fm > 0 ? pl.fillAt(fm) : FILL, gl1 = fm > .5 ? pl.glint : 1; // (the laser show's ball takes the laser's colour)
     if (pl.drop) dropAt(pl.drop, T, I, false);
     if (pl.twin) twinAt(pl.twin, pl, T, I, A, bx, by, br, tl, w, fill, gl1);
     // the chain, from past the top of the page down to the ball's cap; the ball
@@ -1905,6 +2119,7 @@ export default function party(K, id) {
   const shuffle = (a, r) => { for (let i = a.length - 1; i > 0; i--) { const q = Math.floor(r() * (i + 1)); [a[i], a[q]] = [a[q], a[i]]; } return a; };
   const dealDay = P => {
     const LG = K.long ? K.long(P) : 0; if (LG === 1 || LG === 2) return hourDay(P, LG); // (1.12 b428: an hour egg, in place of the pass)
+    if (LG === 3) return crownDay(P); // (1.12 b440: the crown)
     if (K.egg(P)) { const r = K.deal(P, 1201), nth = Math.max(0, Math.round((P + 1) / 12) - 1); // (1.12 b417: the egg, in place of the pass; its own dice)
       return { P, sig: false, b: { gust: [NEVER, NEVER], guest: [NEVER, NEVER], popper: [NEVER, NEVER], pop: NEVER, sink: [NEVER, NEVER], tremble: [NEVER, NEVER], burst: NEVER, leave: NEVER, free: NEVER, back: [NEVER, NEVER] },
         head: "egg", guest: -1, gc: 8, gz: .95, clear: false, fate: "none", ring: "#FFFFFF", gdir: 1, gk: 0, gside: 1, pflip: 1, popC: 0, pal: 0, cshape: 0, trio: [], egg: { col: DOGC[nth % DOGC.length], side: r() < .5 ? -1 : 1 } }; }
@@ -1939,6 +2154,9 @@ export default function party(K, id) {
     }
     return pl;
   };
+  /** 1.12 b440: the crown's pass by day — the bouquet lifts off — on dice of its own: nothing of the pass's own beats */
+  const crownDay = P => ({ P, sig: false, b: { gust: [NEVER, NEVER], guest: [NEVER, NEVER], popper: [NEVER, NEVER], pop: NEVER, sink: [NEVER, NEVER], tremble: [NEVER, NEVER], burst: NEVER, leave: NEVER, free: NEVER, back: [NEVER, NEVER] },
+    head: "crown", guest: -1, gc: 8, gz: .95, clear: false, fate: "none", ring: "#FFFFFF", gdir: 1, gk: 0, gside: 1, pflip: 1, popC: 0, pal: 0, cshape: 0, trio: [], crown: { seed: Math.floor(K.deal(P, 1701)() * 1e9) } });
   /** 1.12 b428: an hour egg's pass by day — the cake (1) or the piñata (2) — on dice of its own: nothing of the pass's
    *  own beats plays, and the hour it is (the list left up that long) goes on the cake's candle */
   const hourDay = (P, LG) => { const r = K.deal(P, 1401);
@@ -1958,6 +2176,7 @@ export default function party(K, id) {
   };
   const dealNight = P => {
     const LG = K.long ? K.long(P) : 0; if (LG === 1 || LG === 2) return hourNight(P, LG); // (1.12 b428: an hour egg, in place of the pass)
+    if (LG === 3) return { ...nightSig, P, sig: false, head: "crown", b: { lower: [1.9, 3.3], beams: [2.3, 3.0], sweep: 3.0, aim: [10.95, 11.5, 12.25, 12.95], spin: [3.0, 4.3, 11.9, 13.2], glitter: [8.0, 9.8], dim: [12.45, 13.4], raise: [12.95, 14.7] }, choreo: 4, cph: 0, cf: 1, fdir: 1, spin: 1, depth: .85, crown: true }; // (1.12 b440: the crown, in place of the pass)
     if (K.egg(P)) return { ...nightSig, P, sig: false, head: "egg", b: { lower: [NEVER, NEVER + 1], beams: EN.beams, sweep: 3.0, aim: EN.aim, spin: EN.spin, glitter: EN.glit, dim: EN.dim, raise: [NEVER, NEVER + 1] }, choreo: 0, cph: 0, cf: 1, fdir: 1, egg: { side: K.deal(P, 1301)() < .5 ? -1 : 1 } }; // (1.12 b417: the egg, in place of the pass)
     if (P <= 0) return { ...nightSig, P };
     const r = K.deal(P, 31), rare = rareAt(P, 45) ? (K.deal(P, 37)() < .5 ? "twin" : "heart") : null;

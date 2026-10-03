@@ -53,6 +53,19 @@
 // tally — so the bank, and every level after it, stand as they always would; and an hour egg that falls on a fiftieth
 // level wins over its boss (which comes round again in fifty levels; the egg not for an hour), its thousands going into
 // the tally. The crown's level, and every level either side, deal as they always have.
+//
+// 1.12 b441: the crown. In the sixth hour of the screen left on, and every sixth after (K.long 3), the level the game was
+// never meant to reach: the kill screen. It starts like any other — LEVEL n, though the last digit won't stay put, GO!, a
+// run, a couple of coins already in the wrong colours — and then the game runs out of numbers: from the right edge the
+// screen comes apart, row by row, into tiles of garbage — letters and digits upside down and inside out, pieces of the
+// cast in the wrong palettes, stripes, boxes, black — until the right half is nothing else, as Pac-Man's did at level 256
+// (1980). The world stops; the score's digits spin, roll over to nines and run to nonsense. The hero, unbothered, walks
+// into it, its colours going wrong and its rows tearing, and on out of the other side. The garbage churns, a tile at a
+// time; then the machine powers down, the picture squeezing to a line and gone, and boots: RAM OK, ROM OK, the title
+// lighting letter by letter in neon over the high score counting up — the level's points, all of them, so the bank stands
+// as it would — and the city is drawn back in from the top, line by line, the hero at its post, the score whole again. A
+// crown that falls on a fiftieth level wins over its boss, as an hour egg does. Nothing of it reaches the strip behind the
+// top bar but the dark, and nothing of the garbage lies behind a word.
 export default function arcade(K) {
   const { clamp, lerp, E, seg, env, rng, canvas, sprite } = K;
   const TAU = Math.PI * 2;
@@ -460,7 +473,7 @@ export default function arcade(K) {
         L.clouds = [0, 1, 2, 0].map((i, j) => { const x0 = bw + 4 + j * (pr ? 18 : 44) + r() * 10, w = S.clouds[i].width; return { i, x0, v: (x0 + w + 10 + r() * 30) / 14.5, y: Math.round(gy * (.04 + r() * .2)) }; });
         L.bolts = [2.6 + r() * 2.6, 8.32].map(t => { const x0 = Math.round(bw * (pr ? .2 + r() * .6 : .5 + r() * .42)), y1 = gy - S.farH * .45, pts2 = [[x0, 0]]; let x = x0; for (let i = 1; i <= 9; i++) { x += Math.round((r() - .5) * (pr ? 6 : 10)); pts2.push([x, Math.round(y1 * i / 9)]); } return { t, pts: pts2 }; });
       }
-      const hr = P >= 240 ? K.long(P) : 0; if (hr === 1 || hr === 2) S.hourLevel(L, hr); // b424: the long day's hour eggs
+      const hr = P >= 240 ? K.long(P) : 0; if (hr === 1 || hr === 2) S.hourLevel(L, hr); else if (hr === 3) S.crownLevel(L); // b424: the long day's hour eggs; b441: its crown
       return L;
     },
     /** 1.12 b424: the long day's hour eggs (K.long: one level in each hour of the screen left alone, the two taking turns).
@@ -551,6 +564,127 @@ export default function arcade(K) {
       const m = 6, f = 8; lx.globalCompositeOperation = "destination-out"; lx.fillStyle = "#000"; lx.globalAlpha = 1; lx.fillRect(0, 0, bw, top + m);
       for (let i = 0; i < f; i++) { lx.globalAlpha = 1 - (i + .5) / f; lx.fillRect(0, top + m + i, bw, 1); }
       lx.globalCompositeOperation = "source-over"; lx.globalAlpha = 1; b.globalAlpha = 1; b.drawImage(lc, 0, 0);
+    },
+    /** 1.12 b441: the crown (K.long 3: the sixth hour of the screen left on, and every sixth after): the kill screen. A level
+     *  like any other — LEVEL n (its last digit not quite right), GO!, a run, a couple of coins in the wrong colours — and then
+     *  the game reaches the end of what it can count: from the right edge the screen comes apart, column by column, into
+     *  tiles of garbage — letters, upside-down digits, pieces of the cast in the wrong palette — until the right half of it is
+     *  nothing else (Pac-Man's level 256, 1980); the world stops; the score counter rolls over and runs to nonsense. The hero,
+     *  unbothered, walks into it and on out of the other side. The dead screen churns a little; the machine powers down, the
+     *  picture squeezing to nothing; and boots again — RAM OK, ROM OK, the title in neon letter by letter over the day's high
+     *  score counting up — and the city is drawn back in, line by line from the top, the hero at its post. Its scroll: the
+     *  run, still from the freeze, and the rest of the way while the screen is dark; its points: what the dealt level would
+     *  have scored, a few coins in the run and the rest counted up under the title */
+    crownLevel(L) {
+      const tot = L.pts.reduce((a, q) => a + q[1], 0), { bw, D } = S, hx = L.hx, N = 15 * 240;
+      L.hour = 3; L.crown = true; L.beats = []; L.lands = []; L.bonus = null; L.boss = -1; L.cam = () => 0; L.tally = 11.25;
+      const v = t => t < 1.2 ? 0 : t < 1.7 ? E.out((t - 1.2) / .5) : t < 3.7 ? 1 : t < 4.8 ? 1 - E.io((t - 3.7) / 1.1) : 0;
+      const c = new Float32Array(N + 1); for (let k = 1; k <= N; k++) c[k] = c[k - 1] + v(k / 240) / 240;
+      const F1 = t => { const f = clamp(t / 15) * N, i = Math.min(N - 1, Math.floor(f)); return lerp(c[i], c[i + 1], f - i) / c[N]; }, R = Math.min(D * .6, Math.max(bw - hx + 70, D * .32));
+      L.X = t => R * F1(t) + (D - R) * (t >= 10.6 ? 1 : 0); L.glitch = t => (t > 1.2 && t < 1.32) || (t > 3.95 && t < 4.03);
+      let t0 = 2.1; while (t0 < 3.4 && R * F1(t0) < bw - hx + 12) t0 += .02; // the coins come on from past the edge, wherever the hero stands
+      const coins = [0, 1, 2, 3].map(i => ({ t: t0 + i * .17, bad: i >= 2 })), xs = Math.round(bw / 2), r = K.deal(L.P, 431), cols = Math.ceil((bw - xs) / 8), rows = Math.ceil(S.bh / 8);
+      const delay = Array.from({ length: rows }, () => (r() - .5) * .7), churn = Array.from({ length: 56 }, (_, i) => ({ t: 4.7 + i * .095 + r() * .05, c: Math.floor(r() * cols), rw: Math.floor(r() * rows), k: Math.floor(r() * 64), d: r() * 5 }));
+      const layout = Array.from({ length: cols * rows }, () => r() < .34 ? -1 : Math.floor(r() * 64)), sGarb = Array.from({ length: 14 }, () => [Math.floor(r() * 40), Math.floor(r() * 7)]);
+      L.kill = { coins, xs, cols, rows, delay, churn, layout, sGarb, R };
+      const own = coins.map(q => [q.t, 10]), left = Math.max(0, tot - 40), n = 20, step = Math.floor(left / n / 10) * 10;
+      for (let i = 0; i < n; i++) own.push([L.tally + i * .06, i < n - 1 ? step : left - step * (n - 1)]); // counted up under the title
+      L.pts = own; L.tallyPts = left;
+    },
+    /** the garbage's tiles, drawn once: letters and digits (some upside down, some inverted) in the wrong colours, pieces of
+     *  the cast in the wrong palette, stripes and checks and blocks — sixty-four eight-pixel tiles; and the hero in the
+     *  garbage's colours */
+    killTiles() {
+      const q = rng(430), cols = [...NEON, "#FFFFFF", "#7F7FFF", "#FF9F3F", "#9AE7FF"], bgs = ["#000000", "#000000", "#000000", "#000000", "#000000", "#1B1346", "#3A0F44", "#0B3A3A"], chars = "0123456789ABCDEFGHIKLMNOPRSTUVWXYZ?!";
+      const swap = (c2, k) => { const x = c2.getContext("2d"), im = x.getImageData(0, 0, c2.width, c2.height), d = im.data; for (let i = 0; i < d.length; i += 4) { const [rr, gg, bb] = [d[i], d[i + 1], d[i + 2]]; if (k === 0) { d[i] = gg; d[i + 1] = bb; d[i + 2] = rr; } else if (k === 1) { d[i] = bb; d[i + 1] = rr; d[i + 2] = gg; } else { d[i] = 255 - rr; d[i + 1] = 255 - gg; d[i + 2] = 255 - bb; } } x.putImageData(im, 0, 0); return c2; };
+      const tiles = [], src = [S.coin[0], S.block, S.slime, S.star[2], S.shell[0], S.bat[0], S.brick, S.plant[0], S.shroom, S.cannon, S.hIdle[0], S.boss, S.dhead[0], S.king, S.robot, S.flower];
+      for (let i = 0; i < 64; i++) { const [c2, x] = canvas(8, 8), kind = i < 28 ? 0 : i < 46 ? 1 : i < 58 ? 2 : 3, fg = cols[Math.floor(q() * cols.length)], bg = bgs[Math.floor(q() * bgs.length)];
+        if (kind === 0) { const inv = q() < .14, gl = F5[chars[Math.floor(q() * chars.length)]], flipY = q() < .3; x.fillStyle = inv ? fg : bg; x.fillRect(0, 0, 8, 8); x.fillStyle = inv ? "#000000" : fg; gl.forEach((row, j) => { for (let k = 0; k < 5; k++) if (row[k] === "#") x.fillRect(1 + k, flipY ? 7 - j : j, 1, 1); }); } // a letter or a digit, wrong
+        else if (kind === 1) { const sp = src[Math.floor(q() * src.length)], ox = Math.floor(q() * Math.max(1, sp.width - 8)), oy = Math.floor(q() * Math.max(1, sp.height - 8)); x.fillStyle = bg; x.fillRect(0, 0, 8, 8); x.drawImage(sp, ox, oy, 8, 8, 0, 0, 8, 8); swap(c2, Math.floor(q() * 3)); } // a piece of the cast, in the wrong palette
+        else if (kind === 2) { const f2 = cols[Math.floor(q() * cols.length)], m = Math.floor(q() * 4); x.fillStyle = bg; x.fillRect(0, 0, 8, 8); x.fillStyle = f2; for (let yy = 0; yy < 8; yy++) for (let xx = 0; xx < 8; xx++) if (m === 0 ? yy % 2 === 0 : m === 1 ? (xx + yy) % 2 === 0 : m === 2 ? xx < 4 : (xx + yy) % 4 === 0) x.fillRect(xx, yy, 1, 1); } // stripes, checks, halves
+        else { x.fillStyle = fg; x.fillRect(0, 0, 8, 8); x.fillStyle = "#000000"; x.fillRect(1, 1, 6, 6); x.fillStyle = cols[Math.floor(q() * cols.length)]; x.fillRect(2, 2, 4, 4); } // a box in a box
+        tiles.push(c2); }
+      const cp = (sp, kk) => { const [c2, x] = canvas(sp.width, sp.height); x.drawImage(sp, 0, 0); return swap(c2, kk); }, hero2 = [...S.hRun, S.hJump, S.hIdle[0]].map(sp => cp(sp, 1)), coinBad = [0, 1].map(kk => S.coin.map(sp => cp(sp, kk)));
+      return { tiles, hero2, coinBad, bw: S.bw };
+    },
+    /** the garbage over the right of the screen, laid out once for the level (and again if the words move): each tile, or
+     *  black where it would lie behind a word */
+    killBoard(L) {
+      const k = L.kill, key = L.P + ":" + k.xs + ":" + S.bw; if (S.killB && S.killB.key === key && S.killB.wr === S.wr) return S.killB.c;
+      const art = S.killA && S.killA.bw === S.bw ? S.killA : (S.killA = S.killTiles()), [c2, x] = canvas(k.cols * 8, k.rows * 8), PS = S.PS;
+      x.fillStyle = "#000000"; x.fillRect(0, 0, c2.width, c2.height);
+      const m = 4 * PS, near = (cx, cy) => (S.wr || []).some(r => r[4] !== 2 && r[0] - m < (k.xs + cx + 8) * PS && r[2] + m > (k.xs + cx) * PS && r[1] - m < (cy + 8) * PS && r[3] + m > cy * PS); // black under a word and round it, far enough that the bloom off the tiles falls short of it (not a line's tools, which show only under the pointer)
+      for (let rw = 0; rw < k.rows; rw++) for (let cl = 0; cl < k.cols; cl++) { const t = k.layout[rw * k.cols + cl]; if (t >= 0 && !near(cl * 8, rw * 8)) x.drawImage(art.tiles[t], cl * 8, rw * 8); } // (a third of it black, as the real one is)
+      S.killB = { key, wr: S.wr, c: c2 }; return c2;
+    },
+    /** the crown's score: as ever, until the counter rolls over (each digit spinning, the slowest last, to nines), then
+     *  nonsense (drawn by the crown itself), then dark with the screen until the line it sits on is drawn back in */
+    crownScore(T, I, sc) {
+      const { pr } = S, lab = pr ? "" : "SCORE "; if (I < .5 || T < 4.4 || (T >= 12.6 && E.io(seg(T, 12.6, 14.3, x => x)) * S.bh > S.gy + 9)) return lab + sc; // (back as soon as its line is drawn in again)
+      if (T < 6.0) { const u = T - 4.4, n = sc.length; return lab + [...sc].map((ch, i) => { const sp = (n - i) * 7 * u * u; return T > 5.75 - (n - i) * .03 ? "9" : String((+ch + Math.floor(sp)) % 10); }).join(""); }
+      return "";
+    },
+    /** where the boot screen goes (its middle, in the game's pixels): the place nearest the middle of the right of the screen
+     *  where its block of words lies clear of the page's words and below the top bar's strip; worked out again when the words
+     *  move. Failing that, the banners' place */
+    bootAt() {
+      if (S.boot && S.boot.wr === S.wr && S.boot.bw === S.bw) return S.boot.at;
+      const { PS, bw, bh, gy, pr } = S, top = (S.barB ? Math.ceil(S.barB / PS) : 0) + 4, m = (pr ? 2 : 3) * PS, rs = (S.wr || []).filter(r => r[4] !== 2);
+      const find = (w, h, up) => { let best = null, bs = -1e9;
+        for (let cy = top + up; cy + h - up <= bh - 2; cy += 2) for (let cx = Math.ceil(w / 2) + 2; cx + w / 2 <= bw - 2; cx += 2) { // (the whole screen is dark then, the street's too)
+          const x0 = (cx - w / 2) * PS, x1 = (cx + w / 2) * PS, y0 = (cy - up) * PS, y1 = (cy - up + h) * PS; if (rs.some(r => r[0] - m < x1 && r[2] + m > x0 && r[1] - m < y1 && r[3] + m > y0)) continue;
+          const sc = -Math.hypot(cx - bw * (pr ? .5 : .72), (cy - gy * .4) * 1.4); if (sc > bs) { bs = sc; best = [cx, cy]; } }
+        return best; };
+      const full = find(pr ? 62 : 76, pr ? 34 : 40, pr ? 14 : 20), small = full ? null : find(52, 22, 10); // the whole of it, or the title and the score small, or (no room anywhere) none of it
+      S.boot = { wr: S.wr, bw, at: full ? [...full, 0] : small ? [...small, 1] : [0, 0, 2] }; return S.boot.at;
+    },
+    /** the kill screen, drawn: `H` the frame's moment and the drawing helpers */
+    crownDraw(H) {
+      const { T, I, A, F, L, hx, top0, wX, on, put, dot, txt, tw, panel, shadeB } = H, { bw, bh, gy, pr } = S, k = L.kill, o = { shake: 0, warn: 0, flashL: 0 };
+      const art = S.killA && S.killA.bw === bw ? S.killA : (S.killA = S.killTiles()), dark = on && T >= 10.0, cut = on && T > 3.85 && T < 10.35;
+      const ring = (x, y, p, n, rad, col, a) => { if (p <= 0 || p >= 1) return; for (let i = 0; i < n; i++) { const an = i / n * TAU; dot(x + Math.cos(an) * p * rad, y + Math.sin(an) * p * rad, col, a * (1 - p)); } };
+      // the run's coins: the last two in the wrong colours already (the tiles' palette), and the +10 not quite a +10
+      if (on && T < 6) for (const [i, c] of k.coins.entries()) { const x = hx + 2 + wX(c.t), y = top0 + 3;
+        if (T < c.t) { if (x < bw + 8 && x > -9) put((c.bad ? art.coinBad[i % 2] : S.coin)[Math.floor(A * 10 + i) % 4], x, y + Math.round(Math.sin(A * 5 + i) * .6), I * shadeB(x + 4, y + 4)); }
+        else if (T < c.t + .45) { const p = (T - c.t) / .45; ring(x + 4, y + 4, p, 6, 7, c.bad ? "#7F7FFF" : "#FFE14D", I); txt(c.bad ? (i === 2 ? "+1?" : "+?0") : "+10", x - 3, y - 6 - p * 8, c.bad ? "#FF9AF0" : "#FFFFFF", I * (1 - p) * .9); } }
+      // the garbage: in from the right edge, column by column, each row a little before or after the next; then a slow churn
+      if (cut) S.barCut(() => { const board = S.killBoard(L), fade = I;
+        for (let rw = 0; rw < k.rows; rw++) { const u = clamp((T - 4.0 - k.delay[rw] * .5) / 2.1), n = Math.min(k.cols, Math.round(E.io(u) * (k.cols + 1))); if (n <= 0) continue; const x0 = (k.cols - n) * 8;
+          b.globalAlpha = fade; b.drawImage(board, x0, rw * 8, n * 8, 8, k.xs + x0, rw * 8, n * 8, 8); }
+        for (const ch of k.churn) { if (T < ch.t) break; const u = clamp((T - 4.0 - k.delay[ch.rw] * .5) / 2.1), n = Math.round(E.io(u) * (k.cols + 1)); if (ch.c < k.cols - n) continue; const cx = k.xs + ch.c * 8, cy = ch.rw * 8;
+          const m = 4 * S.PS; if ((S.wr || []).some(r => r[4] !== 2 && r[0] - m < (cx + 8) * S.PS && r[2] + m > cx * S.PS && r[1] - m < (cy + 8) * S.PS && r[3] + m > cy * S.PS)) continue; b.globalAlpha = fade; b.drawImage(art.tiles[ch.k], cx, cy); }
+        b.globalAlpha = 1; });
+      // the hero: waits, runs, stops at the freeze; walks, unbothered, into the garbage (or, standing where it comes, is
+      // swallowed by it), its colours going wrong and its rows tearing, and on out of the other side; after the dark, at its post
+      const walk = seg(T, 6.4, 9.2, x => x), hxW = on && T < 10 ? hx + Math.round((bw + 14 - hx) * walk * I) : hx, spd = L.X(T + .05) - L.X(T), inG = on && I > .5 && hxW + 6 > k.xs && T < 10 && T > 4.0 + clamp((bw - hxW - 6) / (bw - k.xs)) * 2.1; // (once the garbage has reached it)
+      let spr = S.hIdle[Math.floor(A * 1.6) % 2], y = top0, sx = 1, sy = 1, fi = 5; // (5: its idle frame, in the garbage's colours)
+      if (!on && (A % 4.2) < .14) spr = S.hBlink;
+      if (on && T < 10 && (spd > .2 || (walk > 0 && walk < 1))) { fi = Math.floor(A * (spd > .2 ? 7 + spd * 3 : 6)) % 4; spr = S.hRun[fi]; }
+      if (on && T > .95 && T < 1.2) { sx = 1.16; sy = .82; }
+      if (F >= 0) { const fj = seg(F, 0, .5, x => x); if (fj > 0 && fj < 1) { spr = S.hJump; fi = 4; y = top0 - Math.round(4 * fj * (1 - fj) * 26 * S.jk); } }
+      const gone = on && T >= 9.2 && T < 12.6, ha = shadeB(hxW + 6, y + 7, 10);
+      if (gone && I < 1) put(S.hIdle[0], hx, top0, ha * (1 - I)); // (back at its post, fading in, if the loop lets go while it's away)
+      if (!gone && hxW < bw + 13) { if (inG) { const s2 = art.hero2[fi], band = Math.floor(A * 5); for (let j = 0; j < 3; j++) { const o2 = Math.round((((band * 7 + j * 3) % 5) - 2) * .8); b.globalAlpha = ha; b.drawImage(s2, 0, j * 5, s2.width, 5, hxW + o2, y + j * 5, s2.width, 5); } b.globalAlpha = 1; } // in the garbage: wrong colours, rows torn
+        else { put(spr, hxW, y, ha, sx, sy); dot(hxW + 6, y - 2, "#9FB6DC", ha); dot(hxW + 6, y - 3, "#9FB6DC", ha); dot(hxW + 6, y - 4, "#FF2BD6", ha * (.5 + .5 * Math.sin(A * 4))); } }
+      if (F >= 0 && F < .92 && !gone) put(S.cup, hxW + 3, y - 12, 1);
+      if (on) { const p = seg(T, 1.2, 1.5, x => x); if (p > 0 && p < 1) for (const qq of [-1, 1]) dot(hx + 6 + qq * (3 + p * 6), gy - 2 - p * 3, "#B388FF", I * (1 - p)); }
+      // the score, gone to nonsense: the counter's glyphs wrong, in the wrong colours, a few turning over now and then
+      if (on && T >= 6.0 && T < 10.35 && I > .5) { const sx0 = bw - (pr ? 47 : 83), sy0 = gy + (pr ? 3 : 5), cs = "0123456789?!SCOREZXK"; k.sGarb.forEach(([g, c2], i) => { if (pr && i > 7) return; const turn = Math.floor((T - 6) * 1.3 + i * .37) % 3; txt(cs[(g + turn * 7) % cs.length], sx0 + i * 6, sy0 + ((i + turn) % 3 === 0 ? 1 : 0), [...NEON, "#FFFFFF"][(c2 + turn) % 7], I); }); }
+      // the banners: LEVEL n (its last digit going wrong), GO!
+      if (on && F < 0) { const lv = env(T, .3, .4, 1.0, 1.15) * I, ns = String(L.P + 1); if (lv > .02) panel("LEVEL " + (T > .78 ? ns.slice(0, -1) + "?" : ns), lv, 1, "#FFFFFF", !!L.mile);
+        const go = env(T, 1.2, 1.26, 1.7, 1.9) * I; if (go > .02) panel("GO!", go, 2, "#7CFF6B"); }
+      if (on && T > 3.95 && T < 4.05) o.shake = .8;
+      // the machine powers down: the picture squeezes to a line and is gone; dark; it boots — RAM OK, ROM OK — and the title
+      // lights up letter by letter over the high score, which counts up; then the city is drawn back in from the top
+      if (dark) { const tmp = S.killT && S.killT[0].width === bw && S.killT[0].height === bh ? S.killT : (S.killT = canvas(bw, bh)), sq = seg(T, 10.0, 10.35, x => x), rev = T >= 12.6 ? E.io(seg(T, 12.6, 14.3, x => x)) : 0, ry = Math.round(rev * bh);
+        if (sq < 1) { const [tc, tx] = tmp; tx.clearRect(0, 0, bw, bh); tx.drawImage(b.canvas, 0, 0); b.globalAlpha = I; b.fillStyle = "#000000"; b.fillRect(0, 0, bw, bh); const h = Math.max(1, Math.round(bh * (1 - E.in(sq)))); b.globalAlpha = I * (1 - sq * sq); b.drawImage(tc, 0, 0, bw, bh, 0, Math.round((bh - h) / 2), bw, h); b.globalAlpha = 1; }
+        else { b.globalAlpha = I; b.fillStyle = "#000000"; b.fillRect(0, ry, bw, bh - ry); b.globalAlpha = 1;
+          const [cx, cy, small] = S.bootAt(), fadeT = small === 2 ? 0 : 1 - seg(T, 12.35, 12.7, x => x); // (where the screen is clear of words, below the top bar's strip)
+          if (fadeT > 0 && T < 11.2) { const ty = cy - 10; if (T > 10.55) txt("RAM OK", cx - 17, ty, "#FFFFFF", I * fadeT); if (T > 10.8) txt("ROM OK", cx - 17, ty + 10, "#FFFFFF", I * fadeT); }
+          if (fadeT > 0 && T >= 11.2) { const sc3 = pr || small ? 2 : 3, word = "ARCADE", lw = (3 + 1) * sc3, x0 = cx - Math.round((word.length * lw - sc3) / 2), y0 = cy - (small ? 10 : pr ? 14 : 20);
+            [...word].forEach((ch, i) => { const on2 = T - (11.25 + i * .13); if (on2 <= 0) return; const flick = on2 < .08 ? .35 : 1; S.F3[ch].forEach((row, j) => { for (let q2 = 0; q2 < 3; q2++) if (row[q2] === "#") { b.globalAlpha = I * fadeT * flick; b.fillStyle = i % 2 ? "#2BE8FF" : "#FF2BD6"; b.fillRect(x0 + i * lw + q2 * sc3, y0 + j * sc3, sc3, sc3); } }); });
+            b.globalAlpha = 1; if (T > 11.95) { const hs = "HIGH SCORE", sv = String(S.bank + S.earned(L, T)); if (!small) txt(hs, cx - Math.round(tw(hs) / 2), y0 + 5 * sc3 + 5, "#FFFFFF", I * fadeT); txt(sv, cx - Math.round(tw(sv) / 2), y0 + 5 * sc3 + (small ? 3 : 15), "#FFE14D", I * fadeT); } } } }
+      return o;
     },
     /** coin heaven, drawn: `H` the frame's moment and the drawing helpers */
     heavenDraw(H) {
@@ -891,7 +1025,7 @@ export default function arcade(K) {
         }
       } else if (hour) {
         // ---- b424: an hour egg's level ----
-        const o = (hour === 1 ? S.heavenDraw : S.duoDraw)({ T, I, A, F, L, hx, top0, X, XF, wX, cam, on, put, dot, txt, tw, panel, shadeB }); shake = o.shake; warn = o.warn; flashL = o.flashL;
+        const o = (hour === 1 ? S.heavenDraw : hour === 2 ? S.duoDraw : S.crownDraw)({ T, I, A, F, L, hx, top0, X, XF, wX, cam, on, put, dot, txt, tw, panel, shadeB }); shake = o.shake; warn = o.warn; flashL = o.flashL;
       } else {
         // ---- a dealt level (b381) ----
         const U = D / 800, jumps = L.jumps, SH = [9.2, 9.8, 10.4], HT = [9.86, 10.46, 11.06];
@@ -1158,7 +1292,7 @@ export default function arcade(K) {
       }
       // the score, on the bricks: the bank and what this level has scored so far (b397: it carries from level to level)
       const score = S.bank + (T > 0 ? S.earned(L, T) : 0); sc = String(score).padStart(6, "0"); S.lastInfo = { level: P + 1, score, bank: S.bank, boss: sig ? -1 : L.boss }; if (hour) S.lastInfo.hour = hour;
-      txt(pr ? sc : "SCORE " + sc, bw - tw(pr ? sc : "SCORE " + sc) - 4, gy + (pr ? 3 : 5), "#FFE14D", 1);
+      const sTxt = hour === 3 ? S.crownScore(T, I, sc) : pr ? sc : "SCORE " + sc; if (sTxt) txt(sTxt, bw - tw(sTxt) - 4, gy + (pr ? 3 : 5), "#FFE14D", 1); // (b441: the crown's score overflows, and goes dark with the screen)
       // under the words the moving picture is cut back, so the backdrop's dark sky is what's behind them (and the bloom with it)
       b.globalCompositeOperation = "destination-out"; for (const [x0, y0, x1, y1, k] of S.wr || []) { b.globalAlpha = k === 1 ? .7 : .4; b.fillRect(Math.floor(x0 / PS), Math.floor(y0 / PS), Math.ceil((x1 - x0) / PS) + 1, Math.ceil((y1 - y0) / PS) + 1); } b.globalCompositeOperation = "source-over"; b.globalAlpha = 1;
       // the frame: crisp, then bloom, then scanlines; a shake when things hit (a jitter of the frame's time — b381: it was

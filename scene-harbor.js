@@ -44,6 +44,19 @@
 // size the first time they are wanted, every few degrees of their turn, and kept; the ship is painted by rule at every
 // size she is seen at. Each has the bay to itself and keeps back from the words as the boats do; the crown's pass, and
 // every pass either side, deal as they always have.
+//
+// 1.12 b441: the crown. In the sixth hour of the list left up, and every sixth after (K.long 3), the harbour's festival
+// day comes to its race. Signal flags run up two lines from the headland to the lighthouse's lantern; a white launch
+// dressed overall runs in and anchors out in the bay as the mark, and fires the start; and the fleet — seven dinghies on a
+// desktop, five on a phone, each with its class emblem in its own colour — comes in from past the headland, heeled hard
+// and beating across the bay to the mark. One after another they round it toward you, and as each comes round its
+// spinnaker breaks out in its colours, red, yellow, blue, green, orange, magenta, violet. Then the run home before the
+// wind, the yellow coming up on the red and taking her at the line off the lighthouse: the gun at the lighthouse's foot,
+// its smoke rolling up and away, the lamp flashing three times, the light running down the sun's path and a swell to the
+// pier. The rainbow fleet sails on out of the bay, the launch after it, and the flags come down. Each boat's race is
+// worked out once for the pass from its own dice (who is quick, when each starts), so any moment can be held; the boats
+// are painted by rule, by pose, size and colours, the first time each is wanted, and kept. It keeps back from the words
+// as the boats do.
 export default function harbor(K) {
   const { clamp, lerp, E, seg, env, rng, rgb, mixc, css, canvas, paint, noise1, fbm, glowSpr, sprite, deal, bag } = K;
   let g = null;
@@ -312,6 +325,113 @@ export default function harbor(K) {
       else { pl.pirate = S.piratePlan(deal(n, 41)); pl.set = { t: [7.1, 7.9, 9.1, 10.3], t0: 7.1, dur: 3.2 }; pl.flashes = [[10.2, 10.42, 10.5, 11.1], [11.5, 11.72, 11.8, 12.4]]; } // the swell from the shots; the lighthouse flashes after her
       return pl;
     },
+    /** 1.12 b441: the crown (K.long 3: the sixth hour of the list left up, and every sixth after): the regatta, the harbour's
+     *  festival day at its end. The committee boat runs in from past the headland, dressed overall in signal flags, and
+     *  anchors out in the bay as the mark; its gun goes, and the fleet comes round the headland — seven dinghies, heeled
+     *  hard and close-hauled — and beats across the bay to it, places changing; one after another they round the mark
+     *  toward you and as each comes round its spinnaker breaks out in its colours, red, yellow, blue, green, orange,
+     *  magenta, violet; then the run home before the wind, the yellow coming up on the red, and passing her just before the
+     *  line off the lighthouse — the lighthouse's gun, its lamp flashing three times, a swell to the pier — and the fleet
+     *  sails on round the headland, the committee boat after them. Its own dice: who is quick, and when */
+    crownPlan(n) {
+      const e = S.regattaPlan(n), off = [20, 21, 22, 23], tf = e.tFin;
+      return { dealt: true, hour: 3, regatta: e, sweep: { t: [tf + .1, tf + .6, tf + 1.0, tf + 2.1], lag: 1.4 }, set: { t: [tf - .2, tf + .6, tf + 1.8, tf + 3.0], t0: tf - .2, dur: 3.2 }, flashes: [0, 1, 2].map(i => { const a = tf + .15 + i * .55; return [a, a + .2, a + .28, a + .7]; }) }; // for the winner: the light running down the sun's path, a swell to the pier, the lamp three times
+    },
+    /** the regatta's course and its fleet: the far line in, the turn round the mark toward you, the near line out; each
+     *  boat's place along it worked out once for the pass, a sixtieth of a second at a time */
+    regattaPlan(n) {
+      const { W, hz, portrait: pr } = S, r = deal(n, 47), k = pr ? .8 : 1.2, nb = pr ? 5 : 7, y1 = hz + (pr ? 9 : 10), y2 = hz + (pr ? 25 : 34), xm = Math.round(W * (pr ? .3 : .63)), rx = pr ? 12 : 18, ry = (y2 - y1) / 2, X0 = W + 32;
+      const N = 48, arc = [0]; for (let i = 1; i <= N; i++) { const a0 = Math.PI / 2 + Math.PI * (i - 1) / N, a1 = Math.PI / 2 + Math.PI * i / N; arc.push(arc[i - 1] + Math.hypot(rx * (Math.cos(a1) - Math.cos(a0)), ry * (Math.sin(a1) - Math.sin(a0)))); }
+      const L1 = X0 - xm, LA = arc[N], cy = y1 + ry;
+      const at = s2 => { if (s2 < L1) return [X0 - s2, y1, -1, 0]; if (s2 > L1 + LA) return [xm + s2 - L1 - LA, y2, 1, 0]; let i = 1; while (i < N && arc[i] < s2 - L1) i++; const f = (s2 - L1 - arc[i - 1]) / (arc[i] - arc[i - 1]), a = Math.PI / 2 + Math.PI * (i - 1 + f) / N; return [xm + rx * Math.cos(a), cy - ry * Math.sin(a), -rx * Math.sin(a), -ry * Math.cos(a)]; };
+      const COLS = [["#F4F7F6", "#E23B32", "#FFFFFF"], ["#1F3150", "#F4BE1F", "#E23B32"], ["#F4F7F6", "#2563CF", "#FFFFFF"], ["#A92E28", "#22A260", "#F4BE1F"], ["#F4F7F6", "#F0761F", "#1D3557"], ["#1F3150", "#D63C96", "#FFFFFF"], ["#2D6B54", "#7550D4", "#F4BE1F"]];
+      const sc = W / (pr ? 98 : 288) * (pr ? .55 : 1), end = X0 - xm + LA + (W + 22 - xm); // (speeds in pixels a second, for the bay's width)
+      const fleet = Array.from({ length: nb }, (_, i) => ({ i, cols: COLS[i], t0: .9 + i * (pr ? .5 : .42) + r() * .1, v1: (24 - i * .3 + r() * 1.2) * sc, v2: (31 - i * .4 + (i === 1 ? 4.6 : 0) + r() * .8) * sc, lane: [0, -2, 2, -1, 1, -3, 3][i] * (pr ? .7 : 1) }));
+      const sim = b => { const tr = new Float32Array(15 * 60 + 1); let s2 = 0; for (let j = 1; j < tr.length; j++) { const t = j / 60; if (t > b.t0) { const v = s2 < L1 - 4 ? b.v1 : s2 < L1 + LA + 4 ? b.v1 * .78 : b.v2; s2 += v / 60; } tr[j] = s2; } return tr; };
+      const takes = b => (L1 - 4) / b.v1 + (LA + 8) / (b.v1 * .78) + (end - L1 - LA - 4) / b.v2, f = Math.max(1, ...fleet.map(b => takes(b) / (14.3 - b.t0)));
+      fleet.forEach(b => { b.v1 *= f; b.v2 *= f; b.tr = sim(b); }); // all of them out past the headland before the pass ends
+      const xf = Math.round(W * (pr ? .8 : .86)), sF = L1 + LA + (xf - xm), tFin = Math.min(...fleet.map(b => { const q = b.tr.findIndex(v => v >= sF); return q < 0 ? 99 : q / 60; })); // the line off the lighthouse; the first across it
+      return { k, fleet, at, L1, LA, xm, cy, y1, y2, xf, tFin, cb: { x: xm - 1, y: Math.round(cy) + 1, t: [.15, 1.9, 11.9, 13.9] }, gun: 2.15 };
+    },
+    /** a racing dinghy, painted by rule (kept by pose, size and colours): "beat" bow to the left, heeled, close-hauled;
+     *  "turn" end on, coming round toward you; "run" bow to the right, upright, the main eased, its spinnaker `fill` set */
+    boatSpr(k, pose, cols, fill = 1) {
+      const key = pose + k + cols[1] + fill; S.boats = S.boats && S.boats.W === S.W ? S.boats : { W: S.W }; if (S.boats[key]) return S.boats[key];
+      const C = { hull: rgb(cols[0]), hullLo: rgb(cols[0]).map(v => Math.round(v * .72)), sail: rgb("#FFFFFF"), sailLo: rgb("#DCE8E6"), sailEdge: rgb("#8FADA9"), mast: rgb("#3E4A49"), spin: rgb(cols[1]), spinHi: rgb(cols[1]).map(v => Math.min(255, Math.round(v * 1.18 + 20))), spinLo: rgb(cols[1]).map(v => Math.round(v * .74)), stripe: rgb(cols[2]), deck: rgb("#C9B994"), mark: rgb(cols[1]) };
+      const Wd = Math.ceil(24 * k), Hd = Math.ceil(23 * k), wl = Hd - 1, X = v => v * k, Y = v => wl - v * k;
+      const px = new Array(Wd * Hd).fill(null), set = (x, y, c) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && y >= 0 && x < Wd && y < Hd) px[y * Wd + x] = c; };
+      const inTri = (q, a, b, c) => { const sg = (p1, p2, p3) => (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1]), d1 = sg(q, a, b), d2 = sg(q, b, c), d3 = sg(q, c, a); return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0)); };
+      const tri = (a, b, c, col, lo) => { const xs = [a[0], b[0], c[0]], ys = [a[1], b[1], c[1]]; for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)); y++) for (let x = Math.floor(Math.min(...xs)); x <= Math.ceil(Math.max(...xs)); x++) if (inTri([x + .5, y + .5], a, b, c)) set(x, y, lo && !inTri([x + 1.5, y + .5], a, b, c) ? lo : col); };
+      const line = (a, b, col) => { const n2 = Math.ceil(Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]))) || 1; for (let i = 0; i <= n2; i++) set(a[0] + (b[0] - a[0]) * i / n2, a[1] + (b[1] - a[1]) * i / n2, col); };
+      let ox;
+      if (pose === "turn") { const cx = X(12); ox = cx; for (let y = 0; y < 3 * k; y++) { const hw = (3.2 - y * .6) * k; for (let x = Math.floor(cx - hw); x <= Math.ceil(cx + hw); x++) set(x, wl - y, y < 1 ? C.hullLo : C.hull); }
+        tri([cx + .5, Y(18)], [cx + .5, Y(3.5)], [cx + 3.4 * k, Y(4)], C.sail, C.sailEdge); line([cx + .5, Y(18)], [cx + 3.4 * k, Y(4)], C.sailEdge); tri([cx - .5, Y(15)], [cx - .5, Y(3.5)], [cx - 2.4 * k, Y(4)], C.sailLo, C.sailEdge); line([cx, Y(3)], [cx, Y(19)], C.mast); } // end on, coming round: the sails swinging over
+      else { const run = pose === "run", mx = run ? X(13) : X(9), heel = run ? 0 : .2, deck = 3, bowX = run ? X(21) : X(3), sternX = run ? X(5) : X(20); ox = X(12);
+        for (let y = 0; y <= deck * k; y++) { const t = y / (deck * k), a = run ? sternX : bowX - 2.5 * k * t, b = run ? bowX + 2.5 * k * t : sternX; for (let x = Math.floor(Math.min(a, b)); x <= Math.ceil(Math.max(a, b)); x++) set(x, wl - y, y < 1 ? C.hullLo : y >= deck * k - .5 ? C.deck : C.hull); }
+        const top = [mx + heel * 17 * k, Y(20)], foot = [mx, Y(deck + .5)];
+        if (!run) { const ta = top, tb2 = [mx + heel * 2 * k, Y(deck + 1.5)], tc = [sternX - .5 * k, Y(deck + 1)]; tri(ta, tb2, tc, C.sail, C.sailEdge); line(ta, tc, C.sailEdge); // the main sheeted in aft, its leech drawn in
+          tri([mx + heel * 12 * k, Y(15)], [bowX - 1.5 * k, Y(deck + 1)], [mx - .5, Y(deck + 1)], C.sail, C.sailLo); line([mx + heel * 12 * k, Y(15)], [bowX - 1.5 * k, Y(deck + 1)], C.sailEdge); // a jib to the bow
+          const ex = lerp(ta[0], tc[0], .26), ey = lerp(ta[1], tc[1], .26) + 2 * k; for (let j = 0; j < 2 * k; j++) for (let i = 0; i < 2 * k; i++) set(ex - 1 + i, ey + j, C.mark); // its class's emblem, in its colour
+          line(foot, top, C.mast); line([mx, Y(deck + 1)], [sternX - .5 * k, Y(deck + .8)], C.mast); }
+        else { tri(top, [mx - .3, Y(deck + 1)], [sternX - 2.5 * k, Y(deck + 2.2)], C.sail, C.sailLo); line(top, [sternX - 2.5 * k, Y(deck + 2.2)], C.sailEdge); line(foot, top, C.mast); line([mx, Y(deck + 1.4)], [sternX - 2.5 * k, Y(deck + 2.2)], C.mast); // the main eased out over the quarter
+          { const ex = lerp(top[0], sternX - 2.5 * k, .3), ey = lerp(top[1], Y(deck + 2.2), .3) + 1.5 * k; for (let j = 0; j < 2 * k; j++) for (let i = 0; i < 2 * k; i++) set(ex - 1 + i, ey + j, C.mark); }
+          if (fill > 0) { const cx = mx + (2.2 + 4.2 * fill) * k, cy = Y(12), rx = (1.2 + 4.6 * fill) * k, ry = 8 * k; // the spinnaker: a round of colour from the masthead to the bow, a stripe across it
+            for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) for (let x = Math.floor(mx + 1); x <= Math.ceil(cx + rx); x++) { const u = (x + .5 - cx) / rx, v = (y + .5 - cy) / ry; if (u * u + v * v > 1 || x + .5 < mx + 1.2 * k + (1 - fill) * 2 * k) continue;
+              set(x, y, Math.abs(v - .05) < .16 ? C.stripe : u * u + v * v > .72 ? C.spinLo : u < -.15 && v < .1 ? C.spinHi : C.spin); } } } }
+      return (S.boats[key] = { c: paint(Wd, Hd, (x, y) => px[y * Wd + x]), wl, ox });
+    },
+    /** the regatta's morning: the committee boat dressed overall, the fleet racing, the spinnakers breaking out, the finish */
+    regattaAt(T, I, A, e) {
+      const { W, portrait: pr } = S, foam = S.cFoam, sinp = Math.sin(13 * Math.PI / 180), its = S.regIts || (S.regIts = Array.from({ length: 8 }, () => ({}))); let ni = 0;
+      // the committee boat: in fast to the mark, anchored, its gun for the start; away after the fleet at the end
+      const [c0, c1, c2, c3] = e.cb.t, cbx = T < c1 ? lerp(W + 30, e.cb.x, E.out(seg(T, c0, c1, x => x))) : T < c2 ? e.cb.x : lerp(e.cb.x, W + 34, E.in(seg(T, c2, c3, x => x)));
+      if (T > c0 && T < c3 + .1) Object.assign(its[ni++], { y: e.cb.y, b: null, x: Math.round(cbx) });
+      // the fleet: where each boat is on the course, and which way it faces
+      for (const b of e.fleet) { const j = Math.min(b.tr.length - 1, Math.max(0, Math.floor(T * 60))), f = T * 60 - j, s2 = j < b.tr.length - 1 ? lerp(b.tr[j], b.tr[j + 1], f) : b.tr[j]; if (s2 <= 0) continue;
+        const [x, y, dx, dy] = e.at(s2); if (x > W + 26) continue; const ang = Math.atan2(dx, dy / sinp) * 180 / Math.PI, sL = s2 < e.L1 ? 1 : s2 > e.L1 + e.LA ? -1 : Math.cos(Math.PI * (s2 - e.L1) / e.LA); // its depth in the fleet, on either line
+        const pose = ang < -55 ? "beat" : ang > 55 ? "run" : "turn", fill = pose === "run" ? Math.min(1, Math.round(clamp((s2 - e.L1 - e.LA * .62) / (pr ? 9 : 13)) * 3) / 3) : 0;
+        Object.assign(its[ni++], { y: Math.round(y + b.lane * Math.abs(sL)), b, x: Math.round(x), pose, fill }); }
+      const live = its.slice(0, ni).sort((p, q) => p.y - q.y); // the farther first
+      for (const it of live) { if (!it.b) { S.committeeAt(T, I, A, it.x, it.y, T < c1 - .2 || T > c2 + .1, e); continue; }
+        const b = it.b, sp = S.boatSpr(e.k, it.pose, b.cols, it.fill), X = it.x, Y0 = it.y, bob = Math.round(Math.sin(A * 2.1 + b.i * 1.3) * .6);
+        g.globalAlpha = I * .22; for (let rr = 1; rr < Math.min(8, sp.wl); rr += 2) g.drawImage(sp.c, 0, sp.wl - rr, sp.c.width, 1, X - sp.ox + Math.round(Math.sin(A * 3 + rr + b.i) * .7), Y0 + bob + rr, sp.c.width, 1); // its reflection
+        g.globalAlpha = I; g.drawImage(sp.c, X - sp.ox, Y0 + bob - sp.wl);
+        const dir = it.pose === "beat" ? -1 : it.pose === "run" ? 1 : 0; if (dir) { g.fillStyle = foam; const n = Math.round(6 * e.k) + 2, x0 = X - dir * Math.round(9 * e.k); for (let q = 0; q < n; q++) { g.globalAlpha = I * .9 * (1 - q / n); g.fillRect(Math.round(x0 - dir * (q * 2 + 1)), Y0 + 1 + (q & 1), 2, 1); } // its wake
+          if (it.pose === "beat" && Math.sin(A * 5 + b.i) > 0) { g.globalAlpha = I * .8; g.fillRect(X - Math.round(11 * e.k), Y0 - 1, 2, 1); } } } // spray at the bow, beating
+      S.dressAt(T, I, A); // the lighthouse dressed overall for the day
+      // the finish: the gun at the lighthouse's foot as the first comes across the line — a flash, and a ball of white smoke
+      // that rolls up and drifts off downwind, thinning
+      const q = T - e.tFin, gx = S.light.x - (pr ? 4 : 6), gy2 = S.hz - Math.round(S.H * (pr ? .05 : .06)) - 1;
+      if (q > 0 && q < .09) { g.globalAlpha = I; g.fillStyle = S.cFlash || (S.cFlash = css(rgb("#FF9F43"))); g.fillRect(gx - 2, gy2 - 1, 4, 2); g.fillStyle = S.cFlashHi || (S.cFlashHi = css(rgb("#FFF4C8"))); g.fillRect(gx - 1, gy2 - 1, 2, 1); }
+      if (q > 0 && q < 3.2) { const gsm = S.gunsmoke || (S.gunsmoke = S.puffs(rgb("#FFFFFF"), rgb("#ECF3F1"), rgb("#C6D8D4"), 12)), big = pr ? 7 : 10;
+        for (let j = 0; j < 4; j++) { const qj = q - j * .07; if (qj <= 0) continue; const rr2 = Math.max(1, Math.min(12, Math.round(big * (.35 + .65 * E.out(clamp(qj / .5))) * (1 - .4 * clamp((qj - 1.6) / 1.6)) * [1, .8, .7, .6][j]))), thin = 1 - clamp((qj - 1.2) / 2);
+          g.globalAlpha = I * thin * Math.min(1, qj * 10) * .95; g.drawImage(gsm[rr2 - 1], Math.round(gx - 3 + [0, -4, 4, 1][j] * (pr ? .6 : 1) + qj * (3 + j)) - rr2, Math.round(gy2 - 2 - [0, 3, 2, 6][j] * (pr ? .6 : 1) - qj * (3 + j * .6)) - rr2); } }
+      g.globalAlpha = 1;
+    },
+    /** the lighthouse dressed overall: two strings of signal flags from its lantern down to the headland either side, run up
+     *  as the day's racing begins, stirring in the wind, and lowered again when it is done */
+    dressAt(T, I, A) {
+      const L = S.light, pr = S.portrait, W = S.W, top = [L.x, L.top - 6], ends = [[L.x - Math.round(W * (pr ? .14 : .085)), S.hz - Math.round(S.H * (pr ? .05 : .06)) + (pr ? 3 : 4)], [Math.min(W - 1, L.x + Math.round(W * (pr ? .14 : .095))), S.hz - Math.round(S.H * (pr ? .05 : .06)) - 1]];
+      const up = seg(T, .2, 1.7, E.out) * (1 - seg(T, 13.3, 14.8, E.in)); if (up <= 0) return;
+      const FL = S.dressC || (S.dressC = ["#E8453C", "#F6C431", "#2D6CD3", "#FFFFFF", "#2FAE6B", "#F28033", "#22344E"].map(h => css(rgb(h))));
+      const ns = ends.map(([ex, ey]) => Math.max(4, Math.round(Math.hypot(ex - top[0], ey - top[1]) / 2.4))), at = (ex, ey, u) => [Math.round(lerp(ex, top[0], u)), Math.round(lerp(ey, top[1], u) + Math.sin(u * Math.PI) * 2)];
+      g.globalAlpha = I * .9; g.fillStyle = S.cLine || (S.cLine = css(P.nesD));
+      ends.forEach(([ex, ey], j) => { const n = ns[j]; for (let i = 0; i <= n; i++) { const u = i / n - (1 - up); if (u < 0) continue; const [x, y] = at(ex, ey, u); g.fillRect(x, y, 1, 1); } }); // the lines, hauled up from the headland
+      g.globalAlpha = I; for (let c = 0; c < 7; c++) { g.fillStyle = FL[c]; // the flags, a colour at a time, stirring
+        ends.forEach(([ex, ey], j) => { const n = ns[j]; for (let i = c || 7; i < n; i += 7) { const u = i / n - (1 - up); if (u < 0) continue; const [x, y] = at(ex, ey, u), flap = Math.sin(A * 6 + i * 1.3) > .45 ? 1 : 0; g.fillRect(x, y + 1, pr ? 1 : 2, 2 - (pr ? 0 : flap)); if (!pr && !flap) g.fillRect(x, y + 3, 1, 1); } }); }
+      g.globalAlpha = 1;
+    },
+    /** the committee boat: a white launch dressed overall — a line of signal flags from her stem up to her masthead and down to
+     *  her stern, stirring — her wake when she runs, her gun for the start */
+    committeeAt(T, I, A, x, y, moving, e) {
+      const sp = S.cbSpr || (S.cbSpr = sprite(S.portrait ? ["....m.....", "....m.....", "..wwww....", ".wwgwgww..", "hhhhhhhhhh", ".HHHHHHHH."] : ["......m.......", "......m.......", "......m.......", "...wwwwww.....", "..wwgwgwgw....", ".wwwwwwwwwww..", "hhhhhhhhhhhhhh", ".HHHHHHHHHHHH."], { m: P.mast, w: P.house, g: P.window, h: P.hullHi, H: rgb("#3E6E8E") }));
+      const X = x - (sp.width >> 1), Y = y - sp.height + 1 + Math.round(Math.sin(A * 1.7) * .5);
+      g.globalAlpha = I; g.drawImage(sp, X, Y); if (moving) S.wake(X + sp.width, y, -1, 8, I * .9);
+      const mt = [X + (S.portrait ? 4 : 6), Y], bow = [X, Y + sp.height - 3], st = [X + sp.width - 1, Y + sp.height - 3], FL = S.cbFl || (S.cbFl = ["#E8453C", "#F6C431", "#2D6CD3", "#FFFFFF", "#2FAE6B", "#F28033"]);
+      for (let c = 0; c < 6; c++) { g.fillStyle = FL[c]; for (const [a, b2, n0] of [[bow, mt, 0], [mt, st, 5]]) { const n = Math.max(3, Math.round(Math.hypot(b2[0] - a[0], b2[1] - a[1]) / 2)); for (let i = 1; i < n; i++) { if ((i + n0) % 6 !== c) continue; const u = i / n; g.fillRect(Math.round(lerp(a[0], b2[0], u)), Math.round(lerp(a[1], b2[1], u) + Math.sin(u * Math.PI) * 1.2 + (Math.sin(A * 4 + i) > .6 ? 1 : 0)), 1, 1); } } } // dressed overall, a colour at a time
+      const q = T - e.gun; if (q > 0 && q < 1.6) { const puf = S.steam || (S.steam = S.puffs(rgb("#FFFFFF"), rgb("#F1F7F6"), rgb("#C9DCD8"))), rr2 = Math.min(4, 1 + Math.floor(q * 5)); g.globalAlpha = I * (1 - q / 1.6) * Math.min(1, q * 12); g.drawImage(puf[rr2 - 1], X + 2 - rr2 + Math.round(q * 2), Y + 3 - rr2 - Math.round(q * 4)); } // the start
+      g.globalAlpha = 1;
+    },
     /** the duck's course (the second hour egg): a little tug comes in round the headland towing, on a long line, a rubber duck
      *  as tall as the lighthouse (Florentijn Hofman's, which tugs have towed into harbours the world over since 2007); the tug
      *  swings round toward you and heads back out, and the duck comes round after it, turning till it faces you square on —
@@ -380,7 +500,7 @@ export default function harbor(K) {
       return set[i];
     },
     /** an hour egg, drawn in two layers: what is out beyond the headland (`front` false), behind its cliff; what is in the bay */
-    hourAt(T, I, A, pl, setE, front) { if (pl.duck && front) S.duckAt(T, I, A, pl.duck, setE); if (pl.pirate) S.pirateAt(T, I, A, pl.pirate, front); },
+    hourAt(T, I, A, pl, setE, front) { if (pl.duck && front) S.duckAt(T, I, A, pl.duck, setE); if (pl.pirate) S.pirateAt(T, I, A, pl.pirate, front); if (pl.regatta && front) S.regattaAt(T, I, A, pl.regatta); },
     /** the black ship's course (the first hour egg). She comes in from past the headland under all her black sail, slowing,
      *  and rounds to broadside on; she shows her colours, the skull and crossbones run up her main; her ports open; she fires
      *  her four guns one after another — a flash, a burst of smoke, the
@@ -524,7 +644,7 @@ export default function harbor(K) {
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; N: the pass (0, the signature) */
     draw(T, I, A, F, N = 0) {
       const { W, H, hz, pier: pr, light: L } = S, TAU = 6.283;
-      if (N !== S.planP) { const h = N > 0 ? K.long(N) : 0; S.pl = N > 0 ? (K.egg(N) ? S.eggPlan(N) : h === 1 || h === 2 ? S.hourPlan(N, h) : S.dealPass(N)) : S.sig(); S.planP = N; } // (b424: an hour egg; the crown's pass, 3, deals as it did)
+      if (N !== S.planP) { const h = N > 0 ? K.long(N) : 0; S.pl = N > 0 ? (K.egg(N) ? S.eggPlan(N) : h === 1 || h === 2 ? S.hourPlan(N, h) : h === 3 ? S.crownPlan(N) : S.dealPass(N)) : S.sig(); S.planP = N; } // (b424: an hour egg; b441: the crown)
       const pl = S.pl;
       g.drawImage(S.bgSky, 0, 0);
       for (const cl of S.clouds) g.drawImage(cl.spr, Math.round(((cl.x + A * cl.v * .6) % (W + cl.spr.width)) - cl.spr.width), cl.y);

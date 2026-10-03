@@ -45,6 +45,16 @@
 // either side; in the light lies a pine cone, which rises up the beam, turning, and is taken in; the beam draws up, the
 // rings break and drift away, and with a little hop it tips and is gone up the sky in a streak.
 // Neither is dealt; each keeps back from the words as the dealt nights do, and opens and closes on the resting picture.
+//
+// 1.12 b446: the crown. In the sixth hour of the list left alone, and every sixth after (K.long 3), for whoever has had it up
+// all day, the day goes round: a whole day over the forest in fifteen seconds. The moon sets into the pines, dawn warms
+// the sky, the sun comes up past the tall pine with a glint and its light runs down the trees; birds dart out; the forest
+// turns green under a blue day, clouds racing over with their shadows on the meadow, the pines' shadows wheeling, geese in
+// a V; then the light goes gold, the sun sets into a bank of cloud over the pines with beams fanning up behind it and the
+// pines rimmed in fire, the sky burns down through red and violet, and the night comes back — the stars, the moon rising
+// out of the trees, the fireflies — to rest as it began. The words stay on the stage's own pad and washes through the
+// day; what is bright in it keeps back from them, and the day's zenith deepens as a real sky's does, so that the bar's
+// small words keep a dark ground from dawn to dusk.
 export default function forest(K) {
   const { LOOP, clamp, lerp, E, seg, env, rng, dith, rgb, mixc, css, canvas, paint, noise1, fbm, glowSpr, pine, sprite, layer, deal, bag } = K;
   let g = null;
@@ -69,6 +79,21 @@ export default function forest(K) {
     wolfEye: rgb("#F6EC9A"), wolf: rgb("#030907"), wolfRim: rgb("#86B29B"), moonDeep: rgb("#A3B99C"), moonHi: rgb("#F6FBF1"), // the hour eggs: the pack, black against the moon; the moon's face, close
   };
   const midsLayer = layer(), nearsLayer = layer(), grassLayer = layer();
+  // b446: the crown's day — the colours of the land and the trees by daylight, and the hours it goes through (seconds of the
+  // pass: the sky's four colours from the top down, the light laid over the land, how much of the trees' daylight shows)
+  const DAYC = { ridge: "#5A8494", ridgeHi: "#8AB0B6", farTree: "#3E6A60", farHi: "#5E8C78", haze: "#E2EEF2", groundHi: "#6E9A4E", ground: "#4A7838", groundLo: "#22422A",
+    mid: "#2E6240", midHi: "#5E9C5E", midShade: "#1E4632", trunk: "#4A3424", near: "#1E482E", nearHi: "#3C7846", grass: "#3A6C30", grassHi: "#9ACC5E",
+    dawn: "#FFD486", dusk: "#FF8C46", cloud: "#FFFFFF", cloudMid: "#E6EEF6", cloudSh: "#B4C6DA", cloudLo: "#8A9EBA", cloudW: "#FFE6B0", cloudWMid: "#FFB27E", cloudWSh: "#D86A6A", cloudWLo: "#5E3E72", goose: "#1C2830", shadow: "#16321E", dawnGlow: "#FFB27A",
+    sun: "#FFFBEA", sunRim: "#FFE7A8", sunW: "#FFC870", sunWRim: "#FF8A3C", sunGlow: "#FFF2CE", fireGlow: "#FF7A34" };
+  const DAY = Object.fromEntries(Object.entries(DAYC).map(([k, v]) => [k, rgb(v)]));
+  const SKYK = [[.8, [P.skyTop, P.skyMid, P.skyLow, P.horizon]], [2.4, ["#0A1430", "#1A2C54", "#384A7E", "#7E6A96"]], [3.5, ["#142A62", "#3A4E96", "#B07494", "#F09A86"]], [4.3, ["#1C3A7A", "#4A6EB4", "#E8908E", "#FFC27A"]],
+    [5.4, ["#2058B4", "#5A94DC", "#A8D0EE", "#F0E6C8"]], [6.8, ["#1E56B4", "#4A8EE0", "#8EC6F2", "#D8ECF6"]], [8.6, ["#2552A8", "#5E8AC6", "#E6B888", "#FFD27E"]], [9.9, ["#2C2A6C", "#9A4A86", "#FF7A48", "#FFC25A"]],
+    [10.8, ["#1E1C50", "#5E2E68", "#C8484A", "#F07A4A"]], [11.7, ["#121838", "#2E2652", "#64385C", "#A85A52"]], [13.0, [P.skyTop, P.skyMid, P.skyLow, P.horizon]]].map(([t, c]) => [t, c.map(v => typeof v === "string" ? rgb(v) : v)]);
+  const LIGHTK = [[.8, "#0A1028", .8], [2.4, "#141E46", .74], [3.5, "#2A2442", .62], [4.4, "#5A3A3E", .5], [5.4, "#FFE2A6", .12], [6.8, "#FFFFFF", 0], [8.6, "#FFC06C", .2], [9.6, "#E0703C", .36], [10.4, "#4A1E30", .56], [11.4, "#121636", .74], [13.0, "#0A1020", .82]].map(([t, c, a]) => [t, rgb(c), a]);
+  const AMBK = [[.8, 0], [2.4, .08], [3.6, .3], [4.6, .74], [5.4, .96], [8.8, 1], [9.8, .42], [10.6, .18], [11.4, .07], [12.4, 0]];
+  const DAYT = { sky: [.8, 2.0, 12.4, 14.0], sun: [3.9, 11.6], moonSet: [.8, 3.4], moonRise: [11.7, 13.9], creep: [4.0, 5.6], dawnLit: [4.0, 4.5, 5.3, 6.5], duskLit: [8.8, 9.8, 10.6, 11.6], warm: [8.6, 9.8, 10.8, 12.0], geese: [5.6, 8.8], birds: [3.9, 5.6], bank: [8.4, 9.4, 11.6, 12.6], shadows: [4.3, 5.2, 9.6, 10.6], dawnGlow: [2.6, 3.9, 4.6, 6.0], burst: [4.25, 4.55, 4.7, 5.35], fan: [9.1, 9.8, 10.5, 11.3] };
+  /** where T falls among keyframes: the one before, the one after, and how far between (eased) */
+  const keyf = (T, ks) => { if (T <= ks[0][0]) return [0, 0, 0]; for (let i = 0; i < ks.length - 1; i++) if (T < ks[i + 1][0]) { const u = (T - ks[i][0]) / (ks[i + 1][0] - ks[i][0]); return [i, i + 1, u * u * (3 - 2 * u)]; } const n = ks.length - 1; return [n, n, 0]; };
   const SL = .5; // b413: the egg's shaft of moonlight, how far it leans (across for each pixel down)
   const flip = c => { const [o, x] = canvas(c.width, c.height); x.setTransform(-1, 0, 0, 1, c.width, 0); x.drawImage(c, 0, 0); return o; };
   const mirror = o => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, Array.isArray(v) ? v.map(flip) : flip(v)]));
@@ -134,6 +159,7 @@ export default function forest(K) {
       b.drawImage(far, 0, 0); b.drawImage(mist, 0, hz - 20); b.drawImage(farTrees, 0, 0); b.drawImage(ground, 0, hz); b.drawImage(groundMist, 0, hz - 2);
       S.bg = bg;
       S.skyC = sky; S.ridgeY = ridgeY; // (the hour eggs': the sky to lay over the moon's place when it moves, the ridge it moves behind)
+      S.land = { far, farTrees }; S.dayB = null; // (the crown's: the far hills and their pines, for the day's colours of them)
       S.cast(W, H, portrait); S.planP = -1;
     },
     /** the forever cycle's cast, drawn once, each from dice of its own (the signature's are left as they were) */
@@ -576,6 +602,148 @@ export default function forest(K) {
       const { W, hz } = S; if (!S.rgS || S.rgS.width !== W || S.rgS.height !== hz + 4) { const x0 = w.mx - w.mr * 1.7, c = P.fog; S.rgS = paint(W, hz + 4, (x, y) => { const d = S.ridgeY(x) - y, a = (d >= 0 ? .24 * Math.exp(-d / 5) + .32 * Math.exp(-d / 15) : .5 * Math.exp(d / 2.5)) * Math.pow(clamp((x - x0) / (w.mr * 1.1)), 1.5); return a < .004 ? null : [c[0], c[1], c[2], Math.round(255 * a)]; }); }
       S.masked(v => { v.globalAlpha = k; v.drawImage(S.rgS, 0, 0); v.globalAlpha = 1; });
     },
+    /** 1.12 b446: the crown (K.long 3: the sixth hour of the list left alone, and every sixth after): the day goes round. A
+     *  whole day over the forest in fifteen seconds, as a time-lapse. The moon sets into the pines and the sky pales; dawn
+     *  warms the sky at the left, where the sun comes up past the tall pine with a glint, and its light runs down the pines
+     *  from their tops; birds dart out of the trees; the sun climbs over the words, its rays turning, and the forest is green
+     *  under a blue day, clouds racing over it with their shadows sliding across the meadow, the pines' shadows wheeling
+     *  round, geese crossing in a V; the light goes gold, the sun comes down the sky to the right into a long bank of cloud
+     *  over the pines, lighting it from below, beams of light fanning up from behind it, the pines rimmed in fire; the sky
+     *  burns down through red and violet to night, the stars come back, the moon rises out of the pines to its place, and the
+     *  fireflies come out and settle. On a phone the moon stays, paling to a daytime moon. The day's versions of the land and
+     *  the trees are made once, a part a frame in the first moments of the pass, and each frame mixes them by the hour.
+     *  Composed; its clouds from dice of their own */
+    crownPlan(n) {
+      const { W, H, portrait: pr, moon: M } = S, r = deal(n, 71);
+      const sun = pr ? [[-9, 62], [8, 46], [30, 33], [50, 29], [70, 34], [86, 46], [96, 60], [104, 74], [112, 88]] // (desktop: up past the left edge high over the words, over the top between the bar and the list, down under the cloud, into the tall pines and behind the hills on the right; on a phone away past the right edge)
+        : [[-14, 46], [12, 34], [60, 25], [118, 20], [176, 23], [218, 30], [244, 40], [258, 52], [266, 68], [270, 88], [272, 116]];
+      const clouds = (pr ? [[24, 1], [33, .8]] : [[19, 1], [31, .85], [24, .9]]).map(([y, k], i) => ({ y: y + Math.floor(r() * 4), k, t0: (pr ? 5.2 : 5.4) + i * (pr ? 1.9 : 1.45) + r() * .4, dur: pr ? 3.2 : 3.8, s: i })); // (none of them over the sun as it comes up)
+      S.crownBuild();
+      return { dealt: true, gust: { t: [5.4, 6.4, 7.0, 8.4], dir: 1, amp: 0 }, fph: 2.2, fog: [20, 21, 22, 23], wake: [11.9, 12.9], settle: [13.5, 14.6],
+        crown: { sun, clouds, moon: pr ? null : [[M.x, M.y], [M.x + 12, M.y + 10], [M.x + 26, M.y + 26], [M.x + 36, M.y + 46], [M.x + 40, M.y + 58]] } };
+    },
+    /** the day's versions of everything that the day lights, made once a layout: the far hills and their pines, the ground,
+     *  the haze; each pine in daylight, and the edges of it the low sun catches, gold from the left in the morning and fire
+     *  from the right in the evening; the grass; the sun, its glow; clouds; the sky's column; buffers */
+    crownBuild() {
+      const { W, H, hz, portrait: pr, moon: M } = S; if (S.dayB && S.dayB.W === W && S.dayB.H === H) return S.dayB;
+      const D = DAY, key = c => (c[0] << 16) | (c[1] << 8) | c[2], map = pairs => new Map(pairs.map(([a, b]) => [key(a), b]));
+      const read = c => c.getContext("2d").getImageData(0, 0, c.width, c.height).data; // (each sprite read back once)
+      const put = (w, h, fill) => { const [o, x] = canvas(w, h), im = x.createImageData(w, h); fill(im.data); x.putImageData(im, 0, 0); return o; };
+      const recolor = (c, m, a = read(c)) => put(c.width, c.height, d => { for (let i = 0; i < a.length; i += 4) { if (!a[i + 3]) continue; const v = m.get((a[i] << 16) | (a[i + 1] << 8) | a[i + 2]) || [a[i], a[i + 1], a[i + 2]]; d[i] = v[0]; d[i + 1] = v[1]; d[i + 2] = v[2]; d[i + 3] = a[i + 3]; } });
+      const edge = (c, a, dir, col) => { const w = c.width, h = c.height, on = (x, y) => x >= 0 && y >= 0 && x < w && y < h && a[(y * w + x) * 4 + 3] > 0;
+        return put(w, h, d => { for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { if (!on(x, y)) continue; const e1 = !on(x + dir, y), e2 = !e1 && !on(x + 2 * dir, y); if (!e1 && !e2) continue; const k = (y * w + x) * 4; d[k] = col[0]; d[k + 1] = col[1]; d[k + 2] = col[2]; d[k + 3] = e1 ? (on(x, y - 1) ? 200 : 255) : 70; } }); }; // the edge toward the sun, the outer pixel lit and the next one a little, the tips of the boughs brightest
+      const mm = map([[P.mid, D.mid], [P.midHi, D.midHi], [P.midShade, D.midShade], [P.trunk, D.trunk]]), nm = map([[P.near, D.near], [P.nearHi, D.nearHi], [P.trunk, D.trunk]]);
+      const trees = (list, m) => list.map(t => { const a = read(t.spr); return { x: t.x, base: t.base, d: recolor(t.spr, m, a), l: edge(t.spr, a, -1, D.dawn), r: edge(t.spr, a, 1, D.dusk) }; });
+      const R = pr ? 6 : 8, disc = (r, core, rim) => paint(r * 2 + 3, r * 2 + 3, (x, y) => { const d = Math.hypot(x - r - 1, y - r - 1); return d > r + .3 ? null : d > r - 1.2 ? rim : core; });
+      const cloud = (w, h, seed, c0, c1, c2, c3) => { const q = rng(seed), n = 6, puffs = Array.from({ length: n }, (_, i) => { const u = (i + .5) / n, big = Math.sin(Math.PI * u); return [w * (.08 + .84 * u) + (q() - .5) * 2, h * .72, h * (.2 + .42 * big + q() * .1)]; }), flat = Math.round(h * .8);
+        const inside = (x, y) => { if (y > flat) return false; for (const [px, py, pr2] of puffs) if (Math.hypot((x - px) * .82, y - py) <= pr2) return true; return false; };
+        return paint(w, h, (x, y) => { if (!inside(x, y)) return null; const top = !inside(x, y - 1), sh = !inside(x - 1, y - 1) && !top; if (y >= flat - 1) return c3; if (top || (y < flat * .45 && !inside(x, y - 2))) return c0; return y > flat * .62 ? c2 : sh ? c0 : c1; }); }; // heaped puffs on a flat base: the tops in the sun, the bodies, the shaded underside, the base line
+      const cw = pr ? 30 : 46, ch = pr ? 11 : 15, bw = pr ? 72 : 132, bh = pr ? 12 : 14;
+      const B = S.dayB = { W, H, R, mL: [layer(), layer(), layer()], nL: [layer(), layer(), layer()], gL: layer(), top: Math.min(...S.nears.concat(S.mids).map(t => t.base - t.h)), bankAt: pr ? [W - 54, 57] : [Math.round(W * .59), 39] };
+      [B.colC, B.colX] = canvas(1, hz + 4); B.colI = B.colX.createImageData(1, hz + 4); [B.c, B.x] = canvas(W, H);
+      if (!S.halo2) S.halo2 = glowSpr(Math.round(M.r * 2.2), P.moon, .22);
+      // made in four parts, a frame apiece in the night before the day begins (crownStep), so that no one frame pays for all
+      B.todo = [() => { // the land by day: the far hills, their haze, their pines, the meadow
+        const [land, lx] = canvas(W, H);
+        lx.drawImage(recolor(S.land.far, map([[P.ridge, D.ridge], [P.ridgeHi, D.ridgeHi]])), 0, 0);
+        lx.drawImage(paint(W, 26, (x, y) => [D.haze[0], D.haze[1], D.haze[2], Math.round(255 * .42 * Math.exp(-Math.pow((y - 17) / 7, 2)))]), 0, hz - 20);
+        lx.drawImage(recolor(S.land.farTrees, map([[P.farTree, D.farTree], [P.farHi, D.farHi]])), 0, 0);
+        lx.drawImage(paint(W, H - hz, (x, y) => { const t = Math.pow(y / (H - hz), .7); return t < .5 ? mixc(D.groundHi, D.ground, t / .5) : mixc(D.ground, D.groundLo, (t - .5) / .5); }), 0, hz);
+        lx.drawImage(paint(W, 18, (x, y) => [D.haze[0], D.haze[1], D.haze[2], Math.round(255 * .18 * Math.exp(-Math.pow((y - 5) / 6, 2)))]), 0, hz - 2);
+        B.land = land; B.grass = S.grass.map(c => recolor(c, map([[P.grass, D.grass], [P.grassHi, D.grassHi]]))); },
+      () => { B.mids = trees(S.mids, mm); }, () => { B.nears = trees(S.nears, nm); },
+      () => Object.assign(B, { // the sun and its light, the clouds, the birds
+        sun: disc(R, D.sun, D.sunRim), sunW: disc(R + 1, D.sunW, D.sunWRim), glow: glowSpr(Math.round(R * 3.6), D.sunGlow, .55), fire: glowSpr(Math.round(R * 7.5), D.fireGlow, .7), dawnG: glowSpr(pr ? 60 : 96, D.dawnGlow, .75),
+        rays: Array.from({ length: 6 }, (_, ph) => { const L = Math.round(R * 3.4), n = 12; return paint(L * 2 + 1, L * 2 + 1, (x, y) => { const dx = x - L, dy = y - L, d = Math.hypot(dx, dy); if (d < R + 2 || d > L) return null; const a = Math.atan2(dy, dx) - ph / 6 * (Math.PI * 2 / n), k = Math.round(a / (Math.PI * 2 / n)), off = Math.abs(a - k * Math.PI * 2 / n) * d, len = (k & 1) ? L * .62 : L; if (off > .6 || d > len) return null; return [D.sunGlow[0], D.sunGlow[1], D.sunGlow[2], Math.round(255 * .5 * Math.pow(1 - (d - R - 2) / (len - R - 2), 1.3))]; }); }), // twelve rays, long and short by turns, in six steps of their turning
+        burst: (() => { const L = Math.round(R * 4.2); return paint(L * 2 + 1, L * 2 + 1, (x, y) => { const dx = Math.abs(x - L), dy = Math.abs(y - L), d = Math.max(dx, dy), diag = dx === dy && d <= L * .55, axis = (dx === 0 || dy === 0) && d <= L; if (!diag && !axis) return null; return [255, 250, 226, Math.round(255 * Math.pow(1 - d / (L + 1), 1.2) * (axis ? 1 : .7))]; }); })(), // the glint as it clears the pines: a cross of light and its diagonals
+        fan: (() => { const L = pr ? 80 : 120, a0 = -Math.PI * .97, a1 = -Math.PI * .28, n = 6; return paint(L * 2 + 1, L + 1, (x, y) => { const dx = x - L, dy = y - L, d = Math.hypot(dx, dy); if (d < 6 || d > L || dy > 0) return null; const a = Math.atan2(dy, dx); if (a < a0 || a > a1) return null; const f = (a - a0) / (a1 - a0) * n, w = Math.abs(f - Math.round(f)), k = Math.max(0, 1 - w / .2); return k <= 0 ? null : [D.fireGlow[0], D.fireGlow[1], D.fireGlow[2], Math.round(255 * .32 * k * Math.pow(1 - d / L, 1.1) * Math.min(1, d / 20))]; }); })(), // the evening's beams of light fanned up from behind the cloud
+        clouds: [0, 1, 2].map(i => [cloud(cw + i * 6, ch + (i & 1) * 2, 900 + i, D.cloud, D.cloudMid, D.cloudSh, D.cloudLo), cloud(cw + i * 6, ch + (i & 1) * 2, 900 + i, D.cloudW, D.cloudWMid, D.cloudWSh, D.cloudWLo)]),
+        cshade: paint(cw * 2, 9, (x, y) => { const q = Math.hypot((x - cw) / cw, (y - 4) / 4.5); return q >= 1 ? null : [0, 0, 0, Math.round(255 * Math.pow(1 - q, .7))]; }), // a cloud's shadow on the meadow
+        bank: [cloud(bw, bh, 930, rgb("#7686A6"), rgb("#5C6C8C"), rgb("#4A5878"), rgb("#3A4664")), cloud(bw, bh, 930, rgb("#FFD890"), rgb("#F4885A"), rgb("#A84E6A"), rgb("#523866"))], // the long bank of cloud the sun sets into, over the pines
+        goose: [sprite(["#...#", ".#.#.", "..#.."], { "#": D.goose }), sprite(["..#..", ".#.#.", "#...#"], { "#": D.goose }), sprite([".....", "#####", "..#.."], { "#": D.goose })],
+        bird: [sprite(["#.#", ".#."], { "#": D.goose }), sprite(["...", "###"], { "#": D.goose })] })];
+      return B;
+    },
+    /** the next part of the day's making: one a frame while it is still night, the rest at once if the day is wanted now */
+    crownStep(T) { const B = S.dayB; if (!B || !B.todo.length) return; if (T < .7) B.todo.shift()(); else while (B.todo.length) B.todo.shift()(); },
+    /** how much of the day's light is on the land and the trees at T (0 … 1) */
+    dayAmb(T) { const [i, j, f] = keyf(T, AMBK); return lerp(AMBK[i][1], AMBK[j][1], f); },
+    /** the moon's place, bare while the moon is away from it (on a desktop it sets into the pines and rises out of them) */
+    crownUnmoon(T, I, c) { if (!c.moon || T <= DAYT.moonSet[0] || T >= DAYT.moonRise[1]) return; const M = S.moon, r = S.halo.width >> 1, x0 = Math.max(0, M.x - r), y0 = Math.max(0, M.y - r), x1 = Math.min(S.W, M.x + r + 1), y1 = Math.min(S.skyC.height, M.y + r + 1); g.globalAlpha = I; g.drawImage(S.skyC, x0, y0, x1 - x0, y1 - y0, x0, y0, x1 - x0, y1 - y0); g.globalAlpha = 1; },
+    /** the sky at this hour, the land in its light, the sun and its glow behind the land; then the moon, clouds and birds */
+    crownSky(T, I, A, c) {
+      const { W, H, hz, portrait: pr, moon: M } = S, B = S.dayB, a = env(T, ...DAYT.sky, E.sine) * I; S.dayK = S.dayAmb(T) * I;
+      if (a > .005) {
+        const [i, j, f] = keyf(T, SKYK), cs = [0, 1, 2, 3].map(k => mixc(SKYK[i][1][k], SKYK[j][1][k], f)), d = B.colI.data; // the sky's colours now, a column of them stretched across
+        const zen = cs[0].map(v => v * .4), zh = pr ? 30 : 34; // the zenith deeper, as a real sky's is, so that the bar's small words keep their dark ground all day
+        for (let y = 0; y < hz + 4; y++) { const t = y / hz; let v = t < .55 ? mixc(cs[0], cs[1], t / .55) : t < .9 ? mixc(cs[1], cs[2], (t - .55) / .35) : mixc(cs[2], cs[3], clamp((t - .9) / .1)); if (y < zh) v = mixc(v, zen, .9 * Math.pow(1 - y / zh, 1.2)); const k = y * 4; d[k] = v[0]; d[k + 1] = v[1]; d[k + 2] = v[2]; d[k + 3] = 255; }
+        B.colX.putImageData(B.colI, 0, 0);
+        const x = B.x, [li, lj, lf] = keyf(T, LIGHTK), la = lerp(LIGHTK[li][2], LIGHTK[lj][2], lf);
+        x.globalCompositeOperation = "source-over"; x.globalAlpha = 1; x.clearRect(0, 0, W, H); x.drawImage(B.land, 0, 0);
+        if (la > .004) { x.globalCompositeOperation = "source-atop"; x.globalAlpha = la; x.fillStyle = css(mixc(LIGHTK[li][1], LIGHTK[lj][1], lf)); x.fillRect(0, 0, W, H); } // the light on the land: dark before dawn, gold, clear, gold, dark and red, blue
+        S.crownShadows(T, c, x);
+        x.globalCompositeOperation = "destination-over"; // and behind the land: the sun, its glow, the dawn's glow, the sky
+        const sp = S.crownSun(T, c); if (sp) { const [sx, sy, w] = sp, X = Math.round(sx), Y = Math.round(sy);
+          x.globalAlpha = 1 - w; x.drawImage(B.sun, X - B.R - 1, Y - B.R - 1); x.globalAlpha = w; x.drawImage(B.sunW, X - B.R - 2, Y - B.R - 2);
+          x.globalAlpha = .9 * (1 - w); x.drawImage(B.glow, X - (B.glow.width >> 1), Y - (B.glow.height >> 1)); x.globalAlpha = w; x.drawImage(B.fire, X - (B.fire.width >> 1), Y - (B.fire.height >> 1)); }
+        const dg = env(T, ...DAYT.dawnGlow, E.sine); if (dg > .01) { x.globalAlpha = dg; x.drawImage(B.dawnG, c.sun[0][0] - (B.dawnG.width >> 1) + 6, c.sun[0][1] + 30 - (B.dawnG.height >> 1)); } // where the sun is coming up, the sky warming before it (low, clear of the bar)
+        x.globalAlpha = 1; x.drawImage(B.colC, 0, 0, 1, hz + 4, 0, 0, W, hz + 4);
+        x.globalCompositeOperation = "source-over";
+      }
+      if (a > .005) { g.globalAlpha = a; g.drawImage(B.c, 0, 0); g.globalAlpha = 1; } // (the day itself over the words, under the stage's own pad and washes, which keep them readable)
+      const busy = S.crownSun(T, c) || (c.moon ? T > DAYT.moonSet[0] && T < DAYT.moonRise[1] : a > .005) || c.clouds.some(cl => T > cl.t0 && T < cl.t0 + cl.dur) || (T > DAYT.bank[0] && T < DAYT.bank[3]) || (T > DAYT.birds[0] && T < DAYT.birds[1]) || (T > DAYT.geese[0] && T < DAYT.geese[1]); if (!busy) return; // (nothing of its own to lay through the mask)
+      S.masked(v => {
+        // the moon: on a desktop down into the pines in the morning and up out of them in the evening; on a phone it stays,
+        // paling in the day
+        const sp = S.crownSun(T, c); if (sp) { const [sx, sy, w] = sp, X = Math.round(sx), Y = Math.round(sy); // the sun's light in the sky, kept back from the words (the bar's small ones above all)
+          const ray = clamp(1 - w * 1.6) * env(T, 4.6, 5.6, 8.4, 9.3, E.sine) * I; if (ray > .01) { const rs = B.rays[Math.floor(T * 5) % 6]; v.globalAlpha = ray; v.drawImage(rs, X - (rs.width >> 1), Y - (rs.height >> 1)); } // its rays by day, turning
+          const bu = env(T, ...DAYT.burst, E.sine) * I; if (bu > .01) { v.globalAlpha = bu; v.drawImage(B.burst, X - (B.burst.width >> 1), Y - (B.burst.height >> 1)); } // the glint as it clears the pines
+          const fa = env(T, ...DAYT.fan, E.sine) * I; if (fa > .01) { v.globalAlpha = fa; v.drawImage(B.fan, X - (B.fan.width >> 1), Y - B.fan.height + 1); } } // the evening's beams, fanned up from behind the cloud
+        if (c.moon) { const u = T < 7 ? seg(T, ...DAYT.moonSet, E.io) : 1 - seg(T, ...DAYT.moonRise, E.io); if (T > DAYT.moonSet[0] && T < DAYT.moonRise[1] && u < 1) { const [mx, my] = along(c.moon, u); S.crownMoon(v, mx, my, I); } } // (while it is set, nothing)
+        else if (a > .005) S.crownMoon(v, M.x, M.y, a * (1 - .45 * S.dayK));
+        // clouds racing over in the day, and fire-lit at evening; on a phone the bank the sun sets into
+        const warm = env(T, ...DAYT.warm, E.sine);
+        for (const cl of c.clouds) { const u = (T - cl.t0) / cl.dur; if (u <= 0 || u >= 1) continue; const [c0, c1] = B.clouds[cl.s % 3], X = Math.round(lerp(-c0.width - 2, W + 2, u)); v.globalAlpha = I * cl.k * (1 - warm); v.drawImage(c0, X, cl.y); if (warm > .01) { v.globalAlpha = I * cl.k * warm; v.drawImage(c1, X, cl.y); } }
+        { const k = env(T, ...DAYT.bank, E.sine) * I; if (k > .01) { const X = B.bankAt[0] + Math.round(24 * (1 - seg(T, DAYT.bank[0], DAYT.bank[1] + .6, E.out))), Y = B.bankAt[1]; v.globalAlpha = k * (1 - warm); v.drawImage(B.bank[0], X, Y); v.globalAlpha = k * warm; v.drawImage(B.bank[1], X, Y); } } // (drifting in from the right as the afternoon goes)
+        // the birds: a few dart out of the pines at dawn; geese cross in a V in the morning
+        const ub = seg(T, ...DAYT.birds, x => x); if (!pr && ub > 0 && ub < 1) for (let k = 0; k < 3; k++) { const q = clamp(ub * 1.25 - k * .12); if (q <= 0 || q >= 1) continue; const bx = lerp(262 * W / 288 - k * 6, 150 * W / 288 - k * 22, q), by = lerp(62 - k * 4, -8 - k * 3, Math.pow(q, .8)) + Math.sin(q * 20 + k) * 1.5; v.globalAlpha = I; v.drawImage(B.bird[(Math.floor(T * 11) + k) & 1], Math.round(bx), Math.round(by)); } // (the birds: out of the pines and away up over the top)
+        const ug = seg(T, ...DAYT.geese, x => x); if (ug > 0 && ug < 1) { const gy = pr ? 23 : 28, lead = lerp(-12, W + 40, ug); for (let k = 0; k < 7; k++) { const row = Math.ceil(k / 2), side = k % 2 ? -1 : 1, bx = lead - row * (pr ? 4 : 6), by = gy + side * row * (pr ? 2 : 3) + Math.sin(T * 3 + k) * .6; v.globalAlpha = I; v.drawImage(B.goose[(Math.floor(T * 6) + k) % 3], Math.round(bx), Math.round(by)); } }
+        v.globalAlpha = 1;
+      });
+    },
+    /** the shadows on the meadow (x: the day's buffer, the land in it): each middle pine's, long to the side away from the sun
+     *  in the morning and the evening, short at noon, sweeping round with it; and the clouds' as they race over */
+    crownShadows(T, c, x) {
+      const k = env(T, ...DAYT.shadows, E.sine), sp = S.crownSun(T, c); if (k < .02 || !sp) return;
+      const { W, hz } = S, u = (T - DAYT.sun[0]) / (DAYT.sun[1] - DAYT.sun[0]), len = .5 + 2.4 * Math.pow(Math.abs(u - .42) * 1.9, 1.6), sx = sp[0];
+      x.globalCompositeOperation = "source-atop"; x.fillStyle = css(DAY.shadow); x.globalAlpha = .42 * k;
+      for (const t of S.mids) { const bx = t.x, by = t.base - 1, w = t.spr.width * .42, dir = clamp((bx - sx) / (W * .35), -1, 1), tx = bx + dir * t.h * len, ty = by + t.h * (.1 + .12 * len);
+        x.beginPath(); x.moveTo(bx - w, by); x.lineTo(bx + w, by); x.lineTo(tx, ty); x.closePath(); x.fill(); }
+      const B = S.dayB; x.globalAlpha = .3 * k; // the clouds' shadows, sliding over the meadow under them
+      for (const cl of c.clouds) { const q = (T - cl.t0) / cl.dur; if (q <= 0 || q >= 1) continue; const cw = B.clouds[cl.s % 3][0].width, X = lerp(-cw - 2, W + 2, q) + cw * .5 - (sx - W * .5) * .25; x.drawImage(B.cshade, Math.round(X - B.cshade.width / 2), Math.round(hz + 10 + cl.s * 7)); }
+      x.globalAlpha = 1;
+    },
+    /** where the sun is at T, and how low and warm (0 … 1); null when it is not up */
+    crownSun(T, c) { const u = (T - DAYT.sun[0]) / (DAYT.sun[1] - DAYT.sun[0]); if (u <= 0 || u >= 1) return null; const [x, y] = along(c.sun, u), o = S.sunO || (S.sunO = [0, 0, 0]); o[0] = x; o[1] = y; o[2] = clamp(Math.max(1 - u / .14, (u - .62) / .3)); return o; },
+    /** the moon, as the backdrop has it, at x, y */
+    crownMoon(v, x, y, k) { if (k <= .01) return; const M = S.moon, X = Math.round(x), Y = Math.round(y); v.globalAlpha = .75 * k; v.drawImage(S.halo, X - (S.halo.width >> 1), Y - (S.halo.height >> 1)); v.globalAlpha = k; v.drawImage(S.halo2, X - (S.halo2.width >> 1), Y - (S.halo2.height >> 1)); v.drawImage(S.moonSpr(M.r)[0], X - M.r, Y - M.r); v.globalAlpha = 1; },
+    /** the pines by daylight (which: 0 the middle ones, 1 the near), laid over them by the hour: green in the day, the morning's
+     *  gold running down their sunward edges from the tops, the evening's fire along the other edges */
+    crownTrees(T, I, which, sway) {
+      const B = S.dayB, a = S.dayAmb(T) * I, mo = env(T, ...DAYT.dawnLit, E.sine) * I, ev = env(T, ...DAYT.duskLit, E.sine) * I; if (a + mo + ev <= .01) return;
+      const list = which ? B.nears : B.mids, Ls = which ? B.nL : B.mL, key = sway.map(v => Math.round(v * 4)).join(), W = S.W, H = S.H;
+      const lay = (k, pick) => Ls[k](W, H, key, x => list.forEach((t, i) => S.tree(x, { x: t.x, base: t.base, spr: t[pick] }, sway[i])));
+      const yl = Math.round(lerp(B.top - 2, H, seg(T, ...DAYT.creep, E.sine)));
+      if (a > .01) { g.globalAlpha = a; g.drawImage(lay(0, "d"), 0, 0); g.globalAlpha = 1; }
+      if (mo > .01 || ev > .01) S.masked(v => {
+        if (mo > .01 && yl > 0) { const L = lay(1, "l"); v.globalAlpha = mo * .8; v.drawImage(L, 0, 0, W, yl, 0, 0, W, yl); const y2 = Math.min(H, yl + 3); if (y2 > yl) { v.globalAlpha = mo * .4; v.drawImage(L, 0, yl, W, y2 - yl, 0, yl, W, y2 - yl); } } // the morning's light, run down from the tops
+        if (ev > .01) { v.globalAlpha = ev; v.drawImage(lay(2, "r"), 0, 0); }
+        v.globalAlpha = 1;
+      });
+    },
+    /** the grass by daylight */
+    crownGrass(T, I, leans) { const B = S.dayB, a = S.dayAmb(T) * I; if (a <= .01) return; S.masked(v => { v.globalAlpha = a; v.drawImage(B.gL(S.W, 11, leans.join(), x => leans.forEach((l, i) => x.drawImage(B.grass[l + 1], i * 6, 0, 6, 11, i * 6, 0, 6, 11))), 0, S.H - 11); v.globalAlpha = 1; }); },
     /** where the moon is: 0 … 1 of the way from its place to the ridge, and its centre and radius there */
     moonAt(T, I, w) { const M = S.moon, q = env(T, ...w.moon, E.io) * I, o = S.mo || (S.mo = [0, 0, 0, 0]); o[0] = q; o[1] = lerp(M.x, w.mx, q); o[2] = lerp(M.y, w.my, q); o[3] = lerp(M.r, w.mr, Math.pow(q, 1.25)); return o; },
     /** its place in the sky, bare, once it has left it (the sky laid back over the moon and its halo in the backdrop) */
@@ -676,15 +844,19 @@ export default function forest(K) {
     /** T: loop time; I: how idle (0 in use … 1 the loop); A: wall time; F: finale progress, or -1; N: the pass (0, the signature) */
     draw(T, I, A, F, N = 0) {
       const { W, H, hz, moon: M } = S;
-      if (N !== S.planP) { const h = N > 0 ? K.long(N) : 0; S.pl = N > 0 ? (h === 1 ? S.wolfPlan(N) : h === 2 ? S.ufoPlan(N) : K.egg(N) ? S.eggPlan(N) : S.dealPass(N)) : S.sig(); S.planP = N; } // (a crown, long 3, is dealt as it always was)
+      if (N !== S.planP) { const h = N > 0 ? K.long(N) : 0; S.pl = N > 0 ? (h === 1 ? S.wolfPlan(N) : h === 2 ? S.ufoPlan(N) : h === 3 ? S.crownPlan(N) : K.egg(N) ? S.eggPlan(N) : S.dealPass(N)) : S.sig(); S.planP = N; }
       const pl = S.pl;
       g.drawImage(S.bg, 0, 0);
       if (pl.wolves && I > .01) S.unmoon(T, I, pl.wolves); // the first hour egg: the moon's place in the sky, when it has left it
+      const dayA = pl.crown ? env(T, ...DAYT.sky, E.sine) * I : 0; S.dayK = 0; // the crown: how much of the sky is the day's
+      if (pl.crown) S.crownStep(T); // (the day's making, a part a frame)
+      if (pl.crown && I > .01) S.crownUnmoon(T, I, pl.crown);
       // a colour string is parsed each time it is set, so two fixed ones and the twinkle in globalAlpha
       const cS = css(P.star), cH = css(P.starHi);
-      for (const s of S.stars) { const tw = .55 + .45 * Math.sin(A * s.f + s.ph), a = s.b * tw; g.fillStyle = a > .78 ? cH : cS; g.globalAlpha = clamp(a); g.fillRect(s.x, s.y, 1, 1); if (s.big && tw > .9) { g.fillStyle = cS; g.globalAlpha = .3; g.fillRect(s.x - 1, s.y, 3, 1); g.fillRect(s.x, s.y - 1, 1, 3); } }
+      if (dayA < .995) for (const s of S.stars) { const tw = .55 + .45 * Math.sin(A * s.f + s.ph), a = s.b * tw; g.fillStyle = a > .78 ? cH : cS; g.globalAlpha = dayA ? clamp(a) * (1 - dayA) : clamp(a); g.fillRect(s.x, s.y, 1, 1); if (s.big && tw > .9) { g.fillStyle = cS; g.globalAlpha = dayA ? .3 * (1 - dayA) : .3; g.fillRect(s.x - 1, s.y, 3, 1); g.fillRect(s.x, s.y - 1, 1, 3); } } // (the crown's day puts them out)
       g.globalAlpha = 1;
       if (pl.wolves && I > .01) S.bigMoon(T, I, pl.wolves); // the first hour egg: the moon, come down to the ridge
+      if (pl.crown && I > .01) S.crownSky(T, I, A, pl.crown); // the crown: the day's sky, its sun and moon, its clouds and birds, the land in its light
       if (pl.aurora && I > .01) S.aurora(T, I, pl.aurora);
       if (pl.star) S.shoot(T, I, pl.star);
       if (pl.meteors) for (const m of pl.meteors) S.shoot(T, I, m);
@@ -703,6 +875,7 @@ export default function forest(K) {
       const q = v => Math.round(v * 4);
       const mSway = S.mids.map(t => gust(t.x) * 1.5);
       g.drawImage(midsLayer(W, H, mSway.map(q).join(), x => S.mids.forEach((t, i) => S.tree(x, t, mSway[i]))), 0, 0);
+      if (pl.crown && I > .01) S.crownTrees(T, I, 0, mSway); // (the crown: by daylight)
       if (pl.wolves && I > .01) { S.ridgeGlow(T, I, pl.wolves); S.masked(() => S.packAt(T, I, pl.wolves, S.moonAt(T, I, pl.wolves)[0])); } // and the pack on the ridge, among the spires, against the moonlit mist
       if (dm) { S.fog(S.fogBands[1], hz - 1, o1, .25); if (fogE > 0) S.masked(x => S.fog(S.fogBands[1], hz - 1, o1, fogE * .5, x)); } else S.fog(S.fogBands[1], hz - 1, o1, .25 + fogE * .5);
       const bank = pl.bank ? env(T, ...pl.bank, E.sine) * I : 0;
@@ -719,9 +892,11 @@ export default function forest(K) {
       const rus = pl.egg && I > .01 ? S.rustle(T, I, pl.egg) : null; // the egg: the boughs it pushes through
       g.drawImage(nearsLayer(W, H, nSway.map(q).join() + (rus ? "|" + rus.join() : ""), x => S.nears.forEach((t, i) => S.tree(x, t, nSway[i], rus && rus[i] ? [rus[i] / 4, Math.floor(T * 15)] : null))), 0, 0);
       if (pl.owl && I > .01) S.owlAt(T, I, pl.owl, 1, nSway);
+      if (pl.crown && I > .01) S.crownTrees(T, I, 1, nSway);
       if (pl.ufo && I > .01) S.masked(() => S.ufoNear(T, I, pl.ufo)); // the second hour egg: the near pines in its beam's light
       const leans = []; for (let x = 0; x < W + 8; x += 6) leans.push(Math.round(clamp(gust(x) * 1.7 - .35, -1, 1)));
       g.drawImage(grassLayer(W, 11, leans.join(), x => leans.forEach((l, i) => x.drawImage(S.grass[l + 1], i * 6, 0, 6, 11, i * 6, 0, 6, 11))), 0, H - 11);
+      if (pl.crown && I > .01) S.crownGrass(T, I, leans);
       if (cover > 0) { g.globalAlpha = cover * .3; g.fillStyle = css(P.near); g.fillRect(0, 0, W, H); g.globalAlpha = 1; } // the clearing goes dark under the cloud
       S.fireflies(T, I, A, F, pl);
     },
@@ -876,7 +1051,7 @@ export default function forest(K) {
         if (pl.egg) { const s = S.scatter(T, x, y, pl.egg); x += s[0]; y += s[1]; b = Math.max(b, s[2] * up); } // the egg: they scatter from it, startled bright
         if (pl.hush) b *= 1 - .92 * env(T, ...pl.hush, E.sine); // the first hour egg: they go quiet while the pack howls
         if (pl.ufo) { const r = S.ringAt(T, i, n, pl.ufo, x, y, b); x = r[0]; y = r[1]; b = r[2]; } // the second: they dance round under the saucer
-        if (f.amb) glow(f.hx + Math.sin(A * .4 + f.ph) * 4, f.hy - 2 + Math.sin(A * .3 + f.ph) * 2, Math.pow(Math.max(0, Math.sin(A * (.8 + f.m * .06) + f.ph)), 10) * .75 * (1 - I * up));
+        if (f.amb) glow(f.hx + Math.sin(A * .4 + f.ph) * 4, f.hy - 2 + Math.sin(A * .3 + f.ph) * 2, Math.pow(Math.max(0, Math.sin(A * (.8 + f.m * .06) + f.ph)), 10) * .75 * (1 - I * up) * (pl.crown ? 1 - S.dayK : 1)); // (none by day: the crown's)
         const dm = pl.dealt && S.wmOn, mf = dm ? S.m(x, y) : 1, mh = dm ? S.mb(x - 5, y - 5, 11, 11) : 1; // a dealt pass's fireflies keep back from the words
         if (b * I > 0) glow(x, y, dm ? b * I * mf : b * I);
         if (gth > .3 && b * I > .55) { g.globalAlpha = (b * I - .55) * gth * .9 * mh; g.drawImage(S.flyHalo, Math.round(x) - 9, Math.round(y) - 9); g.globalAlpha = 1; } // the near side of the spiral

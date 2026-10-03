@@ -38,6 +38,13 @@
 // again, each a moment behind the one before, so that every change runs down the flock as a wave — each so thin all over
 // that it shows one of the film's colours, and the colours run through the flock as it turns; then they settle into a
 // heart, which goes to magenta, beats once, and pops away from its notch, one by one.
+// 1.12 b444: the crown. In the sixth hour of the list left alone, and every sixth after (K.long 3), the most beautiful
+// thing bubbles do. A giant hoop comes in from the open side, its film a great disc of swirling colour; it turns edge on
+// and sweeps slowly across the page, drawing the film out behind it into one long bubble, a tube undulating as it fills,
+// the window drawn out along it; it twists the end shut and goes, and the long bubble floats free, necks along its length
+// as a stream of water does, and pinches off into a flight of bubbles of different sizes (Plateau and Rayleigh's
+// instability), which round off and rise, wobbling, each its own way, and pop one after another. Under the words its film
+// is thinned, as the first hour egg's is.
 export default function bubbles(K) {
   const { clamp, lerp, E, seg, env, rng, canvas } = K;
   const TAU = Math.PI * 2;
@@ -304,6 +311,105 @@ export default function bubbles(K) {
     g.globalAlpha = 1;
   };
 
+  /* ---------------- 1.12 b444: the crown ----------------
+     For a list left up through a whole day (K.long 3: in the sixth hour, and every sixth after), the most beautiful thing
+     bubbles do. Its own dice (salt 135). */
+  const EC3 = { in: [.3, 1.8], turn: [2.7, 3.5], sweep: [3.1, 7.7], close: [7.5, 8.3], away: [8.0, 9.5], pinch: [8.9, 10.7], round: [10.55, 11.2], pops: [12.2, 14.1] };
+  /** the crown's dice and its sizes for this page: the hoop's line across, the tube's radius, how many it breaks into,
+   *  and each one's way up and when it pops */
+  const crownOf = P => { const { W, H, pr } = S; if (S.c3 && S.c3.P === P && S.c3.W === W && S.c3.H === H) return S.c3; const r = K.deal(P, 135);
+    const r0 = clamp(Math.min(H * .125, W * .19), 48, 118), y0 = H * (pr ? .8 : .78), n = W > 1000 ? 6 : W > 640 ? 5 : 4, xa = W + r0 * 1.6, xh = W * (pr ? .64 : .8), xe = W * (pr ? .2 : .13);
+    const lobes = Array.from({ length: n }, () => ({ v: .55 + r() * .45, sw: (r() - .5) * 2, ph: r() * TAU, f: .6 + r() * .5 }));
+    const ord = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const q = Math.floor(r() * (i + 1)); [ord[i], ord[q]] = [ord[q], ord[i]]; }
+    ord.forEach((k, i) => { lobes[k].pop = EC3.pops[0] + i * (EC3.pops[1] - EC3.pops[0] - .3) / Math.max(1, n - 1) + r() * .1; });
+    const nk = [0]; for (let i = 1; i < n; i++) nk.push(i / n + (r() - .5) * .3 / n); nk.push(1); // where its necks fall: not evenly, so its pieces differ
+    lobes.forEach((b, k) => { b.a = nk[k]; b.b = nk[k + 1]; b.dir = (k - (n - 1) / 2) / n * 1.3 + (r() - .5) * .5; }); // (and each its own way up: the outer ones out to the sides)
+    return (S.c3 = { P, W, H, r0, y0, n, nk, xa, xh, xe, lobes, wav: r() * TAU, tilt: (r() - .5) * .05 }); };
+  /** where the hoop is at T (its middle, how far it has turned edge on: 1 face on … .3; gone when null) */
+  const hoopAt = (T, c) => { if (T < EC3.in[0] || T > EC3.away[1]) return null;
+    const qi = E.out(seg(T, EC3.in[0], EC3.in[1], x => x)), sw = E.io(seg(T, EC3.sweep[0], EC3.sweep[1], x => x)), qa = E.in(seg(T, EC3.away[0], EC3.away[1], x => x));
+    const x = lerp(c.xa, c.xh, qi) + (c.xe - c.xh) * sw - qa * (c.xe + c.r0 * 3), y = c.y0 + Math.sin(T * 1.3) * c.r0 * .05 * qi + qa * c.r0 * 1.8;
+    const k = lerp(1, .3, E.io(seg(T, EC3.turn[0], EC3.turn[1], x => x))) * (1 - .85 * E.io(seg(T, EC3.close[0], EC3.close[1], x => x))); // face on, edge on, and twisted shut
+    return { x, y, k, tw: seg(T, EC3.close[0], EC3.close[1], E.io) }; };
+  /** the long bubble at T: its two ends, how open its end at the hoop still is, its rise, and how far its necks have
+   *  pinched (0 … 1); null before it begins or once it has broken into its flight */
+  const tubeAt = (T, c) => { if (T < EC3.turn[0] || T > EC3.round[1]) return null; const h = hoopAt(T, c), sw = E.io(seg(T, EC3.sweep[0], EC3.sweep[1], x => x));
+    const tail = c.xh + c.r0 * .2 + (c.xh - c.xe) * .05 * sw + c.r0 * 1.6 * seg(T, EC3.turn[0], EC3.turn[1] + .4, E.out); // the far end, drifting a little the other way as it's drawn out
+    const Ts = EC3.close[1] + .2, free = seg(T, EC3.close[0] + .25, Ts, x => x), sealX = c.sealX !== undefined ? c.sealX : (c.sealX = hoopAt(Ts, c).x); // (on the hoop until it is sealed; then where the hoop let it go)
+    const left = T < Ts && h ? h.x : sealX, rise = seg(T, EC3.close[1], EC3.round[1] + 2, E.sine) * c.r0 * .5;
+    return { xl: Math.min(left, tail - c.r0 * .5), xr: tail, open: 1 - free, rise, pinch: seg(T, EC3.pinch[0], EC3.pinch[1], E.in), drawn: seg(T, EC3.turn[0], EC3.turn[1] + .3, E.out) }; };
+  /** the tube's radius and middle at x, at T (the profile: round at a sealed end, the hoop's width at an open one; a
+   *  bulge running along it; sagging and waving; necked at its pinches) */
+  const tubeR = (x, t, c, T, A) => { const L = Math.max(1, t.xr - t.xl), s = (x - t.xl) / L, r0 = c.r0 * lerp(.25, 1, t.drawn); if (s < 0 || s > 1) return null;
+    const capR = Math.min(.5, r0 / L * 1.1), capL = t.open > .01 ? capR * (1 - t.open) : capR, eR = s > 1 - capR ? Math.sqrt(clamp(1 - ((s - 1 + capR) / capR) ** 2)) : 1, eL = capL > .0005 && s < capL ? Math.sqrt(clamp(1 - ((capL - s) / capL) ** 2)) : 1;
+    let r = r0 * (.93 + .07 * Math.cos(Math.PI * s)) * (1 + .075 * Math.sin(s * L / (r0 * 1.7) - T * 2.2) + .045 * Math.sin(s * L / (r0 * 3.4) + T * 1.3)) * eR * eL; // (a bulge running along it, and a slower one back)
+    if (t.pinch > 0) { const n = c.n; let k = 1; for (let i = 1; i < n; i++) { const pk = clamp(t.pinch * 1.25 - (i % 2 ? 0 : .2)), d = (s - c.nk[i]) * n * 2.4; k *= 1 - pk * Math.exp(-d * d); } r *= k; } // the necks, the odd ones first
+    const yc = c.y0 + c.r0 * (.2 * Math.sin(Math.PI * s) + .3 * s * Math.sin(s * 6.5 - T * 1.6 + c.wav)) - t.rise + (x - c.xh) * c.tilt; // sagging, and a wave running down it to its far end
+    return [r, yc, s]; };
+  /** the long bubble's film, reckoned as every film here is (by how thick it is, drained thicker low down, swirling), on a
+   *  buffer a quarter the page's size and only where the tube is: seen slant at its top and bottom, so its colours crowd
+   *  there and it is clear across its middle */
+  const SINT = new Float32Array(4096); for (let i = 0; i < 4096; i++) SINT[i] = Math.sin(i / 4096 * TAU);
+  const fsin = x => SINT[(x * 651.8986469) & 4095]; // (a sine looked up: the film here is reckoned per pixel)
+  /** a bubble's film as film() reckons it, with the sines looked up (for the crown's hoop, redrawn as it swirls) */
+  const filmFast = (im, N, t) => { const d = im.data, h = (N - 1) / 2; d.fill(0);
+    for (let j = 0; j < N; j++) { const v = (j - h) / h; for (let i = 0; i < N; i++) { const u = (i - h) / h, rr = Math.hypot(u, v); if (rr >= 1) continue;
+      const a = u * 2.6 + .8 * fsin(v * 3.4 + t), b = v * 2.3 + .8 * fsin(u * 3.1 - t), sw = fsin(a * 2.6 + fsin(b * 2.1 + t) * 1.7) + .55 * fsin(b * 3.7 - a * 1.5 + 2 * t);
+      const th = (520 + 170 * v + 150 * sw) * Math.sqrt(1 - rr * rr / 1.77), k = clamp(Math.round(th / 2), 0, 599) * 4, al = clamp((.05 + .85 * rr ** 3.2) * (.3 + 1.1 * FILM[k + 3] / 255)) * clamp(th / 70) * clamp((1 - rr) * h);
+      const o = (j * N + i) * 4; d[o] = FILM[k]; d[o + 1] = FILM[k + 1]; d[o + 2] = FILM[k + 2]; d[o + 3] = 255 * al; } } };
+  const VPROF = Array.from({ length: 129 }, (_, i) => { const v = i / 128; return [Math.sqrt(1 - v * v / 1.77), v ** 3.2]; }); // (across the tube: how slant it's seen, and how its colour crowds the rims)
+  const tubeFilm = (F, c, t, Tq, Aq) => { const { bw, bh, sc, oy } = F, d = F.im.data, tt = Aq * .35; d.fill(0);
+    for (let i = 0; i < bw; i++) { const x = (i + .5) / sc, rc = tubeR(x, t, c, Tq, Aq); if (!rc || rc[0] < 1) continue; const [r, yc] = rc, u = x / (c.r0 * 2.2), su = .8 * fsin(u * 2.1 - tt), ua = u * 2.2;
+      const j0 = Math.max(0, Math.floor((yc - r - oy) * sc)), j1 = Math.min(bh - 1, Math.ceil((yc + r - oy) * sc)), edge = r * sc * .9;
+      for (let j = j0; j <= j1; j++) { const v = ((j + .5) / sc + oy - yc) / r, av = v < 0 ? -v : v; if (av >= 1) continue;
+        const a = ua + .8 * fsin(v * 3.4 + tt), b = v * 2.3 + su, sw = fsin(a * 2.6 + fsin(b * 2.1 + tt) * 1.7) + .55 * fsin(b * 3.7 - a * 1.5 + 2 * tt), pf = VPROF[(av * 128) | 0];
+        const th = (500 + 160 * v + 150 * sw) * pf[0], k = clamp(Math.round(th / 2), 0, 599) * 4, al = clamp((.09 + .85 * pf[1]) * (.3 + 1.1 * FILM[k + 3] / 255)) * clamp((1 - av) * edge);
+        const o = (j * bw + i) * 4; d[o] = FILM[k]; d[o + 1] = FILM[k + 1]; d[o + 2] = FILM[k + 2]; d[o + 3] = 255 * al; } }
+    F.x.putImageData(F.im, 0, 0); };
+  /** the crown, under the small ones: the hoop's film, the long bubble (its film, its outline, the window drawn out along
+   *  it), the hoop and its handle; all of it thinned under the words */
+  const crownUnder = (T, A, P, V) => {
+    const c = crownOf(P), { W, H } = S, h = hoopAt(T, c), t = tubeAt(T, c), sc = .25, oy = c.y0 - c.r0 * 2.4, bh = Math.ceil(c.r0 * 4.3 * sc), bw = Math.ceil(W * sc);
+    if (!h && !t) return;
+    if (t) { const F = S.c3F && S.c3F.bw === bw && S.c3F.bh === bh ? S.c3F : (S.c3F = (() => { const [cv2, x2] = canvas(bw, bh); return { c: cv2, x: x2, im: x2.createImageData(bw, bh), bw, bh, sc, oy }; })()); F.oy = oy;
+      const Tq = Math.round(T * 12) / 12, Aq = Math.round(A * 12) / 12, key = P + ":" + Tq + ":" + Aq + ":" + W + ":" + H; if (S.c3K !== key) { const tq = tubeAt(Tq, c) || t; tubeFilm(F, c, tq, Tq, Aq); F.xl = Math.max(0, tq.xl); F.xr = Math.min(W, tq.xr); S.c3K = key; } // (twelve times a second, from the moment rounded, so a moment held draws the same)
+      const fade = 1 - seg(T, EC3.round[0], EC3.round[1], x => x), dl = Math.max(0, t.xl), dr = Math.min(W, t.xr); g.save(); g.globalAlpha = V * fade; g.imageSmoothingEnabled = true;
+      if (F.xr - F.xl > 2 && dr - dl > 2) g.drawImage(F.c, F.xl * sc, 0, (F.xr - F.xl) * sc, bh, dl, oy, dr - dl, bh / sc); // (stretched to where its ends are now, so it keeps up with the hoop between reckonings)
+      // its outline, and the window drawn out long along its top
+      const pts = []; for (let x = Math.max(0, t.xl); x <= Math.min(W, t.xr); x += 6) { const rc = tubeR(x, t, c, T, A); if (rc) pts.push([x, rc[0], rc[1]]); } { const rc = tubeR(Math.min(W, t.xr) - .01, t, c, T, A); if (rc) pts.push([Math.min(W, t.xr) - .01, rc[0], rc[1]]); }
+      g.lineWidth = 1.4; g.strokeStyle = "rgba(160,64,112,.3)"; for (const sg of [-1, 1]) { g.beginPath(); let on2 = false; for (const [x, r, yc] of pts) { if (r < 1) { on2 = false; continue; } on2 ? g.lineTo(x, yc + sg * r * .985) : g.moveTo(x, yc + sg * r * .985); on2 = true; } g.stroke(); }
+      g.lineCap = "round"; g.globalAlpha = 1;
+      for (const [v, lw, al] of [[-.64, .13, .72], [-.47, .1, .72], [.74, .07, .3]]) { g.beginPath(); let on2 = false;
+        for (const [x, r, yc] of pts) { const ph = ((x - t.xl) / (c.r0 * 1.9)) % 1; if (r < c.r0 * .45 || ph < .12) { on2 = false; continue; } on2 ? g.lineTo(x, yc + v * r) : g.moveTo(x, yc + v * r); on2 = true; }
+        g.lineWidth = Math.max(1.5, lw * c.r0 * 1.9); g.strokeStyle = `rgba(255,255,255,${(al * .3 * V * fade).toFixed(3)})`; g.stroke(); g.lineWidth = Math.max(1, lw * c.r0); g.strokeStyle = `rgba(255,255,255,${(al * V * fade).toFixed(3)})`; g.stroke(); } // (panes, with their mullions between; a soft edge drawn wider round each)
+      g.restore(); }
+    if (h) { // the hoop's film while it faces us, then the hoop itself, turned edge on, twisted shut, and going
+      const R0 = c.r0, rx = Math.max(.5, R0 * h.k), face = 1 - seg(T, EC3.turn[0], EC3.turn[1] + .2, E.io);
+      if (face > .01) { const Fh = S.c3H || (S.c3H = (() => { const [cv2, x2] = canvas(64, 64); return { c: cv2, x: x2, im: x2.createImageData(64, 64) }; })()), key = P + ":" + Math.round(A * 15);
+        if (S.c3HK !== key) { filmFast(Fh.im, 64, Math.round(A * 15) / 15 * .35); Fh.x.putImageData(Fh.im, 0, 0); S.c3HK = key; }
+        g.save(); g.globalAlpha = V * face; g.translate(h.x, h.y); g.scale(rx / R0, 1); g.imageSmoothingEnabled = true; g.drawImage(Fh.c, -R0, -R0, 2 * R0, 2 * R0); g.drawImage(S.shine, -R0, -R0, 2 * R0, 2 * R0); g.restore(); }
+      const [dk, md, hi] = WANDS[0], hx = h.x + rx * .55, hy = h.y + R0 * .85, ex = hx + R0 * 1.4, ey = H + R0;
+      g.save(); g.globalAlpha = V; g.lineCap = "round"; g.strokeStyle = dk; g.lineWidth = R0 * .15; g.beginPath(); g.moveTo(hx, hy); g.lineTo(ex, ey); g.stroke(); g.strokeStyle = md; g.lineWidth = R0 * .1; g.stroke(); g.strokeStyle = hi; g.lineWidth = R0 * .03; g.beginPath(); g.moveTo(hx - R0 * .02, hy); g.lineTo(ex - R0 * .02, ey); g.stroke();
+      g.beginPath(); g.ellipse(h.x, h.y, rx, R0, 0, 0, TAU); g.strokeStyle = dk; g.lineWidth = R0 * .13; g.stroke(); g.strokeStyle = md; g.lineWidth = R0 * .085; g.stroke();
+      g.beginPath(); g.ellipse(h.x - rx * .02, h.y, rx * .97, R0 * .97, 0, Math.PI * 1.08, Math.PI * 1.55); g.strokeStyle = hi; g.lineWidth = R0 * .03; g.stroke(); g.restore(); }
+    const mk = maskOf(); if (mk) { g.save(); g.globalCompositeOperation = "destination-out"; g.globalAlpha = .84; g.imageSmoothingEnabled = true; g.drawImage(mk, 0, 0, W, H); g.restore(); } // (thinned under the words)
+  };
+  /** the flight, over the small ones: the long bubble's pieces rounded into bubbles, rising, wobbling, and popping one
+   *  after another */
+  const crownOver = (T, A, P, V, bubble, pop) => {
+    if (T < EC3.round[0] - .05) return; const c = crownOf(P), t0 = EC3.round[0], q = seg(T, t0, EC3.round[1], x => x), tq = tubeAt(t0, c), { n, lobes } = c;
+    if (!tq) return; const L = tq.xr - tq.xl, texs = S.c3L && S.c3L.P === P ? S.c3L.t : (S.c3L = { P, t: lobes.map((b, k) => { const [cv2, x2] = canvas(64, 64), im = x2.createImageData(64, 64); film(im, 64, b.ph, 0); x2.putImageData(im, 0, 0); return cv2; }) }).t;
+    for (let k = 0; k < n; k++) { const b = lobes[k], xm = tq.xl + (b.a + b.b) / 2 * L, rc = tubeR(xm, tq, c, t0, A) || [c.r0, c.y0], R = Math.cbrt(.75 * c.r0 * c.r0 * .82 * (b.b - b.a) * L), age = Math.max(0, T - t0);
+      const go = E.out(clamp(age / 3.2)), x = xm + (xm - (tq.xl + tq.xr) / 2) * .14 * E.out(clamp(age / 1.6)) + Math.sin(b.dir) * c.r0 * 1.9 * go * b.v + Math.sin(A * b.f + b.ph) * c.r0 * .12 * clamp(age); // (each off its own way, bobbing)
+      const y = rc[1] - Math.cos(b.dir) * c.r0 * 1.7 * go * b.v - age * c.r0 * .12, w = Math.exp(-age * 2.6) * .12 * Math.sin(age * 12 + k) + Math.sin(A * 3.1 + k) * .015;
+      if (T >= b.pop) { pop(x, y, R, T - b.pop, V * S.shade(x, y, R * .5)); continue; }
+      bubble(x, y, R, texs[k], A * .1 * (k % 2 ? 1 : -1), w, V * q * S.shade(x, y, R * .6)); }
+    // and where each neck closed, a small one, as a stream of water leaves a satellite between its drops
+    for (let i = 1; i < n; i++) { const tc = EC3.pinch[0] + (EC3.pinch[1] - EC3.pinch[0]) * Math.cbrt((i % 2 ? 1 : 1.2) / 1.25), age = T - tc; if (age < 0) continue; const b = lobes[i - 1], b2 = lobes[i], xm = tq.xl + c.nk[i] * L, rc = tubeR(xm, tq, c, t0, A) || [c.r0, c.y0], Rs = c.r0 * (.13 + .05 * Math.sin(i * 7.3)), tp = (b.pop + b2.pop) / 2 + .15;
+      const go = E.out(clamp(age / 3)), dir = (b.dir + b2.dir) / 2, x = xm + Math.sin(dir) * c.r0 * 1.6 * go + Math.sin(A * 1.3 + i) * c.r0 * .08, y = rc[1] - Math.cos(dir) * c.r0 * 2.1 * go - age * c.r0 * .1;
+      if (T >= tp) { pop(x, y, Rs, T - tp, V * S.shade(x, y, Rs)); continue; } bubble(x, y, Rs * E.back(clamp(age / .35)), S.smalls[i % 6], A * .5, Math.sin(A * 5 + i) * .03, V * S.shade(x, y, Rs)); }
+  };
+
   const S = {
     res: "dpr",
     wash: 1.6, veil: 1, hug: .85, hugFinale: true, // a light kit: the lines and the finale's words sit on pads, and Everything shows the plain ground
@@ -369,7 +475,7 @@ export default function bubbles(K) {
     /** where the wand and the big bubble are (the stage's `spot`), or nothing while there's no room for them */
     spot() { return S.vis < .05 ? null : [Math.round(S.cx), Math.round(S.cy), Math.round(S.R)]; },
     /** 1.12 b431: which hour egg pass P plays (1 or 2), or 0 (K.long, worked out once a pass) */
-    hourOf(P) { if (S.lgP !== P) { const l = K.long ? K.long(P) : 0; S.lgP = P; S.lgK = l === 1 || l === 2 ? l : 0; } return S.lgK; },
+    hourOf(P) { if (S.lgP !== P) { const l = K.long ? K.long(P) : 0; S.lgP = P; S.lgK = l === 1 || l === 2 ? l : 0; S.lgC = l === 3; } return S.lgK; }, // (b444: and whether it is a crown's, 3)
     /** 1 clear of the words, down to a trace behind them: a bubble drifting past a word fades there */
     shade(x, y, r) { let d = 1e9; for (const [x0, y0, x1, y1] of S.wr || []) d = Math.min(d, Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(y0 - y, 0, y - y1))); return lerp(.15, 1, clamp((d - r * .2) / (r + 8))); },
     /** a dealt pass (1.12 b369): the wand in the pass's colour and frame, and the pass's own bubbles out of it */
@@ -635,6 +741,7 @@ export default function bubbles(K) {
       };
       const lg = P > 0 ? S.hourOf(P) : 0; // 1.12 b431: an hour egg's pass (1 or 2; a crown, 3, is dealt as it always was)
       if (lg === 1 && on) hourFilm(T, A, P, V); // (the first's bubble under the small ones, which drift on through it)
+      const cw = P > 0 && !lg && S.lgC; if (cw && on) crownUnder(T, A, P, V); // 1.12 b444: a crown's pass (K.long 3): its long bubble under the small ones
       // the small bubbles, always drifting up the page: each comes up from below the foot and goes off the top, or pops
       // on the way (while the loop plays); a popped one waits below for its next time round
       const span = H + 2 * m * .06;
@@ -647,6 +754,7 @@ export default function bubbles(K) {
         bubble(x, y, b.R, S.smalls[b.tex], A * b.spin + b.ph, wob, .9 * S.shade(x, y, b.R));
       }
       if (lg) { if (on) { if (lg === 1) hourSpray(T, P, V); else hourFlock(T, A, P, V); } } // b431: once an hour, an hour egg
+      else if (cw) { if (on) crownOver(T, A, P, V, bubble, pop); } // b444: every sixth hour, the crown
       else if (P > 0 && K.egg(P)) S.eggCube(T, I, A, P, pop, on, V); // b416: every twelfth pass, the egg
       else if (P > 0) S.pass2(T, I, A, S.plan && S.plan.P === P ? S.plan : (S.plan = dealPass(P)), bubble, pop, on, V); // a dealt pass
       else {

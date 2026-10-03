@@ -64,6 +64,17 @@
 // long pendulum, and it strikes the hours the list has been up on a bell, each stroke's sound drawn as a ring running
 // out over the works (by night all of it charred, an ember glowing down in the works, a spark at every tick, the bell
 // glowing as it is struck). Then the blades come back, and the picture on them is the next.
+//
+// 1.12 b444: the crown. In the sixth hour of the list left alone, and every sixth after (K.long 3), the day's end. By day
+// the light over the board goes gold, the medallion lifts out of its place glowing like the low sun, and sets: it sinks
+// into the board below it as into the sea, its reflection broken in the ripples of the grain, a road of light on it. The
+// light goes rose, then dusk comes over the board, stars of holly are let in round its place and a new moon, and a shooting
+// star crosses it; then the dawn: the stars go, and the medallion rises out of the grain again with the next picture on it
+// and drops home with a puff of sawdust. By night the medallion is the moon, and sets the same way on a pale road; the board
+// goes dark, stars are burned into it one by one, each a spark cooling to ash, and a shooting star crosses it, its trail
+// cooling behind it; then the dawn breaks over it, the embers in the char's cracks glowing up through them in a wave, and
+// the medallion rises as the sun, the next picture burned in it white-hot, cooling as it goes home. The light is the board's own (the plank multiplied by each light's
+// colour), thinned under the words; it plays from the picture the pass began on to the one it would have left.
 export default function wood(K, id) {
   const night = id === "char";
   const { clamp, lerp, E, seg, env, rng, canvas, noise1, fbm } = K;
@@ -370,10 +381,11 @@ export default function wood(K, id) {
     };
     const phase = !on || T < BD.plane[0] || T >= BD.rag[3] ? 0 : T < BD.ring[0] ? 1 : T < BD.done ? 2 : T < BD.rag[0] ? 3 : 4;
     const egg = K.egg(P) && pp.P > 0; // (1.12 b417: on an egg pass the puzzle plays instead of the plane, the pieces and the rag)
-    const lg = !egg && pp.P > 0 ? longOf(P) : 0, quiet = egg || lg > 0, hw = lg ? hourWin(P, lg) : null; // (1.12 b431: an hour egg plays instead of them too)
+    const lg = !egg && pp.P > 0 ? longOf(P) : 0, cw = !egg && !lg && pp.P > 0 && S.lgC, quiet = egg || lg > 0 || cw, hw = lg ? hourWin(P, lg) : cw ? crownWin() : null; // (1.12 b431: an hour egg plays instead of them too; b444: and a crown)
     if (egg) eggDay(T, I, prev, cur);
     else if (lg === 1) cuckooDay(T, I, A, prev, cur, ckPlan(P));
     else if (lg === 2) clockDay(T, I, A, prev, cur, P);
+    else if (cw) crownDay(T, I, A, prev, cur);
     else if (phase === 0) { if (!pp.P || !on || T < BD.plane[0]) put(prev.oiled); else { put(cur.oiled); put(prev.oiled, 1 - I); } }
     else if (phase === 1) { // the plane has taken these bands back to the plank
       g.save(); g.beginPath(); g.rect(cx - 1.1 * R, cy - 1.1 * R, 2.2 * R, 2.2 * R);
@@ -553,6 +565,7 @@ export default function wood(K, id) {
         x += len + 6 + r() * 46; }
       for (let x = -r() * 40; x < W + 10; x += 11 + r() * 36) { const d = deep(x, (y0 + y1) / 2); if (d <= .06 || r() < .22) continue; // the short cracks across, down to the next
         const b = P[Math.min(3, Math.floor(d * 4))], xb = x + (r() - .5) * 7, ya = edge(y0, x), yb = edge(y1, xb); b.c.moveTo(x, ya); b.c.lineTo((x + xb) / 2 + (r() - .5) * 4, (ya + yb) / 2); b.c.lineTo(xb, yb); } }
+    S.crk = P; // (1.12 b444: kept, for the crown's dawn to run through)
     P.forEach((b, k) => { const d = (k + .5) / 4; bg.strokeStyle = rgba([7, 5, 4], .35 + .5 * d); bg.lineWidth = .7 + d; bg.stroke(b.c); bg.strokeStyle = rgba([112, 98, 88], .05 + .13 * d); bg.lineWidth = .7; bg.stroke(b.l); });
     for (let k = 0; k < W * H / 2200; k++) { bg.fillStyle = rgba(r() < .7 ? G[3] : [96, 84, 74], .25 + r() * .4); const s = .8 + r() * 1.2; bg.fillRect(r() * W, r() * H, s, s); }
     q = bg.createRadialGradient(W * .5, H * .4, Math.min(W, H) * .25, W * .5, H * .45, Math.hypot(W, H) * .62); q.addColorStop(0, rgba(G[0], 0)); q.addColorStop(1, rgba(G[0], .85)); bg.fillStyle = q; bg.fillRect(0, 0, W, H);
@@ -623,13 +636,14 @@ export default function wood(K, id) {
     g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = .13 * V; g.drawImage(S.moonGlow, cx - .62 * R, cy - .62 * R, 1.24 * R, 1.24 * R); g.restore();
     const [c0, c1] = BN.crumble, [p0, p1, p2, p3] = BN.pen, burnt = p2 + BN.cool, cEnd = c1 - .35;
     const phase = !on || T < BN.heat[0] || T >= burnt ? 0 : T < c1 ? 1 : T < p0 ? 2 : 3, egg = K.egg(P) && pp.P > 0; // (1.12 b417: an egg pass plays the puzzle instead)
-    const lg = !egg && pp.P > 0 ? longOf(P) : 0, quiet = egg || lg > 0, hw = lg ? hourWin(P, lg) : null; // (1.12 b431: and an hour egg's pass its hour egg)
+    const lg = !egg && pp.P > 0 ? longOf(P) : 0, cw = !egg && !lg && pp.P > 0 && S.lgC, quiet = egg || lg > 0 || cw, hw = lg ? hourWin(P, lg) : cw ? crownWin() : null; // (1.12 b431: and an hour egg's pass its hour egg; b444: a crown's its crown)
     if (hw) heat(0, 1.2, (.045 + .035 * Math.sin(A * .7)) * V * lerp(1, 1 - env(T, hw[0] - .3, hw[0], hw[3] - .3, hw[3] + .5, E.sine), I), false, on && T >= hw[1] ? cur : prev); // (the picture breathing, quiet while it plays)
     else if (egg) heat(0, 1.2, (.045 + .035 * Math.sin(A * .7)) * V * lerp(1, 1 - env(T, EW.crack[0] - .3, EW.crack[0], EW.seal[1] - .3, EW.seal[1] + .5, E.sine), I), false, on && T >= EW.seal[0] ? cur : prev);
     else heat(0, 1.2, (.045 + .035 * Math.sin(A * .7)) * V * lerp(1, 1 - env(T, BN.heat[0] - .3, BN.heat[0], burnt - .2, burnt + 1.4, E.sine), I), false, pp.P && on && T >= burnt - .2 ? cur : prev); // the picture breathing a little, as embers do
     if (egg) eggNight(T, I, A, prev, cur);
     else if (lg === 1) cuckooNight(T, I, A, prev, cur, ckPlan(P));
     else if (lg === 2) clockNight(T, I, A, prev, cur, P);
+    else if (cw) crownNight(T, I, A, prev, cur);
     else if (phase === 0) { if (!pp.P || !on || T < BN.heat[0]) pic(prev.full, 1); else { pic(cur.full, 1); pic(prev.full, 1 - I); } } // (burned: the new picture, the old one back as the list is used)
     else if (phase === 1) { // it glows red-hot once, from the moon outward, and crumbles to ash behind the glow
       const rc = lerp(-.05, 1.12, seg(T, c0, cEnd, lin)), rh = lerp(0, 1.35, seg(T, BN.heat[0], BN.heat[1], E.sine));
@@ -1167,7 +1181,7 @@ export default function wood(K, id) {
      in even), each one idea by day and by night. Each plays in place of the plane and the rag (the glow and the pen),
      from the picture the pass began on to the one the pass would have left, so the pass after it rests where it always
      would; a touch eases back to the picture it began on, as any pass does. Neither draws a die any other pass draws. */
-  const longOf = P => { if (S.lgP !== P) { const l = K.long ? K.long(P) : 0; S.lgP = P; S.lgK = l === 1 || l === 2 ? l : 0; } return S.lgK; };
+  const longOf = P => { if (S.lgP !== P) { const l = K.long ? K.long(P) : 0; S.lgP = P; S.lgK = l === 1 || l === 2 ? l : 0; S.lgC = l === 3; } return S.lgK; }; // (b444: and whether it is a crown's, 3)
   /** a piece of veneer for the hour eggs' things (a hand, a mark, a bird's wing), as the pictures' pieces are: its wood,
    *  its shape, the way its grain runs */
   const vpiece = (wood, pts, grain, seed) => { let x0 = 9, y0 = 9, x1 = -9, y1 = -9, sx = 0, sy = 0; for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); sx += x; sy += y; }
@@ -1517,6 +1531,156 @@ export default function wood(K, id) {
     irisCuts(T, I, true);
   }
 
+  /* ---------------- 1.12 b444: the crown ----------------
+     For a list left up through a whole day (K.long 3: in the sixth hour, and every sixth after): the day's end. By day the
+     light goes gold, the medallion lifts out of its place glowing like the low sun, and sets — sinking into the board below
+     it as into the sea, the grain turned water under it, a road of light on it; dusk comes over the board, stars are let in
+     round its place and a new moon, a shooting star crosses it, and then the dawn: the stars go, and the medallion rises out of the grain again
+     with the next picture on it, and drops into its place. By night the medallion is the moon, and sets the same way, a
+     pale road on the char; stars are burned in, a shooting star crosses; and then the dawn breaks over the board, the embers in the char's cracks glowing up through
+     them in a wave, and the medallion rises as the sun, the next picture burned in it white-hot, cooling as it goes home.
+     Its own dice (salt 481). */
+  const ES = { glow: [.3, 1.6], lift: [1.1, 1.9], set: [2.4, 6.4], stars: [6.5, 8.3], moon: [7.1, 7.7], shoot: [8.0, 8.75], dawn: [9.2, 11.8], rise: [10.4, 12.6], drop: [12.6, 13.1], seal: [13.0, 14.2] };
+  const crownWin = () => [ES.glow[0], ES.rise[0], ES.seal[0], ES.seal[1]];
+  /** the medallion at T: where it is, how high off the board, which picture it carries */
+  const sunAt = T => { const { cx, cy, R } = S, hi = cy - .22 * R, lo = cy + 2.32 * R;
+    if (T < ES.rise[0]) { const l = seg(T, ES.lift[0], ES.lift[1], E.out); return { x: cx, y: lerp(lerp(cy, hi, l), lo, seg(T, ES.set[0], ES.set[1], E.io)), z: l, cur: false }; }
+    const d = seg(T, ES.drop[0], ES.drop[1], E.in); return { x: cx, y: lerp(lerp(lo, hi, seg(T, ES.rise[0], ES.rise[1], E.io)), cy, d), z: 1 - d, cur: true }; };
+  /** the crown's dice for this page: the stars let in round the medallion's place (in the open, clear of the words), their
+   *  twinkles, the moon's place, the glints on the water */
+  const crownPlan = P => { const { W, H, cx, cy, R } = S, key = [P, W, H, Math.round(cx), Math.round(cy), Math.round(R), S.maskV || 0].join(":"); if (S.cwp && S.cwp.key === key) return S.cwp;
+    const r = K.deal(P, 481), stars = [], yh = cy + 1.12 * R;
+    for (let t = 0; t < 600 && stars.length < (S.pr ? 11 : 16); t++) { const a = r() * TAU, d = R * (1.25 + r() * 1.9), x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d * .8;
+      if (x < 12 || x > W - 12 || y < 96 || y > yh - 14 || S.shade(x, y, 18) < .97 || stars.some(s => Math.hypot(s.x - x, s.y - y) < R * .38)) continue; stars.push({ x, y, s: 4.5 + r() * 4.5, ph: r() * TAU, f: 1.5 + r() * 2.5, t: 0 }); }
+    stars.sort((p, q) => Math.hypot(p.x - cx, p.y - cy) - Math.hypot(q.x - cx, q.y - cy)).forEach((s, i) => { s.t = ES.stars[0] + i / Math.max(1, stars.length - 1) * (ES.stars[1] - ES.stars[0]); });
+    const glints = Array.from({ length: 170 }, () => { const v = Math.pow(r(), .85), u = (r() + r() + r() - 1.5) / 1.5; return { u, v, l: .6 + r() * .8, ph: r() * TAU, f: 2 + r() * 4 }; });
+    let mx = null, my = null, best = 1e9; const m = R * .36, px0 = cx - R * 1.6, py0 = cy - R * 1.25; // (the new moon: in the open, clear of the words, the page's edges and the medallion's place — the nearest such spot to up and left of it; none, if there is no room)
+    for (let gy = 0; gy <= 16; gy++) for (let gx = 0; gx <= 24; gx++) { const x = m + (W - 2 * m) * gx / 24, y = 110 + m + (yh - R * .5 - 110 - m) * gy / 16, d = Math.hypot(x - px0, y - py0); if (d >= best || Math.hypot(x - cx, y - cy) < R * 1.4 || S.shade(x, y, m) < .97) continue; best = d; mx = x; my = y; }
+    // a shooting star across the open board (its medallion set by then): every line from a grid of starts, down to the
+    // left or the right, as long as fits clear of the words; the longest kept (the dice choose among the near-longest)
+    let shoot = null; { const cands = [], yTop = 110, yBot = yh - R * .45;
+      for (let gy = 0; gy <= 10; gy++) for (let gx = 0; gx <= 16; gx++) for (const dir of [-1, 1]) for (const L2 of [R * 2.3, R * 1.8, R * 1.4]) {
+        const x0 = 20 + (W - 40) * gx / 16, y0 = yTop + (yBot - yTop) * gy / 10, an = dir < 0 ? Math.PI * .83 : Math.PI * .17, x1 = x0 + Math.cos(an) * L2, y1 = y0 + Math.sin(an) * L2;
+        let ok = x1 > 12 && x1 < W - 12 && y1 < yBot; for (let i = 0; i <= 12 && ok; i++) { const x = lerp(x0, x1, i / 12), y = lerp(y0, y1, i / 12) - Math.sin(Math.PI * i / 12) * R * .12; if (y < yTop || S.shade(x, y, 14) < .97) ok = false; }
+        if (ok) { cands.push([x0, y0, x1, y1, L2]); break; } }
+      if (cands.length) { const top = Math.max(...cands.map(q => q[4])), near = cands.filter(q => q[4] >= top - 1); shoot = near[Math.floor(r() * near.length)].slice(0, 4); } }
+    return (S.cwp = { key, stars, glints, mx, my, yh, shoot }); };
+  /** the shooting star at T: its head along its line, and the trail behind it, cooling (by night white-hot to ash; by day
+   *  a pale streak), gone by its end */
+  const shootingStar = (T, Vi) => { const sh = S.cwp && S.cwp.shoot, [t0, t1] = ES.shoot; if (!sh || T < t0 || T > t1 + .6) return; const { R } = S, [x0, y0, x1, y1] = sh, q = seg(T, t0, t1, E.in), at = f => [lerp(x0, x1, f), lerp(y0, y1, f) - Math.sin(Math.PI * f) * R * .12], fade = 1 - seg(T, t1, t1 + .6, x => x);
+    g.save(); g.lineCap = "round"; const n = 14;
+    for (let i = 0; i < n; i++) { const f0 = q - (i + 1) * .045, f1 = q - i * .045; if (f1 <= 0) break; const p0 = at(Math.max(0, f0)), p1 = at(f1), k2 = 1 - i / n;
+      g.globalAlpha = Vi * fade * k2 * (night ? 1 : .85); g.strokeStyle = night ? rgba(mixc([255, 244, 214], [201, 84, 30], i / n)) : rgba(mixc([255, 252, 240], [240, 220, 190], i / n)); g.lineWidth = (night ? 2.4 : 2.2) * k2 + .5; g.beginPath(); g.moveTo(p0[0], p0[1]); g.lineTo(p1[0], p1[1]); g.stroke(); }
+    if (q < 1) { const [hx, hy] = at(q), gr = 9; g.globalCompositeOperation = "lighter"; g.globalAlpha = Vi * fade; g.drawImage(night ? S.halo : crownThings().warm, hx - gr, hy - gr, 2 * gr, 2 * gr); }
+    g.restore(); };
+  /** the light's colours for the crown, each a strip drawn once and laid over the board stretched: gold low down at
+   *  sunset, rose, dusk's blue, and dawn's warmth rising from the foot (by night only dawn's, deeper) */
+  const crownLights = () => S.cwl || (S.cwl = (() => { const strip = stops => { const [c, x] = canvas(1, 128), q = x.createLinearGradient(0, 0, 0, 128); stops.forEach(([o, col]) => q.addColorStop(o, col)); x.fillStyle = q; x.fillRect(0, 0, 1, 128); return c; };
+    return { gold: strip([[0, "rgb(255,214,160)"], [.6, "rgb(255,178,104)"], [1, "rgb(250,150,84)"]]), rose: strip([[0, "rgb(196,150,190)"], [.65, "rgb(236,140,130)"], [1, "rgb(244,150,110)"]]),
+      dusk: strip([[0, "rgb(48,58,128)"], [.7, "rgb(76,80,146)"], [1, "rgb(104,96,150)"]]), dawn: strip([[0, "rgb(236,222,236)"], [.55, "rgb(250,196,190)"], [1, "rgb(255,200,150)"]]),
+      ndawn: strip([[0, "rgba(255,120,40,0)"], [.45, "rgba(255,110,40,.25)"], [.8, "rgba(255,120,50,.7)"], [1, "rgba(255,170,90,1)"]]) }; })());
+  /** the words' shadow, for a light over the whole board: soft where they are, on a small canvas drawn big (a line's tools
+   *  left out, which are there only on hover) */
+  const crownMask = () => { const { W, H } = S, rs = S.raw; if (!rs || !rs.length || !W) return null; const key = (S.maskV || 0) + ":" + W + ":" + H; if (S.cwm && S.cwm.key === key) return S.cwm.c;
+    const k = 1 / 8, [c, x] = canvas(Math.ceil(W * k), Math.ceil(H * k)); x.imageSmoothingEnabled = true; x.scale(k, k); x.fillStyle = "#fff"; x.shadowColor = "#fff"; x.shadowBlur = 3;
+    for (const [x0, y0, x1, y1, kind] of rs) { if (kind === 2) continue; x.beginPath(); x.roundRect(x0 - 16, y0 - 12, x1 - x0 + 32, y1 - y0 + 24, 18); x.fill(); }
+    S.cwm = { key, c }; return c; };
+  /** the crown's own things for this size: the medallion's shadow, a star, the new moon, a warm glow; by night the cracks of the char lit, once, for the dawn to run through */
+  const crownThings = () => { if (S.cwt && S.cwt.RR === S.RR && S.cwt.W === S.W && S.cwt.H === S.H) return S.cwt; const R = S.RR, t = { RR: R, W: S.W, H: S.H };
+    const disc = make(2 * R, 2 * R, x => { x.fillStyle = "#000"; x.beginPath(); x.arc(R, R, R, 0, TAU); x.fill(); }); t.sh = shadowOf(disc, 8, night ? "rgba(0,0,0,.85)" : "rgba(60,36,14,.6)");
+    t.star = make(16, 16, x => { x.translate(8, 8); x.shadowColor = night ? "rgba(0,0,0,0)" : "rgba(255,250,235,.95)"; x.shadowBlur = 2 * px; x.fillStyle = night ? rgba(ASH, .9) : rgba(hex(WOOD.holly.oil[0])); x.beginPath(); for (let i = 0; i < 8; i++) { const a = i / 8 * TAU - Math.PI / 2, d = i % 2 ? 2.2 : 7.5; x.lineTo(Math.cos(a) * d, Math.sin(a) * d); } x.closePath(); x.fill(); x.lineWidth = .9; x.strokeStyle = night ? "rgba(0,0,0,.6)" : "rgba(60,36,16,.55)"; x.stroke(); });
+    t.moon = make(.62 * R, .62 * R, x => { const m = .31 * R, ra = m * .9, bx = m * .4, by = -m * .2, rb = m * .78, d = Math.hypot(bx, by), ph = Math.atan2(by, bx), aa = (ra * ra - rb * rb + d * d) / (2 * d), ga = Math.acos(clamp(aa / ra, -1, 1)), de = Math.acos(clamp((d - aa) / rb, -1, 1));
+      const path = () => { x.beginPath(); x.arc(0, 0, ra, ph + ga, ph + TAU - ga); x.arc(bx, by, rb, ph + Math.PI + de, ph + Math.PI - de, true); x.closePath(); }; // (the crescent: the moon's rim away from the bite, and the bite's edge)
+      x.translate(m, m); x.shadowColor = "rgba(255,250,235,.8)"; x.shadowBlur = 4 * px; path(); x.fillStyle = rgba(hex(WOOD.holly.oil[0])); x.fill(); x.shadowBlur = 0; x.lineWidth = 1.2; x.strokeStyle = "rgba(60,36,16,.6)"; path(); x.stroke(); });
+    t.warm = K.glowSpr(48, night ? [235, 228, 210] : [255, 196, 110], .85);
+    if (night && S.crk) { const [c, x] = canvas(Math.ceil(S.W), Math.ceil(S.H)); x.lineCap = "round"; x.shadowColor = "rgba(255,100,24,.95)"; x.shadowBlur = 5;
+      S.crk.forEach((b, k) => { if (k < 1) return; x.strokeStyle = k > 2 ? "#FFB868" : "#FF7A22"; x.lineWidth = .8 + k * .45; x.stroke(b.c); }); t.cracks = c; }
+    return (S.cwt = t); };
+  /** the road of light on the water under the low sun (or moon): glints along the grain, crowding under it, widening toward
+   *  us, each catching the light and losing it */
+  const road = (A, x0, yh, k, V, col) => { if (k <= .01) return; const { W, H, R } = S, pl = S.cwp, depth = H - yh; if (depth < 8) return; g.save(); g.fillStyle = col;
+    for (const q of pl.glints) { const y = yh + 3 + q.v * (depth - 6), w2 = R * (.25 + q.v * 1.15), x = x0 + q.u * w2, fl = Math.max(0, Math.sin(A * q.f + q.ph)) ** 2; if (x < 0 || x > W) continue;
+      const a = k * V * fl * (1 - Math.abs(q.u) * .55) * (1 - q.v * .35); if (a < .02) continue; const l = (5 + q.v * 26) * q.l * (R / 132); g.globalAlpha = a; g.fillRect(x - l / 2, y, l, 1 + q.v * 1.4); }
+    g.restore(); };
+  /** the low sun's (or moon's) reflection in the water under it: its picture mirrored about the horizon, in thin strips each
+   *  pushed aside by the ripples, fading as it goes down */
+  const reflect = (pic, sx, sy, sc, yh, A, a) => { if (a <= .01) return; const { W, H, R } = S, depth = H - yh, top = sy + R * sc; if (depth < 6 || 2 * yh - top >= H) return; const st = 3;
+    for (let y = yh; y < H; y += st) { const my = 2 * yh - y; if (my > top) continue; if (my < sy - R * sc) break; const f = (y - yh) / depth, al = a * Math.pow(1 - f, 1.3) * .62, dx = Math.sin(y * .19 + A * 2.7) * (1.5 + f * 9) + Math.sin(y * .047 - A * 1.2) * (1 + f * 5);
+      g.save(); g.beginPath(); g.rect(0, y, W, st); g.clip(); g.globalAlpha = al; g.translate(sx + dx, 2 * yh - sy); g.scale(sc, -sc); g.drawImage(pic, -1.05 * R, -1.05 * R, 2.1 * R, 2.1 * R); g.restore(); } };
+  /** the light over the board: a copy of the plank, multiplied by each light's colour as far as it is up, so the wood itself
+   *  goes gold, rose, blue; then thinned under the words back to the plank as it is */
+  const lightBoard = (lights, V) => { const act = lights.filter(([, a]) => a > .003); if (!act.length || !S.bgc) return; const { W, H } = S;
+    g.save(); g.globalAlpha = V; g.drawImage(S.bgc, 0, 0, W, H); g.globalCompositeOperation = "multiply"; for (const [c, a] of act) { g.globalAlpha = a * V; g.drawImage(c, 0, 0, W, H); }
+    g.globalCompositeOperation = "destination-out"; const mk = crownMask(); if (mk) { g.globalAlpha = .86; g.imageSmoothingEnabled = true; g.drawImage(mk, 0, 0, W, H); } g.restore(); };
+  /** the crown by day */
+  function crownDay(T, I, A, prev, cur) {
+    const { W, H, cx, cy, R } = S, V = S.vis, Vi = V * I, k = R / S.RR, pl = crownPlan(S.pp.P), t = crownThings(), L = crownLights(), yh = pl.yh, whole = (c, a = 1) => { if (a <= .003) return; g.globalAlpha = a * V; g.drawImage(c, cx - 1.05 * R, cy - 1.05 * R, 2.1 * R, 2.1 * R); g.globalAlpha = 1; };
+    if (I <= .01 || T < ES.glow[0]) { whole(prev.oiled); return; }
+    // the light over the board: gold, rose, dusk, dawn
+    lightBoard([[L.gold, env(T, ES.glow[0], ES.glow[1], 4.6, 6.0, E.sine) * .55], [L.rose, env(T, 4.6, 5.6, 6.0, 7.0, E.sine) * .45], [L.dusk, env(T, 5.8, 7.2, 9.0, 10.8, E.sine) * .7], [L.dawn, env(T, 9.4, 10.6, 11.3, 12.8, E.sine) * .45]], Vi);
+    const sun = sunAt(T); // (it lifts off a board that is whole under it)
+    // the stars let into the dusk round it, twinkling, and the new moon; gone again at dawn
+    for (const s of pl.stars) { const q = seg(T, s.t, s.t + .35, E.out), out2 = 1 - seg(T, 9.7 + (s.t - ES.stars[0]) * .3, 10.3 + (s.t - ES.stars[0]) * .3, E.sine); if (q <= 0 || out2 <= 0) continue;
+      const tw = .65 + .35 * Math.sin(A * s.f + s.ph), sz = s.s * (1 + (1 - q) * .6) * Math.max(1, k * .9); g.globalAlpha = Vi * q * out2; g.drawImage(t.star, s.x - sz, s.y - sz, 2 * sz, 2 * sz);
+      if (tw > .9) { g.globalCompositeOperation = "lighter"; g.globalAlpha = Vi * q * out2 * (tw - .9) * 6; g.drawImage(t.warm, s.x - sz * 1.6, s.y - sz * 1.6, sz * 3.2, sz * 3.2); g.globalCompositeOperation = "source-over"; } }
+    { const q = seg(T, ES.moon[0], ES.moon[1], E.out), o = 1 - seg(T, 9.8, 10.6, E.sine); if (pl.mx !== null && q > 0 && o > 0) { const m = .62 * R, z = 1 - q; g.globalAlpha = Vi * Math.min(1, q * 3) * o; g.drawImage(t.moon, pl.mx - m / 2 * (1 + .3 * z), pl.my - m / 2 * (1 + .3 * z) - z * 8 * k, m * (1 + .3 * z), m * (1 + .3 * z)); g.globalAlpha = 1; } }
+    shootingStar(T, Vi);
+    // the sun: the medallion lifted out, glowing, setting into the grain as into water (only what's above the horizon shows,
+    // its reflection broken in the ripples below), and rising out of it again with the next picture
+    const pic = sun.cur ? cur.oiled : prev.oiled, glow = sun.cur ? env(T, ES.rise[0], ES.rise[0] + .6, 11.6, 12.9, E.sine) : env(T, ES.glow[0], ES.glow[1], 5.6, 6.4, E.sine), sc = 1 + .05 * sun.z;
+    const nearH = clamp(1 - (yh - (sun.y + R * sc)) / (R * 1.4)) * (sun.y - R * sc < yh ? 1 : 0) * Math.min(1, sun.z * 1.5); // (how near the horizon it hangs, lifted: its reflection and the road come up as it nears, and go as it settles home)
+    if (nearH > .01) { reflect(pic, sun.x, sun.y, sc, yh, A, Vi * nearH); g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = Vi * nearH * glow * .5; g.drawImage(t.warm, sun.x - R * 1.6, yh - R * .35, R * 3.2, R * .7); g.restore(); } // (and a bright line where it meets the water)
+    if (sun.y - R * sc < yh) { g.save(); g.beginPath(); g.rect(0, 0, W, yh); g.clip();
+      if (sun.z > .01) { g.globalAlpha = Vi * Math.min(1, sun.z * 2) * .8; g.drawImage(t.sh, sun.x - R * sc + (4 + 14 * sun.z) * k - 16 * k, sun.y - R * sc + (6 + 18 * sun.z) * k - 16 * k, 2 * R * sc + 32 * k, 2 * R * sc + 32 * k); }
+      if (glow > .01) { g.globalCompositeOperation = "lighter"; g.globalAlpha = Vi * glow * .6; g.drawImage(t.warm, sun.x - R * 2, sun.y - R * 2, R * 4, R * 4); g.globalCompositeOperation = "source-over"; } // (glowing like the low sun)
+      g.globalAlpha = Vi; g.translate(sun.x, sun.y); g.scale(sc, sc); g.drawImage(pic, -1.05 * R, -1.05 * R, 2.1 * R, 2.1 * R);
+      if (glow > .01) { g.beginPath(); g.arc(0, 0, R, 0, TAU); g.clip(); g.globalCompositeOperation = "soft-light"; g.globalAlpha = Vi * glow; g.fillStyle = "rgb(255,176,80)"; g.fillRect(-R, -R, 2 * R, 2 * R); g.globalCompositeOperation = "source-over"; }
+      g.restore(); }
+    // the road of light on the grain under it, while it's low
+    road(A, sun.x, yh, nearH * (sun.cur ? 1 : 1) * Math.max(glow, .35), Vi, "rgb(255,226,160)");
+    // home: a puff of sawdust out round it as it drops in
+    for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + .4; puff(cx + Math.cos(a) * R * .96, cy + Math.sin(a) * R * .96, R * .04, (T - ES.drop[1]) / .5, Vi, 9800 + i, 5); }
+    whole(prev.oiled, 1 - I); // (the list touched: back to the picture it began on, in its place)
+  }
+  /** the crown by night */
+  function crownNight(T, I, A, prev, cur) {
+    const { W, H, cx, cy, R } = S, V = S.vis, Vi = V * I, k = R / S.RR, pl = crownPlan(S.pp.P), t = crownThings(), L = crownLights(), yh = pl.yh, pic = (c, a = 1) => { if (a <= .003) return; g.globalAlpha = a * V; g.drawImage(c, cx - 1.05 * R, cy - 1.05 * R, 2.1 * R, 2.1 * R); g.globalAlpha = 1; };
+    if (I <= .01 || T < ES.glow[0]) { pic(prev.full); return; }
+    // the dark before the dawn, and the dawn: its warmth rising from the foot of the board, the embers in the char's cracks
+    // glowing up through them in a wave as it comes, then cooling; thinned under the words
+    const dk = env(T, 5.4, 6.6, 8.3, 9.6, E.sine) * .32, dawn = env(T, 8.4, 10.2, 11.3, 13.2, E.sine);
+    if (dk > .003) { g.globalAlpha = dk * Vi; g.fillStyle = "#000"; g.fillRect(0, 0, W, H); }
+    if (dawn > .003) { g.globalAlpha = dawn * .4 * Vi; g.drawImage(L.ndawn, 0, H * .3, W, H * .7); }
+    const wave = seg(T, 8.7, 11.9, E.sine); if (t.cracks && wave > 0 && wave < 1) { const front = lerp(H * 1.05, H * .2, wave); g.save(); g.globalCompositeOperation = "lighter";
+      for (let j = 0; j < 10; j++) { const y0 = front + j * H * .045, a = (j === 0 ? .5 : 1) * Math.pow(1 - j / 10, 1.3) * Vi * (1 - seg(T, 10.9, 11.9, E.sine)); /* (cooling to nothing by the time it reaches the top) */ if (y0 > H || a < .02) continue; g.save(); g.beginPath(); g.rect(0, y0, W, H * .045 + 1); g.clip(); g.globalAlpha = a; g.drawImage(t.cracks, 0, 0, W, H); g.restore(); }
+      g.restore(); }
+    if (dk > .003 || dawn > .003 || (wave > 0 && wave < 1)) { const mk = crownMask(); if (mk) { g.save(); g.globalCompositeOperation = "destination-out"; g.globalAlpha = .84; g.imageSmoothingEnabled = true; g.drawImage(mk, 0, 0, W, H); g.restore(); } }
+    g.globalAlpha = 1;
+    // in the dark before the dawn, stars burned into the board one by one, each a spark white-hot as it goes in and
+    // cooling to ash, twinkling; gone as the light comes
+    for (const st of pl.stars) { const age = T - st.t, o = 1 - seg(T, 9.0, 10.0, E.sine); if (age < 0 || o <= 0) continue; const tw = .6 + .4 * Math.sin(A * st.f + st.ph), sz = st.s * Math.max(1, k * .9), hot = Math.exp(-age * 3.2);
+      g.globalCompositeOperation = "lighter"; g.globalAlpha = Vi * o * (hot * .9 + .25 * tw); g.drawImage(S.halo, st.x - sz * 1.7, st.y - sz * 1.7, sz * 3.4, sz * 3.4); g.globalCompositeOperation = "source-over"; // (its heat, and then its twinkle)
+      g.globalAlpha = Vi * o * Math.min(1, age * 5) * (.55 + .45 * tw); g.drawImage(t.star, st.x - sz * .7, st.y - sz * .7, sz * 1.4, sz * 1.4);
+      if (hot > .05) { g.globalAlpha = Vi * o * hot; g.fillStyle = "#FFF4D6"; g.beginPath(); g.arc(st.x, st.y, 1.6 * Math.max(1, k * .9), 0, TAU); g.fill(); } }
+    g.globalAlpha = 1; shootingStar(T, Vi);
+    const sun = sunAt(T);
+    // the moon setting (its picture on its plate, silver), and the sun rising (the next picture burned white-hot in it,
+    // cooling as it goes home)
+    const d = sun.cur ? cur : prev, plate = plateOf(d), glow = sun.cur ? 0 : env(T, ES.glow[0], ES.glow[1], 5.6, 6.4, E.sine), hot = sun.cur ? 1 - seg(T, ES.rise[0] + .4, ES.drop[1] + .9, E.sine) : 0, sc = 1 + .05 * sun.z;
+    const nearH = clamp(1 - (yh - (sun.y + R * sc)) / (R * 1.4)) * (sun.y - R * sc < yh ? 1 : 0) * Math.min(1, sun.z * 1.5);
+    if (nearH > .01) { reflect(plate, sun.x, sun.y, sc, yh, A, Vi * nearH * .8); g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = Vi * nearH * .35; g.drawImage(sun.cur ? S.halo : t.warm, sun.x - R * 1.5, yh - R * .3, R * 3, R * .6); g.restore(); }
+    if (sun.y - R * sc < yh) { g.save(); g.beginPath(); g.rect(0, 0, W, yh); g.clip();
+      if (sun.z > .01) { g.globalAlpha = Vi * Math.min(1, sun.z * 2) * .85; g.drawImage(t.sh, sun.x - R * sc + (4 + 14 * sun.z) * k - 16 * k, sun.y - R * sc + (6 + 18 * sun.z) * k - 16 * k, 2 * R * sc + 32 * k, 2 * R * sc + 32 * k); }
+      g.globalCompositeOperation = "lighter"; if (glow > .01) { g.globalAlpha = Vi * glow * .45; g.drawImage(t.warm, sun.x - R * 1.8, sun.y - R * 1.8, R * 3.6, R * 3.6); } if (hot > .01) { g.globalAlpha = Vi * hot * .55; g.drawImage(S.halo, sun.x - R * 1.7, sun.y - R * 1.7, R * 3.4, R * 3.4); } g.globalCompositeOperation = "source-over";
+      g.translate(sun.x, sun.y); g.scale(sc, sc); g.beginPath(); g.arc(0, 0, 1.03 * R, 0, TAU); g.clip(); g.globalAlpha = Vi; g.drawImage(plate, -1.05 * R, -1.05 * R, 2.1 * R, 2.1 * R);
+      if (glow > .01) { g.globalCompositeOperation = "lighter"; g.globalAlpha = Vi * glow * .3; g.drawImage(S.moonGlow, -R, -R, 2 * R, 2 * R); g.globalCompositeOperation = "source-over"; } // (the moon: its face lit)
+      if (hot > .01) { g.globalAlpha = Vi * hot; g.drawImage(d.hotC, -1.05 * R, -1.05 * R, 2.1 * R, 2.1 * R); g.globalCompositeOperation = "lighter"; g.globalAlpha = Vi * hot * .8; g.drawImage(d.glowC, -1.05 * R, -1.05 * R, 2.1 * R, 2.1 * R); g.globalCompositeOperation = "source-over"; } // (the new picture burned in it, white-hot, cooling)
+      g.restore(); }
+    road(A, sun.x, yh, nearH * .8, Vi, sun.cur ? "rgb(255,190,110)" : "rgb(232,226,212)");
+    for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + .4; puff(cx + Math.cos(a) * R * .96, cy + Math.sin(a) * R * .96, R * .04, (T - ES.drop[1]) / .5, Vi, 9810 + i, 5); }
+    pic(prev.full, 1 - I);
+  }
+
   const S = {
     res: "dpr", carry: true, // (the picture a pass lays, or burns, stays up through the quiet after it)
     wash: night ? 1 : 1.6, veil: night ? .6 : 1, // a light kit's small words have no room for the picture under them (scenes.js); a dark kit's do
@@ -1532,7 +1696,7 @@ export default function wood(K, id) {
       if (S.raw) S.words(S.raw);
     },
     /** where the words are (scenes.js): the medallion settles in the largest open space; embers keep off the lines */
-    words(rects) { S.raw = rects; S.wr = rects.map(([x0, y0, x1, y1]) => [x0 - 10, y0 - 8, x1 + 10, y1 + 8]); if (S.W) place(rects); },
+    words(rects) { S.raw = rects; S.wr = rects.map(([x0, y0, x1, y1]) => [x0 - 10, y0 - 8, x1 + 10, y1 + 8]); S.maskV = (S.maskV || 0) + 1; /* (b444: for the crown's light) */ if (S.W) place(rects); },
     /** 1 clear of the words, down to nothing behind them */
     shade(x, y, r) { let d = 1e9; for (const [x0, y0, x1, y1] of S.wr || []) d = Math.min(d, Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(y0 - y, 0, y - y1))); return clamp((d - r * .3) / (r + 6)); },
     /** where the medallion has settled, for the suite: its centre and size in CSS pixels, or null while there's no room */
